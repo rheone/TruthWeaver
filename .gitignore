@@ -1,0 +1,54 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# IDEs
+.vs/
+.idea/
+_ReSharper*/
+*.DotSettings.user
+*.user
+*.suo
+
+# VS Code: keep shared project configuration if added later
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Test output
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Generated documentation
+*.xml
+
+# CSharpier
+.csharpier/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local Claude state
+.claude/local/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.bak
+*.orig
+
+# Local Skills
+.claude/skills/
