@@ -17,7 +17,10 @@ public static class TestPredicates
         bool value
     )
     {
-        return builder.Add(PredicateSchema.NoArguments(name), (_, _, _) => ValueTask.FromResult(value));
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', always {value}."),
+            (_, _, _) => ValueTask.FromResult(value)
+        );
     }
 
     /// <summary>Registers a zero-argument predicate that records each invocation (for memoization/short-circuit tests) and returns a fixed value.</summary>
@@ -29,7 +32,7 @@ public static class TestPredicates
     )
     {
         return builder.Add(
-            PredicateSchema.NoArguments(name),
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', always {value}, logs invocations."),
             (_, _, _) =>
             {
                 invocationLog.Add(name);
@@ -45,7 +48,7 @@ public static class TestPredicates
     )
     {
         return builder.Add(
-            PredicateSchema.NoArguments(name),
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', always faults."),
             (_, _, _) => throw new InvalidOperationException($"'{name}' faulted.")
         );
     }
@@ -59,12 +62,51 @@ public static class TestPredicates
     )
     {
         return builder.Add(
-            PredicateSchema.NoArguments(name),
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', delays then returns {value}."),
             async (_, _, ct) =>
             {
                 await Task.Delay(delay, ct).ConfigureAwait(false);
                 return value;
             }
+        );
+    }
+
+    /// <summary>
+    /// Registers a zero-argument predicate that cancels the supplied <see cref="CancellationTokenSource"/>
+    /// and then observes its own cancellation via the caller's token — used to exercise the genuine
+    /// cancellation path (as opposed to a self-thrown <see cref="OperationCanceledException"/> the
+    /// caller never requested).
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddCancelingPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name,
+        CancellationTokenSource cancellationTokenSource
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', cancels the caller's token then observes it."),
+            async (_, _, ct) =>
+            {
+                await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                return true;
+            }
+        );
+    }
+
+    /// <summary>
+    /// Registers a zero-argument predicate that throws <see cref="OperationCanceledException"/> on its
+    /// own initiative, without the caller's token ever being cancelled — this must be recorded as an
+    /// ordinary <see cref="Fault"/>, not treated as a genuine cancellation.
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddSelfCancelingPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', throws OperationCanceledException unprompted."),
+            (_, _, _) => throw new OperationCanceledException($"'{name}' canceled itself.")
         );
     }
 
@@ -77,9 +119,58 @@ public static class TestPredicates
     )
     {
         return builder.Add(
-            new PredicateSchema(name, [new PredicateArgumentSchema(argumentName, LiteralKind.String)]),
+            new PredicateSchema(
+                name,
+                name,
+                $"Test predicate '{name}', true iff '{argumentName}' equals '{matchValue}'.",
+                [new PredicateArgumentSchema(argumentName, $"The value to compare against '{matchValue}'.", LiteralKind.String)]
+            ),
             (_, args, _) =>
                 ValueTask.FromResult(string.Equals(args.GetString(argumentName), matchValue, StringComparison.Ordinal))
+        );
+    }
+
+    /// <summary>Registers a single-GUID-argument predicate whose truth is "does the argument equal <paramref name="matchValue"/>?".</summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddGuidArgPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name,
+        string argumentName,
+        Guid matchValue
+    )
+    {
+        return builder.Add(
+            new PredicateSchema(
+                name,
+                name,
+                $"Test predicate '{name}', true iff '{argumentName}' equals '{matchValue}'.",
+                [new PredicateArgumentSchema(argumentName, $"The GUID to compare against '{matchValue}'.", LiteralKind.Guid)]
+            ),
+            (_, args, _) => ValueTask.FromResult(args.GetGuid(argumentName) == matchValue)
+        );
+    }
+
+    /// <summary>Registers a single-DateTimeOffset-argument predicate whose truth is "does the argument equal <paramref name="matchValue"/>?".</summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddDateTimeOffsetArgPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name,
+        string argumentName,
+        DateTimeOffset matchValue
+    )
+    {
+        return builder.Add(
+            new PredicateSchema(
+                name,
+                name,
+                $"Test predicate '{name}', true iff '{argumentName}' equals '{matchValue:O}'.",
+                [
+                    new PredicateArgumentSchema(
+                        argumentName,
+                        $"The date/time to compare against '{matchValue:O}'.",
+                        LiteralKind.DateTimeOffset
+                    ),
+                ]
+            ),
+            (_, args, _) => ValueTask.FromResult(args.GetDateTimeOffset(argumentName) == matchValue)
         );
     }
 }

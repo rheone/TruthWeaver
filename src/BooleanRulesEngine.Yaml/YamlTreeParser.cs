@@ -1,6 +1,7 @@
 namespace BooleanRulesEngine.Yaml;
 
 using System.Diagnostics.CodeAnalysis;
+using BooleanRulesEngine.Ast;
 using BooleanRulesEngine.Diagnostics;
 using BooleanRulesEngine.Parsing;
 using YamlDotNet.Core;
@@ -22,7 +23,6 @@ internal static class YamlTreeParser
     /// </returns>
     public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string yaml)
     {
-        List<Diagnostic> diagnostics = [];
         YamlStream stream = [];
         try
         {
@@ -31,17 +31,35 @@ internal static class YamlTreeParser
         }
         catch (YamlException ex)
         {
-            diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Malformed YAML: {ex.Message}", SourceSpan.None));
+            List<Diagnostic> diagnostics =
+            [
+                Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Malformed YAML: {ex.Message}", SourceSpan.None),
+            ];
             return (null, diagnostics);
         }
 
         if (stream.Documents.Count == 0)
         {
-            diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, "The YAML document is empty.", SourceSpan.None));
+            List<Diagnostic> diagnostics =
+            [
+                Diagnostic.Error(DiagnosticCodes.MalformedTree, "The YAML document is empty.", SourceSpan.None),
+            ];
             return (null, diagnostics);
         }
 
-        RuleNode? root = ParseNode(stream.Documents[0].RootNode, diagnostics);
+        return Parse(stream.Documents[0].RootNode);
+    }
+
+    /// <summary>Parses an already-materialized YAML tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
+    /// <param name="node">The YAML tree node.</param>
+    /// <returns>
+    /// The parsed root node (or <see langword="null"/> if the node was malformed) and the
+    /// diagnostics raised while parsing.
+    /// </returns>
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(YamlNode node)
+    {
+        List<Diagnostic> diagnostics = [];
+        RuleNode? root = ParseNode(node, diagnostics);
         return (root, diagnostics);
     }
 
@@ -169,13 +187,19 @@ internal static class YamlTreeParser
             operands.Add(operand);
         }
 
-        switch (op.ToUpperInvariant())
+        if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
-            case "AND":
+            diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Unknown operator '{op}'.", SourceSpan.None));
+            return null;
+        }
+
+        switch (canonicalOpName)
+        {
+            case "And":
                 return new AndNode(operands, SourceSpan.None);
-            case "OR":
+            case "Or":
                 return new OrNode(operands, SourceSpan.None);
-            case "NOT":
+            case "Not":
                 if (operands.Count != 1)
                 {
                     diagnostics.Add(
@@ -185,28 +209,48 @@ internal static class YamlTreeParser
                 }
 
                 return new NotNode(operands[0], SourceSpan.None);
-            case "XOR":
+            case "Xor":
                 return new XorNode(operands, SourceSpan.None);
-            case "EXACTLYONE":
+            case "Xnor":
+                return new XnorNode(operands, SourceSpan.None);
+            case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
-            case "ATLEAST":
-                if (
-                    !TryGetChild(mapping, "k", out YamlNode? kNode)
-                    || kNode is not YamlScalarNode { Value: { } kText }
-                    || !int.TryParse(kText, out int k)
-                )
-                {
-                    diagnostics.Add(
-                        Diagnostic.Error(DiagnosticCodes.MalformedTree, "'atLeast' requires a numeric 'k'.", SourceSpan.None)
-                    );
-                    return null;
-                }
-
-                return new AtLeastNode(k, operands, SourceSpan.None);
+            case "AtLeast":
+                return ParseThreshold(mapping, op, ThresholdComparison.AtLeast, operands, diagnostics);
+            case "AtMost":
+                return ParseThreshold(mapping, op, ThresholdComparison.AtMost, operands, diagnostics);
+            case "GreaterThan":
+                return ParseThreshold(mapping, op, ThresholdComparison.GreaterThan, operands, diagnostics);
+            case "LessThan":
+                return ParseThreshold(mapping, op, ThresholdComparison.LessThan, operands, diagnostics);
+            case "Exactly":
+                return ParseThreshold(mapping, op, ThresholdComparison.Exactly, operands, diagnostics);
             default:
-                diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Unknown operator '{op}'.", SourceSpan.None));
-                return null;
+                throw new InvalidOperationException($"Unhandled canonical op-name '{canonicalOpName}'.");
         }
+    }
+
+    private static RuleNode? ParseThreshold(
+        YamlMappingNode mapping,
+        string op,
+        ThresholdComparison comparison,
+        List<RuleNode> operands,
+        List<Diagnostic> diagnostics
+    )
+    {
+        if (
+            !TryGetChild(mapping, "k", out YamlNode? kNode)
+            || kNode is not YamlScalarNode { Value: { } kText }
+            || !int.TryParse(kText, out int k)
+        )
+        {
+            diagnostics.Add(
+                Diagnostic.Error(DiagnosticCodes.MalformedTree, $"'{op}' requires a numeric 'k'.", SourceSpan.None)
+            );
+            return null;
+        }
+
+        return new ThresholdNode(comparison, k, operands, SourceSpan.None);
     }
 
     private static RawLiteral? ParseLiteral(YamlNode node, List<Diagnostic> diagnostics)

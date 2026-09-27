@@ -45,6 +45,56 @@ public sealed class CompiledRule<TContext>
         return JsonTreePrinter.Print(this.Root);
     }
 
+    /// <summary>
+    /// Describes this rule's expression tree recursively — every operator's label/description (from
+    /// <see cref="OperatorInfo"/>) and every term's label/description (from its predicate's registered
+    /// <see cref="PredicateSchema"/>), without exposing the underlying closed-set AST types
+    /// themselves. Useful for a rule-authoring UI or a generated "what does this rule mean" report.
+    /// </summary>
+    /// <returns>The root node's description, with every operand described the same way.</returns>
+    public RuleDescription Describe()
+    {
+        return DescribeNode(this.Root, this.registry);
+    }
+
+    /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI.</summary>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    public string PrintMermaid()
+    {
+        return MermaidTreePrinter.Print(this.Describe());
+    }
+
+    /// <summary>
+    /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
+    /// result and short-circuit path.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    public string PrintMermaid(Decision decision)
+    {
+        return MermaidTreePrinter.Print(this.Describe(), RequireEvaluatedTree(decision));
+    }
+
+    /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
+    /// <returns>The indented tree text.</returns>
+    public string PrintPlainText()
+    {
+        return PlainTextTreePrinter.Print(this.Describe());
+    }
+
+    /// <summary>
+    /// Renders this rule's structure as an indented plain-text tree, annotated by one evaluation's
+    /// result and short-circuit path.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <returns>The indented tree text.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    public string PrintPlainText(Decision decision)
+    {
+        return PlainTextTreePrinter.Print(this.Describe(), RequireEvaluatedTree(decision));
+    }
+
     /// <summary>Evaluates this rule against a context.</summary>
     /// <param name="context">The application-supplied evaluation context.</param>
     /// <param name="services">
@@ -87,5 +137,35 @@ public sealed class CompiledRule<TContext>
     public override string ToString()
     {
         return this.CanonicalText;
+    }
+
+    private static RuleDescription DescribeNode(Expression node, PredicateRegistry<TContext> registry)
+    {
+        if (node is TermExpression term)
+        {
+            (string label, string description) = registry.TryGetSchema(term.Identity.PredicateName, out PredicateSchema? schema)
+                ? (schema!.Label, schema.Description)
+                : (term.Identity.PredicateName, "An unregistered predicate (CompilationMode.Lenient).");
+            return new RuleDescription(label, description, []);
+        }
+
+        OperatorDescriptor descriptor = OperatorInfo.Describe(node);
+        IReadOnlyList<Expression> operands =
+            node is ConstantExpression ? Array.Empty<Expression>() : ExpressionShape.Of(node).Operands;
+
+        return new RuleDescription(
+            descriptor.Label,
+            descriptor.Description,
+            [.. operands.Select(operand => DescribeNode(operand, registry))]
+        );
+    }
+
+    private static EvaluatedNode RequireEvaluatedTree(Decision decision)
+    {
+        return decision.EvaluatedTree
+            ?? throw new ArgumentException(
+                "This decision has no EvaluatedTree to render — it must come from EvaluateAsync on this same rule.",
+                nameof(decision)
+            );
     }
 }

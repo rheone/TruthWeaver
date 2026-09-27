@@ -28,18 +28,21 @@ internal static class YamlTreePrinter
 
     private static YamlNode ToNode(Expression node)
     {
-        return node switch
+        if (node is ConstantExpression c)
         {
-            ConstantExpression c => Mapping(("const", Scalar(c.Value ? "true" : "false", ScalarStyle.Plain))),
-            TermExpression t => TermToNode(t),
-            NotExpression n => OperatorNode("not", [ToNode(n.Operand)]),
-            AndExpression a => OperatorNode("and", a.Operands.Select(ToNode)),
-            OrExpression o => OperatorNode("or", o.Operands.Select(ToNode)),
-            XorExpression x => OperatorNode("xor", [ToNode(x.Left), ToNode(x.Right)]),
-            ExactlyOneExpression e => OperatorNode("exactlyOne", e.Operands.Select(ToNode)),
-            AtLeastExpression al => OperatorNodeWithThreshold("atLeast", al.K, al.Operands.Select(ToNode)),
-            _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
-        };
+            return Mapping(("const", Scalar(c.Value ? "true" : "false", ScalarStyle.Plain)));
+        }
+
+        if (node is TermExpression t)
+        {
+            return TermToNode(t);
+        }
+
+        NodeShape shape = ExpressionShape.Of(node);
+        string op = TreeFormatOpNames.ToTreeFormat(shape.OpName);
+        return shape.K is { } k
+            ? OperatorNodeWithThreshold(op, k, shape.Operands.Select(ToNode))
+            : OperatorNode(op, shape.Operands.Select(ToNode));
     }
 
     private static YamlScalarNode Scalar(string text, ScalarStyle style)
@@ -105,6 +108,7 @@ internal static class YamlTreePrinter
                 value.AsDateTimeOffset().ToString("O", CultureInfo.InvariantCulture),
                 ScalarStyle.DoubleQuoted
             ),
+            LiteralKind.Guid => Scalar(value.AsGuid().ToString(), ScalarStyle.DoubleQuoted),
             _ => ArrayLiteralToNode(value),
         };
     }

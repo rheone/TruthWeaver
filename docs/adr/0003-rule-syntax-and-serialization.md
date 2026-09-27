@@ -35,7 +35,10 @@ Two specific traps drove several of the decisions below:
 `AND`, `OR`, `NOT`, `XOR` (**binary only** — a compile error if given more
 than two operands), `ExactlyOne(...)` (n-ary, true iff exactly one operand is
 `True`), `AtLeast(k, ...)` (n-ary threshold, e.g. "any two of these three
-approvals"), and the constants `true`/`false`.
+approvals"), and the constants `true`/`false`. See
+[Amendments](#amendments) below for `XNOR` and the rest of the threshold
+family (`AtMost`/`GreaterThan`/`LessThan`/`Exactly`), added after this ADR
+was first accepted.
 
 `IMPLIES` is deliberately **not** included — it saves two characters over
 `OR(NOT(a), b)` and rule authors reliably get its truth table wrong, so the
@@ -130,8 +133,33 @@ A node is discriminated by which key is present (`op` vs. `predicate`)
 rather than by an extra wrapper object, halving the nesting depth for the
 same information. YAML uses the identical shape under YamlDotNet.
 
+This shape is published as a JSON Schema document,
+[`rule-tree.schema.json`](../../src/BooleanRulesEngine/Json/rule-tree.schema.json),
+shipped as a content asset in the `BooleanRulesEngine` NuGet package so a
+rule-authoring UI or other external tooling can validate a generated tree
+structurally without hand-copying this shape. The schema covers structural
+JSON shape only — the same level `JsonTreeParser` enforces before
+`RuleCompiler` validation runs — so it does not (and cannot, as JSON Schema)
+express compile-time-only constraints like `XOR`/`XNOR` being binary-only or
+a threshold's `k` being in range for its operand count; a schema-valid
+document can still fail compilation. `RuleTreeSchemaTests` validates the
+schema against the compiler's own valid and malformed JSON fixtures.
+
 The `true`/`false` constant (user story 11) uses the same discrimination
 principle with a third key: `{"const": true}` / `{"const": false}`.
+
+Both `RuleCompiler.CompileJson` and `CompileYaml` also accept an
+already-materialized node (`System.Text.Json.JsonElement` /
+`YamlDotNet.RepresentationModel.YamlNode`) in addition to standalone text, so
+a caller embedding a rule as one field of a larger document can compile it
+directly from the field it already parsed, without re-serializing that
+subtree back to text first. Locating that subtree is ordinary caller-side
+navigation through the JSON/YAML library's own node APIs (`GetProperty`,
+`mapping.Children[...]`, etc.) — the engine adds no path/pointer syntax of
+its own for it. This is the same rationale as the decision above against
+context-path argument values: a path-expression grammar is a real
+sub-language to design and version, and the engine stays out of that
+business at both the argument level and the document-navigation level.
 
 ### Compilation pipeline
 
@@ -200,6 +228,118 @@ flowchart TD
   as a distinct, named predicate rather than parameterized generically from
   a path expression — more predicates to register, but each one is fully
   inspectable and testable in isolation.
+
+## Amendments
+
+### Threshold operator family (supersedes the single `AtLeast(k, ...)`)
+
+`AtLeast(k, ...)` turned out to be one point on a small, closed family of
+count-threshold comparisons a rule author reasonably wants: "at least",
+"at most", "more than", "fewer than", and "exactly". Rather than adding four
+near-duplicate AST node types, all five compile to one `ThresholdExpression`
+node parameterized by a `ThresholdComparison` enum (`AtLeast`, `AtMost`,
+`GreaterThan`, `LessThan`, `Exactly`), sharing one evaluator, one BDD
+composition (each expressed via the existing `AtLeast`-counting BDD helper,
+e.g. `AtMost(k, ...)` is `NOT AtLeast(k + 1, ...)`), and one compile-time
+range check: for a given operand count, a `k` outside the range that makes
+the result structurally non-constant is rejected (`BRE0008`,
+`InvalidThresholdValue`) — the same "don't silently accept a constant rule"
+rationale the original `AtLeast` validation already applied.
+
+DSL keywords: `AtLeast(k, ...)`, `AtMost(k, ...)`, `GreaterThan(k, ...)`,
+`LessThan(k, ...)`, `Exactly(k, ...)`. JSON/YAML op names are the camelCase
+equivalents (`atLeast`, `atMost`, `greaterThan`, `lessThan`, `exactly`), each
+carrying its threshold as a `k` key alongside `operands`, exactly as
+`atLeast` already did.
+
+Several edge values in this family collapse to other operators in the set
+(`AtMost(0, ...)` is `NOT(OR(...))`, `GreaterThan(0, ...)` is `OR(...)`,
+`Exactly(n, ...)` at the full operand count is `AND(...)`, and so on) — see
+[CONTEXT.md's "Equivalency rules"](../../CONTEXT.md#equivalency-rules) for
+the full table and why no `All`/`None` operators exist to duplicate them.
+
+### `XNOR` (logical biconditional / `IFF`)
+
+Added as `XOR`'s natural counterpart: binary-only for the same reason `XOR`
+is (the n-ary generalization is a parity operator nobody means when they
+write `XNOR(a, b, c)`), always parenthesized by the canonical printer
+regardless of context, and included in the same ambiguous-mixing check `XOR`
+already had — mixing `XNOR` with `AND`/`OR`, or mixing `XOR` with `XNOR`, at
+the same syntactic level without parentheses is a compile error
+(`BRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
+
+`IFF` was considered as an alternate/additional keyword but not added:
+`XNOR` is already the standard boolean-algebra name and adding a second
+spelling for the same operator would just be another synonym to document,
+parse, and test, which this ADR's original decision already argues against
+for `IMPLIES`/symbol aliases.
+
+### Required predicate descriptions, and a required predicate label
+
+`PredicateSchema` and `PredicateArgumentSchema` both gained a required,
+read-only `Description` string. This was not part of the original operator
+set decision above, but belongs here rather than a new ADR: it's a
+predicate-authoring-contract change, not a rule-syntax change, and it exists
+so a rule-authoring UI or generated documentation always has something to
+show for every registered predicate and its arguments, rather than an empty
+string a UI would have to guard against.
+
+`PredicateSchema` later gained a second required string, `Label` — a short,
+human-friendly display name distinct from the machine-facing `Name` used in
+rule text (e.g. `Name: "hasRole"`, `Label: "Has Role"`). The distinction
+matters because `Name` is load-bearing for term identity (CONTEXT.md) and
+therefore can't casually change once rules reference it, while `Label` is
+purely presentational and free to be renamed, capitalized, or localized
+without touching a single persisted rule.
+
+### Operator label/description, and `CompiledRule.Describe()`
+
+Predicates carry `Label`/`Description` on their schema; the closed set of
+*operators* (`AND`/`OR`/`NOT`/`XOR`/`XNOR`/`ExactlyOne`/the threshold family/
+the constants) needed the equivalent, so a rule-authoring UI or a generated
+"what does this rule mean" report can describe every node of a compiled
+expression tree, not just its predicate leaves. `OperatorInfo.Describe`
+(`BooleanRulesEngine.Ast`) returns an `OperatorDescriptor` (`Label`,
+`Description`) for any operator node; `CompiledRule<TContext>.Describe()`
+walks the whole tree and returns a `RuleDescription` (`Label`, `Description`,
+`Operands`) recursively, resolving each term's `Label`/`Description` from its
+predicate's registered `PredicateSchema` via the new public
+`PredicateRegistry<TContext>.TryGetSchema`. `RuleDescription` is a plain DTO,
+not the AST itself — the closed-set `Expression`/`RuleNode` types stay
+internal-to-the-package (ADR-0004); nothing here opens them up as a second,
+parallel public surface.
+
+### Canonical printer: parenthesize mixed operators for clarity
+
+The canonical printer's original "minimal but unambiguous" rule left some
+mixed-operator combinations unparenthesized where precedence alone made them
+unambiguous to the parser (e.g. `a AND b OR c`, parsed correctly as
+`(a AND b) OR c` since `AND` binds tighter). In practice this reads poorly
+in a large, deeply nested rule, where a human has to reconstruct precedence
+mentally to see the grouping the parser already knows. The printer now
+parenthesizes an operand whenever it's a different operator than the one
+it's nested under (`a AND b OR c` → `(a AND b) OR c`), even where the parser
+would resolve the same meaning unambiguously without them — precedence still
+governs *parsing*, but the printed form no longer relies on the reader
+holding that precedence table in their head. `XOR`/`XNOR` operands remain
+always-parenthesized regardless of context, as before. This does not change
+`parse(print(x))` round-trip equality: the extra parentheses only affect
+which operand groupings appear in the printed text, not which tree they
+reparse to.
+
+### Programmatic construction: `RuleBuilder`
+
+A fluent `RuleBuilder` (in `BooleanRulesEngine.Building`) lets a host
+assemble a rule tree from application logic — e.g. a dynamically built list
+of conditions — without hand-writing or string-concatenating DSL/JSON/YAML
+text. It is deliberately *not* a fourth parallel front end into the AST:
+each builder method renders to the same flat JSON tree shape this ADR
+already defines, and compiles through the existing `RuleCompiler.CompileJson`,
+so a builder-assembled rule goes through the identical Validate/Analyze
+pipeline and receives the identical diagnostics a hand-written rule would.
+This keeps the closed-set `Expression`/`RuleNode` types (ADR-0004) as the
+only place that knows about the AST's shape, rather than adding a second,
+lower-trust path that could drift out of sync with the validated one.
 
 ## Related
 

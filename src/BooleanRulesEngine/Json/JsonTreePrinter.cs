@@ -20,26 +20,31 @@ internal static class JsonTreePrinter
 
     private static JsonNode ToNode(Expression node)
     {
-        return node switch
+        if (node is ConstantExpression c)
         {
-            ConstantExpression c => new JsonObject { ["const"] = c.Value },
-            TermExpression t => TermToNode(t),
-            NotExpression n => new JsonObject { ["op"] = "not", ["operands"] = new JsonArray(ToNode(n.Operand)) },
-            AndExpression a => new JsonObject { ["op"] = "and", ["operands"] = OperandsArray(a.Operands) },
-            OrExpression o => new JsonObject { ["op"] = "or", ["operands"] = OperandsArray(o.Operands) },
-            XorExpression x => new JsonObject { ["op"] = "xor", ["operands"] = new JsonArray(ToNode(x.Left), ToNode(x.Right)) },
-            ExactlyOneExpression e => new JsonObject { ["op"] = "exactlyOne", ["operands"] = OperandsArray(e.Operands) },
-            AtLeastExpression al => new JsonObject
-            {
-                ["op"] = "atLeast",
-                ["k"] = al.K,
-                ["operands"] = OperandsArray(al.Operands),
-            },
-            _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
+            return new JsonObject { ["const"] = c.Value };
+        }
+
+        if (node is TermExpression t)
+        {
+            return TermToNode(t);
+        }
+
+        NodeShape shape = ExpressionShape.Of(node);
+        JsonObject obj = new()
+        {
+            ["op"] = TreeFormatOpNames.ToTreeFormat(shape.OpName),
+            ["operands"] = OperandsArray(shape.Operands),
         };
+        if (shape.K is { } k)
+        {
+            obj["k"] = k;
+        }
+
+        return obj;
     }
 
-    private static JsonArray OperandsArray(EquatableArray<Expression> operands)
+    private static JsonArray OperandsArray(IReadOnlyList<Expression> operands)
     {
         JsonArray array = [];
         foreach (Expression operand in operands)
@@ -75,6 +80,7 @@ internal static class JsonTreePrinter
             LiteralKind.Int64 => JsonValue.Create(value.AsInt64()),
             LiteralKind.Decimal => JsonValue.Create(value.AsDecimal()),
             LiteralKind.Boolean => JsonValue.Create(value.AsBoolean()),
+            LiteralKind.Guid => JsonValue.Create(value.AsGuid().ToString()),
             LiteralKind.DateTimeOffset => JsonValue.Create(
                 value.AsDateTimeOffset().ToString("O", CultureInfo.InvariantCulture)
             ),

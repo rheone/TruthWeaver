@@ -11,6 +11,11 @@ _ReSharper*/
 *.user
 *.suo
 
+# Local agent/tool state (generated indexes, per-machine CLI config)
+.codegraph/
+.codex/
+.cursor/
+
 # VS Code: keep shared project configuration if added later
 .vscode/*
 !.vscode/extensions.json
@@ -22,6 +27,9 @@ TestResults/
 coverage/
 *.coverage
 *.coveragexml
+
+# BenchmarkDotNet run output (not the committed baseline under benchmarks/*/results/)
+BenchmarkDotNet.Artifacts/
 
 # NuGet
 *.nupkg

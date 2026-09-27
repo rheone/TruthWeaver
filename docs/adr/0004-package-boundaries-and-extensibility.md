@@ -24,7 +24,7 @@ observability is deferred, not v1).
 
 ## Decision
 
-### Three packages
+### Four packages
 
 - **`BooleanRulesEngine.Abstractions`** — `IPredicate<TContext>`,
   `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`.
@@ -40,6 +40,20 @@ observability is deferred, not v1).
 - **`BooleanRulesEngine.Yaml`** — YAML tree support, isolated here because
   it is the one place YamlDotNet is needed, and a consumer with no interest
   in YAML should not acquire that dependency transitively.
+- **`BooleanRulesEngine.Predicates`** — a convenience library of ready-made,
+  generic `IPredicate<TContext>`-shaped implementations (string comparison,
+  null/empty, set equality, regex matching), each parameterized by a
+  selector delegate supplied at registration. Depends on
+  `BooleanRulesEngine.Abstractions` alone — not `BooleanRulesEngine` — so a
+  service that wants these common predicates still doesn't acquire the
+  parser, compiler, or analyzer. It is deliberately its own package rather
+  than folded into `BooleanRulesEngine.Abstractions` itself: `Abstractions`
+  is a zero-opinion kernel (the contract every predicate author, including
+  this package, implements against), while `Predicates` is one opinionated,
+  optional convenience layer built on top of that contract — a host is free
+  to implement every predicate itself and never reference this package at
+  all. Any host project may opt into it; nothing in `BooleanRulesEngine`
+  itself depends on it.
 
 ```mermaid
 flowchart LR
@@ -62,17 +76,23 @@ flowchart LR
         Yaml["YAML tree support"]
     end
 
+    subgraph PredicatesPkg["BooleanRulesEngine.Predicates"]
+        Predicates["String/null-or-empty/set-equality/regex predicates"]
+    end
+
     Core --> Abstractions
     YamlPkg --> Core
+    PredicatesPkg --> Abstractions
     Core --> MEL["Microsoft.Extensions.Logging.Abstractions"]
     Core --> MEDI["Microsoft.Extensions.DependencyInjection.Abstractions"]
 
     App["Predicate-implementing service"] -.->|"references only"| Abstractions
     Host["Rule-authoring / evaluation host"] -->|"references"| Core
     Host -.->|"optional"| YamlPkg
+    Host -.->|"optional"| PredicatesPkg
 ```
 
-Splitting a monolithic package into these three later is a breaking change
+Splitting a monolithic package into these four later is a breaking change
 for anyone who already depends on the combined surface; shipping the split
 from the start costs nothing extra now.
 
@@ -105,6 +125,51 @@ model — the operator set is small and closed by design
 ([ADR-0003](0003-rule-syntax-and-serialization.md)), so an extensibility
 point for operators would be speculative surface area with no current
 consumer.
+
+### Amendment: `RuleBuilder` is not a fourth front end
+
+`RuleBuilder` (`BooleanRulesEngine.Building`, added after this ADR was first
+accepted) lets a host assemble a rule tree fluently in C#. It lives inside
+`BooleanRulesEngine` itself rather than as a separate package or an
+extension point some other assembly could plug into: it renders to the same
+JSON tree shape [ADR-0003](0003-rule-syntax-and-serialization.md) already
+defines and compiles through the existing `CompileJson`, so it's a
+convenience wrapper over the closed operator set above, not a new surface
+that would need to independently track every operator this package adds.
+
+### Amendment: the real per-operator touch-point count, after the shared node-shape seam
+
+The "operator set is closed... adding a new operator is a versioned change" language above scoped
+the cost of a new operator to four subsystems (parser, compiler, evaluator, analyzer). In practice,
+by the time `BooleanRulesEngine.Yaml` and the JSON/canonical-text printers existed, adding a new
+operator touched **six** independent switches over `Expression` that each re-derived the same
+structural fact — a node's op-name, its threshold `K` (when applicable), and its operand list:
+`OperatorInfo`, `CanonicalPrinter`, `JsonTreePrinter`, `YamlTreePrinter`, `Evaluator` (its trace/skip
+`Describe` helper), and `CompiledRule` (its `Describe()` operand-extraction switch). None of those six
+were the four subsystems this ADR originally scoped (parser, compiler, evaluator's actual eval
+dispatch, analyzer) — they were rendering/description call sites layered on afterward, each
+re-implementing the same structural lookup independently.
+
+`BooleanRulesEngine.Ast.ExpressionShape.Of` (internal, `src/BooleanRulesEngine/Ast/NodeShape.cs`) now
+supplies that one structural fact from a single switch. Adding a new operator variant to the closed
+set still means editing several places, but the count is smaller and each remaining edit is now
+irreducibly format- or behavior-specific rather than a duplicate of the same structural
+pattern-match:
+
+1. `Expression.cs` — add the record.
+2. The parser/compiler front ends (DSL, JSON, YAML) — teach them the new keyword/shape.
+3. `ExpressionShape.Of` — **one** new case for op-name/K/operands (was six before this ticket).
+4. `Evaluator`'s `EvalAsync` switch — the new operator's actual Kleene evaluation algorithm (never
+   collapsible into the seam — it's genuinely distinct control flow per operator).
+5. The analyzer's BDD encoding, if the operator needs one.
+6. Per-format label/keyword strings in `OperatorInfo`, `CanonicalPrinter`,
+   `JsonTreePrinter`/`YamlTreePrinter` — each format still needs to know what to *call* the new
+   op-name in its own vocabulary, but no longer needs its own switch to find the op-name/K/operands
+   in the first place.
+
+The structural duplication (six identical `Expression` switches) is gone; what remains is
+irreducible — genuinely different behavior or vocabulary per subsystem, not the same fact
+re-derived six times.
 
 ## Consequences
 

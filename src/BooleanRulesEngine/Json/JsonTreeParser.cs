@@ -1,6 +1,8 @@
 namespace BooleanRulesEngine.Json;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using BooleanRulesEngine.Ast;
 using BooleanRulesEngine.Diagnostics;
 using BooleanRulesEngine.Parsing;
 
@@ -24,9 +26,10 @@ internal static class JsonTreeParser
     /// The parsed root node (or <see langword="null"/> if the JSON itself was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string json)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
+        [StringSyntax(StringSyntaxAttribute.Json)] string json
+    )
     {
-        List<Diagnostic> diagnostics = [];
         JsonDocument document;
         try
         {
@@ -34,15 +37,30 @@ internal static class JsonTreeParser
         }
         catch (JsonException ex)
         {
-            diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Malformed JSON: {ex.Message}", SourceSpan.None));
+            List<Diagnostic> diagnostics =
+            [
+                Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Malformed JSON: {ex.Message}", SourceSpan.None),
+            ];
             return (null, diagnostics);
         }
 
         using (document)
         {
-            RuleNode? root = ParseNode(document.RootElement, diagnostics);
-            return (root, diagnostics);
+            return Parse(document.RootElement);
         }
+    }
+
+    /// <summary>Parses an already-materialized JSON tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
+    /// <param name="element">The JSON tree node.</param>
+    /// <returns>
+    /// The parsed root node (or <see langword="null"/> if the element was malformed) and the
+    /// diagnostics raised while parsing.
+    /// </returns>
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(JsonElement element)
+    {
+        List<Diagnostic> diagnostics = [];
+        RuleNode? root = ParseNode(element, diagnostics);
+        return (root, diagnostics);
     }
 
     private static RuleNode? ParseNode(JsonElement element, List<Diagnostic> diagnostics)
@@ -157,13 +175,19 @@ internal static class JsonTreeParser
             operands.Add(operand);
         }
 
-        switch (op.ToUpperInvariant())
+        if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
-            case "AND":
+            diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Unknown operator '{op}'.", SourceSpan.None));
+            return null;
+        }
+
+        switch (canonicalOpName)
+        {
+            case "And":
                 return new AndNode(operands, SourceSpan.None);
-            case "OR":
+            case "Or":
                 return new OrNode(operands, SourceSpan.None);
-            case "NOT":
+            case "Not":
                 if (operands.Count != 1)
                 {
                     diagnostics.Add(
@@ -173,24 +197,44 @@ internal static class JsonTreeParser
                 }
 
                 return new NotNode(operands[0], SourceSpan.None);
-            case "XOR":
+            case "Xor":
                 return new XorNode(operands, SourceSpan.None);
-            case "EXACTLYONE":
+            case "Xnor":
+                return new XnorNode(operands, SourceSpan.None);
+            case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
-            case "ATLEAST":
-                if (!element.TryGetProperty("k", out JsonElement kElement) || kElement.ValueKind != JsonValueKind.Number)
-                {
-                    diagnostics.Add(
-                        Diagnostic.Error(DiagnosticCodes.MalformedTree, "'atLeast' requires a numeric 'k'.", SourceSpan.None)
-                    );
-                    return null;
-                }
-
-                return new AtLeastNode(kElement.GetInt32(), operands, SourceSpan.None);
+            case "AtLeast":
+                return ParseThreshold(element, op, ThresholdComparison.AtLeast, operands, diagnostics);
+            case "AtMost":
+                return ParseThreshold(element, op, ThresholdComparison.AtMost, operands, diagnostics);
+            case "GreaterThan":
+                return ParseThreshold(element, op, ThresholdComparison.GreaterThan, operands, diagnostics);
+            case "LessThan":
+                return ParseThreshold(element, op, ThresholdComparison.LessThan, operands, diagnostics);
+            case "Exactly":
+                return ParseThreshold(element, op, ThresholdComparison.Exactly, operands, diagnostics);
             default:
-                diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, $"Unknown operator '{op}'.", SourceSpan.None));
-                return null;
+                throw new InvalidOperationException($"Unhandled canonical op-name '{canonicalOpName}'.");
         }
+    }
+
+    private static RuleNode? ParseThreshold(
+        JsonElement element,
+        string op,
+        ThresholdComparison comparison,
+        List<RuleNode> operands,
+        List<Diagnostic> diagnostics
+    )
+    {
+        if (!element.TryGetProperty("k", out JsonElement kElement) || kElement.ValueKind != JsonValueKind.Number)
+        {
+            diagnostics.Add(
+                Diagnostic.Error(DiagnosticCodes.MalformedTree, $"'{op}' requires a numeric 'k'.", SourceSpan.None)
+            );
+            return null;
+        }
+
+        return new ThresholdNode(comparison, kElement.GetInt32(), operands, SourceSpan.None);
     }
 
     private static RawLiteral? ParseLiteral(JsonElement element, List<Diagnostic> diagnostics)

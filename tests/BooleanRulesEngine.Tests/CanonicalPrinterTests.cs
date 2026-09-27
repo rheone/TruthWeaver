@@ -30,6 +30,28 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("(isManager XOR isDepartmentHead)", rule.CanonicalText);
     }
 
+    [Fact]
+    public void Xnor_operand_is_always_parenthesized_even_when_unnecessary_for_precedence()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompiledRule<RuleTestContext> rule = compiler.Compile("isManager XNOR isDepartmentHead").CompiledRule!;
+
+        Assert.Equal("(isManager XNOR isDepartmentHead)", rule.CanonicalText);
+    }
+
+    [Fact]
+    public void And_operand_of_or_is_parenthesized_for_clarity_even_though_precedence_makes_it_unambiguous()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompiledRule<RuleTestContext> rule = compiler
+            .Compile("isManager AND isDepartmentHead OR hasRole(role: \"Y\")")
+            .CompiledRule!;
+
+        Assert.Equal("(isManager AND isDepartmentHead) OR hasRole(role: \"Y\")", rule.CanonicalText);
+    }
+
     [Theory]
     [InlineData("isManager AND isDepartmentHead")]
     [InlineData("isManager OR isDepartmentHead")]
@@ -37,6 +59,11 @@ public sealed class CanonicalPrinterTests
     [InlineData("(isManager XOR isDepartmentHead)")]
     [InlineData("ExactlyOne(isManager, isDepartmentHead, isManager)")]
     [InlineData("AtLeast(2, isManager, isDepartmentHead, isManager)")]
+    [InlineData("AtMost(1, isManager, isDepartmentHead, isManager)")]
+    [InlineData("GreaterThan(1, isManager, isDepartmentHead, isManager)")]
+    [InlineData("LessThan(2, isManager, isDepartmentHead, isManager)")]
+    [InlineData("Exactly(2, isManager, isDepartmentHead, isManager)")]
+    [InlineData("(isManager XNOR isDepartmentHead)")]
     [InlineData("hasRole(role: \"Y\")")]
     [InlineData("true")]
     [InlineData("false")]
@@ -49,6 +76,56 @@ public sealed class CanonicalPrinterTests
         CompiledRule<RuleTestContext> original = compiler.Compile(source).CompiledRule!;
         CompiledRule<RuleTestContext> reparsed = compiler.Compile(original.CanonicalText).CompiledRule!;
 
+        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
+    }
+
+    [Fact]
+    public void A_string_argument_with_an_embedded_quote_prints_with_the_quote_escaped()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompiledRule<RuleTestContext> rule = compiler.Compile("hasRole(role: \"a\\\"b\")").CompiledRule!;
+
+        Assert.Equal("hasRole(role: \"a\\\"b\")", rule.CanonicalText);
+    }
+
+    [Fact]
+    public void A_string_argument_with_an_embedded_backslash_prints_with_the_backslash_escaped()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompiledRule<RuleTestContext> rule = compiler.Compile("hasRole(role: \"a\\\\b\")").CompiledRule!;
+
+        Assert.Equal("hasRole(role: \"a\\\\b\")", rule.CanonicalText);
+    }
+
+    [Fact]
+    public void A_string_argument_with_both_a_quote_and_a_backslash_round_trips_to_a_structurally_equal_tree()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompiledRule<RuleTestContext> original = compiler.Compile("hasRole(role: \"a\\\"\\\\b\")").CompiledRule!;
+        CompiledRule<RuleTestContext> reparsed = compiler.Compile(original.CanonicalText).CompiledRule!;
+
+        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
+    }
+
+    [Fact]
+    public void A_datetimeoffset_argument_prints_as_a_quoted_string_and_round_trips_to_a_structurally_equal_tree()
+    {
+        DateTimeOffset matchValue = new(2024, 3, 17, 9, 30, 0, TimeSpan.FromHours(-5));
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddDateTimeOffsetArgPredicate("startedAt", "when", matchValue)
+                .Build()
+        );
+
+        CompiledRule<RuleTestContext> original = compiler.Compile($"startedAt(when: \"{matchValue:O}\")").CompiledRule!;
+
+        Assert.Equal($"startedAt(when: \"{matchValue:O}\")", original.CanonicalText);
+
+        CompiledRule<RuleTestContext> reparsed = compiler.Compile(original.CanonicalText).CompiledRule!;
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
