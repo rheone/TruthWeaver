@@ -9,6 +9,18 @@ using TruthWeaver.Yaml;
 using YamlDotNet.RepresentationModel;
 
 /// <summary>Ticket 08: YAML tree parse/print.</summary>
+/// <remarks>
+/// Ticket 29: <c>YamlTreeParser.ParseOperator</c>'s unhandled-canonical-op-name <c>default</c> arm
+/// (thrown as an <see cref="InvalidOperationException"/>) is left undocumented-by-test rather than
+/// exercised directly, unlike ticket 15's <c>ThresholdDescription</c> precedent. That switch takes its
+/// discriminant as a method parameter that a test can hand-build with a bogus value; this one instead
+/// switches on the out-value of <c>TreeFormatOpNames.TryFromTreeFormat</c>, an internal lookup whose
+/// backing dictionary has exactly the same ten entries as the switch's non-default cases (see
+/// <c>TreeFormatOpNames.CanonicalToTreeFormat</c>). There is no parameter or public seam through which
+/// a test can make that lookup yield an eleventh, unhandled canonical name, so the branch is genuinely
+/// unreachable rather than merely untested — it exists defensively against the closed set (ADR-0003)
+/// ever growing without updating this switch in lockstep.
+/// </remarks>
 public sealed class YamlTreeTests
 {
     private const string WorkedExampleYaml = """
@@ -83,6 +95,19 @@ public sealed class YamlTreeTests
     }
 
     [Fact]
+    public void Constant_false_node_round_trips_through_yaml()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        CompiledRule<RuleTestContext> original = compiler.Compile("false").CompiledRule!;
+
+        string yaml = original.PrintYaml();
+        CompiledRule<RuleTestContext> reparsed = compiler.CompileYaml(yaml).CompiledRule!;
+
+        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
+        Assert.Contains("const: false", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Xnor_round_trips_through_yaml()
     {
         RuleCompiler<RuleTestContext> compiler = new(
@@ -95,6 +120,84 @@ public sealed class YamlTreeTests
 
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
         Assert.Contains("op: xnor", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Not_node_wraps_its_single_operand_and_round_trips_through_yaml()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build()
+        );
+        CompiledRule<RuleTestContext> original = compiler.Compile("NOT a").CompiledRule!;
+
+        string yaml = original.PrintYaml();
+        CompiledRule<RuleTestContext> reparsed = compiler.CompileYaml(yaml).CompiledRule!;
+
+        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
+        Assert.Contains("op: not", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExactlyOne_node_wraps_its_operands_and_round_trips_through_yaml()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("a", true)
+                .AddConstant("b", true)
+                .AddConstant("c", true)
+                .Build()
+        );
+        CompiledRule<RuleTestContext> original = compiler.Compile("ExactlyOne(a, b, c)").CompiledRule!;
+
+        string yaml = original.PrintYaml();
+        CompiledRule<RuleTestContext> reparsed = compiler.CompileYaml(yaml).CompiledRule!;
+
+        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
+        Assert.Contains("op: exactlyOne", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_malformed_nested_operand_short_circuits_operator_parsing_without_a_parent_diagnostic()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(
+            """
+            op: and
+            operands:
+              - predicate: isManager
+              - noRecognizedKey: true
+            """
+        );
+
+        Assert.False(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Contains("must have a 'const', 'predicate', or 'op' key", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_malformed_element_in_an_array_literal_fails_the_whole_literal_rather_than_truncating_it()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(
+            """
+            predicate: hasRole
+            args:
+              role:
+                - valid
+                - weird: 1
+            """
+        );
+
+        Assert.False(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Contains("Unsupported YAML node type", diagnostic.Message, StringComparison.Ordinal);
     }
 
     [Fact]
