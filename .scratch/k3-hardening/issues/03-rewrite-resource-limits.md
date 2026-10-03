@@ -4,12 +4,18 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every rewrite has a documented maximum output size and returns a clear failure result instead of exhausting memory when exceeded
-- [ ] Tests cover a rule just inside the cap, just over it, and a wide threshold in NAND/NOR form
-- [ ] Normal rules are unaffected and the suite runtime does not grow noticeably
-- [ ] README documents the cap and the growth behaviour
-- [ ] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
+- [x] Every rewrite has a documented maximum output size and returns a clear failure result instead of exhausting memory when exceeded
+- [x] Tests cover a rule just inside the cap, just over it, and a wide threshold in NAND/NOR form
+- [x] Normal rules are unaffected and the suite runtime does not grow noticeably
+- [x] README documents the cap and the growth behaviour
+- [x] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
 
 See also [spec](../spec.md).
+
+## Comments
+
+- Implemented test-first. `ExpandToPrimitives`, `ExpandToNand` and `ExpandToNor` now take an optional `CompilerOptions` and return `CompilationResult<TContext>`; the cap is the new `CompilerOptions.MaxRewriteNodeCount` (default 100,000 nodes counted as a printed tree), and an over-cap rewrite is a `BRE0016` error with no rule. This is a breaking return-type change to the three methods (existing tests updated with `.CompiledRule!`). Default is 100,000 because a 4-operand `PARITY` in NAND form is already about 12k nodes.
+- Gate rewrites check cost before building: primitive size, then a lower bound of `C(n, k) * k` slots per threshold, then the final size. The threshold subset disjunction is now balanced (was a left fold) so a large accepted result is not thousands of levels deep (a recursive size walk overflowed the stack).
+- Tests: `tests/TruthWeaver.Tests/RewriteResourceLimitsTests.cs`. README gained a "Size cap" section with the growth table. `CompressToDerived`, `Canonicalize` and `Simplify` are documented as never larger, so they have no cap.

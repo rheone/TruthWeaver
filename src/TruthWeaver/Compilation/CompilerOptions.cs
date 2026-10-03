@@ -12,13 +12,19 @@ namespace TruthWeaver.Compilation;
 /// "not constant".
 /// </param>
 /// <param name="Mode">How an unregistered predicate name is treated.</param>
+/// <param name="MaxRewriteNodeCount">
+/// The maximum node count, counted as a printed tree, that <c>ExpandToPrimitives</c>, <c>ExpandToNand</c> and
+/// <c>ExpandToNor</c> may produce. A rewrite that would exceed it is refused with a <c>BRE0016</c> error diagnostic
+/// instead of being built. Pass a larger value to those methods to allow bigger results.
+/// </param>
 public sealed record CompilerOptions(
     int MaxDepth = 32,
     int MaxNodeCount = 512,
     int MaxAnalysisTerms = 20,
-    CompilationMode Mode = CompilationMode.Strict
+    CompilationMode Mode = CompilationMode.Strict,
+    int MaxRewriteNodeCount = 100_000
 )
 {
-    /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/>.</summary>
+    /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/> / 100000.</summary>
     public static CompilerOptions Default { get; } = new();
 }

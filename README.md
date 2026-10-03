@@ -703,7 +703,7 @@ primitive kernel: `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly` and `COALES
 
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("a IMPLIES ANY(b, c)").CompiledRule!;
-CompiledRule<MyContext> kernel = rule.ExpandToPrimitives();
+CompiledRule<MyContext> kernel = rule.ExpandToPrimitives().CompiledRule!;
 
 Console.WriteLine(kernel.CanonicalText);   // only primitive operators
 Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
@@ -731,6 +731,35 @@ Every row was checked against an independent truth-table oracle for all
 Kleene logic (`a OR NOT a` is not `True`, and `If(Unknown, t, t)` is `t`, which the
 `If` row's third term preserves). Nothing is left unexpanded: even the inspections
 are expressible with `COALESCE`, which is the primitive that can see `Unknown`.
+
+### Size cap
+
+The three expanding rewrites (`ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`)
+can produce a tree far larger than the rule they start from, so each returns a
+`CompilationResult<TContext>` and refuses to build a result larger than
+`CompilerOptions.MaxRewriteNodeCount` (default **100,000** nodes, counted as a printed
+tree, so a sub-expression shared in memory but written twice counts twice). An
+over-cap rewrite never throws and is not built: `Succeeded` is `false`, `CompiledRule`
+is `null`, and a single `BRE0016` error says which rewrite hit which cap. To allow a bigger
+result, pass options with a larger cap:
+
+```csharp
+CompilationResult<MyContext> expanded = rule.ExpandToNand(new CompilerOptions(MaxRewriteNodeCount: 1_000_000));
+if (!expanded.Succeeded)
+{
+    Console.WriteLine(expanded.FormatDiagnostics());   // BRE0016: ExpandToNand would produce more than ...
+}
+```
+
+How the size grows, so you can predict a refusal:
+
+| Rewrite | Growth |
+| --- | --- |
+| `ExpandToPrimitives()` | Linear for most operators. `XOR`, `EQUIVALENT`, `If` and the inspections repeat an operand, so nesting them multiplies the printed size by about two per level (exponential in nesting depth). |
+| `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the gates, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a gate conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
+
+`CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and
+have no cap.
 
 ### NAND-only and NOR-only
 
@@ -764,7 +793,9 @@ Things to know for `ExpandToPrimitives`:
 - **Size.** Operators whose definition mentions an operand twice (`XOR`,
   `EQUIVALENT`, `If`, the inspections) repeat that operand's text, so a deeply
   nested rule can grow a lot. The expanded rule's printed text compiles back to
-  the same rule, but may exceed the default `CompilerOptions.MaxNodeCount`.
+  the same rule, but may exceed the default `CompilerOptions.MaxNodeCount`. The
+  result itself is capped at `CompilerOptions.MaxRewriteNodeCount` (see
+  [Size cap](#size-cap)).
 - **Faults.** A predicate that throws is `Unknown` plus a `Fault` in the expanded
   rule exactly as in the original; terms are still memoized by identity.
 

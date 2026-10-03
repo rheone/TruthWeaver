@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
 using TruthWeaver.Json;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
@@ -66,13 +67,20 @@ public sealed class CompiledRule<TContext>
     /// The result evaluates to the same <see cref="TruthValue"/> as this rule for every assignment of its terms, and
     /// records the same faults for predicates that throw. This rule is immutable and is not changed. The expanded rule prints canonical text that compiles back to the same tree, but it is usually larger:
     /// an operator whose definition mentions an operand twice (<c>XOR</c>, <c>EQUIVALENT</c>, <c>If</c>, the inspections)
-    /// repeats that operand's text, so deeply nested rules grow quickly and may exceed
-    /// <see cref="CompilerOptions.MaxNodeCount"/> when recompiled with the default limits.
+    /// repeats that operand's text, so deeply nested rules grow quickly (exponentially in the nesting depth).
+    /// <para>
+    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree. A larger
+    /// result is not built: the call returns a failed <see cref="CompilationResult{TContext}"/> carrying a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error, and never throws for size.
+    /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates whose tree contains only primitive operators, constants and terms.</returns>
-    public CompiledRule<TContext> ExpandToPrimitives()
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose tree contains only primitive operators, constants and terms, or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToPrimitives(CompilerOptions? options = null)
     {
-        return new CompiledRule<TContext>(PrimitiveExpander.Expand(this.Root), this.registry, this.logger);
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        Expression expanded = PrimitiveExpander.Expand(this.Root);
+        return this.RewriteResult(expanded, "ExpandToPrimitives", cap);
     }
 
     /// <summary>
@@ -88,12 +96,20 @@ public sealed class CompiledRule<TContext>
     /// <c>IsKnown</c>, which expand to it) cannot be written with <c>NAND</c>, because every <c>NAND</c> circuit is monotone
     /// in the information order and <c>COALESCE</c> is not. Such nodes stay as <c>COALESCE</c> with their operands rewritten,
     /// so a rule without them is <c>NAND</c>-only. Thresholds become a disjunction over operand subsets, so wide
-    /// thresholds grow combinatorially.
+    /// thresholds grow combinatorially (<c>C(n, k)</c> subsets for <c>AtLeast(k)</c> over <c>n</c> operands).
+    /// <para>
+    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree; the cost
+    /// is estimated first, so an over-cap rewrite is refused without being built. The call then returns a failed
+    /// <see cref="CompilationResult{TContext}"/> carrying a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error
+    /// and never throws for size.
+    /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates whose logic is <c>NAND</c> (plus any <c>COALESCE</c> boundary).</returns>
-    public CompiledRule<TContext> ExpandToNand()
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose logic is <c>NAND</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToNand(CompilerOptions? options = null)
     {
-        return new CompiledRule<TContext>(UniversalGateExpander.ToNand(this.Root), this.registry, this.logger);
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        return this.RewriteResult(UniversalGateExpander.ToNand(this.Root, cap), "ExpandToNand", cap);
     }
 
     /// <summary>
@@ -102,12 +118,14 @@ public sealed class CompiledRule<TContext>
     /// becomes <c>(a NOR a) NOR (b NOR b)</c>; every other operator is first expanded to the primitive kernel.
     /// </summary>
     /// <remarks>
-    /// Same guarantees, cost and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
+    /// Same guarantees, cost, size cap and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
     /// </remarks>
-    /// <returns>A new rule over the same predicates whose logic is <c>NOR</c> (plus any <c>COALESCE</c> boundary).</returns>
-    public CompiledRule<TContext> ExpandToNor()
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose logic is <c>NOR</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToNor(CompilerOptions? options = null)
     {
-        return new CompiledRule<TContext>(UniversalGateExpander.ToNor(this.Root), this.registry, this.logger);
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        return this.RewriteResult(UniversalGateExpander.ToNor(this.Root, cap), "ExpandToNor", cap);
     }
 
     /// <summary>
@@ -372,5 +390,30 @@ public sealed class CompiledRule<TContext>
                 "This decision has no EvaluatedTree to render — it must come from EvaluateAsync on this same rule.",
                 nameof(decision)
             );
+    }
+
+    /// <summary>
+    /// Wraps a rewrite's output as a new rule, or as the <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> failure
+    /// when the rewrite refused (<paramref name="tree"/> is <see langword="null"/>) or its tree is over the cap.
+    /// </summary>
+    private CompilationResult<TContext> RewriteResult(Expression? tree, string rewrite, int cap)
+    {
+        if (tree is not null && ExpressionTools.Size(tree) <= cap)
+        {
+            return new CompilationResult<TContext>(new CompiledRule<TContext>(tree, this.registry, this.logger), []);
+        }
+
+        Diagnostic diagnostic = Diagnostic.Error(
+            DiagnosticCodes.RewriteTooLarge,
+            $"{rewrite} would produce more than the maximum of {cap} nodes.",
+            SourceSpan.None,
+            expected: $"at most {cap} nodes",
+            found: "more nodes than that",
+            suggestion: new DiagnosticSuggestion(
+                DiagnosticSuggestionKind.Hint,
+                "Raise CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
+            )
+        );
+        return new CompilationResult<TContext>(null, [diagnostic]);
     }
 }

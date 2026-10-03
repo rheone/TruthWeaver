@@ -158,7 +158,7 @@ public sealed class ExpandToUniversalGateTests
     {
         CompiledRule<RuleTestContext> rule = K3Rule.TryCreate(ruleText, 2)!.Compiled;
 
-        Assert.Equal(expected, rule.ExpandToNand().CanonicalText);
+        Assert.Equal(expected, rule.ExpandToNand().CompiledRule!.CanonicalText);
     }
 
     /// <summary>The NOR duals: <c>NOT A = A NOR A</c>, <c>A OR B = (A NOR B) NOR (A NOR B)</c>, <c>A AND B = (A NOR A) NOR (B NOR B)</c>.</summary>
@@ -170,7 +170,7 @@ public sealed class ExpandToUniversalGateTests
     {
         CompiledRule<RuleTestContext> rule = K3Rule.TryCreate(ruleText, 2)!.Compiled;
 
-        Assert.Equal(expected, rule.ExpandToNor().CanonicalText);
+        Assert.Equal(expected, rule.ExpandToNor().CompiledRule!.CanonicalText);
     }
 
     /// <summary>
@@ -280,7 +280,7 @@ public sealed class ExpandToUniversalGateTests
 
     private static CompiledRule<RuleTestContext> Expand(CompiledRule<RuleTestContext> rule, string gate)
     {
-        return gate == "nand" ? rule.ExpandToNand() : rule.ExpandToNor();
+        return gate == "nand" ? rule.ExpandToNand().CompiledRule! : rule.ExpandToNor().CompiledRule!;
     }
 
     /// <summary>Collects every operator name used in a rule's JSON tree form.</summary>

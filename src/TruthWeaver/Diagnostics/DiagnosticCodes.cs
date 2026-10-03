@@ -64,4 +64,10 @@ public static class DiagnosticCodes
 
     /// <summary>A string literal in DSL rule text contains a <c>\</c> not followed by one of the supported escapes (<c>\"</c>, <c>\\</c>, <c>\n</c>, <c>\t</c>).</summary>
     public const string InvalidEscapeSequence = "BRE0015";
+
+    /// <summary>
+    /// An expanding rewrite (<c>ExpandToPrimitives</c>, <c>ExpandToNand</c> or <c>ExpandToNor</c>) would produce more than
+    /// <c>CompilerOptions.MaxRewriteNodeCount</c> nodes and was not performed.
+    /// </summary>
+    public const string RewriteTooLarge = "BRE0016";
 }

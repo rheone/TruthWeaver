@@ -36,7 +36,7 @@ public sealed class ExpandToPrimitivesTests
                 continue;
             }
 
-            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
+            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
             checkedRules++;
             foreach (TruthValue[] assignment in K3Oracle.Assignments(3))
             {
@@ -72,7 +72,7 @@ public sealed class ExpandToPrimitivesTests
                 continue;
             }
 
-            CompiledRule<RuleTestContext> expanded = original.Compiled.ExpandToPrimitives();
+            CompiledRule<RuleTestContext> expanded = original.Compiled.ExpandToPrimitives().CompiledRule!;
             checkedRules++;
 
             Assert.True(OperatorsOf(expanded).IsSubsetOf(PrimitiveOps), $"{text} expanded to {expanded.CanonicalText}");
@@ -108,8 +108,8 @@ public sealed class ExpandToPrimitivesTests
     public async Task ExpandToPrimitives_DerivedOperator_BecomesEquivalentPrimitives_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        CompiledRule<RuleTestContext> expandedRule = original.Compiled.ExpandToPrimitives();
-        K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
+        CompiledRule<RuleTestContext> expandedRule = original.Compiled.ExpandToPrimitives().CompiledRule!;
+        K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
 
         Assert.True(OperatorsOf(expandedRule).IsSubsetOf(PrimitiveOps), expandedRule.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
@@ -129,7 +129,7 @@ public sealed class ExpandToPrimitivesTests
         string textBefore = original.Compiled.CanonicalText;
         string jsonBefore = original.Compiled.PrintJson();
 
-        CompiledRule<RuleTestContext> expanded = original.Compiled.ExpandToPrimitives();
+        CompiledRule<RuleTestContext> expanded = original.Compiled.ExpandToPrimitives().CompiledRule!;
 
         Assert.NotSame(original.Compiled, expanded);
         Assert.NotEqual(textBefore, expanded.CanonicalText);
@@ -143,8 +143,8 @@ public sealed class ExpandToPrimitivesTests
     {
         K3Rule original = K3Rule.TryCreate("NOT a AND (b OR AtLeast(2, a, b, c)) OR COALESCE(a, Exactly(1, b, c))", 3)!;
 
-        CompiledRule<RuleTestContext> once = original.Compiled.ExpandToPrimitives();
-        CompiledRule<RuleTestContext> twice = once.ExpandToPrimitives();
+        CompiledRule<RuleTestContext> once = original.Compiled.ExpandToPrimitives().CompiledRule!;
+        CompiledRule<RuleTestContext> twice = once.ExpandToPrimitives().CompiledRule!;
 
         Assert.Equal(original.Compiled.CanonicalText, once.CanonicalText);
         Assert.Equal(once.CanonicalText, twice.CanonicalText);
@@ -161,7 +161,7 @@ public sealed class ExpandToPrimitivesTests
     [InlineData("GreaterThan(2, a, b, c) OR LessThan(1, a, b)", 3)]
     public void ExpandToPrimitives_Rule_PrintsCanonicalTextThatRecompilesToTheSameRule_Test(string ruleText, int arity)
     {
-        CompiledRule<RuleTestContext> expanded = K3Rule.TryCreate(ruleText, arity)!.Compiled.ExpandToPrimitives();
+        CompiledRule<RuleTestContext> expanded = K3Rule.TryCreate(ruleText, arity)!.Compiled.ExpandToPrimitives().CompiledRule!;
         K3Rule? recompiled = K3Rule.TryCreate(expanded.CanonicalText, arity);
 
         Assert.NotNull(recompiled);
@@ -173,7 +173,7 @@ public sealed class ExpandToPrimitivesTests
     public async Task ExpandToPrimitives_CollapseOverTheDecision_GivesTheSameOutcome_Test()
     {
         K3Rule original = K3Rule.TryCreate("a IMPLIES b", 2)!;
-        K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
+        K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
         TruthValue[] assignment = [TruthValue.True, TruthValue.Unknown];
 
         Decision before = await original.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
@@ -199,7 +199,7 @@ public sealed class ExpandToPrimitivesTests
         CompiledRule<RuleTestContext> original = new RuleCompiler<RuleTestContext>(registry)
             .Compile("boom XOR ok")
             .CompiledRule!;
-        CompiledRule<RuleTestContext> expanded = original.ExpandToPrimitives();
+        CompiledRule<RuleTestContext> expanded = original.ExpandToPrimitives().CompiledRule!;
 
         Decision before = await original.EvaluateAsync(
             new RuleTestContext(),

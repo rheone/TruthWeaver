@@ -30,7 +30,7 @@ public sealed class CompressToDerivedTests
                 continue;
             }
 
-            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
+            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
             K3Rule compressed = expanded.Rewrite(rule => rule.CompressToDerived());
             checkedRules++;
             if (RuleMetrics.NodeCount(compressed.Compiled) > RuleMetrics.NodeCount(expanded.Compiled))
@@ -71,7 +71,7 @@ public sealed class CompressToDerivedTests
                 continue;
             }
 
-            CompiledRule<RuleTestContext> once = original.Compiled.ExpandToPrimitives().CompressToDerived();
+            CompiledRule<RuleTestContext> once = original.Compiled.ExpandToPrimitives().CompiledRule!.CompressToDerived();
             CompiledRule<RuleTestContext> twice = once.CompressToDerived();
             checkedRules++;
 
@@ -105,7 +105,7 @@ public sealed class CompressToDerivedTests
     public async Task CompressToDerived_ExpandedOperator_IsRecognisedAgain_Test(string ruleText, int arity, string expected)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule compressed = original.Rewrite(rule => rule.ExpandToPrimitives().CompressToDerived());
+        K3Rule compressed = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!.CompressToDerived());
 
         Assert.Equal(expected, compressed.Compiled.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))

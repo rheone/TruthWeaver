@@ -85,7 +85,7 @@ public sealed class SimplifyTests
                 continue;
             }
 
-            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
+            K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
             K3Rule simplified = expanded.Rewrite(rule => rule.Simplify());
             checkedRules++;
             if (RuleMetrics.NodeCount(simplified.Compiled) > RuleMetrics.NodeCount(expanded.Compiled))

@@ -22,7 +22,8 @@ using TruthWeaver.Ast;
 /// completion (<c>Unknown</c> read as <c>False</c>) is true and <c>False</c> exactly when its optimistic completion is false,
 /// which is the definitely-true / possibly-true interval semantics of the threshold. <c>AtMost(k)</c> is
 /// <c>NOT AtLeast(k + 1)</c> and <c>Exactly(k)</c> is the conjunction of the two non-vacuous sides. The number of subsets is
-/// <c>C(n, k)</c>, so very wide thresholds produce very large trees.
+/// <c>C(n, k)</c>, so very wide thresholds produce very large trees; the subset disjunction is balanced (logarithmic depth)
+/// and every rewrite is capped by <c>CompilerOptions.MaxRewriteNodeCount</c>.
 /// </para>
 /// <para>
 /// <b>Semantic boundary: <c>COALESCE</c>.</b> Every function built from <c>NAND</c>/<c>NOR</c> and constants is monotone
@@ -36,18 +37,102 @@ internal static class UniversalGateExpander
 {
     /// <summary>Rewrites <paramref name="node"/> into <c>NAND</c>-only form (plus the <c>COALESCE</c> boundary).</summary>
     /// <param name="node">The tree to rewrite.</param>
-    /// <returns>The rewritten tree.</returns>
-    public static Expression ToNand(Expression node)
+    /// <param name="maxNodes">The most nodes, counted as a printed tree, the result may have.</param>
+    /// <returns>The rewritten tree, or <see langword="null"/> when it would exceed <paramref name="maxNodes"/>.</returns>
+    public static Expression? ToNand(Expression node, int maxNodes)
     {
-        return Convert(PrimitiveExpander.Expand(node), nand: true);
+        return Rewrite(node, nand: true, maxNodes);
     }
 
     /// <summary>Rewrites <paramref name="node"/> into <c>NOR</c>-only form (plus the <c>COALESCE</c> boundary).</summary>
     /// <param name="node">The tree to rewrite.</param>
-    /// <returns>The rewritten tree.</returns>
-    public static Expression ToNor(Expression node)
+    /// <param name="maxNodes">The most nodes, counted as a printed tree, the result may have.</param>
+    /// <returns>The rewritten tree, or <see langword="null"/> when it would exceed <paramref name="maxNodes"/>.</returns>
+    public static Expression? ToNor(Expression node, int maxNodes)
     {
-        return Convert(PrimitiveExpander.Expand(node), nand: false);
+        return Rewrite(node, nand: false, maxNodes);
+    }
+
+    /// <summary>
+    /// Expands, checks the cost, and only then converts. The conversion walks the primitive tree as a tree (shared
+    /// sub-expressions are visited once per appearance) and builds one conjunction per operand subset of every threshold,
+    /// so both costs are bounded before any of that work is done.
+    /// </summary>
+    private static Expression? Rewrite(Expression node, bool nand, int maxNodes)
+    {
+        Expression primitive = PrimitiveExpander.Expand(node);
+
+        // The gate form is never smaller than the primitive form, so a primitive tree over the cap is already too big. This
+        // also bounds the conversion walk, which would otherwise be exponential on nested XOR/EQUIVALENT/If.
+        if (ExpressionTools.Size(primitive) > maxNodes)
+        {
+            return null;
+        }
+
+        // Each threshold subset contributes at least one node per operand, so that is a lower bound on the result.
+        if (SubsetCost(primitive, maxNodes, new Dictionary<Expression, long>(ReferenceEqualityComparer.Instance)) > maxNodes)
+        {
+            return null;
+        }
+
+        Expression result = Convert(primitive, nand);
+        return ExpressionTools.Size(result) > maxNodes ? null : result;
+    }
+
+    /// <summary>
+    /// A lower bound on the nodes the threshold expansions below <paramref name="node"/> will add, counted per appearance
+    /// and saturated just above <paramref name="cap"/> so the arithmetic cannot overflow.
+    /// </summary>
+    private static long SubsetCost(Expression node, int cap, Dictionary<Expression, long> memo)
+    {
+        if (memo.TryGetValue(node, out long known))
+        {
+            return known;
+        }
+
+        long total = node is ThresholdExpression t ? ThresholdCost(t, cap) : 0;
+        foreach (Expression child in ExpressionTools.Children(node))
+        {
+            total = Math.Min(total + SubsetCost(child, cap, memo), (long)cap + 1);
+        }
+
+        memo[node] = total;
+        return total;
+    }
+
+    /// <summary>The operand slots of every subset conjunction <see cref="ConvertThreshold"/> will build for <paramref name="t"/>.</summary>
+    private static long ThresholdCost(ThresholdExpression t, int cap)
+    {
+        int n = t.Operands.Count;
+        long limit = (long)cap + 1;
+        return t.Comparison switch
+        {
+            ThresholdComparison.AtLeast => SubsetSlots(n, t.K, limit),
+            ThresholdComparison.AtMost => SubsetSlots(n, t.K + 1, limit),
+            ThresholdComparison.Exactly => Math.Min(
+                (t.K >= 1 ? SubsetSlots(n, t.K, limit) : 0) + (t.K <= n - 1 ? SubsetSlots(n, t.K + 1, limit) : 0),
+                limit
+            ),
+            _ => 0,
+        };
+    }
+
+    /// <summary><c>C(n, k) * k</c> (the operand slots over every k-subset), saturated at <paramref name="limit"/>.</summary>
+    private static long SubsetSlots(int n, int k, long limit)
+    {
+        // C(n, k) = C(n, n - k); walking the smaller side keeps the running product exact (each step is an exact division).
+        int small = Math.Min(k, n - k);
+        long combinations = 1;
+        for (int i = 0; i < small; i++)
+        {
+            combinations = combinations * (n - i) / (i + 1);
+            if (combinations > limit)
+            {
+                return limit;
+            }
+        }
+
+        return Math.Min(combinations * Math.Max(k, 1), limit);
     }
 
     private static Expression Convert(Expression node, bool nand)
@@ -144,7 +229,26 @@ internal static class UniversalGateExpander
             subsetConjunctions.Add(Fold([.. subset.Select(index => operands[index])], (l, r) => And(l, r, nand)));
         }
 
-        return Fold(subsetConjunctions, (l, r) => Or(l, r, nand));
+        // Balanced rather than left-folded: with thousands of subsets a left fold is thousands of levels deep, which the
+        // size check (and any later recursive walk of the result) cannot traverse without exhausting the stack.
+        return FoldBalanced(subsetConjunctions, 0, subsetConjunctions.Count, (l, r) => Or(l, r, nand));
+    }
+
+    /// <summary>Combines <c>items[start..end)</c> as a balanced tree; sound for the associative <c>OR</c>, and depth is logarithmic.</summary>
+    private static Expression FoldBalanced(
+        List<Expression> items,
+        int start,
+        int end,
+        Func<Expression, Expression, Expression> combine
+    )
+    {
+        if (end - start == 1)
+        {
+            return items[start];
+        }
+
+        int middle = start + ((end - start) / 2);
+        return combine(FoldBalanced(items, start, middle, combine), FoldBalanced(items, middle, end, combine));
     }
 
     /// <summary><c>count &lt;= k</c> is the negation of <c>count &gt;= k + 1</c> for every count in the interval, so it holds in K3.</summary>
