@@ -34,7 +34,7 @@ Two specific traps drove several of the decisions below:
 
 > **Superseded by [ADR-0005](0005-strong-k3-language-surface.md) (decisions 3, 4, 5, 6):** the operator
 > set is no longer this list. `IMPLIES`, `NAND`, `NOR`, `NXOR`, `ANY`/`ALL`/`NONE`/`BETWEEN`,
-> `COALESCE`, `If`, the inspections and `Project` exist, `EQUIVALENT` replaces `XNOR`, and `Unknown` is
+> `COALESCE`, `If`, the inspections exist (and `Project` as a method on `Decision`, not a rule operator), `EQUIVALENT` replaces `XNOR`, and `Unknown` is
 > a constant. The text below is kept as the original decision.
 
 `AND`, `OR`, `NOT`, `XOR` (**binary only** — a compile error if given more

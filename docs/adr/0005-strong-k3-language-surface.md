@@ -26,7 +26,8 @@ the aliases are cheap once the canonical form stays single.
 1. **Every expression, including every predicate result, is a `TruthValue`**
    (`True`, `False`, `Unknown`). `Unknown` is never implicitly converted to
    `True` or `False`; conversion to a two-valued result happens only at an
-   explicit boundary (`Project`, or `Decision.Collapse` on the result; decision 14).
+   explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` /
+   `Decision.Collapse` on the result; decisions 12 and 14).
    `False < Unknown < True` is an implementation aid for truth functions and
    cardinality bounds, not a numeric ordering of truth.
 2. **Operators are accepted in several notations but have one canonical form.**
@@ -40,9 +41,8 @@ the aliases are cheap once the canonical form stays single.
    `AtLeast`, `AtMost`, `Exactly`, `COALESCE`. Derived: `IMPLIES` (`¬A ∨ B`,
    Strong Kleene material implication), `EQUIVALENT` (alias `IFF`), `XOR`,
    `NAND`, `NOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`. Inspection: `IsTrue`,
-   `IsFalse`, `IsUnknown`, `IsKnown`. Conditional: `If` / `? :`. Boundaries:
-   `Project`. Collapse is a method on `Decision`, not a rule construct
-   (decision 14).
+   `IsFalse`, `IsUnknown`, `IsKnown`. Conditional: `If` / `? :`. Project and
+   Collapse are methods on `Decision`, not rule constructs (decisions 12 and 14).
 3a. **Derived operators remain first-class AST nodes** with their own
    evaluation, label/description and printing, rather than being desugared at
    parse time. Their primitive definitions are used by the optional
@@ -117,7 +117,7 @@ the aliases are cheap once the canonical form stays single.
     compiler rejects those thresholds as constants; `GreaterThan(k)` =
     `AtLeast(k + 1)` and `LessThan(k)` = `AtMost(k - 1)` (the compiler's valid
     ranges map exactly onto the targets' valid ranges); `If` = the multiplexer
-    plus consensus term of decision 13; `Project(x, v)` = `COALESCE(x, v)`.
+    plus consensus term of decision 13.
     **`NXOR` (parity)** is `OR(Exactly(1, ...), Exactly(3, ...), ...)` over every
     odd count rather than a fold of the `XOR` expansion: with no `Unknown`
     operand the interval is a single count and the disjunction is `True` iff it is
@@ -146,7 +146,7 @@ the aliases are cheap once the canonical form stays single.
     boundary:** every `NAND`/`NOR`/`AND`/`OR`/`NOT` circuit is monotone in the
     information order and `COALESCE` is not (`COALESCE(Unknown, True)` = `True` but
     `COALESCE(False, True)` = `False`), so it has no gate-only form and stays in
-    place with its operands rewritten, as do `Project` and the inspections that
+    place with its operands rewritten, as do the inspections that
     expand to it. A rule without them is purely `NAND` (or `NOR`).
 
     Implemented in k3-conformance 25 (compression):
@@ -158,12 +158,12 @@ the aliases are cheap once the canonical form stays single.
     threshold-to-alias rows (`AtLeast(1)` `ANY`, `AtLeast(n)` `ALL`, `AtMost(0)`
     `NONE`, `Exactly(1)` `ExactlyOne`, `NOT AtLeast(k)` `AtMost(k - 1)`);
     `AND(AtLeast(m), AtMost(M))` over the same operands to `BETWEEN`; and the
-    `COALESCE` forms to `Project` (`COALESCE(NOT x, False)` to `IsFalse`, the
-    two-sided pairs to `IsUnknown` and `IsKnown`). Each rewrite never adds nodes, so
+    `COALESCE` forms to `IsFalse` (`COALESCE(NOT x, False)`) and, as two-sided
+    pairs, to `IsUnknown` and `IsKnown`. Each rewrite never adds nodes, so
     the result is never larger than the input; passes repeat until stable, so
     compression is idempotent. It recovers an equivalent derived form, not
-    necessarily the original (`COALESCE(x, False)` reads back as `Project`, not
-    `IsTrue`). Shared operands are preserved.
+    necessarily the original; a `COALESCE` with a constant that matches no
+    inspection pattern is left as written (it is already its shortest form). Shared operands are preserved.
 
     Implemented in k3-conformance 26 (canonicalisation):
     `CompiledRule<TContext>.Canonicalize()` applies an ordered, K3-sound rule set
@@ -172,7 +172,7 @@ the aliases are cheap once the canonical form stays single.
     to `AtMost(k - 1)`, `ExactlyOne` to `Exactly(1)`); (2) `NOT NOT x` to `x`; (3)
     nested `AND`/`OR`/`COALESCE` flatten; (4) operands of the commutative
     operators sort by canonical text (ordinal); (5) repeated `AND`/`OR` operands
-    are removed. `IMPLIES`, `NAND`, `NOR`, `Project`, `NONE` and the inspections keep
+    are removed. `IMPLIES`, `NAND`, `NOR`, `NONE` and the inspections keep
     their spelling (rewriting them to primitives would grow the tree, and the
     canonical form is never larger than its input); `COALESCE`, `IMPLIES` and `If`
     keep operand order. No complement law and no constant folding. It is
@@ -187,7 +187,7 @@ the aliases are cheap once the canonical form stays single.
     identity/annihilator laws for `AND`/`OR` (an `Unknown` operand is kept);
     absorption `a AND (a OR b) = a` (a lattice law that holds in K3); `NOT` of a
     constant, `NOT NAND`, `NOT NOR`, `NOT IsKnown`/`IsUnknown`, threshold flipping,
-    and De Morgan only where it removes nodes; `COALESCE`/`Project`/inspections
+    and De Morgan only where it removes nodes; `COALESCE`/inspections
     of constants and of operands that can never be `Unknown`; `If` with a constant
     condition or equal branches; threshold operands that are `True`/`False`
     eliminated by shifting `k`, out-of-range thresholds folded; and any other
@@ -230,7 +230,7 @@ the aliases are cheap once the canonical form stays single.
     carry the path (an internal `Path` init property), and the compiler copies it
     onto its own diagnostics, so a validation error found after parsing is
     located the same way. A wrong field is located at the field (`.k`,
-    `.unknownAs`, `.min`, `.max`, `.const`, `.op`, `.predicate`, `.args.name`), a
+    `.min`, `.max`, `.const`, `.op`, `.predicate`, `.args.name`), a
     wrong operand count at `.operands`, and a missing key at the node that should
     have held it. `Unknown operator` is checked before the operands are read and
     is answered with the nearest tree-format op name (including the read-only
@@ -243,10 +243,34 @@ the aliases are cheap once the canonical form stays single.
     innermost container still open when the reader stopped. `FormatDiagnostics`
     prints `at $.path` (plus ` (line L, column C)` when there is a span).
 
-12. **`Project(expr, unknown)`** is an in-tree node that keeps `True`/`False`
-    and replaces `Unknown` with the chosen `True` or `False`
-    (`.tmp/ProjectAndCollapse.md`). It always yields a definite `TruthValue`
-    and equals `COALESCE(expr, unknown)`; it exists as a named alias for intent.
+12. **Project is a method on the result, not part of the rule.**
+    *Amended 2026-10-03 (k3-followups 05); this replaces the original decision,
+    which made `Project(expr, unknown)` an in-tree node (`ProjectExpression`) that
+    could appear anywhere in a rule.* A rule always yields its raw three-valued
+    result, and `Project` is no longer an operator in the DSL, JSON, YAML, the
+    builder or the schema. Inside a rule, `COALESCE(x, True)` and `COALESCE(x,
+    False)` do the same job and remain rule-level operators; on the result, the
+    application calls `Decision.Project(bool unknownAs)`, which keeps `True` and
+    `False` and replaces `Unknown` with the chosen definite value. The parameter is a
+    `bool` so an `Unknown` replacement cannot be requested. It is a pure function
+    of `Decision.Result`: it never changes the decision, never adds or hides a
+    `Fault` (a faulting predicate is still `Unknown` plus a `Fault`) and leaves
+    `Decision.IsSatisfied` fail-closed. It equals `COALESCE(rule, value)` for
+    every input. **Removed from the rule language:** the DSL `Project(expr, True|False)`
+    function, the JSON/YAML `project` node and its `unknownAs` field,
+    `RuleBuilder.Project`, `ProjectExpression`, `NodeShape.UnknownAs`,
+    `rule-tree.schema.json`'s `projectOperatorNode`, the analyzer, evaluator,
+    printer and `RuleDiff` handling, and the `Project(True)` / `Project(False)`
+    description label. The expansion and compression rewrites no longer produce or
+    recognise a project node: `ExpandToPrimitives` has nothing to expand and
+    `CompressToDerived` leaves `COALESCE(x, True|False)` as written, the shortest
+    form (only `COALESCE(NOT x, False)` still compresses, to `IsFalse`), and
+    `Simplify` treats a `COALESCE` with a definite operand as definite. A rule that
+    still declares a `Project` is rejected, wherever it appears and in any letter
+    case, with an error whose message and hint point to `COALESCE` and
+    `Decision.Project`: `SyntaxError` (`BRE0001`) spanning the whole call in DSL
+    text, and `MalformedTree` (`BRE0014`) at the node's path in JSON and YAML.
+    `Project` stays a reserved word so a predicate cannot shadow it.
 13. **JSON/YAML node shapes** for `If`, inspection, boundaries and the
     `Unknown` literal follow the existing `{"op": ..., "operands": [...]}`
     pattern (literal: `{"op": "unknown"}`) and are recorded here when
@@ -414,39 +438,6 @@ the aliases are cheap once the canonical form stays single.
     "isFalse" | "isUnknown" | "isKnown", "operands": [x]}` (case-insensitive on
     read, one operand checked by the compiler; the schema lists them in the
     unary node). `RuleBuilder.IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` are new.
-
-    Implemented in k3-conformance 18: `Project(expr, True|False)` is a
-    first-class `ProjectExpression(Operand, UnknownAs)` node (`UnknownAs` is a
-    `bool`, so an `Unknown` replacement cannot even be represented). It keeps
-    `True`/`False` and replaces `Unknown` with the chosen constant, so it is
-    always definite and is the same value as `COALESCE(expr, value)`; the
-    operand's own faults are recorded as usual (a faulting predicate is
-    `Unknown` plus a `Fault`, the projection makes the *value* definite but does
-    not hide the fault). **Syntax:** `Project` is a reserved function-call word
-    (any case) taking exactly two arguments, an expression and the literal
-    constant `True` or `False` (any case). The second argument is parsed as a
-    full expression and then checked, so every bad shape is a `SyntaxError` over
-    the offending argument's span: `Unknown` gets a dedicated message ("Project
-    replaces Unknown, so it needs the constant True or False to replace it
-    with"), any other non-constant (`Project(a, b)`, `Project(a, NOT True)`)
-    says it must be the constant `True` or `False`, and a missing or third
-    argument names the expected shape. **JSON/YAML:** `{"op": "project",
-    "unknownAs": true, "operands": [x]}` (YAML `op: project`, `unknownAs:
-    true`): the policy rides in an `unknownAs` field next to the single operand,
-    as `BETWEEN` carries `min`/`max` and the threshold family `k`, so it is not
-    an operand. It is written as a plain boolean (like a `True`/`False` `const`)
-    and read as a boolean or the string `"true"`/`"false"` in any letter case; a
-    missing, `"unknown"` or non-boolean value is `MalformedTree`, and the operand
-    count (exactly one) is a compiler `MalformedTree` like the inspections.
-    `rule-tree.schema.json` has a `projectOperatorNode`. `NodeShape` gained an
-    optional `UnknownAs`. **Analyzer:** both rails are the same BDD, `P` (the
-    operand's possible rail) for `Project(x, True)` and `D` for `Project(x,
-    False)`, so `Project(a, True) OR NOT Project(a, True)` is a genuine
-    tautology. The canonical printer writes `Project(a, True)`; the evaluated and
-    description label is `Project(True)` / `Project(False)`, kept as a word in
-    every `OperatorStyle`. `RuleBuilder.Project(operand, unknownAs)` is new.
-    It may appear anywhere in a rule, unlike a collapse, which is applied to the result (decision 14).
-
 14. **Collapse is a method on the result, not part of the rule.**
     *Amended 2026-10-03 (k3-followups 04); this replaces the original decision,
     which made `Collapse(expr, policy)` a rule-language function accepted only as a

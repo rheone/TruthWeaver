@@ -392,13 +392,13 @@ internal static class Compressor
                 return null;
             }
 
-            // COALESCE(NOT x, False) is exactly IsFalse(x); otherwise the named Project form.
+            // COALESCE(NOT x, False) is exactly IsFalse(x); any other COALESCE with a constant is already the shortest form.
             if (fallback.Value == TruthValue.False && c.Operands[0] is NotExpression negated)
             {
                 return new InspectionExpression(InspectionKind.IsFalse, this.Visit(negated.Operand));
             }
 
-            return new ProjectExpression(this.Visit(c.Operands[0]), fallback.Value == TruthValue.True);
+            return null;
         }
     }
 }

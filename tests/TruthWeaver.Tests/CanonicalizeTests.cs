@@ -163,7 +163,6 @@ public sealed class CanonicalizeTests
     [InlineData("COALESCE(b, a)", 2)]
     [InlineData("b IMPLIES a", 2)]
     [InlineData("If(c, b, a)", 3)]
-    [InlineData("Project(b, True)", 2)]
     [InlineData("a OR NOT a", 1)]
     [InlineData("a AND NOT a", 1)]
     [InlineData("a IMPLIES a", 1)]

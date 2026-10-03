@@ -1,19 +1,19 @@
 namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
-using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
-using TruthWeaver.Printing;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
 /// <summary>
-/// <c>Project(expr, True|False)</c> keeps <c>True</c>/<c>False</c> and replaces <c>Unknown</c> with the chosen definite
-/// value (ADR-0005 decision 12): the result is always definite and equals <c>COALESCE(expr, value)</c>.
+/// Project is a method on the result, not part of the rule (ADR-0005 decision 12): <c>Decision.Project(unknownAs)</c>
+/// keeps <c>True</c>/<c>False</c> and replaces <c>Unknown</c> with the chosen definite value without changing
+/// <c>Decision.Result</c>, and rule text, JSON and YAML that still declare a <c>Project</c> are rejected with a diagnostic
+/// that points to <c>COALESCE</c> and <c>Decision.Project</c>.
 /// </summary>
 public sealed class ProjectTests
 {
@@ -26,146 +26,155 @@ public sealed class ProjectTests
             .Build()
     );
 
-    /// <summary>Both policies, in any letter case of keyword and value, match the oracle for each input value.</summary>
+    /// <summary>
+    /// <c>Decision.Project(unknownAs)</c> over every K3 result and both choices matches the oracle, is never
+    /// <c>Unknown</c>, and the decision's own result is the raw value whatever was projected.
+    /// </summary>
     [Theory]
-    [InlineData("Project(a, True)", TruthValue.True)]
-    [InlineData("project(a, TRUE)", TruthValue.True)]
-    [InlineData("PROJECT(a, true)", TruthValue.True)]
-    [InlineData("Project(a, False)", TruthValue.False)]
-    [InlineData("project(a, FALSE)", TruthValue.False)]
-    [InlineData("PROJECT(a, false)", TruthValue.False)]
-    public async Task Evaluate_OverAllInputs_MatchesOracle_Test(string text, TruthValue unknownAs)
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Project_OverAllInputs_MatchesOracleAndLeavesTheResultRaw_Test(bool unknownAs)
     {
-        K3Rule rule = K3Rule.TryCreate(text, 1)!;
+        K3Rule rule = K3Rule.TryCreate("a", 1)!;
+        TruthValue replacement = unknownAs ? TruthValue.True : TruthValue.False;
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(1))
         {
-            Decision actual = await rule.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+            Decision decision = await rule.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+            TruthValue projected = decision.Project(unknownAs);
 
-            Assert.Equal(K3Oracle.Project(assignment[0], unknownAs), actual.Result);
+            Assert.Equal(K3Oracle.Project(assignment[0], replacement), projected);
+            Assert.NotEqual(TruthValue.Unknown, projected);
+            Assert.Equal(assignment[0], decision.Result);
         }
     }
 
-    /// <summary>The projection is always definite, even over a composed operand with several Unknown terms.</summary>
+    /// <summary>The projection applies to a composed expression's K3 result, not to its parts.</summary>
     [Theory]
-    [InlineData("Project(a AND b, True)")]
-    [InlineData("Project(a XOR b, False)")]
-    [InlineData("Project(a ?? b, True)")]
-    [InlineData("Project(If(a, b, c), False)")]
-    [InlineData("Project(Project(a, True), False)")]
-    public async Task Evaluate_OverComposedOperands_NeverYieldsUnknown_Test(string text)
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Project_OverAComposedExpression_ProjectsItsK3Result_Test(bool unknownAs)
     {
-        K3Rule rule = K3Rule.TryCreate(text, 3)!;
+        K3Rule rule = K3Rule.TryCreate("a AND (b OR NOT c)", 3)!;
+        TruthValue replacement = unknownAs ? TruthValue.True : TruthValue.False;
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(3))
         {
-            Decision actual = await rule.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+            TruthValue inner = K3Oracle.And([assignment[0], K3Oracle.Or([assignment[1], K3Oracle.Not(assignment[2])])]);
 
-            Assert.NotEqual(TruthValue.Unknown, actual.Result);
-        }
-    }
+            Decision decision = await rule.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
 
-    /// <summary>Known values pass through unchanged whichever policy is chosen.</summary>
-    [Theory]
-    [InlineData("Project(a, True)", TruthValue.True, TruthValue.True)]
-    [InlineData("Project(a, True)", TruthValue.False, TruthValue.False)]
-    [InlineData("Project(a, False)", TruthValue.True, TruthValue.True)]
-    [InlineData("Project(a, False)", TruthValue.False, TruthValue.False)]
-    public async Task Evaluate_KnownOperand_PassesThroughUnchanged_Test(string text, TruthValue input, TruthValue expected)
-    {
-        K3Rule rule = K3Rule.TryCreate(text, 1)!;
-
-        Decision decision = await rule.EvaluateAsync([input], TestContext.Current.CancellationToken);
-
-        Assert.Equal(expected, decision.Result);
-    }
-
-    /// <summary><c>Unknown</c> becomes the chosen value and records no fault.</summary>
-    [Theory]
-    [InlineData("Project(a, True)", TruthValue.True)]
-    [InlineData("Project(a, False)", TruthValue.False)]
-    public async Task Evaluate_UnknownOperand_BecomesTheChosenValue_Test(string text, TruthValue expected)
-    {
-        K3Rule rule = K3Rule.TryCreate(text, 1)!;
-
-        Decision decision = await rule.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
-
-        Assert.Equal(expected, decision.Result);
-        Assert.Empty(decision.Faults);
-    }
-
-    /// <summary><c>Project(x, v)</c> and <c>COALESCE(x, v)</c> agree for every input (ADR-0005 decision 12).</summary>
-    [Theory]
-    [InlineData("True")]
-    [InlineData("False")]
-    public async Task Evaluate_ComparedWithCoalesce_AgreesForEveryInput_Test(string value)
-    {
-        K3Rule project = K3Rule.TryCreate($"Project(a AND b, {value})", 2)!;
-        K3Rule coalesce = K3Rule.TryCreate($"COALESCE(a AND b, {value})", 2)!;
-
-        foreach (TruthValue[] assignment in K3Oracle.Assignments(2))
-        {
-            Decision viaProject = await project.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
-            Decision viaCoalesce = await coalesce.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
-
-            Assert.Equal(viaCoalesce.Result, viaProject.Result);
+            Assert.Equal(K3Oracle.Project(inner, replacement), decision.Project(unknownAs));
         }
     }
 
     /// <summary>
-    /// A faulting predicate is Unknown plus a Fault; the projection turns the value definite but the Fault is kept, so a
-    /// caller can still tell "not known" from "broke".
+    /// <c>Decision.Project(v)</c> and a rule written <c>COALESCE(rule, v)</c> agree for every input (ADR-0005 decision 12),
+    /// which is why the in-rule form needs no operator of its own.
     /// </summary>
-    [Fact]
-    public async Task EvaluateAsync_ProjectingAFaultingPredicate_YieldsTheValueAndKeepsTheFault_Test()
+    [Theory]
+    [InlineData(true, "True")]
+    [InlineData(false, "False")]
+    public async Task Project_OverAllInputs_AgreesWithACoalesceInsideTheRule_Test(bool unknownAs, string value)
+    {
+        K3Rule raw = K3Rule.TryCreate("a AND b", 2)!;
+        K3Rule coalesced = K3Rule.TryCreate($"COALESCE(a AND b, {value})", 2)!;
+
+        foreach (TruthValue[] assignment in K3Oracle.Assignments(2))
+        {
+            Decision viaMethod = await raw.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+            Decision viaCoalesce = await coalesced.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+
+            Assert.Equal(viaCoalesce.Result, viaMethod.Project(unknownAs));
+        }
+    }
+
+    /// <summary>
+    /// A faulting predicate is Unknown plus a Fault; projecting makes the value definite but is pure, so the Fault, the
+    /// <c>Unknown</c> result and the fail-closed <c>IsSatisfied</c> are all unchanged and a caller can still tell "not known"
+    /// from "broke".
+    /// </summary>
+    [Theory]
+    [InlineData(true, TruthValue.True)]
+    [InlineData(false, TruthValue.False)]
+    public async Task Project_OverAFaultingPredicate_KeepsTheFaultAndTheUnknownResult_Test(bool unknownAs, TruthValue expected)
     {
         RuleCompiler<RuleTestContext> compiler = new(
-            PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("boom").AddConstant("ok", true).Build()
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("boom").Build()
         );
-        CompiledRule<RuleTestContext> rule = compiler.Compile("Project(boom, True) AND ok").CompiledRule!;
+        CompiledRule<RuleTestContext> rule = compiler.Compile("boom").CompiledRule!;
 
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
             cancellationToken: TestContext.Current.CancellationToken
         );
+        TruthValue projected = decision.Project(unknownAs);
 
-        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Equal(expected, projected);
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.False(decision.IsSatisfied);
         Assert.Single(decision.Faults);
     }
 
-    /// <summary>The evaluated tree labels the node with the operator and policy and has the operand as its only child.</summary>
-    [Fact]
-    public async Task EvaluateAsync_Project_ProducesALabelledNodeWithOneChild_Test()
+    /// <summary>
+    /// <c>Decision.IsSatisfied</c> stays fail-closed: true only for a <c>True</c> result. Projecting <c>Unknown</c> to
+    /// <c>True</c> does not change that.
+    /// </summary>
+    [Theory]
+    [InlineData(TruthValue.True, true)]
+    [InlineData(TruthValue.False, false)]
+    [InlineData(TruthValue.Unknown, false)]
+    public async Task IsSatisfied_IsTrueOnlyForTrueWhateverProjectionIsApplied_Test(TruthValue input, bool expected)
     {
-        K3Rule rule = K3Rule.TryCreate("Project(a, True)", 1)!;
+        K3Rule rule = K3Rule.TryCreate("a", 1)!;
 
-        Decision decision = await rule.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
+        Decision decision = await rule.EvaluateAsync([input], TestContext.Current.CancellationToken);
+        TruthValue lenient = decision.Project(unknownAs: true);
 
-        Assert.Equal("Project(True)", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(TruthValue.True, decision.EvaluatedTree.Result);
-        EvaluatedNode child = Assert.Single(decision.EvaluatedTree.Children);
-        Assert.Equal(TruthValue.Unknown, child.Result);
+        Assert.Equal(expected, decision.IsSatisfied);
+        Assert.Equal(input == TruthValue.False ? TruthValue.False : TruthValue.True, lenient);
+        Assert.Equal(expected, decision.IsSatisfied);
     }
 
-    /// <summary>Every spelling prints as the canonical function call with the value in canonical case.</summary>
+    /// <summary>
+    /// A rule that still declares <c>Project</c> is rejected wherever it sits and in any letter case, with a diagnostic
+    /// that names <c>COALESCE</c> and <c>Decision.Project</c> and spans the whole project call.
+    /// </summary>
     [Theory]
-    [InlineData("project(a, true)", "Project(a, True)")]
-    [InlineData("PROJECT( a , FALSE )", "Project(a, False)")]
-    [InlineData("Project(a AND b, True)", "Project(a AND b, True)")]
-    [InlineData("NOT Project(a, False)", "NOT Project(a, False)")]
-    [InlineData("Project(a, True) AND Project(b, False)", "Project(a, True) AND Project(b, False)")]
-    [InlineData("Project(Project(a, True), False)", "Project(Project(a, True), False)")]
-    [InlineData("Project(a XOR b, True)", "Project((a XOR b), True)")]
-    public void Compile_AnySpelling_ProducesTheCanonicalText_Test(string text, string expected)
+    [InlineData("Project(a, True)", "Project(a, True)")]
+    [InlineData("project(a AND b, FALSE)", "project(a AND b, FALSE)")]
+    [InlineData("a AND Project(b, False)", "Project(b, False)")]
+    [InlineData("NOT Project(a, False)", "Project(a, False)")]
+    [InlineData("Project(a)", "Project(a)")]
+    [InlineData("Project(a, Unknown)", "Project(a, Unknown)")]
+    public void Compile_DeclaredProject_IsRejectedWithADiagnosticPointingToCoalesceAndDecisionProject_Test(
+        string text,
+        string call
+    )
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
-        Assert.True(result.Succeeded);
-        Assert.Equal(expected, result.CompiledRule!.CanonicalText);
+        Assert.False(result.Succeeded);
+        Diagnostic outermost = Assert.Single(
+            result.Diagnostics,
+            d => d.Message.Contains("Decision.Project", StringComparison.Ordinal)
+        );
+        Assert.Equal(DiagnosticCodes.SyntaxError, outermost.Code);
+        Assert.Contains("COALESCE", outermost.Message, StringComparison.Ordinal);
+        Assert.Equal(call, text.Substring(outermost.Span.Start, outermost.Span.Length));
     }
 
-    /// <summary><c>Project</c> is reserved so a predicate cannot shadow it.</summary>
+    /// <summary>Every project in a rule is its own diagnostic, and the rest of the text is still checked.</summary>
+    [Fact]
+    public void Compile_TwoDeclaredProjects_ReportsEachOne_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compiler.Compile("Project(a, True) AND Project(b, False)");
+
+        Assert.Equal(2, result.Diagnostics.Count(d => d.Message.Contains("Decision.Project", StringComparison.Ordinal)));
+    }
+
+    /// <summary><c>Project</c> stays reserved so a predicate cannot shadow the rejected word.</summary>
     [Theory]
     [InlineData("project")]
     [InlineData("Project")]
@@ -175,219 +184,56 @@ public sealed class ProjectTests
         Assert.True(DslParser.IsReservedWord(word));
     }
 
-    /// <summary>The value must be the constant True or False; Unknown is rejected with a readable message.</summary>
-    [Fact]
-    public void Compile_WithUnknownAsTheValue_ReportsAReadableSyntaxErrorAtTheValue_Test()
-    {
-        const string text = "Project(a, Unknown)";
-
-        CompilationResult<RuleTestContext> result = Compiler.Compile(text);
-
-        Assert.False(result.Succeeded);
-        Diagnostic error = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.SyntaxError);
-        Assert.Contains("Unknown", error.Message, StringComparison.Ordinal);
-        Assert.Contains("True or False", error.Message, StringComparison.Ordinal);
-        Assert.Equal("Unknown", text.Substring(error.Span.Start, error.Span.Length));
-    }
-
-    /// <summary>A term or any other expression as the value is not a constant and is rejected at its own span.</summary>
+    /// <summary>The replacement the diagnostic recommends, <c>COALESCE(x, True|False)</c>, compiles and is definite.</summary>
     [Theory]
-    [InlineData("Project(a, b)", "b")]
-    [InlineData("Project(a, NOT True)", "NOT True")]
-    [InlineData("Project(a, b AND c)", "b AND c")]
-    public void Compile_WithANonConstantValue_ReportsAReadableSyntaxErrorAtTheValue_Test(string text, string offending)
+    [InlineData("COALESCE(a, True)")]
+    [InlineData("COALESCE(a AND b, False)")]
+    public void Compile_CoalesceWithAConstant_IsAcceptedAsTheInRuleReplacement_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
-
-        Assert.False(result.Succeeded);
-        Diagnostic error = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.SyntaxError);
-        Assert.Contains("constant True or False", error.Message, StringComparison.Ordinal);
-        Assert.Equal(offending, text.Substring(error.Span.Start, error.Span.Length));
-    }
-
-    /// <summary>A wrong argument count is a syntax error rather than a silent default.</summary>
-    [Theory]
-    [InlineData("Project(a)")]
-    [InlineData("Project()")]
-    [InlineData("Project(a, True, False)")]
-    [InlineData("Project(True, a, b)")]
-    public void Compile_WithTheWrongArgumentCount_ReportsASyntaxError_Test(string text)
-    {
-        CompilationResult<RuleTestContext> result = Compiler.Compile(text);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.SyntaxError);
-    }
-
-    /// <summary>A bare keyword without a call is not an expression.</summary>
-    [Fact]
-    public void Compile_ProjectWithoutParentheses_ReportsSyntaxError_Test()
-    {
-        CompilationResult<RuleTestContext> result = Compiler.Compile("Project a");
-
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.SyntaxError);
-    }
-
-    /// <summary>JSON carries the policy as a boolean <c>unknownAs</c>, round-trips, and reads the op in any letter case.</summary>
-    [Theory]
-    [InlineData("Project(a AND NOT b, True)", "true")]
-    [InlineData("Project(a AND NOT b, False)", "false")]
-    public void PrintJson_Project_RoundTripsWithTheUnknownAsField_Test(string text, string expectedValue)
-    {
-        CompiledRule<RuleTestContext> original = Compiler.Compile(text).CompiledRule!;
-
-        string json = original.PrintJson();
-        CompiledRule<RuleTestContext> reparsed = Compiler
-            .CompileJson(json.Replace("project", "PROJECT", StringComparison.Ordinal))
-            .CompiledRule!;
-
-        string compact = json.Replace(" ", string.Empty, StringComparison.Ordinal);
-        Assert.Contains("\"op\":\"project\"", compact, StringComparison.Ordinal);
-        Assert.Contains($"\"unknownAs\":{expectedValue}", compact, StringComparison.Ordinal);
-        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
-    }
-
-    /// <summary>YAML uses the same node shape and round-trips.</summary>
-    [Theory]
-    [InlineData("Project(a AND NOT b, True)", "unknownAs: true")]
-    [InlineData("Project(a AND NOT b, False)", "unknownAs: false")]
-    public void PrintYaml_Project_RoundTripsWithTheUnknownAsField_Test(string text, string expectedLine)
-    {
-        CompiledRule<RuleTestContext> original = Compiler.Compile(text).CompiledRule!;
-
-        string yaml = original.PrintYaml();
-        CompiledRule<RuleTestContext> reparsed = Compiler.CompileYaml(yaml).CompiledRule!;
-
-        Assert.Contains("op: project", yaml, StringComparison.Ordinal);
-        Assert.Contains(expectedLine, yaml, StringComparison.Ordinal);
-        Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
-    }
-
-    /// <summary>JSON also accepts the policy as the string <c>"true"</c>/<c>"false"</c> in any letter case, like <c>const</c>.</summary>
-    [Theory]
-    [InlineData("\"true\"", "Project(a, True)")]
-    [InlineData("\"FALSE\"", "Project(a, False)")]
-    [InlineData("true", "Project(a, True)")]
-    public void CompileJson_UnknownAsInEitherForm_IsAccepted_Test(string value, string expected)
-    {
-        CompilationResult<RuleTestContext> result = Compiler.CompileJson(
-            $$"""{"op": "project", "unknownAs": {{value}}, "operands": [{"predicate": "a"}]}"""
-        );
 
         Assert.True(result.Succeeded);
-        Assert.Equal(expected, result.CompiledRule!.CanonicalText);
     }
 
-    /// <summary>A missing, <c>unknown</c>-valued or non-boolean <c>unknownAs</c> is a malformed tree.</summary>
+    /// <summary>A JSON project node, in any letter case and nested or not, is rejected pointing to <c>Decision.Project</c>.</summary>
     [Theory]
+    [InlineData("""{"op": "project", "unknownAs": true, "operands": [{"predicate": "a"}]}""")]
+    [InlineData("""{"op": "Project", "unknownAs": "false", "operands": [{"predicate": "a"}]}""")]
     [InlineData("""{"op": "project", "operands": [{"predicate": "a"}]}""")]
-    [InlineData("""{"op": "project", "unknownAs": "unknown", "operands": [{"predicate": "a"}]}""")]
-    [InlineData("""{"op": "project", "unknownAs": 1, "operands": [{"predicate": "a"}]}""")]
-    [InlineData("""{"op": "project", "unknownAs": null, "operands": [{"predicate": "a"}]}""")]
-    public void CompileJson_WithABadUnknownAs_ReportsMalformedTree_Test(string json)
+    [InlineData("""{"op": "not", "operands": [{"op": "project", "unknownAs": true, "operands": [{"predicate": "a"}]}]}""")]
+    public void CompileJson_DeclaredProject_IsRejectedWithADiagnosticPointingToDecisionProject_Test(string json)
     {
         CompilationResult<RuleTestContext> result = Compiler.CompileJson(json);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Diagnostic error = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Contains("Decision.Project", error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>YAML rejects the same bad <c>unknownAs</c> values.</summary>
-    [Theory]
-    [InlineData("op: project\noperands:\n- predicate: a\n")]
-    [InlineData("op: project\nunknownAs: unknown\noperands:\n- predicate: a\n")]
-    public void CompileYaml_WithABadUnknownAs_ReportsMalformedTree_Test(string yaml)
-    {
-        CompilationResult<RuleTestContext> result = Compiler.CompileYaml(yaml);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
-    }
-
-    /// <summary>A JSON project node with the wrong operand count is rejected by the compiler.</summary>
+    /// <summary>A YAML project node is rejected the same way, at the node's path.</summary>
     [Fact]
-    public void CompileJson_ProjectWithTwoOperands_ReportsMalformedTree_Test()
+    public void CompileYaml_DeclaredProject_IsRejectedWithADiagnosticPointingToDecisionProject_Test()
     {
-        CompilationResult<RuleTestContext> result = Compiler.CompileJson(
-            """{"op": "project", "unknownAs": true, "operands": [{"predicate": "a"}, {"predicate": "b"}]}"""
+        CompilationResult<RuleTestContext> result = Compiler.CompileYaml(
+            "op: not\noperands:\n- op: project\n  unknownAs: true\n  operands:\n  - predicate: a\n"
         );
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Diagnostic error = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Contains("Decision.Project", error.Message, StringComparison.Ordinal);
+        Assert.NotNull(error.Path);
     }
 
-    /// <summary>The builder produces the same rule as the DSL for both policies.</summary>
+    /// <summary>The compiled rule's canonical text, JSON and description never mention a project.</summary>
     [Fact]
-    public void Project_Builder_CompilesToTheSameCanonicalTextAsDsl_Test()
+    public void Compile_PlainRule_HasNoProjectAnywhereInItsRenderings_Test()
     {
-        RuleBuilder builder = RuleBuilder.And(
-            RuleBuilder.Project(RuleBuilder.Predicate("a"), unknownAs: true),
-            RuleBuilder.Project(RuleBuilder.Not(RuleBuilder.Predicate("b")), unknownAs: false)
-        );
+        CompiledRule<RuleTestContext> rule = Compiler.Compile("COALESCE(a AND b, True)").CompiledRule!;
 
-        CompilationResult<RuleTestContext> result = builder.Compile(Compiler);
-
-        Assert.True(result.Succeeded);
-        Assert.Equal("Project(a, True) AND Project(NOT b, False)", result.CompiledRule!.CanonicalText);
-    }
-
-    /// <summary>The description names the policy and says the result is definite.</summary>
-    [Theory]
-    [InlineData("Project(a, True)", "Project(True)")]
-    [InlineData("Project(a, False)", "Project(False)")]
-    public void Describe_Project_ExplainsItsDefiniteResult_Test(string text, string label)
-    {
-        RuleDescription description = Compiler.Compile(text).CompiledRule!.Describe();
-
-        Assert.Equal(label, description.Label);
-        Assert.Contains("never Unknown", description.Description, StringComparison.Ordinal);
-        Assert.Equal(["a"], description.Operands.Select(o => o.Label));
-    }
-
-    /// <summary><c>Project</c> has no symbolic or C-style spelling, so every tree style keeps the word.</summary>
-    [Theory]
-    [InlineData(OperatorStyle.Word)]
-    [InlineData(OperatorStyle.Symbolic)]
-    [InlineData(OperatorStyle.CStyle)]
-    public void Print_Project_KeepsTheWordInEveryStyle_Test(OperatorStyle style)
-    {
-        RuleDescription tree = Compiler.Compile("Project(a, True)").CompiledRule!.Describe();
-
-        Assert.Contains("Project(True)", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
-        Assert.Contains("Project(True)", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// The analyzer knows a projection is always definite: <c>Project(a, True) OR NOT Project(a, True)</c> is a genuine
-    /// tautology (a classical one, since the operand is definite), and its conjunction a genuine contradiction.
-    /// </summary>
-    [Theory]
-    [InlineData("Project(a, True) OR NOT Project(a, True)", DiagnosticCodes.StructuralTautology)]
-    [InlineData("Project(a, False) OR NOT Project(a, False)", DiagnosticCodes.StructuralTautology)]
-    [InlineData("Project(a, True) AND NOT Project(a, True)", DiagnosticCodes.StructuralContradiction)]
-    [InlineData("Project(a, False) AND NOT Project(a, False)", DiagnosticCodes.StructuralContradiction)]
-    public void Compile_ProjectionsOfTheSameTerm_ReportsTheK3Verdict_Test(string text, string code)
-    {
-        CompilationResult<RuleTestContext> result = Compiler.Compile(text);
-
-        Assert.True(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == code);
-    }
-
-    /// <summary>A projection of an ordinary term is neither a tautology nor a contradiction.</summary>
-    [Theory]
-    [InlineData("Project(a, True)")]
-    [InlineData("Project(a, False)")]
-    [InlineData("Project(a, True) AND Project(b, False)")]
-    public void Compile_PlainProjection_ReportsNoStructuralFinding_Test(string text)
-    {
-        CompilationResult<RuleTestContext> result = Compiler.Compile(text);
-
-        Assert.True(result.Succeeded);
-        Assert.DoesNotContain(
-            result.Diagnostics,
-            d => d.Code is DiagnosticCodes.StructuralTautology or DiagnosticCodes.StructuralContradiction
-        );
+        Assert.DoesNotContain("project", rule.CanonicalText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("project", rule.PrintJson(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("COALESCE", rule.Describe().Label);
     }
 }

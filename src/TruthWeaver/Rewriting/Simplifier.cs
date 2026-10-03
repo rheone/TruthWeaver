@@ -15,7 +15,7 @@ using TruthWeaver.Ast;
 /// <item><description>Constant folding falls out of the identity/annihilator rules and the operator definitions: a node whose operands are all constants folds to a constant.</description></item>
 /// <item><description><c>AND</c>/<c>OR</c>: drop the identity constant, annihilate on the dominant constant, absorb (<c>a AND (a OR b) = a</c>). An <c>Unknown</c> operand is kept.</description></item>
 /// <item><description><c>NOT</c>: fold constants, remove double negation, <c>NOT NAND</c> to <c>AND</c>, <c>NOT NOR</c> to <c>OR</c>, <c>NOT IsKnown</c> to <c>IsUnknown</c> (and back), flip a threshold, De Morgan only where it removes nodes.</description></item>
-/// <item><description><c>COALESCE</c>/<c>Project</c>/inspections: drop <c>Unknown</c> constants, stop at the first operand that can never be <c>Unknown</c>, fold inspections of such operands.</description></item>
+/// <item><description><c>COALESCE</c>/inspections: drop <c>Unknown</c> constants, stop at the first operand that can never be <c>Unknown</c>, fold inspections of such operands.</description></item>
 /// <item><description><c>If</c>: a constant condition picks a branch; equal branches are that branch. Other derived operators with a constant operand are expanded one level and re-simplified, and kept only if that is no larger.</description></item>
 /// <item><description>Thresholds: <c>True</c>/<c>False</c> operands are eliminated by shifting <c>k</c>; out-of-range thresholds fold to constants; one remaining operand is that operand or its negation.</description></item>
 /// </list>
@@ -308,7 +308,6 @@ internal static class Simplifier
                 AndExpression a => RewriteJunction(a.Operands, isAnd: true),
                 OrExpression o => RewriteJunction(o.Operands, isAnd: false),
                 CoalesceExpression c => this.RewriteCoalesce(c),
-                ProjectExpression p => this.RewriteProject(p),
                 InspectionExpression s => this.RewriteInspection(s),
                 IfExpression f => this.RewriteIf(f),
                 ThresholdExpression t => RewriteThreshold(t),
@@ -361,16 +360,6 @@ internal static class Simplifier
                 1 => kept[0],
                 _ => new CoalesceExpression(ExpressionTools.Array(kept)),
             };
-        }
-
-        private Expression? RewriteProject(ProjectExpression p)
-        {
-            if (p.Operand is ConstantExpression { Value: TruthValue.Unknown })
-            {
-                return Constant(p.UnknownAs ? TruthValue.True : TruthValue.False);
-            }
-
-            return this.IsDefinite(p.Operand) ? p.Operand : null;
         }
 
         private Expression? RewriteInspection(InspectionExpression s)
@@ -436,7 +425,7 @@ internal static class Simplifier
 
         /// <summary>
         /// Whether the expression can never be <c>Unknown</c>, judged structurally and conservatively: a definite constant,
-        /// an inspection or a <c>Project</c>; a <c>COALESCE</c> with any such operand; or any other operator all of whose
+        /// or an inspection; a <c>COALESCE</c> with any such operand; or any other operator all of whose
         /// operands are. Terms are never definite, since a predicate may answer or fault to <c>Unknown</c>.
         /// </summary>
         private bool IsDefinite(Expression node)
@@ -450,7 +439,7 @@ internal static class Simplifier
             {
                 ConstantExpression c => c.Value != TruthValue.Unknown,
                 TermExpression => false,
-                InspectionExpression or ProjectExpression => true,
+                InspectionExpression => true,
                 CoalesceExpression c => c.Operands.Any(this.IsDefinite),
                 _ => ExpressionTools.Children(node).All(this.IsDefinite),
             };

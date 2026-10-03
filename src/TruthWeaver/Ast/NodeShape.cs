@@ -15,14 +15,7 @@ namespace TruthWeaver.Ast;
 /// <param name="K">The threshold value for a <see cref="ThresholdExpression"/>, or the lower bound (<c>min</c>) for a <see cref="BetweenExpression"/>; otherwise <see langword="null"/>.</param>
 /// <param name="Operands">The node's operands, in source order.</param>
 /// <param name="Max">The upper bound (<c>max</c>) for a <see cref="BetweenExpression"/>; otherwise <see langword="null"/>.</param>
-/// <param name="UnknownAs">The value <c>Unknown</c> becomes for a <see cref="ProjectExpression"/>; otherwise <see langword="null"/>.</param>
-internal readonly record struct NodeShape(
-    string OpName,
-    int? K,
-    IReadOnlyList<Expression> Operands,
-    int? Max = null,
-    bool? UnknownAs = null
-);
+internal readonly record struct NodeShape(string OpName, int? K, IReadOnlyList<Expression> Operands, int? Max = null);
 
 /// <summary>
 /// The single seam every consumer that needs an operator node's op-name/K/operands goes through,
@@ -64,7 +57,6 @@ internal static class ExpressionShape
             ThresholdExpression th => new NodeShape(th.Comparison.ToString(), th.K, th.Operands),
             BetweenExpression bt => new NodeShape("Between", bt.Min, bt.Operands, bt.Max),
             InspectionExpression ins => new NodeShape(ins.Kind.ToString(), null, [ins.Operand]),
-            ProjectExpression pr => new NodeShape("Project", null, [pr.Operand], UnknownAs: pr.UnknownAs),
             IfExpression i3 => new NodeShape("If", null, [i3.Condition, i3.WhenTrue, i3.WhenFalse]),
             CoalesceExpression co => new NodeShape("Coalesce", null, co.Operands),
             ConstantExpression or TermExpression => throw new ArgumentException(

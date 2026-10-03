@@ -94,8 +94,6 @@ internal static class CanonicalPrinter
             AllExpression => $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             NoneExpression => $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             ExactlyOneExpression => $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            ProjectExpression pr =>
-                $"Project({PrintNode(pr.Operand, PrintContext.Top, innerDepth, grouping)}, {TruthValueText.Canonical(pr.UnknownAs)})",
             InspectionExpression ins => $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping)})",
             IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             CoalesceExpression => $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",

@@ -219,7 +219,6 @@ internal sealed class RuleNodeCompiler<TContext>
             ),
             IfNode ifNode => this.BuildIf(ifNode, depth),
             InspectionNode ins => this.BuildInspection(ins, depth),
-            ProjectNode pr => this.BuildProject(pr, depth),
             _ => throw new InvalidOperationException($"Unhandled rule node type '{node.GetType()}'."),
         };
     }
@@ -268,27 +267,6 @@ internal sealed class RuleNodeCompiler<TContext>
         }
 
         return new InspectionExpression(node.Kind, this.Build(node.Operands[0], depth + 1));
-    }
-
-    /// <summary>Builds <c>Project(x, True|False)</c>; anything but one operand is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>
-    private Expression BuildProject(ProjectNode node, int depth)
-    {
-        if (node.Operands.Count != 1)
-        {
-            this.diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
-                    $"Project requires exactly 1 operand but found {node.Operands.Count}.",
-                    node.Span,
-                    expected: "1 operand",
-                    found: CountText(node.Operands.Count),
-                    path: PathOf(node, "operands")
-                )
-            );
-            return FailedNode.Placeholder;
-        }
-
-        return new ProjectExpression(this.Build(node.Operands[0], depth + 1), node.UnknownAs);
     }
 
     private Expression BuildVariadic(

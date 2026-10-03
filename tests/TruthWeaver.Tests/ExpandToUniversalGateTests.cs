@@ -21,8 +21,8 @@ public sealed class ExpandToUniversalGateTests
     /// </summary>
     private const int MaxGeneratedTextLength = 30;
 
-    /// <summary>Spellings that expand to <c>COALESCE</c> (the boundary): the operator itself, <c>Project</c> and the inspections.</summary>
-    private static readonly string[] BoundaryNames = ["COALESCE", "Project", "IsTrue", "IsFalse", "IsUnknown", "IsKnown"];
+    /// <summary>Spellings that expand to <c>COALESCE</c> (the boundary): the operator itself and the inspections.</summary>
+    private static readonly string[] BoundaryNames = ["COALESCE", "IsTrue", "IsFalse", "IsUnknown", "IsKnown"];
 
     /// <summary>
     /// For many generated rules (every operator, nested) and every {True, False, Unknown} assignment of the terms, the
@@ -68,7 +68,7 @@ public sealed class ExpandToUniversalGateTests
 
     /// <summary>
     /// Whatever a generated rule contains, the output uses only the target gate; the single exception is
-    /// <c>COALESCE</c>, and only when the rule used <c>COALESCE</c>, <c>Project</c> or an inspection.
+    /// <c>COALESCE</c>, and only when the rule used <c>COALESCE</c> or an inspection.
     /// </summary>
     [Theory]
     [InlineData("nand")]

@@ -99,8 +99,6 @@ public sealed class CompressToDerivedTests
     [InlineData("ExactlyOne(a, b, c)", 3, "ExactlyOne(a, b, c)")]
     [InlineData("BETWEEN(1, 2, a, b, c)", 3, "BETWEEN(1, 2, a, b, c)")]
     [InlineData("If(a, b, c)", 3, "If(a, b, c)")]
-    [InlineData("Project(a, True)", 1, "Project(a, True)")]
-    [InlineData("Project(a, False)", 1, "Project(a, False)")]
     [InlineData("IsFalse(a)", 1, "IsFalse(a)")]
     [InlineData("IsUnknown(a)", 1, "IsUnknown(a)")]
     [InlineData("IsKnown(a)", 1, "IsKnown(a)")]
@@ -136,8 +134,6 @@ public sealed class CompressToDerivedTests
     [InlineData("Exactly(1, a, b, c)", 3, "ExactlyOne(a, b, c)")]
     [InlineData("NOT AtLeast(1, a, b, c)", 3, "NONE(a, b, c)")]
     [InlineData("AtLeast(1, a, b, c) AND AtMost(2, a, b, c)", 3, "BETWEEN(1, 2, a, b, c)")]
-    [InlineData("COALESCE(a, True)", 1, "Project(a, True)")]
-    [InlineData("COALESCE(a, False)", 1, "Project(a, False)")]
     [InlineData("COALESCE(NOT a, False)", 1, "IsFalse(a)")]
     public async Task CompressToDerived_PrimitivePattern_BecomesTheDerivedForm_Test(string ruleText, int arity, string expected)
     {
@@ -156,7 +152,8 @@ public sealed class CompressToDerivedTests
 
     /// <summary>
     /// Shapes that look like a derived operator but are not one in Strong Kleene logic stay as written (the classical
-    /// <c>a OR NOT a</c> is not an implication of anything, and an unmatched threshold pair is not a range).
+    /// <c>a OR NOT a</c> is not an implication of anything, an unmatched threshold pair is not a range, and a
+    /// <c>COALESCE</c> with a constant is already its shortest form now that <c>Project</c> is not an operator).
     /// </summary>
     [Theory]
     [InlineData("a OR b", 2)]
@@ -165,6 +162,8 @@ public sealed class CompressToDerivedTests
     [InlineData("AtLeast(2, a, b, c) AND AtMost(1, a, b, a)", 3)]
     [InlineData("COALESCE(a, b)", 2)]
     [InlineData("COALESCE(a, False, b)", 2)]
+    [InlineData("COALESCE(a, True)", 1)]
+    [InlineData("COALESCE(a, False)", 1)]
     public async Task CompressToDerived_NonMatchingShape_IsLeftEquivalent_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;

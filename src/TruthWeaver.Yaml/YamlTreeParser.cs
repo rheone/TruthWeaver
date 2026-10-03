@@ -333,6 +333,12 @@ internal static class YamlTreeParser
             return null;
         }
 
+        if (string.Equals(op, "project", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.MalformedTree, SpanOf(opNode), path));
+            return null;
+        }
+
         // The operator name is checked before its operands so a typo is reported on its own, with its suggestion.
         if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
@@ -447,8 +453,6 @@ internal static class YamlTreeParser
                 return new InspectionNode(InspectionKind.IsUnknown, operands, SourceSpan.None);
             case "IsKnown":
                 return new InspectionNode(InspectionKind.IsKnown, operands, SourceSpan.None);
-            case "Project":
-                return ParseProject(mapping, op, path, operands, diagnostics);
             case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
             case "AtLeast":
@@ -494,42 +498,6 @@ internal static class YamlTreeParser
         }
 
         return new ThresholdNode(comparison, k, operands, SourceSpan.None);
-    }
-
-    /// <summary>
-    /// Reads <c>Project</c>'s <c>unknownAs</c>: <c>true</c> or <c>false</c> in any letter case. <c>Unknown</c> is rejected
-    /// because projecting <c>Unknown</c> to itself is no projection.
-    /// </summary>
-    private static RuleNode? ParseProject(
-        YamlMappingNode mapping,
-        string op,
-        string path,
-        List<RuleNode> operands,
-        List<Diagnostic> diagnostics
-    )
-    {
-        bool present = TryGetChild(mapping, "unknownAs", out YamlNode? valueNode);
-        if (
-            !present
-            || valueNode is not YamlScalarNode { Value: { } valueText }
-            || !TruthValueText.TryParse(valueText, out TruthValue parsed)
-            || parsed == TruthValue.Unknown
-        )
-        {
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
-                    $"'{op}' requires 'unknownAs' to be true or false.",
-                    present ? SpanOf(valueNode!) : SpanOf(mapping),
-                    expected: "true or false",
-                    found: present ? DescribeValue(valueNode!) : "no 'unknownAs' key",
-                    path: present ? TreePath.Property(path, "unknownAs") : path
-                )
-            );
-            return null;
-        }
-
-        return new ProjectNode(operands, parsed == TruthValue.True, SourceSpan.None);
     }
 
     private static RuleNode? ParseBetween(

@@ -63,7 +63,6 @@ internal static class PrimitiveExpander
 
             // Conditional and boundary operators.
             IfExpression f => ExpandIf(f.Condition, f.WhenTrue, f.WhenFalse),
-            ProjectExpression p => Coalesce(p.Operand, p.UnknownAs ? TruthValue.True : TruthValue.False),
             InspectionExpression s => ExpandInspection(s.Kind, s.Operand),
 
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),

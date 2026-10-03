@@ -59,7 +59,7 @@ anything else.
 
 `TruthWeaver` answers one question: *what is the truth value of this expression
 right now, for this context?* — `True`, `False` or `Unknown`. It knows about `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`,
-`NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `Project`, `ExactlyOne`, the threshold family (`AtLeast`/`AtMost`/`GreaterThan`/
+`NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family (`AtLeast`/`AtMost`/`GreaterThan`/
 `LessThan`/`Exactly`), terms, and evaluation. It does not know about
 permissions, workflows, or policies — those are things you build *on top* of
 it. A permission check ("can the current user do X") is one consumer of this
@@ -71,7 +71,7 @@ engine, not what the engine itself is.
 | **Expression** | The three-valued tree — operators over terms, constants and sub-expressions. |
 | **Predicate** | A registered, reusable implementation, e.g. `hasTopping`, `lovesPineapple`. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")` — the tree's leaf node. |
-| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `NXOR` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `Project(x, True)` `Project(x, False)` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Collapse` is not part of the rule language: it is a method on the result (`Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)). See [Operators](#operators) below. |
+| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `NXOR` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Project` and `Collapse` are not part of the rule language: they are methods on the result (`Decision.Project(unknownAs)` and `Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)); inside a rule use `COALESCE(x, True)` / `COALESCE(x, False)`. See [Operators](#operators) below. |
 | **Decision** | The evaluation result: a `TruthValue` plus any faults, and optionally a trace. `IsSatisfied` is fail-closed: only `True` is satisfied. |
 
 Full vocabulary and the predicate-author contract: [CONTEXT.md](CONTEXT.md).
@@ -307,9 +307,10 @@ A service that only *implements* domain predicates references
   `IsKnown`) and `Unknown` as a constant. Operators are case-insensitive, have
   symbol spellings, and every notation compiles to the same tree with one
   canonical form. See [Operators](#operators).
-- **Explicit boundaries.** `Project(x, True|False)` resolves `Unknown` anywhere
-  inside a rule; `Decision.Collapse(policy)` turns the rule's three-valued result into
-  a two-valued answer at the call site, and is not part of the rule. See
+- **Explicit boundaries.** `COALESCE(x, True|False)` resolves `Unknown` anywhere
+  inside a rule; `Decision.Project(unknownAs)` and `Decision.Collapse(policy)` turn
+  the rule's three-valued result into a definite value or a two-valued answer at the
+  call site, and are not part of the rule. See
   [Collapse](#collapse-the-final-boundary).
 - **Rule rewriting.** Opt-in, value-preserving transforms return a new rule:
   expand to primitives, to NAND-only or NOR-only, compress back to derived
@@ -421,8 +422,7 @@ call        = list_op "(" expression { "," expression } ")"
             | threshold "(" integer "," expression { "," expression } ")"
             | "BETWEEN" "(" integer "," integer "," expression { "," expression } ")"
             | "If" "(" expression "," expression "," expression ")"
-            | inspection "(" expression ")"
-            | "Project" "(" expression "," ( "True" | "False" ) ")" ;
+            | inspection "(" expression ")" ;
 list_op     = "NXOR" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
 threshold   = "AtLeast" | "AtMost" | "GreaterThan" | "LessThan" | "Exactly" ;
 inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
@@ -478,7 +478,7 @@ no-mixing rule too: its condition and each branch must be a single operand or a 
 `a ? b XOR c : d` and a nested `a ? b : c ? d : e` are all `AmbiguousOperatorMixing` errors, while `(a AND b) ? c : d` and
 `a ? b : (c ? d : e)` are fine. Everywhere a full expression is allowed (the root, parentheses, call arguments such as
 `ANY(a ? b : c, d)`) a ternary may appear without extra parentheses.
-Function-call-style operators (`NXOR(...)`, `ANY(...)`, `ALL(...)`, `NONE(...)`, `BETWEEN(...)`, `COALESCE(...)`, `If(...)`, `IsTrue(...)`, `IsFalse(...)`, `IsUnknown(...)`, `IsKnown(...)`, `Project(...)`, `ExactlyOne(...)` and the threshold
+Function-call-style operators (`NXOR(...)`, `ANY(...)`, `ALL(...)`, `NONE(...)`, `BETWEEN(...)`, `COALESCE(...)`, `If(...)`, `IsTrue(...)`, `IsFalse(...)`, `IsUnknown(...)`, `IsKnown(...)`, `ExactlyOne(...)` and the threshold
 family) are self-delimiting — their parentheses are part of the call syntax,
 not grouping, so they never participate in precedence at all.
 
@@ -536,7 +536,6 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | --- | --- | --- |
 | **Unary** | `NOT`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown` | Take exactly one operand (`MalformedTree` otherwise). The four inspections are function calls (`IsUnknown(a)`). |
 | **Binary only** | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` | Always exactly two operands — a compile error otherwise (`InfixArityViolation`). `XOR` with three or more operands is an error whose message points at `NXOR` (n-ary parity) and `ExactlyOne` (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 7); a chain such as `a IMPLIES b IMPLIES c` or `a NAND b NAND c` is rejected too — parenthesize it. |
-| **Unary with a policy** | `Project` | `Project(x, True)` / `Project(x, False)`: one operand expression plus the constant `True` or `False` that replaces `Unknown` (see below). The policy is part of the node, not an operand. |
 | **Ternary** | `If` | Takes exactly three operands, `[condition, whenTrue, whenFalse]` — `MalformedTree` otherwise. |
 | **N-ary (≥ 2)** | `AND`, `OR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`AND(a, b, c)`, not `AND(AND(a, b), c)`). |
 | **0-ary** | `True`, `False`, `Unknown` | Constants, not operators over operands. Written in any letter case; printed upper camel. |
@@ -564,7 +563,6 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | `IsFalse(x)` | unary | Inspection: `True` iff `x` is `False`; `False` when it is `True` or `Unknown`. |
 | `IsUnknown(x)` | unary | Inspection: `True` iff `x` is `Unknown`; `False` when it is `True` or `False`. |
 | `IsKnown(x)` | unary | Inspection: `True` iff `x` is `True` or `False`; `False` when it is `Unknown`. |
-| `Project(x, True)` / `Project(x, False)` | unary + policy | Projection: `True` and `False` pass through unchanged and `Unknown` becomes the chosen constant, so the result is always definite (never `Unknown`). Equal to `COALESCE(x, True)` / `COALESCE(x, False)`; it is the named, intent-revealing spelling. The second argument must be the literal constant `True` or `False` (any letter case): `Unknown` and non-constant expressions are a `SyntaxError` at that argument. It can sit anywhere inside a rule. |
 | `ExactlyOne(...)` | n-ary | True iff exactly one operand is true — the unambiguous name for what `XOR` only means at exactly two operands. |
 | `AtLeast(k, ...)` | n-ary | True iff at least `k` operands are true. |
 | `AtMost(k, ...)` | n-ary | True iff at most `k` operands are true. |
@@ -610,6 +608,18 @@ if (outcome == CollapseOutcome.RejectedUnresolved)
 }
 ```
 
+`Decision.Project(unknownAs)` is the lighter-weight sibling for when you want a
+definite `TruthValue` rather than a `CollapseOutcome`: `True` and `False` pass
+through and `Unknown` becomes the `bool` you pass (`true` for `True`, `false` for
+`False`; an `Unknown` replacement cannot be requested). Like `Collapse` it is a pure
+method on the result, so `Decision.Result`, `Faults` and the fail-closed
+`IsSatisfied` are untouched.
+
+```csharp
+TruthValue lenient = decision.Project(unknownAs: true);   // Unknown becomes True
+TruthValue strict = decision.Project(unknownAs: false);   // Unknown becomes False
+```
+
 `Decision.Collapse(policy)` is pure: it never changes the decision, its `Result`,
 its `Faults` or `IsSatisfied`. `Decision.IsSatisfied` stays fail-closed regardless
 of any policy you apply: it is `true` only when `Decision.Result` is `True`, so
@@ -619,8 +629,14 @@ of any policy you apply: it is `true` only when `Decision.Result` is `True`, so
 Rule text, JSON and YAML cannot declare a `Collapse`: a `Collapse(expr, policy)`
 call or a `collapse` node is rejected (`SyntaxError` in the DSL, `MalformedTree` in
 JSON and YAML) with a diagnostic that points to `Decision.Collapse`. Use
-`Project(expr, True)` / `Project(expr, False)` to resolve `Unknown` *inside* a rule.
+`COALESCE(expr, True)` / `COALESCE(expr, False)` to resolve `Unknown` *inside* a rule.
 `UnknownRequiresResolution` is not supported.
+
+`Project` follows the same split. A `Project(expr, True|False)` call or a `project`
+node in rule text, JSON or YAML is rejected (`SyntaxError` in the DSL, `MalformedTree`
+in JSON and YAML) with a diagnostic that points to `COALESCE` and `Decision.Project`.
+`COALESCE(x, True)` is the in-rule form and `Decision.Project(true)` the call-site
+form; both give the same value for every input.
 
 ## Rewriting rules
 
@@ -654,7 +670,6 @@ Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
 | `BETWEEN(min, max, ...)` | `AtLeast(min, ...) AND AtMost(max, ...)` (a vacuous bound is dropped) |
 | `GreaterThan(k, ...)` / `LessThan(k, ...)` | `AtLeast(k + 1, ...)` / `AtMost(k - 1, ...)` |
 | `If(c, t, f)` | `(c AND t) OR (NOT c AND f) OR (t AND f)` |
-| `Project(x, True)` / `Project(x, False)` | `COALESCE(x, True)` / `COALESCE(x, False)` |
 | `IsTrue(x)` | `COALESCE(x, False)` |
 | `IsFalse(x)` | `COALESCE(NOT x, False)` |
 | `IsUnknown(x)` | `COALESCE(x, True) AND COALESCE(NOT x, True)` |
@@ -687,7 +702,7 @@ subsets: very wide thresholds produce very large trees.
 **`COALESCE` is the one boundary.** Every circuit built from `NAND`, `NOR`,
 `NOT`, `AND` and `OR` is monotone in the information order (`Unknown` below `True`
 and `False`), while `COALESCE(x, True)` turns `Unknown` into `True` and `False` into
-`False`, which no monotone function can do. So `COALESCE`, and `Project` and the
+`False`, which no monotone function can do. So `COALESCE`, and the
 inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) that expand to it, stay as
 `COALESCE` nodes with their operands rewritten. A rule without them is purely
 `NAND` (or `NOR`). Same guarantees as above: a new rule, the original untouched,
@@ -722,15 +737,14 @@ that compresses to itself.
 | `AtLeast(1, ...)` / `AtLeast(n, ...)` / `AtMost(0, ...)` / `Exactly(1, ...)` | `ANY` / `ALL` / `NONE` / `ExactlyOne` |
 | `NOT AtLeast(k, ...)` / `NOT AtMost(k, ...)` | `AtMost(k - 1, ...)` / `AtLeast(k + 1, ...)` |
 | `AtLeast(m, ...) AND AtMost(M, ...)` over the same operands | `BETWEEN(m, M, ...)` |
-| `COALESCE(x, True)` / `COALESCE(x, False)` | `Project(x, True)` / `Project(x, False)` |
 | `COALESCE(NOT x, False)` | `IsFalse(x)` |
 | `COALESCE(x, True) AND COALESCE(NOT x, True)` | `IsUnknown(x)` |
 | `COALESCE(x, False) OR COALESCE(NOT x, False)` | `IsKnown(x)` |
 
 Every row is an identity of Strong Kleene logic, checked against the truth-table
-oracle for every `True`/`False`/`Unknown` assignment. `COALESCE(x, False)` is
-written `Project(x, False)` rather than `IsTrue(x)` (they are the same value;
-`Project` is the form the ticket names). Classical-only shapes are never matched:
+oracle for every `True`/`False`/`Unknown` assignment. A `COALESCE` with a constant
+that matches none of the rows above, such as `COALESCE(x, True)`, is already the
+shortest form and is left as written. Classical-only shapes are never matched:
 `a OR NOT a` stays as written. Operand order inside a matched `OR`/`AND` can
 differ from the original, which changes the order predicates are invoked in but
 never a result.
@@ -788,14 +802,15 @@ the original for every `True`/`False`/`Unknown` assignment, is never larger
 | Absorption | `a AND (a OR b)` is `a`; `a OR (a AND b)` is `a` |
 | De Morgan, only where it removes nodes | `NOT (NOT a AND NOT b)` is `a OR b`; `NOT a NAND NOT b` is `a OR b` |
 | Negation through derived operators | `NOT a IMPLIES b` is `a OR b`; `NOT a XOR b` is `a EQUIVALENT b`; `NOT IsKnown(a)` is `IsUnknown(a)` |
-| `COALESCE` / `Project` | `COALESCE(Unknown, a)` is `a`; `COALESCE(a, True, b)` is `COALESCE(a, True)`; `COALESCE(IsKnown(a), b)` is `IsKnown(a)`; `Project(IsTrue(a), False)` is `IsTrue(a)` |
+| `COALESCE` | `COALESCE(Unknown, a)` is `a`; `COALESCE(a, True, b)` is `COALESCE(a, True)`; `COALESCE(IsKnown(a), b)` is `IsKnown(a)`; `COALESCE(IsTrue(a), False)` is `IsTrue(a)` |
 | Inspections | `IsKnown(True)` is `True`; `IsUnknown(IsTrue(a))` is `False`; `IsTrue(NOT a)` is `IsFalse(a)` |
 | `If` | `If(True, a, b)` is `a`; `If(c, a, a)` is `a` |
 | Derived operator with a constant operand | `a IMPLIES False` is `NOT a`; `a XOR True` is `NOT a`; `a NAND False` is `True` (expanded one level, simplified, kept only if no larger) |
 | Thresholds with `True`/`False` operands | `AtLeast(2, True, a, b)` is `a OR b`; `AtMost(0, True, a, b)` is `False`; `Exactly(2, True, True, a)` is `NOT a` |
 
-"Never `Unknown`" operands (constants, `Project`, the inspections, and operators
-over only those) also let `COALESCE`, `Project` and the inspections be removed.
+"Never `Unknown`" operands (constants, the inspections, a `COALESCE` with such an
+operand, and operators over only those) also let `COALESCE` and the inspections be
+removed.
 
 **Classical rules that deliberately do not apply.** Each of these is valid in
 two-valued logic and false in Strong Kleene logic, because it fails when `a` is
@@ -1668,7 +1683,6 @@ on `TruthWeaver.Building.RuleBuilder`:
 | `BETWEEN(min, max)` | `RuleBuilder.Between(int min, int max, params RuleBuilder[] operands)` (JSON/YAML: `{"op": "between", "min": 1, "max": 2, "operands": [...]}`) |
 | `COALESCE` | `RuleBuilder.Coalesce(params RuleBuilder[] operands)` |
 | `IsTrue` / `IsFalse` / `IsUnknown` / `IsKnown` | `RuleBuilder.IsTrue(RuleBuilder operand)` / `RuleBuilder.IsFalse(...)` / `RuleBuilder.IsUnknown(...)` / `RuleBuilder.IsKnown(...)` (JSON/YAML: `{"op": "isTrue", "operands": [x]}`, `isFalse`, `isUnknown`, `isKnown`) |
-| `Project` | `RuleBuilder.Project(RuleBuilder operand, bool unknownAs)` (JSON/YAML: `{"op": "project", "unknownAs": true, "operands": [x]}`; `unknownAs` is a boolean, or the string `"true"`/`"false"` on read) |
 | `If` | `RuleBuilder.If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)` (JSON/YAML: `{"op": "if", "operands": [condition, whenTrue, whenFalse]}`) |
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
 | `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
@@ -1929,6 +1943,7 @@ The classes of malformed rule text each report as follows.
 | Ambiguous mixing without parentheses | `BRE0007` | parentheses around one of the groups / the operators sharing a level | hint showing the parenthesised text |
 | Threshold or `BETWEEN` bounds, non-integer bound | `BRE0008`, `BRE0001` | the valid range, or an integer / the value | none |
 | Declared `Collapse` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
+| Declared `Project` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Project` / `Project` | hint to use `COALESCE(x, True)` / `COALESCE(x, False)` or `Decision.Project(unknownAs)` |
 | Missing, unknown or mistyped predicate argument | `BRE0003`, `BRE0005`, `BRE0004` | the argument or kind / what was written | nearest declared argument name |
 
 ## Benchmarks
@@ -1982,7 +1997,7 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `CompilationResult<TContext>` | What `Compile`/`CompileJson`/`CompileYaml` return: a nullable `CompiledRule<TContext>` plus every `Diagnostic` raised. |
 | `CompiledRule<TContext>` | The immutable, thread-safe result of a successful compile. Safe to cache, share, and evaluate repeatedly; swapping the reference that holds it is how a host applies a rule edit at runtime. |
 | `CompilerOptions` | Compile-time resource bounds — max tree depth, max node count, the BDD analyzer's term cap — plus `CompilationMode`. |
-| `Decision` | The result of one evaluation: a `TruthValue`, the `Fault`s absorbed along the way, and optionally a `Trace`. `Decision.IsSatisfied` is true only when the result is `TruthValue.True`. `Decision.Result` is always the rule's raw value; `Decision.Collapse(policy)` turns it into a final `CollapseOutcome` at the call site. |
+| `Decision` | The result of one evaluation: a `TruthValue`, the `Fault`s absorbed along the way, and optionally a `Trace`. `Decision.IsSatisfied` is true only when the result is `TruthValue.True`. `Decision.Result` is always the rule's raw value; `Decision.Collapse(policy)` turns it into a final `CollapseOutcome` and `Decision.Project(unknownAs)` into a definite `TruthValue`, both at the call site. |
 | `Collapse` / `CollapsePolicy` / `CollapseOutcome` | A method on the result, not part of the rule (ADR-0005 decision 14). `CollapsePolicy` (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`) says how `Unknown` becomes a two-valued answer; `CollapseOutcome` (`True`, `False`, `RejectedUnresolved`) is the answer. `RejectedUnresolved` is a normal outcome, not a `Fault`. Rule text, JSON and YAML cannot declare it. See [Collapse](#collapse-the-final-boundary). |
 | `Diagnostic` | One compile-time problem: a code, a `DiagnosticSeverity` (`Error`/`Warning`/`Info`), a message, a source span or JSON/YAML `Path`, optional expected/found text and a `DiagnosticSuggestion`. See [Reading diagnostics](#reading-diagnostics). `Error` severity is what blocks `CompiledRule<TContext>` from being populated. |
 | `EvaluationOptions` | Per-call evaluation knobs: `FaultBudget` (abort after N faults), `Mode` (`Default` or `Exhaustive`), and an overall timeout. |
@@ -1991,7 +2006,6 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `BETWEEN(min, max, ...)` | N-ary operator: the number of true operands lies in `[min, max]` (`AtLeast(min, ...) AND AtMost(max, ...)`); the bounds are validated at compile time and a rule prints them first. |
 | `COALESCE(...)` / `??` | N-ary operator that replaces only `Unknown` with the next operand (`True`/`False` pass through); short-circuits at the first known value. `??` is the infix spelling and chains into one node. |
 | `IsTrue(...)` / `IsFalse(...)` / `IsUnknown(...)` / `IsKnown(...)` | Inspection operators: test the K3 state of their operand and always answer a definite `True` or `False`, so they never collapse or fault the enclosing rule. |
-| `Project(x, True\|False)` | Projection: keeps `True`/`False` and replaces `Unknown` with the chosen constant, so the result is always definite. Equal to `COALESCE(x, value)`. |
 | `If(...)` / `c ? t : f` | Ternary conditional. A definite condition picks its branch (the other is not evaluated); an `Unknown` condition yields a value only when both branches are the same definite value. |
 | `ExactlyOne(...)` | N-ary operator: true iff exactly one operand is true. The explicit name for "exactly one," so it's never confused with `XOR`'s binary-only meaning or `NXOR`'s parity. |
 | Expression | The three-valued tree itself — operators over terms, constants and sub-expressions. What a `CompiledRule<TContext>` wraps. |
@@ -2002,7 +2016,7 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `GroupingStyle` / `RuleText` | `CompiledRule.PrintRuleText(GroupingStyle)` prints with `()` only or depth-cycling `()` `[]` `{}`; `RuleText.NormalizeWhitespace` tidies rule text as written without compiling it. See [Grouping delimiters](#grouping-delimiters). |
 | Kleene logic | Three-valued logic (`True`/`False`/`Unknown`) instead of two-valued boolean logic — the reason a predicate fault becomes `Unknown` rather than a thrown exception or a silently coerced `false`. See [ADR-0001](docs/adr/0001-kleene-failure-model.md). |
 | Memoization | Within one evaluation, a given term identity is invoked at most once, however many places in the tree reference it. Never carries across separate `EvaluateAsync` calls. |
-| Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `Project`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
+| Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
 | `OperatorInfo` / `OperatorDescriptor` | `OperatorInfo.Describe(node)` (`TruthWeaver.Ast`) returns an operator node's `OperatorDescriptor` (`Label`, `Description`) — the operator-side counterpart to a predicate's `PredicateSchema.Label`/`Description`. See [Describing a compiled rule](#describing-a-compiled-rule). |
 | Predicate | A registered, reusable implementation (e.g. `hasTopping`, `lovesPineapple`) — the *function*, not any one call to it. Implements `IPredicate<TContext>` or is registered as a stateless lambda. Required to carry a `Label` and `Description`; see [Predicate types](#predicate-types). |
 | `PredicateArguments` | The non-generic accessor (`GetString`, `GetInt64`, ...) a predicate uses to read its own term's arguments inside `EvaluateAsync`. |
@@ -2189,13 +2203,13 @@ These test the K3 state itself, so the answer is always a definite `True` or
 | F | F | T | F | T |
 | ? | F | F | T | F |
 
-### Projection: `Project(a, True|False)`
+### Projection: `Decision.Project(unknownAs)` / `COALESCE(a, True|False)`
 
-`Project` keeps `True` and `False` and replaces only `Unknown` with the chosen
-constant, so its result is always definite. `Project(a, v)` is the same value as
-`COALESCE(a, v)`.
+`Project` is a method on the result. It keeps `True` and `False` and replaces only
+`Unknown` with the chosen constant, so its result is always definite. It is the same
+value as the in-rule `COALESCE(a, v)`.
 
-| a | `Project(a, True)` | `Project(a, False)` |
+| a | `Project(unknownAs: true)` / `COALESCE(a, True)` | `Project(unknownAs: false)` / `COALESCE(a, False)` |
 | :-: | :-: | :-: |
 | T | T | T |
 | F | F | F |
@@ -2271,7 +2285,7 @@ are covered by the evaluator's behavior described in
   why the library ships as five packages and how predicates and operators
   are extended.
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md) —
-  the full K3 operator set, notations, boundaries (`Project`, and `Decision.Collapse` on the result), rewrites,
+  the full K3 operator set, notations, boundaries (`Decision.Project` and `Decision.Collapse` on the result), rewrites,
   structured diagnostics and `TruthValue`-returning predicates.
 
 ## License

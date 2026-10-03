@@ -170,14 +170,16 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("$.k", diagnostic.Path);
     }
 
-    /// <summary>A <c>Project</c> whose <c>unknownAs</c> is not a boolean is located at that property.</summary>
+    /// <summary>A declared <c>Project</c> is located at the node that declares it and points to <c>Decision.Project</c>.</summary>
     [Fact]
-    public void CompileJson_BadUnknownAs_ReportsTheUnknownAsPath_Test()
+    public void CompileJson_DeclaredProject_ReportsTheNodePath_Test()
     {
-        Diagnostic diagnostic = SingleJson("""{"op":"project","unknownAs":"unknown","operands":[{"const":true}]}""");
+        Diagnostic diagnostic = SingleJson(
+            """{"op":"not","operands":[{"op":"project","unknownAs":true,"operands":[{"const":true}]}]}"""
+        );
 
-        Assert.Equal("$.unknownAs", diagnostic.Path);
-        Assert.Equal("true or false", diagnostic.Expected);
+        Assert.Equal("$.operands[0]", diagnostic.Path);
+        Assert.Contains("Decision.Project", diagnostic.Message, StringComparison.Ordinal);
     }
 
     /// <summary>A <c>between</c> with a non-integer <c>min</c> is located at <c>min</c>; a missing <c>max</c> is reported at the node.</summary>
@@ -359,13 +361,12 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("a scalar", diagnostic.Found);
     }
 
-    /// <summary>A bad YAML <c>const</c>, <c>k</c>, <c>min</c> and <c>unknownAs</c> are each located at their key.</summary>
+    /// <summary>A bad YAML <c>const</c>, <c>k</c> and <c>min</c> are each located at their key.</summary>
     [Theory]
     [InlineData("const: maybe", "$.const")]
     [InlineData("op: atLeast\nk: two\noperands:\n  - const: true\n  - const: false", "$.k")]
     [InlineData("op: between\nmin: x\nmax: 1\noperands:\n  - const: true\n  - const: false", "$.min")]
     [InlineData("op: between\nmin: 0\noperands:\n  - const: true\n  - const: false", "$")]
-    [InlineData("op: project\nunknownAs: unknown\noperands:\n  - const: true", "$.unknownAs")]
     public void CompileYaml_BadFieldValue_ReportsTheFieldPath_Test(string yaml, string path)
     {
         Diagnostic diagnostic = SingleYaml(yaml);

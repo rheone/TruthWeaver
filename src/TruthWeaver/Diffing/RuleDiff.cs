@@ -105,11 +105,6 @@ public static class RuleDiff
             return beforeInspection.Kind == afterInspection.Kind;
         }
 
-        if (before is ProjectExpression beforeProject && after is ProjectExpression afterProject)
-        {
-            return beforeProject.UnknownAs == afterProject.UnknownAs;
-        }
-
         return true;
     }
 }

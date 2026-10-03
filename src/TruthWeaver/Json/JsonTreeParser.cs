@@ -78,12 +78,6 @@ internal static class JsonTreeParser
         };
     }
 
-    /// <summary>Like <see cref="Describe"/>, but quotes a string's value, for fields where the value is what is wrong.</summary>
-    private static string DescribeValue(JsonElement element)
-    {
-        return element.ValueKind == JsonValueKind.String ? $"\"{element.GetString()}\"" : Describe(element);
-    }
-
     private static string FoundOperands(int count)
     {
         return count == 1 ? "1 operand" : $"{count} operands";
@@ -335,6 +329,12 @@ internal static class JsonTreeParser
             return null;
         }
 
+        if (string.Equals(op, "project", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.MalformedTree, SourceSpan.None, path));
+            return null;
+        }
+
         // The operator name is checked before its operands so a typo is reported on its own, with its suggestion.
         if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
@@ -449,8 +449,6 @@ internal static class JsonTreeParser
                 return new InspectionNode(InspectionKind.IsUnknown, operands, SourceSpan.None);
             case "IsKnown":
                 return new InspectionNode(InspectionKind.IsKnown, operands, SourceSpan.None);
-            case "Project":
-                return ParseProject(element, op, path, operands, diagnostics);
             case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
             case "AtLeast":
@@ -497,54 +495,6 @@ internal static class JsonTreeParser
         }
 
         return new ThresholdNode(comparison, k, operands, SourceSpan.None);
-    }
-
-    /// <summary>
-    /// Reads <c>Project</c>'s <c>unknownAs</c>: a JSON boolean or the string <c>"true"</c>/<c>"false"</c> in any letter
-    /// case (like <c>const</c>). <c>Unknown</c> is rejected because projecting <c>Unknown</c> to itself is no projection.
-    /// </summary>
-    private static RuleNode? ParseProject(
-        JsonElement element,
-        string op,
-        string path,
-        List<RuleNode> operands,
-        List<Diagnostic> diagnostics
-    )
-    {
-        bool present = element.TryGetProperty("unknownAs", out JsonElement valueElement);
-        bool? unknownAs = null;
-        if (present)
-        {
-            if (valueElement.ValueKind is JsonValueKind.True or JsonValueKind.False)
-            {
-                unknownAs = valueElement.GetBoolean();
-            }
-            else if (
-                valueElement.ValueKind == JsonValueKind.String
-                && TruthValueText.TryParse(valueElement.GetString(), out TruthValue parsed)
-                && parsed != TruthValue.Unknown
-            )
-            {
-                unknownAs = parsed == TruthValue.True;
-            }
-        }
-
-        if (unknownAs is not { } value)
-        {
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
-                    $"'{op}' requires 'unknownAs' to be true or false (a JSON boolean or the string \"true\"/\"false\").",
-                    SourceSpan.None,
-                    expected: "true or false",
-                    found: present ? DescribeValue(valueElement) : "no 'unknownAs' property",
-                    path: present ? TreePath.Property(path, "unknownAs") : path
-                )
-            );
-            return null;
-        }
-
-        return new ProjectNode(operands, value, SourceSpan.None);
     }
 
     private static RuleNode? ParseBetween(

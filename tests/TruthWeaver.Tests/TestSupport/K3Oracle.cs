@@ -258,8 +258,8 @@ public static class K3Oracle
     }
 
     /// <summary>
-    /// <c>Project(x, unknownAs)</c>: keeps <c>True</c>/<c>False</c> and replaces <c>Unknown</c> with
-    /// <paramref name="unknownAs"/>. Defined from the primitive <see cref="Coalesce"/> as <c>COALESCE(x, unknownAs)</c>
+    /// The projection <c>Decision.Project(unknownAs)</c> performs: keeps <c>True</c>/<c>False</c> and replaces <c>Unknown</c>
+    /// with <paramref name="unknownAs"/>. Defined from the primitive <see cref="Coalesce"/> as <c>COALESCE(x, unknownAs)</c>
     /// (ADR-0005 decision 12), so the result is always definite.
     /// </summary>
     /// <param name="value">The operand's value.</param>

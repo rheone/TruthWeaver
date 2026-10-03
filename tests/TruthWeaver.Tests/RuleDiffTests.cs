@@ -108,23 +108,6 @@ public sealed class RuleDiffTests
         Assert.Equal([1, 1], entry.Path);
     }
 
-    /// <summary>A different <c>Project</c> policy is a change of the node, not an identical rule.</summary>
-    [Fact]
-    public void A_changed_project_policy_produces_a_changed_entry_at_the_root()
-    {
-        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
-        CompiledRule<RuleTestContext> before = compiler.Compile("Project(isManager, True)").CompiledRule!;
-        CompiledRule<RuleTestContext> after = compiler.Compile("Project(isManager, False)").CompiledRule!;
-
-        RuleDiffResult diff = RuleDiff.Compare(before, after);
-
-        RuleDiffEntry entry = Assert.Single(diff.Entries);
-        Assert.Equal(RuleDiffChangeKind.Changed, entry.Kind);
-        Assert.Empty(entry.Path);
-        Assert.Equal("Project(True)", entry.Before!.Label);
-        Assert.Equal("Project(False)", entry.After!.Label);
-    }
-
     /// <summary>A different inspection kind is a change of the node, not an identical rule.</summary>
     [Fact]
     public void A_changed_inspection_kind_produces_a_changed_entry_at_the_root()

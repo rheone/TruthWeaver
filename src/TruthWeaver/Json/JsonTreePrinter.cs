@@ -43,12 +43,7 @@ internal static class JsonTreePrinter
             ["op"] = TreeFormatOpNames.ToTreeFormat(shape.OpName),
             ["operands"] = OperandsArray(shape.Operands),
         };
-        if (shape.UnknownAs is { } unknownAs)
-        {
-            // Project carries its policy as a plain JSON boolean, like a True/False const.
-            obj["unknownAs"] = unknownAs;
-        }
-        else if (shape.Max is { } max)
+        if (shape.Max is { } max)
         {
             // BETWEEN carries its two bounds as min/max instead of a single threshold k.
             obj["min"] = shape.K;

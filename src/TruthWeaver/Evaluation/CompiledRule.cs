@@ -59,7 +59,7 @@ public sealed class CompiledRule<TContext>
     /// <c>AtMost</c>, <c>Exactly</c> and <c>COALESCE</c> — and returns the result as a new rule (ADR-0005 decision 10). The
     /// derived operators are <c>IMPLIES</c>, <c>EQUIVALENT</c>, <c>XOR</c>, <c>NAND</c>, <c>NOR</c>, <c>NXOR</c>,
     /// <c>ExactlyOne</c>, <c>ANY</c>, <c>ALL</c>, <c>NONE</c>, <c>BETWEEN</c>, <c>GreaterThan</c>, <c>LessThan</c>,
-    /// <c>If</c>, the four inspections and <c>Project</c>; every one of them has a kernel definition, so nothing is left
+    /// <c>If</c> and the four inspections; every one of them has a kernel definition, so nothing is left
     /// unexpanded.
     /// </summary>
     /// <remarks>
@@ -84,7 +84,7 @@ public sealed class CompiledRule<TContext>
     /// <remarks>
     /// The result evaluates to the same <see cref="TruthValue"/> for every assignment of its terms; this rule is not
     /// changed. <b>One documented boundary:</b>
-    /// <c>COALESCE</c> (and therefore <c>Project</c> and the inspections <c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>,
+    /// <c>COALESCE</c> (and therefore the inspections <c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>,
     /// <c>IsKnown</c>, which expand to it) cannot be written with <c>NAND</c>, because every <c>NAND</c> circuit is monotone
     /// in the information order and <c>COALESCE</c> is not. Such nodes stay as <c>COALESCE</c> with their operands rewritten,
     /// so a rule without them is <c>NAND</c>-only. Thresholds become a disjunction over operand subsets, so wide
@@ -122,7 +122,7 @@ public sealed class CompiledRule<TContext>
     /// <c>EQUIVALENT</c>, <c>If</c> and <c>NXOR</c> shapes <see cref="ExpandToPrimitives"/> produces; <c>AtLeast(1)</c> to
     /// <c>ANY</c>, <c>AtLeast(n)</c> to <c>ALL</c>, <c>AtMost(0)</c> to <c>NONE</c> and <c>Exactly(1)</c> to
     /// <c>ExactlyOne</c>; a matching <c>AtLeast</c>/<c>AtMost</c> pair under <c>AND</c> to <c>BETWEEN</c>; and
-    /// <c>COALESCE(x, True/False)</c> to <c>Project</c> (or <c>IsFalse</c> for <c>COALESCE(NOT x, False)</c>), with the
+    /// <c>COALESCE(NOT x, False)</c> to <c>IsFalse</c>, with the
     /// <c>IsUnknown</c>/<c>IsKnown</c> pairs of those. Every pattern is an identity in Strong Kleene logic, checked against a
     /// truth-table oracle; classical-only shortcuts are never used.
     /// </para>
@@ -180,8 +180,8 @@ public sealed class CompiledRule<TContext>
     /// Applied rewrites: constant folding through the K3 tables; identity and annihilator laws with constants
     /// (<c>a AND True = a</c>, <c>a AND False = False</c>, <c>a OR False = a</c>, <c>a OR True = True</c>; an
     /// <c>Unknown</c> operand is kept); idempotence, double negation and flattening (from canonicalisation); absorption
-    /// (<c>a AND (a OR b) = a</c>); De Morgan and negation-pushing only where they remove nodes; <c>COALESCE</c> and
-    /// <c>Project</c> of a known or never-<c>Unknown</c> operand; inspections of constants or never-<c>Unknown</c> operands;
+    /// (<c>a AND (a OR b) = a</c>); De Morgan and negation-pushing only where they remove nodes; <c>COALESCE</c> with a
+    /// never-<c>Unknown</c> operand; inspections of constants or never-<c>Unknown</c> operands;
     /// <c>If</c> with a constant condition or equal branches; derived operators with a constant operand; and threshold
     /// operators with <c>True</c>/<c>False</c> operands. Classical-only laws are <b>never</b> applied: <c>a OR NOT a</c> is
     /// not <c>True</c>, <c>a AND NOT a</c> is not <c>False</c>, <c>a IMPLIES a</c> and <c>a EQUIVALENT a</c> are not

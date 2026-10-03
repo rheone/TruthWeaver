@@ -142,7 +142,7 @@ public sealed class CollapseTests
     [InlineData("collapse(a AND b, unknownIsError)", "collapse(a AND b, unknownIsError)")]
     [InlineData("a AND Collapse(b, UnknownAsFalse)", "Collapse(b, UnknownAsFalse)")]
     [InlineData("NOT Collapse(a, UnknownIsError)", "Collapse(a, UnknownIsError)")]
-    [InlineData("Project(Collapse(a, UnknownAsFalse), True)", "Collapse(a, UnknownAsFalse)")]
+    [InlineData("COALESCE(Collapse(a, UnknownAsFalse), True)", "Collapse(a, UnknownAsFalse)")]
     [InlineData("Collapse(a)", "Collapse(a)")]
     public void Compile_DeclaredCollapse_IsRejectedWithADiagnosticPointingToDecisionCollapse_Test(string text, string call)
     {

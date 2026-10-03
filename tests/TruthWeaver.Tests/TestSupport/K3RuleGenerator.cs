@@ -162,7 +162,7 @@ public static class K3RuleGenerator
                 bool unknownAs = random.Next(2) == 0;
                 TruthValue replacement = unknownAs ? TruthValue.True : TruthValue.False;
                 return new GeneratedRule(
-                    $"Project({projected.Text}, {replacement})",
+                    $"COALESCE({projected.Text}, {replacement})",
                     v => K3Oracle.Project(projected.Eval(v), replacement),
                     [projected]
                 );

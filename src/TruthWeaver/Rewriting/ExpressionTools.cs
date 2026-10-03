@@ -64,12 +64,6 @@ internal static class ExpressionTools
                 static (o, x) => new InspectionExpression(((InspectionExpression)o).Kind, x),
                 s.Operand
             ),
-            ProjectExpression p => Remap(
-                p,
-                map(p.Operand),
-                static (o, x) => new ProjectExpression(x, ((ProjectExpression)o).UnknownAs),
-                p.Operand
-            ),
             IfExpression f => MapIf(f, map),
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
         };

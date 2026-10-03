@@ -28,7 +28,7 @@ using TruthWeaver.Ast;
 /// <b>Semantic boundary: <c>COALESCE</c>.</b> Every function built from <c>NAND</c>/<c>NOR</c> and constants is monotone
 /// in the information order (<c>Unknown</c> below <c>True</c> and <c>False</c>), but <c>COALESCE(x, True)</c> maps
 /// <c>Unknown</c> to <c>True</c> while mapping <c>False</c> to <c>False</c>, which no monotone function can do. So a
-/// <c>COALESCE</c> node (and the <c>Project</c> and inspection operators, which expand to it) cannot be rewritten; it is
+/// <c>COALESCE</c> node (and the inspection operators, which expand to it) cannot be rewritten; it is
 /// left in place with its operands rewritten.
 /// </para>
 /// </remarks>

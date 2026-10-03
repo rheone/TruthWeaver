@@ -39,7 +39,6 @@ internal static class TreeFormatOpNames
         ["IsFalse"] = "isFalse",
         ["IsUnknown"] = "isUnknown",
         ["IsKnown"] = "isKnown",
-        ["Project"] = "project",
     };
 
     private static readonly IReadOnlyDictionary<string, string> TreeFormatToCanonical = BuildReadTable();

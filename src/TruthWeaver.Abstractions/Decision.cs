@@ -58,4 +58,22 @@ public sealed record Decision(
             },
         };
     }
+
+    /// <summary>
+    /// Projects <see cref="Result"/> to a definite value: <see cref="TruthValue.True"/> and <see cref="TruthValue.False"/>
+    /// pass through unchanged and <see cref="TruthValue.Unknown"/> becomes <paramref name="unknownAs"/> (ADR-0005 decision 12).
+    /// It is the call-site counterpart of <c>COALESCE(rule, True)</c> / <c>COALESCE(rule, False)</c>, which does the same inside a
+    /// rule. Pure: it does not change this decision, its <see cref="Faults"/> or <see cref="Result"/>, and
+    /// <see cref="IsSatisfied"/> stays fail-closed regardless of the value chosen here.
+    /// </summary>
+    /// <param name="unknownAs">The definite value an <see cref="TruthValue.Unknown"/> result becomes: <see langword="true"/> for <see cref="TruthValue.True"/>, <see langword="false"/> for <see cref="TruthValue.False"/>. A <see cref="bool"/> so that an <see cref="TruthValue.Unknown"/> replacement cannot be requested.</param>
+    /// <returns><see cref="TruthValue.True"/> or <see cref="TruthValue.False"/>, never <see cref="TruthValue.Unknown"/>.</returns>
+    public TruthValue Project(bool unknownAs)
+    {
+        return this.Result switch
+        {
+            TruthValue.Unknown => unknownAs ? TruthValue.True : TruthValue.False,
+            _ => this.Result,
+        };
+    }
 }

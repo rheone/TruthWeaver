@@ -105,8 +105,6 @@ public sealed class ExpandToPrimitivesTests
     [InlineData("IsFalse(a)", 1)]
     [InlineData("IsUnknown(a)", 1)]
     [InlineData("IsKnown(a)", 1)]
-    [InlineData("Project(a, True)", 1)]
-    [InlineData("Project(a, False)", 1)]
     public async Task ExpandToPrimitives_DerivedOperator_BecomesEquivalentPrimitives_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
