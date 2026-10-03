@@ -4,11 +4,15 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No culture-sensitive comparison remains in the built-in predicates
-- [ ] Trim and ignoreCase options keep working and are tested
-- [ ] XML docs and README updated
-- [ ] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
+- [x] No culture-sensitive comparison remains in the built-in predicates
+- [x] Trim and ignoreCase options keep working and are tested
+- [x] XML docs and README updated
+- [x] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
+
+## Comments
+
+Comparison is now ordinal (`Ordinal` / `OrdinalIgnoreCase`). The `culture` argument is retained so existing rules and printed output keep compiling, but must be empty; a non-empty value throws at evaluation and becomes `Unknown` plus a `Fault`. CONTEXT.md, README and the gap list no longer call this a deviation.
 
 Source: [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md) and [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).

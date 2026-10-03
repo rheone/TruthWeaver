@@ -51,8 +51,8 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
 - **Null selected value.** Every string and regex member returns `False` for a `null` selection;
   `SetEquals` treats a `null` collection as empty; `IsNullOrEmpty` returns `True` for `null` (its
   definition). Nothing returns `Unknown` for null. See [Open questions](#open-questions-for-the-repo-owner).
-- **Comparison.** Ordinal and case-sensitive by default. `EqualsIgnoreCase` is ordinal-ignore-case. Only
-  `EqualsConfigurable` is culture-sensitive (`CultureInfo.CompareInfo.Compare`).
+- **Comparison.** Ordinal and case-sensitive by default. `EqualsIgnoreCase` is ordinal-ignore-case. `EqualsConfigurable` is
+  also ordinal (k3-followups 12); its retained `culture` argument must be empty.
 - **Naming.** Members are named like BCL methods (`Equals`, `StartsWith`); the inventory uses `Equal`,
   `IsEmpty`, etc. The registered predicate `name` is chosen by the host at registration, so the member name
   is the factory name, not the rule-text name.
@@ -115,7 +115,7 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 | `Contains` | present | `StringPredicates.Contains` | Ordinal, case-sensitive, no `Trim`/`Culture`/`ignoreCase` arguments. Options are missing, not the predicate. |
 | `EndsWith` | present | `StringPredicates.EndsWith` | As `Contains`. |
 | `StartsWith` | present | `StringPredicates.StartsWith` | As `Contains`. |
-| `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase`, `culture` and `trim` arguments (defaults `true`, invariant, `false`). It is culture-sensitive via `CompareInfo`, see open question 3. |
+| `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase`, `culture` and `trim` arguments (defaults `true`, empty, `false`). It is ordinal; a non-empty `culture` faults (k3-followups 12, open question 3). |
 | `IsNullOrEmpty` | present | `StringPredicates.IsNullOrEmpty` | No arguments. `Trim` is meaningless here and `ignoreCase`/`Culture` do not apply. Returns `True` for `null`. |
 | `Matches` | present | `RegexPredicates.Matches` | `pattern` only; `RegexOptions.None`, 1-second timeout, cached per pattern. `ignoreCase` would map to `RegexOptions.IgnoreCase` (a new optional `Boolean` argument); `Culture` maps to `CultureInvariant`; `Trim` is questionable for a regex. |
 | `IsEmpty` | missing | none (`IsNullOrEmpty` includes null) | Non-null empty string. Null input: `False` or `Unknown`, see open question 1. |

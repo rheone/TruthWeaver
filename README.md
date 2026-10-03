@@ -897,8 +897,9 @@ generic factories parameterized by a value selector, and
 design — a case-insensitive variant is a separate predicate
 (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception,
 `StringPredicates.EqualsConfigurable`, deliberately inverts that: it's one
-predicate whose `ignoreCase`/`culture`/`trim` arguments are set per rule
-(case-insensitive and `InvariantCulture` by default), for the case where a
+predicate whose `ignoreCase`/`trim` arguments are set per rule
+(case-insensitive by default; comparison is always ordinal, and the retained
+`culture` argument must be empty), for the case where a
 rule author genuinely needs that flexibility rather than a fixed-behavior
 predicate per name.
 

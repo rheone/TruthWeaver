@@ -220,13 +220,15 @@ public static class StringPredicates
     }
 
     /// <summary>
-    /// Creates a string-equality predicate whose case-sensitivity, culture, and whitespace-trimming
-    /// behavior are rule-text arguments rather than fixed at registration. This is a deliberate
-    /// divergence from every other method in this class: they are ordinal-only, fixed-behavior
-    /// predicates by design (see this class's type-level remarks), so that a behavior variant is a
-    /// distinct, separately-named predicate rather than a flag threaded through rule text. This method
-    /// exists for the opposite case — a rule author who genuinely needs to choose case-sensitivity,
-    /// culture, and trimming per rule, not per predicate name. The same divergence-for-a-reason pattern
+    /// Creates an ordinal string-equality predicate whose case-sensitivity and whitespace-trimming
+    /// behavior are rule-text arguments rather than fixed at registration. Like every other method in this
+    /// class the comparison is ordinal (<see cref="StringComparison.Ordinal"/>, or
+    /// <see cref="StringComparison.OrdinalIgnoreCase"/> when <c>ignoreCase</c> is set), never
+    /// culture-sensitive. The <c>culture</c> argument is retained only for compatibility with existing
+    /// rules and must be empty. The per-rule flags are a deliberate divergence from the fixed-behavior
+    /// predicates here (see this class's type-level remarks), which make a behavior variant a distinct,
+    /// separately-named predicate; this method exists for a rule author who genuinely needs to choose
+    /// case-sensitivity and trimming per rule, not per predicate name. The same divergence-for-a-reason pattern
     /// <see cref="CollectionPredicates.SetEquals{TContext}"/> already documents for a different rule.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -239,10 +241,9 @@ public static class StringPredicates
     /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
-    /// <exception cref="CultureNotFoundException">
-    /// The rule-text <c>culture</c> argument does not name a known culture. This is not caught at
-    /// compile time (the schema only declares the argument's <see cref="LiteralKind"/>, not that its
-    /// value must be a valid culture name); it surfaces as an evaluation-time fault
+    /// <exception cref="ArgumentException">
+    /// The rule-text <c>culture</c> argument is not empty. This is not caught at compile time (the
+    /// schema only declares the argument's <see cref="LiteralKind"/>); it surfaces as an evaluation-time fault
     /// (<see cref="TruthValue.Unknown"/>) per ADR-0001's Kleene failure model, the same treatment
     /// <see cref="RegexPredicates.Matches{TContext}"/> gives an invalid regular-expression pattern.
     /// </exception>
@@ -259,8 +260,8 @@ public static class StringPredicates
     {
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
-            + "case-insensitive and InvariantCulture by default, both overridable, with optional "
-            + "leading/trailing-whitespace trimming. A null selected value is treated as not-equal "
+            + "ordinal and case-insensitive by default (ignoreCase), with optional "
+            + "leading/trailing-whitespace trimming. The culture argument is retained for compatibility and must be empty. A null selected value is treated as not-equal "
             + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         PredicateSchema schema = new(
             name,
@@ -277,7 +278,7 @@ public static class StringPredicates
                 ),
                 new PredicateArgumentSchema(
                     "culture",
-                    "The culture name to compare under (e.g. \"en-US\"), or empty for InvariantCulture (the default).",
+                    "Retained for compatibility with existing rules; must be empty. Comparison is always ordinal, never culture-sensitive.",
                     LiteralKind.String,
                     Required: false,
                     Default: LiteralValue.OfString(string.Empty)
@@ -313,12 +314,16 @@ public static class StringPredicates
                     target = target.Trim();
                 }
 
-                CultureInfo compareCulture = string.IsNullOrEmpty(culture)
-                    ? CultureInfo.InvariantCulture
-                    : CultureInfo.GetCultureInfo(culture);
-                CompareOptions options = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
+                // Culture-sensitive comparison is not offered (CONTEXT.md, Predicate catalog rules): the argument
+                // remains only so existing rules that spell culture: "" keep compiling.
+                if (!string.IsNullOrEmpty(culture))
+                {
+                    throw new ArgumentException("EqualsConfigurable compares ordinally; the culture argument must be empty.");
+                }
 
-                return PredicateResult.FromBoolAsync(compareCulture.CompareInfo.Compare(selected, target, options) == 0);
+                StringComparison comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+                return PredicateResult.FromBoolAsync(string.Equals(selected, target, comparison));
             }
         );
     }

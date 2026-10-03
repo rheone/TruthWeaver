@@ -238,27 +238,64 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>
+    /// Verifies the comparison is ordinal: a linguistic comparison treats "ß" and "ss" as equal, an ordinal
+    /// one does not, so the result never depends on culture tables.
+    /// </summary>
     [Fact]
-    public async Task EqualsConfigurable_TurkishCulture_TurkishIProblemMakesCaseInsensitiveCompareNonMatching()
+    public async Task EqualsConfigurable_LinguisticallyEquivalentStrings_AreNotEqualBecauseComparisonIsOrdinal_Test()
     {
-        // The classic "Turkish I problem": under tr-TR, lowercase "i" does not case-fold to "I" the way
-        // it does under InvariantCulture, so this same ignoreCase comparison disagrees by culture.
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
 
-        TruthValue invariantResult = await evaluate(
-            new TestContext("i"),
-            ConfigurableArgs("I", ignoreCase: true, culture: string.Empty, trim: false),
-            CancellationToken.None
-        );
-        TruthValue turkishResult = await evaluate(
-            new TestContext("i"),
-            ConfigurableArgs("I", ignoreCase: true, culture: "tr-TR", trim: false),
+        TruthValue result = await evaluate(
+            new TestContext("straße"),
+            ConfigurableArgs("STRASSE", ignoreCase: true, culture: string.Empty, trim: false),
             CancellationToken.None
         );
 
-        Assert.Equal(TruthValue.True, invariantResult);
-        Assert.Equal(TruthValue.False, turkishResult);
+        Assert.Equal(TruthValue.False, result);
+    }
+
+    /// <summary>
+    /// Verifies ignoreCase uses OrdinalIgnoreCase: the dotted capital I (U+0130) is not the ordinal
+    /// uppercase of "i", whatever the host culture is.
+    /// </summary>
+    [Fact]
+    public async Task EqualsConfigurable_IgnoreCaseWithDottedCapitalI_DoesNotMatchPlainI_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+
+        TruthValue result = await evaluate(
+            new TestContext("i"),
+            ConfigurableArgs("İ", ignoreCase: true, culture: string.Empty, trim: false),
+            CancellationToken.None
+        );
+
+        Assert.Equal(TruthValue.False, result);
+    }
+
+    /// <summary>
+    /// Verifies a non-empty culture is rejected (an evaluation-time fault) rather than silently switching
+    /// to culture-sensitive comparison; empty is the only accepted value.
+    /// </summary>
+    [Theory]
+    [InlineData("tr-TR")]
+    [InlineData("not!a!culture")]
+    public Task EqualsConfigurable_NonEmptyCulture_ThrowsAtEvaluationTime_Test(string culture)
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+
+        return Assert.ThrowsAsync<ArgumentException>(() =>
+            evaluate(
+                    new TestContext("Alice"),
+                    ConfigurableArgs("Alice", ignoreCase: true, culture: culture, trim: false),
+                    CancellationToken.None
+                )
+                .AsTask()
+        );
     }
 
     [Fact]
@@ -295,22 +332,6 @@ public class StringPredicatesTests
         );
 
         Assert.Equal(TruthValue.False, result);
-    }
-
-    [Fact]
-    public Task EqualsConfigurable_InvalidCultureName_ThrowsAtEvaluationTime()
-    {
-        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
-
-        return Assert.ThrowsAsync<CultureNotFoundException>(() =>
-            evaluate(
-                    new TestContext("Alice"),
-                    ConfigurableArgs("Alice", ignoreCase: true, culture: "not!a!culture", trim: false),
-                    CancellationToken.None
-                )
-                .AsTask()
-        );
     }
 
     private static PredicateArguments Args(string name, string value)
