@@ -18,20 +18,31 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to compare from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Equals<TContext>(string name, Func<TContext, string?> selector, string label = "Equals", string argumentName = "value")
+    ) Equals<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Equals",
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
+    )
     {
         const string description =
             "True when the selected string equals the argument exactly (ordinal, case-sensitive "
-            + "comparison). A null selected value is treated as not-equal (false), never a fault.";
+            + "comparison). A null selected value is treated as not-equal (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
             label,
             description,
             selector,
+            nullBehavior,
             argumentName,
             "The string the selected value must equal.",
             static (selected, target) => string.Equals(selected, target, StringComparison.Ordinal)
@@ -44,6 +55,10 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to compare from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -52,18 +67,20 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Equals (Ignore Case)",
-        string argumentName = "value"
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string equals the argument, ignoring case. Comparison is ordinal "
             + "case-insensitive, never culture-sensitive, so behavior never depends on the host's "
-            + "current culture. A null selected value is treated as not-equal (false), never a fault.";
+            + "current culture. A null selected value is treated as not-equal (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
             label,
             description,
             selector,
+            nullBehavior,
             argumentName,
             "The string the selected value must equal, ignoring case.",
             static (selected, target) => string.Equals(selected, target, StringComparison.OrdinalIgnoreCase)
@@ -76,6 +93,10 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the prefix.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -84,17 +105,19 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Starts With",
-        string argumentName = "value"
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string starts with the argument (ordinal comparison, never "
-            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault.";
+            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
             label,
             description,
             selector,
+            nullBehavior,
             argumentName,
             "The prefix the selected value must start with.",
             static (selected, target) => selected.StartsWith(target, StringComparison.Ordinal)
@@ -107,6 +130,10 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the suffix.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -115,17 +142,19 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Ends With",
-        string argumentName = "value"
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string ends with the argument (ordinal comparison, never "
-            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault.";
+            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
             label,
             description,
             selector,
+            nullBehavior,
             argumentName,
             "The suffix the selected value must end with.",
             static (selected, target) => selected.EndsWith(target, StringComparison.Ordinal)
@@ -138,6 +167,10 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the substring.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -146,18 +179,20 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Contains",
-        string argumentName = "value"
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string contains the argument as a substring (ordinal comparison, "
             + "never culture-sensitive). A null selected value is treated as not-matching (false), "
-            + "never a fault.";
+            + "never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
             label,
             description,
             selector,
+            nullBehavior,
             argumentName,
             "The substring the selected value must contain.",
             static (selected, target) => selected.Contains(target, StringComparison.Ordinal)
@@ -199,6 +234,10 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to compare from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     /// <exception cref="CultureNotFoundException">
     /// The rule-text <c>culture</c> argument does not name a known culture. This is not caught at
@@ -214,14 +253,15 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Equals (Configurable)",
-        string argumentName = "value"
+        string argumentName = "value",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
             + "case-insensitive and InvariantCulture by default, both overridable, with optional "
             + "leading/trailing-whitespace trimming. A null selected value is treated as not-equal "
-            + "(false), never a fault.";
+            + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         PredicateSchema schema = new(
             name,
             label,
@@ -259,7 +299,7 @@ public static class StringPredicates
                 string? selected = selector(context);
                 if (selected is null)
                 {
-                    return PredicateResult.FromBoolAsync(false);
+                    return PredicateResult.ForNullAsync(nullBehavior);
                 }
 
                 string target = args.GetString(argumentName);
@@ -291,6 +331,7 @@ public static class StringPredicates
         string label,
         string description,
         Func<TContext, string?> selector,
+        NullBehavior nullBehavior,
         string argumentName,
         string argumentDescription,
         Func<string, string, bool> compare
@@ -309,7 +350,7 @@ public static class StringPredicates
             {
                 string? selected = selector(context);
                 return selected is null
-                    ? PredicateResult.FromBoolAsync(false)
+                    ? PredicateResult.ForNullAsync(nullBehavior)
                     : PredicateResult.FromBoolAsync(compare(selected, args.GetString(argumentName)));
             }
         );

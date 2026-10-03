@@ -265,7 +265,8 @@ questions in the [predicate gap list](.scratch/predicate-catalog/k3-gap-list.md)
 catalog members, not for the engine.
 
 - **Null selected value.** The existing built-in members (`StringPredicates`, `RegexPredicates`,
-  `CollectionPredicates`) return a definite `False` for a null selected value. New comparison families
+  `CollectionPredicates`) return a definite `False` for a null selected value by default; a host can
+  pass `NullBehavior.Unknown` at registration to get `Unknown` (still no fault) instead. New comparison families
   (equality, ordering, range, count) return `Unknown` for a null input, and the null tests themselves
   (`IsNull`, `IsNullOrEmpty`, ...) return a definite `True` or `False`. Rationale: `Unknown` is the K3
   reading of a missing value and stays fail-closed under `Decision.IsSatisfied`, while changing the

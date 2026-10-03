@@ -902,6 +902,24 @@ predicate whose `ignoreCase`/`culture`/`trim` arguments are set per rule
 rule author genuinely needs that flexibility rather than a fixed-behavior
 predicate per name.
 
+A null selected value is a definite `False` by default, with no fault. Every
+`StringPredicates` comparison (`Equals`, `EqualsIgnoreCase`, `StartsWith`,
+`EndsWith`, `Contains`, `EqualsConfigurable`), `RegexPredicates.Matches` and
+`CollectionPredicates.SetEquals` also take an optional `nullBehavior`
+parameter that the host sets at registration. `NullBehavior.Unknown` makes a
+null selected value answer `Unknown` instead (still without a fault), so
+`NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust
+rather than becoming `True`, and `Decision.IsSatisfied` stays fail-closed.
+The default is `NullBehavior.False`, so existing registrations behave as
+before. `StringPredicates.IsNullOrEmpty` has no option: it is a null test and
+always returns a definite answer.
+
+```csharp
+StringPredicates.Equals<PizzaOrder>(
+    "hasCrust", order => order.Crust, "Has Crust", argumentName: "crust",
+    nullBehavior: NullBehavior.Unknown);
+```
+
 ### 0 arguments, stateless lambda
 
 ```csharp

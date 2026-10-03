@@ -22,10 +22,15 @@ public static class CollectionPredicates
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">
     /// Reads the collection to compare from the context. A <see langword="null"/> result is treated as
-    /// an empty collection, never a fault.
+    /// an empty collection, never a fault, unless <paramref name="nullBehavior"/> is
+    /// <see cref="NullBehavior.Unknown"/>, which makes it <see cref="TruthValue.Unknown"/> instead.
     /// </param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison set.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -34,7 +39,8 @@ public static class CollectionPredicates
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Set Equals",
-        string argumentName = "values"
+        string argumentName = "values",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
@@ -43,7 +49,8 @@ public static class CollectionPredicates
             + "divergence from CONTEXT.md's array-argument order-sensitive term-identity rule, which "
             + "governs term identity, not this predicate's evaluation semantics). Comparison is "
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "
-            + "collection is treated as empty, never a fault.";
+            + "collection is treated as empty, never a fault, unless the host registers it with "
+            + "NullBehavior.Unknown, which makes it Unknown.";
         PredicateSchema schema = new(
             name,
             label,
@@ -56,6 +63,11 @@ public static class CollectionPredicates
             (context, args, _) =>
             {
                 IReadOnlyCollection<string>? selected = selector(context);
+                if (selected is null && nullBehavior == NullBehavior.Unknown)
+                {
+                    return PredicateResult.ForNullAsync(nullBehavior);
+                }
+
                 HashSet<string> selectedSet = selected is null
                     ? new(StringComparer.Ordinal)
                     : new(selected, StringComparer.Ordinal);
