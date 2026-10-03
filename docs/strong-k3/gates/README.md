@@ -4,6 +4,6 @@ The primitive Strong Kleene connectives. Back to the [reference](../README.md); 
 
 | Operation | Summary |
 | --- | --- |
-| NOT | Negation (pending) |
-| AND | Conjunction (pending) |
-| OR | Disjunction (pending) |
+| [NOT](not.md) | Negation: reverses `True` and `False`, keeps `Unknown` |
+| [AND](and.md) | Conjunction: the minimum of its operands; `False` dominates |
+| [OR](or.md) | Disjunction: the maximum of its operands; `True` dominates |
