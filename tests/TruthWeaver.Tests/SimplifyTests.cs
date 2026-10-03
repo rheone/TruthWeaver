@@ -245,6 +245,28 @@ public sealed class SimplifyTests
         Assert.NotEqual(K3Rule.TryCreate(classical, 2)!.Compiled.Canonicalize().CanonicalText, simplified);
     }
 
+    /// <summary>
+    /// The classical consensus-removal rewrite is invalid in Strong Kleene logic: an <c>If</c> whose condition is an
+    /// Unknown term and whose branches are equal definite constants keeps that constant, it does not become Unknown.
+    /// </summary>
+    [Theory]
+    [InlineData("If(a, True, True)", "True", TruthValue.True)]
+    [InlineData("If(a, False, False)", "False", TruthValue.False)]
+    public async Task Simplify_IfWithEqualDefiniteBranchesAndUnknownCondition_KeepsTheConstant_Test(
+        string ruleText,
+        string expectedText,
+        TruthValue expected
+    )
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 1)!;
+        K3Rule simplified = original.Rewrite(rule => rule.Simplify());
+
+        Decision decision = await simplified.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedText, simplified.Compiled.CanonicalText);
+        Assert.Equal(expected, decision.Result);
+    }
+
     /// <summary>The simplified rule is a new rule: the original keeps its text.</summary>
     [Fact]
     public void Simplify_Rule_LeavesTheOriginalUntouched_Test()

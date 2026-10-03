@@ -45,6 +45,47 @@ public sealed class IfTests
         }
     }
 
+    /// <summary>
+    /// For all 27 (condition, whenTrue, whenFalse) triples the evaluated <c>If</c> equals the strongest-extension definition,
+    /// computed independently of the engine: the result is a definite value only when every True/False resolution of the
+    /// Unknown inputs yields that same value, otherwise Unknown. This pins <c>If(Unknown, A, A) = A</c> (the consensus term):
+    /// the bare multiplexer disagrees at one triple and SQL <c>CASE</c> at four.
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_AllTwentySevenTriples_EqualsTheStrongestExtension_Test()
+    {
+        K3Rule rule = K3Rule.TryCreate("If(a, b, c)", 3)!;
+        int checkedTriples = 0;
+
+        foreach (TruthValue[] triple in K3Oracle.Assignments(3))
+        {
+            Decision actual = await rule.EvaluateAsync(triple, TestContext.Current.CancellationToken);
+
+            Assert.Equal(StrongestExtensionIf(triple[0], triple[1], triple[2]), actual.Result);
+            checkedTriples++;
+        }
+
+        Assert.Equal(27, checkedTriples);
+    }
+
+    /// <summary>
+    /// <c>If(IsTrue(c), t, f)</c> is the SQL <c>CASE WHEN c THEN t ELSE f END</c> equivalent: only a <c>True</c> condition
+    /// selects the first branch, and an Unknown condition falls to the else branch.
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_IfOfIsTrueCondition_MatchesSqlCaseWhen_Test()
+    {
+        K3Rule rule = K3Rule.TryCreate("If(IsTrue(a), b, c)", 3)!;
+
+        foreach (TruthValue[] triple in K3Oracle.Assignments(3))
+        {
+            Decision actual = await rule.EvaluateAsync(triple, TestContext.Current.CancellationToken);
+
+            TruthValue expected = triple[0] == TruthValue.True ? triple[1] : triple[2];
+            Assert.Equal(expected, actual.Result);
+        }
+    }
+
     /// <summary>A definite condition picks its branch outright, whatever the other branch holds.</summary>
     [Theory]
     [InlineData(TruthValue.True, TruthValue.False, TruthValue.True, TruthValue.False)]
@@ -340,5 +381,41 @@ public sealed class IfTests
 
         Assert.Contains("If", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains("If", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The strongest extension of the classical conditional: <c>Unknown</c> inputs are resolved to every combination of
+    /// <c>True</c>/<c>False</c>, and the result is definite only when all combinations agree.
+    /// </summary>
+    private static TruthValue StrongestExtensionIf(TruthValue condition, TruthValue whenTrue, TruthValue whenFalse)
+    {
+        static bool[] Resolutions(TruthValue value)
+        {
+            return value switch
+            {
+                TruthValue.True => [true],
+                TruthValue.False => [false],
+                _ => [true, false],
+            };
+        }
+
+        HashSet<bool> outcomes = [];
+        foreach (bool c in Resolutions(condition))
+        {
+            foreach (bool t in Resolutions(whenTrue))
+            {
+                foreach (bool f in Resolutions(whenFalse))
+                {
+                    outcomes.Add(c ? t : f);
+                }
+            }
+        }
+
+        if (outcomes.Count > 1)
+        {
+            return TruthValue.Unknown;
+        }
+
+        return outcomes.Single() ? TruthValue.True : TruthValue.False;
     }
 }

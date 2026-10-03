@@ -2249,6 +2249,19 @@ result is certain only when both branches agree on a definite value (the
 | ? | F | T | ? |
 | ? | ? | ? | ? |
 
+This is the strongest extension of the classical conditional: `If(c, t, f)` is
+definite exactly when every `True`/`False` resolution of the `Unknown` inputs
+gives the same answer (27 of 27 triples agree, pinned by a test). The bare
+multiplexer `(c AND t) OR (NOT c AND f)` would give `Unknown` for
+`If(Unknown, A, A)`; the consensus term keeps it `A`. The classical
+consensus-removal rewrite is therefore invalid in K3, and `Simplify` and
+`Canonicalize` never apply it (rationale: [ADR-0005](docs/adr/0005-strong-k3-language-surface.md)
+decision 13 and the [spec audit](.scratch/k3-conformance/spec-audit.md), C2).
+
+**SQL `CASE` equivalent.** SQL `CASE WHEN c THEN t ELSE f END` sends an
+`Unknown` condition to the `ELSE` branch, so it differs from `If` at four of the
+27 triples. Write `If(IsTrue(c), t, f)` to get that behavior.
+
 ### N-ary: `BETWEEN(1, 2, a, b, c)`
 
 The count of `True` operands must lie in `[1, 2]` for every reachable count

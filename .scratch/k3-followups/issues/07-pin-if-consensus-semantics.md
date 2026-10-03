@@ -4,12 +4,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 27-triple oracle test for If passes
-- [ ] Simplify and Canonicalize never remove the consensus term of If (regression test)
-- [ ] README documents the SQL CASE equivalence and cites the rationale
-- [ ] Issues-log row 17 updated
-- [ ] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
+- [x] 27-triple oracle test for If passes
+- [x] Simplify and Canonicalize never remove the consensus term of If (regression test)
+- [x] README documents the SQL CASE equivalence and cites the rationale
+- [x] Issues-log row 17 updated
+- [x] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
 
 Source: [spec audit](../../k3-conformance/spec-audit.md). See also [spec](../spec.md) and [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).
+
+## Comments
+
+No engine change was needed; the existing semantics were correct and are now pinned. Added the 27-triple strongest-extension oracle test and an `If(IsTrue(c), t, f)` SQL CASE test (`IfTests`), Simplify and Canonicalize regression tests, a README paragraph on the SQL CASE equivalence, and updated issues-log row 17.

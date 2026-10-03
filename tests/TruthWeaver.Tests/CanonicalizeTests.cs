@@ -185,6 +185,26 @@ public sealed class CanonicalizeTests
         Assert.Equal(RuleMetrics.NodeCount(original.Compiled), RuleMetrics.NodeCount(canonical.Compiled));
     }
 
+    /// <summary>
+    /// Canonicalising never drops the consensus behaviour of <c>If</c>: with an Unknown condition term and equal definite
+    /// branches the canonical rule still evaluates to that constant (the classical consensus removal is invalid in K3).
+    /// </summary>
+    [Theory]
+    [InlineData("If(a, True, True)", TruthValue.True)]
+    [InlineData("If(a, False, False)", TruthValue.False)]
+    public async Task Canonicalize_IfWithEqualDefiniteBranchesAndUnknownCondition_KeepsTheConstant_Test(
+        string ruleText,
+        TruthValue expected
+    )
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 1)!;
+        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize());
+
+        Decision decision = await canonical.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, decision.Result);
+    }
+
     /// <summary>The canonical rule is a new rule: the original keeps its text.</summary>
     [Fact]
     public void Canonicalize_Rule_LeavesTheOriginalUntouched_Test()
