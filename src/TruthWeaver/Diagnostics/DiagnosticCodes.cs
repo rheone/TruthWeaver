@@ -70,4 +70,43 @@ public static class DiagnosticCodes
     /// <c>CompilerOptions.MaxRewriteNodeCount</c> nodes and was not performed.
     /// </summary>
     public const string RewriteTooLarge = "BRE0016";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): an inspection (<c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>,
+    /// <c>IsKnown</c>) over an operand that can never be <c>Unknown</c>, or never be known, so the inspection is redundant.
+    /// </summary>
+    public const string RedundantInspection = "BRE0017";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): a <c>COALESCE</c> operand can never be <c>Unknown</c>, so the
+    /// operands after it are never reached.
+    /// </summary>
+    public const string RedundantCoalesce = "BRE0018";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): an <c>If</c> whose condition is always <c>True</c> or always
+    /// <c>False</c>, so only one branch can ever be chosen.
+    /// </summary>
+    public const string ConstantIfCondition = "BRE0019";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): an <c>If</c> whose two branches are the same expression, so the
+    /// condition does not affect the result.
+    /// </summary>
+    public const string IdenticalIfBranches = "BRE0020";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): a threshold or <c>BETWEEN</c> whose constant operands already fix
+    /// its value, so it is the same constant whatever the other operands are.
+    /// </summary>
+    public const string VacuousCardinality = "BRE0021";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): an operand repeated inside <c>AND</c>, <c>OR</c>, <c>ANY</c>,
+    /// <c>ALL</c> or <c>COALESCE</c>, where the repeat adds nothing.
+    /// </summary>
+    public const string DuplicateOperands = "BRE0022";
+
+    /// <summary>Lint (opt-in via <c>CompilerOptions.Lints</c>): <c>NOT (NOT x)</c>, which is <c>x</c> in Strong K3.</summary>
+    public const string DoubleNegation = "BRE0023";
 }

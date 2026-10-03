@@ -158,6 +158,10 @@ public sealed class RuleCompiler<TContext>(
         if (tree is not null)
         {
             diagnostics.AddRange(Analyzer.Analyze(tree, this.options));
+            if (this.options.Lints != LintRules.None)
+            {
+                diagnostics.AddRange(Linter.Lint(tree, this.options));
+            }
         }
 
         diagnostics = LocateInJson(diagnostics, jsonText);

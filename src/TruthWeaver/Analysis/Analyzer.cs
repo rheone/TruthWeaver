@@ -95,6 +95,30 @@ internal static class Analyzer
         return assignment;
     }
 
+    /// <summary>
+    /// Works out which of <c>True</c>, <c>False</c> and <c>Unknown</c> a tree can take over every assignment of its terms,
+    /// from the two rails: <c>True</c> is possible unless the definitely-true rail is empty, <c>Unknown</c> unless
+    /// "possibly true and not definitely true" is empty, and <c>False</c> unless the possibly-true rail is full.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <param name="maxTerms">The distinct-term cap; a tree with more is not analysed.</param>
+    /// <returns>The reachable values, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms.</returns>
+    public static ValueProfile? Profile(Expression root, int maxTerms)
+    {
+        if (DistinctTerms(root).Count > maxTerms)
+        {
+            return null;
+        }
+
+        BddManager bdd = new();
+        DualRail rail = Build(root, bdd, [], []);
+        return new ValueProfile(
+            CanBeTrue: rail.Definite != BddManager.False,
+            CanBeFalse: rail.Possible != BddManager.True,
+            CanBeUnknown: bdd.And(rail.Possible, bdd.Not(rail.Definite)) != BddManager.False
+        );
+    }
+
     /// <summary>Collects the distinct terms of a tree.</summary>
     /// <param name="root">The tree.</param>
     /// <returns>The distinct term identities.</returns>

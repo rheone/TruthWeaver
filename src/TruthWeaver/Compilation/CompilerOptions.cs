@@ -17,12 +17,17 @@ namespace TruthWeaver.Compilation;
 /// <c>ExpandToNor</c> may produce. A rewrite that would exceed it is refused with a <c>BRE0016</c> error diagnostic
 /// instead of being built. Pass a larger value to those methods to allow bigger results.
 /// </param>
+/// <param name="Lints">
+/// The opt-in lint rules to run after analysis. Defaults to <see cref="LintRules.None"/>, so enabling none of them
+/// leaves a rule's diagnostics exactly as they were. Findings are <c>Info</c> diagnostics and never block compilation.
+/// </param>
 public sealed record CompilerOptions(
     int MaxDepth = 32,
     int MaxNodeCount = 512,
     int MaxAnalysisTerms = 20,
     CompilationMode Mode = CompilationMode.Strict,
-    int MaxRewriteNodeCount = 100_000
+    int MaxRewriteNodeCount = 100_000,
+    LintRules Lints = LintRules.None
 )
 {
     /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/> / 100000.</summary>

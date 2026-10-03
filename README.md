@@ -2075,6 +2075,40 @@ suggestion rather than a bad guess. They cover unknown predicate and operator
 names, undeclared predicate argument names, and a
 lone `&` or `|`.
 
+### Lint rules (opt-in)
+
+Beyond the Strong K3 tautology and contradiction warnings, the compiler can flag constructs that are redundant under
+Strong K3 and say what to write instead. The lints are off by default, so a rule that compiled clean before keeps
+compiling clean; switch them on with `CompilerOptions.Lints`:
+
+```csharp
+RuleCompiler<MyContext> compiler = new(registry, new CompilerOptions(Lints: LintRules.All));
+CompilationResult<MyContext> result = compiler.Compile("NOT NOT isAdmin");
+// BRE0023 info: a negation of a negation cancels out ... Did you mean: isAdmin
+```
+
+Each finding is an `Info` diagnostic (it never blocks compilation) with a `Replacement` suggestion holding the simpler
+rule text, and a message that gives the Strong K3 reason the replacement means the same. Findings carry no source span
+(the compiled tree does not remember where a node was written), so the message and `Found` show the construct. Every
+suggestion is checked in the test suite with `RuleEquivalence`: it is the same rule for every `True`/`False`/`Unknown`
+input. A lint never fires on a two-valued intuition that Strong K3 does not share (`a XOR a`, `a AND NOT a` and a
+repeated `PARITY` operand are left alone).
+
+| `LintRules` flag | Code | Flags | Suggests |
+| --- | --- | --- | --- |
+| `RedundantInspection` | `BRE0017` | `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` over an operand that can never be `Unknown`, or never be known (`IsKnown(IsTrue(a))`) | `True`/`False`, the operand, or its negation |
+| `RedundantCoalesce` | `BRE0018` | a `COALESCE` operand that can never be `Unknown`, so the operands after it are unreachable | the operands up to and including it |
+| `ConstantIfCondition` | `BRE0019` | an `If` whose condition is always `True` or always `False` | the branch that is always chosen |
+| `IdenticalIfBranches` | `BRE0020` | `If(c, t, t)` | `t` |
+| `VacuousCardinality` | `BRE0021` | a threshold or `BETWEEN` whose constant operands already fix the result (`AtLeast(1, a, TRUE)`) | the constant |
+| `DuplicateOperands` | `BRE0022` | a structurally identical operand repeated inside `AND`, `OR`, `ANY`, `ALL` or `COALESCE` | the operator with each operand once |
+| `DoubleNegation` | `BRE0023` | `NOT NOT x` | `x` |
+
+`LintRules` is a flags enum: combine the ones you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`) or use
+`LintRules.All`. The semantic lints (`BRE0017` to `BRE0019`, `BRE0021`) use the analyzer's BDD and are skipped for a
+sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms; the structural ones (`BRE0020`,
+`BRE0022`, `BRE0023`) always run.
+
 ### JSON and YAML rules
 
 A malformed JSON or YAML rule is located by `Path` instead of by line and
