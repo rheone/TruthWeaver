@@ -2090,6 +2090,11 @@ console project (dev-only — never packed, never referenced by `src/`) measurin
 - **Eval-time memoized term lookup** (`EvaluationBenchmarks.EvaluateAsync`) — `CompiledRule.EvaluateAsync`
   against a rule whose branches all share one term, at increasing branch fan-out, exercising the
   per-evaluation term memoization ADR-0002 describes.
+- **Operator families** (`OperatorBenchmarks`) - evaluation cost of the connective, cardinality, threshold,
+  external, `If` and `PARITY` operator families.
+- **Rewrites** (`RewriteBenchmarks`) - `ExpandToPrimitives`/`ExpandToNand`/`ExpandToNor`, `CompressToDerived`,
+  `Canonicalize` and `Simplify` on one mixed-operator rule.
+- **Diagnostics formatting** (`DiagnosticsBenchmarks`) - `CompilationResult.FormatDiagnostics` with and without source text.
 
 A committed baseline (captured with `--job Short`) lives at
 [`benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md`](benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md).
