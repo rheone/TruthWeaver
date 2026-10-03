@@ -144,8 +144,21 @@ internal sealed class TreeFormatReader
                 return null;
             }
 
-            foreach ((string name, ITreeNodeCursor value) in argsNode.Members)
+            foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in argsNode.Members)
             {
+                // A format whose keys can be non-strings (YAML) hands over the key node so it is reported where it sits.
+                if (name is null)
+                {
+                    this.Report(
+                        $"An argument name must be a {this.words.StringNoun}.",
+                        key!.Span,
+                        $"a {this.words.StringNoun}",
+                        key.Describe(),
+                        argsPath
+                    );
+                    return null;
+                }
+
                 string argumentPath = TreePath.Property(argsPath, name);
                 RawLiteral? literal = this.ReadLiteral(value, argumentPath);
                 if (literal is null)

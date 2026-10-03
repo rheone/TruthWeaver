@@ -43,8 +43,8 @@ internal interface ITreeNodeCursor
     /// <summary>Gets the children of a <see cref="TreeNodeShape.Sequence"/> node in order; empty for any other shape.</summary>
     public IEnumerable<ITreeNodeCursor> Elements { get; }
 
-    /// <summary>Gets the named entries of a <see cref="TreeNodeShape.Mapping"/> node in document order; empty for any other shape.</summary>
-    public IEnumerable<KeyValuePair<string, ITreeNodeCursor>> Members { get; }
+    /// <summary>Gets the entries of a <see cref="TreeNodeShape.Mapping"/> node in document order; empty for any other shape.</summary>
+    public IEnumerable<TreeMember> Members { get; }
 
     /// <summary>Gets the message for a node that cannot be a predicate-argument literal (a mapping, <c>null</c>, an alias).</summary>
     public string UnsupportedLiteralMessage { get; }

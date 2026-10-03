@@ -12,6 +12,9 @@ using TruthWeaver.Parsing;
 /// </summary>
 public sealed class TreeFormatReaderTests
 {
+    /// <summary>The entry key that stands in for a key that is not a string.</summary>
+    private const string NonStringKey = "<non-string key>";
+
     private static readonly TreeFormatVocabulary Words = new(
         MappingNoun: "map",
         SequenceNoun: "list",
@@ -204,6 +207,30 @@ public sealed class TreeFormatReaderTests
     }
 
     /// <summary>
+    /// Verifies that an argument whose key is not a string (possible in YAML) is reported at the key, in the format's words.
+    /// </summary>
+    [Fact]
+    public void Read_PredicateArgWithNonStringKey_ReportsArgumentNameAtTheKey_Test()
+    {
+        // Arrange
+        FakeNode root = FakeNode.Map(
+            ("predicate", FakeNode.Text("isAdult")),
+            ("args", FakeNode.Map(("minAge", FakeNode.Number(18)), (NonStringKey, FakeNode.Text("EU"))))
+        );
+
+        // Act
+        (RuleNode? node, IReadOnlyList<Diagnostic> diagnostics) = TreeFormatReader.Read(root, Words);
+
+        // Assert
+        Assert.Null(node);
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("An argument name must be a text.", diagnostic.Message);
+        Assert.Equal("a text", diagnostic.Expected);
+        Assert.Equal("a scalar", diagnostic.Found);
+        Assert.Equal("$.args", diagnostic.Path);
+    }
+
+    /// <summary>
     /// Verifies that the node span the cursor reports is recorded on the parsed node, which is how a position-aware
     /// format keeps its spans.
     /// </summary>
@@ -239,8 +266,10 @@ public sealed class TreeFormatReaderTests
 
         public IEnumerable<ITreeNodeCursor> Elements => this.Items ?? [];
 
-        public IEnumerable<KeyValuePair<string, ITreeNodeCursor>> Members =>
-            (this.Entries ?? []).Select(e => KeyValuePair.Create(e.Key, (ITreeNodeCursor)e.Value));
+        public IEnumerable<TreeMember> Members =>
+            (this.Entries ?? []).Select(e =>
+                e.Key == NonStringKey ? new TreeMember(null, e.Value, Text("key")) : new TreeMember(e.Key, e.Value)
+            );
 
         public string UnsupportedLiteralMessage => "Unsupported literal.";
 

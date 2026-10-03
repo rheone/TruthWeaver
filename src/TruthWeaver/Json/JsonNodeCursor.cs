@@ -54,8 +54,7 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
     public IEnumerable<ITreeNodeCursor> Elements => element.ValueKind == JsonValueKind.Array ? ElementsOf(element) : [];
 
     /// <inheritdoc />
-    public IEnumerable<KeyValuePair<string, ITreeNodeCursor>> Members =>
-        element.ValueKind == JsonValueKind.Object ? MembersOf(element) : [];
+    public IEnumerable<TreeMember> Members => element.ValueKind == JsonValueKind.Object ? MembersOf(element) : [];
 
     /// <inheritdoc />
     public string UnsupportedLiteralMessage => $"Unsupported literal JSON value kind '{element.ValueKind}'.";
@@ -143,11 +142,11 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
         }
     }
 
-    private static IEnumerable<KeyValuePair<string, ITreeNodeCursor>> MembersOf(JsonElement obj)
+    private static IEnumerable<TreeMember> MembersOf(JsonElement obj)
     {
         foreach (JsonProperty property in obj.EnumerateObject())
         {
-            yield return KeyValuePair.Create(property.Name, (ITreeNodeCursor)new JsonNodeCursor(property.Value));
+            yield return new TreeMember(property.Name, new JsonNodeCursor(property.Value));
         }
     }
 }
