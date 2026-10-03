@@ -77,6 +77,8 @@ engine, not what the engine itself is.
 
 Full vocabulary and the predicate-author contract: [CONTEXT.md](CONTEXT.md).
 
+Release status, version policy and the migration guide for every breaking change: [CHANGELOG.md](CHANGELOG.md).
+
 ## Requirements
 
 Building from source needs at least the SDK version floor in
