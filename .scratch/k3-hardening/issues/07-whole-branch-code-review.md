@@ -4,10 +4,14 @@
 
 **Blocked by:** k3-followups 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A review report exists for the whole branch with findings ranked by severity
-- [ ] Each non-trivial finding is a ticket; trivial ones are fixed in the same change
-- [ ] The report states what was not reviewed
+- [x] A review report exists for the whole branch with findings ranked by severity
+- [x] Each non-trivial finding is a ticket; trivial ones are fixed in the same change
+- [x] The report states what was not reviewed
 
 See also [spec](../spec.md).
+
+## Comments
+
+- Report: [07-review-report.md](../07-review-report.md). No correctness defect found against ADR-0005 or the oracle. Filed tickets 11 (consolidate duplicated operator logic, needs-owner-decision), 12 (amend ADR-0005 JSON span sentence), 13 (XML summaries on 19 branch-added tests), 14 (pre-existing test XML-comment gap, needs-owner-decision), 15 (narrow IDISP004 in JsonNodeCursor), 16 (vendored humanizer skill, needs-owner-decision). No trivial fixes were applied: the IDISP004 restore at `JsonTreeTests.cs` was already present. The report lists what was not reviewed.
