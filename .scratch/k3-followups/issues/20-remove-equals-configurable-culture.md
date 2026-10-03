@@ -14,3 +14,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: ticket 12 comments (`culture` kept restricted to empty); owner decision 2026-10-03. See also [spec](../spec.md).
+
+## Comments
+
+- 2026-10-03 (PR #4 review): until this ticket lands, a non-empty `culture` throws `ArgumentException` at evaluation time, which surfaces as Unknown plus a Fault. Existing rules that set `culture: "en-US"` therefore silently change from True/False to Unknown. Make the new authoring diagnostic cover that case, and call the change out in the changelog or README as breaking.
