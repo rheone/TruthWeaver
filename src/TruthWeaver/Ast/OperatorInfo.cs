@@ -35,15 +35,11 @@ public static class OperatorInfo
         }
 
         NodeShape shape = ExpressionShape.Of(node);
+
+        // Every operator reaches here through ExpressionShape.Of; the table completeness test guarantees a definition,
+        // so a missing one degrades to the bare op-name rather than throwing in production.
         return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
             ? new OperatorDescriptor(definition.Label(shape), definition.Describe(shape))
-            : new OperatorDescriptor(shape.OpName, ThresholdDescription(shape));
-    }
-
-    // Defensive: every node reaches here through ExpressionShape.Of, so a missing definition means an operator was added
-    // to the shape seam without a table entry; fail loudly. An existing test pins this method and message via reflection.
-    private static string ThresholdDescription(NodeShape shape)
-    {
-        throw new InvalidOperationException($"Unhandled threshold comparison '{shape.OpName}'.");
+            : new OperatorDescriptor(shape.OpName, string.Empty);
     }
 }

@@ -175,6 +175,14 @@ The structural duplication (six identical `Expression` switches) is gone; what r
 irreducible — genuinely different behavior or vocabulary per subsystem, not the same fact
 re-derived six times.
 
+> **Update (operator definition table):** item 6's per-format label and name strings are no longer
+> separate switches. `OperatorDefinitions` (internal, `src/TruthWeaver/Ast/`) holds one definition per
+> operator (canonical name, tree-format name, arity, label and description templates). `OperatorInfo`,
+> the `Evaluator` trace label, `RuleBuilder` and `TreeFormatOpNames` read it, so a new operator adds one
+> table entry instead of editing those. `CanonicalPrinter` keeps its own DSL keywords, since the table
+> holds no DSL spelling. Evaluation, analysis and rewriting still switch on the node type. A missing
+> entry fails the table completeness test.
+
 > **Update (ADR-0005):** the K3 operator slices also touch the expand/compress/canonicalize/simplify
 > rewriters (`src/TruthWeaver/Rewriting`), the structured-diagnostic suggestions and the JSON schema, in
 > addition to the six switches above.

@@ -62,7 +62,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>AND</c> expression.</returns>
     public static RuleBuilder And(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("and", operands);
+        return new OperatorBuilder("And", operands);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>OR</c> expression.</returns>
     public static RuleBuilder Or(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("or", operands);
+        return new OperatorBuilder("Or", operands);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>NOT</c> expression.</returns>
     public static RuleBuilder Not(RuleBuilder operand)
     {
-        return new OperatorBuilder("not", [operand]);
+        return new OperatorBuilder("Not", [operand]);
     }
 
     /// <summary>Creates a builder for binary exclusive-or.</summary>
@@ -115,7 +115,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>XOR</c> expression.</returns>
     public static RuleBuilder Xor(RuleBuilder left, RuleBuilder right)
     {
-        return new OperatorBuilder("xor", [left, right]);
+        return new OperatorBuilder("Xor", [left, right]);
     }
 
     /// <summary>Creates a builder for the binary logical biconditional (<c>EQUIVALENT</c>, also written <c>IFF</c> or <c>↔</c>).</summary>
@@ -124,7 +124,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>EQUIVALENT</c> expression.</returns>
     public static RuleBuilder Equivalent(RuleBuilder left, RuleBuilder right)
     {
-        return new OperatorBuilder("equivalent", [left, right]);
+        return new OperatorBuilder("Equivalent", [left, right]);
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>IMPLIES</c> expression.</returns>
     public static RuleBuilder Implies(RuleBuilder antecedent, RuleBuilder consequent)
     {
-        return new OperatorBuilder("implies", [antecedent, consequent]);
+        return new OperatorBuilder("Implies", [antecedent, consequent]);
     }
 
     /// <summary>Creates a builder for negated conjunction (<c>NOT (left AND right)</c>, also written <c>NAND</c> or <c>↑</c>).</summary>
@@ -154,7 +154,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>NAND</c> expression.</returns>
     public static RuleBuilder Nand(RuleBuilder left, RuleBuilder right)
     {
-        return new OperatorBuilder("nand", [left, right]);
+        return new OperatorBuilder("Nand", [left, right]);
     }
 
     /// <summary>Creates a builder for negated disjunction (<c>NOT (left OR right)</c>, also written <c>NOR</c> or <c>↓</c>).</summary>
@@ -163,7 +163,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>NOR</c> expression.</returns>
     public static RuleBuilder Nor(RuleBuilder left, RuleBuilder right)
     {
-        return new OperatorBuilder("nor", [left, right]);
+        return new OperatorBuilder("Nor", [left, right]);
     }
 
     /// <summary>Creates a builder for n-ary parity (<c>PARITY(a, b, ...)</c>): <c>Unknown</c> if any operand is <c>Unknown</c>, otherwise <c>True</c> for an odd number of <c>True</c> operands.</summary>
@@ -171,7 +171,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>PARITY</c> expression.</returns>
     public static RuleBuilder Parity(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("parity", operands);
+        return new OperatorBuilder("Parity", operands);
     }
 
     /// <summary>
@@ -193,7 +193,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>ANY</c> expression.</returns>
     public static RuleBuilder Any(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("any", operands);
+        return new OperatorBuilder("Any", operands);
     }
 
     /// <summary>
@@ -215,7 +215,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>ALL</c> expression.</returns>
     public static RuleBuilder All(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("all", operands);
+        return new OperatorBuilder("All", operands);
     }
 
     /// <summary>
@@ -237,7 +237,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>NONE</c> expression.</returns>
     public static RuleBuilder None(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("none", operands);
+        return new OperatorBuilder("None", operands);
     }
 
     /// <summary>
@@ -259,7 +259,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>ExactlyOne</c> expression.</returns>
     public static RuleBuilder ExactlyOne(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("exactlyOne", operands);
+        return new OperatorBuilder("ExactlyOne", operands);
     }
 
     /// <summary>
@@ -284,7 +284,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("coalesce", operands);
+        return new OperatorBuilder("Coalesce", operands);
     }
 
     /// <summary>
@@ -309,7 +309,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>IsTrue</c> expression.</returns>
     public static RuleBuilder IsTrue(RuleBuilder operand)
     {
-        return new OperatorBuilder("isTrue", [operand]);
+        return new OperatorBuilder("IsTrue", [operand]);
     }
 
     /// <summary>
@@ -320,7 +320,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>IsFalse</c> expression.</returns>
     public static RuleBuilder IsFalse(RuleBuilder operand)
     {
-        return new OperatorBuilder("isFalse", [operand]);
+        return new OperatorBuilder("IsFalse", [operand]);
     }
 
     /// <summary>
@@ -331,7 +331,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>IsUnknown</c> expression.</returns>
     public static RuleBuilder IsUnknown(RuleBuilder operand)
     {
-        return new OperatorBuilder("isUnknown", [operand]);
+        return new OperatorBuilder("IsUnknown", [operand]);
     }
 
     /// <summary>
@@ -342,7 +342,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>IsKnown</c> expression.</returns>
     public static RuleBuilder IsKnown(RuleBuilder operand)
     {
-        return new OperatorBuilder("isKnown", [operand]);
+        return new OperatorBuilder("IsKnown", [operand]);
     }
 
     /// <summary>
@@ -356,7 +356,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>If</c> expression.</returns>
     public static RuleBuilder If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)
     {
-        return new OperatorBuilder("if", [condition, whenTrue, whenFalse]);
+        return new OperatorBuilder("If", [condition, whenTrue, whenFalse]);
     }
 
     /// <summary>
@@ -391,7 +391,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>AtLeast</c> expression.</returns>
     public static RuleBuilder AtLeast(int k, params RuleBuilder[] operands)
     {
-        return new ThresholdBuilder("atLeast", k, operands);
+        return new ThresholdBuilder("AtLeast", k, operands);
     }
 
     /// <summary>
@@ -412,7 +412,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>AtMost</c> expression.</returns>
     public static RuleBuilder AtMost(int k, params RuleBuilder[] operands)
     {
-        return new ThresholdBuilder("atMost", k, operands);
+        return new ThresholdBuilder("AtMost", k, operands);
     }
 
     /// <summary>
@@ -433,7 +433,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>GreaterThan</c> expression.</returns>
     public static RuleBuilder GreaterThan(int k, params RuleBuilder[] operands)
     {
-        return new ThresholdBuilder("greaterThan", k, operands);
+        return new ThresholdBuilder("GreaterThan", k, operands);
     }
 
     /// <summary>Creates a builder for "fewer than <paramref name="k"/> of these operands are true".</summary>
@@ -442,7 +442,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>LessThan</c> expression.</returns>
     public static RuleBuilder LessThan(int k, params RuleBuilder[] operands)
     {
-        return new ThresholdBuilder("lessThan", k, operands);
+        return new ThresholdBuilder("LessThan", k, operands);
     }
 
     /// <summary>Creates a builder for "exactly <paramref name="k"/> of these operands are true".</summary>
@@ -451,7 +451,7 @@ public abstract class RuleBuilder
     /// <returns>A builder for the <c>Exactly</c> expression.</returns>
     public static RuleBuilder Exactly(int k, params RuleBuilder[] operands)
     {
-        return new ThresholdBuilder("exactly", k, operands);
+        return new ThresholdBuilder("Exactly", k, operands);
     }
 
     /// <summary>
@@ -602,7 +602,11 @@ public abstract class RuleBuilder
 
         private protected override JsonNode ToNode()
         {
-            return new JsonObject { ["op"] = this.op, ["operands"] = OperandsNode(this.operands) };
+            return new JsonObject
+            {
+                ["op"] = TreeFormatOpNames.ToTreeFormat(this.op),
+                ["operands"] = OperandsNode(this.operands),
+            };
         }
     }
 
@@ -616,7 +620,7 @@ public abstract class RuleBuilder
         {
             return new JsonObject
             {
-                ["op"] = "between",
+                ["op"] = TreeFormatOpNames.ToTreeFormat("Between"),
                 ["min"] = this.min,
                 ["max"] = this.max,
                 ["operands"] = OperandsNode(this.operands),
@@ -634,7 +638,7 @@ public abstract class RuleBuilder
         {
             return new JsonObject
             {
-                ["op"] = this.op,
+                ["op"] = TreeFormatOpNames.ToTreeFormat(this.op),
                 ["k"] = this.k,
                 ["operands"] = OperandsNode(this.operands),
             };

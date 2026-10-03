@@ -56,27 +56,12 @@ internal sealed class Evaluator<TContext>(
         }
 
         NodeShape shape = ExpressionShape.Of(node);
-        return shape.OpName switch
-        {
-            "Not" => "NOT",
-            "And" => "AND",
-            "Or" => "OR",
-            "Xor" => "XOR",
-            "Equivalent" => "EQUIVALENT",
-            "Implies" => "IMPLIES",
-            "Nand" => "NAND",
-            "Nor" => "NOR",
-            "Parity" => "PARITY",
-            "Any" => "ANY",
-            "All" => "ALL",
-            "None" => "NONE",
-            "ExactlyOne" => "ExactlyOne",
-            "Between" => $"BETWEEN({shape.K}, {shape.Max})",
-            "Coalesce" => "COALESCE",
-            "If" => "If",
-            "IsTrue" or "IsFalse" or "IsUnknown" or "IsKnown" => shape.OpName,
-            _ => $"{shape.OpName}({shape.K})",
-        };
+
+        // Labels come from the operator table; the completeness test guarantees every operator has one, so the
+        // op-name fallback is only reachable for a node that skipped the table.
+        return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
+            ? definition.Label(shape)
+            : shape.OpName;
     }
 
     /// <summary>Tests the K3 state of <paramref name="value"/>; the answer is always a definite <c>True</c> or <c>False</c>.</summary>
