@@ -28,6 +28,7 @@ anything else.
   - [Whitespace](#whitespace)
   - [Binary vs. unary operators](#binary-vs-unary-operators)
   - [All operators](#all-operators)
+  - [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators)
   - [Collapse: the final boundary](#collapse-the-final-boundary)
 - [Rewriting rules](#rewriting-rules)
   - [Expand to primitives](#expand-to-primitives)
@@ -300,13 +301,16 @@ A service that only *implements* domain predicates references
   `Unknown`, never a thrown exception or a silently coerced `false`, and a
   predicate can also answer `Unknown` directly. Entry
   point: [`Evaluator`](src/TruthWeaver/Evaluation/Evaluator.cs).
-- **A complete Strong K3 language.** Primitive and derived logic (`NOT`, `AND`,
-  `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `PARITY`, `NAND`, `NOR`), cardinality
-  (`AtLeast`/`AtMost`/`Exactly`, `ANY`/`ALL`/`NONE`/`BETWEEN`), value operations
-  (`COALESCE`/`??`, `If`/`? :`), inspections (`IsTrue`, `IsFalse`, `IsUnknown`,
-  `IsKnown`) and `Unknown` as a constant. Operators are case-insensitive, have
-  symbol spellings, and every notation compiles to the same tree with one
-  canonical form. See [Operators](#operators).
+- **A complete Strong Kleene (K3) language, plus external operators.** The
+  Strong Kleene connectives are `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`,
+  `XOR`, `PARITY`, `NAND`, `NOR`, the cardinality operators
+  (`AtLeast`/`AtMost`/`Exactly`, `ANY`/`ALL`/`NONE`/`BETWEEN`) and `If`/`? :`.
+  `COALESCE`/`??` and the four inspections (`IsTrue`, `IsFalse`, `IsUnknown`,
+  `IsKnown`) are external operators, not K3 connectives. `Unknown` is also a
+  constant. Operators are case-insensitive, have symbol spellings, and every
+  notation compiles to the same tree with one canonical form. See
+  [Operators](#operators) and
+  [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators).
 - **Explicit boundaries.** `COALESCE(x, True|False)` resolves `Unknown` anywhere
   inside a rule; `Decision.Project(unknownAs)` and `Decision.Collapse(policy)` turn
   the rule's three-valued result into a definite value or a two-valued answer at the
@@ -577,9 +581,53 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 The binary logical operators are infix only (`a XOR b`); there is no `XOR(a, b)` call form. The n-ary
 operators, the threshold family and the other functions are calls (`PARITY(a, b, c)`).
 
-Every operator above follows the three-valued Kleene truth tables in
-[ADR-0001](docs/adr/0001-kleene-failure-model.md) — see the
-[truth table appendix](#appendix-truth-tables) for the full tables.
+The connectives follow the Strong Kleene truth tables in
+[ADR-0001](docs/adr/0001-kleene-failure-model.md); `COALESCE` and the inspections
+are external operators with their own tables (next section). See the
+[truth table appendix](#appendix-truth-tables) for every table.
+
+### Strong Kleene connectives and external operators
+
+Only the connectives are Strong Kleene (K3): `NOT`, `AND`, `OR`, `IMPLIES`,
+`EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators (`AtLeast`,
+`AtMost`, `Exactly`, `ExactlyOne`, the threshold family, `ANY`, `ALL`, `NONE`,
+`BETWEEN`) and `If`. `COALESCE` / `??` and the four inspections `IsTrue`,
+`IsFalse`, `IsUnknown` and `IsKnown` are **external operators**: they test or
+replace `Unknown` itself, as SQL's `COALESCE` and `IS [NOT] TRUE/FALSE/UNKNOWN`
+do and as Bochvar's external connectives do. They are useful and well defined,
+but they are not part of Kleene's logic.
+
+Two orders on the values explain the difference.
+
+| Order | Definition | Used for |
+| --- | --- | --- |
+| Truth order | `False < Unknown < True`. `AND` is the minimum, `OR` the maximum and `NOT` reverses it. | Truth functions and cardinality bounds. It is an implementation aid, not a numeric order of truth. |
+| Information order | `Unknown` is below both `True` and `False`, which are incomparable. | Monotonicity: replacing an `Unknown` input by `True` or `False` may refine an output but never changes a definite one. |
+
+Every K3 connective is monotone in the information order. `COALESCE` and the
+inspections are not: `COALESCE(Unknown, False)` is `False` but `COALESCE(True, False)`
+is `True`, and `IsUnknown` flips from `True` to `False` when its operand is
+refined. Three consequences:
+
+- **The "no tautologies" theorem does not extend to them.** A formula built only
+  from terms, `NOT`, `AND` and `OR` is `Unknown` when every term is, so it is
+  never a tautology. `IsKnown(a) OR IsUnknown(a)` is one, because the inspections
+  can observe `Unknown`.
+- **`NAND` and `NOR` are not expressive enough for them.** Every `NAND`-only or
+  `NOR`-only circuit is monotone, so it cannot compute them (see
+  [NAND-only and NOR-only](#nand-only-and-nor-only)).
+- **Each rewrite is verified per operator.** The K3 laws (De Morgan, absorption,
+  double negation) hold for the connectives only; `Simplify` handles the external
+  operators with their own rules.
+
+`If` is a connective in this sense: it is the strongest extension of the
+classical conditional, so it is monotone, and its `(t AND f)` consensus term is
+what keeps it so (see [Ternary](#ternary-ifc-t-f-c--t--f)).
+
+The names `Project` and `Collapse` are TruthWeaver's own terms, not terms from
+the K3 literature (in relational algebra "projection" means selecting columns).
+Both are methods on the result (`Decision.Project`, `Decision.Collapse`), not
+rule operators; see [Collapse](#collapse-the-final-boundary).
 
 ### Collapse: the final boundary
 
@@ -2033,7 +2081,9 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | Expression | The three-valued tree itself — operators over terms, constants and sub-expressions. What a `CompiledRule<TContext>` wraps. |
 | `Fault` | A record of one predicate failing to produce an answer during one evaluation: the faulting term's identity plus the exception. Faults are absorbed as `Unknown`, never rethrown. |
 | `a IMPLIES b` / `→` | Strong Kleene material implication, `NOT a OR b`; a first-class binary node that prints as written (`(a IMPLIES b)`). Mixing it with `AND`/`OR` or another infix operator without parentheses is a compile error. See [Operators](#operators). |
-| Inspection | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: operators that test the K3 state of their operand and always answer a definite `True`/`False`. |
+| Inspection | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: external operators that test the K3 state of their operand and always answer a definite `True`/`False`. |
+| External operator | An operator that is not a Strong Kleene connective because it is not monotone in the information order: `COALESCE` / `??` and the four inspections. The "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to them. See [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators). |
+| Information order | `Unknown` below both `True` and `False`. Strong Kleene connectives are monotone in it; external operators are not. The truth order `False < Unknown < True` is separate. |
 | Rewrite | An opt-in, value-preserving transform of a compiled rule returning a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify`. See [Rewriting rules](#rewriting-rules). |
 | `GroupingStyle` / `RuleText` | `CompiledRule.PrintRuleText(GroupingStyle)` prints with `()` only or depth-cycling `()` `[]` `{}`; `RuleText.NormalizeWhitespace` tidies rule text as written without compiling it. See [Grouping delimiters](#grouping-delimiters). |
 | Kleene logic | Three-valued logic (`True`/`False`/`Unknown`) instead of two-valued boolean logic — the reason a predicate fault becomes `Unknown` rather than a thrown exception or a silently coerced `false`. See [ADR-0001](docs/adr/0001-kleene-failure-model.md). |

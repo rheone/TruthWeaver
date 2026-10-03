@@ -510,6 +510,64 @@ the aliases are cheap once the canonical form stays single.
     names and codes are kept for stability. Each later operator slice extends
     the analyzer with its own rail definition.
 
+## Amendments (2026-10-03, k3-followups 15)
+
+These record the final decisions of the k3-followups effort and the audit
+([spec audit](../../.scratch/k3-conformance/spec-audit.md) sections C and D).
+Where they differ from the original wording above they take precedence.
+
+18. **Only the connectives are Strong Kleene (K3); `COALESCE` and the
+    inspections are external operators.** Decision 3 calls `COALESCE` part of the
+    "primitive kernel". It is a kernel operator in the sense that it is the one
+    primitive that can observe `Unknown`, but it is not a K3 connective. Neither
+    are `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`. The K3 connectives are
+    `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`,
+    the cardinality operators (`AtLeast`, `AtMost`, `Exactly`, `ExactlyOne`,
+    the threshold family, `ANY`, `ALL`, `NONE`, `BETWEEN`) and `If`. The
+    distinction is the **information order** (`Unknown` below `True` and
+    `False`, which are incomparable), which sits beside the truth order
+    `False < Unknown < True` of decision 1. Every connective is monotone in the
+    information order (refining an `Unknown` input never changes a definite
+    output); the external operators are not (`COALESCE(Unknown, False)` is
+    `False`, `COALESCE(True, False)` is `True`). The precedents are SQL
+    (`COALESCE`, `IS [NOT] TRUE/FALSE/UNKNOWN`) and Bochvar's external
+    connectives. Consequences: the "no tautologies" theorem and the
+    expressiveness of `NAND`/`NOR` (decision 10, k3-conformance 24) hold for the
+    connectives and do not extend to the external operators, so
+    `IsKnown(a) OR IsUnknown(a)` is a genuine tautology (decision 13,
+    k3-conformance 17) and `COALESCE` stays outside the universal gates. The
+    language as a whole is Strong Kleene (K3) plus external operators. Prose
+    uses "Strong Kleene (K3)", not "K3" and "Strong K3" as two systems.
+19. **`Project` and `Collapse` are TruthWeaver terms and are methods on the
+    result.** Neither name appears in the K3 literature (and "projection" means
+    column selection in relational algebra). Decisions 12 and 14 (amended
+    2026-10-03) are final: `Decision.Project(bool unknownAs)` and
+    `Decision.Collapse(CollapsePolicy)` are pure functions of `Decision.Result`,
+    which is always the raw three-valued value, and `IsSatisfied` stays
+    fail-closed.
+20. **`PARITY` is the final name** for n-ary parity (decision 4, amended
+    2026-10-03). `NXOR` conventionally means negated `XOR`, which is
+    `EQUIVALENT` here, the opposite of parity.
+21. **`If` rationale.** Decision 13's consensus definition is the *strongest
+    extension* of the classical conditional: `If(c, t, f)` is definite exactly
+    when every `True`/`False` resolution of the `Unknown` inputs gives the same
+    answer, which holds for all 27 `(c, t, f)` triples. This is the
+    metastability-containing multiplexer result (Friedrichs, Függer and Lenzen,
+    "Metastability-Containing Circuits", IEEE Trans. Computers 2018, section 3,
+    which adds the `t AND f` term to the standard multiplexer) and the
+    reason the classical consensus-removal rewrite is invalid in K3. The
+    alternatives differ: the bare multiplexer and McCarthy's conditional give
+    `If(Unknown, True, True)` = `Unknown`, and SQL searched `CASE` sends an
+    `Unknown` condition to `ELSE` (differing at four triples). `If(IsTrue(c), t,
+    f)` is the SQL `CASE` equivalent. The semantics are pinned by an exhaustive
+    27-triple test.
+22. **`BETWEEN` needs `min <= max`.** Decision 6's `AND(AtLeast(min),
+    AtMost(max))` equals the strongest extension of the cardinality range only
+    for `min <= max`; for an empty range the composition gives `Unknown` where
+    every completion is `False`. The compiler already enforces
+    `0 <= min <= max <= n` (decision 13, k3-conformance 14) and the compressor
+    only builds `BETWEEN` when the bounds are ordered.
+
 ## Open decisions
 
 None.

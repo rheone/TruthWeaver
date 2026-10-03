@@ -4,10 +4,14 @@
 
 **Blocked by:** 04, 05, 06, 07
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] README, CONTEXT.md and ADR-0005 amended consistently, with no statement left that contradicts the final design
-- [ ] The three .tmp-derived claims shown wrong by the audit appear nowhere in README, CONTEXT.md or the ADRs
-- [ ] CLAUDE.md architecture summary matches the final operator set
+- [x] README, CONTEXT.md and ADR-0005 amended consistently, with no statement left that contradicts the final design
+- [x] The three .tmp-derived claims shown wrong by the audit appear nowhere in README, CONTEXT.md or the ADRs
+- [x] CLAUDE.md architecture summary matches the final operator set
 
 Source: [spec audit](../../k3-conformance/spec-audit.md). See also [spec](../spec.md) and [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).
+
+## Comments
+
+Added a README section and CONTEXT.md terms for Strong Kleene connectives versus external operators (`COALESCE` and the four inspections), the information order beside the truth order, and the note that `Project` and `Collapse` are TruthWeaver terms and `Decision` methods. ADR-0005 gains amendments 18-22 (external operators, Project/Collapse terms, `PARITY`, `If` strongest-extension rationale citing the metastability-containing multiplexer result, `BETWEEN` needs `min <= max`). CLAUDE.md architecture summary now lists the final operator set. The `PARITY` rename, `Decision.Collapse`/`Decision.Project` and `BETWEEN` bounds were already stated in README and CONTEXT.md; a grep found none of the audit-wrong claims (consensus valid in K3, `All()` false when `T<n`, `If(IsUnknown(A), B, A)` as an inverse of coalesce) in README, CONTEXT.md or the ADRs. Docs only; no code changed.
