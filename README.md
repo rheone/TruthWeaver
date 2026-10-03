@@ -391,13 +391,13 @@ prints the named form.
 | `AND` | `&&`, `∧` |
 | `OR` | `\|\|`, `∨` |
 | `NOT` | `!`, `¬` |
-| `XOR` | `⊕` |
-| `IMPLIES` | `→` |
-| `NAND` | `↑` |
-| `NOR` | `↓` |
+| `XOR` | `⊕`, `⊻` |
+| `IMPLIES` | `→`, `⇒` |
+| `NAND` | `↑`, `⊼` |
+| `NOR` | `↓`, `⊽` |
 | `COALESCE` | `??` (infix; the word `COALESCE` is the function-call form only) |
 | `If` | `c ? t : f` (ternary; `If(c, t, f)` is the function-call form) |
-| `EQUIVALENT` | `↔` (words `IFF` and the legacy `XNOR` are accepted too) |
+| `EQUIVALENT` | `↔`, `⇔` (words `IFF` and the legacy `XNOR` are accepted too) |
 
 Symbols and words mix freely (`a && b OR c`) and follow the same precedence
 and no-mixing rules as the named operators. A lone `&` or `|` is a syntax error; a lone `?` is only valid as the ternary's `?`.
@@ -415,8 +415,8 @@ or_expr     = and_expr { ( "OR" | "||" | "∨" ) and_expr } ;
 and_expr    = infix_expr { ( "AND" | "&&" | "∧" ) infix_expr } ;
 infix_expr  = not_expr [ infix_op not_expr ]                 (* at most one *)
             | not_expr { "??" not_expr } ;                   (* COALESCE chain *)
-infix_op    = "XOR" | "⊕" | "EQUIVALENT" | "IFF" | "XNOR" | "↔"
-            | "IMPLIES" | "→" | "NAND" | "↑" | "NOR" | "↓" ;
+infix_op    = "XOR" | "⊕" | "⊻" | "EQUIVALENT" | "IFF" | "XNOR" | "↔" | "⇔"
+            | "IMPLIES" | "→" | "⇒" | "NAND" | "↑" | "⊼" | "NOR" | "↓" | "⊽" ;
 not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
 
 primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"

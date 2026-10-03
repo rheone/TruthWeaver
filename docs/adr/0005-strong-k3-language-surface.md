@@ -33,8 +33,9 @@ the aliases are cheap once the canonical form stays single.
 2. **Operators are accepted in several notations but have one canonical form.**
    Named operators are case-insensitive on input; canonical output is upper
    camel/upper case (`AND`, `OR`, `AtLeast`). Symbol notation (`&&`, `||`,
-   `!`, and the logic symbols `∧ ∨ ¬ ⊕ → ↔`) is accepted on input and maps to
-   the canonical named operator. The canonical printer and persisted DSL text
+   `!`, and the logic symbols `∧ ∨ ¬ ⊕ → ↔`, plus the input-only aliases
+   `⊼ ⊽ ⊻ ⇒ ⇔` for NAND, NOR, XOR, IMPLIES and EQUIVALENT) is accepted on
+   input and maps to the canonical named operator. The canonical printer and persisted DSL text
    remain word-only. `True`/`False`/`Unknown` literals are case-insensitive,
    and `Unknown` becomes a valid literal.
 3. **Primitive kernel and derived operators.** Primitives: `NOT`, `AND`, `OR`,

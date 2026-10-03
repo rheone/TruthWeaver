@@ -4,11 +4,15 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each symbol compiles to the same tree as the named operator
-- [ ] Canonical output remains word-only
-- [ ] Lexer and README symbol table updated
-- [ ] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
+- [x] Each symbol compiles to the same tree as the named operator
+- [x] Canonical output remains word-only
+- [x] Lexer and README symbol table updated
+- [x] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
 
 Source: [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md) and [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).
+
+## Comments
+
+The lexer accepts ⊼ ⊽ ⊻ ⇒ ⇔ as operator tokens and `DslParser.SymbolAlias` maps them to NAND, NOR, XOR, IMPLIES and EQUIVALENT, so the printers (word-only canonical form) are untouched. README symbol table and grammar and ADR-0005 decision 2 list the new aliases. Tests are in `UnicodeInputAliasTests`.
