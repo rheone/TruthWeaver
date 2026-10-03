@@ -19,3 +19,25 @@ rework.
 | **Minimal satisfying assignments** (BDD-derived "what facts would make this true") | The BDD exists anyway for constant/contradiction diagnostics; exposing satisfying-assignment enumeration is an authoring-tool feature with no current consumer. |
 | **Attribute-based / assembly-scanned predicate registration** | Explicit registration only — scanning is magic, breaks trimming/AOT, and the repo's own rule is "do not introduce unnecessary abstractions." |
 | **JSONC / JSON5 rule text** (comments and trailing commas in JSON rule text, or full JSON5 syntax) | Requested, but `System.Text.Json` does not cover this out of the box: `JsonDocumentOptions` (`CommentHandling`, `AllowTrailingCommas`) gets partway to JSONC, but nothing in the BCL handles JSON5's unquoted keys, single-quoted strings, or extended numeric literals. No parser for either exists in this repo yet. Needs a decision (hand-rolled subset parser vs. full JSON5 spec vs. a to-be-named external package) before implementation — deferred until that's investigated. |
+
+## Re-score (2026-10-03, k3-hardening ticket 01)
+
+Re-checked against the source after the Strong K3 work. The table above is the original reasoning; this table is the
+current verdict for each item. "Still deferred" means the original reason still holds.
+
+| Item | Current verdict | What changed |
+| --- | --- | --- |
+| Authorization layer | Still deferred | Nothing in `src/` is permit/forbid shaped. The building blocks it would sit on are now stronger: `RuleEquivalence.Compare` (policy comparison) and structured diagnostics. Still wants a concrete consumer. |
+| Partial evaluation / residual expressions | Still deferred; in-process variant newly feasible | A residual for SQL still needs translatable predicates. But binding known predicates to constants and calling `CompiledRule.Simplify()` (K3-sound constant folding) would give an in-process residual; there is no substitution API yet. Scored in the [roadmap](../library-roadmap/spec.md#new-candidates). |
+| Rule-to-rule references / named reusable fragments | Still deferred | Unchanged. The shared immutable `Expression` tree and `RuleBuilder` would make compile-time inlining straightforward, but the resolver abstraction and cycle detection are still unneeded. Related: "Joining compiled rules" in the roadmap. |
+| Cross-evaluation caching | Still deferred | Unchanged. |
+| OpenTelemetry-shaped observability | Partly delivered; tracing still deferred | `System.Diagnostics.Metrics` instrumentation exists (`TruthWeaverMetrics`, meter `TruthWeaver`: evaluations, faults, compile diagnostics), so a host can already `AddMeter("TruthWeaver")`. There is no `ActivitySource`, so per-rule activities and per-term events remain deferred. |
+| Context-bound term arguments | Still deferred | Unchanged. `ResolvedValuePredicates` is the documented alternative. |
+| ~~Symbol operator aliases~~ | No longer deferred | Already struck through. Unicode input aliases were also added (k3-followups 16). |
+| Concurrent operand evaluation | Still deferred | Unchanged. The K3 operators added since (for example `COALESCE`, `If` and the cardinality family) do not change the evaluation contract; an `EvaluationOptions` knob remains the intended shape. |
+| Minimal satisfying assignments | Partly delivered | `BddManager.FindSatisfyingAssignment` exists and powers the counter-example in `RuleEquivalence.Compare`, but it is internal and answers "where do two rules differ", not "what facts make this rule True". A public API is still an authoring-tool feature with no current consumer. |
+| Attribute-based / assembly-scanned predicate registration | Still deferred (runtime scanning rejected) | Unchanged. The compile-time source-generator variant is scored separately in the [roadmap](../library-roadmap/spec.md). |
+| JSONC / JSON5 rule text | Still deferred | Unchanged. JSON diagnostics now carry source spans (commit 2f296ff), which any future lenient parser would need to keep. |
+
+New deferred items from the K3 work (diagnostic properties and JSON pointer, k3-followups 26; lint spans, k3-hardening 09)
+are tracked in the [roadmap's new candidates](../library-roadmap/spec.md#new-candidates) rather than duplicated here.
