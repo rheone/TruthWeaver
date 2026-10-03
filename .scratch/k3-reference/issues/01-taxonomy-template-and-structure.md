@@ -9,7 +9,7 @@
 - [ ] Taxonomy, template and directory tree are presented in one document at docs/strong-k3/PROPOSAL.md (or the agreed equivalent), clearly marked as awaiting approval
 - [ ] Every operation in the inventory has exactly one primary category and an explicit Primitive or Derived kind; ambiguities are listed as open questions, none silently resolved
 - [ ] Derived operations list a canonical form only where it is established (and verified under Strong K3 by brute force); otherwise the proposal says no canonical reduction is established
-- [ ] The owner has approved or amended the proposal (record the decision in the ticket Comments) before any other ticket starts
+- [x] The owner has approved or amended the proposal (record the decision in the ticket Comments) before any other ticket starts
 - [ ] No operation documents are written in this ticket
 
 Source: [spec audit](../../k3-conformance/spec-audit.md) and [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md).
@@ -17,3 +17,4 @@ Source: [spec audit](../../k3-conformance/spec-audit.md) and [research findings]
 ## Comments
 
 - 2026-10-03: Proposal written at [docs/strong-k3/PROPOSAL.md](../../../docs/strong-k3/PROPOSAL.md), clearly marked awaiting owner approval. It covers the model, categories, primitive/derived rule, template, directory tree and a 27-operation inventory. Canonical forms were verified by independent brute force (operand counts 2-5); the engine tests were not re-run. Eleven open questions are listed with a recommendation each (notably: category versus kind overlap, "gate" versus CONTEXT.md, COALESCE/If/inspections category, Project/Collapse Kind, and the threshold-family operand minimum mismatch between `OperatorDefinitions` (2) and the compiler (1)). The owner approval checkbox stays open: no other k3-reference ticket should start until the owner records a decision here. docs/strong-k3 is outside the README/CONTEXT doctest scope, so no doctest markers apply.
+- 2026-10-03: The owner approved the proposal as written, accepting the recommendation on all 11 open questions (recorded in the owner's reply to the dispatch run's approval question). The decision record is the recommendation text under each question in [PROPOSAL.md](../../../docs/strong-k3/PROPOSAL.md), whose status is now approved. Tickets 02 onward are unblocked.

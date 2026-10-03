@@ -1,7 +1,7 @@
 # Strong Kleene (K3) reference: taxonomy, template and structure proposal
 
 > [!IMPORTANT]
-> **Status: awaiting owner approval.** Nothing under `docs/strong-k3/` other than this file is written. No operation document, index or specification page exists until this proposal is approved or amended ([ticket 01](../../.scratch/k3-reference/issues/01-taxonomy-template-and-structure.md), [spec](../../.scratch/k3-reference/spec.md)).
+> **Status: approved by the owner on 2026-10-03, with the recommendation on each of the 11 open questions accepted.** This page is the decision record for the model, categories, template and directory tree. Tickets 02 onward may proceed ([ticket 01](../../.scratch/k3-reference/issues/01-taxonomy-template-and-structure.md), [spec](../../.scratch/k3-reference/spec.md)).
 
 This page fixes the authoritative model for the reference library: the values, the categories, the primitive-versus-derived rule, the template for one operation document, the directory tree and an inventory of every operation in the engine's final design. Sections that need an owner decision are collected in [Open questions](#open-questions); none is resolved silently.
 
@@ -182,7 +182,7 @@ ADR-0005 decision 10 records that the engine's own oracle tests check the same e
 
 ## Open questions
 
-Each question gives the options and a recommendation. Answering them (or amending the proposal) is the approval gate.
+Each question gives the options and a recommendation. The owner approved the proposal on 2026-10-03 and accepted the recommendation on every question.
 
 ### 1. Category and kind overlap
 

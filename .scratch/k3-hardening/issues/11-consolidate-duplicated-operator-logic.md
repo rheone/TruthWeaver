@@ -12,3 +12,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 See also [spec](../spec.md).
+
+## Comments
+
+- 2026-10-03 (from k3-reference 01): `OperatorDefinitions` records a minimum of 2 operands for `AtLeast`, `AtMost`, `Exactly`, `GreaterThan` and `LessThan`, but `RuleNodeCompiler.BuildThreshold` accepts one. Arity is stored in the table as a fact only and nothing enforces it, so the two disagree. Resolve when this ticket is worked.
