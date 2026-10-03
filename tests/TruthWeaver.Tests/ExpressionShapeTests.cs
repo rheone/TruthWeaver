@@ -60,7 +60,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Equivalent_shape_exposes_left_then_right_as_operands()
+    public void EquivalentShape_Operands_ExposeLeftThenRight_Test()
     {
         EquivalentExpression node = new(TermA, TermB);
 
@@ -71,7 +71,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Nand_shape_exposes_left_then_right_as_operands()
+    public void NandShape_Operands_ExposeLeftThenRight_Test()
     {
         NandExpression node = new(TermA, TermB);
 
@@ -83,7 +83,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Nor_shape_exposes_left_then_right_as_operands()
+    public void NorShape_Operands_ExposeLeftThenRight_Test()
     {
         NorExpression node = new(TermA, TermB);
 
@@ -95,7 +95,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Implies_shape_exposes_antecedent_then_consequent_as_operands()
+    public void ImpliesShape_Operands_ExposeAntecedentThenConsequent_Test()
     {
         ImpliesExpression node = new(TermA, TermB);
 
@@ -106,7 +106,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Parity_shape_carries_its_operands_in_order()
+    public void ParityShape_Operands_AreInOrder_Test()
     {
         ParityExpression node = new(new([TermA, TermB, TermA]));
 
@@ -118,7 +118,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Any_shape_carries_its_operands_in_order()
+    public void AnyShape_Operands_AreInOrder_Test()
     {
         AnyExpression node = new(new([TermA, TermB]));
 
@@ -130,7 +130,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void All_shape_carries_its_operands_in_order()
+    public void AllShape_Operands_AreInOrder_Test()
     {
         AllExpression node = new(new([TermA, TermB]));
 
@@ -142,7 +142,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void None_shape_carries_its_operands_in_order()
+    public void NoneShape_Operands_AreInOrder_Test()
     {
         NoneExpression node = new(new([TermA, TermB]));
 
@@ -154,7 +154,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Between_shape_carries_its_bounds_and_operands_in_order()
+    public void BetweenShape_BoundsAndOperands_AreInOrder_Test()
     {
         BetweenExpression node = new(1, 2, new([TermA, TermB, TermA]));
 
@@ -167,7 +167,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void If_shape_carries_condition_then_both_branches_in_order()
+    public void IfShape_Operands_AreConditionThenBothBranchesInOrder_Test()
     {
         IfExpression node = new(TermA, TermB, TermA);
 
@@ -184,7 +184,7 @@ public sealed class ExpressionShapeTests
     [InlineData(InspectionKind.IsFalse, "IsFalse")]
     [InlineData(InspectionKind.IsUnknown, "IsUnknown")]
     [InlineData(InspectionKind.IsKnown, "IsKnown")]
-    public void Inspection_shape_is_named_after_its_kind_and_carries_its_one_operand(InspectionKind kind, string opName)
+    public void InspectionShape_Name_MatchesKindAndCarriesOneOperand_Test(InspectionKind kind, string opName)
     {
         InspectionExpression node = new(kind, TermA);
 
@@ -197,7 +197,7 @@ public sealed class ExpressionShapeTests
     }
 
     [Fact]
-    public void Coalesce_shape_carries_its_operands_in_order()
+    public void CoalesceShape_Operands_AreInOrder_Test()
     {
         CoalesceExpression node = new(new([TermA, TermB]));
 

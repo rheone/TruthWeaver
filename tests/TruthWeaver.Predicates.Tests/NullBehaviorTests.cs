@@ -19,7 +19,7 @@ public class NullBehaviorTests
     /// </summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]
-    public async Task Evaluate_NullSelectedValueWithDefaultOption_ReturnsFalseTest(string factoryName)
+    public async Task Evaluate_NullSelectedValueWithDefaultOption_ReturnsFalse_Test(string factoryName)
     {
         TruthValue result = await EvaluateNullAsync(factoryName, nullBehavior: null);
 
@@ -29,7 +29,7 @@ public class NullBehaviorTests
     /// <summary>An explicit <see cref="NullBehavior.False"/> behaves exactly like the default.</summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]
-    public async Task Evaluate_NullSelectedValueWithFalseOption_ReturnsFalseTest(string factoryName)
+    public async Task Evaluate_NullSelectedValueWithFalseOption_ReturnsFalse_Test(string factoryName)
     {
         TruthValue result = await EvaluateNullAsync(factoryName, NullBehavior.False);
 
@@ -42,7 +42,7 @@ public class NullBehaviorTests
     /// </summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]
-    public async Task Evaluate_NullSelectedValueWithUnknownOption_ReturnsUnknownWithoutThrowingTest(string factoryName)
+    public async Task Evaluate_NullSelectedValueWithUnknownOption_ReturnsUnknownWithoutThrowing_Test(string factoryName)
     {
         TruthValue result = await EvaluateNullAsync(factoryName, NullBehavior.Unknown);
 
@@ -54,7 +54,7 @@ public class NullBehaviorTests
     /// answer from the comparison.
     /// </summary>
     [Fact]
-    public async Task Equals_NonNullSelectedValueWithUnknownOption_ReturnsDefiniteAnswerTest()
+    public async Task Equals_NonNullSelectedValueWithUnknownOption_ReturnsDefiniteAnswer_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.Equals<TestContext>("isAlice", c => c.Value, nullBehavior: NullBehavior.Unknown);
@@ -71,7 +71,7 @@ public class NullBehaviorTests
     /// collection (not an empty one) becomes Unknown.
     /// </summary>
     [Fact]
-    public async Task SetEquals_EmptySelectedCollectionWithUnknownOption_ReturnsTrueForEmptyLiteralTest()
+    public async Task SetEquals_EmptySelectedCollectionWithUnknownOption_ReturnsTrueForEmptyLiteral_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("same", c => c.Values, nullBehavior: NullBehavior.Unknown);

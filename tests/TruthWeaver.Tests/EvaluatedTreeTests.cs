@@ -199,7 +199,7 @@ public sealed class EvaluatedTreeTests
     }
 
     [Fact]
-    public async Task Skipped_equivalent_subtree_is_described_as_EQUIVALENT()
+    public async Task Describe_SkippedEquivalentSubtree_ReturnsEquivalent_Test()
     {
         // "a AND (b XNOR c)" with a = false short-circuits before the (b XNOR c) XnorExpression is
         // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.

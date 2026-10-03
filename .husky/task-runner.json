@@ -2,6 +2,13 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
+      "name": "line-endings",
+      "group": "pre-commit",
+      "command": "pwsh",
+      "args": ["-NoProfile", "-File", "scripts/check-line-endings.ps1", "${staged}"],
+      "include": ["**/*.cs", "**/*.csproj", "**/*.props", "**/*.targets", "**/*.json", "**/*.yml", "**/*.yaml", "**/*.md", "**/*.ps1", "**/*.sh", "**/*.xml", "**/*.slnx"]
+    },
+    {
       "name": "csharpier",
       "group": "pre-commit",
       "command": "dotnet",

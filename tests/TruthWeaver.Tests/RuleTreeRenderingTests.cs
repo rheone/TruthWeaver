@@ -218,7 +218,7 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.Word, "NAND", "NOR")]
     [InlineData(OperatorStyle.Symbolic, "↑", "↓")]
     [InlineData(OperatorStyle.CStyle, "NAND", "NOR")]
-    public void PlainText_and_Mermaid_render_nand_and_nor_in_the_requested_style(OperatorStyle style, string nand, string nor)
+    public void Render_NandAndNor_PlainTextAndMermaidUseRequestedStyle_Test(OperatorStyle style, string nand, string nor)
     {
         Assert.Contains(nand, PlainTextTreePrinter.Print(BinaryNode("NAND"), style));
         Assert.Contains(nand, MermaidTreePrinter.Print(BinaryNode("NAND"), style));
@@ -230,7 +230,7 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.Word, "IMPLIES")]
     [InlineData(OperatorStyle.Symbolic, "→")]
     [InlineData(OperatorStyle.CStyle, "IMPLIES")]
-    public void PlainText_and_Mermaid_render_implies_in_the_requested_style(OperatorStyle style, string expected)
+    public void Render_Implies_PlainTextAndMermaidUseRequestedStyle_Test(OperatorStyle style, string expected)
     {
         Assert.Contains(expected, PlainTextTreePrinter.Print(BinaryNode("IMPLIES"), style));
         Assert.Contains(expected, MermaidTreePrinter.Print(BinaryNode("IMPLIES"), style));

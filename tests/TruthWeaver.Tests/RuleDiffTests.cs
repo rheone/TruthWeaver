@@ -110,7 +110,7 @@ public sealed class RuleDiffTests
 
     /// <summary>A different inspection kind is a change of the node, not an identical rule.</summary>
     [Fact]
-    public void A_changed_inspection_kind_produces_a_changed_entry_at_the_root()
+    public void Diff_ChangedInspectionKind_ProducesChangedEntryAtRoot_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("IsTrue(isManager)").CompiledRule!;

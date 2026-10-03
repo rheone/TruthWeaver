@@ -27,7 +27,7 @@ public sealed class RuleNodeCompilerErrorNodeAndDefensiveThrowsTests
         .Build();
 
     [Fact]
-    public void An_error_node_compiles_to_an_unknown_constant_without_throwing_and_the_surrounding_tree_still_compiles()
+    public void Compile_ErrorNode_ProducesUnknownConstantAndSurroundingTreeStillCompiles_Test()
     {
         SourceSpan span = new(0, 1);
         AndNode tree = new([new ConstantNode(TruthValue.True, span), new ErrorNode(span)], span);

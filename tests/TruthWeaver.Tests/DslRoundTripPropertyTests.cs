@@ -160,7 +160,7 @@ public sealed class DslRoundTripPropertyTests
     /// tree as the parentheses-only form for any generated tree (delimiters never change the compiled tree).
     /// </summary>
     [Fact]
-    public void Parsing_the_depth_cycled_form_of_a_generated_tree_reproduces_a_structurally_equal_tree()
+    public void Parse_DepthCycledPrintOfGeneratedTree_ReproducesStructurallyEqualTree_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
 
@@ -184,7 +184,7 @@ public sealed class DslRoundTripPropertyTests
     /// the tidy print.
     /// </summary>
     [Fact]
-    public void Normalising_a_whitespace_padded_print_of_a_generated_tree_matches_the_tidy_print_and_reparses_equal()
+    public void Normalise_WhitespacePaddedPrintOfGeneratedTree_MatchesTidyPrintAndReparsesEqual_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
 

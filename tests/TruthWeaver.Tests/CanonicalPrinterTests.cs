@@ -33,7 +33,7 @@ public sealed class CanonicalPrinterTests
     [Theory]
     [InlineData("isManager ↑ isDepartmentHead", "(isManager NAND isDepartmentHead)")]
     [InlineData("isManager nor isDepartmentHead", "(isManager NOR isDepartmentHead)")]
-    public void Nand_and_nor_are_always_parenthesized_and_printed_with_the_word_operator(string text, string expected)
+    public void Print_NandAndNor_ParenthesizesAndUsesWordOperator_Test(string text, string expected)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -43,7 +43,7 @@ public sealed class CanonicalPrinterTests
     }
 
     [Fact]
-    public void Implies_is_always_parenthesized_and_printed_with_the_word_operator()
+    public void Print_Implies_ParenthesizesAndUsesWordOperator_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -53,7 +53,7 @@ public sealed class CanonicalPrinterTests
     }
 
     [Fact]
-    public void Equivalent_operand_is_always_parenthesized_even_when_unnecessary_for_precedence()
+    public void Print_EquivalentOperand_ParenthesizesEvenWhenPrecedenceDoesNotRequireIt_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 

@@ -46,11 +46,7 @@ public sealed class TruthValueAndDecisionTests
     [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownAsFalse, CollapseOutcome.False)]
     [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownAsTrue, CollapseOutcome.True)]
     [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownIsError, CollapseOutcome.RejectedUnresolved)]
-    public void Decision_collapse_resolves_only_unknown_by_policy(
-        TruthValue result,
-        CollapsePolicy policy,
-        CollapseOutcome expected
-    )
+    public void Collapse_ByPolicy_ResolvesOnlyUnknown_Test(TruthValue result, CollapsePolicy policy, CollapseOutcome expected)
     {
         Decision decision = new(result, []);
 
@@ -58,7 +54,7 @@ public sealed class TruthValueAndDecisionTests
     }
 
     [Fact]
-    public void Decision_collapse_with_an_undefined_policy_throws_argument_out_of_range()
+    public void Collapse_UndefinedPolicy_ThrowsArgumentOutOfRange_Test()
     {
         Decision decision = new(TruthValue.Unknown, []);
 
@@ -66,7 +62,7 @@ public sealed class TruthValueAndDecisionTests
     }
 
     [Fact]
-    public void Decision_collapse_does_not_change_the_decision_or_its_fail_closed_satisfaction()
+    public void Collapse_AnyPolicy_LeavesDecisionAndFailClosedSatisfactionUnchanged_Test()
     {
         Fault fault = new(new TermIdentity("a", []), new InvalidOperationException("boom"));
         Decision decision = new(TruthValue.Unknown, [fault]);
@@ -80,7 +76,7 @@ public sealed class TruthValueAndDecisionTests
     }
 
     [Fact]
-    public void Decision_collapse_rejection_is_not_recorded_as_a_fault()
+    public void Collapse_RejectedPolicy_RecordsNoFault_Test()
     {
         Decision decision = new(TruthValue.Unknown, []);
 

@@ -34,7 +34,7 @@ public sealed class EndToEndUsageExampleTests
 
     /// <summary>A fake that answers Unknown directly yields an Unknown decision with no fault recorded.</summary>
     [Fact]
-    public async Task UnknownFakePredicate_DrivesAnUnknownDecisionWithNoFault()
+    public async Task UnknownFakePredicate_Evaluated_DrivesUnknownDecisionWithNoFault_Test()
     {
         (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Returning<object?>("hasRole", TruthValue.Unknown);

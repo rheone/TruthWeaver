@@ -32,7 +32,7 @@ public sealed class FakePredicatesTests
     [InlineData(TruthValue.True)]
     [InlineData(TruthValue.False)]
     [InlineData(TruthValue.Unknown)]
-    public async Task Returning_Kleene_AnyValue_ReturnsThatValueDirectly(TruthValue value)
+    public async Task Returning_AnyKleeneValue_ReturnsThatValueDirectly_Test(TruthValue value)
     {
         (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Returning<object?>("hasRole", value);

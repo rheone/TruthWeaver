@@ -96,6 +96,7 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 
 - Use work trees when appropriate
 - Husky.Net provides local pre-commit validation.
+- Line endings: `.gitattributes` sets `eol=crlf`, so working-tree text files must be CRLF. Scripted or tool edits (sed, Python, `Set-Content`, agents) can write LF, and Git normalises that silently, so diffs and CI never show it. The `line-endings` pre-commit task runs `scripts/check-line-endings.ps1` on staged files and fails on any bare LF. Repair with `sed -i 's/\r*$/\r/' <file>`. There is no CI step: CI checks out with `eol=crlf`, so it can never see LF in the working tree.
 - CI is authoritative; hooks provide fast local feedback.
 
 ## Claude Code

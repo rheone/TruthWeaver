@@ -4,11 +4,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The non-conforming tests are listed by a grep over the branch diff before any rename
-- [ ] Each listed test is renamed to the convention, with its XML summary still accurate
-- [ ] No test body changes; the same tests pass before and after
-- [ ] The full validation from CLAUDE.md passes
+- [x] The non-conforming tests are listed by a grep over the branch diff before any rename
+- [x] Each listed test is renamed to the convention, with its XML summary still accurate
+- [x] No test body changes; the same tests pass before and after
+- [x] The full validation from CLAUDE.md passes
 
 Source: review of PR #4, Standards axis, hard violation 1. Related: [28](28-decide-aaa-and-nsubstitute-rules.md).
+
+## Comments
+
+- 33 non-conforming names found by a diff of tests/ against the merge-base with main (listed by an awk/grep over added `public ... void/Task` lines before renaming) and renamed to `{Member}_{Scenario}_{Expectation}_Test`; no bodies changed, 2069 tests pass before and after. Names for the snake-case sentence tests were chosen by me (e.g. `ParityShape_Operands_AreInOrder_Test`). XML summaries were left untouched.
