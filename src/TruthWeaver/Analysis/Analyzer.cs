@@ -51,6 +51,60 @@ internal static class Analyzer
         return diagnostics;
     }
 
+    /// <summary>
+    /// Decides whether two trees have the same Strong K3 value for every <c>{True, False, Unknown}</c> assignment of
+    /// their terms, by building both on one shared BDD (so equal terms share variables) and comparing both rails: the
+    /// diagrams are canonical, so equal functions are the same node.
+    /// </summary>
+    /// <param name="left">The first tree.</param>
+    /// <param name="right">The second tree.</param>
+    /// <returns>
+    /// <see langword="null"/> when the trees are equivalent; otherwise an assignment of every term in either tree
+    /// for which they differ. Terms the difference does not depend on are <c>False</c>.
+    /// </returns>
+    public static IReadOnlyDictionary<TermIdentity, TruthValue>? FindDifference(Expression left, Expression right)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        List<Diagnostic> ignored = [];
+        DualRail leftRail = Build(left, bdd, variableIndex, ignored);
+        DualRail rightRail = Build(right, bdd, variableIndex, ignored);
+
+        // The values differ exactly when either rail differs.
+        int difference = bdd.Or(bdd.Xor(leftRail.Definite, rightRail.Definite), bdd.Xor(leftRail.Possible, rightRail.Possible));
+        IReadOnlyDictionary<int, bool>? path = bdd.FindSatisfyingAssignment(difference);
+        if (path is null)
+        {
+            return null;
+        }
+
+        Dictionary<TermIdentity, TruthValue> assignment = [];
+        foreach ((TermIdentity term, int index) in variableIndex)
+        {
+            // Each term is two BDD variables: "is True" (2i) and "is Unknown" (2i + 1); unmentioned ones read as false.
+            if (path.GetValueOrDefault(2 * index))
+            {
+                assignment[term] = TruthValue.True;
+            }
+            else
+            {
+                assignment[term] = path.GetValueOrDefault((2 * index) + 1) ? TruthValue.Unknown : TruthValue.False;
+            }
+        }
+
+        return assignment;
+    }
+
+    /// <summary>Collects the distinct terms of a tree.</summary>
+    /// <param name="root">The tree.</param>
+    /// <returns>The distinct term identities.</returns>
+    public static HashSet<TermIdentity> DistinctTerms(Expression root)
+    {
+        HashSet<TermIdentity> terms = [];
+        CollectTerms(root, terms);
+        return terms;
+    }
+
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
         switch (node)

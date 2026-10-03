@@ -1,5 +1,6 @@
 namespace TruthWeaver.Diffing;
 
+using TruthWeaver.Analysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Evaluation;
 
@@ -28,7 +29,18 @@ public static class RuleDiff
 
         List<RuleDiffEntry> entries = [];
         DiffNode(before.Root, before.Describe(), after.Root, after.Describe(), [], entries);
-        return new RuleDiffResult(entries);
+
+        // Identical structure is trivially the same meaning; otherwise ask the K3 equivalence check.
+        bool? preservesMeaning =
+            entries.Count == 0
+                ? true
+                : RuleEquivalence.Compare(before, after).Outcome switch
+                {
+                    RuleEquivalenceOutcome.Equivalent => true,
+                    RuleEquivalenceOutcome.NotEquivalent => false,
+                    _ => null,
+                };
+        return new RuleDiffResult(entries, preservesMeaning);
     }
 
     private static void DiffNode(

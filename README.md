@@ -221,6 +221,7 @@ Starting points for common tasks:
 | Understand compile diagnostics and "did you mean" | [`Diagnostic`](src/TruthWeaver/Diagnostics/Diagnostic.cs), [`DiagnosticFormatter`](src/TruthWeaver/Diagnostics/DiagnosticFormatter.cs) |
 | Print or diagram a compiled rule | [`CanonicalPrinter`](src/TruthWeaver/Printing/CanonicalPrinter.cs), [`MermaidTreePrinter`](src/TruthWeaver/Printing/MermaidTreePrinter.cs) |
 | Diff two compiled rules | [`RuleDiff`](src/TruthWeaver/Diffing/RuleDiff.cs) |
+| Check two rules for Strong K3 equivalence | [`RuleEquivalence`](src/TruthWeaver/Analysis/RuleEquivalence.cs) |
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](src/TruthWeaver.Yaml/YamlTreeParser.cs) |
 | Write a unit test against a `Decision` | [`DecisionAssertions`](src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](src/TruthWeaver.Testing/FakePredicates.cs) |
@@ -359,8 +360,14 @@ A service that only *implements* domain predicates references
   rules and reports which operator, term, or constant nodes were added,
   removed, or changed, each located by operand-index path and paired with a
   human-readable description — useful for "what did this edit actually
-  change" tooling. Entry point:
+  change" tooling. The result also says whether the change preserves meaning
+  (see [Rule equivalence](#rule-equivalence)). Entry point:
   [`RuleDiff`](src/TruthWeaver/Diffing/RuleDiff.cs).
+- **Strong K3 rule equivalence.** `RuleEquivalence.Compare` says whether two
+  compiled rules give the same result for every `True`/`False`/`Unknown`
+  assignment of their terms, with a counter-example when they do not. See
+  [Rule equivalence](#rule-equivalence). Entry point:
+  [`RuleEquivalence`](src/TruthWeaver/Analysis/RuleEquivalence.cs).
 - **Diagram rendering.** A compiled rule renders as a Mermaid flowchart or
   an indented plain-text tree, optionally colored by one evaluation's
   result and short-circuit path — see
@@ -918,6 +925,50 @@ Only plain absorption (`a AND (a OR b)`) holds, since `AND` and `OR` form a latt
 The rewrite does not use the analyzer's dual-rail findings: those are reported as
 diagnostics (`StructuralTautology`, `StructuralContradiction`) for authors, and
 every simplification here is a local, structural rule that is easy to check.
+
+## Rule equivalence
+
+`RuleEquivalence.Compare(first, second)` answers "do these two rules always give
+the same result?" under Strong Kleene logic, using the same dual-rail BDD as the
+analyzer. It is exact, not sampled, and returns a `RuleEquivalenceResult`:
+
+| `Outcome` | Meaning |
+| --- | --- |
+| `Equivalent` | Same value for every `True`/`False`/`Unknown` assignment of the terms. |
+| `NotEquivalent` | Some assignment differs. `CounterExample` maps every distinct term in either rule (keyed by its printed form, such as `hasRole(role: "Y")`) to the value it takes. |
+| `Undecided` | The rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms` (default 20). `Reason` says so; nothing is guessed. |
+
+```csharp
+RuleEquivalenceResult result = RuleEquivalence.Compare(
+    compiler.Compile("NOT (a AND b)").CompiledRule!,
+    compiler.Compile("NOT a OR NOT b").CompiledRule!);
+// result.Outcome == RuleEquivalenceOutcome.Equivalent
+
+RuleEquivalenceResult excluded = RuleEquivalence.Compare(
+    compiler.Compile("a OR NOT a").CompiledRule!,
+    compiler.Compile("TRUE").CompiledRule!);
+// excluded.Outcome == NotEquivalent, excluded.CounterExample["a"] == TruthValue.Unknown
+```
+
+Limits to know:
+
+- **Terms are opaque and independent.** Two terms are the same variable only when
+  their predicate name and arguments match. The check cannot know that two
+  different predicates are related, so `isManager` and `isDepartmentHead` are
+  treated as unrelated.
+- **The cap is on distinct terms across both rules**, not on size. A rule pair at
+  exactly the cap is decided. Pass `new CompilerOptions(MaxAnalysisTerms: n)` to
+  change it; only that option is read.
+- **Value only.** Evaluation order, short-circuiting and faults are not compared.
+- **A counter-example is one witness**, not all of them. Terms the difference does
+  not depend on are reported as `False`.
+- **Strong K3 is not two-valued logic.** `a OR NOT a` is not equivalent to `TRUE`,
+  because it is `Unknown` when `a` is.
+
+`RuleDiff.Compare` uses this check: `RuleDiffResult.PreservesMeaning` is `true`
+when the rules are equivalent (including when structurally identical), `false`
+when not, and `null` when the default term cap makes it undecidable. Call
+`RuleEquivalence.Compare` directly to use a larger cap.
 
 ## Choosing a rule format
 

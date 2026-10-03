@@ -118,6 +118,35 @@ internal sealed class BddManager
         return result;
     }
 
+    /// <summary>
+    /// Finds one variable assignment that makes the function represented by <paramref name="node"/> true. Because the
+    /// diagram is reduced, every node other than <see cref="False"/> has a path to <see cref="True"/>, so the walk never
+    /// backtracks.
+    /// </summary>
+    /// <param name="node">The function's node id.</param>
+    /// <returns>
+    /// The variables on the path mapped to their value, or <see langword="null"/> when the function is constantly
+    /// false. Variables the path does not mention may take either value.
+    /// </returns>
+    public IReadOnlyDictionary<int, bool>? FindSatisfyingAssignment(int node)
+    {
+        if (node == False)
+        {
+            return null;
+        }
+
+        Dictionary<int, bool> assignment = [];
+        while (node != True)
+        {
+            (int variable, int low, int high) = this.nodes[node];
+            bool takeHigh = high != False;
+            assignment[variable] = takeHigh;
+            node = takeHigh ? high : low;
+        }
+
+        return assignment;
+    }
+
     private int TopVariable(int i, int t, int e)
     {
         int min = int.MaxValue;
