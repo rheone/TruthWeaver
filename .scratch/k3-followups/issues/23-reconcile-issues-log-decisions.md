@@ -4,7 +4,7 @@
 
 **Blocked by:** 20, 21, 22
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Rows 15, 18, 19 and 27 carry their final status and a pointer to the deciding ticket or ADR
 - [ ] The `culture` removal and the counted-operator overloads are recorded
@@ -13,3 +13,7 @@
 - [ ] `dotnet build` and `dotnet csharpier check .` pass
 
 Source: owner decisions 2026-10-03. See [issues-log](../../k3-conformance/issues-log.md).
+
+## Comments
+
+- 2026-10-03 (implementation): rows 15, 19, 27 and the "Open decisions" entries were already reconciled by ticket 30. Added issues-log rows 42 (`culture` removal, ticket 20) and 43 (counted-operator overloads, ticket 22), recorded both in ADR-0005 "Open decisions" (they were not there), and rewrote the log summary to the genuinely open items: the deferred predicate-catalog questions 2, 4, 7, 8, plus row 18 (ternary wording), which stays open pending ticket 31 and so cannot be dropped from the list. Row 18 keeps status Open. Docs only; no source changed.

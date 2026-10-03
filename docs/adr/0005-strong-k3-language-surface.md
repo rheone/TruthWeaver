@@ -574,7 +574,8 @@ Where they differ from the original wording above they take precedence.
 
 The owner answered the four rows the k3-conformance issues log carried as open
 (rows 15, 18, 19 and 27) on 2026-10-03. Three are decided and already recorded
-in the decisions above; one wording question remains.
+in the decisions above; one wording question remains. Two further owner
+decisions of the same day follow the list.
 
 - **Decided, `COALESCE` (log row 15).** Chains `a ?? b ?? c` stay one n-ary
   node, `COALESCE` is the canonical function-call form and `??` is accepted as
@@ -595,6 +596,17 @@ in the decisions above; one wording question remains.
   ternary "the lowest-precedence construct", which does not fit that rule, so
   the wording (or the parser) must change. Tracked by k3-followups 31, which
   awaits an owner decision; nothing else is open.
+
+- **Decided, `EqualsConfigurable` has no `culture` argument (log row 42).**
+  Comparison is ordinal, or ordinal-ignore-case with `ignoreCase`; no culture-sensitive
+  comparison exists in the predicate catalog. A rule that still passes `culture`
+  gets the `UnknownArgument` diagnostic with a removal hint (k3-followups 20).
+  This is a deliberate breaking change for rules that spelled `culture: ""`.
+- **Decided, counted `RuleBuilder` operators take sequences (log row 43).**
+  `Between`, `AtLeast`, `AtMost` and `Exactly` gain `IEnumerable<RuleBuilder>`
+  overloads that build the same node as `params` with no folding of empty or
+  short lists, because counted operators have no identity constant; an
+  unmeetable count is the same diagnostic as with `params` (k3-followups 22).
 
 ## Consequences
 
