@@ -258,6 +258,31 @@ Nothing broader is claimed or enforced:
 See [ADR-0002](docs/adr/0002-evaluation-semantics.md) for the full
 evaluation model this contract supports.
 
+## Predicate catalog rules
+
+Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. They resolve the open
+questions in the [predicate gap list](.scratch/predicate-catalog/k3-gap-list.md); each is a rule for
+catalog members, not for the engine.
+
+- **Null selected value.** The existing built-in members (`StringPredicates`, `RegexPredicates`,
+  `CollectionPredicates`) return a definite `False` for a null selected value. New comparison families
+  (equality, ordering, range, count) return `Unknown` for a null input, and the null tests themselves
+  (`IsNull`, `IsNullOrEmpty`, ...) return a definite `True` or `False`. Rationale: `Unknown` is the K3
+  reading of a missing value and stays fail-closed under `Decision.IsSatisfied`, while changing the
+  existing members would be a breaking behaviour change.
+- **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
+  `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
+  depend on the host's locale, which is unsafe for authorization rules. The existing
+  `EqualsConfigurable` `culture` argument predates this rule and is a known deviation, tracked in the
+  gap list.
+- **Date and time use `DateTimeOffset` only.** There is no `DateTime` literal kind; a host holding a
+  `DateTime` converts it in its selector. Rationale: `DateTime` with an unspecified `Kind` is ambiguous,
+  and adding a kind breaks exhaustive switches over the closed `LiteralKind` set.
+- **Clock predicates receive a `TimeProvider` at registration.** `AfterNow`/`BeforeNow` take the
+  provider as a required registration parameter with no ambient default. Rationale: the clock stays an
+  explicit dependency, so evaluation is testable with a fake provider, consistent with the
+  [predicate-author contract](#the-predicate-author-contract).
+
 ## Failure model (summary)
 
 Internally three-valued (Kleene), two-valued at the boundary. A predicate

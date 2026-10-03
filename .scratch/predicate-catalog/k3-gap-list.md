@@ -190,6 +190,19 @@ takes an `object?` selector today.
 
 ## Open questions for the repo owner
 
+Resolution status (k3-followups 10): the rules are recorded in
+[CONTEXT.md](../../CONTEXT.md#predicate-catalog-rules).
+
+- Question 1 (null input): **resolved**. Existing members keep `False`; new comparison, range and count
+  families return `Unknown` for null; null tests stay definite.
+- Question 3 (culture): **resolved**. Ordinal only; `EqualsConfigurable` `culture` is a known deviation.
+- Question 5 (`DateTime` arguments): **resolved**. `DateTimeOffset` only.
+- Question 6 (clock predicates): **resolved**. `TimeProvider` supplied at registration.
+- Questions 2, 4, 7, 8 (`NotX` shape, collection `In`/`NotIn`, bounds, selector shapes): **deferred**.
+  Research item 7.5 in [research-findings](../k3-conformance/research-findings.md#7-predicate-catalog)
+  recommends answers; they are not decided here.
+
+
 1. **Null input: `False` or `Unknown`?** The existing convention (every catalog XML doc and issue 01) is
    "null selected value is `False`, never a fault". Now that predicates return `TruthValue`, a missing
    value is the textbook K3 case for `Unknown` (`NULL > 5` is unknown, not false). The consequence is
