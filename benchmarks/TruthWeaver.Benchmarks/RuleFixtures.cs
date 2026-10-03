@@ -66,7 +66,8 @@ internal static class RuleFixtures
                 members.Add(RuleBuilder.Predicate("term0"));
             }
 
-            groups[g] = RuleBuilder.Or([.. members]);
+            RuleBuilder[] memberArray = [.. members];
+            groups[g] = RuleBuilder.Or(memberArray);
         }
 
         return RuleBuilder.And(groups);

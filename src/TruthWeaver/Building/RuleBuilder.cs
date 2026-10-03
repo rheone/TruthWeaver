@@ -65,12 +65,40 @@ public abstract class RuleBuilder
         return new OperatorBuilder("and", operands);
     }
 
+    /// <summary>
+    /// Creates a builder for <c>AND</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="And(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="And(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>AND</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder And(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.True, And);
+    }
+
     /// <summary>Creates a builder for logical disjunction.</summary>
     /// <param name="operands">The disjuncts (at least two).</param>
     /// <returns>A builder for the <c>OR</c> expression.</returns>
     public static RuleBuilder Or(params RuleBuilder[] operands)
     {
         return new OperatorBuilder("or", operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>OR</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="Or(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="Or(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>OR</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Or(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.False, Or);
     }
 
     /// <summary>Creates a builder for logical negation.</summary>
@@ -146,12 +174,40 @@ public abstract class RuleBuilder
         return new OperatorBuilder("parity", operands);
     }
 
+    /// <summary>
+    /// Creates a builder for <c>PARITY</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="Parity(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="Parity(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>PARITY</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Parity(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.False, Parity);
+    }
+
     /// <summary>Creates a builder for <c>ANY(...)</c>: at least one operand is true (<c>AtLeast(1, ...)</c>).</summary>
     /// <param name="operands">The operands (at least two).</param>
     /// <returns>A builder for the <c>ANY</c> expression.</returns>
     public static RuleBuilder Any(params RuleBuilder[] operands)
     {
         return new OperatorBuilder("any", operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>ANY</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="Any(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="Any(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>ANY</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Any(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.False, Any);
     }
 
     /// <summary>Creates a builder for <c>ALL(...)</c>: every operand is true (<c>AtLeast(n, ...)</c>).</summary>
@@ -162,12 +218,40 @@ public abstract class RuleBuilder
         return new OperatorBuilder("all", operands);
     }
 
+    /// <summary>
+    /// Creates a builder for <c>ALL</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="All(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="All(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>ALL</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder All(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.True, All);
+    }
+
     /// <summary>Creates a builder for <c>NONE(...)</c>: no operand is true (<c>AtMost(0, ...)</c>).</summary>
     /// <param name="operands">The operands (at least two).</param>
     /// <returns>A builder for the <c>NONE</c> expression.</returns>
     public static RuleBuilder None(params RuleBuilder[] operands)
     {
         return new OperatorBuilder("none", operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>NONE</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="None(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields its negation. Two or more
+    /// operands build the same node as <see cref="None(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>NONE</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder None(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.True, None, RuleBuilder.Not);
     }
 
     /// <summary>Creates a builder for the n-ary "exactly one of these is true" operator.</summary>
@@ -179,6 +263,20 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
+    /// Creates a builder for <c>ExactlyOne</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="ExactlyOne(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="ExactlyOne(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>ExactlyOne</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder ExactlyOne(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.False, ExactlyOne);
+    }
+
+    /// <summary>
     /// Creates a builder for <c>COALESCE(...)</c>: the first operand that is not <c>Unknown</c> (<c>True</c> and
     /// <c>False</c> pass through).
     /// </summary>
@@ -187,6 +285,20 @@ public abstract class RuleBuilder
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)
     {
         return new OperatorBuilder("coalesce", operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>COALESCE</c> from a sequence of operands whose length is only known at run time. Unlike
+    /// <see cref="Coalesce(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
+    /// sequence yields <c>Constant(TruthValue.Unknown)</c> and a single operand yields that operand unchanged. Two or more
+    /// operands build the same node as <see cref="Coalesce(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="operands">The operands; may be empty or hold a single item.</param>
+    /// <returns>A builder for the folded or full <c>COALESCE</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Coalesce(IEnumerable<RuleBuilder> operands)
+    {
+        return FromSequence(operands, TruthValue.Unknown, Coalesce);
     }
 
     /// <summary>
@@ -325,6 +437,29 @@ public abstract class RuleBuilder
     }
 
     private protected abstract JsonNode ToNode();
+
+    /// <summary>
+    /// Folds a run-time operand sequence: empty becomes the operator's identity constant, one item becomes
+    /// <paramref name="single"/> applied to it (or the item itself), and two or more build the full operator node.
+    /// </summary>
+    private static RuleBuilder FromSequence(
+        IEnumerable<RuleBuilder> operands,
+        TruthValue emptyValue,
+        Func<RuleBuilder[], RuleBuilder> create,
+        Func<RuleBuilder, RuleBuilder>? single = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(operands);
+
+        // Materialise once so a single-pass sequence is safe and the count decides the fold.
+        RuleBuilder[] items = [.. operands];
+        return items.Length switch
+        {
+            0 => Constant(emptyValue),
+            1 => single is null ? items[0] : single(items[0]),
+            _ => create(items),
+        };
+    }
 
     private static JsonNode ValueToNode(object value)
     {

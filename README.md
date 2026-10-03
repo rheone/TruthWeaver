@@ -1757,6 +1757,24 @@ on `TruthWeaver.Building.RuleBuilder`:
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
 | `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
 
+For operand lists whose length is only known at run time, `And`, `Or`,
+`Parity`, `Any`, `All`, `None`, `ExactlyOne` and `Coalesce` also have an
+`IEnumerable<RuleBuilder>` overload. It folds short lists at build time instead
+of producing a node the compiler would reject (`MalformedTree`); two or more
+items build the same node as the `params` overload:
+
+| Operator | 0 items | 1 item `x` |
+| -------- | ------- | ---------- |
+| `And` / `All` | `Constant(True)` | `x` |
+| `Or` / `Any` | `Constant(False)` | `x` |
+| `Parity` / `ExactlyOne` | `Constant(False)` | `x` |
+| `None` | `Constant(True)` | `Not(x)` |
+| `Coalesce` | `Constant(Unknown)` | `x` |
+
+An empty list silently becoming a constant can hide a mistake (an empty list of
+role checks under `And` is `True`), so check the count first when that matters.
+`Between` and the threshold family have no enumerable overload.
+
 `RuleBuilder.Compile(compiler)` is a thin wrapper around
 `compiler.CompileJson(builder.ToJson())` — nothing bypasses the
 Validate/Analyze pipeline described in
