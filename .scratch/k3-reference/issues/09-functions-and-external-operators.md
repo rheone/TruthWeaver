@@ -2,7 +2,7 @@
 
 **What to build:** Documents for COALESCE (alias ?? and n-ary form; replaces only Unknown; associative), If (alias ? :; the consensus term so that If(Unknown, A, A) = A, the strongest extension of if-then-else, contrasted with the bare multiplexer, McCarthy's conditional and SQL CASE), and IsTrue, IsFalse, IsUnknown and IsKnown (definite results, SQL IS TRUE / IS UNKNOWN precedents). Each is marked as an external operator rather than a Strong K3 connective (not information-monotone), with the classification ambiguity recorded as an open question where the owner has not decided the category. A decision-flow diagram for If if it helps.
 
-**Blocked by:** 05
+**Blocked by:** 05, k3-followups 21
 
 **Status:** ready-for-agent
 
