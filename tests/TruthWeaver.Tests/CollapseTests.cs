@@ -114,6 +114,21 @@ public sealed class CollapseTests
     }
 
     /// <summary>
+    /// An undefined <see cref="CollapsePolicy"/> is a caller error whatever the result: it is rejected for True and False
+    /// results as well as Unknown, so a bad value is not silently accepted just because it happened not to be needed.
+    /// </summary>
+    [Theory]
+    [InlineData(TruthValue.True)]
+    [InlineData(TruthValue.False)]
+    [InlineData(TruthValue.Unknown)]
+    public void Collapse_UndefinedPolicy_ThrowsForEveryResult_Test(TruthValue result)
+    {
+        Decision decision = new(result, []);
+
+        Assert.Throws<ArgumentOutOfRangeException>("policy", () => decision.Collapse((CollapsePolicy)99));
+    }
+
+    /// <summary>
     /// <c>Decision.IsSatisfied</c> stays fail-closed: true only for a <c>True</c> result. Calling
     /// <c>Collapse(UnknownAsTrue)</c> on an <c>Unknown</c> decision does not change that.
     /// </summary>

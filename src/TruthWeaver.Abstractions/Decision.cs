@@ -37,7 +37,7 @@ public sealed record Decision(
     /// <summary>
     /// Collapses <see cref="Result"/> to a final answer under <paramref name="policy"/>. <see cref="TruthValue.True"/> and
     /// <see cref="TruthValue.False"/> always map to the matching <see cref="CollapseOutcome"/>; only
-    /// <see cref="TruthValue.Unknown"/> depends on the policy. Pure: it does not change this decision, its
+    /// <see cref="TruthValue.Unknown"/> depends on the policy, but an undefined policy is rejected for every result. Pure: it does not change this decision, its
     /// <see cref="Faults"/> or <see cref="IsSatisfied"/> (which stays fail-closed regardless of any policy applied here).
     /// </summary>
     /// <param name="policy">How an <see cref="TruthValue.Unknown"/> result is resolved.</param>
@@ -45,6 +45,12 @@ public sealed record Decision(
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="policy"/> is not a defined <see cref="CollapsePolicy"/>.</exception>
     public CollapseOutcome Collapse(CollapsePolicy policy)
     {
+        // Checked up front so a bad policy is rejected for every result, not only the Unknown one that consults it.
+        if (!Enum.IsDefined(policy))
+        {
+            throw new ArgumentOutOfRangeException(nameof(policy), policy, "Unhandled collapse policy.");
+        }
+
         return this.Result switch
         {
             TruthValue.True => CollapseOutcome.True,
@@ -53,8 +59,7 @@ public sealed record Decision(
             {
                 CollapsePolicy.UnknownAsFalse => CollapseOutcome.False,
                 CollapsePolicy.UnknownAsTrue => CollapseOutcome.True,
-                CollapsePolicy.UnknownIsError => CollapseOutcome.RejectedUnresolved,
-                _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, "Unhandled collapse policy."),
+                _ => CollapseOutcome.RejectedUnresolved,
             },
         };
     }

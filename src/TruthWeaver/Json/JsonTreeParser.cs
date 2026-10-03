@@ -19,8 +19,9 @@ using TruthWeaver.Parsing;
 /// validation (ticket 07). A node is discriminated by which key is present: <c>const</c>,
 /// <c>predicate</c>, or <c>op</c>. Never throws for malformed input — it reports a
 /// <see cref="DiagnosticCodes.MalformedTree"/> diagnostic instead. Every diagnostic is located by its path from the
-/// document root (<c>$.operands[1].op</c>), because a <see cref="JsonElement"/> does not keep source positions; only
-/// invalid JSON syntax also carries the parser's position.
+/// document root (<c>$.operands[1].op</c>), because a <see cref="JsonElement"/> does not keep source positions. Invalid JSON syntax carries the reader's
+/// position; for every other diagnostic <c>RuleCompiler.CompileJson</c> adds the span afterwards (see
+/// <see cref="JsonSpanLocator"/>), so this parser leaves them at <see cref="SourceSpan.None"/>.
 /// </summary>
 internal static class JsonTreeParser
 {

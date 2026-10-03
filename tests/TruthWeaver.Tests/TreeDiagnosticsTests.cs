@@ -290,7 +290,7 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("$", diagnostic.Path);
     }
 
-    /// <summary>The rendering of a path-located diagnostic uses the path where the DSL style uses line and column.</summary>
+    /// <summary>The rendering of a JSON diagnostic names the path and, now that it has a span, the line, column and source line.</summary>
     [Fact]
     public void FormatDiagnostics_JsonUnknownOp_RendersThePathExpectedFoundAndSuggestion_Test()
     {
@@ -301,7 +301,9 @@ public sealed class TreeDiagnosticsTests
 
         string expected = string.Join(
             "\n",
-            "BRE0014 error at $.op: Unknown operator 'annd'.",
+            "BRE0014 error at $.op (line 1, column 7): Unknown operator 'annd'.",
+            "  " + json,
+            "        ^^^^^^",
             "  Expected: a known operator",
             "  Found: 'annd'",
             "  Did you mean: and"

@@ -52,7 +52,7 @@ public sealed class RuleCompiler<TContext>(
     public CompilationResult<TContext> CompileJson([StringSyntax(StringSyntaxAttribute.Json)] string json)
     {
         (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(json);
-        return this.CompileFromParsedJson(root, parseDiagnostics);
+        return this.CompileFromParsedJson(root, parseDiagnostics, json);
     }
 
     /// <summary>
@@ -93,22 +93,57 @@ public sealed class RuleCompiler<TContext>(
         return this.CompileNode(root, frontEndDiagnostics);
     }
 
-    private CompilationResult<TContext> CompileFromParsedJson(RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics)
+    /// <summary>
+    /// Gives each path-located diagnostic that has no span the span of its node in the JSON text. The text is read again
+    /// only when there is such a diagnostic, so a clean compile pays nothing; a diagnostic that already has a span (such
+    /// as invalid JSON syntax) is left as it is.
+    /// </summary>
+    private static List<Diagnostic> LocateInJson(IReadOnlyList<Diagnostic> diagnostics, string? jsonText)
+    {
+        List<Diagnostic> result = [.. diagnostics];
+        if (jsonText is null || !result.Exists(d => d.Path is not null && d.Span == SourceSpan.None))
+        {
+            return result;
+        }
+
+        JsonSpanLocator locator = JsonSpanLocator.Create(jsonText);
+        for (int i = 0; i < result.Count; i++)
+        {
+            if (result[i].Path is { } path && result[i].Span == SourceSpan.None)
+            {
+                result[i] = result[i] with { Span = locator.Locate(path) };
+            }
+        }
+
+        return result;
+    }
+
+    private CompilationResult<TContext> CompileFromParsedJson(
+        RuleNode? root,
+        IReadOnlyList<Diagnostic> parseDiagnostics,
+        string? jsonText = null
+    )
     {
         if (root is null)
         {
-            this.LogDiagnostics(parseDiagnostics);
-            return new CompilationResult<TContext>(null, parseDiagnostics);
+            List<Diagnostic> located = LocateInJson(parseDiagnostics, jsonText);
+            this.LogDiagnostics(located);
+            return new CompilationResult<TContext>(null, located);
         }
 
-        return this.CompileNode(root, parseDiagnostics);
+        return this.CompileNode(root, parseDiagnostics, jsonText);
     }
 
-    private CompilationResult<TContext> CompileNode(RuleNode root, IReadOnlyList<Diagnostic> frontEndDiagnostics)
+    private CompilationResult<TContext> CompileNode(
+        RuleNode root,
+        IReadOnlyList<Diagnostic> frontEndDiagnostics,
+        string? jsonText = null
+    )
     {
         List<Diagnostic> diagnostics = [.. frontEndDiagnostics];
         if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
         {
+            diagnostics = LocateInJson(diagnostics, jsonText);
             this.LogDiagnostics(diagnostics);
             return new CompilationResult<TContext>(null, diagnostics);
         }
@@ -125,6 +160,7 @@ public sealed class RuleCompiler<TContext>(
             diagnostics.AddRange(Analyzer.Analyze(tree, this.options));
         }
 
+        diagnostics = LocateInJson(diagnostics, jsonText);
         this.LogDiagnostics(diagnostics);
 
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);

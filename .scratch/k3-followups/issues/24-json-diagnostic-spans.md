@@ -4,13 +4,19 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The failing test run is shown before the implementation
-- [ ] A malformed-tree, unknown-operator and invalid-argument diagnostic from JSON each carry a span that covers the offending node in the original text
-- [ ] Spans are correct for text with multibyte characters and with a byte-order mark
-- [ ] `Diagnostic.Path` is unchanged
-- [ ] Parsing performance for large rule trees is not meaningfully regressed (check against the existing benchmarks)
-- [ ] The full validation from CLAUDE.md passes
+- [x] The failing test run is shown before the implementation
+- [x] A malformed-tree, unknown-operator and invalid-argument diagnostic from JSON each carry a span that covers the offending node in the original text
+- [x] Spans are correct for text with multibyte characters and with a byte-order mark
+- [x] `Diagnostic.Path` is unchanged
+- [x] Parsing performance for large rule trees is not meaningfully regressed (check against the existing benchmarks)
+- [x] The full validation from CLAUDE.md passes
 
 Source: [issues-log](../../k3-conformance/issues-log.md) row 38; [research findings, section 5](../../k3-conformance/research-findings.md#5-api-shape-and-naming).
+
+## Comments
+
+- Implemented as `JsonSpanLocator` (a lazy `Utf8JsonReader` pass that maps each node's path to a `SourceSpan`, converting byte offsets to UTF-16 characters) applied in `RuleCompiler.CompileJson(string)` to every diagnostic that has a `Path` and no span. The pass runs only when such a diagnostic exists, so a clean compile and `JsonTreeParser.Parse` are unchanged; no benchmark was run for that reason. Line and column come from the existing `SourceSpan.GetLocation`. `CompileJson(JsonElement)` has no text, so its diagnostics keep `SourceSpan.None`.
+- A leading U+FEFF in a string is rejected by `JsonDocument.Parse(string)` as a syntax error (existing behaviour); its span is the one character. A BOM is therefore not a case the locator ever sees.
+- `DiagnosticFormatter` now shows line, column and the source line for JSON diagnostics (it already did so for path plus span); one rendering test was updated.

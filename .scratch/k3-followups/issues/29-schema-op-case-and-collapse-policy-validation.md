@@ -4,12 +4,17 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A failing test shows `{"op":"AND"}` accepted by the parser and rejected by the schema, before the fix
-- [ ] The schema accepts every spelling the parsers accept for `op`, or the schema comment is corrected if the owner prefers case-sensitive names (confirm with the owner first)
-- [ ] A failing test shows `Collapse` with an undefined policy on a True and on a False result, before the fix
-- [ ] `Collapse` rejects an undefined policy for True, False and Unknown results alike
-- [ ] The full validation from CLAUDE.md passes
+- [x] A failing test shows `{"op":"AND"}` accepted by the parser and rejected by the schema, before the fix
+- [x] The schema accepts every spelling the parsers accept for `op`, or the schema comment is corrected if the owner prefers case-sensitive names (confirm with the owner first)
+- [x] A failing test shows `Collapse` with an undefined policy on a True and on a False result, before the fix
+- [x] `Collapse` rejects an undefined policy for True, False and Unknown results alike
+- [x] The full validation from CLAUDE.md passes
 
 Source: review of PR #4, Spec axis, questionable items on the schema and on `Decision.Collapse`.
+
+## Comments
+
+- Schema: kept the existing schema comment (names are case-insensitive) and changed the four `op` constraints from case-sensitive `enum`s to `type: string` plus a per-letter-class `pattern` (for example `[aA][nN][dD]`), since JSON Schema regex has no case-insensitive flag. The accepted set is unchanged apart from case, so `iff` and `xnor` stay accepted. Owner confirmation was not needed because the first option in the ticket was taken.
+- `Decision.Collapse` now rejects an undefined `CollapsePolicy` with `ArgumentOutOfRangeException` (via `Enum.IsDefined`) before looking at the result.

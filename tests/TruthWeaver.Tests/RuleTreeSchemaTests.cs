@@ -2,6 +2,9 @@ namespace TruthWeaver.Tests;
 
 using System.Text.Json;
 using global::Json.Schema;
+using TruthWeaver.Compilation;
+using TruthWeaver.Registry;
+using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
 /// Validates the published ADR-0003 rule-tree JSON Schema (<c>rule-tree.schema.json</c>) against the
@@ -141,6 +144,31 @@ public sealed class RuleTreeSchemaTests
         EvaluationResults results = Schema.Evaluate(document.RootElement);
 
         Assert.False(results.IsValid);
+    }
+
+    /// <summary>
+    /// The parser reads <c>op</c> names case-insensitively, so the schema must accept the same spellings: a document the
+    /// compiler takes is never rejected by the published schema (k3-followups 29).
+    /// </summary>
+    [Theory]
+    [InlineData("""{"op":"AND","operands":[{"const":true},{"const":false}]}""")]
+    [InlineData("""{"op":"And","operands":[{"const":true},{"const":false}]}""")]
+    [InlineData("""{"op":"NOT","operands":[{"const":true}]}""")]
+    [InlineData("""{"op":"ISTRUE","operands":[{"const":"unknown"}]}""")]
+    [InlineData("""{"op":"EXACTLYONE","operands":[{"const":true},{"const":false}]}""")]
+    [InlineData("""{"op":"ATLEAST","k":1,"operands":[{"const":true},{"const":false}]}""")]
+    [InlineData("""{"op":"BETWEEN","min":0,"max":1,"operands":[{"const":true},{"const":false}]}""")]
+    [InlineData("""{"op":"IFF","operands":[{"const":true},{"const":false}]}""")]
+    public void Schema_OpInAnyLetterCase_AgreesWithTheParser_Test(string json)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
+        using JsonDocument document = JsonDocument.Parse(json);
+
+        bool parserAccepts = compiler.CompileJson(json).CompiledRule is not null;
+        bool schemaAccepts = Schema.Evaluate(document.RootElement).IsValid;
+
+        Assert.True(parserAccepts);
+        Assert.Equal(parserAccepts, schemaAccepts);
     }
 
     private static string SchemaFilePath()
