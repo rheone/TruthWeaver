@@ -35,90 +35,15 @@ public static class OperatorInfo
         }
 
         NodeShape shape = ExpressionShape.Of(node);
-        return shape.OpName switch
-        {
-            "Not" => new OperatorDescriptor("NOT", "Logical negation. Unknown stays Unknown."),
-            "And" => new OperatorDescriptor("AND", "True iff every operand is true. Short-circuits at the first False."),
-            "Or" => new OperatorDescriptor("OR", "True iff at least one operand is true. Short-circuits at the first True."),
-            "Xor" => new OperatorDescriptor(
-                "XOR",
-                "True iff exactly one of the two operands is true. Unknown if either operand is Unknown."
-            ),
-            "Equivalent" => new OperatorDescriptor(
-                "EQUIVALENT",
-                "Logical biconditional (IFF, formerly XNOR) — true iff both operands agree (both true or both false). The negation of XOR; Unknown if either operand is Unknown."
-            ),
-            "Implies" => new OperatorDescriptor(
-                "IMPLIES",
-                "Material implication (NOT antecedent OR consequent). True if the antecedent is False or the consequent is True; otherwise Unknown if either operand is Unknown."
-            ),
-            "Nand" => new OperatorDescriptor(
-                "NAND",
-                "Negated conjunction, NOT (left AND right). False only when both operands are True; True if either is False; otherwise Unknown."
-            ),
-            "Nor" => new OperatorDescriptor(
-                "NOR",
-                "Negated disjunction, NOT (left OR right). True only when both operands are False; False if either is True; otherwise Unknown."
-            ),
-            "Parity" => new OperatorDescriptor(
-                "PARITY",
-                "N-ary parity. True iff an odd number of operands are true and none is Unknown; False iff an even number are true and none is Unknown; Unknown whenever any operand is Unknown."
-            ),
-            "Any" => new OperatorDescriptor(
-                "ANY",
-                "True iff at least one operand is true (AtLeast(1, ...)). False iff every operand is false; Unknown when no operand is true yet some are Unknown."
-            ),
-            "All" => new OperatorDescriptor(
-                "ALL",
-                "True iff every operand is true (AtLeast(n, ...)). False iff any operand is false; Unknown when no operand is false yet some are Unknown."
-            ),
-            "None" => new OperatorDescriptor(
-                "NONE",
-                "True iff no operand is true (AtMost(0, ...)). False iff any operand is true; Unknown when no operand is true yet some are Unknown."
-            ),
-            "Between" => new OperatorDescriptor(
-                $"BETWEEN({shape.K}, {shape.Max})",
-                $"True iff the number of true operands is between {shape.K} and {shape.Max} inclusive (AtLeast({shape.K}, ...) AND AtMost({shape.Max}, ...)). False iff no possible count of true operands lies in that range; Unknown otherwise."
-            ),
-            "Coalesce" => new OperatorDescriptor(
-                "COALESCE",
-                "The first operand that is not Unknown; True and False pass through unchanged and the result is Unknown only if every operand is Unknown. Operands after the first known value are skipped."
-            ),
-            "IsTrue" => new OperatorDescriptor(
-                "IsTrue",
-                "Inspection: True iff the operand is True; False if it is False or Unknown. The result is never Unknown, so it never collapses the enclosing rule."
-            ),
-            "IsFalse" => new OperatorDescriptor(
-                "IsFalse",
-                "Inspection: True iff the operand is False; False if it is True or Unknown. The result is never Unknown, so it never collapses the enclosing rule."
-            ),
-            "IsUnknown" => new OperatorDescriptor(
-                "IsUnknown",
-                "Inspection: True iff the operand is Unknown; False if it is True or False. The result is never Unknown, so it never collapses the enclosing rule."
-            ),
-            "IsKnown" => new OperatorDescriptor(
-                "IsKnown",
-                "Inspection: True iff the operand is True or False; False if it is Unknown. The result is never Unknown, so it never collapses the enclosing rule."
-            ),
-            "If" => new OperatorDescriptor(
-                "If",
-                "Conditional: the second operand when the condition is True, the third when it is False. An Unknown condition does not pick a branch: the result is the branch value when both branches are the same definite value, otherwise Unknown. Only the needed branch is evaluated for a definite condition."
-            ),
-            "ExactlyOne" => new OperatorDescriptor("ExactlyOne", "True iff exactly one operand is true."),
-            _ => new OperatorDescriptor($"{shape.OpName}({shape.K})", ThresholdDescription(shape)),
-        };
+        return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
+            ? new OperatorDescriptor(definition.Label(shape), definition.Describe(shape))
+            : new OperatorDescriptor(shape.OpName, ThresholdDescription(shape));
     }
 
-    private static string ThresholdDescription(NodeShape threshold)
+    // Defensive: every node reaches here through ExpressionShape.Of, so a missing definition means an operator was added
+    // to the shape seam without a table entry; fail loudly. An existing test pins this method and message via reflection.
+    private static string ThresholdDescription(NodeShape shape)
     {
-        return threshold.OpName switch
-        {
-            "AtLeast" => $"True iff at least {threshold.K} of the operands are true.",
-            "AtMost" => $"True iff at most {threshold.K} of the operands are true.",
-            "GreaterThan" => $"True iff more than {threshold.K} of the operands are true.",
-            "LessThan" => $"True iff fewer than {threshold.K} of the operands are true.",
-            "Exactly" => $"True iff exactly {threshold.K} of the operands are true.",
-            _ => throw new InvalidOperationException($"Unhandled threshold comparison '{threshold.OpName}'."),
-        };
+        throw new InvalidOperationException($"Unhandled threshold comparison '{shape.OpName}'.");
     }
 }

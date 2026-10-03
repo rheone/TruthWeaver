@@ -10,36 +10,12 @@ using System.Diagnostics.CodeAnalysis;
 /// </summary>
 internal static class TreeFormatOpNames
 {
-    private static readonly IReadOnlyDictionary<string, string> CanonicalToTreeFormat = new Dictionary<string, string>(
+    // Read from the operator definition table, the single home of each operator's tree-format name.
+    private static readonly IReadOnlyDictionary<string, string> CanonicalToTreeFormat = OperatorDefinitions.All.ToDictionary(
+        d => d.OpName,
+        d => d.TreeFormatName,
         StringComparer.Ordinal
-    )
-    {
-        ["Not"] = "not",
-        ["And"] = "and",
-        ["Or"] = "or",
-        ["Xor"] = "xor",
-        ["Equivalent"] = "equivalent",
-        ["Implies"] = "implies",
-        ["Nand"] = "nand",
-        ["Nor"] = "nor",
-        ["Parity"] = "parity",
-        ["Any"] = "any",
-        ["All"] = "all",
-        ["None"] = "none",
-        ["ExactlyOne"] = "exactlyOne",
-        ["AtLeast"] = "atLeast",
-        ["AtMost"] = "atMost",
-        ["GreaterThan"] = "greaterThan",
-        ["LessThan"] = "lessThan",
-        ["Exactly"] = "exactly",
-        ["Between"] = "between",
-        ["Coalesce"] = "coalesce",
-        ["If"] = "if",
-        ["IsTrue"] = "isTrue",
-        ["IsFalse"] = "isFalse",
-        ["IsUnknown"] = "isUnknown",
-        ["IsKnown"] = "isKnown",
-    };
+    );
 
     private static readonly IReadOnlyDictionary<string, string> TreeFormatToCanonical = BuildReadTable();
 
