@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Taxonomy, template and directory tree are presented in one document at docs/strong-k3/PROPOSAL.md (or the agreed equivalent), clearly marked as awaiting approval
 - [ ] Every operation in the inventory has exactly one primary category and an explicit Primitive or Derived kind; ambiguities are listed as open questions, none silently resolved
@@ -13,3 +13,7 @@
 - [ ] No operation documents are written in this ticket
 
 Source: [spec audit](../../k3-conformance/spec-audit.md) and [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md).
+
+## Comments
+
+- 2026-10-03: Proposal written at [docs/strong-k3/PROPOSAL.md](../../../docs/strong-k3/PROPOSAL.md), clearly marked awaiting owner approval. It covers the model, categories, primitive/derived rule, template, directory tree and a 27-operation inventory. Canonical forms were verified by independent brute force (operand counts 2-5); the engine tests were not re-run. Eleven open questions are listed with a recommendation each (notably: category versus kind overlap, "gate" versus CONTEXT.md, COALESCE/If/inspections category, Project/Collapse Kind, and the threshold-family operand minimum mismatch between `OperatorDefinitions` (2) and the compiler (1)). The owner approval checkbox stays open: no other k3-reference ticket should start until the owner records a decision here. docs/strong-k3 is outside the README/CONTEXT doctest scope, so no doctest markers apply.
