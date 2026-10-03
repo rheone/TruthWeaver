@@ -71,7 +71,7 @@ engine, not what the engine itself is.
 | **Expression** | The three-valued tree — operators over terms, constants and sub-expressions. |
 | **Predicate** | A registered, reusable implementation, e.g. `hasTopping`, `lovesPineapple`. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")` — the tree's leaf node. |
-| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `NXOR` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `Project(x, True)` `Project(x, False)` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Collapse(x, policy)` is the final boundary, not an operator. See [Operators](#operators) below. |
+| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `NXOR` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `Project(x, True)` `Project(x, False)` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Collapse` is not part of the rule language: it is a method on the result (`Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)). See [Operators](#operators) below. |
 | **Decision** | The evaluation result: a `TruthValue` plus any faults, and optionally a trace. `IsSatisfied` is fail-closed: only `True` is satisfied. |
 
 Full vocabulary and the predicate-author contract: [CONTEXT.md](CONTEXT.md).
@@ -308,8 +308,8 @@ A service that only *implements* domain predicates references
   symbol spellings, and every notation compiles to the same tree with one
   canonical form. See [Operators](#operators).
 - **Explicit boundaries.** `Project(x, True|False)` resolves `Unknown` anywhere
-  inside a rule; `Collapse(x, policy)` is the single, outermost step that turns a
-  three-valued result into a two-valued answer. See
+  inside a rule; `Decision.Collapse(policy)` turns the rule's three-valued result into
+  a two-valued answer at the call site, and is not part of the rule. See
   [Collapse](#collapse-the-final-boundary).
 - **Rule rewriting.** Opt-in, value-preserving transforms return a new rule:
   expand to primitives, to NAND-only or NOR-only, compress back to derived
@@ -403,9 +403,7 @@ The whole DSL in EBNF (`{ x }` is zero or more, `[ x ]` optional, `|` a choice).
 constants are case-insensitive; a term name may not be a reserved word.
 
 ```ebnf
-rule        = collapse | expression ;
-collapse    = "Collapse" "(" expression "," policy ")" ;     (* outermost only *)
-policy      = "UnknownAsFalse" | "UnknownAsTrue" | "UnknownIsError" ;
+rule        = expression ;
 
 expression  = or_expr [ "?" or_expr ":" or_expr ] ;          (* ternary = If *)
 or_expr     = and_expr { ( "OR" | "||" | "∨" ) and_expr } ;
@@ -439,8 +437,9 @@ Two rules sit outside the grammar because they are context rules, not syntax:
 - **No implicit mixing.** An `infix_op` expression (or `??`, or the ternary) may not sit next to
   `AND`/`OR`, another infix operator or a nested ternary at the same level without parentheses
   (`AmbiguousOperatorMixing`); see [Order of operations](#order-of-operations).
-- **`Collapse` is outermost only** (`NestedCollapse`), and operand counts, threshold bounds and
-  argument schemas are checked after parsing, as diagnostics.
+- **`Collapse` is not part of the language.** It is rejected wherever it appears, with a diagnostic
+  that points to `Decision.Collapse`. Operand counts, threshold bounds and argument schemas are
+  checked after parsing, as diagnostics.
 
 Precedence, tightest first: grouping, `NOT`, `AND`, `OR`. Everything else is a one-step infix form
 that needs parentheses to combine.
@@ -565,8 +564,7 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | `IsFalse(x)` | unary | Inspection: `True` iff `x` is `False`; `False` when it is `True` or `Unknown`. |
 | `IsUnknown(x)` | unary | Inspection: `True` iff `x` is `Unknown`; `False` when it is `True` or `False`. |
 | `IsKnown(x)` | unary | Inspection: `True` iff `x` is `True` or `False`; `False` when it is `Unknown`. |
-| `Collapse(x, policy)` | outermost only | The final boundary that turns the rule's three-valued result into a two-valued answer; see [Collapse](#collapse-the-final-boundary). It is not an ordinary operator: it may only wrap the whole rule. |
-| `Project(x, True)` / `Project(x, False)` | unary + policy | Projection: `True` and `False` pass through unchanged and `Unknown` becomes the chosen constant, so the result is always definite (never `Unknown`). Equal to `COALESCE(x, True)` / `COALESCE(x, False)`; it is the named, intent-revealing spelling. The second argument must be the literal constant `True` or `False` (any letter case): `Unknown` and non-constant expressions are a `SyntaxError` at that argument. Unlike `Collapse` it can sit anywhere inside a rule. |
+| `Project(x, True)` / `Project(x, False)` | unary + policy | Projection: `True` and `False` pass through unchanged and `Unknown` becomes the chosen constant, so the result is always definite (never `Unknown`). Equal to `COALESCE(x, True)` / `COALESCE(x, False)`; it is the named, intent-revealing spelling. The second argument must be the literal constant `True` or `False` (any letter case): `Unknown` and non-constant expressions are a `SyntaxError` at that argument. It can sit anywhere inside a rule. |
 | `ExactlyOne(...)` | n-ary | True iff exactly one operand is true — the unambiguous name for what `XOR` only means at exactly two operands. |
 | `AtLeast(k, ...)` | n-ary | True iff at least `k` operands are true. |
 | `AtMost(k, ...)` | n-ary | True iff at most `k` operands are true. |
@@ -585,8 +583,11 @@ Every operator above follows the three-valued Kleene truth tables in
 ### Collapse: the final boundary
 
 `Unknown` is a normal Strong Kleene value, never an error, and the engine never
-turns it into `True` or `False` on its own. An application that needs a plain
-yes/no answer decides how at the boundary, with a `CollapsePolicy`:
+turns it into `True` or `False` on its own. A rule always yields its raw
+three-valued result: `Decision.Result` is exactly what the expression produced.
+An application that needs a plain yes/no answer decides how at the call site,
+with `Decision.Collapse(CollapsePolicy)`. Collapse is a method on the result, not
+a feature of the rule language.
 
 | Policy | `True` | `False` | `Unknown` | Use it when |
 | --- | --- | --- | --- | --- |
@@ -600,54 +601,31 @@ known" stays distinguishable from "something broke": a faulting predicate still
 puts its exception in `Decision.Faults`, while a clean `Unknown` leaves that list
 empty.
 
-There are two equivalent ways to ask for it.
-
 ```csharp
-// 1. At the call site, over any decision:
 Decision decision = await rule.EvaluateAsync(context, services);
 CollapseOutcome outcome = decision.Collapse(CollapsePolicy.UnknownIsError);
-
-// 2. Declared in the rule itself, as its outermost expression:
-CompiledRule<MyContext> declared = compiler.Compile("Collapse(isManager AND hasRole(role: \"Y\"), UnknownIsError)").CompiledRule!;
-Decision rejected = await declared.EvaluateAsync(context, services);
-if (rejected.Outcome == CollapseOutcome.RejectedUnresolved)
+if (outcome == CollapseOutcome.RejectedUnresolved)
 {
-    // not known; rejected.Faults.Count > 0 would additionally mean a predicate broke
+    // not known; decision.Faults.Count > 0 would additionally mean a predicate broke
 }
 ```
 
-`Decision.Collapse(policy)` is pure: it does not change the decision. A rule that
-declares `Collapse(expr, policy)` applies it for you, and `compiledRule.CollapsePolicy`
-tells you which one. With `UnknownAsFalse` or `UnknownAsTrue` the returned
-`Decision.Result` is already the collapsed, definite value; with `UnknownIsError` it
-stays the three-valued result and `Decision.Outcome` carries the rejection. The
-uncollapsed value is always the single child of `Decision.EvaluatedTree`, and the
-rule's plain-text and Mermaid renderings show the collapse as the root node, labelled
-`Collapse(UnknownAsFalse)` and so on. A rule that declares no collapse has
-`Decision.Outcome == null` and behaves exactly as before.
+`Decision.Collapse(policy)` is pure: it never changes the decision, its `Result`,
+its `Faults` or `IsSatisfied`. `Decision.IsSatisfied` stays fail-closed regardless
+of any policy you apply: it is `true` only when `Decision.Result` is `True`, so
+`decision.Collapse(CollapsePolicy.UnknownAsTrue)` on an `Unknown` decision returns
+`CollapseOutcome.True` but leaves `IsSatisfied` `false`.
 
-`Decision.IsSatisfied` stays fail-closed regardless: it is `true` only when
-`Decision.Result` is `True`. Calling `decision.Collapse(CollapsePolicy.UnknownAsTrue)`
-on an `Unknown` decision returns `CollapseOutcome.True` but leaves `IsSatisfied`
-`false`; only a policy *declared in the rule* changes the `Result` that `IsSatisfied`
-reads.
-
-In the DSL `Collapse` is accepted **only as the outermost expression**. Writing it
-inside another operator, a `Project`, a branch of `If`, or inside another `Collapse`
-(`a AND Collapse(b, UnknownAsFalse)`) is a `NestedCollapse` (`BRE0016`) error whose span
-covers the misplaced collapse. Use `Project(expr, True)` / `Project(expr, False)` to
-resolve `Unknown` *inside* a rule. The policy names are case-insensitive. In JSON and
-YAML the outermost collapse is a node of its own:
-`{"op": "collapse", "policy": "unknownAsFalse", "operands": [rule]}` (`op: collapse`,
-`policy: unknownAsFalse`); the same rule applies, so a nested one is `NestedCollapse`.
-`RuleBuilder.Collapse(operand, policy)` builds it. `UnknownRequiresResolution` is not
-supported.
+Rule text, JSON and YAML cannot declare a `Collapse`: a `Collapse(expr, policy)`
+call or a `collapse` node is rejected (`SyntaxError` in the DSL, `MalformedTree` in
+JSON and YAML) with a diagnostic that points to `Decision.Collapse`. Use
+`Project(expr, True)` / `Project(expr, False)` to resolve `Unknown` *inside* a rule.
+`UnknownRequiresResolution` is not supported.
 
 ## Rewriting rules
 
 A compiled rule is immutable, so a rewrite never edits it: it returns a **new**
-`CompiledRule` over the same predicates, with the same declared `Collapse` policy,
-that evaluates to the same value for every `True`/`False`/`Unknown` assignment of
+`CompiledRule` over the same predicates, that evaluates to the same value for every `True`/`False`/`Unknown` assignment of
 its terms. Rewrites are opt-in; the compiler never applies one for you, so a rule
 always prints and round-trips as it was written.
 
@@ -712,8 +690,8 @@ and `False`), while `COALESCE(x, True)` turns `Unknown` into `True` and `False` 
 `False`, which no monotone function can do. So `COALESCE`, and `Project` and the
 inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) that expand to it, stay as
 `COALESCE` nodes with their operands rewritten. A rule without them is purely
-`NAND` (or `NOR`). Same guarantees as above: a new rule, the original untouched, the
-`Collapse` policy carried over, identical results and faults.
+`NAND` (or `NOR`). Same guarantees as above: a new rule, the original untouched,
+identical results and faults.
 
 Things to know for `ExpandToPrimitives`:
 
@@ -723,8 +701,6 @@ Things to know for `ExpandToPrimitives`:
   the same rule, but may exceed the default `CompilerOptions.MaxNodeCount`.
 - **Faults.** A predicate that throws is `Unknown` plus a `Fault` in the expanded
   rule exactly as in the original; terms are still memoized by identity.
-- **Collapse.** A declared outermost `Collapse(expr, policy)` is the evaluation
-  boundary, not an operator, so it is carried over unchanged.
 
 ### Compress to derived operators
 
@@ -1692,7 +1668,6 @@ on `TruthWeaver.Building.RuleBuilder`:
 | `BETWEEN(min, max)` | `RuleBuilder.Between(int min, int max, params RuleBuilder[] operands)` (JSON/YAML: `{"op": "between", "min": 1, "max": 2, "operands": [...]}`) |
 | `COALESCE` | `RuleBuilder.Coalesce(params RuleBuilder[] operands)` |
 | `IsTrue` / `IsFalse` / `IsUnknown` / `IsKnown` | `RuleBuilder.IsTrue(RuleBuilder operand)` / `RuleBuilder.IsFalse(...)` / `RuleBuilder.IsUnknown(...)` / `RuleBuilder.IsKnown(...)` (JSON/YAML: `{"op": "isTrue", "operands": [x]}`, `isFalse`, `isUnknown`, `isKnown`) |
-| `Collapse` | `RuleBuilder.Collapse(RuleBuilder operand, CollapsePolicy policy)`, valid only as the root of a rule (JSON/YAML: `{"op": "collapse", "policy": "unknownAsFalse", "operands": [x]}`; the policy is `unknownAsFalse`, `unknownAsTrue` or `unknownIsError`) |
 | `Project` | `RuleBuilder.Project(RuleBuilder operand, bool unknownAs)` (JSON/YAML: `{"op": "project", "unknownAs": true, "operands": [x]}`; `unknownAs` is a boolean, or the string `"true"`/`"false"` on read) |
 | `If` | `RuleBuilder.If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)` (JSON/YAML: `{"op": "if", "operands": [condition, whenTrue, whenFalse]}`) |
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
@@ -1899,7 +1874,7 @@ reserved words and the predicate names registered in your registry; equally
 close candidates resolve to the ordinally first one, so the same typo always
 gets the same answer. A word that is nowhere near anything known gets no
 suggestion rather than a bad guess. They cover unknown predicate and operator
-names, misspelt `Collapse` policies, undeclared predicate argument names, and a
+names, undeclared predicate argument names, and a
 lone `&` or `|`.
 
 ### JSON and YAML rules
@@ -1953,7 +1928,7 @@ The classes of malformed rule text each report as follows.
 | Wrong operand count, `XOR` and the other binary operators | `BRE0006`, `BRE0014` | `2 operands` / `3 operands` | `NXOR` / `ExactlyOne` for `XOR`, parentheses for the others |
 | Ambiguous mixing without parentheses | `BRE0007` | parentheses around one of the groups / the operators sharing a level | hint showing the parenthesised text |
 | Threshold or `BETWEEN` bounds, non-integer bound | `BRE0008`, `BRE0001` | the valid range, or an integer / the value | none |
-| Nested `Collapse` | `BRE0016` | `Collapse` as the outermost expression / nested | hint to move it outside or use `Project` |
+| Declared `Collapse` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
 | Missing, unknown or mistyped predicate argument | `BRE0003`, `BRE0005`, `BRE0004` | the argument or kind / what was written | nearest declared argument name |
 
 ## Benchmarks
@@ -2007,8 +1982,8 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `CompilationResult<TContext>` | What `Compile`/`CompileJson`/`CompileYaml` return: a nullable `CompiledRule<TContext>` plus every `Diagnostic` raised. |
 | `CompiledRule<TContext>` | The immutable, thread-safe result of a successful compile. Safe to cache, share, and evaluate repeatedly; swapping the reference that holds it is how a host applies a rule edit at runtime. |
 | `CompilerOptions` | Compile-time resource bounds — max tree depth, max node count, the BDD analyzer's term cap — plus `CompilationMode`. |
-| `Decision` | The result of one evaluation: a `TruthValue`, the `Fault`s absorbed along the way, and optionally a `Trace`. `Decision.IsSatisfied` is true only when the result is `TruthValue.True`. `Decision.Collapse(policy)` turns it into a final `CollapseOutcome`; `Decision.Outcome` is set when the rule declared a `Collapse`. |
-| `Collapse` / `CollapsePolicy` / `CollapseOutcome` | The final evaluation boundary (ADR-0005 decision 14). `CollapsePolicy` (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`) says how `Unknown` becomes a two-valued answer; `CollapseOutcome` (`True`, `False`, `RejectedUnresolved`) is the answer. `RejectedUnresolved` is a normal outcome, not a `Fault`. In the DSL `Collapse(expr, policy)` is accepted only as the outermost expression. See [Collapse](#collapse-the-final-boundary). |
+| `Decision` | The result of one evaluation: a `TruthValue`, the `Fault`s absorbed along the way, and optionally a `Trace`. `Decision.IsSatisfied` is true only when the result is `TruthValue.True`. `Decision.Result` is always the rule's raw value; `Decision.Collapse(policy)` turns it into a final `CollapseOutcome` at the call site. |
+| `Collapse` / `CollapsePolicy` / `CollapseOutcome` | A method on the result, not part of the rule (ADR-0005 decision 14). `CollapsePolicy` (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`) says how `Unknown` becomes a two-valued answer; `CollapseOutcome` (`True`, `False`, `RejectedUnresolved`) is the answer. `RejectedUnresolved` is a normal outcome, not a `Fault`. Rule text, JSON and YAML cannot declare it. See [Collapse](#collapse-the-final-boundary). |
 | `Diagnostic` | One compile-time problem: a code, a `DiagnosticSeverity` (`Error`/`Warning`/`Info`), a message, a source span or JSON/YAML `Path`, optional expected/found text and a `DiagnosticSuggestion`. See [Reading diagnostics](#reading-diagnostics). `Error` severity is what blocks `CompiledRule<TContext>` from being populated. |
 | `EvaluationOptions` | Per-call evaluation knobs: `FaultBudget` (abort after N faults), `Mode` (`Default` or `Exhaustive`), and an overall timeout. |
 | `NXOR(...)` | N-ary parity: true iff an odd number of operands are true; `Unknown` whenever any operand is `Unknown`. The unambiguous name for what `XOR` would mean past two operands. |
@@ -2226,9 +2201,9 @@ constant, so its result is always definite. `Project(a, v)` is the same value as
 | F | F | F |
 | ? | T | F |
 
-### Collapse: `Collapse(a, policy)`
+### Collapse: `Decision.Collapse(policy)`
 
-`Collapse` is the evaluation boundary, so its "truth table" maps a K3 result to a
+`Collapse` is a method on the result, so its "truth table" maps a K3 result to a
 `CollapseOutcome` rather than to another `TruthValue`.
 
 | a | `UnknownAsFalse` | `UnknownAsTrue` | `UnknownIsError` |
@@ -2296,7 +2271,7 @@ are covered by the evaluator's behavior described in
   why the library ships as five packages and how predicates and operators
   are extended.
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md) —
-  the full K3 operator set, notations, boundaries (`Project`, `Collapse`), rewrites,
+  the full K3 operator set, notations, boundaries (`Project`, and `Decision.Collapse` on the result), rewrites,
   structured diagnostics and `TruthValue`-returning predicates.
 
 ## License

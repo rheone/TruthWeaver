@@ -256,15 +256,15 @@ public sealed class StructuredDiagnosticsTests
         Assert.Equal("')'", diagnostic.Found);
     }
 
-    /// <summary>A nested Collapse explains the boundary rule and hints at moving it outside.</summary>
+    /// <summary>A declared Collapse explains that it left the rule language and hints at Decision.Collapse.</summary>
     [Fact]
-    public void Compile_NestedCollapse_ReportsExpectedAndFoundAndHintsAtMovingIt_Test()
+    public void Compile_DeclaredCollapse_ReportsExpectedAndFoundAndHintsAtDecisionCollapse_Test()
     {
         Diagnostic diagnostic = Single("a AND Collapse(b, UnknownAsFalse)");
 
-        Assert.Equal(DiagnosticCodes.NestedCollapse, diagnostic.Code);
-        Assert.Equal("Collapse as the outermost expression", diagnostic.Expected);
-        Assert.Equal("Collapse nested inside another expression", diagnostic.Found);
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal("a rule without Collapse", diagnostic.Expected);
+        Assert.Equal("Collapse", diagnostic.Found);
         Assert.Equal(DiagnosticSuggestionKind.Hint, diagnostic.Suggestion?.Kind);
     }
 
@@ -278,16 +278,6 @@ public sealed class StructuredDiagnosticsTests
         Assert.Equal("an operator or the end of the rule", diagnostic.Expected);
         Assert.Equal("'b'", diagnostic.Found);
         Assert.Null(diagnostic.Suggestion);
-    }
-
-    /// <summary>A bad Collapse policy lists the valid policies and suggests the nearest one.</summary>
-    [Fact]
-    public void Compile_MisspelledCollapsePolicy_SuggestsTheNearestPolicy_Test()
-    {
-        Diagnostic diagnostic = Compiler.Compile("Collapse(a, UnknownAsFals)").Diagnostics[0];
-
-        Assert.Equal("UnknownAsFalse", diagnostic.Suggestion?.Text);
-        Assert.Equal("'UnknownAsFals'", diagnostic.Found);
     }
 
     /// <summary>A missing predicate argument names the argument that was expected.</summary>

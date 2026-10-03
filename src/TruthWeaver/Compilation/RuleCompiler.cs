@@ -113,8 +113,11 @@ public sealed class RuleCompiler<TContext>(
             return new CompilationResult<TContext>(null, diagnostics);
         }
 
-        (Expression? tree, CollapsePolicy? collapse, IReadOnlyList<Diagnostic> validationDiagnostics) =
-            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.options);
+        (Expression? tree, IReadOnlyList<Diagnostic> validationDiagnostics) = RuleNodeCompiler<TContext>.Compile(
+            root,
+            this.registry,
+            this.options
+        );
         diagnostics.AddRange(validationDiagnostics);
 
         if (tree is not null)
@@ -126,7 +129,7 @@ public sealed class RuleCompiler<TContext>(
 
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         CompiledRule<TContext>? compiled =
-            !hasErrors && tree is not null ? new CompiledRule<TContext>(tree, this.registry, this.logger, collapse) : null;
+            !hasErrors && tree is not null ? new CompiledRule<TContext>(tree, this.registry, this.logger) : null;
         return new CompilationResult<TContext>(compiled, diagnostics);
     }
 

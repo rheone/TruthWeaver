@@ -170,16 +170,6 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("$.k", diagnostic.Path);
     }
 
-    /// <summary>A misspelt <c>Collapse</c> policy is located at <c>policy</c> and answered in the tree spelling.</summary>
-    [Fact]
-    public void CompileJson_MisspeltCollapsePolicy_SuggestsTheTreeSpelling_Test()
-    {
-        Diagnostic diagnostic = SingleJson("""{"op":"collapse","policy":"unknownAsFals","operands":[{"const":true}]}""");
-
-        Assert.Equal("$.policy", diagnostic.Path);
-        Assert.Equal("unknownAsFalse", diagnostic.Suggestion?.Text);
-    }
-
     /// <summary>A <c>Project</c> whose <c>unknownAs</c> is not a boolean is located at that property.</summary>
     [Fact]
     public void CompileJson_BadUnknownAs_ReportsTheUnknownAsPath_Test()
@@ -369,13 +359,12 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("a scalar", diagnostic.Found);
     }
 
-    /// <summary>A bad YAML <c>const</c>, <c>k</c>, <c>min</c>, <c>policy</c> and <c>unknownAs</c> are each located at their key.</summary>
+    /// <summary>A bad YAML <c>const</c>, <c>k</c>, <c>min</c> and <c>unknownAs</c> are each located at their key.</summary>
     [Theory]
     [InlineData("const: maybe", "$.const")]
     [InlineData("op: atLeast\nk: two\noperands:\n  - const: true\n  - const: false", "$.k")]
     [InlineData("op: between\nmin: x\nmax: 1\noperands:\n  - const: true\n  - const: false", "$.min")]
     [InlineData("op: between\nmin: 0\noperands:\n  - const: true\n  - const: false", "$")]
-    [InlineData("op: collapse\npolicy: nope\noperands:\n  - const: true", "$.policy")]
     [InlineData("op: project\nunknownAs: unknown\noperands:\n  - const: true", "$.unknownAs")]
     public void CompileYaml_BadFieldValue_ReportsTheFieldPath_Test(string yaml, string path)
     {
@@ -384,15 +373,6 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal(path, diagnostic.Path);
         Assert.NotNull(diagnostic.Expected);
         Assert.NotNull(diagnostic.Found);
-    }
-
-    /// <summary>A misspelt YAML <c>Collapse</c> policy is answered in the tree spelling.</summary>
-    [Fact]
-    public void CompileYaml_MisspeltCollapsePolicy_SuggestsTheTreeSpelling_Test()
-    {
-        Diagnostic diagnostic = SingleYaml("op: collapse\npolicy: unknownAsFals\noperands:\n  - const: true");
-
-        Assert.Equal("unknownAsFalse", diagnostic.Suggestion?.Text);
     }
 
     /// <summary>An unknown YAML predicate and its arguments are located by path, with suggestions.</summary>

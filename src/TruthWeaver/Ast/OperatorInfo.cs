@@ -113,28 +113,6 @@ public static class OperatorInfo
         };
     }
 
-    /// <summary>
-    /// Gets the label and description for the outermost <c>Collapse</c> boundary a rule declared. It is not an
-    /// <see cref="Expression"/> node, so it is described here rather than through <see cref="Describe"/>.
-    /// </summary>
-    /// <param name="policy">The declared policy.</param>
-    /// <returns>The boundary's label (<c>Collapse(UnknownAsFalse)</c>, ...) and description.</returns>
-    internal static OperatorDescriptor DescribeCollapse(CollapsePolicy policy)
-    {
-        string meaning = policy switch
-        {
-            CollapsePolicy.UnknownAsFalse => "Unknown becomes False, so only a definite True is accepted.",
-            CollapsePolicy.UnknownAsTrue => "Unknown becomes True, so only a definite False is refused.",
-            CollapsePolicy.UnknownIsError =>
-                "Unknown becomes a rejected-unresolved outcome (not a fault): the rule could not be resolved either way.",
-            _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, "Unhandled collapse policy."),
-        };
-        return new OperatorDescriptor(
-            $"Collapse({CollapsePolicyText.Canonical(policy)})",
-            $"Final boundary: turns the three-valued result of the rule into a two-valued answer. True and False pass through; {meaning}"
-        );
-    }
-
     private static string ThresholdDescription(NodeShape threshold)
     {
         return threshold.OpName switch

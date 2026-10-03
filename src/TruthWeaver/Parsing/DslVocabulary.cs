@@ -28,7 +28,6 @@ internal static class DslVocabulary
         "IsUnknown",
         "IsKnown",
         "Project",
-        "Collapse",
         "ExactlyOne",
         "AtLeast",
         "AtMost",

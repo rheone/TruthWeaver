@@ -170,20 +170,19 @@ public sealed class ExpandToPrimitivesTests
         Assert.Equal(expanded.CanonicalText, recompiled.Compiled.CanonicalText);
     }
 
-    /// <summary>A declared outermost <c>Collapse</c> policy is an evaluation boundary, not a derived operator, and survives expansion.</summary>
+    /// <summary>A collapse policy chosen at the call site over the expanded rule's decision gives the same outcome as over the original's.</summary>
     [Fact]
-    public async Task ExpandToPrimitives_RuleWithCollapse_PreservesThePolicyAndOutcome_Test()
+    public async Task ExpandToPrimitives_CollapseOverTheDecision_GivesTheSameOutcome_Test()
     {
-        K3Rule original = K3Rule.TryCreate("Collapse(a IMPLIES b, UnknownIsError)", 2)!;
+        K3Rule original = K3Rule.TryCreate("a IMPLIES b", 2)!;
         K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives());
         TruthValue[] assignment = [TruthValue.True, TruthValue.Unknown];
 
         Decision before = await original.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
         Decision after = await expanded.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
 
-        Assert.Equal(CollapsePolicy.UnknownIsError, expanded.Compiled.CollapsePolicy);
-        Assert.Equal(CollapseOutcome.RejectedUnresolved, after.Outcome);
-        Assert.Equal(before.Outcome, after.Outcome);
+        Assert.Equal(CollapseOutcome.RejectedUnresolved, after.Collapse(CollapsePolicy.UnknownIsError));
+        Assert.Equal(before.Collapse(CollapsePolicy.UnknownIsError), after.Collapse(CollapsePolicy.UnknownIsError));
         Assert.Equal(before.Result, after.Result);
     }
 

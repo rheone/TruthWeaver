@@ -36,14 +36,6 @@ public sealed class TruthValueAndDecisionTests
         Assert.Null(decision.EvaluatedTree);
     }
 
-    [Fact]
-    public void Decision_outcome_defaults_to_null_when_no_collapse_was_declared()
-    {
-        Decision decision = new(TruthValue.Unknown, []);
-
-        Assert.Null(decision.Outcome);
-    }
-
     [Theory]
     [InlineData(TruthValue.True, CollapsePolicy.UnknownAsFalse, CollapseOutcome.True)]
     [InlineData(TruthValue.True, CollapsePolicy.UnknownAsTrue, CollapseOutcome.True)]
@@ -85,7 +77,6 @@ public sealed class TruthValueAndDecisionTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
         Assert.False(decision.IsSatisfied);
         Assert.Equal([fault], decision.Faults);
-        Assert.Null(decision.Outcome);
     }
 
     [Fact]

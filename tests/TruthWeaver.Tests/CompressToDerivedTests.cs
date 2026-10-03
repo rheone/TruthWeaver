@@ -181,18 +181,17 @@ public sealed class CompressToDerivedTests
         Assert.Equal(original.Compiled.CanonicalText, compressed.Compiled.CanonicalText);
     }
 
-    /// <summary>The compressed rule is a new rule: the original keeps its text and the declared Collapse policy survives.</summary>
+    /// <summary>The compressed rule is a new rule: the original keeps its text.</summary>
     [Fact]
-    public void CompressToDerived_Rule_LeavesTheOriginalUntouchedAndKeepsTheCollapsePolicy_Test()
+    public void CompressToDerived_Rule_LeavesTheOriginalUntouched_Test()
     {
-        K3Rule original = K3Rule.TryCreate("Collapse(NOT a OR b, UnknownAsFalse)", 2)!;
+        K3Rule original = K3Rule.TryCreate("NOT a OR b", 2)!;
         string textBefore = original.Compiled.CanonicalText;
 
         CompiledRule<RuleTestContext> compressed = original.Compiled.CompressToDerived();
 
         Assert.NotSame(original.Compiled, compressed);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);
-        Assert.Equal(CollapsePolicy.UnknownAsFalse, compressed.CollapsePolicy);
-        Assert.Equal("Collapse((a IMPLIES b), UnknownAsFalse)", compressed.CanonicalText);
+        Assert.Equal("(a IMPLIES b)", compressed.CanonicalText);
     }
 }

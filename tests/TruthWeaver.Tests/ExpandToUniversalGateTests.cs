@@ -227,21 +227,20 @@ public sealed class ExpandToUniversalGateTests
         Assert.Equal(rewritten.CanonicalText, recompiled.Compiled.CanonicalText);
     }
 
-    /// <summary>A declared outermost <c>Collapse</c> policy survives the rewrite and still produces the same outcome.</summary>
+    /// <summary>A collapse policy chosen at the call site over the rewritten rule's decision gives the same outcome as over the original's.</summary>
     [Theory]
     [InlineData("nand")]
     [InlineData("nor")]
-    public async Task ExpandToNandOrNor_RuleWithCollapse_PreservesThePolicyAndOutcome_Test(string gate)
+    public async Task ExpandToNandOrNor_CollapseOverTheDecision_GivesTheSameOutcome_Test(string gate)
     {
-        K3Rule original = K3Rule.TryCreate("Collapse(a IMPLIES b, UnknownIsError)", 2)!;
+        K3Rule original = K3Rule.TryCreate("a IMPLIES b", 2)!;
         K3Rule rewritten = original.Rewrite(rule => Expand(rule, gate));
         TruthValue[] assignment = [TruthValue.True, TruthValue.Unknown];
 
         Decision before = await original.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
         Decision after = await rewritten.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
 
-        Assert.Equal(CollapsePolicy.UnknownIsError, rewritten.Compiled.CollapsePolicy);
-        Assert.Equal(CollapseOutcome.RejectedUnresolved, after.Outcome);
+        Assert.Equal(CollapseOutcome.RejectedUnresolved, after.Collapse(CollapsePolicy.UnknownIsError));
         Assert.Equal(before.Result, after.Result);
     }
 

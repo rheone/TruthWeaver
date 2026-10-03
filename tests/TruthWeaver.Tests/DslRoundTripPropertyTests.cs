@@ -172,7 +172,7 @@ public sealed class DslRoundTripPropertyTests
         GenExpressionTree.Sample(
             tree =>
             {
-                string printed = CanonicalPrinter.Print(tree, null, GroupingStyle.DepthCycling);
+                string printed = CanonicalPrinter.Print(tree, GroupingStyle.DepthCycling);
                 CompilationResult<RuleTestContext> result = compiler.Compile(printed);
                 string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
 

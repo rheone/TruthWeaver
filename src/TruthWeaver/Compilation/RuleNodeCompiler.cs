@@ -35,43 +35,18 @@ internal sealed class RuleNodeCompiler<TContext>
     /// <param name="options">The compiler's resource limits and mode.</param>
     /// <returns>
     /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/>
-    /// diagnostic was produced), the outermost <c>Collapse</c> policy the rule declared (or <see langword="null"/>), and
-    /// every diagnostic raised while validating. A root <see cref="CollapseNode"/> is not part of the tree: it is peeled
-    /// into the policy here, which is what makes every other <see cref="CollapseNode"/> a nested, rejected one.
+    /// diagnostic was produced) and every diagnostic raised while validating.
     /// </returns>
-    public static (Expression? Tree, CollapsePolicy? Collapse, IReadOnlyList<Diagnostic> Diagnostics) Compile(
+    public static (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics) Compile(
         RuleNode root,
         PredicateRegistry<TContext> registry,
         CompilerOptions options
     )
     {
         RuleNodeCompiler<TContext> compiler = new(registry, options);
-        CollapsePolicy? collapse = null;
-        RuleNode body = root;
-        if (root is CollapseNode outermost)
-        {
-            if (outermost.Operands.Count != 1)
-            {
-                compiler.diagnostics.Add(
-                    Diagnostic.Error(
-                        DiagnosticCodes.MalformedTree,
-                        $"Collapse requires exactly 1 operand but found {outermost.Operands.Count}.",
-                        outermost.Span,
-                        expected: "1 operand",
-                        found: CountText(outermost.Operands.Count),
-                        path: PathOf(outermost, "operands")
-                    )
-                );
-                return (null, null, compiler.diagnostics);
-            }
-
-            collapse = outermost.Policy;
-            body = outermost.Operands[0];
-        }
-
-        Expression tree = compiler.Build(body, depth: 1);
+        Expression tree = compiler.Build(root, depth: 1);
         bool hasErrors = compiler.diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
-        return (hasErrors ? null : tree, collapse, compiler.diagnostics);
+        return (hasErrors ? null : tree, compiler.diagnostics);
     }
 
     /// <summary>Gets the path of a property of a JSON/YAML node, or <see langword="null"/> for a DSL node.</summary>
@@ -245,7 +220,6 @@ internal sealed class RuleNodeCompiler<TContext>
             IfNode ifNode => this.BuildIf(ifNode, depth),
             InspectionNode ins => this.BuildInspection(ins, depth),
             ProjectNode pr => this.BuildProject(pr, depth),
-            CollapseNode collapse => this.RejectNestedCollapse(collapse, depth),
             _ => throw new InvalidOperationException($"Unhandled rule node type '{node.GetType()}'."),
         };
     }
@@ -294,29 +268,6 @@ internal sealed class RuleNodeCompiler<TContext>
         }
 
         return new InspectionExpression(node.Kind, this.Build(node.Operands[0], depth + 1));
-    }
-
-    /// <summary>
-    /// Reports a <c>Collapse</c> that is not the rule's outermost expression (ADR-0005 decision 14). Its operand is still
-    /// built so problems inside it surface in the same pass instead of only after the author fixes the nesting.
-    /// </summary>
-    private Expression RejectNestedCollapse(CollapseNode node, int depth)
-    {
-        this.diagnostics.Add(
-            Diagnostic.Error(
-                DiagnosticCodes.NestedCollapse,
-                "Collapse can only be the outermost expression of a rule, because it is the final step that turns the result into a two-valued answer. Move it to the outside of the whole rule, or use Project(expr, True) / Project(expr, False) to resolve Unknown inside the rule.",
-                node.Span,
-                expected: "Collapse as the outermost expression",
-                found: "Collapse nested inside another expression",
-                suggestion: new DiagnosticSuggestion(
-                    DiagnosticSuggestionKind.Hint,
-                    "Move Collapse to the outside of the whole rule, or use Project(expr, True) or Project(expr, False) to resolve Unknown inside the rule."
-                ),
-                path: node.Path
-            )
-        );
-        return node.Operands.Count == 1 ? this.Build(node.Operands[0], depth + 1) : FailedNode.Placeholder;
     }
 
     /// <summary>Builds <c>Project(x, True|False)</c>; anything but one operand is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>

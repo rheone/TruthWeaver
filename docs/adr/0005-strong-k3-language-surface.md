@@ -26,7 +26,7 @@ the aliases are cheap once the canonical form stays single.
 1. **Every expression, including every predicate result, is a `TruthValue`**
    (`True`, `False`, `Unknown`). `Unknown` is never implicitly converted to
    `True` or `False`; conversion to a two-valued result happens only at an
-   explicit boundary (`Project`, `Collapse`, or the `Decision` API).
+   explicit boundary (`Project`, or `Decision.Collapse` on the result; decision 14).
    `False < Unknown < True` is an implementation aid for truth functions and
    cardinality bounds, not a numeric ordering of truth.
 2. **Operators are accepted in several notations but have one canonical form.**
@@ -41,7 +41,8 @@ the aliases are cheap once the canonical form stays single.
    Strong Kleene material implication), `EQUIVALENT` (alias `IFF`), `XOR`,
    `NAND`, `NOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`. Inspection: `IsTrue`,
    `IsFalse`, `IsUnknown`, `IsKnown`. Conditional: `If` / `? :`. Boundaries:
-   `Project`, `Collapse`.
+   `Project`. Collapse is a method on `Decision`, not a rule construct
+   (decision 14).
 3a. **Derived operators remain first-class AST nodes** with their own
    evaluation, label/description and printing, rather than being desugared at
    parse time. Their primitive definitions are used by the optional
@@ -104,7 +105,7 @@ the aliases are cheap once the canonical form stays single.
 
     Implemented in k3-conformance 23 (primitive expansion):
     `CompiledRule<TContext>.ExpandToPrimitives()` returns a new rule (the original
-    is immutable and untouched; the declared `CollapsePolicy` is carried over)
+    is immutable and untouched)
     whose tree holds only the kernel (`NOT`, `AND`, `OR`, `AtLeast`, `AtMost`,
     `Exactly`, `COALESCE`), constants and terms. Definitions, each verified
     exhaustively against the oracle (and a random-rule property test over every
@@ -162,7 +163,7 @@ the aliases are cheap once the canonical form stays single.
     the result is never larger than the input; passes repeat until stable, so
     compression is idempotent. It recovers an equivalent derived form, not
     necessarily the original (`COALESCE(x, False)` reads back as `Project`, not
-    `IsTrue`). Shared operands and the declared `Collapse` policy are preserved.
+    `IsTrue`). Shared operands are preserved.
 
     Implemented in k3-conformance 26 (canonicalisation):
     `CompiledRule<TContext>.Canonicalize()` applies an ordered, K3-sound rule set
@@ -228,12 +229,12 @@ the aliases are cheap once the canonical form stays single.
     identifier; JSON and YAML share the syntax. Raw parse nodes (and arguments)
     carry the path (an internal `Path` init property), and the compiler copies it
     onto its own diagnostics, so a validation error found after parsing is
-    located the same way. A wrong field is located at the field (`.k`, `.policy`,
+    located the same way. A wrong field is located at the field (`.k`,
     `.unknownAs`, `.min`, `.max`, `.const`, `.op`, `.predicate`, `.args.name`), a
     wrong operand count at `.operands`, and a missing key at the node that should
     have held it. `Unknown operator` is checked before the operands are read and
     is answered with the nearest tree-format op name (including the read-only
-    `xnor`/`iff` aliases) or, for `Collapse` policies, in the tree spelling; an
+    `xnor`/`iff` aliases); an
     unknown predicate in a tree is only ever answered with a registered predicate
     name, never a DSL operator word. YAML diagnostics also carry the `Span` of the
     offending node (from YamlDotNet's marks); JSON diagnostics have none, because
@@ -444,58 +445,44 @@ the aliases are cheap once the canonical form stays single.
     tautology. The canonical printer writes `Project(a, True)`; the evaluated and
     description label is `Project(True)` / `Project(False)`, kept as a word in
     every `OperatorStyle`. `RuleBuilder.Project(operand, unknownAs)` is new.
-    Unlike `Collapse` (decision 14) it may appear anywhere in a rule.
+    It may appear anywhere in a rule, unlike a collapse, which is applied to the result (decision 14).
 
-14. **`Collapse(expr, policy)`** is the final boundary that produces a
-    two-valued application result. Policies: `UnknownAsFalse`,
-    `UnknownAsTrue`, `UnknownIsError`. `Unknown` is a normal K3 value, not a
-    failure: `UnknownIsError` yields an explicit "rejected: unresolved"
-    outcome and never a `Fault` or exception; `Decision.Faults` is reserved
-    for real predicate exceptions, timeouts and cancellation. It lives on the
-    evaluation API and is accepted in the DSL only as the outermost function
-    (never nested). `UnknownRequiresResolution` is out of scope.
+14. **Collapse is a method on the result, not part of the rule.**
+    *Amended 2026-10-03 (k3-followups 04); this replaces the original decision,
+    which made `Collapse(expr, policy)` a rule-language function accepted only as a
+    rule's outermost expression and recorded on the compiled rule.* A rule always
+    yields its raw three-valued result: `Decision.Result` is never altered by a
+    collapse. The application chooses how an `Unknown` becomes a two-valued answer at
+    the call site with `Decision.Collapse(CollapsePolicy)`. Policies:
+    `UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`. `Unknown` is a normal K3
+    value, not a failure: `UnknownIsError` yields an explicit "rejected:
+    unresolved" outcome and never a `Fault` or exception; `Decision.Faults` is
+    reserved for real predicate exceptions, timeouts and cancellation.
+    `UnknownRequiresResolution` is out of scope. The rationale is the same split the
+    SQL `WHERE`/`CHECK` and XACML PDP/PEP precedents make: the decision point
+    reports what it knows, and the enforcement point decides what an unknown means for
+    the action it guards. Putting the policy in the rule would let rule text silently
+    change `Result` and weaken the fail-closed `IsSatisfied`.
 
-    Implemented in k3-conformance 19. **Public API** (in
-    `TruthWeaver.Abstractions`): the `CollapsePolicy` enum, the `CollapseOutcome`
-    enum (`False`, `True`, `RejectedUnresolved`), `Decision.Collapse(CollapsePolicy)`
-    (a pure function of `Decision.Result`: `True`/`False` map to themselves and only
-    `Unknown` depends on the policy) and a trailing optional `Decision.Outcome`
-    (`CollapseOutcome?`, `null` when the rule declared no collapse, so existing
-    callers see no change). `RejectedUnresolved` is a normal outcome: it is not a
-    `Fault`, nothing is thrown, `Decision.Faults` is not touched (a faulting
+    **Public API** (in `TruthWeaver.Abstractions`): the `CollapsePolicy` enum, the
+    `CollapseOutcome` enum (`False`, `True`, `RejectedUnresolved`) and
+    `Decision.Collapse(CollapsePolicy)`, a pure function of `Decision.Result`
+    (`True`/`False` map to themselves and only `Unknown` depends on the policy). It
+    never records a fault, never changes the decision, and `RejectedUnresolved` is a
+    normal outcome: nothing is thrown and `Decision.Faults` is untouched (a faulting
     predicate still records its fault, which is how "not known" and "something
-    broke" stay distinguishable), and `Decision.IsSatisfied` is unchanged
-    (`Result == True`, fail-closed). **Where a DSL-declared policy lives:**
-    `Collapse(expr, policy)` is not an `Expression` node. The parsers build a raw
-    `CollapseNode` wherever the text puts it; `RuleNodeCompiler` peels a *root*
-    one into the outer policy and reports every other occurrence (inside an
-    operator, a `Project`, an `If` branch, another `Collapse`, a builder operand)
-    as the new error `NestedCollapse` (`BRE0016`) whose span is exactly the nested
-    collapse expression. `CompiledRule.CollapsePolicy` (`CollapsePolicy?`) holds the
-    outer policy, so the analyzer, `ExpressionShape`, `RuleDiff` and every operator
-    see only the inner expression and the analyzer analyzes it unchanged.
-    **Evaluation:** `EvaluateAsync` evaluates the inner expression, then applies the
-    declared policy: `Decision.Outcome` is set; for `UnknownAsFalse`/`UnknownAsTrue`
-    `Decision.Result` becomes the collapsed definite value (so `IsSatisfied` follows
-    the explicit choice the author wrote), and for `UnknownIsError` it stays the
-    three-valued result (`Unknown` when rejected, so `IsSatisfied` is `false`). The
-    uncollapsed value remains the single child of the evaluated tree. **Printing and
-    rendering:** the canonical text is `Collapse(inner, UnknownAsFalse)` (policy in
-    canonical case, parsed in any case), recompiling to the same rule;
-    `CompiledRule.Describe()` and the evaluated tree both gain a root labelled
-    `Collapse(UnknownAsFalse)` etc. wrapping the inner tree (so the plain-text and
-    Mermaid renderers need no change and the description/evaluated trees stay
-    aligned), with no symbolic or C-style spelling in any `OperatorStyle`.
-    **JSON/YAML:** the outermost collapse is supported as a node of its own,
-    `{"op": "collapse", "policy": "unknownAsFalse", "operands": [rule]}` (YAML
-    `op: collapse`, `policy: unknownAsFalse`; op and policy names case-insensitive on
-    read, a missing or unknown policy is `MalformedTree`, exactly one operand), so a
-    rule that declares a collapse round-trips through every format; a nested
-    collapse node is `NestedCollapse` like in the DSL. `rule-tree.schema.json` has
-    a `collapseOperatorNode` (it validates a nested one structurally; the
-    outermost-only rule is the compiler's). `RuleBuilder.Collapse(operand, policy)`
-    is new. `RuleDiff` reports a changed, added or removed collapse policy as one
-    `Changed` entry at the root, and diffs the inner expression otherwise.
+    broke" stay distinguishable). `Decision.IsSatisfied` is `Result == True`,
+    fail-closed, whatever policy a caller applies. There is no `Decision.Outcome`.
+    **Removed from the rule language:** the DSL `Collapse(expr, policy)` function, the
+    JSON/YAML `collapse` node and its `policy` field, `RuleBuilder.Collapse`,
+    `CompiledRule.CollapsePolicy`, the collapse root of `Describe()` and of the
+    evaluated tree, `rule-tree.schema.json`'s `collapseOperatorNode`, the printers'
+    and `RuleDiff`'s collapse handling and the `NestedCollapse` diagnostic
+    (`BRE0016`, retired and not reused). A rule that still declares one is rejected,
+    wherever it appears and in any letter case, with an error whose message and hint
+    point to `Decision.Collapse`: `SyntaxError` (`BRE0001`) spanning the whole call in
+    DSL text, and `MalformedTree` (`BRE0014`) at the node's path in JSON and YAML.
+    `Collapse` stays a reserved word so a predicate cannot shadow it.
 15. **Predicates return `TruthValue`.** `IPredicate` and every predicate
     delegate return `TruthValue` (breaking change, pre-1.0). A returned
     `Unknown` records no `Fault`; an exception, timeout or cancellation still

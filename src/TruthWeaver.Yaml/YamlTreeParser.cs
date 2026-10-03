@@ -325,6 +325,14 @@ internal static class YamlTreeParser
         List<Diagnostic> diagnostics
     )
     {
+        // A declared Collapse is rejected up front: it is no longer an operator, and a plain "unknown operator" would not
+        // tell the author where collapse went.
+        if (string.Equals(op, "collapse", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.MalformedTree, SpanOf(opNode), path));
+            return null;
+        }
+
         // The operator name is checked before its operands so a typo is reported on its own, with its suggestion.
         if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
@@ -441,8 +449,6 @@ internal static class YamlTreeParser
                 return new InspectionNode(InspectionKind.IsKnown, operands, SourceSpan.None);
             case "Project":
                 return ParseProject(mapping, op, path, operands, diagnostics);
-            case "Collapse":
-                return ParseCollapse(mapping, op, path, operands, diagnostics);
             case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
             case "AtLeast":
@@ -488,45 +494,6 @@ internal static class YamlTreeParser
         }
 
         return new ThresholdNode(comparison, k, operands, SourceSpan.None);
-    }
-
-    /// <summary>
-    /// Reads <c>Collapse</c>'s <c>policy</c>: one of the three policy names (case-insensitive). Whether the node is the
-    /// outermost one is the compiler's rule, not the parser's, so a nested node parses and is rejected there.
-    /// </summary>
-    private static RuleNode? ParseCollapse(
-        YamlMappingNode mapping,
-        string op,
-        string path,
-        List<RuleNode> operands,
-        List<Diagnostic> diagnostics
-    )
-    {
-        bool present = TryGetChild(mapping, "policy", out YamlNode? policyNode);
-        if (
-            !present
-            || policyNode is not YamlScalarNode { Value: { } policyText }
-            || !CollapsePolicyText.TryParse(policyText, out CollapsePolicy policy)
-        )
-        {
-            DiagnosticSuggestion? suggestion = policyNode is YamlScalarNode { Value: { } written }
-                ? NameSuggester.Suggest(written, CollapsePolicyText.TreeFormatNames)
-                : null;
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
-                    $"'{op}' requires 'policy' to be one of {string.Join(", ", CollapsePolicyText.Names)}.",
-                    present ? SpanOf(policyNode!) : SpanOf(mapping),
-                    expected: $"one of {string.Join(", ", CollapsePolicyText.TreeFormatNames)}",
-                    found: present ? DescribeValue(policyNode!) : "no 'policy' key",
-                    suggestion: suggestion,
-                    path: present ? TreePath.Property(path, "policy") : path
-                )
-            );
-            return null;
-        }
-
-        return new CollapseNode(operands, policy, SourceSpan.None);
     }
 
     /// <summary>

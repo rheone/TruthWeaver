@@ -4,7 +4,11 @@ namespace TruthWeaver.Abstractions;
 /// The result of evaluating a rule against a context: a <see cref="TruthValue"/> plus any faults
 /// recorded along the way, and optionally a trace (ADR-0001).
 /// </summary>
-/// <param name="Result">The rule's three-valued result.</param>
+/// <param name="Result">
+/// The rule's three-valued result, always the raw value the expression produced. A rule cannot declare a collapse
+/// (ADR-0005 decision 14); to resolve <see cref="TruthValue.Unknown"/> choose a policy at the call site with
+/// <see cref="Collapse(CollapsePolicy)"/>.
+/// </param>
 /// <param name="Faults">Every fault absorbed during this evaluation, in the order they occurred.</param>
 /// <param name="Trace">
 /// The evaluation trace, present only when requested via <c>EvaluationOptions</c>.
@@ -16,22 +20,11 @@ namespace TruthWeaver.Abstractions;
 /// it can drive a full-tree rendering (e.g. <c>MermaidTreePrinter</c>/<c>PlainTextTreePrinter</c>)
 /// that shows the whole rule, the path actually taken, and the parts left out.
 /// </param>
-/// <param name="Outcome">
-/// The collapsed answer, present only when the rule declared an outermost <c>Collapse(expr, policy)</c>
-/// (ADR-0005 decision 14); <see langword="null"/> for a rule that did not, so a caller that never declares a collapse sees
-/// no change. When the declared policy is <see cref="CollapsePolicy.UnknownAsFalse"/> or
-/// <see cref="CollapsePolicy.UnknownAsTrue"/> <see cref="Result"/> is already the collapsed, definite value; for
-/// <see cref="CollapsePolicy.UnknownIsError"/> it stays the three-valued result and this is
-/// <see cref="CollapseOutcome.RejectedUnresolved"/> when that result is <see cref="TruthValue.Unknown"/>. The inner,
-/// uncollapsed result is always available as the single child of <see cref="EvaluatedTree"/>. For a collapse chosen at the
-/// call site instead, use <see cref="Collapse(CollapsePolicy)"/>.
-/// </param>
 public sealed record Decision(
     TruthValue Result,
     IReadOnlyList<Fault> Faults,
     Trace? Trace = null,
-    EvaluatedNode? EvaluatedTree = null,
-    CollapseOutcome? Outcome = null
+    EvaluatedNode? EvaluatedTree = null
 )
 {
     /// <summary>

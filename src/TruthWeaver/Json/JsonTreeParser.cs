@@ -327,6 +327,14 @@ internal static class JsonTreeParser
 
     private static RuleNode? ParseOperator(JsonElement element, string op, string path, List<Diagnostic> diagnostics)
     {
+        // A declared Collapse is rejected up front: it is no longer an operator, and a plain "unknown operator" would not
+        // tell the author where collapse went.
+        if (string.Equals(op, "collapse", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.MalformedTree, SourceSpan.None, path));
+            return null;
+        }
+
         // The operator name is checked before its operands so a typo is reported on its own, with its suggestion.
         if (!TreeFormatOpNames.TryFromTreeFormat(op, out string? canonicalOpName))
         {
@@ -443,8 +451,6 @@ internal static class JsonTreeParser
                 return new InspectionNode(InspectionKind.IsKnown, operands, SourceSpan.None);
             case "Project":
                 return ParseProject(element, op, path, operands, diagnostics);
-            case "Collapse":
-                return ParseCollapse(element, op, path, operands, diagnostics);
             case "ExactlyOne":
                 return new ExactlyOneNode(operands, SourceSpan.None);
             case "AtLeast":
@@ -491,46 +497,6 @@ internal static class JsonTreeParser
         }
 
         return new ThresholdNode(comparison, k, operands, SourceSpan.None);
-    }
-
-    /// <summary>
-    /// Reads <c>Collapse</c>'s <c>policy</c>: one of the three policy names (case-insensitive) as a JSON string. Whether the
-    /// node is the outermost one is the compiler's rule, not the parser's, so a nested node parses and is rejected there.
-    /// </summary>
-    private static RuleNode? ParseCollapse(
-        JsonElement element,
-        string op,
-        string path,
-        List<RuleNode> operands,
-        List<Diagnostic> diagnostics
-    )
-    {
-        if (
-            !element.TryGetProperty("policy", out JsonElement policyElement)
-            || policyElement.ValueKind != JsonValueKind.String
-            || !CollapsePolicyText.TryParse(policyElement.GetString(), out CollapsePolicy policy)
-        )
-        {
-            bool present = element.TryGetProperty("policy", out policyElement);
-            DiagnosticSuggestion? suggestion =
-                present && policyElement.ValueKind == JsonValueKind.String
-                    ? NameSuggester.Suggest(policyElement.GetString()!, CollapsePolicyText.TreeFormatNames)
-                    : null;
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
-                    $"'{op}' requires 'policy' to be one of {string.Join(", ", CollapsePolicyText.Names)}.",
-                    SourceSpan.None,
-                    expected: $"one of {string.Join(", ", CollapsePolicyText.TreeFormatNames)}",
-                    found: present ? DescribeValue(policyElement) : "no 'policy' property",
-                    suggestion: suggestion,
-                    path: present ? TreePath.Property(path, "policy") : path
-                )
-            );
-            return null;
-        }
-
-        return new CollapseNode(operands, policy, SourceSpan.None);
     }
 
     /// <summary>

@@ -192,8 +192,7 @@ public sealed record InspectionExpression(InspectionKind Kind, Expression Operan
 /// <summary>
 /// <c>Project(x, unknownAs)</c>: keeps a <c>True</c> or <c>False</c> operand and replaces <c>Unknown</c> with the chosen
 /// definite value, so the result is never <c>Unknown</c> (ADR-0005 decision 12). It is the same value as
-/// <c>COALESCE(x, unknownAs)</c> and exists as a named, intent-revealing form. Unlike a final <c>Collapse</c> it can sit
-/// anywhere inside a rule.
+/// <c>COALESCE(x, unknownAs)</c> and exists as a named, intent-revealing form that can sit anywhere inside a rule.
 /// </summary>
 /// <param name="Operand">The expression whose <c>Unknown</c> result is replaced.</param>
 /// <param name="UnknownAs">

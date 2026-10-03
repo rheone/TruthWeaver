@@ -245,18 +245,17 @@ public sealed class SimplifyTests
         Assert.NotEqual(K3Rule.TryCreate(classical, 2)!.Compiled.Canonicalize().CanonicalText, simplified);
     }
 
-    /// <summary>The simplified rule is a new rule: the original keeps its text and the declared Collapse policy survives.</summary>
+    /// <summary>The simplified rule is a new rule: the original keeps its text.</summary>
     [Fact]
-    public void Simplify_Rule_LeavesTheOriginalUntouchedAndKeepsTheCollapsePolicy_Test()
+    public void Simplify_Rule_LeavesTheOriginalUntouched_Test()
     {
-        K3Rule original = K3Rule.TryCreate("Collapse(a AND True, UnknownAsFalse)", 1)!;
+        K3Rule original = K3Rule.TryCreate("a AND True", 1)!;
         string textBefore = original.Compiled.CanonicalText;
 
         CompiledRule<RuleTestContext> simplified = original.Compiled.Simplify();
 
         Assert.NotSame(original.Compiled, simplified);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);
-        Assert.Equal(CollapsePolicy.UnknownAsFalse, simplified.CollapsePolicy);
-        Assert.Equal("Collapse(a, UnknownAsFalse)", simplified.CanonicalText);
+        Assert.Equal("a", simplified.CanonicalText);
     }
 }

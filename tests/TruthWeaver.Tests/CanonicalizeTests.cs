@@ -186,19 +186,18 @@ public sealed class CanonicalizeTests
         Assert.Equal(RuleMetrics.NodeCount(original.Compiled), RuleMetrics.NodeCount(canonical.Compiled));
     }
 
-    /// <summary>The canonical rule is a new rule: the original keeps its text and the declared Collapse policy survives.</summary>
+    /// <summary>The canonical rule is a new rule: the original keeps its text.</summary>
     [Fact]
-    public void Canonicalize_Rule_LeavesTheOriginalUntouchedAndKeepsTheCollapsePolicy_Test()
+    public void Canonicalize_Rule_LeavesTheOriginalUntouched_Test()
     {
-        K3Rule original = K3Rule.TryCreate("Collapse(b AND a, UnknownAsFalse)", 2)!;
+        K3Rule original = K3Rule.TryCreate("b AND a", 2)!;
         string textBefore = original.Compiled.CanonicalText;
 
         CompiledRule<RuleTestContext> canonical = original.Compiled.Canonicalize();
 
         Assert.NotSame(original.Compiled, canonical);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);
-        Assert.Equal(CollapsePolicy.UnknownAsFalse, canonical.CollapsePolicy);
-        Assert.Equal("Collapse(a AND b, UnknownAsFalse)", canonical.CanonicalText);
+        Assert.Equal("a AND b", canonical.CanonicalText);
     }
 
     /// <summary>A small AND/OR/NOT tree over terms a, b, c that can spell itself many equivalent ways.</summary>

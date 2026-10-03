@@ -25,23 +25,14 @@ internal static class CanonicalPrinter
 
     /// <summary>Prints an expression tree to canonical DSL text.</summary>
     /// <param name="root">The tree to print.</param>
-    /// <param name="collapse">
-    /// The outermost <c>Collapse</c> policy the rule declared, or <see langword="null"/>. When present it wraps the whole
-    /// tree (<c>Collapse(expr, UnknownAsFalse)</c>), the only place the DSL accepts it.
-    /// </param>
     /// <param name="grouping">
     /// The grouping delimiters to wrap operands in. <see cref="GroupingStyle.Parentheses"/> (the default) is the canonical
     /// form; <see cref="GroupingStyle.DepthCycling"/> prints the same tree with the delimiter chosen by group depth.
     /// </param>
     /// <returns>The DSL text.</returns>
-    public static string Print(
-        Expression root,
-        CollapsePolicy? collapse = null,
-        GroupingStyle grouping = GroupingStyle.Parentheses
-    )
+    public static string Print(Expression root, GroupingStyle grouping = GroupingStyle.Parentheses)
     {
-        string text = PrintNode(root, PrintContext.Top, 0, grouping);
-        return collapse is { } policy ? $"Collapse({text}, {CollapsePolicyText.Canonical(policy)})" : text;
+        return PrintNode(root, PrintContext.Top, 0, grouping);
     }
 
     private static bool NeedsWrap(Expression node, PrintContext context)
