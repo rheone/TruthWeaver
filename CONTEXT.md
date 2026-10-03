@@ -53,6 +53,7 @@ a bound call to it); "gate" is circuit vocabulary, not used here;
 
 ## Conceptual model
 
+<!-- doctest:skip class diagram, structure only -->
 ```mermaid
 classDiagram
     class Rule {
@@ -148,6 +149,7 @@ The same shape, as an abstract (tree) grammar. This is the shape of the tree, so
 written as calls here; in the text DSL they are infix (`a XOR b`). The complete text grammar and
 precedence summary is in the [README](README.md#grammar).
 
+<!-- doctest:skip abstract grammar notation, not a rule -->
 ```text
 
 Expression =

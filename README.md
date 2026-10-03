@@ -154,6 +154,7 @@ The five `src` projects mirror the rule lifecycle from
 needs the zero-dependency kernel, while a rule-authoring host pulls in the
 parser, compiler, analyzer, and evaluator.
 
+<!-- doctest:skip class diagram, structure only -->
 ```mermaid
 flowchart TD
     subgraph Kernel["TruthWeaver.Abstractions — the zero-dependency kernel"]
@@ -251,6 +252,7 @@ Beyond `src`, the rest of the repository:
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-resolved-value predicates for a safe-to-share resolving client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
 | `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions and fake/scripted predicate factories for tests, without a hand-written `IPredicate<TContext>` per test. |
 
+<!-- doctest:skip class diagram, structure only -->
 ```mermaid
 flowchart LR
     subgraph Abstractions["TruthWeaver.Abstractions<br/>(zero third-party dependencies)"]
@@ -416,6 +418,7 @@ and no-mixing rules as the named operators. A lone `&` or `|` is a syntax error;
 The whole DSL in EBNF (`{ x }` is zero or more, `[ x ]` optional, `|` a choice). Keywords and
 constants are case-insensitive; a term name may not be a reserved word.
 
+<!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
 rule        = expression ;
 
@@ -1309,6 +1312,7 @@ sentence.
 
 ### 1. A single predicate
 
+<!-- doctest:rule ex1 -->
 ```text
 lovesPineapple
 ```
@@ -1323,6 +1327,7 @@ Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancella
 
 ### 2. Combining predicates: `AND` / `OR` / `NOT`
 
+<!-- doctest:rule ex2 -->
 ```text
 lovesPineapple AND NOT isBanned
 ```
@@ -1332,6 +1337,7 @@ parses as `lovesPineapple AND (NOT isBanned)` without needing parentheses.
 
 ### 3. Named arguments
 
+<!-- doctest:rule ex3 -->
 ```text
 hasTopping(topping: "greenOlives")
 ```
@@ -1380,6 +1386,7 @@ A predicate can take more than one named argument — same registration shape,
 just a longer `PredicateArgumentSchema` array and an `EvaluateAsync` that
 reads more than one `Get*` call:
 
+<!-- doctest:rule ex3b -->
 ```text
 hasToppingAmount(topping: "pepperoni", amount: "extra")
 ```
@@ -1412,6 +1419,7 @@ matters, however many arguments a predicate declares (see
 
 ### 4. `XOR`, `EQUIVALENT`, `ExactlyOne`, and the threshold family
 
+<!-- doctest:rule ex4a -->
 ```text
 AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)
 ```
@@ -1431,6 +1439,7 @@ The two differ from three operands: with all of `a`, `b`, `c` true, `PARITY` is
 
 `EQUIVALENT` (`IFF`, `↔`) is `XOR`'s counterpart — "these two must agree":
 
+<!-- doctest:rule ex4b -->
 ```text
 isPrimaryReviewer EQUIVALENT isBackupReviewer
 ```
@@ -1440,6 +1449,7 @@ when both are reviewers or neither is, false when exactly one is.
 
 `IMPLIES` (or `→`) is material implication — "if this holds, that must too":
 
+<!-- doctest:rule ex4c -->
 ```text
 isContractor IMPLIES hasSignedNda
 ```
@@ -1455,12 +1465,14 @@ next to `AND`/`OR` or another infix operator
 
 Rule text as authored (`CanonicalText` prints the same rule with the optional `hasCrust` arguments filled in from their defaults):
 
+<!-- doctest:rule worked -->
 ```text
 hasTopping(topping: "greenOlives") AND (hasCrust(crust: "thin") OR hasCrust(crust: "stuffed", ignoreCase: false) OR (isDineIn XOR isTakeout))
 ```
 
 The same rule as JSON:
 
+<!-- doctest:json worked -->
 ```json
 {
   "op": "and",
@@ -1486,6 +1498,7 @@ The same rule as JSON:
 
 ...and in YAML (`TruthWeaver.Yaml`):
 
+<!-- doctest:yaml worked -->
 ```yaml
 op: and
 operands:
@@ -1592,6 +1605,7 @@ Rendering the same rule as a Mermaid diagram:
 string mermaid = result.CompiledRule!.PrintMermaid();
 ```
 
+<!-- doctest:mermaid worked -->
 ```mermaid
 flowchart TD
     Start(["Start"]) --> n0
@@ -1618,6 +1632,7 @@ Rendering the same rule as a text tree:
 string tree = result.CompiledRule!.PrintPlainText();
 ```
 
+<!-- doctest:tree worked -->
 ```text
 AND
 ├─ Has Topping (topping: "greenOlives")
@@ -1665,6 +1680,7 @@ has a predicate per value or not.
 `hasTopping(topping: "greenOlives")`), just `OR` it together per
 alternative — no new predicate needed:
 
+<!-- doctest:rule ex7a -->
 ```text
 hasTopping(topping: "pepperoni") OR hasTopping(topping: "mushroom") OR hasTopping(topping: "greenOlives")
 ```
@@ -1706,6 +1722,7 @@ public sealed class HasAnyTopping : IPredicate<Customer>
 
 Used in a rule as:
 
+<!-- doctest:rule ex7b -->
 ```text
 hasAnyTopping(toppings: ["pepperoni", "mushroom", "greenOlives"])
 ```
@@ -1957,6 +1974,7 @@ directly as `PrintMermaid()`/`PrintMermaid(decision)` and
 
 ## Evaluation flow
 
+<!-- doctest:skip class diagram, structure only -->
 ```mermaid
 flowchart TD
     Start(["Evaluate(context, ct)"]) --> Visit["Visit next operand<br/>(left to right)"]
@@ -1998,6 +2016,7 @@ Parse → Validate → Analyze → Build pipeline, which is why
 `parse(print(x))` round-trips structurally regardless of which surface a
 rule came from:
 
+<!-- doctest:skip state diagram, structure only -->
 ```mermaid
 flowchart TD
     Source["Rule text<br/>(DSL, JSON, or YAML)"] --> Parse[Parse]
@@ -2054,6 +2073,7 @@ foreach (Diagnostic d in result.Diagnostics)
 Console.WriteLine(result.FormatDiagnostics(source));
 ```
 
+<!-- doctest:diagnostics-dsl a ANDD b -->
 ```text
 BRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expression.
   a ANDD b
@@ -2118,16 +2138,20 @@ column: the route from the document root to the offending key, written the
 same way for both formats (`$` is the root, `.name` a key, `[n]` a 0-based
 sequence item). A YAML diagnostic also carries the `Span` of the offending node,
 so `FormatDiagnostics(yaml)` adds the line and column and the source line; a JSON
-diagnostic has no span, because `System.Text.Json` keeps no positions, except for
-invalid JSON syntax, which carries the parser's position.
+diagnostic carries the span of the offending node in the same way (found by
+re-reading the text, since `System.Text.Json` keeps no positions), and invalid JSON
+syntax carries the parser's position.
 
 ```csharp
 const string json = """{"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}""";
 Console.WriteLine(compiler.CompileJson(json).FormatDiagnostics(json));
 ```
 
+<!-- doctest:diagnostics-json {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]} -->
 ```text
-BRE0014 error at $.operands[1].op: Unknown operator 'orr'.
+BRE0014 error at $.operands[1].op (line 1, column 46): Unknown operator 'orr'.
+  {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}
+                                               ^^^^^
   Expected: a known operator
   Found: 'orr'
   Did you mean: or
@@ -2142,6 +2166,7 @@ reported at the node that should have held it. Invalid JSON or YAML syntax
 reports the nearest valid ancestor (the innermost object or array still open) and
 the parser's position:
 
+<!-- doctest:diagnostics-json {"op":"and","operands":[{"const":true}, -->
 ```text
 BRE0014 error at $.operands (line 1, column 39): Malformed JSON: Expected start of a property name or value, but instead reached end of data. LineNumber: 0 | BytePositionInLine: 38.
   {"op":"and","operands":[{"const":true},

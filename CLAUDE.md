@@ -91,6 +91,7 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 - Tests should describe behavior rather than implementation details.
 - Tests should have XML comments to describe what is being tested.
 - Prefer one logical behavior per test.
+- Runnable examples in `README.md`/`CONTEXT.md` are tested: put a `<!-- doctest:... -->` marker above each `text`/`json`/`yaml`/`mermaid` block (procedure in `docs/doc-examples.md`); an untagged block fails `dotnet test`.
 
 ## Git
 
