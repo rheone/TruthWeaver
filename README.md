@@ -396,7 +396,7 @@ prints the named form.
 | `NAND` | `↑`, `⊼` |
 | `NOR` | `↓`, `⊽` |
 | `COALESCE` | `??` (infix; the word `COALESCE` is the function-call form only) |
-| `If` | `c ? t : f` (ternary; `If(c, t, f)` is the function-call form) |
+| `If` | `c ? t : f` (ternary; `If(c, t, f)` is the function-call form; the `CStyle` tree printers label it `?:`, the other styles `If`) |
 | `EQUIVALENT` | `↔`, `⇔` (words `IFF` and the legacy `XNOR` are accepted too) |
 
 Symbols and words mix freely (`a && b OR c`) and follow the same precedence
@@ -946,10 +946,16 @@ design — a case-insensitive variant is a separate predicate
 (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception,
 `StringPredicates.EqualsConfigurable`, deliberately inverts that: it's one
 predicate whose `ignoreCase`/`trim` arguments are set per rule
-(case-insensitive by default; comparison is always ordinal, and the retained
-`culture` argument must be empty), for the case where a
+(case-insensitive by default; comparison is always ordinal, so there is no
+`culture` argument), for the case where a
 rule author genuinely needs that flexibility rather than a fixed-behavior
 predicate per name.
+
+> [!WARNING]
+> **Breaking change:** `EqualsConfigurable` no longer has a `culture` argument.
+> A rule that still passes one (even `culture: ""`) now fails to compile with an
+> `UnknownArgument` diagnostic that tells you to remove it. Previously a non-empty
+> `culture` faulted at evaluation, so such a rule answered `Unknown`.
 
 A null selected value is a definite `False` by default, with no fault. Every
 `StringPredicates` comparison (`Equals`, `EqualsIgnoreCase`, `StartsWith`,
@@ -1462,7 +1468,7 @@ predicate with a scoped dependency such as a `DbContext`. `hasTopping` is a
 hand-written stateless lambda; `hasCrust` comes from the ready-made
 `StringPredicates.EqualsConfigurable` factory instead (see
 [Predicate types](#predicate-types)) — it takes `crust` as its rule-text
-comparison target, plus `ignoreCase`/`culture`/`trim` arguments with sensible
+comparison target, plus `ignoreCase`/`trim` arguments with sensible
 defaults, so `hasCrust(crust: "thin")` alone already compiles. All three
 forms register against the same `PredicateRegistryBuilder<TContext>`; see
 [ADR-0002](docs/adr/0002-evaluation-semantics.md#predicate-registration-and-dependency-lifetimes).
@@ -1509,9 +1515,9 @@ flowchart TD
     n1["Has Topping (topping: #quot;greenOlives#quot;)"]
     n0 --> n1
     n2["OR"]
-    n3["Has Crust (crust: #quot;thin#quot;, culture: #quot;#quot;, ignoreCase: true, trim: false)"]
+    n3["Has Crust (crust: #quot;thin#quot;, ignoreCase: true, trim: false)"]
     n2 --> n3
-    n4["Has Crust (crust: #quot;stuffed#quot;, culture: #quot;#quot;, ignoreCase: false, trim: false)"]
+    n4["Has Crust (crust: #quot;stuffed#quot;, ignoreCase: false, trim: false)"]
     n2 --> n4
     n5["XOR"]
     n6["Is Dine In"]
@@ -1532,8 +1538,8 @@ string tree = result.CompiledRule!.PrintPlainText();
 AND
 ├─ Has Topping (topping: "greenOlives")
 └─ OR
-   ├─ Has Crust (crust: "thin", culture: "", ignoreCase: true, trim: false)
-   ├─ Has Crust (crust: "stuffed", culture: "", ignoreCase: false, trim: false)
+   ├─ Has Crust (crust: "thin", ignoreCase: true, trim: false)
+   ├─ Has Crust (crust: "stuffed", ignoreCase: false, trim: false)
    └─ XOR
       ├─ Is Dine In
       └─ Is Takeout
@@ -1542,11 +1548,11 @@ AND
 The second `hasCrust` term deliberately sets `ignoreCase: false` in the rule
 text itself, rather than leaving every optional argument at its default —
 `StringPredicates.EqualsConfigurable` (see [Predicate types](#predicate-types))
-declares four rule-text arguments (`crust`, `ignoreCase`, `culture`, `trim`),
+declares three rule-text arguments (`crust`, `ignoreCase`, `trim`),
 and this shows a rule actually setting more than one of them, not just the
 one required argument every other predicate in this example takes. Both
 diagrams show every term's rule-text argument values by default — the first
-`hasCrust` term's `ignoreCase`/`culture`/`trim` are filled in from their
+`hasCrust` term's `ignoreCase`/`trim` are filled in from their
 schema defaults even though its rule text never mentions them (ADR-0003's
 compiler behavior for optional arguments), which is also why the two
 `hasCrust` terms are visually distinct here, unlike a predicate label alone.
@@ -1773,7 +1779,15 @@ items build the same node as the `params` overload:
 
 An empty list silently becoming a constant can hide a mistake (an empty list of
 role checks under `And` is `True`), so check the count first when that matters.
-`Between` and the threshold family have no enumerable overload.
+
+`Between`, `AtLeast`, `AtMost` and `Exactly` also have an `IEnumerable<RuleBuilder>`
+overload, but it never folds: a counted operator has no identity constant, so
+the sequence builds the same node as the `params` overload and goes through the
+same count validation. An unmeetable count such as `AtLeast(2, [])` is the same
+compile diagnostic as with `params`. An empty list passed to a counted operator
+is probably a bug, so treat that diagnostic as a prompt to check how the list was
+built. A `null` sequence throws `ArgumentNullException`, and the sequence is
+enumerated once. `GreaterThan` and `LessThan` have no enumerable overload.
 
 `RuleBuilder.Compile(compiler)` is a thin wrapper around
 `compiler.CompileJson(builder.ToJson())` — nothing bypasses the

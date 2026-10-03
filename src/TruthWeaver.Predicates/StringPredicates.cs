@@ -224,8 +224,7 @@ public static class StringPredicates
     /// behavior are rule-text arguments rather than fixed at registration. Like every other method in this
     /// class the comparison is ordinal (<see cref="StringComparison.Ordinal"/>, or
     /// <see cref="StringComparison.OrdinalIgnoreCase"/> when <c>ignoreCase</c> is set), never
-    /// culture-sensitive. The <c>culture</c> argument is retained only for compatibility with existing
-    /// rules and must be empty. The per-rule flags are a deliberate divergence from the fixed-behavior
+    /// culture-sensitive, so the predicate has no <c>culture</c> argument. The per-rule flags are a deliberate divergence from the fixed-behavior
     /// predicates here (see this class's type-level remarks), which make a behavior variant a distinct,
     /// separately-named predicate; this method exists for a rule author who genuinely needs to choose
     /// case-sensitivity and trimming per rule, not per predicate name. The same divergence-for-a-reason pattern
@@ -241,12 +240,6 @@ public static class StringPredicates
     /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
-    /// <exception cref="ArgumentException">
-    /// The rule-text <c>culture</c> argument is not empty. This is not caught at compile time (the
-    /// schema only declares the argument's <see cref="LiteralKind"/>); it surfaces as an evaluation-time fault
-    /// (<see cref="TruthValue.Unknown"/>) per ADR-0001's Kleene failure model, the same treatment
-    /// <see cref="RegexPredicates.Matches{TContext}"/> gives an invalid regular-expression pattern.
-    /// </exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -261,7 +254,7 @@ public static class StringPredicates
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
             + "ordinal and case-insensitive by default (ignoreCase), with optional "
-            + "leading/trailing-whitespace trimming. The culture argument is retained for compatibility and must be empty. A null selected value is treated as not-equal "
+            + "leading/trailing-whitespace trimming. A null selected value is treated as not-equal "
             + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         PredicateSchema schema = new(
             name,
@@ -275,13 +268,6 @@ public static class StringPredicates
                     LiteralKind.Boolean,
                     Required: false,
                     Default: LiteralValue.OfBoolean(true)
-                ),
-                new PredicateArgumentSchema(
-                    "culture",
-                    "Retained for compatibility with existing rules; must be empty. Comparison is always ordinal, never culture-sensitive.",
-                    LiteralKind.String,
-                    Required: false,
-                    Default: LiteralValue.OfString(string.Empty)
                 ),
                 new PredicateArgumentSchema(
                     "trim",
@@ -306,19 +292,11 @@ public static class StringPredicates
                 string target = args.GetString(argumentName);
                 bool ignoreCase = args.GetBool("ignoreCase");
                 bool trim = args.GetBool("trim");
-                string culture = args.GetString("culture");
 
                 if (trim)
                 {
                     selected = selected.Trim();
                     target = target.Trim();
-                }
-
-                // Culture-sensitive comparison is not offered (CONTEXT.md, Predicate catalog rules): the argument
-                // remains only so existing rules that spell culture: "" keep compiling.
-                if (!string.IsNullOrEmpty(culture))
-                {
-                    throw new ArgumentException("EqualsConfigurable compares ordinally; the culture argument must be empty.");
                 }
 
                 StringComparison comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;

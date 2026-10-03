@@ -67,6 +67,41 @@ public sealed class WhitespaceNormalisationTests
         Assert.Equal(expected, RuleText.NormalizeWhitespace(text));
     }
 
+    /// <summary>
+    /// Prefix <c>!</c> with a space after it is accepted as input (k3-followups 21, issues-log row 27) and
+    /// <see cref="RuleText.NormalizeWhitespace"/> prints it hugging its operand as <c>!a</c>, whatever spacing was written.
+    /// </summary>
+    [Theory]
+    [InlineData("! a", "!a")]
+    [InlineData("!   a", "!a")]
+    [InlineData("  !	a  ", "!a")]
+    [InlineData("!a", "!a")]
+    public void NormalizeWhitespace_PrefixBangWithSpace_PrintsBangHuggingItsOperand_Test(string text, string expected)
+    {
+        Assert.Equal(expected, RuleText.NormalizeWhitespace(text));
+    }
+
+    /// <summary>A spaced prefix <c>!</c> compiles, to the same tree as the unspaced spelling.</summary>
+    [Fact]
+    public void Compile_PrefixBangWithSpace_IsAcceptedAndMatchesTheUnspacedTree_Test()
+    {
+        CompilationResult<RuleTestContext> spaced = Compiler.Compile("! a");
+
+        Assert.NotNull(spaced.CompiledRule);
+        Assert.Equal(Compile("!a").Root, spaced.CompiledRule.Root);
+    }
+
+    /// <summary>
+    /// The canonical printer is word-only (ADR-0005 decision 1), so a spaced <c>! a</c> prints as <c>NOT a</c>, not
+    /// <c>!a</c>; the spaced and unspaced spellings print identically.
+    /// </summary>
+    [Fact]
+    public void CanonicalText_PrefixBangWithSpace_PrintsTheNamedNotLikeTheUnspacedSpelling_Test()
+    {
+        Assert.Equal(Compile("!a").CanonicalText, Compile("! a").CanonicalText);
+        Assert.Equal("NOT a", Compile("! a").CanonicalText);
+    }
+
     /// <summary>Commas are followed by one space, argument colons likewise, and nothing pads the inside of a delimiter pair.</summary>
     [Theory]
     [InlineData("ANY( a ,b,  c )", "ANY(a, b, c)")]

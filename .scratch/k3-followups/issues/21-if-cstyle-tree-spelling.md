@@ -6,7 +6,7 @@ Also pin prefix `!` spacing with tests only (issues-log row 27): input with a sp
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run for the `?:` spelling is shown before the implementation
 - [ ] `CStyle` tree output uses `?:` for `If`; `Symbolic` output is unchanged
@@ -16,3 +16,7 @@ Also pin prefix `!` spacing with tests only (issues-log row 27): input with a sp
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner decisions 2026-10-03 (Q4, Q5, Q8). See [issues-log](../../k3-conformance/issues-log.md) rows 19 and 27.
+
+## Comments
+
+- 2026-10-03 (implementation): `RuleRenderTree.BaseLabel` renders `If` as `?:` under `CStyle` only; `Symbolic`/`Word` keep `If`, the description/evaluated label stays `If`, so `RuleDiff` output, JSON/YAML op `if` and the `MalformedTree` operand-count error are unchanged. `OperatorStyle` docs, the README `If` symbol row and ADR-0005 decision text updated. The README has no other tree-spelling documentation. Open point for the owner: the ticket says the canonical printer prints `!a`, but the canonical printer is word-only (ADR-0005 decision 1) and prints `! a` as `NOT a`. I pinned that actual behavior (spaced and unspaced spellings print identically) rather than change printing rules; `RuleText.NormalizeWhitespace` does print `!a` as specified.

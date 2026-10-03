@@ -239,6 +239,24 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("role", diagnostic.Suggestion?.Text);
     }
 
+    /// <summary>
+    /// A retired argument in a JSON rule is located at the argument and answered with advice that names it and says to
+    /// remove it.
+    /// </summary>
+    [Fact]
+    public void CompileJson_RetiredArgumentWithNoNearbyName_HintsToRemoveTheNamedArgument_Test()
+    {
+        Diagnostic diagnostic = Assert.Single(
+            Compiler.CompileJson("""{"predicate":"hasRole","args":{"role":"x","culture":""}}""").Diagnostics,
+            d => d.Code == DiagnosticCodes.UnknownArgument
+        );
+
+        Assert.Equal("$.args.culture", diagnostic.Path);
+        Assert.Equal(DiagnosticSuggestionKind.Hint, diagnostic.Suggestion?.Kind);
+        Assert.Contains("culture", diagnostic.Suggestion?.Text);
+        Assert.Contains("Remove", diagnostic.Suggestion?.Text);
+    }
+
     /// <summary>An argument value of the wrong kind is located at the value.</summary>
     [Fact]
     public void CompileJson_ArgumentOfTheWrongKind_ReportsTheArgumentPath_Test()

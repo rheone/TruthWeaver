@@ -370,17 +370,21 @@ public sealed class IfTests
         Assert.Equal(["a", "b", "c"], description.Operands.Select(o => o.Label));
     }
 
-    /// <summary>If has no symbolic or C-style spelling, so every tree style keeps the word.</summary>
+    /// <summary>
+    /// Real compiled <c>If</c> trees keep the word in the word and symbolic tree styles and render <c>?:</c> in the C-style
+    /// one (k3-followups 21).
+    /// </summary>
     [Theory]
-    [InlineData(OperatorStyle.Word)]
-    [InlineData(OperatorStyle.Symbolic)]
-    [InlineData(OperatorStyle.CStyle)]
-    public void Print_If_KeepsTheWordInEveryStyle_Test(OperatorStyle style)
+    [InlineData(OperatorStyle.Word, "If")]
+    [InlineData(OperatorStyle.Symbolic, "If")]
+    [InlineData(OperatorStyle.CStyle, "?:")]
+    public void Print_If_UsesTheTernarySpellingOnlyInCStyle_Test(OperatorStyle style, string expected)
     {
         RuleDescription tree = Compiler.Compile("If(a, b, c)").CompiledRule!.Describe();
 
-        Assert.Contains("If", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
-        Assert.Contains("If", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);
+        Assert.Contains(expected, PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
+        Assert.Contains(expected, MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);
+        Assert.Equal("If", tree.Label);
     }
 
     /// <summary>

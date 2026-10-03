@@ -215,7 +215,7 @@ public class StringPredicatesTests
 
         TruthValue result = await evaluate(
             new TestContext("Alice"),
-            ConfigurableArgs("ALICE", ignoreCase: true, culture: string.Empty, trim: false),
+            ConfigurableArgs("ALICE", ignoreCase: true, trim: false),
             CancellationToken.None
         );
 
@@ -231,7 +231,7 @@ public class StringPredicatesTests
 
         TruthValue result = await evaluate(
             new TestContext("Alice"),
-            ConfigurableArgs("ALICE", ignoreCase: false, culture: string.Empty, trim: false),
+            ConfigurableArgs("ALICE", ignoreCase: false, trim: false),
             CancellationToken.None
         );
 
@@ -250,7 +250,7 @@ public class StringPredicatesTests
 
         TruthValue result = await evaluate(
             new TestContext("straße"),
-            ConfigurableArgs("STRASSE", ignoreCase: true, culture: string.Empty, trim: false),
+            ConfigurableArgs("STRASSE", ignoreCase: true, trim: false),
             CancellationToken.None
         );
 
@@ -269,7 +269,7 @@ public class StringPredicatesTests
 
         TruthValue result = await evaluate(
             new TestContext("i"),
-            ConfigurableArgs("İ", ignoreCase: true, culture: string.Empty, trim: false),
+            ConfigurableArgs("İ", ignoreCase: true, trim: false),
             CancellationToken.None
         );
 
@@ -277,25 +277,15 @@ public class StringPredicatesTests
     }
 
     /// <summary>
-    /// Verifies a non-empty culture is rejected (an evaluation-time fault) rather than silently switching
-    /// to culture-sensitive comparison; empty is the only accepted value.
+    /// Verifies the schema declares no <c>culture</c> argument: comparison is always ordinal, so there is nothing
+    /// for a rule author to configure (k3-followups 20).
     /// </summary>
-    [Theory]
-    [InlineData("tr-TR")]
-    [InlineData("not!a!culture")]
-    public Task EqualsConfigurable_NonEmptyCulture_ThrowsAtEvaluationTime_Test(string culture)
+    [Fact]
+    public void EqualsConfigurable_Schema_DeclaresNoCultureArgument_Test()
     {
-        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+        (PredicateSchema schema, _) = StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
 
-        return Assert.ThrowsAsync<ArgumentException>(() =>
-            evaluate(
-                    new TestContext("Alice"),
-                    ConfigurableArgs("Alice", ignoreCase: true, culture: culture, trim: false),
-                    CancellationToken.None
-                )
-                .AsTask()
-        );
+        Assert.Equal(["value", "ignoreCase", "trim"], schema.Arguments.Select(a => a.Name));
     }
 
     [Fact]
@@ -306,12 +296,12 @@ public class StringPredicatesTests
 
         TruthValue trimmedResult = await evaluate(
             new TestContext(" Alice "),
-            ConfigurableArgs("Alice", ignoreCase: false, culture: string.Empty, trim: true),
+            ConfigurableArgs("Alice", ignoreCase: false, trim: true),
             CancellationToken.None
         );
         TruthValue untrimmedResult = await evaluate(
             new TestContext(" Alice "),
-            ConfigurableArgs("Alice", ignoreCase: false, culture: string.Empty, trim: false),
+            ConfigurableArgs("Alice", ignoreCase: false, trim: false),
             CancellationToken.None
         );
 
@@ -327,7 +317,7 @@ public class StringPredicatesTests
 
         TruthValue result = await evaluate(
             new TestContext(null),
-            ConfigurableArgs("Alice", ignoreCase: true, culture: string.Empty, trim: false),
+            ConfigurableArgs("Alice", ignoreCase: true, trim: false),
             CancellationToken.None
         );
 
@@ -339,14 +329,13 @@ public class StringPredicatesTests
         return new PredicateArguments(new Dictionary<string, LiteralValue> { [name] = LiteralValue.OfString(value) });
     }
 
-    private static PredicateArguments ConfigurableArgs(string value, bool ignoreCase, string culture, bool trim)
+    private static PredicateArguments ConfigurableArgs(string value, bool ignoreCase, bool trim)
     {
         return new PredicateArguments(
             new Dictionary<string, LiteralValue>
             {
                 ["value"] = LiteralValue.OfString(value),
                 ["ignoreCase"] = LiteralValue.OfBoolean(ignoreCase),
-                ["culture"] = LiteralValue.OfString(culture),
                 ["trim"] = LiteralValue.OfBoolean(trim),
             }
         );

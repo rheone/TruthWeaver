@@ -301,6 +301,23 @@ public sealed class StructuredDiagnosticsTests
         Assert.Equal("role", diagnostic.Suggestion?.Text);
     }
 
+    /// <summary>
+    /// An argument that is not declared and resembles no declared one (a retired argument such as the former
+    /// <c>culture</c> of <c>EqualsConfigurable</c>) is answered with advice that names it and says to remove it.
+    /// </summary>
+    [Fact]
+    public void Compile_RetiredArgumentWithNoNearbyName_HintsToRemoveTheNamedArgument_Test()
+    {
+        Diagnostic diagnostic = Assert.Single(
+            Compiler.Compile("hasRole(role: \"x\", culture: \"\")").Diagnostics,
+            d => d.Code == DiagnosticCodes.UnknownArgument
+        );
+
+        Assert.Equal(DiagnosticSuggestionKind.Hint, diagnostic.Suggestion?.Kind);
+        Assert.Contains("culture", diagnostic.Suggestion?.Text);
+        Assert.Contains("Remove", diagnostic.Suggestion?.Text);
+    }
+
     /// <summary>Compiles <paramref name="text"/> and returns its only error diagnostic.</summary>
     private static Diagnostic Single(string text)
     {

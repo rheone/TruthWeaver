@@ -262,6 +262,25 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("AtLeast(3)", MermaidTreePrinter.Print(atLeast, style));
     }
 
+    /// <summary>
+    /// Under <see cref="OperatorStyle.CStyle"/> the tree printers label <c>If</c> as <c>?:</c>, mirroring the DSL
+    /// ternary; <see cref="OperatorStyle.Word"/> and <see cref="OperatorStyle.Symbolic"/> keep the label <c>If</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(OperatorStyle.Word, "If")]
+    [InlineData(OperatorStyle.Symbolic, "If")]
+    [InlineData(OperatorStyle.CStyle, "?:")]
+    public void PlainText_and_Mermaid_label_If_in_the_requested_style_Test(OperatorStyle style, string expected)
+    {
+        RuleDescription ifNode = new("If", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+
+        string plain = PlainTextTreePrinter.Print(ifNode, style);
+        string mermaid = MermaidTreePrinter.Print(ifNode, style);
+
+        Assert.StartsWith(expected, plain);
+        Assert.Contains($"[\"{expected}\"]", mermaid);
+    }
+
     [Fact]
     public void PlainText_default_style_is_Word_with_no_style_argument()
     {

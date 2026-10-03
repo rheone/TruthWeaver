@@ -427,7 +427,8 @@ the aliases are cheap once the canonical form stays single.
     or an unparenthesized nested ternary in any of the three positions is
     `AmbiguousOperatorMixing`. The canonical printer writes the function-call
     form `If(a, b, c)`; tree printers and the evaluated/description label are
-    `If` in every `OperatorStyle` (no symbolic or C-style spelling). JSON/YAML:
+    `If` in every `OperatorStyle` except `CStyle`, where the tree printers render
+    `?:` (k3-followups 21; the label itself stays `If`; there is no symbolic spelling). JSON/YAML:
     `{"op": "if", "operands": [condition, whenTrue, whenFalse]}` (op name
     case-insensitive on read; `rule-tree.schema.json` lists `if`).
     `RuleBuilder.If` is new.

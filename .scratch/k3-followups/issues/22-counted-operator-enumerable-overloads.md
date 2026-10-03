@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run is shown before the implementation
 - [ ] Each of the four operators has an `IEnumerable<RuleBuilder>` overload, documented
@@ -15,3 +15,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner decisions 2026-10-03 (Q9, Q10); builds on [ticket 17](17-optional-builder-enumerable-overloads.md).
+
+## Comments
+
+- 2026-10-03 (implementation): added documented `IEnumerable<RuleBuilder>` overloads for `Between`, `AtLeast`, `AtMost`, `Exactly` that null-check (`operands`), materialise once and delegate to the `params` overload with no folding. `GreaterThan`/`LessThan` were not in scope and have no overload. README `RuleBuilder` section updated with the empty-list warning.

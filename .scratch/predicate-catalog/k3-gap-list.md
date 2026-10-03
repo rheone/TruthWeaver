@@ -30,7 +30,7 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
 | --- | --- | --- | --- |
 | `Equals` | `StringPredicates` | `string?` | `value` (`String`) |
 | `EqualsIgnoreCase` | `StringPredicates` | `string?` | `value` (`String`) |
-| `EqualsConfigurable` | `StringPredicates` | `string?` | `value` (`String`), `ignoreCase` (`Boolean`, default `true`), `culture` (`String`, default `""` = invariant), `trim` (`Boolean`, default `false`) |
+| `EqualsConfigurable` | `StringPredicates` | `string?` | `value` (`String`), `ignoreCase` (`Boolean`, default `true`), `trim` (`Boolean`, default `false`) |
 | `StartsWith` | `StringPredicates` | `string?` | `value` (`String`) |
 | `EndsWith` | `StringPredicates` | `string?` | `value` (`String`) |
 | `Contains` | `StringPredicates` | `string?` | `value` (`String`) |
@@ -47,12 +47,12 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
 - **Return type.** The delegate type is already `ValueTask<TruthValue>`, so a predicate *can* return
   `Unknown`. In practice **no catalog member ever does**: all of them go through the internal
   `PredicateResult.FromBoolAsync(bool)`, so the catalog is effectively two-valued. `Unknown` appears only
-  when a predicate faults (invalid regex, bad culture name) per ADR-0001.
+  when a predicate faults (invalid regex) per ADR-0001.
 - **Null selected value.** Every string and regex member returns `False` for a `null` selection;
   `SetEquals` treats a `null` collection as empty; `IsNullOrEmpty` returns `True` for `null` (its
   definition). Nothing returns `Unknown` for null. See [Open questions](#open-questions-for-the-repo-owner).
 - **Comparison.** Ordinal and case-sensitive by default. `EqualsIgnoreCase` is ordinal-ignore-case. `EqualsConfigurable` is
-  also ordinal (k3-followups 12); its retained `culture` argument must be empty.
+  also ordinal (k3-followups 12); its `culture` argument was removed (k3-followups 20).
 - **Naming.** Members are named like BCL methods (`Equals`, `StartsWith`); the inventory uses `Equal`,
   `IsEmpty`, etc. The registered predicate `name` is chosen by the host at registration, so the member name
   is the factory name, not the rule-text name.
@@ -115,7 +115,7 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 | `Contains` | present | `StringPredicates.Contains` | Ordinal, case-sensitive, no `Trim`/`Culture`/`ignoreCase` arguments. Options are missing, not the predicate. |
 | `EndsWith` | present | `StringPredicates.EndsWith` | As `Contains`. |
 | `StartsWith` | present | `StringPredicates.StartsWith` | As `Contains`. |
-| `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase`, `culture` and `trim` arguments (defaults `true`, empty, `false`). It is ordinal; a non-empty `culture` faults (k3-followups 12, open question 3). |
+| `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase` and `trim` arguments (defaults `true`, `false`). It is ordinal and has no `culture` argument (k3-followups 12 and 20, open question 3). |
 | `IsNullOrEmpty` | present | `StringPredicates.IsNullOrEmpty` | No arguments. `Trim` is meaningless here and `ignoreCase`/`Culture` do not apply. Returns `True` for `null`. |
 | `Matches` | present | `RegexPredicates.Matches` | `pattern` only; `RegexOptions.None`, 1-second timeout, cached per pattern. `ignoreCase` would map to `RegexOptions.IgnoreCase` (a new optional `Boolean` argument); `Culture` maps to `CultureInvariant`; `Trim` is questionable for a regex. |
 | `IsEmpty` | missing | none (`IsNullOrEmpty` includes null) | Non-null empty string. Null input: `False` or `Unknown`, see open question 1. |
@@ -195,7 +195,7 @@ Resolution status (k3-followups 10): the rules are recorded in
 
 - Question 1 (null input): **resolved**. Existing members keep `False`; new comparison, range and count
   families return `Unknown` for null; null tests stay definite.
-- Question 3 (culture): **resolved**. Ordinal only; `EqualsConfigurable` `culture` is a known deviation.
+- Question 3 (culture): **resolved**. Ordinal only; `EqualsConfigurable` no longer has a `culture` argument (k3-followups 20).
 - Question 5 (`DateTime` arguments): **resolved**. `DateTimeOffset` only.
 - Question 6 (clock predicates): **resolved**. `TimeProvider` supplied at registration.
 - Questions 2, 4, 7, 8 (`NotX` shape, collection `In`/`NotIn`, bounds, selector shapes): **deferred**.

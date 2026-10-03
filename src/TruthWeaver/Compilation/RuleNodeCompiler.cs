@@ -557,6 +557,13 @@ internal sealed class RuleNodeCompiler<TContext>
             {
                 string[] declared = [.. schema.Arguments.Select(a => a.Name)];
                 string expectedArguments = declared.Length == 0 ? "no arguments" : $"one of {string.Join(", ", declared)}";
+
+                // A near-miss gets a "did you mean"; anything else (typically an argument the predicate has
+                // retired, such as EqualsConfigurable's former culture) gets advice naming it, so the author
+                // knows deleting it is the fix rather than renaming it.
+                DiagnosticSuggestion suggestion =
+                    NameSuggester.Suggest(arg.Name, declared)
+                    ?? new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Remove the argument '{arg.Name}'.");
                 this.diagnostics.Add(
                     Diagnostic.Error(
                         DiagnosticCodes.UnknownArgument,
@@ -564,7 +571,7 @@ internal sealed class RuleNodeCompiler<TContext>
                         arg.Span,
                         expected: expectedArguments,
                         found: $"'{arg.Name}'",
-                        suggestion: NameSuggester.Suggest(arg.Name, declared),
+                        suggestion: suggestion,
                         path: arg.Path
                     )
                 );

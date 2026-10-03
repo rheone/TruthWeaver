@@ -125,7 +125,6 @@ public class NullBehaviorTests
                 {
                     ["value"] = LiteralValue.OfString("a"),
                     ["ignoreCase"] = LiteralValue.OfBoolean(true),
-                    ["culture"] = LiteralValue.OfString(string.Empty),
                     ["trim"] = LiteralValue.OfBoolean(false),
                 }
             ),

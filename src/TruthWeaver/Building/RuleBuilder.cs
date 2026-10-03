@@ -372,6 +372,19 @@ public abstract class RuleBuilder
         return new BetweenBuilder(min, max, operands);
     }
 
+    /// <summary>
+    /// Creates a builder for <c>BETWEEN(min, max, ...)</c> from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count such as <c>AtLeast(2, [])</c> is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="min">The inclusive lower bound (at least 0).</param>
+    /// <param name="max">The inclusive upper bound (at least <paramref name="min"/>, at most the operand count).</param>
+    /// <param name="operands">The operands (at least two, otherwise a compile diagnostic).</param>
+    /// <returns>A builder for the <c>BETWEEN</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Between(int min, int max, IEnumerable<RuleBuilder> operands)
+    {
+        return Between(min, max, Materialize(operands));
+    }
+
     /// <summary>Creates a builder for "at least <paramref name="k"/> of these operands are true".</summary>
     /// <param name="k">The threshold.</param>
     /// <param name="operands">The operands.</param>
@@ -381,6 +394,18 @@ public abstract class RuleBuilder
         return new ThresholdBuilder("atLeast", k, operands);
     }
 
+    /// <summary>
+    /// Creates a builder for "at least <paramref name="k"/> of these operands are true" from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count such as <c>AtLeast(2, [])</c> is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operands">The operands.</param>
+    /// <returns>A builder for the <c>AtLeast</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder AtLeast(int k, IEnumerable<RuleBuilder> operands)
+    {
+        return AtLeast(k, Materialize(operands));
+    }
+
     /// <summary>Creates a builder for "at most <paramref name="k"/> of these operands are true".</summary>
     /// <param name="k">The threshold.</param>
     /// <param name="operands">The operands.</param>
@@ -388,6 +413,18 @@ public abstract class RuleBuilder
     public static RuleBuilder AtMost(int k, params RuleBuilder[] operands)
     {
         return new ThresholdBuilder("atMost", k, operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for "at most <paramref name="k"/> of these operands are true" from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count such as <c>AtLeast(2, [])</c> is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operands">The operands.</param>
+    /// <returns>A builder for the <c>AtMost</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder AtMost(int k, IEnumerable<RuleBuilder> operands)
+    {
+        return AtMost(k, Materialize(operands));
     }
 
     /// <summary>Creates a builder for "more than <paramref name="k"/> of these operands are true".</summary>
@@ -417,6 +454,18 @@ public abstract class RuleBuilder
         return new ThresholdBuilder("exactly", k, operands);
     }
 
+    /// <summary>
+    /// Creates a builder for "exactly <paramref name="k"/> of these operands are true" from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count such as <c>AtLeast(2, [])</c> is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operands">The operands.</param>
+    /// <returns>A builder for the <c>Exactly</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Exactly(int k, IEnumerable<RuleBuilder> operands)
+    {
+        return Exactly(k, Materialize(operands));
+    }
+
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     public string ToJson()
@@ -437,6 +486,14 @@ public abstract class RuleBuilder
     }
 
     private protected abstract JsonNode ToNode();
+
+    /// <summary>Rejects a null sequence and materialises it once, without folding, for the counted operators.</summary>
+    private static RuleBuilder[] Materialize(IEnumerable<RuleBuilder> operands)
+    {
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return [.. operands];
+    }
 
     /// <summary>
     /// Folds a run-time operand sequence: empty becomes the operator's identity constant, one item becomes
