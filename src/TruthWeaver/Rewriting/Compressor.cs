@@ -161,7 +161,7 @@ internal static class Compressor
 
         /// <summary>
         /// <c>OR(Exactly(1, ops), Exactly(3, ops), ...)</c> over every odd count up to <c>n</c> is the expansion of
-        /// <c>NXOR(ops)</c> (see <see cref="PrimitiveExpander"/>). It needs at least three operands: two operands expand to a
+        /// <c>PARITY(ops)</c> (see <see cref="PrimitiveExpander"/>). It needs at least three operands: two operands expand to a
         /// single <c>Exactly(1)</c>, which is not an <c>OR</c>.
         /// </summary>
         private static bool IsParity(EquatableArray<Expression> ops, out EquatableArray<Expression> operands)
@@ -258,7 +258,7 @@ internal static class Compressor
             }
 
             return IsParity(ops, out EquatableArray<Expression> parityOperands)
-                ? new NxorExpression(ExpressionTools.Array(parityOperands.Select(this.Visit)))
+                ? new ParityExpression(ExpressionTools.Array(parityOperands.Select(this.Visit)))
                 : null;
         }
 

@@ -137,7 +137,7 @@ public sealed class CanonicalizeTests
     [InlineData("ExactlyOne(c, a)", 3, "Exactly(1, a, c)")]
     [InlineData("b XOR a", 2, "(a XOR b)")]
     [InlineData("b EQUIVALENT a", 2, "(a EQUIVALENT b)")]
-    [InlineData("NXOR(c, a, b)", 3, "NXOR(a, b, c)")]
+    [InlineData("PARITY(c, a, b)", 3, "PARITY(a, b, c)")]
     [InlineData("BETWEEN(1, 2, c, a, b)", 3, "BETWEEN(1, 2, a, b, c)")]
     [InlineData("AtLeast(2, c, a, b)", 3, "AtLeast(2, a, b, c)")]
     public async Task Canonicalize_SmallRule_GivesTheStatedCanonicalText_Test(string ruleText, int arity, string expected)

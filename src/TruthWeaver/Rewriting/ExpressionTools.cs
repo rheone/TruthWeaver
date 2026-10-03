@@ -38,7 +38,7 @@ internal static class ExpressionTools
             ImpliesExpression i => MapPair(i, i.Antecedent, i.Consequent, map, static (l, r) => new ImpliesExpression(l, r)),
             NandExpression nd => MapPair(nd, nd.Left, nd.Right, map, static (l, r) => new NandExpression(l, r)),
             NorExpression nr => MapPair(nr, nr.Left, nr.Right, map, static (l, r) => new NorExpression(l, r)),
-            NxorExpression nx => MapList(nx, nx.Operands, map, static (_, ops) => new NxorExpression(ops)),
+            ParityExpression nx => MapList(nx, nx.Operands, map, static (_, ops) => new ParityExpression(ops)),
             AnyExpression any => MapList(any, any.Operands, map, static (_, ops) => new AnyExpression(ops)),
             AllExpression all => MapList(all, all.Operands, map, static (_, ops) => new AllExpression(ops)),
             NoneExpression none => MapList(none, none.Operands, map, static (_, ops) => new NoneExpression(ops)),

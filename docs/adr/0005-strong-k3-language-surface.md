@@ -48,12 +48,24 @@ the aliases are cheap once the canonical form stays single.
    parse time. Their primitive definitions are used by the optional
    expand-to-primitives transform, by the analyzer, and as the conformance
    oracle in tests. This preserves the author's operator on round-trip.
-4. **XOR family.** `XOR(a, b)` is binary. `NXOR(a, b, ...)` is n-ary **parity**
+4. **XOR family.** `XOR(a, b)` is binary. `PARITY(a, b, ...)` is n-ary **parity**
    (odd number of `True`); any `Unknown` operand yields `Unknown`
    (`.tmp/xor.md`). `ExactlyOne` is retained and is a different operation
    (exactly one `True`, evaluated with the cardinality interval semantics), as
    is `Exactly(1, ...)`. ADR-0003's concern that n-ary XOR is ambiguous is
-   resolved by the distinct name `NXOR`.
+   resolved by the distinct name `PARITY`.
+
+   *Amended 2026-10-03 (k3-followups 06); the operator was originally named
+   `NXOR`.* `NXOR` conventionally means negated XOR (`XNOR`), which is exactly
+   `EQUIVALENT` here and the opposite of what n-ary parity does, so the name
+   was misleading. It is renamed `PARITY` in every layer (DSL, JSON/YAML `op`
+   `parity`, schema, `RuleBuilder.Parity`, `ParityExpression`, labels, printers,
+   rewrites and analyzer) and the `NXOR` spelling is removed, not kept as an
+   alias. Rule text, JSON or YAML that still writes `NXOR` is rejected
+   (`SyntaxError` in the DSL, `MalformedTree` in JSON and YAML) with a "did you
+   mean `PARITY`" suggestion. The word stays reserved so a predicate cannot
+   take it. Semantics are unchanged. Occurrences of `PARITY` in the other
+   decisions below were `NXOR` when written.
 5. **`EQUIVALENT` replaces `XNOR` as the canonical biconditional.** `IFF` and
    `XNOR` are accepted on input as aliases producing the same node. JSON/YAML
    canonical op name is `equivalent`; `xnor` and `iff` are accepted on read.
@@ -66,12 +78,12 @@ the aliases are cheap once the canonical form stays single.
 ## Amendments (2026-10-02 grilling, round 2)
 
 7. **`XOR` with more than two operands remains a compile error**
-   (`InfixArityViolation`); the diagnostic message hints at `NXOR` for parity.
+   (`InfixArityViolation`); the diagnostic message hints at `PARITY` for parity.
 8. **Precedence.** `NOT` > `AND` > `OR` is unchanged. Every other infix
    operator (`XOR`, `EQUIVALENT`, `NAND`, `NOR`, `IMPLIES`, `??`) must not be
    mixed with another infix operator at the same nesting level without
    parentheses (compile error, extending the existing `XOR`/`XNOR` rule).
-   Function-call forms (`NXOR(...)`, `ANY(...)`, `If(...)`) have no precedence.
+   Function-call forms (`PARITY(...)`, `ANY(...)`, `If(...)`) have no precedence.
 9. **Delimiters.** `()`, `[]`, `{}` are interchangeable grouping; the AST does
    not retain which was written. Printing normalizes to parentheses by
    default, with an optional deterministic depth-cycling renderer.
@@ -118,7 +130,7 @@ the aliases are cheap once the canonical form stays single.
     `AtLeast(k + 1)` and `LessThan(k)` = `AtMost(k - 1)` (the compiler's valid
     ranges map exactly onto the targets' valid ranges); `If` = the multiplexer
     plus consensus term of decision 13.
-    **`NXOR` (parity)** is `OR(Exactly(1, ...), Exactly(3, ...), ...)` over every
+    **`PARITY` (parity)** is `OR(Exactly(1, ...), Exactly(3, ...), ...)` over every
     odd count rather than a fold of the `XOR` expansion: with no `Unknown`
     operand the interval is a single count and the disjunction is `True` iff it is
     odd; with an `Unknown` operand the interval has two or more consecutive
@@ -154,7 +166,7 @@ the aliases are cheap once the canonical form stays single.
     expansion. It matches primitive shapes top-down and rewrites them to derived
     operators: `OR(NOT a, b)` to `IMPLIES`; `NOT(AND(a, b))` and `OR(NOT a, NOT b)`
     to `NAND`; `NOT(OR(a, b))` and `AND(NOT a, NOT b)` to `NOR`; the exact
-    `XOR`, `EQUIVALENT`, `If` and `NXOR` shapes the expander emits; the
+    `XOR`, `EQUIVALENT`, `If` and `PARITY` shapes the expander emits; the
     threshold-to-alias rows (`AtLeast(1)` `ANY`, `AtLeast(n)` `ALL`, `AtMost(0)`
     `NONE`, `Exactly(1)` `ExactlyOne`, `NOT AtLeast(k)` `AtMost(k - 1)`);
     `AND(AtLeast(m), AtMost(M))` over the same operands to `BETWEEN`; and the
@@ -219,7 +231,7 @@ the aliases are cheap once the canonical form stays single.
     over the DSL vocabulary and the registry's predicate names. The shared
     `InfixArityViolation` code (`BRE0006`) is kept for the five binary operators;
     its `Expected`/`Found` carry the operand counts and the `Suggestion` names
-    `NXOR`/`ExactlyOne` for `XOR` and nesting for the others. The
+    `PARITY`/`ExactlyOne` for `XOR` and nesting for the others. The
     no-mixing "add parentheses" advice is now also a `Hint` suggestion that
     quotes the operand wrapped in parentheses where there is one.
 
@@ -314,27 +326,27 @@ the aliases are cheap once the canonical form stays single.
     `rule-tree.schema.json` lists `nand` and `nor`. `RuleBuilder.Nand` and
     `RuleBuilder.Nor` are new.
 
-    Implemented in k3-conformance 12: `NXOR` is a first-class
-    `NxorExpression` function-call node (no precedence, so it needs no
-    parentheses next to infix operators) with `{"op": "nxor", "operands":
+    Implemented in k3-conformance 12: `PARITY` is a first-class
+    `ParityExpression` function-call node (no precedence, so it needs no
+    parentheses next to infix operators) with `{"op": "parity", "operands":
     [...]}` in JSON and YAML (case-insensitive on read). It takes **two or more**
     operands (fewer is `MalformedTree`, like `AND`/`OR`/`ExactlyOne`), and the
-    DSL spelling is `NXOR(a, b, ...)` (reserved word, any case). It is
+    DSL spelling is `PARITY(a, b, ...)` (reserved word, any case). It is
     `Unknown` whenever any operand is `Unknown`, otherwise `True` for an odd
     number of `True` operands; evaluation folds binary XOR and the analyzer rail
     is the same fold of the XOR rail. The canonical printer writes
-    `NXOR(a, b, ...)`; every tree-printer style keeps the word (no symbol or
+    `PARITY(a, b, ...)`; every tree-printer style keeps the word (no symbol or
     C-family spelling). The `XOR` arity message (still `InfixArityViolation`) now
-    names `NXOR` and `ExactlyOne`. `ExactlyOne` is unchanged and differs from
-    `NXOR` from three operands on. `rule-tree.schema.json` lists `nxor`.
-    `RuleBuilder.Nxor` is new.
+    names `PARITY` and `ExactlyOne`. `ExactlyOne` is unchanged and differs from
+    `PARITY` from three operands on. `rule-tree.schema.json` lists `parity`.
+    `RuleBuilder.Parity` is new.
 
     Implemented in k3-conformance 13: `ANY`, `ALL` and `NONE` are first-class
     `AnyExpression` / `AllExpression` / `NoneExpression` function-call nodes (no
     precedence) with `{"op": "any" | "all" | "none", "operands": [...]}` in JSON
     and YAML (case-insensitive on read) and the DSL spellings `ANY(...)`,
     `ALL(...)`, `NONE(...)` (reserved words, any case). They take **two or more**
-    operands, the same minimum as `AND`/`OR`/`ExactlyOne`/`NXOR` (fewer is
+    operands, the same minimum as `AND`/`OR`/`ExactlyOne`/`PARITY` (fewer is
     `MalformedTree`); the threshold family's one-operand allowance is not
     inherited because a single-operand `ANY`/`ALL`/`NONE` is just the operand
     or its negation. Semantics are the cardinality interval over the

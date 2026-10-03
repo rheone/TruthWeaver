@@ -16,7 +16,7 @@ internal static class DslVocabulary
     [
         .. InfixWords,
         "NOT",
-        "NXOR",
+        "PARITY",
         "ANY",
         "ALL",
         "NONE",

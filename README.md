@@ -59,7 +59,7 @@ anything else.
 
 `TruthWeaver` answers one question: *what is the truth value of this expression
 right now, for this context?* — `True`, `False` or `Unknown`. It knows about `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`,
-`NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family (`AtLeast`/`AtMost`/`GreaterThan`/
+`PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family (`AtLeast`/`AtMost`/`GreaterThan`/
 `LessThan`/`Exactly`), terms, and evaluation. It does not know about
 permissions, workflows, or policies — those are things you build *on top* of
 it. A permission check ("can the current user do X") is one consumer of this
@@ -71,7 +71,7 @@ engine, not what the engine itself is.
 | **Expression** | The three-valued tree — operators over terms, constants and sub-expressions. |
 | **Predicate** | A registered, reusable implementation, e.g. `hasTopping`, `lovesPineapple`. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")` — the tree's leaf node. |
-| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `NXOR` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Project` and `Collapse` are not part of the rule language: they are methods on the result (`Decision.Project(unknownAs)` and `Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)); inside a rule use `COALESCE(x, True)` / `COALESCE(x, False)`. See [Operators](#operators) below. |
+| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `PARITY` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Project` and `Collapse` are not part of the rule language: they are methods on the result (`Decision.Project(unknownAs)` and `Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)); inside a rule use `COALESCE(x, True)` / `COALESCE(x, False)`. See [Operators](#operators) below. |
 | **Decision** | The evaluation result: a `TruthValue` plus any faults, and optionally a trace. `IsSatisfied` is fail-closed: only `True` is satisfied. |
 
 Full vocabulary and the predicate-author contract: [CONTEXT.md](CONTEXT.md).
@@ -301,7 +301,7 @@ A service that only *implements* domain predicates references
   predicate can also answer `Unknown` directly. Entry
   point: [`Evaluator`](src/TruthWeaver/Evaluation/Evaluator.cs).
 - **A complete Strong K3 language.** Primitive and derived logic (`NOT`, `AND`,
-  `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NXOR`, `NAND`, `NOR`), cardinality
+  `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `PARITY`, `NAND`, `NOR`), cardinality
   (`AtLeast`/`AtMost`/`Exactly`, `ANY`/`ALL`/`NONE`/`BETWEEN`), value operations
   (`COALESCE`/`??`, `If`/`? :`), inspections (`IsTrue`, `IsFalse`, `IsUnknown`,
   `IsKnown`) and `Unknown` as a constant. Operators are case-insensitive, have
@@ -423,7 +423,7 @@ call        = list_op "(" expression { "," expression } ")"
             | "BETWEEN" "(" integer "," integer "," expression { "," expression } ")"
             | "If" "(" expression "," expression "," expression ")"
             | inspection "(" expression ")" ;
-list_op     = "NXOR" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
+list_op     = "PARITY" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
 threshold   = "AtLeast" | "AtMost" | "GreaterThan" | "LessThan" | "Exactly" ;
 inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
 
@@ -437,6 +437,9 @@ Two rules sit outside the grammar because they are context rules, not syntax:
 - **No implicit mixing.** An `infix_op` expression (or `??`, or the ternary) may not sit next to
   `AND`/`OR`, another infix operator or a nested ternary at the same level without parentheses
   (`AmbiguousOperatorMixing`); see [Order of operations](#order-of-operations).
+- **`NXOR` is not part of the language.** It was renamed `PARITY` (`NXOR` conventionally means negated
+  `XOR`, which is `EQUIVALENT`, the opposite of n-ary parity). The old spelling is rejected in the DSL,
+  JSON and YAML with a "did you mean `PARITY`" suggestion.
 - **`Collapse` is not part of the language.** It is rejected wherever it appears, with a diagnostic
   that points to `Decision.Collapse`. Operand counts, threshold bounds and argument schemas are
   checked after parsing, as diagnostics.
@@ -478,7 +481,7 @@ no-mixing rule too: its condition and each branch must be a single operand or a 
 `a ? b XOR c : d` and a nested `a ? b : c ? d : e` are all `AmbiguousOperatorMixing` errors, while `(a AND b) ? c : d` and
 `a ? b : (c ? d : e)` are fine. Everywhere a full expression is allowed (the root, parentheses, call arguments such as
 `ANY(a ? b : c, d)`) a ternary may appear without extra parentheses.
-Function-call-style operators (`NXOR(...)`, `ANY(...)`, `ALL(...)`, `NONE(...)`, `BETWEEN(...)`, `COALESCE(...)`, `If(...)`, `IsTrue(...)`, `IsFalse(...)`, `IsUnknown(...)`, `IsKnown(...)`, `ExactlyOne(...)` and the threshold
+Function-call-style operators (`PARITY(...)`, `ANY(...)`, `ALL(...)`, `NONE(...)`, `BETWEEN(...)`, `COALESCE(...)`, `If(...)`, `IsTrue(...)`, `IsFalse(...)`, `IsUnknown(...)`, `IsKnown(...)`, `ExactlyOne(...)` and the threshold
 family) are self-delimiting — their parentheses are part of the call syntax,
 not grouping, so they never participate in precedence at all.
 
@@ -535,9 +538,9 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | Arity | Operators | Notes |
 | --- | --- | --- |
 | **Unary** | `NOT`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown` | Take exactly one operand (`MalformedTree` otherwise). The four inspections are function calls (`IsUnknown(a)`). |
-| **Binary only** | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` | Always exactly two operands — a compile error otherwise (`InfixArityViolation`). `XOR` with three or more operands is an error whose message points at `NXOR` (n-ary parity) and `ExactlyOne` (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 7); a chain such as `a IMPLIES b IMPLIES c` or `a NAND b NAND c` is rejected too — parenthesize it. |
+| **Binary only** | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` | Always exactly two operands — a compile error otherwise (`InfixArityViolation`). `XOR` with three or more operands is an error whose message points at `PARITY` (n-ary parity) and `ExactlyOne` (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 7); a chain such as `a IMPLIES b IMPLIES c` or `a NAND b NAND c` is rejected too — parenthesize it. |
 | **Ternary** | `If` | Takes exactly three operands, `[condition, whenTrue, whenFalse]` — `MalformedTree` otherwise. |
-| **N-ary (≥ 2)** | `AND`, `OR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`AND(a, b, c)`, not `AND(AND(a, b), c)`). |
+| **N-ary (≥ 2)** | `AND`, `OR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`AND(a, b, c)`, not `AND(AND(a, b), c)`). |
 | **0-ary** | `True`, `False`, `Unknown` | Constants, not operators over operands. Written in any letter case; printed upper camel. |
 
 ### All operators
@@ -552,7 +555,7 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | `a IMPLIES b` / `a → b` | binary | Strong Kleene material implication, `NOT a OR b`. `True` when `a` is `False` or `b` is `True`; `False` only for `True → False`; otherwise `Unknown`. |
 | `a NAND b` / `a ↑ b` | binary | Negated conjunction, `NOT (a AND b)`. `False` only when both operands are `True`; `True` if either is `False`; otherwise `Unknown`. Both operands are always evaluated. |
 | `a NOR b` / `a ↓ b` | binary | Negated disjunction, `NOT (a OR b)`. `True` only when both operands are `False`; `False` if either is `True`; otherwise `Unknown`. Both operands are always evaluated. |
-| `NXOR(a, b, ...)` | n-ary | Parity: `True` iff an odd number of operands are `True`, `False` iff an even number are, and `Unknown` whenever any operand is `Unknown`. At two operands it equals `XOR`; from three operands it differs from `ExactlyOne` (`NXOR(a, b, c)` is `True` when all three are `True`). A function call, so it has no precedence and needs no parentheses next to other operators. |
+| `PARITY(a, b, ...)` | n-ary | Parity: `True` iff an odd number of operands are `True`, `False` iff an even number are, and `Unknown` whenever any operand is `Unknown`. At two operands it equals `XOR`; from three operands it differs from `ExactlyOne` (`PARITY(a, b, c)` is `True` when all three are `True`). A function call, so it has no precedence and needs no parentheses next to other operators. |
 | `ANY(a, b, ...)` | n-ary | At least one operand is `True` (`AtLeast(1, ...)`): `True` if any operand is `True`, `False` if every operand is `False`, otherwise `Unknown`. |
 | `ALL(a, b, ...)` | n-ary | Every operand is `True` (`AtLeast(n, ...)`): `True` if all are `True`, `False` if any is `False`, otherwise `Unknown`. |
 | `NONE(a, b, ...)` | n-ary | No operand is `True` (`AtMost(0, ...)`): `True` if all are `False`, `False` if any is `True`, otherwise `Unknown`. |
@@ -572,7 +575,7 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | `True` / `False` / `Unknown` | constant | Fixed K3 truth value (any letter case; the canonical printer writes `True`, `False`, `Unknown`). `Unknown` models an indeterminate constant, e.g. when stubbing out incomplete logic. In JSON a constant is `{"const": true}` or, for `Unknown`, `{"const": "unknown"}`; in YAML `const: unknown`. Operator names are case-insensitive in every format. |
 
 The binary logical operators are infix only (`a XOR b`); there is no `XOR(a, b)` call form. The n-ary
-operators, the threshold family and the other functions are calls (`NXOR(a, b, c)`).
+operators, the threshold family and the other functions are calls (`PARITY(a, b, c)`).
 
 Every operator above follows the three-valued Kleene truth tables in
 [ADR-0001](docs/adr/0001-kleene-failure-model.md) — see the
@@ -664,7 +667,7 @@ Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
 | `a XOR b` | `(a AND NOT b) OR (NOT a AND b)` |
 | `a EQUIVALENT b` | `(a AND b) OR (NOT a AND NOT b)` |
 | `a NAND b` / `a NOR b` | `NOT (a AND b)` / `NOT (a OR b)` |
-| `NXOR(a, b, ...)` | `Exactly(1, ...) OR Exactly(3, ...) OR ...` (every odd count) |
+| `PARITY(a, b, ...)` | `Exactly(1, ...) OR Exactly(3, ...) OR ...` (every odd count) |
 | `ExactlyOne(...)` | `Exactly(1, ...)` |
 | `ANY(...)` / `ALL(...)` / `NONE(...)` | `AtLeast(1, ...)` / `AtLeast(n, ...)` / `AtMost(0, ...)` |
 | `BETWEEN(min, max, ...)` | `AtLeast(min, ...) AND AtMost(max, ...)` (a vacuous bound is dropped) |
@@ -733,7 +736,7 @@ that compresses to itself.
 | `(a AND NOT b) OR (NOT a AND b)` | `a XOR b` |
 | `(a AND b) OR (NOT a AND NOT b)` | `a EQUIVALENT b` |
 | `(c AND t) OR (NOT c AND f) OR (t AND f)` | `If(c, t, f)` |
-| `Exactly(1, ...) OR Exactly(3, ...) OR ...` (every odd count, 3+ operands) | `NXOR(...)` |
+| `Exactly(1, ...) OR Exactly(3, ...) OR ...` (every odd count, 3+ operands) | `PARITY(...)` |
 | `AtLeast(1, ...)` / `AtLeast(n, ...)` / `AtMost(0, ...)` / `Exactly(1, ...)` | `ANY` / `ALL` / `NONE` / `ExactlyOne` |
 | `NOT AtLeast(k, ...)` / `NOT AtMost(k, ...)` | `AtMost(k - 1, ...)` / `AtLeast(k + 1, ...)` |
 | `AtLeast(m, ...) AND AtMost(M, ...)` over the same operands | `BETWEEN(m, M, ...)` |
@@ -767,7 +770,7 @@ The rewrites, in the order they are applied (bottom-up, repeated until stable):
 3. **Flatten.** `AND` inside `AND`, `OR` inside `OR` and `COALESCE` inside
    `COALESCE` are spliced into the parent (all associative).
 4. **Sort.** The operands of the commutative operators (`AND`, `OR`, `XOR`,
-   `EQUIVALENT`, `NAND`, `NOR`, `NXOR`, `ExactlyOne`, the threshold family,
+   `EQUIVALENT`, `NAND`, `NOR`, `PARITY`, `ExactlyOne`, the threshold family,
    `BETWEEN`) are sorted by their canonical text, ordinally.
 5. **Deduplicate.** Repeated operands of `AND`/`OR` are removed (`a AND a` is `a`;
    idempotence holds in K3). Counting operators keep repeats, since they count.
@@ -1264,9 +1267,9 @@ apply (see [Operators](#operators) for the full table).
 
 `ExactlyOne(a, b, c)` is the n-ary "exactly one of these" operator; `XOR` is
 binary-only — a third operand is a compile error that points at both
-alternatives. Use `ExactlyOne` for "exactly one", or `NXOR(a, b, c)` for
+alternatives. Use `ExactlyOne` for "exactly one", or `PARITY(a, b, c)` for
 n-ary *parity* (an odd number are true; `Unknown` if any operand is `Unknown`).
-The two differ from three operands: with all of `a`, `b`, `c` true, `NXOR` is
+The two differ from three operands: with all of `a`, `b`, `c` true, `PARITY` is
 `True` and `ExactlyOne` is `False`.
 
 `EQUIVALENT` (`IFF`, `↔`) is `XOR`'s counterpart — "these two must agree":
@@ -1678,7 +1681,7 @@ on `TruthWeaver.Building.RuleBuilder`:
 | `IMPLIES` | `RuleBuilder.Implies(RuleBuilder antecedent, RuleBuilder consequent)` |
 | `NAND` | `RuleBuilder.Nand(RuleBuilder left, RuleBuilder right)` |
 | `NOR` | `RuleBuilder.Nor(RuleBuilder left, RuleBuilder right)` |
-| `NXOR` | `RuleBuilder.Nxor(params RuleBuilder[] operands)` |
+| `PARITY` | `RuleBuilder.Parity(params RuleBuilder[] operands)` |
 | `ANY` / `ALL` / `NONE` | `RuleBuilder.Any(params RuleBuilder[] operands)` / `RuleBuilder.All(...)` / `RuleBuilder.None(...)` |
 | `BETWEEN(min, max)` | `RuleBuilder.Between(int min, int max, params RuleBuilder[] operands)` (JSON/YAML: `{"op": "between", "min": 1, "max": 2, "operands": [...]}`) |
 | `COALESCE` | `RuleBuilder.Coalesce(params RuleBuilder[] operands)` |
@@ -1939,7 +1942,7 @@ The classes of malformed rule text each report as follows.
 | Missing operand or literal | `BRE0001` | a term, constant or `(` (or a literal) / the token or end of rule | none |
 | Mismatched, unclosed or unmatched delimiter | `BRE0001` | the closer / the token or end of rule (an unclosed group is reported at its opener) | none |
 | Unterminated string, bad escape | `BRE0001`, `BRE0015` | a closing `"`, or the supported escapes / end of rule or the escape | none |
-| Wrong operand count, `XOR` and the other binary operators | `BRE0006`, `BRE0014` | `2 operands` / `3 operands` | `NXOR` / `ExactlyOne` for `XOR`, parentheses for the others |
+| Wrong operand count, `XOR` and the other binary operators | `BRE0006`, `BRE0014` | `2 operands` / `3 operands` | `PARITY` / `ExactlyOne` for `XOR`, parentheses for the others |
 | Ambiguous mixing without parentheses | `BRE0007` | parentheses around one of the groups / the operators sharing a level | hint showing the parenthesised text |
 | Threshold or `BETWEEN` bounds, non-integer bound | `BRE0008`, `BRE0001` | the valid range, or an integer / the value | none |
 | Declared `Collapse` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
@@ -2001,13 +2004,13 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `Collapse` / `CollapsePolicy` / `CollapseOutcome` | A method on the result, not part of the rule (ADR-0005 decision 14). `CollapsePolicy` (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`) says how `Unknown` becomes a two-valued answer; `CollapseOutcome` (`True`, `False`, `RejectedUnresolved`) is the answer. `RejectedUnresolved` is a normal outcome, not a `Fault`. Rule text, JSON and YAML cannot declare it. See [Collapse](#collapse-the-final-boundary). |
 | `Diagnostic` | One compile-time problem: a code, a `DiagnosticSeverity` (`Error`/`Warning`/`Info`), a message, a source span or JSON/YAML `Path`, optional expected/found text and a `DiagnosticSuggestion`. See [Reading diagnostics](#reading-diagnostics). `Error` severity is what blocks `CompiledRule<TContext>` from being populated. |
 | `EvaluationOptions` | Per-call evaluation knobs: `FaultBudget` (abort after N faults), `Mode` (`Default` or `Exhaustive`), and an overall timeout. |
-| `NXOR(...)` | N-ary parity: true iff an odd number of operands are true; `Unknown` whenever any operand is `Unknown`. The unambiguous name for what `XOR` would mean past two operands. |
+| `PARITY(...)` | N-ary parity: true iff an odd number of operands are true; `Unknown` whenever any operand is `Unknown`. The unambiguous name for what `XOR` would mean past two operands. |
 | `ANY(...)` / `ALL(...)` / `NONE(...)` | N-ary cardinality operators over the definitely-true / possibly-true interval: `AtLeast(1, ...)`, `AtLeast(n, ...)` and `AtMost(0, ...)`, kept as their own nodes so a rule round-trips as written. They take two or more operands. |
 | `BETWEEN(min, max, ...)` | N-ary operator: the number of true operands lies in `[min, max]` (`AtLeast(min, ...) AND AtMost(max, ...)`); the bounds are validated at compile time and a rule prints them first. |
 | `COALESCE(...)` / `??` | N-ary operator that replaces only `Unknown` with the next operand (`True`/`False` pass through); short-circuits at the first known value. `??` is the infix spelling and chains into one node. |
 | `IsTrue(...)` / `IsFalse(...)` / `IsUnknown(...)` / `IsKnown(...)` | Inspection operators: test the K3 state of their operand and always answer a definite `True` or `False`, so they never collapse or fault the enclosing rule. |
 | `If(...)` / `c ? t : f` | Ternary conditional. A definite condition picks its branch (the other is not evaluated); an `Unknown` condition yields a value only when both branches are the same definite value. |
-| `ExactlyOne(...)` | N-ary operator: true iff exactly one operand is true. The explicit name for "exactly one," so it's never confused with `XOR`'s binary-only meaning or `NXOR`'s parity. |
+| `ExactlyOne(...)` | N-ary operator: true iff exactly one operand is true. The explicit name for "exactly one," so it's never confused with `XOR`'s binary-only meaning or `PARITY`'s parity. |
 | Expression | The three-valued tree itself — operators over terms, constants and sub-expressions. What a `CompiledRule<TContext>` wraps. |
 | `Fault` | A record of one predicate failing to produce an answer during one evaluation: the faulting term's identity plus the exception. Faults are absorbed as `Unknown`, never rethrown. |
 | `a IMPLIES b` / `→` | Strong Kleene material implication, `NOT a OR b`; a first-class binary node that prints as written (`(a IMPLIES b)`). Mixing it with `AND`/`OR` or another infix operator without parentheses is a compile error. See [Operators](#operators). |
@@ -2016,7 +2019,7 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `GroupingStyle` / `RuleText` | `CompiledRule.PrintRuleText(GroupingStyle)` prints with `()` only or depth-cycling `()` `[]` `{}`; `RuleText.NormalizeWhitespace` tidies rule text as written without compiling it. See [Grouping delimiters](#grouping-delimiters). |
 | Kleene logic | Three-valued logic (`True`/`False`/`Unknown`) instead of two-valued boolean logic — the reason a predicate fault becomes `Unknown` rather than a thrown exception or a silently coerced `false`. See [ADR-0001](docs/adr/0001-kleene-failure-model.md). |
 | Memoization | Within one evaluation, a given term identity is invoked at most once, however many places in the tree reference it. Never carries across separate `EvaluateAsync` calls. |
-| Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
+| Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
 | `OperatorInfo` / `OperatorDescriptor` | `OperatorInfo.Describe(node)` (`TruthWeaver.Ast`) returns an operator node's `OperatorDescriptor` (`Label`, `Description`) — the operator-side counterpart to a predicate's `PredicateSchema.Label`/`Description`. See [Describing a compiled rule](#describing-a-compiled-rule). |
 | Predicate | A registered, reusable implementation (e.g. `hasTopping`, `lovesPineapple`) — the *function*, not any one call to it. Implements `IPredicate<TContext>` or is registered as a stateless lambda. Required to carry a `Label` and `Description`; see [Predicate types](#predicate-types). |
 | `PredicateArguments` | The non-generic accessor (`GetString`, `GetInt64`, ...) a predicate uses to read its own term's arguments inside `EvaluateAsync`. |
@@ -2032,7 +2035,7 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | `Trace` | An ordered, literal record of every node an evaluation visited or explicitly skipped — the "why was this denied" explanation. |
 | `TruthValue` | The three-valued result type: `True`, `False`, or `Unknown`. Never `bool?`. |
 | `a EQUIVALENT b` / `↔` | The Strong Kleene biconditional (`IFF`; formerly and still readable as `XNOR`) — the negation of `XOR`, deliberately binary. Mixing `EQUIVALENT` with `AND`/`OR`, or with `XOR`, at the same level without parentheses is a compile error — see [Examples #4](#4-xor-equivalent-exactlyone-and-the-threshold-family). |
-| `a XOR b` | Binary exclusive-or (infix only); `NXOR(...)` is the n-ary parity operator. Mixing `XOR` with `AND`/`OR`, or with `EQUIVALENT`, at the same level without parentheses is a compile error — see [Examples #4](#4-xor-equivalent-exactlyone-and-the-threshold-family). |
+| `a XOR b` | Binary exclusive-or (infix only); `PARITY(...)` is the n-ary parity operator. Mixing `XOR` with `AND`/`OR`, or with `EQUIVALENT`, at the same level without parentheses is a compile error — see [Examples #4](#4-xor-equivalent-exactlyone-and-the-threshold-family). |
 
 ## Appendix: Truth tables
 
@@ -2148,13 +2151,13 @@ logical-name and boolean-algebra notation. `T` = `TruthValue.True`, `F` =
 | ? | F | ? | ?↓0 = ? |
 | ? | ? | ? | ?↓? = ? |
 
-### N-ary: `NXOR` (parity)
+### N-ary: `PARITY` (parity)
 
-`NXOR` is `Unknown` whenever any operand is `Unknown`; otherwise it is `True`
+`PARITY` is `Unknown` whenever any operand is `Unknown`; otherwise it is `True`
 exactly when an odd number of operands are `True`. Two operands give the
 `XOR` table above; three operands:
 
-| a | b | c | `NXOR(a, b, c)` |
+| a | b | c | `PARITY(a, b, c)` |
 | :-: | :-: | :-: | :-: |
 | T | T | T | T |
 | T | T | F | F |

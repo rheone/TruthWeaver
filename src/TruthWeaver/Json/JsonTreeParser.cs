@@ -329,6 +329,12 @@ internal static class JsonTreeParser
             return null;
         }
 
+        if (string.Equals(op, "nxor", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(NxorRejection.Create(DiagnosticCodes.MalformedTree, SourceSpan.None, "parity", path));
+            return null;
+        }
+
         if (string.Equals(op, "project", StringComparison.OrdinalIgnoreCase))
         {
             diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.MalformedTree, SourceSpan.None, path));
@@ -429,8 +435,8 @@ internal static class JsonTreeParser
                 return new NandNode(operands, SourceSpan.None);
             case "Nor":
                 return new NorNode(operands, SourceSpan.None);
-            case "Nxor":
-                return new NxorNode(operands, SourceSpan.None);
+            case "Parity":
+                return new ParityNode(operands, SourceSpan.None);
             case "Any":
                 return new AnyNode(operands, SourceSpan.None);
             case "All":

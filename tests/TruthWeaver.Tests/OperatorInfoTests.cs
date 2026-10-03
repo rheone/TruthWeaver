@@ -22,7 +22,7 @@ public sealed class OperatorInfoTests
     [InlineData("(a IMPLIES b)", "IMPLIES")]
     [InlineData("(a NAND b)", "NAND")]
     [InlineData("(a NOR b)", "NOR")]
-    [InlineData("NXOR(a, b)", "NXOR")]
+    [InlineData("PARITY(a, b)", "PARITY")]
     [InlineData("ANY(a, b)", "ANY")]
     [InlineData("ALL(a, b)", "ALL")]
     [InlineData("NONE(a, b)", "NONE")]

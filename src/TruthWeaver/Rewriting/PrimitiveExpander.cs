@@ -52,7 +52,7 @@ internal static class PrimitiveExpander
             NorExpression nr => Not(Or(nr.Left, nr.Right)),
 
             // Parity: True for an odd number of True operands, Unknown if any operand is Unknown (see ExpandParity).
-            NxorExpression nx => ExpandParity(nx.Operands),
+            ParityExpression nx => ExpandParity(nx.Operands),
 
             // Cardinality aliases over the definitely-true / possibly-true interval (ADR-0005 decision 6).
             AnyExpression any => Threshold(ThresholdComparison.AtLeast, 1, any.Operands),
@@ -151,7 +151,7 @@ internal static class PrimitiveExpander
     }
 
     /// <summary>
-    /// <c>NXOR</c> is "an odd number of operands are True", and Unknown if any operand is Unknown. That is exactly
+    /// <c>PARITY</c> is "an odd number of operands are True", and Unknown if any operand is Unknown. That is exactly
     /// <c>OR(Exactly(1), Exactly(3), ...)</c> over the odd counts: with no Unknown operand the interval is a single count
     /// and the disjunction is True iff that count is odd; with at least one Unknown the interval holds two or more
     /// consecutive counts, so every <c>Exactly(k)</c> that can match is Unknown (never True) and at least one odd count is

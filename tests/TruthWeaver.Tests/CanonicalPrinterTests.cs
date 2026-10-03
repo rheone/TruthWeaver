@@ -79,7 +79,7 @@ public sealed class CanonicalPrinterTests
     [InlineData("isManager OR isDepartmentHead")]
     [InlineData("NOT isManager")]
     [InlineData("(isManager XOR isDepartmentHead)")]
-    [InlineData("NXOR(isManager, isDepartmentHead, isManager)")]
+    [InlineData("PARITY(isManager, isDepartmentHead, isManager)")]
     [InlineData("ANY(isManager, isDepartmentHead, isManager)")]
     [InlineData("ALL(isManager, isDepartmentHead, isManager)")]
     [InlineData("NONE(isManager, isDepartmentHead, isManager)")]

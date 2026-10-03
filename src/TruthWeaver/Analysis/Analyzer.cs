@@ -95,7 +95,7 @@ internal static class Analyzer
                 CollectTerms(im.Antecedent, terms);
                 CollectTerms(im.Consequent, terms);
                 break;
-            case NxorExpression nx:
+            case ParityExpression nx:
                 foreach (Expression o in nx.Operands)
                 {
                     CollectTerms(o, terms);
@@ -214,7 +214,7 @@ internal static class Analyzer
     /// N-ary parity as the left fold of binary <see cref="Xor"/>. Since XOR is <c>Unknown</c> whenever either side
     /// is, the fold is <c>Unknown</c> whenever any operand is, and otherwise true for an odd number of true operands.
     /// </summary>
-    private static DualRail Nxor(BddManager bdd, IReadOnlyList<DualRail> operands)
+    private static DualRail Parity(BddManager bdd, IReadOnlyList<DualRail> operands)
     {
         DualRail result = operands[0];
         for (int i = 1; i < operands.Count; i++)
@@ -421,8 +421,8 @@ internal static class Analyzer
                     Build(im.Consequent, bdd, variableIndex, diagnostics)
                 );
                 break;
-            case NxorExpression nx:
-                rail = Nxor(bdd, BuildOperands(nx.Operands, bdd, variableIndex, diagnostics));
+            case ParityExpression nx:
+                rail = Parity(bdd, BuildOperands(nx.Operands, bdd, variableIndex, diagnostics));
                 break;
             case AnyExpression an:
                 rail = AtLeast(bdd, BuildOperands(an.Operands, bdd, variableIndex, diagnostics), 1);

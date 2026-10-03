@@ -25,7 +25,7 @@ public sealed class EvaluatedNodeRuleDescriptionAlignmentTests
     [InlineData("d IMPLIES a")]
     [InlineData("d NAND a")]
     [InlineData("d NOR a")]
-    [InlineData("NXOR(d, a, c)")]
+    [InlineData("PARITY(d, a, c)")]
     [InlineData("ANY(d, a, c)")]
     [InlineData("ALL(d, a, c)")]
     [InlineData("NONE(d, a, c)")]

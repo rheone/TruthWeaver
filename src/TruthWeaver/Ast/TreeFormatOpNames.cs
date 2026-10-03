@@ -22,7 +22,7 @@ internal static class TreeFormatOpNames
         ["Implies"] = "implies",
         ["Nand"] = "nand",
         ["Nor"] = "nor",
-        ["Nxor"] = "nxor",
+        ["Parity"] = "parity",
         ["Any"] = "any",
         ["All"] = "all",
         ["None"] = "none",

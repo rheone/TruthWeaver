@@ -124,9 +124,9 @@ public sealed class StructuredDiagnosticsTests
         Assert.Contains("parentheses", diagnostic.Suggestion?.Text);
     }
 
-    /// <summary>A three-operand XOR reports its arity and points at NXOR and ExactlyOne.</summary>
+    /// <summary>A three-operand XOR reports its arity and points at PARITY and ExactlyOne.</summary>
     [Fact]
-    public void Compile_XorWithThreeOperands_ReportsArityAndHintsAtNxor_Test()
+    public void Compile_XorWithThreeOperands_ReportsArityAndHintsAtParity_Test()
     {
         Diagnostic diagnostic = Single("a XOR b XOR c");
 
@@ -134,10 +134,10 @@ public sealed class StructuredDiagnosticsTests
         Assert.Equal("2 operands", diagnostic.Expected);
         Assert.Equal("3 operands", diagnostic.Found);
         Assert.Equal(DiagnosticSuggestionKind.Hint, diagnostic.Suggestion?.Kind);
-        Assert.Contains("NXOR", diagnostic.Suggestion?.Text);
+        Assert.Contains("PARITY", diagnostic.Suggestion?.Text);
     }
 
-    /// <summary>A chained NAND reports its arity with a nesting hint instead of an NXOR hint.</summary>
+    /// <summary>A chained NAND reports its arity with a nesting hint instead of a PARITY hint.</summary>
     [Fact]
     public void Compile_NandChain_ReportsArityAndHintsAtParentheses_Test()
     {
@@ -145,7 +145,7 @@ public sealed class StructuredDiagnosticsTests
 
         Assert.Equal("2 operands", diagnostic.Expected);
         Assert.Equal("3 operands", diagnostic.Found);
-        Assert.DoesNotContain("NXOR", diagnostic.Suggestion?.Text);
+        Assert.DoesNotContain("PARITY", diagnostic.Suggestion?.Text);
         Assert.Contains("parentheses", diagnostic.Suggestion?.Text);
     }
 

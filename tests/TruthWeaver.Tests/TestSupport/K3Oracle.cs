@@ -105,7 +105,7 @@ public static class K3Oracle
     /// <c>True</c> operands. Built by folding <see cref="Xor"/>, which is itself defined from the primitives.
     /// </summary>
     /// <param name="operands">The operand values (at least one).</param>
-    public static TruthValue Nxor(IReadOnlyList<TruthValue> operands)
+    public static TruthValue Parity(IReadOnlyList<TruthValue> operands)
     {
         TruthValue result = operands[0];
         for (int i = 1; i < operands.Count; i++)

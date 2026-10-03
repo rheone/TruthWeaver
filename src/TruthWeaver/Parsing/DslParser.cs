@@ -29,6 +29,7 @@ internal sealed class DslParser
         "TRUE",
         "FALSE",
         "UNKNOWN",
+        "PARITY",
         "NXOR",
         "ANY",
         "ALL",
@@ -532,9 +533,14 @@ internal sealed class DslParser
             return this.ParseExactlyOne();
         }
 
+        if (this.IsKeyword("PARITY"))
+        {
+            return this.ParseOperandCall((operands, span) => new ParityNode(operands, span));
+        }
+
         if (this.IsKeyword("NXOR"))
         {
-            return this.ParseOperandCall((operands, span) => new NxorNode(operands, span));
+            return this.RejectNxor();
         }
 
         if (this.IsKeyword("ANY"))
@@ -736,7 +742,7 @@ internal sealed class DslParser
     }
 
     /// <summary>
-    /// Parses a keyword followed by a parenthesized, comma-separated operand list (<c>NXOR</c>, <c>ANY</c>, <c>ALL</c>,
+    /// Parses a keyword followed by a parenthesized, comma-separated operand list (<c>PARITY</c>, <c>ANY</c>, <c>ALL</c>,
     /// <c>NONE</c>) and wraps it with <paramref name="create"/>. The operand count is checked later by the compiler.
     /// </summary>
     private RuleNode ParseOperandCall(Func<IReadOnlyList<RuleNode>, SourceSpan, RuleNode> create)
@@ -819,6 +825,22 @@ internal sealed class DslParser
             (_, span) =>
             {
                 this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.SyntaxError, span));
+                return new ErrorNode(span);
+            }
+        );
+    }
+
+    /// <summary>
+    /// Rejects a <c>NXOR(...)</c> call, the retired spelling of <c>PARITY</c>: the call is parsed as an operand list so the
+    /// rest of the text keeps being checked, then yields an <see cref="ErrorNode"/> and one diagnostic that suggests
+    /// <c>PARITY</c> (ADR-0005 decision 4).
+    /// </summary>
+    private RuleNode RejectNxor()
+    {
+        return this.ParseOperandCall(
+            (_, span) =>
+            {
+                this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.SyntaxError, span, "PARITY"));
                 return new ErrorNode(span);
             }
         );

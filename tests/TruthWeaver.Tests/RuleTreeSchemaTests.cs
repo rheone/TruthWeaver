@@ -65,7 +65,7 @@ public sealed class RuleTreeSchemaTests
             """{"op": "nand", "operands": [{"predicate": "isManager"}, {"predicate": "isDepartmentHead"}]}""",
             """{"op": "nor", "operands": [{"predicate": "isManager"}, {"predicate": "isDepartmentHead"}]}""",
             """{"op": "implies", "operands": [{"predicate": "isManager"}, {"predicate": "isDepartmentHead"}]}""",
-            """{"op": "nxor", "operands": [{"const": true}, {"const": false}, {"const": true}]}""",
+            """{"op": "parity", "operands": [{"const": true}, {"const": false}, {"const": true}]}""",
             """{"op": "any", "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "all", "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "none", "operands": [{"const": true}, {"const": false}]}""",

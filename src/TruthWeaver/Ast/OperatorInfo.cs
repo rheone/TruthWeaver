@@ -60,8 +60,8 @@ public static class OperatorInfo
                 "NOR",
                 "Negated disjunction, NOT (left OR right). True only when both operands are False; False if either is True; otherwise Unknown."
             ),
-            "Nxor" => new OperatorDescriptor(
-                "NXOR",
+            "Parity" => new OperatorDescriptor(
+                "PARITY",
                 "N-ary parity. True iff an odd number of operands are true and none is Unknown; False iff an even number are true and none is Unknown; Unknown whenever any operand is Unknown."
             ),
             "Any" => new OperatorDescriptor(

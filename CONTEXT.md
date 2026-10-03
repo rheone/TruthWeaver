@@ -31,7 +31,7 @@ an authorization layer is intentionally out of scope.
 | **Expression** | The three-valued tree: operators over terms, constants and sub-expressions. Every expression evaluates to exactly one `TruthValue`. |
 | **Predicate** | A registered, reusable implementation — `IPredicate<TContext>` — such as `hasTopping` or `lovesPineapple`. The *function*, not any particular call to it. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")`. The tree's leaf node, and the unit of [term identity](#term-identity) and memoization. |
-| **Operator** | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Never called a "gate." Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
+| **Operator** | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Never called a "gate." Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
 | **Decision** | The result of evaluating an expression: a `TruthValue` plus any faults recorded along the way, and optionally a trace. |
 | **Collapse** | A method on the result, not part of the rule language: `Decision.Collapse(policy)` turns a three-valued result into a **CollapseOutcome** (`True`, `False`, `RejectedUnresolved`) under a **CollapsePolicy** (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`). `Decision.Result` is always the rule's raw value; rule text, JSON and YAML that declare a `Collapse` are rejected with a diagnostic pointing to `Decision.Collapse`. It is pure, so it never records a **Fault** and never changes the decision. `RejectedUnresolved` means "not known"; it is a normal outcome, not a **Fault**, and `Decision.IsSatisfied` stays fail-closed (true only for `True`). |
 | **Inspection** | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: operators that test the K3 state of their operand. They always yield a definite `True`/`False`, so they never make the enclosing rule `Unknown`. |
@@ -70,7 +70,7 @@ classDiagram
     class ImpliesExpression
     class NandExpression
     class NorExpression
-    class NxorExpression
+    class ParityExpression
     class AnyExpression
     class AllExpression
     class NoneExpression
@@ -110,7 +110,7 @@ classDiagram
     Expression <|-- ImpliesExpression
     Expression <|-- NandExpression
     Expression <|-- NorExpression
-    Expression <|-- NxorExpression
+    Expression <|-- ParityExpression
     Expression <|-- AnyExpression
     Expression <|-- AllExpression
     Expression <|-- NoneExpression
@@ -129,7 +129,7 @@ classDiagram
     ImpliesExpression "1" o-- "2" Expression : antecedent, consequent
     NandExpression "1" o-- "2" Expression : operands
     NorExpression "1" o-- "2" Expression : operands
-    NxorExpression "1" o-- "2..*" Expression : operands
+    ParityExpression "1" o-- "2..*" Expression : operands
     AnyExpression "1" o-- "2..*" Expression : operands
     AllExpression "1" o-- "2..*" Expression : operands
     NoneExpression "1" o-- "2..*" Expression : operands
@@ -158,7 +158,7 @@ Expression =
     | IMPLIES(Expression, Expression)      // binary only; OR(NOT(antecedent), consequent)
     | NAND(Expression, Expression)         // binary only; NOT(AND(...))
     | NOR(Expression, Expression)          // binary only; NOT(OR(...))
-    | NXOR(Expression, Expression, ...)    // n-ary parity; Unknown if any operand is Unknown
+    | PARITY(Expression, Expression, ...)    // n-ary parity; Unknown if any operand is Unknown
     | ANY(Expression, Expression, ...)     // AtLeast(1, ...)
     | ALL(Expression, Expression, ...)     // AtLeast(n, ...)
     | NONE(Expression, Expression, ...)    // AtMost(0, ...)

@@ -322,7 +322,7 @@ internal static class Simplifier
                 ),
                 XorExpression x => RewriteNegatedPair(x.Left, x.Right, xor: true) ?? this.ViaExpansion(node),
                 EquivalentExpression e => RewriteNegatedPair(e.Left, e.Right, xor: false) ?? this.ViaExpansion(node),
-                ImpliesExpression or NandExpression or NorExpression or NxorExpression => this.ViaExpansion(node),
+                ImpliesExpression or NandExpression or NorExpression or ParityExpression => this.ViaExpansion(node),
                 AnyExpression or AllExpression or NoneExpression or ExactlyOneExpression or BetweenExpression =>
                     this.ViaExpansion(node),
                 _ => null,

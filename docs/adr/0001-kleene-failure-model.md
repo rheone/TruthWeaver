@@ -78,7 +78,7 @@ traces.
 | `U` | `U` |
 
 > **Superseded in part by [ADR-0005](0005-strong-k3-language-surface.md) (decisions 3, 5, 15):**
-> the operator set is larger (`XNOR` is now `EQUIVALENT`, with `IMPLIES`, `NAND`, `NOR`, `NXOR`,
+> the operator set is larger (`XNOR` is now `EQUIVALENT`, with `IMPLIES`, `NAND`, `NOR`, `PARITY`,
 > `COALESCE`, `If` and others), and a predicate may return `Unknown` directly. The truth tables and
 > the failure model below stand.
 

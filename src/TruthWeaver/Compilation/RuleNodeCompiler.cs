@@ -173,12 +173,12 @@ internal sealed class RuleNodeCompiler<TContext>
             ImpliesNode i => this.BuildImplies(i, depth),
             NandNode nd => this.BuildNegatedBinary(nd.Operands, nd, "NAND", depth, (l, r) => new NandExpression(l, r)),
             NorNode nr => this.BuildNegatedBinary(nr.Operands, nr, "NOR", depth, (l, r) => new NorExpression(l, r)),
-            NxorNode nx => this.BuildVariadic(
+            ParityNode nx => this.BuildVariadic(
                 nx.Operands,
                 depth,
                 nx,
                 2,
-                operands => new NxorExpression(new EquatableArray<Expression>(operands))
+                operands => new ParityExpression(new EquatableArray<Expression>(operands))
             ),
             AnyNode an => this.BuildVariadic(
                 an.Operands,
@@ -307,7 +307,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             string message =
                 $"XOR is binary only; found {node.Operands.Count} operands. "
-                + "Use NXOR(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'.";
+                + "Use PARITY(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'.";
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.InfixArityViolation,
@@ -317,7 +317,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     found: CountText(node.Operands.Count),
                     suggestion: new DiagnosticSuggestion(
                         DiagnosticSuggestionKind.Hint,
-                        "Use NXOR(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'."
+                        "Use PARITY(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'."
                     ),
                     path: PathOf(node, "operands")
                 )

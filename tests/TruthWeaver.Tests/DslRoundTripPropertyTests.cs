@@ -91,8 +91,8 @@ public sealed class DslRoundTripPropertyTests
             Gen<Expression> genImplies = self.Select(self, (left, right) => (Expression)new ImpliesExpression(left, right));
             Gen<Expression> genNand = self.Select(self, (left, right) => (Expression)new NandExpression(left, right));
             Gen<Expression> genNor = self.Select(self, (left, right) => (Expression)new NorExpression(left, right));
-            Gen<Expression> genNxor = self.Array[2, 4]
-                .Select(operands => (Expression)new NxorExpression(new EquatableArray<Expression>(operands)));
+            Gen<Expression> genParity = self.Array[2, 4]
+                .Select(operands => (Expression)new ParityExpression(new EquatableArray<Expression>(operands)));
             Gen<Expression> genAny = self.Array[2, 4]
                 .Select(operands => (Expression)new AnyExpression(new EquatableArray<Expression>(operands)));
             Gen<Expression> genAll = self.Array[2, 4]
@@ -121,7 +121,7 @@ public sealed class DslRoundTripPropertyTests
                 (1, genImplies),
                 (1, genNand),
                 (1, genNor),
-                (1, genNxor),
+                (1, genParity),
                 (1, genAny),
                 (1, genAll),
                 (1, genNone),

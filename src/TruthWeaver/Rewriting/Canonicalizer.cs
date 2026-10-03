@@ -113,7 +113,7 @@ internal static class Canonicalizer
                 ThresholdExpression t => this.NormaliseThreshold(t),
                 ExactlyOneExpression one => Threshold(ThresholdComparison.Exactly, 1, this.Sorted(one.Operands)),
                 BetweenExpression b => new BetweenExpression(b.Min, b.Max, this.Sorted(b.Operands)),
-                NxorExpression nx => new NxorExpression(this.Sorted(nx.Operands)),
+                ParityExpression nx => new ParityExpression(this.Sorted(nx.Operands)),
                 XorExpression x => this.OrderPair(x.Left, x.Right, static (l, r) => new XorExpression(l, r), x),
                 EquivalentExpression e => this.OrderPair(e.Left, e.Right, static (l, r) => new EquivalentExpression(l, r), e),
                 NandExpression nd => this.OrderPair(nd.Left, nd.Right, static (l, r) => new NandExpression(l, r), nd),

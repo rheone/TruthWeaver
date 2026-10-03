@@ -49,7 +49,7 @@ internal static class ExpressionShape
             NandExpression nd => new NodeShape("Nand", null, [nd.Left, nd.Right]),
             NorExpression nr => new NodeShape("Nor", null, [nr.Left, nr.Right]),
             ImpliesExpression i => new NodeShape("Implies", null, [i.Antecedent, i.Consequent]),
-            NxorExpression nx => new NodeShape("Nxor", null, nx.Operands),
+            ParityExpression nx => new NodeShape("Parity", null, nx.Operands),
             AnyExpression an => new NodeShape("Any", null, an.Operands),
             AllExpression al => new NodeShape("All", null, al.Operands),
             NoneExpression no => new NodeShape("None", null, no.Operands),

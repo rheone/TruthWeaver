@@ -89,7 +89,7 @@ internal static class CanonicalPrinter
             NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping)
                 + " NOR "
                 + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping),
-            NxorExpression => $"NXOR({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
+            ParityExpression => $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             AnyExpression => $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             AllExpression => $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
             NoneExpression => $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",

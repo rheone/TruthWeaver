@@ -109,11 +109,11 @@ public static class K3RuleGenerator
                 GeneratedRule rr = Child();
                 return new GeneratedRule($"({rl.Text} NOR {rr.Text})", v => K3Oracle.Nor(rl.Eval(v), rr.Eval(v)), [rl, rr]);
             case 11:
-                GeneratedRule[] nxor = [.. Enumerable.Range(0, random.Next(2, 5)).Select(_ => Child())];
+                GeneratedRule[] parity = [.. Enumerable.Range(0, random.Next(2, 5)).Select(_ => Child())];
                 return new GeneratedRule(
-                    $"NXOR({string.Join(", ", nxor.Select(o => o.Text))})",
-                    v => K3Oracle.Nxor([.. nxor.Select(o => o.Eval(v))]),
-                    nxor
+                    $"PARITY({string.Join(", ", parity.Select(o => o.Text))})",
+                    v => K3Oracle.Parity([.. parity.Select(o => o.Eval(v))]),
+                    parity
                 );
             case 12:
                 GeneratedRule[] anys = [.. Enumerable.Range(0, random.Next(2, 5)).Select(_ => Child())];

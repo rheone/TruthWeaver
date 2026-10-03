@@ -84,10 +84,10 @@ internal sealed record NandNode(IReadOnlyList<RuleNode> Operands, SourceSpan Spa
 internal sealed record NorNode(IReadOnlyList<RuleNode> Operands, SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
-/// N-ary parity reference (<c>NXOR(a, b, ...)</c>). Operand count (at least two) is validated by <c>RuleNodeCompiler</c>
+/// N-ary parity reference (<c>PARITY(a, b, ...)</c>). Operand count (at least two) is validated by <c>RuleNodeCompiler</c>
 /// like the other n-ary operators.
 /// </summary>
-internal sealed record NxorNode(IReadOnlyList<RuleNode> Operands, SourceSpan Span) : RuleNode(Span);
+internal sealed record ParityNode(IReadOnlyList<RuleNode> Operands, SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
 /// N-ary <c>ANY(...)</c> reference (at least one operand is true). Operand count (at least two) is validated by

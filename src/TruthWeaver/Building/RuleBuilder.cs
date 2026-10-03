@@ -138,12 +138,12 @@ public abstract class RuleBuilder
         return new OperatorBuilder("nor", [left, right]);
     }
 
-    /// <summary>Creates a builder for n-ary parity (<c>NXOR(a, b, ...)</c>): <c>Unknown</c> if any operand is <c>Unknown</c>, otherwise <c>True</c> for an odd number of <c>True</c> operands.</summary>
+    /// <summary>Creates a builder for n-ary parity (<c>PARITY(a, b, ...)</c>): <c>Unknown</c> if any operand is <c>Unknown</c>, otherwise <c>True</c> for an odd number of <c>True</c> operands.</summary>
     /// <param name="operands">The operands (at least two).</param>
-    /// <returns>A builder for the <c>NXOR</c> expression.</returns>
-    public static RuleBuilder Nxor(params RuleBuilder[] operands)
+    /// <returns>A builder for the <c>PARITY</c> expression.</returns>
+    public static RuleBuilder Parity(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("nxor", operands);
+        return new OperatorBuilder("parity", operands);
     }
 
     /// <summary>Creates a builder for <c>ANY(...)</c>: at least one operand is true (<c>AtLeast(1, ...)</c>).</summary>

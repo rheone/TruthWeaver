@@ -66,7 +66,7 @@ internal sealed class Evaluator<TContext>(
             "Implies" => "IMPLIES",
             "Nand" => "NAND",
             "Nor" => "NOR",
-            "Nxor" => "NXOR",
+            "Parity" => "PARITY",
             "Any" => "ANY",
             "All" => "ALL",
             "None" => "NONE",
@@ -162,7 +162,7 @@ internal sealed class Evaluator<TContext>(
     /// Strong Kleene n-ary parity: <c>Unknown</c> if any operand is <c>Unknown</c> (the fold of binary XOR, which is
     /// <c>Unknown</c> whenever either side is), otherwise <c>True</c> for an odd number of <c>True</c> operands.
     /// </summary>
-    private static TruthValue EvaluateNxor(IReadOnlyList<TruthValue> operandValues)
+    private static TruthValue EvaluateParity(IReadOnlyList<TruthValue> operandValues)
     {
         if (operandValues.Any(v => v == TruthValue.Unknown))
         {
@@ -353,12 +353,12 @@ internal sealed class Evaluator<TContext>(
                 return new EvalResult(value, new EvaluatedNode("NOR", value, false, [.. results.Select(r => r.Node)]));
             }
 
-            case NxorExpression:
+            case ParityExpression:
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateNxor([.. results.Select(r => r.Value)]);
-                return new EvalResult(value, new EvaluatedNode("NXOR", value, false, [.. results.Select(r => r.Node)]));
+                TruthValue value = EvaluateParity([.. results.Select(r => r.Value)]);
+                return new EvalResult(value, new EvaluatedNode("PARITY", value, false, [.. results.Select(r => r.Node)]));
             }
 
             case AnyExpression:
