@@ -572,7 +572,29 @@ Where they differ from the original wording above they take precedence.
 
 ## Open decisions
 
-None.
+The owner answered the four rows the k3-conformance issues log carried as open
+(rows 15, 18, 19 and 27) on 2026-10-03. Three are decided and already recorded
+in the decisions above; one wording question remains.
+
+- **Decided, `COALESCE` (log row 15).** Chains `a ?? b ?? c` stay one n-ary
+  node, `COALESCE` is the canonical function-call form and `??` is accepted as
+  input; the tree printers spell the label `??` in the symbolic and C-style
+  styles (decision 13). Rationale: coalescing is associative, and no distinct
+  symbol exists to separate the styles.
+- **Decided, `If` (log row 19).** Operand-count errors stay `MalformedTree`, and
+  the JSON/YAML op name stays `if`. The `CStyle` tree printers render `?:`
+  (k3-followups 21); the other styles keep the label `If`. Rationale: the
+  operand-list shape is shared with the other function-call operators.
+- **Decided, `RuleText.NormalizeWhitespace` (log row 27).** It stays in
+  `TruthWeaver.Printing`; prefix `!` is accepted with a space (`! a`) and
+  `NormalizeWhitespace` prints `!a` (pinned by tests, k3-followups 21). The
+  canonical printer is word-only and prints `NOT a` either way (decision 1).
+- **Open, ternary mixing (log row 18).** The owner kept the strict behaviour:
+  a ternary mixed with a bare `AND`/`OR` chain or another infix operator
+  (`a AND b ? c : d`) is `AmbiguousOperatorMixing`. Decision 13 still calls the
+  ternary "the lowest-precedence construct", which does not fit that rule, so
+  the wording (or the parser) must change. Tracked by k3-followups 31, which
+  awaits an owner decision; nothing else is open.
 
 ## Consequences
 

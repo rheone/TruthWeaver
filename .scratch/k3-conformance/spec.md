@@ -2,9 +2,9 @@
 
 **Status:** done
 
-All 31 slices are delivered (tickets 01-31 in `issues/`, each Status: done). Where the implementation chose between readings of the spec, or deviated from it, the choice is recorded in [issues-log.md](issues-log.md) (rows 4-39; the open ones are summarised at the top of that file) and in ADR-0005 decisions 13-17. Notable deviations: `Structural*` analyzer names and codes kept; `XorArityViolation` (BRE0006) reused for all binary infix operators; `XnorExpression` renamed `EquivalentExpression`; `COALESCE`-based forms cannot be written with NAND/NOR only; `Collapse` lives on `CompiledRule`, not in the tree. Predicate catalog gaps are handed off in [`.scratch/predicate-catalog/k3-gap-list.md`](../predicate-catalog/k3-gap-list.md).
+All 31 slices are delivered (tickets 01-31 in `issues/`, each Status: done). Where the implementation chose between readings of the spec, or deviated from it, the choice is recorded in [issues-log.md](issues-log.md) (rows 4-39; the open ones are summarised at the top of that file) and in ADR-0005 decisions 13-17, 18-22 and the amendments to decisions 4, 12 and 14. **This spec is the original plan, refreshed 2026-10-03 after k3-followups 04-06; where it and ADR-0005 could diverge, ADR-0005 is the authority.** Notable deviations: `Structural*` analyzer names and codes kept; `InfixArityViolation` (BRE0006, formerly `XorArityViolation`) reused for all binary infix operators; `XnorExpression` renamed `EquivalentExpression`; `COALESCE`-based forms cannot be written with NAND/NOR only; `Project` and `Collapse` are `Decision` methods, not rule operators (k3-followups 04 and 05; the first implementation put `Project` in the tree and `Collapse` on `CompiledRule`); `NXOR` is now `PARITY` (k3-followups 06). Predicate catalog gaps are handed off in [`.scratch/predicate-catalog/k3-gap-list.md`](../predicate-catalog/k3-gap-list.md).
 
-Source requirements: `.scratch/2026-10-02-TODO.md`. Decisions: [ADR-0005](../../docs/adr/0005-strong-k3-language-surface.md) (decisions 1-17, no open decisions). Reference material in `.tmp/` was used as a source, not trusted blindly; every K3 behaviour is verified against the truth-table oracle described under Testing Decisions. Earlier category-level tickets live in `_superseded/` and must not be implemented.
+Source requirements: `.scratch/2026-10-02-TODO.md`. Decisions: [ADR-0005](../../docs/adr/0005-strong-k3-language-surface.md) (decisions 1-22; one wording question, the ternary's precedence, is open, see its "Open decisions" section). Reference material in `.tmp/` was used as a source, not trusted blindly; every K3 behaviour is verified against the truth-table oracle described under Testing Decisions. Earlier category-level tickets live in `_superseded/` and must not be implemented.
 
 ## Problem Statement
 
@@ -18,7 +18,7 @@ TruthWeaver is meant to be a general-purpose Strong Kleene (K3) expression engin
 
 ## Solution
 
-A rule author writes a rule once in the DSL, JSON or YAML, using any of the supported notations (named, symbolic, any grouping delimiter, any letter case). It compiles to an immutable tree. Every expression and every predicate yields `True`, `False` or `Unknown`; `Unknown` is a normal value that is never silently turned into `True` or `False`. Conversion to a two-valued result happens only at explicit boundaries (`Project`, `Collapse`, `Decision`). The author can optionally expand, compress, simplify or canonicalise the rule, print it with normalised whitespace and delimiters, and gets structured, readable messages when the rule is malformed. All of it is verified exhaustively against a truth-table oracle.
+A rule author writes a rule once in the DSL, JSON or YAML, using any of the supported notations (named, symbolic, any grouping delimiter, any letter case). It compiles to an immutable tree. Every expression and every predicate yields `True`, `False` or `Unknown`; `Unknown` is a normal value that is never silently turned into `True` or `False`. Conversion to a two-valued result happens only at explicit boundaries (`COALESCE` inside a rule, `Decision.Project` and `Decision.Collapse` on the result). The author can optionally expand, compress, simplify or canonicalise the rule, print it with normalised whitespace and delimiters, and gets structured, readable messages when the rule is malformed. All of it is verified exhaustively against a truth-table oracle.
 
 ## User Stories
 
@@ -34,17 +34,17 @@ A rule author writes a rule once in the DSL, JSON or YAML, using any of the supp
 10. As a rule author, I want `EQUIVALENT` (alias `IFF`, legacy `XNOR`) as the biconditional, so that old rules keep working.
 11. As a rule author, I want old persisted rules and JSON/YAML using `xnor` to keep compiling, so that upgrading does not break stored rules.
 12. As a rule author, I want `NAND` and `NOR`, so that I can express negated conjunction and disjunction directly.
-13. As a rule author, I want binary `XOR` and n-ary `NXOR` (parity), so that each operation has one unambiguous name.
-14. As a rule author, I want `XOR` with three or more operands to be an error that points me at `NXOR`, so that I don't get parity when I meant exactly-one.
+13. As a rule author, I want binary `XOR` and n-ary `PARITY` (parity; originally named `NXOR`), so that each operation has one unambiguous name.
+14. As a rule author, I want `XOR` with three or more operands to be an error that points me at `PARITY`, so that I don't get parity when I meant exactly-one.
 15. As a rule author, I want `ExactlyOne` to keep meaning "exactly one is true", so that it is never confused with parity.
-16. As a rule author, I want `NXOR` to be `Unknown` whenever any operand is `Unknown`, so that parity never guesses.
+16. As a rule author, I want `PARITY` to be `Unknown` whenever any operand is `Unknown`, so that parity never guesses.
 17. As a rule author, I want `ANY`, `ALL`, `NONE` and `BETWEEN(min, max, ...)`, so that common counting rules read naturally.
 18. As a rule author, I want cardinality to use the "definitely true / possibly true" interval, so that `Unknown` operands produce correct bounds.
 19. As a rule author, I want `COALESCE` / `??` to replace only `Unknown`, so that known values pass through unchanged.
 20. As a rule author, I want `If(condition, whenTrue, whenFalse)` / `? :` to be K3-aware, so that an `Unknown` condition does not guess a branch.
 21. As a rule author, I want `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`, so that I can test a result's state without collapsing the rest of the rule.
-22. As a rule author, I want `Project(expr, True|False)` to replace `Unknown` with a chosen value, so that I can decide how indeterminate results behave inside a rule.
-23. As an application developer, I want `Collapse(expr, policy)` at the end of evaluation, so that I explicitly decide how `Unknown` becomes a two-valued answer.
+22. As an application developer, I want `Decision.Project(bool unknownAs)` to replace `Unknown` with a chosen definite value, so that I can decide how an indeterminate result behaves without touching the rule; inside a rule, `COALESCE(x, True|False)` does the same job (ADR-0005 decision 12, amended).
+23. As an application developer, I want `Decision.Collapse(CollapsePolicy)` after evaluation, so that I explicitly decide at the call site how `Unknown` becomes a two-valued answer while `Decision.Result` stays raw (ADR-0005 decision 14, amended).
 24. As an application developer, I want `UnknownIsError` to produce a clear "rejected: unresolved" outcome and no fault, so that I can distinguish "not known" from "something broke".
 25. As an application developer, I want `Decision.IsSatisfied` to remain fail-closed (`True` only), so that the safe default is unchanged.
 26. As a rule author, I want to mix operators only with explicit parentheses (other than `NOT` > `AND` > `OR`), so that no one is surprised by implicit precedence.
@@ -61,7 +61,7 @@ A rule author writes a rule once in the DSL, JSON or YAML, using any of the supp
 37. As a rule author, I want canonicalisation to give equivalent rules a deterministic representation, so that I can compare and de-duplicate rules.
 38. As a rule author, I want to apply any rewrite and be certain the result evaluates identically for every `{True, False, Unknown}` input, so that I can trust optimisation.
 39. As a rule author, I want the analyzer to flag contradictions and tautologies only when they hold in K3, so that warnings are never wrong.
-40. As a rule author, I want the analyzer to understand `COALESCE`, `If`, inspection and `Project`, so that analysis works on the full language.
+40. As a rule author, I want the analyzer to understand `COALESCE`, `If`, inspection operators, so that analysis works on the full language.
 41. As a rule author, I want readable messages when a rule from DSL, JSON or YAML is malformed, so that I can fix it without reading source.
 42. As a rule author, I want each message to include a code, a plain explanation, the location (line/column or JSON/YAML path), and what was expected versus found, so that the problem is unambiguous.
 43. As a rule author, I want "did you mean" suggestions for unknown operators and aliases, so that typos are quick to fix.
@@ -77,10 +77,10 @@ A rule author writes a rule once in the DSL, JSON or YAML, using any of the supp
 - ADR-0005 holds the language decisions (operators, notation, XOR family, equivalence naming, cardinality, `Project`/`Collapse`, delimiters, mutation, structured diagnostics, predicate return type, `Unknown` constants, K3 analyzer). ADR-0003's operator-set and alias decisions are superseded; its remaining decisions stand.
 - **Predicates:** `IPredicate` and all built-in predicate delegates return `TruthValue` (breaking, pre-1.0). The externally-resolved-value helper's test delegate also returns `TruthValue`. `FakePredicates` returns `Unknown` directly and keeps a separate fault simulator for exceptions.
 - **Constants:** constants are `TruthValue` end to end (AST, parser, builder, canonical printer, JSON/YAML printers and parsers, JSON schema). Lenient and failed-node substitutions use `Unknown`.
-- **Derived operators** (`IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `Project`) stay first-class tree nodes with their own evaluation, description and printing; their primitive definitions drive expansion and are the oracle's definitions.
+- **Derived operators** (`IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `PARITY`) stay first-class tree nodes with their own evaluation, description and printing; their primitive definitions drive expansion and are the oracle's definitions.
 - **Primitive kernel:** `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly`, `COALESCE`.
 - **Analyzer:** a dual-rail BDD ("definitely true" / "possibly true"), extended per node by each operator slice. An interim slice relabels the existing classical diagnostics so they are not misleading.
-- **Boundaries:** `Project` is an in-tree node yielding a definite `TruthValue`. `Collapse` is the evaluation-API boundary (and an outermost-only DSL function); `UnknownIsError` produces an explicit rejected outcome, not a `Fault`.
+- **Boundaries:** `Project` and `Collapse` are not rule operators. They are `Decision.Project(bool unknownAs)` and `Decision.Collapse(CollapsePolicy)`, pure functions of the raw `Decision.Result`; inside a rule `COALESCE` is the boundary operator. `UnknownIsError` produces an explicit `CollapseOutcome.RejectedUnresolved`, not a `Fault`. `Decision.IsSatisfied` stays fail-closed.
 - **Notation:** named and symbolic input, any letter case; the canonical printer stays word-only with upper camel names; the AST does not retain the written delimiter.
 - **Diagnostics:** structured result with code, message, span (or JSON/YAML path), optional suggestion and expected/found pair, plus a plain-text rendering, built on the existing diagnostic model.
 - **Mutation transforms** are opt-in operations on the immutable tree; each preserves K3 semantics. Simplification applies only K3-sound rules.
@@ -105,8 +105,8 @@ A rule author writes a rule once in the DSL, JSON or YAML, using any of the supp
 ## Further Notes
 
 - `False < Unknown < True` is an implementation aid for truth functions and cardinality bounds. It must not be exposed as a numeric ordering of truth.
-- Reference material in `.tmp/` is partly inconsistent (for example `Project`/`Collapse` and the XOR naming); the decisions in ADR-0005 are authoritative where they differ.
-- Proposed vertical slices (to be published as tickets by `/to-tickets` after approval of the breakdown):
+- Reference material in `.tmp/` is partly inconsistent (for example `Project`/`Collapse` and the XOR naming; neither `NXOR` nor an in-rule `Project`/`Collapse` survives); the decisions in ADR-0005 are authoritative where they differ.
+- Proposed vertical slices (to be published as tickets by `/to-tickets` after approval of the breakdown). The table keeps the original slice names for traceability: slice 11's `NXOR` is `PARITY`, and slices 17 and 18 were delivered as in-rule operators and then moved to `Decision.Project` and `Decision.Collapse` by k3-followups 05 and 04:
 
 | # | Slice | Blocked by |
 | - | ----- | ---------- |
