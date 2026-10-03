@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] OperatorStyle XML docs state the divergence for Unknown (the README does not mention OperatorStyle, so no README change is needed)
-- [ ] Issues-log rows 8 and 10 closed as 'keep' (left for ticket 18, which reconciles the log)
+- [x] Issues-log rows 8 and 10 closed as 'keep' (done by ticket 18, which reconciles the log)
 - [x] Built test-first where code changes; the full validation set in CLAUDE.md passes (build, test, csharpier check src tests benchmarks, format --verify-no-changes with no new diagnostics in touched files, roslynator per project)
 
 Source: [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md) and [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).
@@ -15,3 +15,4 @@ Source: [research findings](../../k3-conformance/research-findings.md). See also
 ## Comments
 
 - Caveat added to the `OperatorStyle.CStyle` XML docs. README has no C-style section to extend (it only mentions C-family languages in the arity table), so no README change was made. Issues-log rows 8 and 10 were not edited here; ticket 18 reconciles the log.
+- Closed by ticket 18: the `OperatorStyle.CStyle` caveat was verified in the XML docs and issues-log rows 8 and 10 are now marked kept.

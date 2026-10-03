@@ -1,6 +1,6 @@
 # k3-followups: research and audit follow-ups
 
-**Status:** ready-for-agent
+**Status:** done
 
 Follow-up work after the k3-conformance effort (31 tickets, done). Sources: [research findings](../k3-conformance/research-findings.md) and [spec audit](../k3-conformance/spec-audit.md), plus the owner's decisions of 2026-10-03:
 
