@@ -292,6 +292,23 @@ catalog members, not for the engine.
   provider as a required registration parameter with no ambient default. Rationale: the clock stays an
   explicit dependency, so evaluation is testable with a fake provider, consistent with the
   [predicate-author contract](#the-predicate-author-contract).
+- **Every positive predicate has a `NotX` twin.** The catalog registers a first-class `NotX` predicate
+  for each positive predicate `X`. `NotX` is the Strong Kleene complement of `X`: `True` becomes
+  `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Rationale: a twin keeps a null input
+  `Unknown` instead of an accidental `True`, and rule text can name the negation directly.
+- **`In` and `NotIn` test scalar membership.** The selector returns one scalar value, and the
+  predicate is `True` when that value is in the literal candidate array. A collection selector is a
+  compile error. The collection predicates are `ContainsAny` (at least one element is in the candidate
+  array), `ContainsAll` (every candidate is an element) and `IsSubsetOf` (every element is in the
+  candidate array). Each of them has a `NotX` twin.
+- **`Between` is inclusive and `Outside` is its exact complement.** `Between(value, n, k)` is `True`
+  when `n <= value <= k`, for numeric and `DateTimeOffset` values. `Outside` is `True` when `Between` is
+  `False`. Reversed bounds (`n > k`) are an authoring error. When both bounds are literals, the
+  compiler reports a diagnostic. Otherwise the predicate throws an argument error. The catalog never
+  swaps the bounds silently. Rationale: a swapped range hides a mistake in the rule.
+- **Each value kind has its own static predicate class.** The new families are `NumericPredicates`,
+  `DateTimePredicates` and `TypePredicates`. Each selector is typed for the kind of its class.
+  Rationale: a typed selector rejects a wrong kind at compile time, and each class stays small.
 
 ## Failure model (summary)
 

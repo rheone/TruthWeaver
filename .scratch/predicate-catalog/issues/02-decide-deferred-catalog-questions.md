@@ -16,3 +16,4 @@ Source: [gap list](../k3-gap-list.md), [research findings, section 7](../../k3-c
 ## Comments
 
 - 2026-10-03: Questions 2, 4, 7 and 8 were answered in the 2026-10-03 owner grilling session; recording is tracked by ticket 09 and ticket amendments by ticket 10.
+- 2026-10-04: Resolved. The rules are recorded in `CONTEXT.md` (predicate catalog rules) and the gap list marks the four questions resolved, both by [ticket 09](09-record-predicate-catalog-rules.md).

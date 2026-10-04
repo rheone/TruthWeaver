@@ -101,10 +101,10 @@ Inventory: `Between(value, n, k)`, `Outside(value, n, k)`, `In(value, candidate1
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `Between` | missing | none | Arguments `n`, `k` as `Int64` or `Decimal`. Inclusive or exclusive bounds is undecided (issue 01 proposed inclusive `[min, max]`). Reversed bounds (`n > k`) need a defined result. |
-| `Outside` | missing | none | Complement of `Between`; must be the K3 complement (`Unknown` stays `Unknown`), not a boolean negation, if null maps to `Unknown`. |
-| `In` | missing | none | Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
-| `NotIn` | missing | none | As `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |
+| `Between` | missing | none | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error: a compile-time diagnostic for literal bounds, an argument error otherwise. |
+| `Outside` | missing | none | Exact complement of `Between` and its registered twin: the K3 complement (`Unknown` stays `Unknown`), not a boolean negation. |
+| `In` | missing | none | Scalar membership only. Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
+| `NotIn` | missing | none | As `In`; the registered twin of `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |
 
 ## String
 
@@ -139,7 +139,7 @@ therefore `string` only; `Int64`/`Decimal`/`Guid` collections need generic or pe
 | `IsEmpty` | missing | none | A `null` collection is treated as empty by `SetEquals`; `IsEmpty(null)` would be `True` by that convention. |
 | `IsNotEmpty` | missing | none | As `IsEmpty`, so `IsNotEmpty(null)` is `False`. |
 | `Contains` | missing | none | Collection contains the literal value: arguments `value` (`String`, or per-kind). Distinct from `StringPredicates.Contains`. |
-| `In` | missing | none | **Ambiguous in the inventory**: it can mean "every element is in the candidate set" (subset) or "the selected scalar is in the candidate set". See open question 4. |
+| `In` | missing | none | Resolved (question 4): `In` is scalar-only membership, so a collection selector is a compile error. The collection predicates are `ContainsAny`, `ContainsAll` and `IsSubsetOf`, each with a twin. |
 | `NotIn` | missing | none | As `In`. |
 | `CountEqual` | missing | none | Argument `count` (`Int64`). Null collection counts as 0 (issue 01 convention) or yields `Unknown`. |
 | `CountLessThan` | missing | none | As `CountEqual`. |
@@ -160,7 +160,7 @@ arguments), `Between` (each with `DateTimeOffset` and `DateTime` arguments).
 | `After(value, DateTime)` | missing | none | **Needs a new `LiteralKind`** (`DateTime`) or a documented conversion. `DateTime` has no offset and a `Kind` of `Utc`/`Local`/`Unspecified`, so conversion to `DateTimeOffset` is host-timezone-dependent for `Local`/`Unspecified`. Adding a `LiteralKind` is a closed-set extension (ADR-0003, CONTEXT.md) and a breaking change for exhaustive switches. Recommend not adding it: accept the `DateTimeOffset` literal and let the host convert. |
 | `Before(value, DateTimeOffset)` | missing | none | As `After`. |
 | `Before(value, DateTime)` | missing | none | As `After(value, DateTime)`. |
-| `Between(value, DateTimeOffset, DateTimeOffset)` | missing | none | Inclusive or exclusive bounds undecided; reversed bounds need a defined result. |
+| `Between(value, DateTimeOffset, DateTimeOffset)` | missing | none | Inclusive on both ends; reversed bounds are an authoring error (question 7). |
 | `Between(value, DateTime, DateTime)` | missing | none | As `After(value, DateTime)`. |
 
 Overload by argument type is not expressible in a single predicate schema (one name, one schema), so the
@@ -173,7 +173,7 @@ Inventory: `IsGuid`, `IsNotGuid`, `IsNumeric`, `IsNotNumeric`, `IsUrl`, `IsNotUr
 `IsDateTimeOffset`, `IsNotDateTimeOffset`.
 
 These imply a selector returning `object?` (or `string?` for the parse-based tests). No catalog member
-takes an `object?` selector today.
+takes an `object?` selector today. They belong to the per-kind static class `TypePredicates` (question 8).
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
@@ -190,7 +190,7 @@ takes an `object?` selector today.
 
 ## Open questions for the repo owner
 
-Resolution status (k3-followups 10): the rules are recorded in
+Resolution status: the rules are recorded in
 [CONTEXT.md](../../CONTEXT.md#predicate-catalog-rules).
 
 - Question 1 (null input): **resolved**. Existing members keep `False`; new comparison, range and count
@@ -198,9 +198,19 @@ Resolution status (k3-followups 10): the rules are recorded in
 - Question 3 (culture): **resolved**. Ordinal only; `EqualsConfigurable` no longer has a `culture` argument (k3-followups 20).
 - Question 5 (`DateTime` arguments): **resolved**. `DateTimeOffset` only.
 - Question 6 (clock predicates): **resolved**. `TimeProvider` supplied at registration.
-- Questions 2, 4, 7, 8 (`NotX` shape, collection `In`/`NotIn`, bounds, selector shapes): **deferred**.
-  Research item 7.5 in [research-findings](../k3-conformance/research-findings.md#7-predicate-catalog)
-  recommends answers; they are not decided here.
+- Question 2 (`NotX` shape): **resolved**. Every positive predicate has a registered first-class `NotX`
+  twin, defined as the Strong Kleene complement (`Unknown` stays `Unknown`).
+- Question 4 (collection `In`/`NotIn`): **resolved**. `In`/`NotIn` are scalar-only membership and a
+  collection selector is a compile error. `ContainsAny`, `ContainsAll` and `IsSubsetOf` are the
+  collection predicates, each with a twin.
+- Question 7 (bounds): **resolved**. `Between` is inclusive on both ends and `Outside` is its exact
+  complement. Reversed bounds are an authoring error (a compile-time diagnostic for literal bounds, an
+  argument error otherwise) and are never swapped silently.
+- Question 8 (selector shapes): **resolved**. New families are per-kind static classes
+  (`NumericPredicates`, `DateTimePredicates`, `TypePredicates`) with selectors typed for their kind.
+
+The rules for questions 2, 4, 7 and 8 are recorded in
+[CONTEXT.md](../../CONTEXT.md#predicate-catalog-rules) (ticket 09).
 
 
 1. **Null input: `False` or `Unknown`?** The existing convention (every catalog XML doc and issue 01) is

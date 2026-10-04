@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The glossary states the four rules beside the existing predicate catalog rules
 - [ ] The gap list marks questions 2, 4, 7 and 8 resolved and its per-predicate notes agree
@@ -12,3 +12,7 @@
 - [ ] The doctest harness still passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
+
+## Comments
+
+- 2026-10-04: The four rules are in `CONTEXT.md` under Predicate catalog rules. The gap list marks questions 2, 4, 7 and 8 resolved and its per-predicate notes agree. Ticket 02 points here.
