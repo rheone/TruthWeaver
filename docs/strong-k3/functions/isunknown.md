@@ -22,17 +22,17 @@ The inspections are Derived: each expands to [COALESCE](coalesce.md). They are e
 
 ## Kind
 
-Derived. `IsUnknown` is defined from `COALESCE` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `IsUnknown` is defined from `COALESCE` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly one operand. `IsUnknown(a, b)` and `IsUnknown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsUnknown requires exactly 1 operand but found N." `RuleBuilder.IsUnknown` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsUnknown(a, b)` and `IsUnknown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.IsUnknown` takes one argument, so a wrong count cannot be written there.
 
-## Input Domain
+## Input domain
 
 The operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F}`. The result is never `Unknown`, whatever the operand is, and also when the operand is a faulting term.
 
@@ -55,7 +55,7 @@ The operand is a value in `{T, F, U}`.
 
 None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is case-insensitive on read. There is no symbol spelling, and every printer keeps the word.
 
-## Formal Semantics
+## Formal semantics
 
 `IsUnknown` is the characteristic function of the value `Unknown`: it asks whether the operand is undetermined. It is `True` for an `Unknown` operand and `False` for each of its refinements, so refining an input can change a definite output and the no-tautology theorem does not hold for rules that use it.
 
@@ -63,7 +63,7 @@ None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is cas
 
 $$\operatorname{IsUnknown}(a) = \begin{cases} \mathsf{T} & \text{if } a = \mathsf{U} \\ \mathsf{F} & \text{otherwise} \end{cases}$$
 
-## Truth Table
+## Truth table
 
 Only an `Unknown` operand gives `T`.
 
@@ -74,7 +74,7 @@ Only an `Unknown` operand gives `T`.
 | U | T |
 | F | F |
 
-## Canonical Form
+## Canonical form
 
 `IsUnknown` is defined from `COALESCE`, the one operation that can observe `Unknown`:
 
@@ -83,7 +83,7 @@ Only an `Unknown` operand gives `T`.
 AND(COALESCE(a, True), COALESCE(NOT(a), True))
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 `IsUnknown` is the negation of `IsKnown`, and the rest of the three values once `True` and `False` are excluded:
 
@@ -107,20 +107,19 @@ Exactly one of `IsTrue(a)`, `IsFalse(a)` and `IsUnknown(a)` is `True` for every 
 | `IsUnknown(canEdit)` | `True` | `False` | The operand is known. |
 | `IsUnknown(canEdit)` | `False` | `False` | The operand is known. |
 
-## Edge Cases
+## Edge cases
 
-- **Never `Unknown`.** `IsUnknown` answers `True` or `False`: asking whether something is undetermined always has a definite answer.
-- **A faulting operand.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)); `IsUnknown` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsUnknown(boom)` is `True` with 1 fault recorded.
-- **No short-circuit question.** There is one operand, so it is always evaluated.
-- **A fault looks like `Unknown`.** `IsUnknown` of a faulting term is `True`, because the term contributed `Unknown`. The recorded `Fault` is what tells a failure apart from a predicate that answered `Unknown`; check the decision's faults when the difference matters.
+- Never `Unknown`. `IsUnknown` answers `True` or `False`: asking whether something is undetermined always has a definite answer.
+- A faulting operand. A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault`; `IsUnknown` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsUnknown(boom)` is `True` with 1 fault recorded.
+- A fault looks like `Unknown`. `IsUnknown` of a faulting term is `True`, because the term contributed `Unknown`. The recorded `Fault` is what tells a failure apart from a predicate that answered `Unknown`; check the decision's faults when the difference matters.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports a `IsUnknown` node as `IsUnknown` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
+- The operand always runs.
 - `ExpandToPrimitives` expands `IsUnknown` to `COALESCE(a, True) AND COALESCE(NOT a, True)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `CompressToDerived` recognises the expanded `COALESCE` conjunction and writes it back as `IsUnknown(a)`.
 
-## Related Operations
+## Related operations
 
 - [COALESCE](coalesce.md) defines it.
 - [IsKnown](isknown.md) is its negation; [IsTrue](istrue.md) and [IsFalse](isfalse.md) are the other inspections.

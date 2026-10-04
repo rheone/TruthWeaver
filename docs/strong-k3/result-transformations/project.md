@@ -3,7 +3,7 @@
 Replaces `Unknown` with a chosen definite value and passes `True` and `False` through. A method on an evaluated `Decision`, not a rule operator. Back to the [Result Transformations index](README.md); shared rules are in the [specification](../specification/README.md).
 
 > [!IMPORTANT]
-> `Project` and `Collapse` are **TruthWeaver terms**, not Strong Kleene (K3) literature terms; in relational algebra "projection" means selecting columns. `Project` is a call on the *result*, never a node in the rule. Inside a rule, `COALESCE(x, True)` and `COALESCE(x, False)` give the same effect ([Canonical Form](#canonical-form)).
+> `Project` and `Collapse` are **TruthWeaver terms**, not Strong Kleene (K3) literature terms; in relational algebra "projection" means selecting columns. `Project` is a call on the *result*, never a node in the rule. Inside a rule, `COALESCE(x, True)` and `COALESCE(x, False)` give the same effect ([Canonical form](#canonical-form)).
 
 ## Name
 
@@ -20,17 +20,17 @@ Replaces `Unknown` with a chosen definite value and passes `True` and `False` th
 
 ## Kind
 
-Derived. `Project` is `COALESCE(rule, unknownAs)` applied to the result instead of inside the rule (see [Canonical Form](#canonical-form)). It is a result transformation, not a rule node.
+Derived. `Project` is `COALESCE(rule, unknownAs)` applied to the result instead of inside the rule (see [Canonical form](#canonical-form)). It is a result transformation, not a rule node.
 
 ## Arity
 
 One evaluated result (the `Decision` the method is called on) and one `bool` parameter, `unknownAs`. The parameter is a `bool`, not a `TruthValue`, so a request to project `Unknown` to `Unknown` cannot be written. There is no operand list and so no operand-count error.
 
-## Input Domain
+## Input domain
 
 The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{true, false}`.
 
-## Output Domain
+## Output domain
 
 `{T, F}`. The returned `TruthValue` is never `Unknown`.
 
@@ -51,7 +51,7 @@ The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{true, fals
 
 None.
 
-## Formal Semantics
+## Formal semantics
 
 For a result $a$ and a definite value $v \in \{\mathsf{T}, \mathsf{F}\}$, $\operatorname{Project}_{v}(a)$ keeps $\mathsf{T}$ and $\mathsf{F}$ and replaces $\mathsf{U}$ with $v$ ([notation](../specification/notation.md)). It is a function on the value of `Decision.Result`; it changes nothing else about the decision.
 
@@ -59,7 +59,7 @@ For a result $a$ and a definite value $v \in \{\mathsf{T}, \mathsf{F}\}$, $\oper
 
 $$\operatorname{Project}_{v}(a) = \begin{cases} v & \text{if } a = \mathsf{U} \\ a & \text{otherwise} \end{cases}$$
 
-## Truth Table
+## Truth table
 
 With `unknownAs` set to `False`, only `Unknown` is replaced, and it becomes `False`:
 
@@ -79,7 +79,7 @@ With `unknownAs` set to `True`, `Unknown` becomes `True`:
 | U | T |
 | F | F |
 
-## Canonical Form
+## Canonical form
 
 `Project` is `COALESCE` with a constant, written over the rule's value `x`. `unknownAs` is `True` or `False`:
 
@@ -88,15 +88,15 @@ With `unknownAs` set to `True`, `Unknown` becomes `True`:
 COALESCE(x, unknownAs)
 ```
 
-So `COALESCE(rule, False)` makes a rule fail closed from inside the rule text, and `COALESCE(rule, True)` makes it fail open. Choosing the value at the call site with `Project` keeps the rule itself three-valued, which is the point of [ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 12.
+So `COALESCE(rule, False)` makes a rule fail closed from inside the rule text, and `COALESCE(rule, True)` makes it fail open. Choosing the value at the call site with `Project` keeps the rule itself three-valued.
 
-## Equivalent Forms
+## Equivalent forms
 
 With the parameter fixed, `Project(false)` has the same table as the inspection [IsTrue](../functions/istrue.md), and `Project(true)` the same table as `NOT IsFalse(x)`. The difference is where it runs: an inspection is a rule node whose value is used inside the rule, while `Project` is applied once to the final result.
 
 The SQL counterparts are `x IS TRUE` for `Project(false)` and `x IS NOT FALSE` for `Project(true)` ([PostgreSQL, comparison functions](https://www.postgresql.org/docs/current/functions-comparison.html)).
 
-## Mermaid Diagram
+## Mermaid diagram
 
 ```mermaid
 flowchart LR
@@ -117,20 +117,19 @@ flowchart LR
 | `Unknown` | `Project(false)` | `False` | `Unknown` becomes the chosen value, `False`. |
 | `Unknown` | `Project(true)` | `True` | `Unknown` becomes the chosen value, `True`. |
 
-## Edge Cases
+## Edge cases
 
-- **The original result is kept.** `Project` returns a new `TruthValue`; the `Decision` still holds `Unknown`, so a caller can project the same decision both ways or inspect it afterwards.
-- **`IsSatisfied` stays fail-closed.** `Decision.IsSatisfied` is `True` only when `Result` is `True`, so an `Unknown` decision is not satisfied whatever `Project` returned. `Project(true)` does not make an `Unknown` decision satisfied ([ADR-0001](../../adr/0001-kleene-failure-model.md)).
-- **A faulting predicate.** A predicate that throws, times out or is cancelled contributes `Unknown` and a `Fault`. `Project` sees only the `Unknown`: `Project(true)` of such a decision is `True` while `Faults` still lists the fault. Check `Faults` before trusting a fail-open projection ([Collapse](collapse.md#edge-cases) has the same hazard).
-- **SQL precedents.** SQL `WHERE` keeps a row only on `true`, which is `Project(false)`; a `CHECK` constraint passes on `true` or null, which is `Project(true)` ([PostgreSQL, table expressions](https://www.postgresql.org/docs/current/queries-table-expressions.html), [PostgreSQL, constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)). In each system the consumer applies the two-valued policy; the three-valued value itself is not rewritten.
+- The original result is kept. `Project` returns a new `TruthValue`; the `Decision` still holds `Unknown`, so a caller can project the same decision both ways or inspect it afterwards.
+- `IsSatisfied` stays fail-closed. `Decision.IsSatisfied` is `True` only when `Result` is `True`, so an `Unknown` decision is not satisfied whatever `Project` returned. `Project(true)` does not make an `Unknown` decision satisfied.
+- A faulting predicate. A predicate that throws, times out or is cancelled contributes `Unknown` and a `Fault`. `Project` sees only the `Unknown`: `Project(true)` of such a decision is `True` while `Faults` still lists the fault. Check `Faults` before trusting a fail-open projection ([Collapse](collapse.md#edge-cases) has the same hazard).
+- SQL precedents. SQL `WHERE` keeps a row only on `true`, which is `Project(false)`; a `CHECK` constraint passes on `true` or null, which is `Project(true)` ([PostgreSQL, table expressions](https://www.postgresql.org/docs/current/queries-table-expressions.html), [PostgreSQL, constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)). In each system the consumer applies the two-valued policy; the three-valued value itself is not rewritten.
 
-## Implementation Notes
+## Evaluation behavior
 
-- `Decision.Project` is a pure `switch` on `Result`; it does not look at `Faults`, `Trace` or `TraceTree`.
-- The harness ([doc-examples](../../doc-examples.md)) checks the two tables and the canonical form against an independent oracle, not against `Decision.Project`.
-- `Project` is not an `Expression` node, so the printers, `Simplify`, the `Expand` rewrites and the JSON and YAML schema never see it.
+- `Project` reads only `Result`. It does not look at `Faults`, `Trace` or `TraceTree`.
+- `Project` is not an expression node, so the printers, `Simplify`, the `Expand` rewrites and the JSON and YAML schema never see it.
 
-## Related Operations
+## Related operations
 
 - [Collapse](collapse.md) applies a policy and can return `RejectedUnresolved` instead of guessing.
 - [COALESCE](../functions/coalesce.md) is `Project`'s canonical form, inside a rule.

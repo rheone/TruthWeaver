@@ -17,17 +17,17 @@ Biconditional: `True` when the two operands are the same definite value, `False`
 
 ## Kind
 
-Derived. `EQUIVALENT` is defined from `AND`, `OR` and `NOT` (see [Canonical Form](#canonical-form)); it is also the negation of [XOR](xor.md). It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `EQUIVALENT` is defined from `AND`, `OR` and `NOT` (see [Canonical form](#canonical-form)); it is also the negation of [XOR](xor.md). It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly two operands. `EQUIVALENT` is binary only. A chain with more operands (`a EQUIVALENT b EQUIVALENT c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`): "EQUIVALENT is binary only; found N operands. Add parentheses (or nest EQUIVALENT nodes) to say how chained equivalences group." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
+Exactly two operands. `EQUIVALENT` is binary only. A chain with more operands (`a EQUIVALENT b EQUIVALENT c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge cases](#edge-cases).
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -45,22 +45,20 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: equivalent` with an `operands:` list of exactly two items |
 | `RuleBuilder` | `RuleBuilder.Equivalent(left, right)` |
 
-`EQUIVALENT` is an infix operator with no call form: `EQUIVALENT(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a EQUIVALENT b` is `(NOT a) EQUIVALENT b`, and mixing `EQUIVALENT` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`TRE0007`). The canonical printer writes the word form.
-
-In this reference the function-call spelling `EQUIVALENT(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
+`EQUIVALENT` is an infix operator with no call form: `EQUIVALENT(a, b)` is a syntax error. It sits outside the `NOT`, `AND`, `OR` precedence chain, so it needs parentheses to combine with another operator at the same level. Precedence, the mixing rule and the printed form are in [syntax](../specification/syntax.md#precedence-and-grouping).
 
 ## Aliases
 
 | Alias | Kind |
 | --- | --- |
 | `IFF` | Word |
-| `XNOR` | Word, the name used before [ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 5 |
+| `XNOR` | Word |
 | `↔` | Symbol |
 | `⇔` | Symbol |
 
 Every alias compiles to the same node as `EQUIVALENT`, so persisted rules written with `XNOR` keep compiling, and the canonical printer writes `EQUIVALENT`. In JSON and YAML `iff` and `xnor` are accepted as the `op`. `RuleBuilder.Xnor` forwards to `RuleBuilder.Equivalent`. The ASCII spelling `<=>` is not accepted.
 
-## Formal Semantics
+## Formal semantics
 
 `EQUIVALENT` is the strongest extension of the Boolean biconditional ([semantics](../specification/semantics.md#truth-functional-evaluation-and-the-strongest-extension)): it is definite only when both operands are, because refining either `Unknown` operand can change the answer.
 
@@ -70,7 +68,7 @@ $$a \leftrightarrow b = (a \land b) \lor (\neg a \land \neg b) = \neg(a \oplus b
 
 When both operands are definite this is $\mathsf{T}$ if $a = b$ and $\mathsf{F}$ if $a \ne b$; if either is $\mathsf{U}$ the result is $\mathsf{U}$.
 
-## Truth Table
+## Truth table
 
 <!-- k3:truth EQUIVALENT -->
 | a | b | EQUIVALENT(a, b) |
@@ -85,7 +83,7 @@ When both operands are definite this is $\mathsf{T}$ if $a = b$ and $\mathsf{F}$
 | F | U | U |
 | F | F | T |
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives is the disjunction of the two ways the operands can agree:
 
@@ -94,7 +92,7 @@ The definition in primitives is the disjunction of the two ways the operands can
 OR(AND(a, b), AND(NOT(a), NOT(b)))
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 `EQUIVALENT` is the negation of [XOR](xor.md), and the conjunction of the implication in both directions:
 
@@ -110,7 +108,7 @@ AND(IMPLIES(a, b), IMPLIES(b, a))
 
 `EQUIVALENT` is commutative and associative, `a EQUIVALENT True` is `a` and `a EQUIVALENT False` is `NOT a`. The classical law `a EQUIVALENT a = True` fails at `a = U`; see [laws that fail](../specification/semantics.md#laws-that-fail).
 
-## Mermaid Diagram
+## Mermaid diagram
 
 The composition of the canonical form: the upper `AND` is the case where both operands are `True`, the lower one the case where both are `False`.
 
@@ -134,23 +132,22 @@ flowchart LR
 | `isActive EQUIVALENT isVerified` | `True`, `False` | `False` | They differ. |
 | `isActive EQUIVALENT isVerified` | `Unknown`, `Unknown` | `Unknown` | Not `True`: two unknowns are not known to agree. |
 
-## Edge Cases
+## Edge cases
 
-- **More than two operands.** `a EQUIVALENT b EQUIVALENT c` (in any spelling, and the same node in JSON or YAML) is rejected with `TRE0006` and a hint to add parentheses. A chain of biconditionals reads two ways in everyday speech, so it is never silently grouped. Nest explicitly, `(a EQUIVALENT b) EQUIVALENT c`.
-- **Unknown propagates.** One `Unknown` operand makes the result `Unknown`, whatever the other is.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- More than two operands. `a EQUIVALENT b EQUIVALENT c` (in any spelling, and the same node in JSON or YAML) is rejected with `TRE0006` and a hint to add parentheses. A chain of biconditionals reads two ways in everyday speech, so it is never silently grouped. Nest explicitly, `(a EQUIVALENT b) EQUIVALENT c`.
+- Unknown propagates. One `Unknown` operand makes the result `Unknown`, whatever the other is.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `boom EQUIVALENT isOff` | `Unknown` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports an `EQUIVALENT` node as `EQUIVALENT` in the trace and the trace tree, whichever spelling the rule used.
-- `a EQUIVALENT a` is not reported as a tautology: the no-tautology theorem covers it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The analyzer does not report `a EQUIVALENT a` as a tautology. The expression is `Unknown` when `a` is.
 
-## Related Operations
+## Related operations
 
 - [XOR](xor.md) is its negation.
 - [IMPLIES](implies.md) is one direction of it.

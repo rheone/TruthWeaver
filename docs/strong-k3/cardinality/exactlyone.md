@@ -17,17 +17,17 @@
 
 ## Kind
 
-Derived. `ExactlyOne(...)` is defined as `Exactly(1, ...)` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `ExactlyOne(...)` is defined as `Exactly(1, ...)` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Two or more operands, and no parameter. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." This holds for `ExactlyOne(a)` and `ExactlyOne()` in the DSL and for JSON, YAML and `RuleBuilder.ExactlyOne(params RuleBuilder[])`. The threshold operations are different: `Exactly(1, a)` compiles. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands, and no parameter. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). This holds for `ExactlyOne(a)` and `ExactlyOne()` in the DSL and for JSON, YAML and `RuleBuilder.ExactlyOne(params RuleBuilder[])`. The threshold operations are different: `Exactly(1, a)` compiles. See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,13 +44,13 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: exactlyOne` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.ExactlyOne(params RuleBuilder[])` for two or more operands; `RuleBuilder.ExactlyOne(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`ExactlyOne` has a real call form with no parameter: every argument is an operand. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators, and the word is case-insensitive. There is no symbol spelling.
+`ExactlyOne` has a real call form with no parameter: every argument is an operand. A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`exactlyone(a, b)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 `ExactlyOne` is `Exactly` with `k = 1`: it answers `True` when every count in the interval $[d, p]$ of possible true counts is one, `False` when one is not in the interval, and `Unknown` otherwise ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). One lies outside the interval when $d \ge 2$ (too many `True` already) or $p = 0$ (none can be `True`).
 
@@ -60,7 +60,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{ExactlyOne}(x_1, \dots, x_n) = \begin{cases} \mathsf{F} & \text{if } d \ge 2 \text{ or } p = 0 \\ \mathsf{T} & \text{if } d = p = 1 \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -113,7 +113,7 @@ Cardinality operations are parameterised and variadic, so a truth table is impra
 | 3 | 4 | F |
 | 4 | 4 | F |
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives, for two or more operands:
 
@@ -122,7 +122,7 @@ The definition in primitives, for two or more operands:
 EXACTLY(1, ...)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 For two operands `ExactlyOne` is [XOR](../derived/xor.md):
 
@@ -157,25 +157,24 @@ The `Unknown` rule differs too. `PARITY` is `Unknown` whenever any operand is. `
 | `ExactlyOne(a, b, c)` | `True`, `True`, `Unknown` | `False` | Two are already `True`; the unknown operand cannot lower the count. |
 | `ExactlyOne(a, b, c)` | `False`, `Unknown`, `False` | `Unknown` | The unknown operand is the only way to reach one. |
 
-## Edge Cases
+## Edge cases
 
-- **Two or more operands.** `ExactlyOne` rejects one or no operands at compile time, unlike `Exactly(1, a)`. A single operand is not "exactly one of one" in the rule languages; write the operand itself.
-- **Empty and single-operand conventions.** Only `RuleBuilder.ExactlyOne(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged. The rule languages and `RuleBuilder.ExactlyOne(params RuleBuilder[])` reject fewer than two operands.
-- **`Unknown` does not always win.** A definite `False` needs either two `True` operands (`d >= 2`) or no operand that could be `True` (`p = 0`). Otherwise any `Unknown` operand leaves the result `Unknown`.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already `False`.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- Two or more operands. `ExactlyOne` rejects one or no operands at compile time, unlike `Exactly(1, a)`. A single operand is not "exactly one of one" in the rule languages; write the operand itself.
+- Empty and single-operand conventions. Only `RuleBuilder.ExactlyOne(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged. The rule languages and `RuleBuilder.ExactlyOne(params RuleBuilder[])` reject fewer than two operands.
+- `Unknown` does not always win. A definite `False` needs either two `True` operands (`d >= 2`) or no operand that could be `True` (`p = 0`). Otherwise any `Unknown` operand leaves the result `Unknown`.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `ExactlyOne(isOn, isOff, boom)` | `Unknown` | 1 |
 | `ExactlyOne(isOn, isOn, boom)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `ExactlyOne` in the trace and the trace tree.
-- `ExpandToPrimitives` rewrites `ExactlyOne(...)` to `Exactly(1, ...)`, and the simplifier does the same ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already `False` (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- `ExpandToPrimitives` rewrites `ExactlyOne(...)` to `Exactly(1, ...)`, and the simplifier does the same.
 
-## Related Operations
+## Related operations
 
 - [Exactly](exactly.md) is the general form with a chosen `k`.
 - [PARITY](../derived/parity.md) is the odd-count reading and [XOR](../derived/xor.md) the binary exclusive or; see [ExactlyOne versus PARITY versus XOR](#exactlyone-versus-parity-versus-xor).

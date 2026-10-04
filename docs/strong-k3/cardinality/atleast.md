@@ -17,17 +17,17 @@
 
 ## Kind
 
-Primitive. `AtLeast` has no definition in other Operations. It is one of the three counting primitives, with [AtMost](atmost.md) and [Exactly](exactly.md), from which the other cardinality operations are defined ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3). `ANY` and `ALL` are its special cases `AtLeast(1, ...)` and `AtLeast(n, ...)`.
+Primitive. `AtLeast` has no definition in other Operations. It is one of the three counting primitives, with [AtMost](atmost.md) and [Exactly](exactly.md), from which the other cardinality operations are defined. `ANY` and `ALL` are its special cases `AtLeast(1, ...)` and `AtLeast(n, ...)`.
 
 ## Arity
 
 One or more operands after the integer `k`, with 1 <= k <= n for n operands. The valid range of `k` depends on the operand count, so the same `k` can be valid for one rule and rejected for another.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 1 <= k <= n.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,13 +44,13 @@ Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 1 
 | YAML | `op: atLeast` with `k:` and an `operands:` list |
 | `RuleBuilder` | `RuleBuilder.AtLeast(int k, params RuleBuilder[])`; `RuleBuilder.AtLeast(int k, IEnumerable<RuleBuilder>)` for a list whose length is known only at run time (it is not folded, so an empty or too short list is rejected like the `params` form) |
 
-`AtLeast` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so `k` comes first, as in the table above. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators, and the word is case-insensitive. There is no symbol spelling.
+`AtLeast` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`atleast(1, a)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 Let $c$ be the number of operands that are `True`; for an `Unknown` operand $c$ is not yet fixed, only known to lie in $[d, p]$. `AtLeast` answers `True` when every count in that interval satisfies $c \ge k$, which holds exactly when $d \ge k$, and `False` when no count does, which holds exactly when $p < k$. Anything else is `Unknown`. This is the strongest extension of the Boolean threshold function, and the condition $c \ge k$ is monotone in $c$, so the two ends of the interval decide it.
 
@@ -60,7 +60,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{AtLeast}_k(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } d \ge k \\ \mathsf{F} & \text{if } p < k \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -140,9 +140,9 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Equivalent Forms
+## Equivalent forms
 
-`AtLeast` is a primitive, so it has no canonical form. These forms are verified against the oracle.
+`AtLeast` is a primitive, so it has no canonical form. These forms hold for every assignment.
 
 `AtLeast(1, ...)` is `OR` and `AtLeast(n, ...)` is `AND`, over the same operands. They are the same function, including every `Unknown` case, and the same value at every operand count:
 
@@ -193,38 +193,35 @@ The strict form is the same thing shifted by one: `GreaterThan(k - 1, ...)` is `
 | `AtLeast(2, a, b, c)` | `False`, `Unknown`, `False` | `False` | At most one operand could be `True`. |
 | `AtLeast(1, a, b)` | `Unknown`, `Unknown` | `Unknown` | The same value as `a OR b`. |
 
-## Edge Cases
+## Edge cases
 
 Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`). For two operands and `k` = 3: "AtLeast's threshold k=3 must satisfy 1 <= k <= 2 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
-| No operands | `MalformedTree` (`TRE0014`): "AtLeast requires at least one operand." |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer threshold as AtLeast's first argument." |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`): "'atLeast' requires a numeric 'k'." |
+| `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
+| No operands | `MalformedTree` (`TRE0014`) |
+| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
+| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
-The out-of-range values are rejected because they make the result a constant: `AtLeast(0, ...)` is always `True`; `AtLeast(n + 1, ...)` is always `False`.
-
-- **The valid `k` range.** `k` must satisfy 1 <= k <= n. `AtLeast(0, ...)` would always be `True` and `AtLeast(n + 1, ...)` always `False`, so the compiler rejects both instead of folding them.
-- **One operand.** The compiler accepts `AtLeast(1, a)`, which is `a`. A larger `k` is out of range for one operand.
-- **`AtLeast(1)` and `AtLeast(n)` reduce to `OR` and `AND`.** The values are identical, so `AtLeast(1, a, b)` and `a OR b` agree everywhere, `Unknown` included. They stay different nodes: the evaluator and printers keep the name that was written. `ANY` and `ALL` (see the [index](README.md)) are the named forms of the same two cases.
-- **`Unknown` is not absorbed in the middle.** Only the two extremes settle early: `True` as soon as `d >= k`, `False` as soon as `p < k`. In between, every further `Unknown` operand keeps the result `Unknown`.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- The valid `k` range. `k` must satisfy 1 <= k <= n. `AtLeast(0, ...)` would always be `True` and `AtLeast(n + 1, ...)` always `False`, so the compiler rejects both instead of folding them.
+- One operand. The compiler accepts `AtLeast(1, a)`, which is `a`. A larger `k` is out of range for one operand.
+- `AtLeast(1)` and `AtLeast(n)` reduce to `OR` and `AND`. The values are identical, so `AtLeast(1, a, b)` and `a OR b` agree everywhere, `Unknown` included. They stay different nodes: the evaluator and printers keep the name that was written. `ANY` and `ALL` (see the [index](README.md)) are the named forms of the same two cases.
+- `Unknown` is not absorbed in the middle. Only the two extremes settle early: `True` as soon as `d >= k`, `False` as soon as `p < k`. In between, every further `Unknown` operand keeps the result `Unknown`.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `AtLeast(2, isOn, boom, isOff)` | `Unknown` | 1 |
 | `AtLeast(1, boom, isOn)` | `True` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `AtLeast(k)` in the trace and the trace tree, for example `AtLeast(2)`.
-- Evaluation takes the definitely-true and possibly-true counts and compares both ends of the interval, so it is linear in the operand count.
-- The simplifier collapses `AtLeast(1, ...)` to `OR` and `AtLeast(n, ...)` to `AND` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)), and `ExpandToPrimitives` leaves `AtLeast` unchanged because it is a kernel node.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `AtLeast(k)`, for example `AtLeast(2)`.
+- `Simplify` collapses `AtLeast(1, ...)` to `OR` and `AtLeast(n, ...)` to `AND`. `ExpandToPrimitives` leaves `AtLeast` unchanged, because it is a primitive.
 
-## Related Operations
+## Related operations
 
 - [AtMost](atmost.md) is the upper-bound dual, and [Exactly](exactly.md) combines both bounds.
 - [GreaterThan](greaterthan.md) is the strict form: `GreaterThan(k, ...)` is `AtLeast(k + 1, ...)`.

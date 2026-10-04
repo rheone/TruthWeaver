@@ -17,17 +17,17 @@
 
 ## Kind
 
-Derived. `GreaterThan(k, ...)` is defined as `AtLeast(k + 1, ...)` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `GreaterThan(k, ...)` is defined as `AtLeast(k + 1, ...)` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
 One or more operands after the integer `k`, with 0 <= k <= n - 1 for n operands. These are exactly the values for which `AtLeast(k + 1, ...)` is valid, so the definition never leaves the valid range.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 <= k <= n - 1.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,13 +44,13 @@ Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 
 | YAML | `op: greaterThan` with `k:` and an `operands:` list |
 | `RuleBuilder` | `RuleBuilder.GreaterThan(int k, params RuleBuilder[])`; there is no `IEnumerable` overload |
 
-`GreaterThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so `k` comes first, as in the table above. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators, and the word is case-insensitive. There is no symbol spelling.
+`GreaterThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling. `RuleBuilder` has only the `params` overload for `GreaterThan`; there is no `IEnumerable` overload.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`greaterthan(1, a)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 Let $c$ be the number of `True` operands, known only to lie in $[d, p]$. `GreaterThan` answers `True` when every count in the interval satisfies $c > k$, which holds exactly when $d > k$, and `False` when none does, which holds exactly when $p \le k$. Anything else is `Unknown`. Since counts are integers, $c > k$ is $c \ge k + 1$, which is why the operation equals [AtLeast](atleast.md) with the threshold raised by one.
 
@@ -60,7 +60,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{GreaterThan}_k(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } d > k \\ \mathsf{F} & \text{if } p \le k \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -140,7 +140,7 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives, for every operand count and every valid `k`:
 
@@ -151,7 +151,7 @@ ATLEAST(k + 1, ...)
 
 The compiler's valid ranges map exactly: `0 <= k <= n - 1` for `GreaterThan` is `1 <= k + 1 <= n` for `AtLeast`.
 
-## Equivalent Forms
+## Equivalent forms
 
 `GreaterThan(k, ...)` is the negation of `AtMost(k, ...)`, over the same operands:
 
@@ -182,38 +182,35 @@ a
 | `GreaterThan(1, a, b, c)` | `False`, `Unknown`, `False` | `False` | At most one operand could be `True`. |
 | `GreaterThan(0, a, b)` | `Unknown`, `False` | `Unknown` | The same value as `a OR b`. |
 
-## Edge Cases
+## Edge cases
 
 Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `k` below 0 or above n - 1 | `InvalidThresholdValue` (`TRE0008`). For two operands and `k` = 2: "GreaterThan's threshold k=2 must satisfy 0 <= k <= 1 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
-| No operands | `MalformedTree` (`TRE0014`): "GreaterThan requires at least one operand." |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer threshold as GreaterThan's first argument." |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`): "'greaterThan' requires a numeric 'k'." |
+| `k` below 0 or above n - 1 | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
+| No operands | `MalformedTree` (`TRE0014`) |
+| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
+| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
-The out-of-range values are rejected because they make the result a constant: a negative `k` is always `True`; `k` of n or more is always `False`.
-
-- **The valid `k` range.** `k` must satisfy 0 <= k <= n - 1. A negative `k` would always be `True` and `k >= n` always `False`, so the compiler rejects both instead of folding them.
-- **One operand.** The compiler accepts `GreaterThan(0, a)`, which is `a`. `GreaterThan(1, a)` is rejected.
-- **`GreaterThan(0)` is `OR`.** Fewer than one `True` operand is none, so "more than zero" is "at least one".
-- **Off-by-one against `AtLeast`.** `GreaterThan(k)` needs `k + 1` operands, so `GreaterThan(2, a, b, c)` is `a AND b AND c`, not "at least two".
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- The valid `k` range. `k` must satisfy 0 <= k <= n - 1. A negative `k` would always be `True` and `k >= n` always `False`, so the compiler rejects both instead of folding them.
+- One operand. The compiler accepts `GreaterThan(0, a)`, which is `a`. `GreaterThan(1, a)` is rejected.
+- `GreaterThan(0)` is `OR`. Fewer than one `True` operand is none, so "more than zero" is "at least one".
+- Off-by-one against `AtLeast`. `GreaterThan(k)` needs `k + 1` operands, so `GreaterThan(2, a, b, c)` is `a AND b AND c`, not "at least two".
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `GreaterThan(1, isOn, isOff, boom)` | `Unknown` | 1 |
 | `GreaterThan(0, isOn, boom, isOff)` | `True` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `GreaterThan(k)` in the trace and the trace tree, for example `GreaterThan(1)`.
-- `ExpandToPrimitives` rewrites `GreaterThan(k, ...)` to `AtLeast(k + 1, ...)`, and the simplifier collapses it to `AtLeast(k + 1, ...)` as well ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
-- `RuleBuilder` has only the `params` overload for `GreaterThan`; there is no `IEnumerable` overload.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `GreaterThan(k)`, for example `GreaterThan(1)`.
+- `ExpandToPrimitives` rewrites `GreaterThan(k, ...)` to `AtLeast(k + 1, ...)`, and the simplifier does the same.
 
-## Related Operations
+## Related operations
 
 - [AtLeast](atleast.md) is the non-strict form; `GreaterThan(k, ...)` is `AtLeast(k + 1, ...)`.
 - [LessThan](lessthan.md) is the strict upper bound, and [AtMost](atmost.md) is its non-strict form.

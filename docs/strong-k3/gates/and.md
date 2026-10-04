@@ -21,13 +21,13 @@ Primitive. `AND` has no definition in other Operations. It is one of the three c
 
 ## Arity
 
-Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -45,9 +45,7 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: and` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.And(params RuleBuilder[])` for two or more operands; `RuleBuilder.And(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`AND` is an infix operator with no call form: `AND(a, b)` is a syntax error in the DSL. It binds tighter than `OR` and looser than `NOT`, so `a OR b AND c` is `a OR (b AND c)` and `NOT a AND b` is `(NOT a) AND b`. Mixing `AND` with `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing`. The canonical printer writes the word form and a flat chain.
-
-In this reference the function-call spelling `AND(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
+`AND` is an infix operator with no call form: `AND(a, b)` is a syntax error. It binds tighter than `OR` and looser than `NOT`, so `a OR b AND c` is `a OR (b AND c)` and `NOT a AND b` is `(NOT a) AND b`. The canonical printer writes the word form and a flat chain. The mixing rule is in [syntax](../specification/syntax.md#the-mixing-rule).
 
 ## Aliases
 
@@ -58,7 +56,7 @@ In this reference the function-call spelling `AND(a, b)` is only a plain-text co
 
 Symbols compile to the same node as the word, so notation never changes meaning. The word is case-insensitive (`and`, `And`, `AND`). A lone `&` is a syntax error.
 
-## Formal Semantics
+## Formal semantics
 
 Under the truth order $\mathsf{F} < \mathsf{U} < \mathsf{T}$, `AND` is the minimum of its operands. The minimum is the least true operand, so a single `False` sets the result and a single `Unknown` caps it at `Unknown`.
 
@@ -68,7 +66,7 @@ $$x_1 \land x_2 \land \dots \land x_n = \min(x_1, x_2, \dots, x_n) = \begin{case
 
 For two operands this is $a \land b = \min(a, b)$.
 
-## Truth Table
+## Truth table
 
 `False` dominates: every row with an `F` in any column has result `F`, whatever the other columns hold, `U` included. A result of `T` needs every column `T`. Every other row is `U`.
 
@@ -214,7 +212,7 @@ Eighty-one rows, one for each assignment of `T`, `U` and `F` to four operands.
 
 </details>
 
-## Equivalent Forms
+## Equivalent forms
 
 De Morgan's law defines `AND` from `OR` and `NOT`:
 
@@ -251,12 +249,11 @@ The other laws that hold for `AND` (commutativity, idempotence, distributivity o
 
 An `Unknown` result is not satisfied: `Decision.IsSatisfied` is `True` only for `True`.
 
-## Edge Cases
+## Edge cases
 
-- **F dominates, U does not.** `AND(F, x)` is `F` for every `x`, including `U` and a faulted term. `AND(U, x)` is `F` only if `x` is `F`; otherwise it is `U` or `T` per the table. `U` is therefore not a short-circuit value.
-- **N-ary evaluation.** The result is the minimum over all operands, in any order and any grouping. The two-operand table and associativity determine every larger table.
-- **Short-circuit does not change the value.** In the default mode the operands are evaluated left to right and evaluation stops after the first `False`. The remaining operands are recorded as `NotEvaluated` and their predicates are not invoked. Because `False` settles `AND`, the stopped result equals what a full evaluation gives. `EvaluationMode.Exhaustive` evaluates every operand; it changes the trace and which faults are recorded, never `Decision.Result`.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). The fault does not change the dominance rule. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- F dominates, U does not. `AND(F, x)` is `F` for every `x`, including `U` and a faulted term. `AND(U, x)` is `F` only if `x` is `F`; otherwise it is `U` or `T` per the table. `U` is therefore not a short-circuit value.
+- N-ary evaluation. The result is the minimum over all operands, in any order and any grouping. The two-operand table and associativity determine every larger table.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). The fault does not change the dominance rule. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
@@ -264,14 +261,14 @@ An `Unknown` result is not satisfied: `Decision.IsSatisfied` is `True` only for 
 | `boom AND isOff` | `False` | 1 |
 | `isOff AND boom` | `False` | 0, because `boom` is never run |
 
-- **Empty and single-operand conventions.** Mathematically the empty conjunction is `True`, the identity of the minimum, and the conjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.And(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.And(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
+- Empty and single-operand conventions. Mathematically the empty conjunction is `True`, the identity of the minimum, and the conjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.And(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.And(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports an `AND` node as `AND` and folds its operands left to right, starting from the identity `True`.
-- The no-tautology theorem covers `AND`: an expression built only from variables and Strong Kleene connectives is `Unknown` when every variable is, so `a AND NOT a` is not reported as a contradiction ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
+- In the default mode the operands run from left to right and evaluation stops after the first `False`. The remaining operands are recorded as `NotEvaluated`, and their predicates do not run. `EvaluationMode.Exhaustive` runs every operand. Neither mode changes `Decision.Result`, because `False` settles `AND` (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The analyzer does not report `a AND NOT a` as a contradiction. The expression is `Unknown` when `a` is.
 
-## Related Operations
+## Related operations
 
 - [OR](or.md) is the dual: De Morgan's laws swap `AND` and `OR` through [NOT](not.md).
 - `NAND` is `NOT(AND(a, b))`, and `IMPLIES` is built from `OR` and `NOT`; see the [derived logical operations](../derived/README.md).

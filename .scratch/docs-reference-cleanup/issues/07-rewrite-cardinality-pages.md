@@ -4,10 +4,14 @@
 
 **Blocked by:** 03, 04, 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The ten pages and the index contain none of the words and links the lint test forbids, and link only inside `docs/strong-k3/`
-- [ ] Each page has an "Evaluation behavior" section with observable behavior only, including that these operations do not short-circuit
-- [ ] The interval diagram is valid and agrees with the Formal Semantics text
-- [ ] Syntax, diagnostic and fault text is stated once and linked
-- [ ] The baseline list loses these pages, and the reference harness and the lint test pass
+- [x] The ten pages and the index contain none of the words and links the lint test forbids, and link only inside `docs/strong-k3/`
+- [x] Each page has an "Evaluation behavior" section with observable behavior only, including that these operations do not short-circuit
+- [x] The interval diagram is valid and agrees with the Formal Semantics text
+- [x] Syntax, diagnostic and fault text is stated once and linked
+- [x] The baseline list loses these pages, and the reference harness and the lint test pass
+
+## Comments
+
+- 2026-10-04: Done in one scripted pass followed by manual fixes. Each page lost its ADR, ticket and owner references, the quoted diagnostic messages and the repeated syntax paragraphs. Section names are sentence case and "Implementation Notes" became "Evaluation behavior" with observable behavior only. Bold bullet lead-ins were removed. The developer-only items (evaluator folding order, linear cost, analyzer rails, test and harness remarks, trace-node reporting for non-parameterised operations) were dropped here. Code comments in `Evaluator` and `OperatorDefinitions` already describe the evaluation order, so no comment was added. The cardinality index gained the interval diagram and a table of the `True` and `False` bounds for each operation.

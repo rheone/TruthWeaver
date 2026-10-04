@@ -22,17 +22,17 @@ The inspections are Derived: each expands to [COALESCE](coalesce.md). They are e
 
 ## Kind
 
-Derived. `IsFalse` is defined from `COALESCE` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `IsFalse` is defined from `COALESCE` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsFalse requires exactly 1 operand but found N." `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
 
-## Input Domain
+## Input domain
 
 The operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F}`. The result is never `Unknown`, whatever the operand is, and also when the operand is a faulting term.
 
@@ -55,7 +55,7 @@ The operand is a value in `{T, F, U}`.
 
 None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is case-insensitive on read. There is no symbol spelling, and every printer keeps the word.
 
-## Formal Semantics
+## Formal semantics
 
 `IsFalse` is the characteristic function of the value `False`: it asks whether the operand is definitely false. It maps `Unknown` to `False`, which no Strong Kleene connective can do.
 
@@ -63,7 +63,7 @@ None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is cas
 
 $$\operatorname{IsFalse}(a) = \begin{cases} \mathsf{T} & \text{if } a = \mathsf{F} \\ \mathsf{F} & \text{otherwise} \end{cases}$$
 
-## Truth Table
+## Truth table
 
 Only a `False` operand gives `T`; both `U` and `T` give `F`.
 
@@ -74,7 +74,7 @@ Only a `False` operand gives `T`; both `U` and `T` give `F`.
 | U | F |
 | F | T |
 
-## Canonical Form
+## Canonical form
 
 `IsFalse` is defined from `COALESCE`, the one operation that can observe `Unknown`:
 
@@ -83,7 +83,7 @@ Only a `False` operand gives `T`; both `U` and `T` give `F`.
 COALESCE(NOT(a), False)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 `IsFalse` is `IsTrue` of the negation. Unlike `NOT a`, which stays `Unknown` for an `Unknown` `a`, `IsFalse(a)` is `False` there.
 
@@ -107,19 +107,18 @@ OR(IsTrue(a), IsFalse(a))
 | `IsFalse(canEdit)` | `True` | `False` | The operand is true. |
 | `IsFalse(canEdit)` | `Unknown` | `False` | An unresolved answer is not a definite no. |
 
-## Edge Cases
+## Edge cases
 
-- **Never `Unknown`.** `IsFalse(Unknown)` is `False`, not `Unknown`. `IsFalse` is not the negation of `IsTrue`: both are `False` for `Unknown`.
-- **A faulting operand.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)); `IsFalse` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsFalse(boom)` is `False` with 1 fault recorded.
-- **No short-circuit question.** There is one operand, so it is always evaluated.
+- Never `Unknown`. `IsFalse(Unknown)` is `False`, not `Unknown`. `IsFalse` is not the negation of `IsTrue`: both are `False` for `Unknown`.
+- A faulting operand. A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault`; `IsFalse` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsFalse(boom)` is `False` with 1 fault recorded.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports a `IsFalse` node as `IsFalse` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
+- The operand always runs.
 - `ExpandToPrimitives` expands `IsFalse` to `COALESCE(NOT a, False)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `CompressToDerived` writes `COALESCE(NOT a, False)` back as `IsFalse(a)`.
 
-## Related Operations
+## Related operations
 
 - [COALESCE](coalesce.md) defines it.
 - [IsTrue](istrue.md), [IsUnknown](isunknown.md) and [IsKnown](isknown.md) are the other inspections.

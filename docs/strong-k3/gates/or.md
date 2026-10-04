@@ -21,13 +21,13 @@ Primitive. `OR` has no definition in other Operations. It is one of the three co
 
 ## Arity
 
-Two or more operands. The engine builds one flat node holding all operands, so `a OR b OR c` is a single three-operand `OR`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. The engine builds one flat node holding all operands, so `a OR b OR c` is a single three-operand `OR`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -45,9 +45,7 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: or` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.Or(params RuleBuilder[])` for two or more operands; `RuleBuilder.Or(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`OR` is an infix operator with no call form: `OR(a, b)` is a syntax error in the DSL. It binds looser than `AND` and `NOT`, so `a OR b AND c` is `a OR (b AND c)`. Mixing `OR` with `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing`. The canonical printer writes the word form and a flat chain.
-
-In this reference the function-call spelling `OR(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
+`OR` is an infix operator with no call form: `OR(a, b)` is a syntax error. It binds looser than `AND` and `NOT`, so `a OR b AND c` is `a OR (b AND c)`. The canonical printer writes the word form and a flat chain. The mixing rule is in [syntax](../specification/syntax.md#the-mixing-rule).
 
 ## Aliases
 
@@ -58,7 +56,7 @@ In this reference the function-call spelling `OR(a, b)` is only a plain-text con
 
 Symbols compile to the same node as the word, so notation never changes meaning. The word is case-insensitive (`or`, `Or`, `OR`). A lone `|` is a syntax error.
 
-## Formal Semantics
+## Formal semantics
 
 Under the truth order $\mathsf{F} < \mathsf{U} < \mathsf{T}$, `OR` is the maximum of its operands. The maximum is the most true operand, so a single `True` sets the result and a single `Unknown` lifts it at least to `Unknown`.
 
@@ -68,7 +66,7 @@ $$x_1 \lor x_2 \lor \dots \lor x_n = \max(x_1, x_2, \dots, x_n) = \begin{cases} 
 
 For two operands this is $a \lor b = \max(a, b)$.
 
-## Truth Table
+## Truth table
 
 `True` dominates: every row with a `T` in any column has result `T`, whatever the other columns hold, `U` included. A result of `F` needs every column `F`. Every other row is `U`.
 
@@ -214,7 +212,7 @@ Eighty-one rows, one for each assignment of `T`, `U` and `F` to four operands.
 
 </details>
 
-## Equivalent Forms
+## Equivalent forms
 
 De Morgan's law defines `OR` from `AND` and `NOT`:
 
@@ -256,12 +254,11 @@ The other laws that hold for `OR` (commutativity, idempotence, distributivity ov
 
 An `Unknown` result is not satisfied: `Decision.IsSatisfied` is `True` only for `True`.
 
-## Edge Cases
+## Edge cases
 
-- **T dominates, U does not.** `OR(T, x)` is `T` for every `x`, including `U` and a faulted term. `OR(U, x)` is `T` only if `x` is `T`; otherwise it is `U` or `F` per the table. `U` is therefore not a short-circuit value.
-- **N-ary evaluation.** The result is the maximum over all operands, in any order and any grouping. The two-operand table and associativity determine every larger table.
-- **Short-circuit does not change the value.** In the default mode the operands are evaluated left to right and evaluation stops after the first `True`. The remaining operands are recorded as `NotEvaluated` and their predicates are not invoked. Because `True` settles `OR`, the stopped result equals what a full evaluation gives. `EvaluationMode.Exhaustive` evaluates every operand; it changes the trace and which faults are recorded, never `Decision.Result`.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). The fault does not change the dominance rule. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- T dominates, U does not. `OR(T, x)` is `T` for every `x`, including `U` and a faulted term. `OR(U, x)` is `T` only if `x` is `T`; otherwise it is `U` or `F` per the table. `U` is therefore not a short-circuit value.
+- N-ary evaluation. The result is the maximum over all operands, in any order and any grouping. The two-operand table and associativity determine every larger table.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). The fault does not change the dominance rule. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
@@ -269,14 +266,14 @@ An `Unknown` result is not satisfied: `Decision.IsSatisfied` is `True` only for 
 | `boom OR isOn` | `True` | 1 |
 | `isOn OR boom` | `True` | 0, because `boom` is never run |
 
-- **Empty and single-operand conventions.** Mathematically the empty disjunction is `False`, the identity of the maximum, and the disjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.Or(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.Or(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
+- Empty and single-operand conventions. Mathematically the empty disjunction is `False`, the identity of the maximum, and the disjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.Or(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.Or(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports an `OR` node as `OR` and folds its operands left to right, starting from the identity `False`.
-- The no-tautology theorem covers `OR`: an expression built only from variables and Strong Kleene connectives is `Unknown` when every variable is, so `a OR NOT a` is not reported as a tautology ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
+- In the default mode the operands run from left to right and evaluation stops after the first `True`. The remaining operands are recorded as `NotEvaluated`, and their predicates do not run. `EvaluationMode.Exhaustive` runs every operand. Neither mode changes `Decision.Result`, because `True` settles `OR` (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The analyzer does not report `a OR NOT a` as a tautology. The expression is `Unknown` when `a` is.
 
-## Related Operations
+## Related operations
 
 - [AND](and.md) is the dual: De Morgan's laws swap `AND` and `OR` through [NOT](not.md).
 - `NOR` is `NOT(OR(a, b))`, and `IMPLIES` is `OR(NOT(a), b)`; see the [derived logical operations](../derived/README.md).

@@ -17,19 +17,19 @@ Strong Kleene material implication, `NOT a OR b`: `True` when the antecedent is 
 
 ## Kind
 
-Derived. `IMPLIES` is defined as `NOT a OR b` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `IMPLIES` is defined as `NOT a OR b` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly two operands. `IMPLIES` is binary only. A chain with more operands (`a IMPLIES b IMPLIES c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`): "IMPLIES is binary only; found N operands. Add parentheses (or nest IMPLIES nodes) to say how chained implications group." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
+Exactly two operands. `IMPLIES` is binary only. A chain with more operands (`a IMPLIES b IMPLIES c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge cases](#edge-cases).
 
 The first operand is the antecedent (the "if") and the second the consequent (the "then").
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -47,11 +47,9 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: implies` with an `operands:` list of exactly two items |
 | `RuleBuilder` | `RuleBuilder.Implies(antecedent, consequent)` |
 
-`IMPLIES` is an infix operator with no call form: `IMPLIES(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a IMPLIES b` is `(NOT a) IMPLIES b`, and mixing `IMPLIES` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`TRE0007`). The canonical printer writes the word form.
+`IMPLIES` is an infix operator with no call form: `IMPLIES(a, b)` is a syntax error. It sits outside the `NOT`, `AND`, `OR` precedence chain, so it needs parentheses to combine with another operator at the same level. Precedence, the mixing rule and the printed form are in [syntax](../specification/syntax.md#precedence-and-grouping).
 
-In this reference the function-call spelling `IMPLIES(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
-
-Because implication is not associative, the DSL never groups a chain for you: `a IMPLIES b IMPLIES c` is the compile error `TRE0006`. Write `a IMPLIES (b IMPLIES c)` or `(a IMPLIES b) IMPLIES c`.
+Implication is not associative, so a chain is never grouped for you: `a IMPLIES b IMPLIES c` is the diagnostic `InfixArityViolation`. Write `a IMPLIES (b IMPLIES c)` or `(a IMPLIES b) IMPLIES c`.
 
 ## Aliases
 
@@ -62,7 +60,7 @@ Because implication is not associative, the DSL never groups a chain for you: `a
 
 Symbols compile to the same node as the word, so notation never changes meaning. The word is case-insensitive. The ASCII spellings `->` and `=>` are not accepted.
 
-## Formal Semantics
+## Formal semantics
 
 Under the truth order $\mathsf{F} < \mathsf{U} < \mathsf{T}$, `IMPLIES` is the maximum of the negated antecedent and the consequent. It is Kleene's strong implication, the strongest extension of the Boolean implication.
 
@@ -70,7 +68,7 @@ Under the truth order $\mathsf{F} < \mathsf{U} < \mathsf{T}$, `IMPLIES` is the m
 
 $$a \to b = \neg a \lor b = \max(\neg a, b)$$
 
-## Truth Table
+## Truth table
 
 A `False` antecedent or a `True` consequent settles the result as `T`, even when the other operand is `Unknown`. An unknown antecedent with an unknown consequent stays `Unknown`.
 
@@ -87,14 +85,14 @@ A `False` antecedent or a `True` consequent settles the result as `T`, even when
 | F | U | T |
 | F | F | T |
 
-## Canonical Form
+## Canonical form
 
 <!-- k3:canonical IMPLIES vars=a,b -->
 ```text
 OR(NOT(a), b)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 Contraposition holds, and the implication is the negated conjunction of the antecedent with the negated consequent:
 
@@ -135,12 +133,11 @@ TruthWeaver is Kleene: `IMPLIES` is `OR(NOT(a), b)`, so it stays among the conne
 | `isAdmin IMPLIES canDelete` | `Unknown`, `True` | `True` | A true consequent settles it whatever the antecedent. |
 | `isAdmin IMPLIES canDelete` | `Unknown`, `Unknown` | `Unknown` | Neither side is known. |
 
-## Edge Cases
+## Edge cases
 
-- **More than two operands.** A chain, or a JSON or YAML node with any other operand count, is rejected with `TRE0006`; group with parentheses.
-- **Operand order matters.** `a IMPLIES b` and `b IMPLIES a` differ. Swapping operands needs `NOT` on both, as in contraposition.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault. A `False` antecedent already gives `True`, but the consequent is still run.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- More than two operands. A chain, or a JSON or YAML node with any other operand count, is rejected with `TRE0006`; group with parentheses.
+- Operand order matters. `a IMPLIES b` and `b IMPLIES a` differ. Swapping operands needs `NOT` on both, as in contraposition.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
@@ -149,12 +146,12 @@ TruthWeaver is Kleene: `IMPLIES` is `OR(NOT(a), b)`, so it stays among the conne
 | `boom IMPLIES isOff` | `Unknown` | 1 |
 | `isOn IMPLIES boom` | `Unknown` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports an `IMPLIES` node as `IMPLIES` in the trace and the trace tree.
-- Compression rewrites an `OR(NOT a, b)` shape to `IMPLIES`, and `ExpandToPrimitives` expands `IMPLIES` back ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- `CompressToDerived` rewrites an `OR(NOT a, b)` shape to `IMPLIES`, and `ExpandToPrimitives` expands `IMPLIES` back.
 
-## Related Operations
+## Related operations
 
 - [OR](../gates/or.md) and [NOT](../gates/not.md) define it.
 - [EQUIVALENT](equivalent.md) is the conjunction of the implication in both directions.

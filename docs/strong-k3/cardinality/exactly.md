@@ -17,17 +17,17 @@
 
 ## Kind
 
-Primitive. `Exactly` has no definition in other Operations. It is one of the three counting primitives with [AtLeast](atleast.md) and [AtMost](atmost.md) ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3), although it equals `AND(AtLeast(k), AtMost(k))` over the same operands. [ExactlyOne](exactlyone.md) is its special case `Exactly(1, ...)`.
+Primitive. `Exactly` has no definition in other Operations. It is one of the three counting primitives with [AtLeast](atleast.md) and [AtMost](atmost.md), although it equals `AND(AtLeast(k), AtMost(k))` over the same operands. [ExactlyOne](exactlyone.md) is its special case `Exactly(1, ...)`.
 
 ## Arity
 
 One or more operands after the integer `k`, with 0 <= k <= n for n operands. Unlike [AtLeast](atleast.md) and [AtMost](atmost.md), both ends of the count range are allowed: `Exactly(0, ...)` and `Exactly(n, ...)` are meaningful, not constants.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 <= k <= n.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,13 +44,13 @@ Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 
 | YAML | `op: exactly` with `k:` and an `operands:` list |
 | `RuleBuilder` | `RuleBuilder.Exactly(int k, params RuleBuilder[])`; `RuleBuilder.Exactly(int k, IEnumerable<RuleBuilder>)` for a list whose length is known only at run time (it is not folded, so an empty or too short list is rejected like the `params` form) |
 
-`Exactly` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so `k` comes first, as in the table above. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators, and the word is case-insensitive. There is no symbol spelling.
+`Exactly` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`exactly(1, a)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 Let $c$ be the number of `True` operands, known only to lie in $[d, p]$. `Exactly` answers `True` when every count in the interval equals $k$, which needs the interval to be the single count $d = p = k$, and `False` when no count does, which holds exactly when $k \notin [d, p]$. Anything else is `Unknown`. The condition $c = k$ is not monotone in $c$, which is why this operation, unlike `AtLeast` and `AtMost`, can be `False` while operands are still `Unknown`, and can never be `True` while any is.
 
@@ -60,7 +60,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{Exactly}_k(x_1, \dots, x_n) = \begin{cases} \mathsf{F} & \text{if } k < d \text{ or } k > p \\ \mathsf{T} & \text{if } d = p = k \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -174,9 +174,9 @@ The same table for four operands: 15 rows, one for each pair of counts.
 | 0 | 1 | U |
 | 1 | 1 | T |
 
-## Equivalent Forms
+## Equivalent forms
 
-`Exactly` is a primitive, so it has no canonical form. These forms are verified against the oracle.
+`Exactly` is a primitive, so it has no canonical form. These forms hold for every assignment.
 
 `Exactly(k, ...)` is the conjunction of a lower and an upper bound on the same operands:
 
@@ -200,26 +200,23 @@ The identity holds for every `k` from 0 to n as a statement about values. The co
 | `Exactly(2, a, b, c)` | `True`, `True`, `Unknown` | `Unknown` | The unknown operand would make the count three if `True`. |
 | `Exactly(1, a, b, c)` | `True`, `True`, `Unknown` | `False` | Two operands are already `True`, so the count cannot be one. |
 
-## Edge Cases
+## Edge cases
 
 Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `k` below 0 or above n | `InvalidThresholdValue` (`TRE0008`). For two operands and `k` = 3: "Exactly's threshold k=3 must satisfy 0 <= k <= 2 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
-| No operands | `MalformedTree` (`TRE0014`): "Exactly requires at least one operand." |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer threshold as Exactly's first argument." |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`): "'exactly' requires a numeric 'k'." |
+| `k` below 0 or above n | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
+| No operands | `MalformedTree` (`TRE0014`) |
+| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
+| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
-The out-of-range values are rejected because they make the result a constant: a negative `k` is always `False`; `k` above n is always `False`.
-
-- **The valid `k` range.** `k` must satisfy 0 <= k <= n. A negative `k` or one above n would always be `False`, so the compiler rejects it instead of folding it.
-- **One operand.** The compiler accepts `Exactly(1, a)` (which is `a`) and `Exactly(0, a)` (which is `NOT a`).
-- **`Unknown` blocks `True`.** `Exactly` is `True` only when the count is certain. A single `Unknown` operand with `k` inside the interval always gives `Unknown`, whatever the other operands are.
-- **`Unknown` can still allow `False`.** When `k` lies outside $[d, p]$ the result is `False` even with `Unknown` operands. This is the difference from [PARITY](../derived/parity.md), which is `Unknown` whenever any operand is.
-- **`Exactly(k)` is not `ExactlyOne`.** [ExactlyOne](exactlyone.md) fixes `k = 1` and requires two or more operands.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- The valid `k` range. `k` must satisfy 0 <= k <= n. A negative `k` or one above n would always be `False`, so the compiler rejects it instead of folding it.
+- One operand. The compiler accepts `Exactly(1, a)` (which is `a`) and `Exactly(0, a)` (which is `NOT a`).
+- `Unknown` blocks `True`. `Exactly` is `True` only when the count is certain. A single `Unknown` operand with `k` inside the interval always gives `Unknown`, whatever the other operands are.
+- `Unknown` can still allow `False`. When `k` lies outside $[d, p]$ the result is `False` even with `Unknown` operands. This is the difference from [PARITY](../derived/parity.md), which is `Unknown` whenever any operand is.
+- `Exactly(k)` is not `ExactlyOne`. [ExactlyOne](exactlyone.md) fixes `k = 1` and requires two or more operands.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
@@ -227,13 +224,13 @@ The out-of-range values are rejected because they make the result a constant: a 
 | `Exactly(2, isOn, isOff, boom)` | `Unknown` | 1 |
 | `Exactly(0, isOn, isOff, boom)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `Exactly(k)` in the trace and the trace tree, for example `Exactly(2)`.
-- Evaluation shares the threshold evaluator with [AtLeast](atleast.md) and [AtMost](atmost.md), with the interval test for `Exactly` described above.
-- `ExpandToPrimitives` leaves `Exactly` unchanged because it is a kernel node, and expands [ExactlyOne](exactlyone.md) and `PARITY` into `Exactly` nodes.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `Exactly(k)`, for example `Exactly(2)`.
+- `ExpandToPrimitives` leaves `Exactly` unchanged, because it is a primitive, and expands [ExactlyOne](exactlyone.md) and `PARITY` into `Exactly` nodes.
 
-## Related Operations
+## Related operations
 
 - [AtLeast](atleast.md) and [AtMost](atmost.md) are the two bounds that `Exactly` combines.
 - [ExactlyOne](exactlyone.md) is `Exactly(1, ...)`; [PARITY](../derived/parity.md) is the disjunction of `Exactly(k, ...)` over every odd `k`.

@@ -19,17 +19,17 @@ The conditional: `True` selects the first branch, `False` the second, and an `Un
 
 ## Kind
 
-Derived. `If` is defined as the multiplexer plus its consensus term (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `If` is defined as the multiplexer plus its consensus term (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `MalformedTree` (`TRE0014`): "If requires exactly 3 operands (condition, whenTrue, whenFalse) but found N." This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
+Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -47,7 +47,7 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: if` with an `operands:` list of exactly three items |
 | `RuleBuilder` | `RuleBuilder.If(condition, whenTrue, whenFalse)` |
 
-`If` is a reserved word in any letter case (`if(c, t, f)`), so a predicate cannot be named `If`. The call form has no precedence. The ternary is accepted wherever a full expression is (the rule root, parentheses and call arguments) but is not an operand of a bare infix expression, so it must be parenthesised when mixed with one. The condition and each branch must each be a single operand or a parenthesized group: a bare `AND` or `OR` chain, a bare infix expression (`XOR`, `??` and the others) or an unparenthesized nested ternary in any of the three positions is the compile error `AmbiguousOperatorMixing` (`TRE0007`). `(a AND b) ? x : y` is fine; `a AND b ? x : y` and `a ? b ? x : y : z` are not. A lone `?` without its `:`, or the reverse, is a syntax error (`TRE0001`). The canonical printer writes the call form `If(a, b, c)`. The tree printers label the node `If`, except in the C-style tree style, which renders `?:`; the evaluated and description label stays `If`.
+`If` is a reserved word in any letter case, so a predicate cannot be named `If`. The condition and each branch of the ternary are single operands or parenthesized groups: `(a AND b) ? x : y` is valid, and `a AND b ? x : y` is not. See [syntax](../specification/syntax.md#the-mixing-rule). The canonical printer writes the call form `If(a, b, c)`. The tree printers label the node `If`, except the C-style tree style, which renders `?:`. The evaluated and description label stays `If`.
 
 ## Aliases
 
@@ -57,7 +57,7 @@ Each operand is a value in `{T, F, U}`.
 
 There is no other spelling. The JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 `If` is the strongest extension of the Boolean conditional: its result is definite exactly when every `True`/`False` resolution of the `Unknown` operands gives the same answer, and then it is that answer ([semantics](../specification/semantics.md#truth-functional-evaluation-and-the-strongest-extension)). It is monotone in the information order. For a definite condition it is plain selection; the consensus term matters only for an `Unknown` condition, where it is what makes `If(Unknown, True, True)` equal `True`.
 
@@ -69,7 +69,7 @@ By cases:
 
 $$\operatorname{If}(c, t, f) = \begin{cases} t & \text{if } c = \mathsf{T} \\ f & \text{if } c = \mathsf{F} \\ t & \text{if } c = \mathsf{U} \text{ and } t = f \in \{\mathsf{T}, \mathsf{F}\} \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Truth Table
+## Truth table
 
 Twenty-seven rows, one for each assignment of `T`, `U` and `F` to the condition and the two branches. The rows with `U` as the condition are the interesting ones: only `(U, T, T)` and `(U, F, F)` are definite.
 
@@ -104,7 +104,7 @@ Twenty-seven rows, one for each assignment of `T`, `U` and `F` to the condition 
 | F | F | U | U |
 | F | F | F | F |
 
-## Canonical Form
+## Canonical form
 
 `If` is the multiplexer with its consensus term:
 
@@ -115,7 +115,7 @@ OR(AND(c, t), AND(NOT(c), f), AND(t, f))
 
 The third term `AND(t, f)` is the **consensus term**. It is redundant in classical logic and **not** in Strong Kleene (K3): without it `If(Unknown, True, True)` would be `Unknown`. No TruthWeaver rewrite removes it ([semantics](../specification/semantics.md#the-invalid-consensus-removal)).
 
-## Equivalent Forms
+## Equivalent forms
 
 Swapping the branches and negating the condition gives the same function:
 
@@ -157,7 +157,7 @@ The bare multiplexer, McCarthy's conditional and SQL `CASE` are different functi
 
 `If(IsTrue(c), t, f)` is the SQL `CASE` equivalent: the [inspection](istrue.md) turns an `Unknown` condition into `False`, so it takes the else-branch exactly as `CASE` does. Both give a definite choice of branch, but `If(IsTrue(c), t, f)` can still be `Unknown` when the chosen branch is.
 
-## Mermaid Diagram
+## Mermaid diagram
 
 The decision flow of the table: a definite condition selects a branch, and an `Unknown` condition needs both branches to agree on a definite value.
 
@@ -180,12 +180,11 @@ flowchart TD
 | `isAdmin ? canEdit : canView` | `Unknown`, `True`, `False` | `Unknown` | The branches disagree and the condition cannot decide. |
 | `isAdmin ? canEdit : canView` | `Unknown`, `Unknown`, `Unknown` | `Unknown` | Nothing is known. |
 
-## Edge Cases
+## Edge cases
 
-- **Unknown condition.** The result is a definite value only when `t` and `f` are the same definite value; it is never a guess of one branch.
-- **Unknown branches.** `If(True, Unknown, False)` is `Unknown`: the selected branch is `Unknown`. `If(Unknown, Unknown, Unknown)` is `Unknown`.
-- **Short-circuit.** For a definite condition only the needed branch is evaluated and the other is recorded as `NotEvaluated`, so its predicate is not invoked and its fault is not recorded. An `Unknown` condition evaluates both branches, and `EvaluationMode.Exhaustive` always evaluates both. This changes the trace and the recorded faults, never `Decision.Result`.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- Unknown condition. The result is a definite value only when `t` and `f` are the same definite value; it is never a guess of one branch.
+- Unknown branches. `If(True, Unknown, False)` is `Unknown`: the selected branch is `Unknown`. `If(Unknown, Unknown, Unknown)` is `Unknown`.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
@@ -194,14 +193,13 @@ flowchart TD
 | `If(isOn, isOff, boom)` | `False` | 0, because the `boom` branch is not run |
 | `If(isOn, boom, isOff)` | `Unknown` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports an `If` node as `If` in the trace and the trace tree, in every operator style.
-- Compression rewrites the three-term form back to `If`, and `ExpandToPrimitives` expands `If` to it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). `Simplify` and `Canonicalize` never remove the consensus term; `Simplify` reduces `If(c, x, x)` to `x`.
-- The analyzer uses the three-term definition over the definite and possible rails, so `If(a, b OR True, c OR True)` is a tautology even for an `Unknown` `a`.
-- The semantics are pinned by an exhaustive 27-triple test in the engine suite ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 21).
+- For a definite condition only the needed branch runs. The other branch is recorded as `NotEvaluated`, so its predicate does not run and its fault is not recorded. A condition of `Unknown` runs both branches, and `EvaluationMode.Exhaustive` always runs both. Neither mode changes `Decision.Result` (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- `CompressToDerived` rewrites the three-term form back to `If`, and `ExpandToPrimitives` expands `If` to it. `Simplify` and `Canonicalize` never remove the consensus term. `Simplify` reduces `If(c, x, x)` to `x`.
+- The analyzer treats `If(a, b OR True, c OR True)` as a tautology, even when `a` is `Unknown`.
 
-## Related Operations
+## Related operations
 
 - [AND](../gates/and.md), [OR](../gates/or.md) and [NOT](../gates/not.md) define it.
 - [COALESCE](coalesce.md) and the [inspections](istrue.md) are the external operators; `If(IsTrue(c), t, f)` is the SQL `CASE` equivalent, and `If(IsKnown(a), a, b)` equals `COALESCE(a, b)`.

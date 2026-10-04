@@ -17,17 +17,17 @@ N-ary parity: `True` when an odd number of operands are `True` and none is `Unkn
 
 ## Kind
 
-Derived. `PARITY` is defined as the disjunction of `Exactly(k, ...)` over every odd count `k` (see [Canonical Form](#canonical-form)). It sits with the `XOR` family rather than the [Cardinality Functions](../cardinality/README.md), although its definition borrows from them. It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `PARITY` is defined as the disjunction of `Exactly(k, ...)` over every odd count `k` (see [Canonical form](#canonical-form)). It sits with the `XOR` family rather than the [Cardinality Functions](../cardinality/README.md), although its definition borrows from them. It stays a first-class node in the engine and is not rewritten to its definition unless a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Two or more operands. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,15 +44,15 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: parity` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.Parity(params RuleBuilder[])` for two or more operands; `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`PARITY` is the one operation of this category with a real call form: `PARITY(a, b, c)` is DSL input, and the word is case-insensitive (`parity(a, b)`). A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators. There is no symbol spelling.
+`PARITY` is the one operation of this category with a real call form: `PARITY(a, b, c)` is DSL input, and the word is case-insensitive (`parity(a, b)`). A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling.
 
 ## Aliases
 
 None.
 
-The name `NXOR`, used before [ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 4, was removed and is not an alias. `NXOR` conventionally means negated XOR, that is `XNOR`, which is [EQUIVALENT](equivalent.md) here, and that is the opposite of what n-ary parity does; the name was misleading. Rule text, JSON or YAML that still writes `NXOR` is rejected with a diagnostic that says it was renamed `PARITY`. The word stays reserved so a predicate cannot take it. Semantics did not change with the rename.
+`NXOR` is not an alias. It conventionally means negated XOR, that is `XNOR`, which is [EQUIVALENT](equivalent.md) here. That is the opposite of n-ary parity. Rule text, JSON or YAML that writes `NXOR` is rejected with a diagnostic that names `PARITY`. The word is reserved, so a predicate cannot take it.
 
-## Formal Semantics
+## Formal semantics
 
 `PARITY` is the strongest extension of the Boolean parity function: refining any `Unknown` operand to `True` or `False` flips the parity, so the result is definite only when every operand is. With no `Unknown` operand it is the exclusive or of all operands, equivalently the parity of the number of `True` operands.
 
@@ -64,7 +64,7 @@ $$\operatorname{PARITY}(x_1, \dots, x_n) = \begin{cases} \mathsf{U} & \text{if }
 
 For two operands this is $a \oplus b$.
 
-## Truth Table
+## Truth table
 
 ### Two operands
 
@@ -208,7 +208,7 @@ Eighty-one rows, one for each assignment of `T`, `U` and `F` to four operands.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives is the disjunction of `Exactly(k, ...)` over every odd count `k` up to the operand count. The form depends on the operand count, so it is shown for three and four operands:
 
@@ -224,7 +224,7 @@ OR(EXACTLY(1, a, b, c, d), EXACTLY(3, a, b, c, d))
 
 With no `Unknown` operand the true count is a single number and the disjunction is `True` exactly when that number is odd. With an `Unknown` operand the true count lies in an interval of two or more consecutive numbers, so every `Exactly(k, ...)` is `Unknown` or `False`, at least one odd count lies in the interval, and the disjunction is `Unknown`. The form has linear size; a fold of `XOR` repeats its accumulator at every step and grows exponentially.
 
-## Equivalent Forms
+## Equivalent forms
 
 `PARITY` equals the left fold of [XOR](xor.md), and for two operands it is `XOR`:
 
@@ -278,25 +278,24 @@ For two operands all three are the same function. From three operands `XOR` is n
 | `PARITY(a, b, c)` | `True`, `True`, `Unknown` | `Unknown` | The unknown operand decides the parity. |
 | `PARITY(a, b, c)` | `Unknown`, `Unknown`, `Unknown` | `Unknown` | Nothing is known. |
 
-## Edge Cases
+## Edge cases
 
-- **Unknown is never absorbed.** Unlike `AND`, `OR` and the cardinality operations, no definite operand settles `PARITY`. One `Unknown` operand gives `Unknown`.
-- **Two operands** give the same value as `XOR` but a different node, which prints as `PARITY(a, b)` rather than `a XOR b`.
-- **Empty and single-operand conventions.** Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The rule languages accept neither: `PARITY(a)` and `PARITY()` in the DSL, and JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- Unknown is never absorbed. Unlike `AND`, `OR` and the cardinality operations, no definite operand settles `PARITY`. One `Unknown` operand gives `Unknown`.
+- Two operands give the same value as `XOR` but a different node, which prints as `PARITY(a, b)` rather than `a XOR b`.
+- Empty and single-operand conventions. Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The rule languages accept neither: `PARITY(a)` and `PARITY()` in the DSL, and JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `PARITY(boom, isOn, isOn)` | `Unknown` | 1 |
 | `PARITY(isOn, isOff, isOn, boom)` | `Unknown` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports a `PARITY` node as `PARITY` in the trace and the trace tree.
-- `ExpandToPrimitives` expands `PARITY` to the odd-count disjunction rather than a fold, so the expansion grows linearly ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 10).
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- `ExpandToPrimitives` expands `PARITY` to the odd-count disjunction rather than a fold, so the expansion grows linearly with the operand count.
 
-## Related Operations
+## Related operations
 
 - [XOR](xor.md) is the binary case.
 - `ExactlyOne` in the [Cardinality Functions](../cardinality/README.md) is the other n-ary reading; see [PARITY versus ExactlyOne versus XOR](#parity-versus-exactlyone-versus-xor).

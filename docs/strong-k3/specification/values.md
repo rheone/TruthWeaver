@@ -61,7 +61,7 @@ with $\sqsubseteq$ applied position by position to the operands. Equivalently: i
 
 The Strong Kleene connectives are exactly the monotone operations; the external operators are not. That boundary, and what follows from it, is in [semantics](semantics.md#strong-kleene-connectives-and-external-operators).
 
-The two orders are checked against the oracle by their consequences. Under the truth order `AND` is the minimum:
+Two tables show the orders at work. Under the truth order `AND` is the minimum:
 
 <!-- k3:truth AND -->
 | a | b | AND(a, b) |

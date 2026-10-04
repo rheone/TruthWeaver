@@ -17,20 +17,20 @@
 
 ## Kind
 
-Derived. `BETWEEN(min, max, ...)` is defined as `AND(AtLeast(min, ...), AtMost(max, ...))` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `BETWEEN(min, max, ...)` is defined as `AND(AtLeast(min, ...), AtMost(max, ...))` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `MalformedTree` (`TRE0014`).
+Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
-> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `BETWEEN` rejects fewer than two operands, like [ANY](any.md), [ALL](all.md) and [NONE](none.md). `OperatorDefinitions` and the compiler agree on this minimum ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a).
+> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `BETWEEN` rejects fewer than two operands, like [ANY](any.md), [ALL](all.md) and [NONE](none.md). `OperatorDefinitions` and the compiler agree on this minimum.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`. The parameters `min` and `max` are integers with `0 <= min <= max <= n`, excluding `min = 0` together with `max = n`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -47,13 +47,13 @@ Each operand is a value in `{T, F, U}`. The parameters `min` and `max` are integ
 | YAML | `op: between` with `min:`, `max:` and an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.Between(int min, int max, params RuleBuilder[])`; `RuleBuilder.Between(int min, int max, IEnumerable<RuleBuilder>)` for a list whose length is known only at run time (it is not folded, so an empty or too short list is rejected like the `params` form) |
 
-`BETWEEN` has a real call form. The first two arguments are the integer bounds, written as literals, then the operands, so `min` and `max` come first, as in the table above. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators. `BETWEEN` is a reserved word, so a predicate cannot be named `BETWEEN`. There is no symbol spelling, and every printer keeps the word.
+`BETWEEN` has a real call form. The first two arguments are the integer bounds, written as literals, then the operands, so `min` and `max` come first, as in the table above. A call has no precedence (see [syntax](../specification/syntax.md#forms)). `BETWEEN` is a reserved word, so a predicate cannot be named `BETWEEN`. There is no symbol spelling, and every printer keeps the word.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`between(1, 2, a, b)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 Let $c$ be the number of `True` operands, known only to lie in $[d, p]$. `BETWEEN` is the [AND](../gates/and.md) of the two cardinality conditions $c \ge \min$ and $c \le \max$, each decided over the interval ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). The combination equals the strongest extension of the Boolean range test, provided $\min \le \max$, so a definite answer needs the whole interval $[d, p]$ to sit inside `[min, max]` (`True`) or entirely outside it (`False`).
 
@@ -63,7 +63,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{BETWEEN}_{\min,\max}(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } d \ge \min \text{ and } p \le \max \\ \mathsf{F} & \text{if } p < \min \text{ or } d > \max \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -145,7 +145,7 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives, for every operand count and every valid pair of bounds:
 
@@ -154,9 +154,9 @@ The definition in primitives, for every operand count and every valid pair of bo
 AND(ATLEAST(min, ...), ATMOST(max, ...))
 ```
 
-The valid ranges meet the primitives' at the edges: `AtLeast(min, ...)` needs `min >= 1`, so with `min = 0` the lower bound is vacuous and the result is `AtMost(max, ...)`; likewise `AtMost(max, ...)` needs `max <= n - 1`, so with `max = n` the result is `AtLeast(min, ...)`. The oracle check above takes the primitives at their value for every bound. `ExpandToPrimitives` produces the `AND` above.
+The valid ranges meet the primitives' at the edges: `AtLeast(min, ...)` needs `min >= 1`, so with `min = 0` the lower bound is vacuous and the result is `AtMost(max, ...)`; likewise `AtMost(max, ...)` needs `max <= n - 1`, so with `max = n` the result is `AtLeast(min, ...)`. `ExpandToPrimitives` produces the `AND` above.
 
-## Equivalent Forms
+## Equivalent forms
 
 With the upper bound written as a negated lower bound the definition has one operator fewer:
 
@@ -179,39 +179,38 @@ When `min` equals `max` the range is a single count and `BETWEEN(k, k, ...)` is 
 | `BETWEEN(1, 2, a, b, c)` | `False`, `Unknown`, `False` | `Unknown` | The count is zero or one: the unknown operand decides whether the minimum is met. |
 | `BETWEEN(1, 2, a, b, c)` | `True`, `True`, `Unknown` | `Unknown` | The count is two or three: the unknown operand decides whether the maximum is exceeded. |
 
-## Edge Cases
+## Edge cases
 
 Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`TRE0008`). For two operands and `BETWEEN(1, 3, a, b)`: "BETWEEN's bounds min=1, max=3 are invalid: it must satisfy 0 <= min <= max <= 2 for 2 operand(s)." |
-| The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`TRE0008`). For `BETWEEN(0, 2, a, b)`: "BETWEEN's bounds min=0, max=2 are invalid: the full range 0..2 is always True (a structural constant)." |
-| Fewer than two operands | `MalformedTree` (`TRE0014`): "BETWEEN requires at least 2 operands but found 1." (or "found 0"). |
-| A bound missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer minimum as BETWEEN's first argument." or "Expected an integer maximum as BETWEEN's second argument." |
-| `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`TRE0014`): "'between' requires integer 'min' and 'max'." |
+| `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`TRE0008`) |
+| The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`TRE0008`) |
+| Fewer than two operands | `MalformedTree` (`TRE0014`). |
+| A bound missing or not an integer in the DSL | `SyntaxError` (`TRE0001`). |
+| `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
-- **The bound rules.** `min` must satisfy `0 <= min <= max <= n`. The whole range `0..n` is rejected because every count lies in it, so the node would be the constant `True`, the same structural-constant reason as for the threshold family.
-- **An empty range is rejected, not evaluated.** `min > max` describes no count at all, so the right result would be `False` for every completion. The composition `AND(AtLeast(min), AtMost(max))` does not give that: with `min > max` and `Unknown` operands it can return `Unknown` where the correct answer is `False` (for `min = 2`, `max = 1` and two `Unknown` operands it gives `Unknown`). The bounds are therefore enforced, and the rewrites build a `BETWEEN` only when `min <= max`.
-- **`min = max` is allowed.** It is the single count `Exactly(min, ...)`.
-- **One vacuous bound is allowed.** `max = n` with `min >= 1`, or `min = 0` with `max < n`, makes `BETWEEN` the same function as `AtLeast(min, ...)` or `AtMost(max, ...)`; only the whole range is rejected.
-- **Empty and single-operand conventions.** `RuleBuilder.Between` has no folding: an empty or one-operand list is rejected like the `params` form.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- The bound rules. `min` must satisfy `0 <= min <= max <= n`. The whole range `0..n` is rejected because every count lies in it, so the node would be the constant `True`, the same structural-constant reason as for the threshold family.
+- An empty range is rejected, not evaluated. `min > max` describes no count at all, so the right result would be `False` for every completion. The composition `AND(AtLeast(min), AtMost(max))` does not give that: with `min > max` and `Unknown` operands it can return `Unknown` where the correct answer is `False` (for `min = 2`, `max = 1` and two `Unknown` operands it gives `Unknown`). The bounds are therefore enforced, and the rewrites build a `BETWEEN` only when `min <= max`.
+- `min = max` is allowed. It is the single count `Exactly(min, ...)`.
+- One vacuous bound is allowed. `max = n` with `min >= 1`, or `min = 0` with `max < n`, makes `BETWEEN` the same function as `AtLeast(min, ...)` or `AtMost(max, ...)`; only the whole range is rejected.
+- Empty and single-operand conventions. `RuleBuilder.Between` has no folding: an empty or one-operand list is rejected like the `params` form.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `BETWEEN(1, 2, isOn, isOff, boom)` | `True` | 1 |
 | `BETWEEN(1, 1, isOn, isOn, boom)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `BETWEEN(min, max)` in the trace and the trace tree, for example `BETWEEN(1, 2)`; the rule outline label is the same. Operand order is kept.
-- Evaluation takes the two threshold results and combines them with `AND`, so it is linear in the operand count.
-- `ExpandToPrimitives` rewrites `BETWEEN(1, 2, a, b, c)` to `AtLeast(1, a, b, c) AND AtMost(2, a, b, c)`. `Simplify` and `Canonicalize` keep `BETWEEN` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `BETWEEN(1, 2, a, b, c)`, and every tree-printer style keeps the word.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `BETWEEN(min, max)`, for example `BETWEEN(1, 2)`. Operand order is kept.
+- `ExpandToPrimitives` rewrites `BETWEEN(1, 2, a, b, c)` to `AtLeast(1, a, b, c) AND AtMost(2, a, b, c)`. `Simplify` and `Canonicalize` keep `BETWEEN`. The canonical printer writes `BETWEEN(1, 2, a, b, c)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "between", "operands": [...], "min": 1, "max": 2}`.
 
-## Related Operations
+## Related operations
 
 - [AtLeast](atleast.md) and [AtMost](atmost.md) are its two bounds; [Exactly](exactly.md) is the case `min = max`.
 - [ANY](any.md), [ALL](all.md) and [NONE](none.md) are the other named forms of the family.

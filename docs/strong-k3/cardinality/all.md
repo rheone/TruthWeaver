@@ -17,20 +17,20 @@
 
 ## Kind
 
-Derived. `ALL(x1, ..., xn)` is defined as `AtLeast(n, x1, ..., xn)` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `ALL(x1, ..., xn)` is defined as `AtLeast(n, x1, ..., xn)` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Two or more operands, and no parameter: the threshold `n` is the operand count. Fewer is the compile error `MalformedTree` (`TRE0014`).
+Two or more operands, and no parameter: the threshold `n` is the operand count. Fewer is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
-> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `ALL` rejects fewer than two operands: a one-operand `ALL` would only be that operand. `OperatorDefinitions` and the compiler agree on this minimum ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a).
+> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `ALL` rejects fewer than two operands: a one-operand `ALL` would only be that operand. `OperatorDefinitions` and the compiler agree on this minimum.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -47,13 +47,13 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: all` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.All(params RuleBuilder[])` for two or more operands; `RuleBuilder.All(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`ALL` has a real call form with no parameter: every argument is an operand. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators (`ALL(a, b) AND c` and `NOT ALL(a, b)` compile as written). `ALL` is a reserved word, so a predicate cannot be named `ALL`. There is no symbol spelling, and every printer keeps the word.
+`ALL` has a real call form with no parameter: every argument is an operand. A call has no precedence (see [syntax](../specification/syntax.md#forms)). `ALL` is a reserved word, so a predicate cannot be named `ALL`. There is no symbol spelling, and every printer keeps the word.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`all(a, b)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 `ALL` is `AtLeast` with `k = n`: with $d$ operands definitely `True` and $p$ possibly `True`, it answers `True` when every count in $[d, p]$ equals $n$, which holds exactly when $d = n$, and `False` when none does, which holds exactly when $p < n$ ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). The second condition is the one that is easy to misstate: `ALL` is `False` only when $T + U < n$, that is, when at least one operand is `False`. Having fewer than $n$ definitely true operands is not enough.
 
@@ -63,7 +63,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{ALL}(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } d = n \\ \mathsf{F} & \text{if } p < n \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -123,7 +123,7 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives. The threshold is the operand count, so the form is written out for two, three and four operands:
 
@@ -142,7 +142,7 @@ ATLEAST(3, a, b, c)
 ATLEAST(4, a, b, c, d)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 ### ALL and AND
 
@@ -181,32 +181,30 @@ NOT(ANY(NOT(a), NOT(b), NOT(c)))
 
 The last row is the case a reading of `ALL` as "`False` when fewer than `n` operands are `True`" gets wrong: with fewer than `n` definitely true operands but no `False` operand the result is `Unknown`, so `ALL(True, Unknown)` and `ALL(Unknown, Unknown)` are both `Unknown`.
 
-
-## Edge Cases
+## Edge cases
 
 | Input | Diagnostic |
 | --- | --- |
-| One operand, `ALL(a)` | `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found 1." |
+| One operand, `ALL(a)` | `MalformedTree` (`TRE0014`) |
 | JSON or YAML node with fewer than two operands | The same `MalformedTree` (`TRE0014`) diagnostic. |
 
-- **`False` only when `T + U < n`.** At least one `False` operand is required for a definite `False`; see the [last example row](#examples).
-- **Empty and single-operand conventions.** Only `RuleBuilder.All(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. `RuleBuilder.All(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- `False` only when `T + U < n`. At least one `False` operand is required for a definite `False`; see the [last example row](#examples).
+- Empty and single-operand conventions. Only `RuleBuilder.All(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. `RuleBuilder.All(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `ALL(isOn, boom)` | `Unknown` | 1 |
 | `ALL(isOff, boom)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `ALL` in the trace and the trace tree; the rule outline label is `ALL`. Operand order is kept.
-- Evaluation reuses the threshold evaluator (`k` equal to the operand count), so it is linear in the operand count.
-- `ExpandToPrimitives` rewrites `ALL(a, b, c)` to `AtLeast(3, a, b, c)`. `Simplify` and `Canonicalize` collapse it to `AND` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `ALL(a, b)`, and every tree-printer style keeps the word.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `ALL`. Operand order is kept.
+- `ExpandToPrimitives` rewrites `ALL(a, b, c)` to `AtLeast(3, a, b, c)`. `Simplify` and `Canonicalize` collapse `ALL` to `AND`. The canonical printer writes `ALL(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "all", "operands": [...]}`.
 
-## Related Operations
+## Related operations
 
 - [AND](../gates/and.md) is the same function as a primitive gate, and [AtLeast](atleast.md) is the threshold form with `k = n`.
 - [ANY](any.md) is its dual and [NONE](none.md) is `ALL` of the negations.

@@ -21,13 +21,13 @@ Primitive. `NOT` has no definition in other Operations. It is one of the three c
 
 ## Arity
 
-Exactly one operand. In JSON and YAML any other count is a compile error, `MalformedTree` (`TRE0014`): "'not' requires exactly one operand." In the DSL the operand is whatever follows the prefix, so the count cannot be wrong.
+Exactly one operand. In JSON and YAML any other count is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). In the DSL the operand is whatever follows the prefix, so the count cannot be wrong.
 
-## Input Domain
+## Input domain
 
 The operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -56,7 +56,7 @@ The operand is a value in `{T, F, U}`.
 
 Symbols compile to the same node as the word, so notation never changes meaning. The word is case-insensitive (`not`, `Not`, `NOT`). No other spelling is accepted: `~` is a syntax error.
 
-## Formal Semantics
+## Formal semantics
 
 Under the truth order $\mathsf{F} < \mathsf{U} < \mathsf{T}$, negation reverses the order and fixes its middle element.
 
@@ -66,7 +66,7 @@ $$\neg a = \begin{cases} \mathsf{F} & \text{if } a = \mathsf{T} \\ \mathsf{U} & 
 
 The plain-text form is `NOT(a)`, following the [notation](../specification/notation.md#code-conventions) conventions.
 
-## Truth Table
+## Truth table
 
 <!-- k3:truth NOT -->
 | a | NOT(a) |
@@ -77,7 +77,7 @@ The plain-text form is `NOT(a)`, following the [notation](../specification/notat
 
 `NOT` is its own inverse on every value, so $\neg\neg a = a$ holds for `Unknown` too.
 
-## Equivalent Forms
+## Equivalent forms
 
 `NOT` can be written with `NAND` or with `NOR` by repeating the operand. This is a fact about those Operations, not a definition of `NOT`:
 
@@ -111,19 +111,18 @@ The classical laws that pair a value with its negation fail, because `NOT(U)` is
 
 An unknown ban status does not grant access: `NOT isBanned` stays `Unknown`, and `Decision.IsSatisfied` is `True` only for a `True` result.
 
-## Edge Cases
+## Edge cases
 
-- **Unknown propagates.** `NOT` never turns `Unknown` into a definite value. That is what makes it safe in a permission rule: an unanswerable predicate cannot become a grant.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault`. `NOT` of it is `Unknown`, with the fault on the decision. Coercing a fault to `False` before `NOT` would produce `True`, the failure [ADR-0001](../../adr/0001-kleene-failure-model.md) rules out.
-- **Nesting.** Each `NOT` is a separate node: `NOT NOT NOT a` is a chain of three, evaluated outward from `a`.
-- **No short-circuit.** The single operand is always evaluated.
+- Unknown propagates. `NOT` never turns `Unknown` into a definite value. That is what makes it safe in a permission rule: an unanswerable predicate cannot become a grant.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). `NOT` of it is `Unknown`, with the fault on the decision. The engine does not coerce a fault to `False` before `NOT`, because that would produce `True`.
+- Nesting. Each `NOT` is a separate node: `NOT NOT NOT a` is a chain of three, evaluated outward from `a`.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports a `NOT` node as `NOT` in the trace and the trace tree.
-- The analyzer treats `NOT` as a Strong Kleene connective, so `a AND NOT a` and `a OR NOT a` are not reported as a contradiction or a tautology ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
+- The operand always runs.
+- The analyzer does not report `a AND NOT a` as a contradiction or `a OR NOT a` as a tautology.
 
-## Related Operations
+## Related operations
 
 - [AND](and.md) and [OR](or.md) complete the primitive connectives; De Morgan's laws relate the three.
 - The [derived logical operations](../derived/README.md) `NAND`, `NOR` and `IMPLIES` are defined using `NOT`.

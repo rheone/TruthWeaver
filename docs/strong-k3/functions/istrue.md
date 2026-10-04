@@ -22,17 +22,17 @@ The inspections are Derived: each expands to [COALESCE](coalesce.md). They are e
 
 ## Kind
 
-Derived. `IsTrue` is defined from `COALESCE` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `IsTrue` is defined from `COALESCE` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Exactly one operand. `IsTrue(a, b)` and `IsTrue()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsTrue requires exactly 1 operand but found N." `RuleBuilder.IsTrue` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsTrue(a, b)` and `IsTrue()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.IsTrue` takes one argument, so a wrong count cannot be written there.
 
-## Input Domain
+## Input domain
 
 The operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F}`. The result is never `Unknown`, whatever the operand is, and also when the operand is a faulting term.
 
@@ -55,7 +55,7 @@ The operand is a value in `{T, F, U}`.
 
 None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is case-insensitive on read. There is no symbol spelling, and every printer keeps the word.
 
-## Formal Semantics
+## Formal semantics
 
 `IsTrue` is the characteristic function of the value `True`: it asks whether the operand is definitely true. It maps `Unknown` to `False`, which no Strong Kleene connective can do, because an operand that might still become `True` would have to keep the result open.
 
@@ -63,7 +63,7 @@ None. The word is case-insensitive in the DSL, and the JSON and YAML `op` is cas
 
 $$\operatorname{IsTrue}(a) = \begin{cases} \mathsf{T} & \text{if } a = \mathsf{T} \\ \mathsf{F} & \text{otherwise} \end{cases}$$
 
-## Truth Table
+## Truth table
 
 Only a `True` operand gives `T`; both `U` and `F` give `F`.
 
@@ -74,7 +74,7 @@ Only a `True` operand gives `T`; both `U` and `F` give `F`.
 | U | F |
 | F | F |
 
-## Canonical Form
+## Canonical form
 
 `IsTrue` is defined from `COALESCE`, the one operation that can observe `Unknown`:
 
@@ -83,7 +83,7 @@ Only a `True` operand gives `T`; both `U` and `F` give `F`.
 COALESCE(a, False)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 `IsTrue` is the fail-closed reading of a result: the same replacement of `Unknown` by `False` that `Decision.IsSatisfied` and `Decision.Project(false)` apply at the end of an evaluation. Inside a rule it is idempotent, and it is `IsFalse` of the negation:
 
@@ -107,20 +107,19 @@ IsFalse(NOT(a))
 | `IsTrue(canEdit)` | `False` | `False` | The operand is false. |
 | `IsTrue(canEdit)` | `Unknown` | `False` | An unresolved answer is not a definite yes. |
 
-## Edge Cases
+## Edge cases
 
-- **Never `Unknown`.** `IsTrue(Unknown)` is `False`, not `Unknown`. A rule that must not grant access on an unresolved answer can wrap it: `IsTrue(canEdit)`.
-- **A faulting operand.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)); `IsTrue` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsTrue(boom)` is `False` with 1 fault recorded.
-- **No short-circuit question.** There is one operand, so it is always evaluated.
-- **Relation to the result transformations.** As a value, `IsTrue(x)` equals `COALESCE(x, False)` and `Decision.Project(false)` of the result of `x`. They differ in where they apply: inside a rule or on the final decision.
+- Never `Unknown`. `IsTrue(Unknown)` is `False`, not `Unknown`. A rule that must not grant access on an unresolved answer can wrap it: `IsTrue(canEdit)`.
+- A faulting operand. A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault`; `IsTrue` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsTrue(boom)` is `False` with 1 fault recorded.
+- Relation to the result transformations. As a value, `IsTrue(x)` equals `COALESCE(x, False)` and `Decision.Project(false)` of the result of `x`. They differ in where they apply: inside a rule or on the final decision.
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports a `IsTrue` node as `IsTrue` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
+- The operand always runs.
 - `ExpandToPrimitives` expands `IsTrue` to `COALESCE(a, False)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `Simplify` rewrites `IsTrue(NOT x)` to `IsFalse(x)` and `IsTrue(IsTrue(x))` to `IsTrue(x)`. `CompressToDerived` does not fold `COALESCE(x, False)` back into `IsTrue(x)`, so an expanded rule keeps its `COALESCE` unless `Simplify` runs.
 
-## Related Operations
+## Related operations
 
 - [COALESCE](coalesce.md) defines it.
 - [IsFalse](isfalse.md), [IsUnknown](isunknown.md) and [IsKnown](isknown.md) are the other inspections; exactly one of `IsTrue`, `IsFalse` and `IsUnknown` is `True` for any operand.

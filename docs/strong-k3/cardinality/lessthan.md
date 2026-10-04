@@ -17,17 +17,17 @@
 
 ## Kind
 
-Derived. `LessThan(k, ...)` is defined as `AtMost(k - 1, ...)` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `LessThan(k, ...)` is defined as `AtMost(k - 1, ...)` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
 One or more operands after the integer `k`, with 1 <= k <= n for n operands. These are exactly the values for which `AtMost(k - 1, ...)` is valid, so the definition never leaves the valid range.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 1 <= k <= n.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -44,13 +44,13 @@ Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 1 
 | YAML | `op: lessThan` with `k:` and an `operands:` list |
 | `RuleBuilder` | `RuleBuilder.LessThan(int k, params RuleBuilder[])`; there is no `IEnumerable` overload |
 
-`LessThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so `k` comes first, as in the table above. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators, and the word is case-insensitive. There is no symbol spelling.
+`LessThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling. `RuleBuilder` has only the `params` overload for `LessThan`; there is no `IEnumerable` overload.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`lessthan(1, a)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 Let $c$ be the number of `True` operands, known only to lie in $[d, p]$. `LessThan` answers `True` when every count in the interval satisfies $c < k$, which holds exactly when $p < k$, and `False` when none does, which holds exactly when $d \ge k$. Anything else is `Unknown`. Since counts are integers, $c < k$ is $c \le k - 1$, which is why the operation equals [AtMost](atmost.md) with the threshold lowered by one.
 
@@ -60,7 +60,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{LessThan}_k(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } p < k \\ \mathsf{F} & \text{if } d \ge k \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -140,7 +140,7 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives, for every operand count and every valid `k`:
 
@@ -151,7 +151,7 @@ ATMOST(k - 1, ...)
 
 The compiler's valid ranges map exactly: `1 <= k <= n` for `LessThan` is `0 <= k - 1 <= n - 1` for `AtMost`.
 
-## Equivalent Forms
+## Equivalent forms
 
 `LessThan(k, ...)` is the negation of `AtLeast(k, ...)`, over the same operands:
 
@@ -182,38 +182,35 @@ NOT(a)
 | `LessThan(2, a, b, c)` | `False`, `Unknown`, `False` | `True` | At most one operand could be `True`. |
 | `LessThan(1, a, b)` | `Unknown`, `False` | `Unknown` | The same value as `NOT (a OR b)`. |
 
-## Edge Cases
+## Edge cases
 
 Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`). For two operands and `k` = 3: "LessThan's threshold k=3 must satisfy 1 <= k <= 2 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
-| No operands | `MalformedTree` (`TRE0014`): "LessThan requires at least one operand." |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer threshold as LessThan's first argument." |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`): "'lessThan' requires a numeric 'k'." |
+| `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
+| No operands | `MalformedTree` (`TRE0014`) |
+| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
+| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
-The out-of-range values are rejected because they make the result a constant: `k` of 0 or less is always `False`; `k` above n is always `True`.
-
-- **The valid `k` range.** `k` must satisfy 1 <= k <= n. `LessThan(0, ...)` would always be `False` and `k > n` always `True`, so the compiler rejects both instead of folding them.
-- **One operand.** The compiler accepts `LessThan(1, a)`, which is `NOT a`. `LessThan(2, a)` is rejected.
-- **`LessThan(1)` is `NONE`.** Fewer than one `True` operand is none.
-- **Off-by-one against `AtMost`.** `LessThan(k)` allows one fewer true operand than `AtMost(k)`, so `LessThan(2, a, b, c)` is `AtMost(1, a, b, c)`.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- The valid `k` range. `k` must satisfy 1 <= k <= n. `LessThan(0, ...)` would always be `False` and `k > n` always `True`, so the compiler rejects both instead of folding them.
+- One operand. The compiler accepts `LessThan(1, a)`, which is `NOT a`. `LessThan(2, a)` is rejected.
+- `LessThan(1)` is `NONE`. Fewer than one `True` operand is none.
+- Off-by-one against `AtMost`. `LessThan(k)` allows one fewer true operand than `AtMost(k)`, so `LessThan(2, a, b, c)` is `AtMost(1, a, b, c)`.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `LessThan(2, isOn, isOff, boom)` | `Unknown` | 1 |
 | `LessThan(1, isOn, boom, isOff)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `LessThan(k)` in the trace and the trace tree, for example `LessThan(2)`.
-- `ExpandToPrimitives` rewrites `LessThan(k, ...)` to `AtMost(k - 1, ...)`, and the simplifier collapses it to `AtMost(k - 1, ...)` as well ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
-- `RuleBuilder` has only the `params` overload for `LessThan`; there is no `IEnumerable` overload.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `LessThan(k)`, for example `LessThan(2)`.
+- `ExpandToPrimitives` rewrites `LessThan(k, ...)` to `AtMost(k - 1, ...)`, and the simplifier does the same.
 
-## Related Operations
+## Related operations
 
 - [AtMost](atmost.md) is the non-strict form; `LessThan(k, ...)` is `AtMost(k - 1, ...)`.
 - [GreaterThan](greaterthan.md) is the strict lower bound, and [AtLeast](atleast.md) is its non-strict form.

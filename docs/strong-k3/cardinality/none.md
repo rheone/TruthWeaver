@@ -17,20 +17,20 @@
 
 ## Kind
 
-Derived. `NONE(...)` is defined as `AtMost(0, ...)` (see [Canonical Form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3).
+Derived. `NONE(...)` is defined as `AtMost(0, ...)` (see [Canonical form](#canonical-form)). It stays a first-class node in the engine and is rewritten to its definition only when a rewrite such as `ExpandToPrimitives` asks for it.
 
 ## Arity
 
-Two or more operands, and no parameter. Fewer is the compile error `MalformedTree` (`TRE0014`).
+Two or more operands, and no parameter. Fewer is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
-> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `NONE` rejects fewer than two operands: a one-operand `NONE` would only be the negation of that operand. `OperatorDefinitions` and the compiler agree on this minimum ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a).
+> Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `NONE` rejects fewer than two operands: a one-operand `NONE` would only be the negation of that operand. `OperatorDefinitions` and the compiler agree on this minimum.
 
-## Input Domain
+## Input domain
 
 Each operand is a value in `{T, F, U}`.
 
-## Output Domain
+## Output domain
 
 `{T, F, U}`.
 
@@ -47,13 +47,13 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: none` with an `operands:` list of two or more items |
 | `RuleBuilder` | `RuleBuilder.None(params RuleBuilder[])` for two or more operands; `RuleBuilder.None(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`NONE` has a real call form with no parameter: every argument is an operand. A call has no precedence, so it needs no parentheses when mixed with `AND`, `OR` or the infix operators (`NONE(a, b) AND c` and `NOT NONE(a, b)` compile as written). `NONE` is a reserved word, so a predicate cannot be named `NONE`. There is no symbol spelling, and every printer keeps the word.
+`NONE` has a real call form with no parameter: every argument is an operand. A call has no precedence (see [syntax](../specification/syntax.md#forms)). `NONE` is a reserved word, so a predicate cannot be named `NONE`. There is no symbol spelling, and every printer keeps the word.
 
 ## Aliases
 
 None. The word is case-insensitive in the DSL (`none(a, b)`) and the JSON and YAML `op` is case-insensitive on read.
 
-## Formal Semantics
+## Formal semantics
 
 `NONE` is `AtMost` with `k = 0`: with $d$ operands definitely `True` and $p$ possibly `True`, it answers `True` when every count in $[d, p]$ is zero, which holds exactly when $p = 0$, and `False` when none is, which holds exactly when $d \ge 1$. Anything else is `Unknown` ([semantics](../specification/semantics.md#cardinality-uses-an-interval)).
 
@@ -63,7 +63,7 @@ With $d$ the number of operands equal to $\mathsf{T}$ and $p$ the number equal t
 
 $$\operatorname{NONE}(x_1, \dots, x_n) = \begin{cases} \mathsf{T} & \text{if } p = 0 \\ \mathsf{F} & \text{if } d \ge 1 \\ \mathsf{U} & \text{otherwise} \end{cases}$$
 
-## Evaluation Table
+## Evaluation table
 
 Cardinality operations are parameterised and variadic, so a truth table is impractical. Each row gives the number of operands that are definitely `True` (d), the number that are `True` or `Unknown` (p) and the result; the operands that make up the rest are `False`. The result depends on the operands only through this pair ([semantics](../specification/semantics.md#cardinality-uses-an-interval)). Every pair with 0 <= d <= p <= n appears once.
 
@@ -123,7 +123,7 @@ The same table for four operands: 15 rows, one for each pair of counts.
 
 </details>
 
-## Canonical Form
+## Canonical form
 
 The definition in primitives, for two or more operands:
 
@@ -132,7 +132,7 @@ The definition in primitives, for two or more operands:
 ATMOST(0, ...)
 ```
 
-## Equivalent Forms
+## Equivalent forms
 
 ### NONE and NOT OR
 
@@ -188,33 +188,31 @@ LESSTHAN(1, ...)
 | `NONE(a, b, c)` | `True`, `Unknown`, `False` | `False` | One operand is already `True`; the unknown operand cannot lower the count. |
 | `NONE(a, b, c)` | `Unknown`, `Unknown`, `Unknown` | `Unknown` | No operand is known. |
 
-
-## Edge Cases
+## Edge cases
 
 | Input | Diagnostic |
 | --- | --- |
-| One operand, `NONE(a)` | `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found 1." |
+| One operand, `NONE(a)` | `MalformedTree` (`TRE0014`) |
 | JSON or YAML node with fewer than two operands | The same `MalformedTree` (`TRE0014`) diagnostic. |
 
-- **Two or more operands in the rule languages.** A single operand is not "none of one" in the DSL, JSON or YAML; write `NOT` of the operand.
-- **`Unknown` is not absorbed.** Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.
-- **Empty and single-operand conventions.** Only `RuleBuilder.None(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand becomes its negation. `RuleBuilder.None(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
-- **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault, even when the result is already settled.
-- **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
+- Two or more operands in the rule languages. A single operand is not "none of one" in the DSL, JSON or YAML; write `NOT` of the operand.
+- `Unknown` is not absorbed. Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.
+- Empty and single-operand conventions. Only `RuleBuilder.None(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand becomes its negation. `RuleBuilder.None(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
+- Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |
 | --- | --- | --- |
 | `NONE(isOff, boom)` | `Unknown` | 1 |
 | `NONE(isOn, boom)` | `False` | 1 |
 
-## Implementation Notes
+## Evaluation behavior
 
-- The evaluator reports the node as `NONE` in the trace and the trace tree; the rule outline label is `NONE`. Operand order is kept.
-- Evaluation reuses the threshold evaluator (`AtMost(0, ...)`), so it is linear in the operand count.
-- `ExpandToPrimitives` rewrites `NONE(...)` to `AtMost(0, ...)`. `Simplify` and `Canonicalize` keep `NONE` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `NONE(a, b)`, and every tree-printer style keeps the word.
+- Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
+- The trace labels the node `NONE`. Operand order is kept.
+- `ExpandToPrimitives` rewrites `NONE(...)` to `AtMost(0, ...)`. `Simplify` and `Canonicalize` keep `NONE`. The canonical printer writes `NONE(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "none", "operands": [...]}`.
 
-## Related Operations
+## Related operations
 
 - [ANY](any.md) is its negation and [ALL](all.md) is `NONE` of the negated operands.
 - [AtMost](atmost.md) is the threshold form with `k = 0`, and `NOT` of [OR](../gates/or.md) gives the same value.
