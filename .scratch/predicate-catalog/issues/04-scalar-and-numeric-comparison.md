@@ -4,7 +4,7 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run is shown before the implementation
 - [ ] Every listed predicate is registerable for each kind where it is defined, and the kinds where it is not defined are documented
@@ -17,3 +17,8 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: [gap list, Primitive types and Numeric sections](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+- 2026-10-04: Done in one run (no split by kind). `NumericPredicates` covers `Int64` and `Decimal` (overloads by selector type) and `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` (`Equal`/`NotEqual`, `In`/`NotIn`, null and default tests). Ordering and `Between`/`Outside` are defined for `Int64` and `Decimal` only; `Boolean`/`Guid` ordering is undefined and `DateTimeOffset` ordering belongs to ticket 06. The `NotX` twin of `LessThan` is `GreaterThanOrEqual` (and so on), so the ordering family adds no extra members. Promotion rule: no cross-kind promotion; the selector kind fixes the argument kind, widen `long` to `decimal` in the selector. `ScalarPredicates` is a deviation from the one-class-per-kind rule, chosen so this ticket does not touch ticket 06's `DateTimePredicates`.
+- 2026-10-04: Not done: the compile-time diagnostic for reversed literal bounds. No schema-level argument validation hook exists in `PredicateSchema` or the compiler, so adding it is an engine design decision. Reversed bounds currently throw `ArgumentException` at evaluation time (Unknown plus a `Fault`), which is the "argument error otherwise" half of the rule.

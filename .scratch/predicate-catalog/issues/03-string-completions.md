@@ -4,7 +4,7 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run is shown before the implementation
 - [ ] Each of the seven members is registerable and returns the documented value for a null, empty, whitespace and ordinary string
@@ -14,3 +14,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: [gap list, String section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+- 2026-10-04: Done. `StringPredicates` gains `IsEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `NotContains` and `NotEqual`; `RegexPredicates` gains `NotMatches`. Also added `IsNotEmpty` as the twin of `IsEmpty` (catalog rule: every positive predicate has a `NotX` twin). The comparison-style members (`IsEmpty`, `IsNotEmpty`, `NotEqual`, `NotContains`, `NotMatches`) take `NullBehavior` and default to `Unknown`; `NullBehavior.False` answers a definite `False` for null, never `True`. The four null tests are definite and have no option. Documented in `docs/predicates.md`; gap list updated. Tests in `StringCompletionPredicatesTests`.

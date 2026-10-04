@@ -51,6 +51,11 @@ copyright line reads 2026.
   `RuleDiffResult.PreservesMeaning`.
 - Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`).
 - `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `TRE0016` for oversized expansions.
+- Predicate catalog additions: the string members `IsEmpty`, `IsNotEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`,
+  `IsNotNullOrWhiteSpace`, `NotEqual`, `NotContains` and `RegexPredicates.NotMatches`; `NumericPredicates` (`Int64` and
+  `Decimal` equality, ordering, `Between`/`Outside`, `In`/`NotIn`, null and default tests); and `ScalarPredicates`
+  (`Boolean`, `Guid` and `DateTimeOffset` equality, `In`/`NotIn`, null and default tests). Every positive member has a
+  `NotX` twin that is the Strong Kleene complement.
 - `NullBehavior` option on the built-in string, regex and collection predicates; `IEnumerable<RuleBuilder>` overloads
   for the counted operators.
 - Benchmarks for the new operators, rewrites and diagnostics formatting.

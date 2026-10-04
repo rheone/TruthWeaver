@@ -17,7 +17,8 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:
 
-- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null and empty checks, set equality and regex matching.
+- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching.
+- `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
 
 Every method on `StringPredicates` except one is ordinal-only and has a fixed behavior. A case-insensitive variant is a separate predicate (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception is `StringPredicates.EqualsConfigurable`. It is one predicate whose `ignoreCase` and `trim` arguments the rule sets. It is case-insensitive by default. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `EqualsConfigurable` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
@@ -30,12 +31,49 @@ A null selected value is a definite `False` by default, with no fault. These mem
 - `RegexPredicates.Matches`
 - `CollectionPredicates.SetEquals`
 
-`NullBehavior.Unknown` makes a null selected value answer `Unknown` instead, still without a fault. With this setting, `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust and does not become `True`. `Decision.IsSatisfied` stays fail-closed. The default is `NullBehavior.False`. `StringPredicates.IsNullOrEmpty` has no option. It is a null test and always returns a definite answer.
+The new members and their twins are listed below. Each `NotX` twin is the Strong Kleene complement of its positive member: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. These members are new, so their `nullBehavior` defaults to `NullBehavior.Unknown` and a null selected value never becomes `True`:
+
+| Member | Class | Meaning |
+| --- | --- | --- |
+| `NotEqual` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
+| `NotContains` | `StringPredicates` | Twin of `Contains` |
+| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern still faults to `Unknown` with a `Fault`. |
+| `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
+| `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
+
+`NullBehavior.False` on a `NotX` twin makes a null selected value answer a definite `False`, not `True`. The twin and its positive member then no longer complement each other for null. Register both with `NullBehavior.Unknown` to keep them exact complements.
+
+`NullBehavior.Unknown` makes a null selected value answer `Unknown` instead, still without a fault. With this setting, `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust and does not become `True`. `Decision.IsSatisfied` stays fail-closed. The default is `NullBehavior.False` for the members listed above and `NullBehavior.Unknown` for the new members in the table. `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` (all in `StringPredicates`) have no option. They are null tests and always return a definite answer: a null selected value is `True` for `IsNullOrEmpty` and `IsNullOrWhiteSpace`, and `False` for their complements. White space follows `char.IsWhiteSpace`.
 
 ```csharp
 StringPredicates.Equals<PizzaOrder>(
     "hasCrust", order => order.Crust, "Has Crust", argumentName: "crust",
     nullBehavior: NullBehavior.Unknown);
+```
+
+### Scalar and numeric predicates
+
+`NumericPredicates` and `ScalarPredicates` take a nullable selector (`Func<TContext, long?>`, `Func<TContext, decimal?>`, `Func<TContext, bool?>`, `Func<TContext, Guid?>` or `Func<TContext, DateTimeOffset?>`). The selector type picks the overload and the argument kind. Each member has a `NotX` twin that is the Strong Kleene complement.
+
+| Member | Twin | `NumericPredicates` (`Int64`, `Decimal`) | `ScalarPredicates` (`Boolean`, `Guid`, `DateTimeOffset`) |
+| --- | --- | --- | --- |
+| `Equal` | `NotEqual` | yes | yes |
+| `LessThan` | `GreaterThanOrEqual` | yes | not defined |
+| `GreaterThan` | `LessThanOrEqual` | yes | not defined |
+| `Between` | `Outside` | yes | not defined |
+| `In` | `NotIn` | yes | yes |
+| `IsNull` | `IsNotNull` | yes | yes |
+| `IsDefault` | `IsNotDefault` | yes | yes |
+
+- Ordering and ranges have no meaning for `Boolean` and `Guid`, so they are not defined. For `DateTimeOffset`, ordering and ranges belong to the date-time predicates.
+- `Between` is inclusive on both bounds and `Outside` is its exact complement. Reversed bounds (`lower` greater than `upper`) are an authoring error. The predicate throws an `ArgumentException` at evaluation time, even for a null selection. The evaluator records a `Fault` and answers `Unknown`. The bounds are never swapped.
+- `In` and `NotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
+- No value is promoted between kinds. A `long?` selector takes `Int64` literals. A `decimal?` selector takes `Decimal` literals, and a whole number such as `5` is a valid `Decimal` literal. To compare an integer value with a decimal literal, widen it in the selector: `c => (decimal?)c.Count`. Decimal values compare by value, so `1.0` equals `1.00`.
+- `DateTimeOffset` values compare by instant, so the same instant in two offsets is equal.
+- A null selected value answers `Unknown` by default. Pass `NullBehavior.False` to answer `False`. `IsNull` and `IsNotNull` are definite and have no option. `IsDefault` tests `default(T)`: `0`, `false`, `Guid.Empty` or the default `DateTimeOffset`. A null selection is a missing value, not a default.
+
+```csharp
+NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Quantity In Range");
 ```
 
 ## 0 arguments, stateless lambda

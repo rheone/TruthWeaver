@@ -64,13 +64,15 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
 
 | Inventory section | Items | Present | Present under another name | Missing |
 | --- | ---: | ---: | ---: | ---: |
-| Primitive types | 10 | 0 | 0 | 10 |
-| Numeric | 4 | 0 | 0 | 4 |
-| String | 13 | 5 | 1 | 7 |
+| Primitive types | 10 | 10 | 0 | 0 |
+| Numeric | 4 | 4 | 0 | 0 |
+| String | 13 | 12 | 1 | 0 |
 | Collection | 10 | 0 | 0 | 10 |
 | DateTimeOffset | 8 | 0 | 0 | 8 |
 | Type tests (`Predicate`) | 10 | 0 | 0 | 10 |
-| **Total** | **55** | **5** | **1** | **49** |
+| **Total** | **55** | **26** | **1** | **28** |
+
+Ordering and range members are defined for `Int64` and `Decimal` only. For `Boolean` and `Guid` they are not defined, and for `DateTimeOffset` they are the date-time comparison predicates. `IsEmpty` also ships an `IsNotEmpty` twin.
 
 Present members that are **not** in the inventory: `StringPredicates.EqualsIgnoreCase` (covered by the
 inventory's `ignoreCase` option) and `CollectionPredicates.SetEquals` (no inventory counterpart; the
@@ -83,16 +85,16 @@ Inventory: `Equal`, `NotEqual`, `LessThan`, `GreaterThan`, `LessThanOrEqual`, `G
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `Equal` | missing | none for `Int64`/`Decimal`/`Boolean`/`DateTimeOffset`/`Guid` (string equality is under [String](#string)) | Needs one thin public overload per scalar kind over a shared generic helper. `Decimal` vs `Int64` comparison semantics (cross-kind promotion) must be decided. |
-| `NotEqual` | missing | none | As `Equal`. Null input: see open question 1. |
-| `LessThan` | missing | none | Ordering uses `CompareTo` on the value type, no culture dimension. `Boolean` and `Guid` ordering is arguably meaningless; decide whether the ordering family is limited to `Int64`, `Decimal`, `DateTimeOffset`. |
-| `GreaterThan` | missing | none | As `LessThan`. |
-| `LessThanOrEqual` | missing | none | As `LessThan`. |
-| `GreaterThanOrEqual` | missing | none | As `LessThan`. |
-| `IsDefault` | missing | none | Needs a generic `TValue` selector and no literal argument, so no new `LiteralKind`. `default(T)` for a reference type is `null`, which overlaps `IsNull`; decide whether `IsDefault` is value-type-only. |
-| `IsNotDefault` | missing | none | As `IsDefault`. |
-| `IsNull` | missing | none (`StringPredicates.IsNullOrEmpty` is a different test) | Needs a generic nullable selector. Input being `null` is the *subject* of the test, so the result is `True`, never `Unknown`; this is the one family where the null convention inverts. |
-| `IsNotNull` | missing | none | As `IsNull`. |
+| `Equal` | present | `NumericPredicates.Equal` (`Int64`, `Decimal`), `ScalarPredicates.Equal` (`Boolean`, `Guid`, `DateTimeOffset`) | Needs one thin public overload per scalar kind over a shared generic helper. `Decimal` vs `Int64` comparison semantics (cross-kind promotion) must be decided. |
+| `NotEqual` | present | `NumericPredicates.NotEqual` (`Int64`, `Decimal`), `ScalarPredicates.NotEqual` (`Boolean`, `Guid`, `DateTimeOffset`) | As `Equal`. Null input: see open question 1. |
+| `LessThan` | present | `NumericPredicates.LessThan` (`Int64`, `Decimal`) | Ordering uses `CompareTo` on the value type, no culture dimension. `Boolean` and `Guid` ordering is arguably meaningless; decide whether the ordering family is limited to `Int64`, `Decimal`, `DateTimeOffset`. |
+| `GreaterThan` | present | `NumericPredicates.GreaterThan` (`Int64`, `Decimal`) | As `LessThan`. |
+| `LessThanOrEqual` | present | `NumericPredicates.LessThanOrEqual` (`Int64`, `Decimal`) | As `LessThan`. |
+| `GreaterThanOrEqual` | present | `NumericPredicates.GreaterThanOrEqual` (`Int64`, `Decimal`) | As `LessThan`. |
+| `IsDefault` | present | `NumericPredicates.IsDefault` (`Int64`, `Decimal`), `ScalarPredicates.IsDefault` (`Boolean`, `Guid`, `DateTimeOffset`) | Needs a generic `TValue` selector and no literal argument, so no new `LiteralKind`. `default(T)` for a reference type is `null`, which overlaps `IsNull`; decide whether `IsDefault` is value-type-only. |
+| `IsNotDefault` | present | `NumericPredicates.IsNotDefault` (`Int64`, `Decimal`), `ScalarPredicates.IsNotDefault` (`Boolean`, `Guid`, `DateTimeOffset`) | As `IsDefault`. |
+| `IsNull` | present | `NumericPredicates.IsNull` (`Int64`, `Decimal`), `ScalarPredicates.IsNull` (`Boolean`, `Guid`, `DateTimeOffset`) | Needs a generic nullable selector. Input being `null` is the *subject* of the test, so the result is `True`, never `Unknown`; this is the one family where the null convention inverts. |
+| `IsNotNull` | present | `NumericPredicates.IsNotNull` (`Int64`, `Decimal`), `ScalarPredicates.IsNotNull` (`Boolean`, `Guid`, `DateTimeOffset`) | As `IsNull`. |
 
 ## Numeric
 
@@ -101,10 +103,10 @@ Inventory: `Between(value, n, k)`, `Outside(value, n, k)`, `In(value, candidate1
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `Between` | missing | none | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error: a compile-time diagnostic for literal bounds, an argument error otherwise. |
-| `Outside` | missing | none | Exact complement of `Between` and its registered twin: the K3 complement (`Unknown` stays `Unknown`), not a boolean negation. |
-| `In` | missing | none | Scalar membership only. Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
-| `NotIn` | missing | none | As `In`; the registered twin of `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |
+| `Between` | present | `NumericPredicates.Between` (`Int64`, `Decimal`) | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error: a compile-time diagnostic for literal bounds, an argument error otherwise. |
+| `Outside` | present | `NumericPredicates.Outside` (`Int64`, `Decimal`) | Exact complement of `Between` and its registered twin: the K3 complement (`Unknown` stays `Unknown`), not a boolean negation. |
+| `In` | present | `NumericPredicates.In`, `ScalarPredicates.In` | Scalar membership only. Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
+| `NotIn` | present | `NumericPredicates.NotIn`, `ScalarPredicates.NotIn` | As `In`; the registered twin of `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |
 
 ## String
 
@@ -118,13 +120,13 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 | `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase` and `trim` arguments (defaults `true`, `false`). It is ordinal and has no `culture` argument (k3-followups 12 and 20, open question 3). |
 | `IsNullOrEmpty` | present | `StringPredicates.IsNullOrEmpty` | No arguments. `Trim` is meaningless here and `ignoreCase`/`Culture` do not apply. Returns `True` for `null`. |
 | `Matches` | present | `RegexPredicates.Matches` | `pattern` only; `RegexOptions.None`, 1-second timeout, cached per pattern. `ignoreCase` would map to `RegexOptions.IgnoreCase` (a new optional `Boolean` argument); `Culture` maps to `CultureInvariant`; `Trim` is questionable for a regex. |
-| `IsEmpty` | missing | none (`IsNullOrEmpty` includes null) | Non-null empty string. Null input: `False` or `Unknown`, see open question 1. |
-| `IsNotNullOrEmpty` | missing | none | Negation of `IsNullOrEmpty`; returns `False` for `null`. |
-| `IsNullOrWhiteSpace` | missing | none | `Trim` is implied. Listed in issue 01 as a candidate. |
-| `IsNotNullOrWhiteSpace` | missing | none | Negation of `IsNullOrWhiteSpace`. |
-| `NotContains` | missing | none | K3 complement of `Contains`. If null selects `False` for `Contains`, `NotContains` of null must not be `True` by accident; decide per open question 1. |
-| `NotEqual` | missing | none | As `NotContains`, against `Equal`. |
-| `NotMatches` | missing | none | As `NotContains`, against `Matches`. An invalid pattern still faults to `Unknown`. |
+| `IsEmpty` | present | `StringPredicates.IsEmpty` (twin `IsNotEmpty` | Non-null empty string. Null input: `False` or `Unknown`, see open question 1. |
+| `IsNotNullOrEmpty` | present | `StringPredicates.IsNotNullOrEmpty` | Negation of `IsNullOrEmpty`; returns `False` for `null`. |
+| `IsNullOrWhiteSpace` | present | `StringPredicates.IsNullOrWhiteSpace` | `Trim` is implied. Listed in issue 01 as a candidate. |
+| `IsNotNullOrWhiteSpace` | present | `StringPredicates.IsNotNullOrWhiteSpace` | Negation of `IsNullOrWhiteSpace`. |
+| `NotContains` | present | `StringPredicates.NotContains` | K3 complement of `Contains`. If null selects `False` for `Contains`, `NotContains` of null must not be `True` by accident; decide per open question 1. |
+| `NotEqual` | present | `StringPredicates.NotEqual` | As `NotContains`, against `Equal`. |
+| `NotMatches` | present | `RegexPredicates.NotMatches` | As `NotContains`, against `Matches`. An invalid pattern still faults to `Unknown`. |
 
 ## Collection
 
