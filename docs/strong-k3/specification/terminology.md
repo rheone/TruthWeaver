@@ -36,7 +36,7 @@ Canonical form is how an Operation is defined. Public form is how it is named. A
 | **Information order** | $\mathsf{U}$ below $\mathsf{T}$ and $\mathsf{F}$, which are incomparable. See [values](values.md#information-order). |
 | **Strongest extension** | The three-valued function that is definite exactly when every classical resolution of the `Unknown` inputs agrees. See [semantics](semantics.md#truth-functional-evaluation-and-the-strongest-extension). |
 | **Definitely true count, possibly true count** | For a cardinality Operation over $n$ operands, $d$ is the number of `True` operands and $p$ is the number of `True` or `Unknown` operands. See [semantics](semantics.md#cardinality-uses-an-interval). |
-| **Fault** | A predicate that fails to answer during one evaluation: an exception, a timeout or a cancellation. The expression sees `Unknown`, and the decision records the fault. A predicate that returns `Unknown` records no fault. |
+| **Fault** | A predicate that fails to answer during one evaluation: an exception, a timeout or a cancellation. The expression sees `Unknown`, and the decision records the fault. A predicate that returns `Unknown` records no fault. See [evaluation](evaluation.md#predicates-and-faults). |
 
 ## Engine terms
 
@@ -44,7 +44,7 @@ Canonical form is how an Operation is defined. Public form is how it is named. A
 | --- | --- |
 | **Expression** | The immutable tree of operators over terms and constants. Every expression evaluates to exactly one value. |
 | **Predicate** and **term** | A predicate is a registered, reusable function. A term is a predicate bound to concrete arguments. A term is a leaf of the tree. The two are not interchangeable. |
-| **Decision** | The result of evaluating an expression: a value, any faults and, optionally, a trace. |
+| **Decision** | The result of evaluating an expression: a value, any faults and, optionally, a trace. See [evaluation](evaluation.md). |
 | **Result transformation** | A method on a `Decision`, outside the rule language. `Decision.Project(unknownAs)` replaces `Unknown` with a chosen definite value. `Decision.Collapse(policy)` turns the value into a `CollapseOutcome`. `Project` and `Collapse` are TruthWeaver terms, not Strong Kleene (K3) terms. In relational algebra, "projection" means selecting columns. Both are pure and never record a fault. |
 | **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize` and `Simplify`. |
 

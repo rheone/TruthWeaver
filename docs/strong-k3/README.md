@@ -16,7 +16,7 @@ The value set is `{True, False, Unknown}`. Tables write the values as T, F and U
 | Result Transformations | `Project` and `Collapse`, the methods on an evaluated decision | [result-transformations/](result-transformations/README.md) |
 | Predicates | The placeholder for predicate documentation | [predicates/](predicates/README.md) |
 
-Start with [values](specification/values.md) and [semantics](specification/semantics.md). [operations](specification/operations.md) lists all 27 Operations.
+Start with [values](specification/values.md) and [semantics](specification/semantics.md). [evaluation](specification/evaluation.md) explains how an expression becomes a decision. [operations](specification/operations.md) lists all 27 Operations.
 
 ## How an Operation document is organized
 

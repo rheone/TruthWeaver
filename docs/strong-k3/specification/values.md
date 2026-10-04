@@ -13,7 +13,7 @@ Every expression evaluates to exactly one of three values. In tables and formula
 | Unknown | U | Not determined: neither established as true nor as false | `TruthValue.Unknown` | `Unknown` | `{"const": "unknown"}` |
 
 - `Unknown` is a value in its own right, not an error, not `null` and not a third way of writing `False`. It is never converted to `True` or `False` implicitly. The only conversions to a two-valued answer are the explicit ones: `COALESCE` with a constant inside a rule, and `Decision.Project` or `Decision.Collapse` on the result.
-- A predicate that cannot answer (an exception, a timeout or a cancellation) contributes `Unknown` and records a fault. A predicate that simply returns `Unknown` is a normal answer and records no fault.
+- A predicate that cannot answer (an exception, a timeout or a cancellation) contributes `Unknown` and records a fault (see [evaluation](evaluation.md#predicates-and-faults)). A predicate that simply returns `Unknown` is a normal answer and records no fault.
 - The literals `True`, `False` and `Unknown` are case-insensitive on input and printed in that spelling. They are not Operations; they are documented here and in each Operation's Syntax section.
 
 > [!WARNING]

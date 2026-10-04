@@ -4,10 +4,14 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The page states the behavior in present tense with no history or ADR references
-- [ ] The flow diagram is valid and agrees with the prose
-- [ ] A throwaway probe or an added test shows the short-circuit, fault and `IsSatisfied` claims hold
-- [ ] The page links only inside `docs/strong-k3/`
-- [ ] The reference harness and the lint test pass
+- [x] The page states the behavior in present tense with no history or ADR references
+- [x] The flow diagram is valid and agrees with the prose
+- [x] A throwaway probe or an added test shows the short-circuit, fault and `IsSatisfied` claims hold
+- [x] The page links only inside `docs/strong-k3/`
+- [x] The reference harness and the lint test pass
+
+## Comments
+
+- 2026-10-04: Done. The short-circuit, fault, `IsSatisfied`, `Project` and `Collapse` claims were checked with a throwaway evaluation probe over 31 rules in both modes; the probe was deleted afterward. The probe confirmed that `NAND`, `NOR`, `IMPLIES` and `XOR` run every operand in both modes.
