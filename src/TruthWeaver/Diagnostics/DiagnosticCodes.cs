@@ -119,4 +119,10 @@ public static class DiagnosticCodes
     /// <c>CompilerOptions.DataSources</c> (ADR-0006 decision 4). The span is the reference.
     /// </summary>
     public const string UndeclaredDataSource = "TRE0024";
+
+    /// <summary>
+    /// A variable reference's query is not valid in the dialect of its data source, according to the
+    /// <c>IQueryValidator</c> the source name was declared with (ADR-0006 decision 4). The span or path is the query string.
+    /// </summary>
+    public const string MalformedDataQuery = "TRE0025";
 }

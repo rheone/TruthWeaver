@@ -1316,7 +1316,7 @@ ageAtLeast(min: from("user", "$.minAge"))
 
 Declare the source names when you compile (`new CompilerOptions(DataSources: ...)` with a `DataSourceDeclarations`), and pass
 the sources when you evaluate (`rule.EvaluateAsync(context, services, dataSources)`). A name that was not declared is a
-`TRE0024` error. Nothing is read at compile time. A missing, ambiguous or mistyped result, an unsupplied source or a
+`TRE0024` error, and a name declared with an `IQueryValidator` (for example `JsonQueryValidator.Instance`) turns a malformed query into a `TRE0025` error. Nothing is read at compile time. A missing, ambiguous or mistyped result, an unsupplied source or a
 failing source makes the term `Unknown` and records a `Fault` carrying a `VariableResolutionException`; the fault and the
 trace name the reference, never the resolved value. In tests, `FakeDataSource` (in `TruthWeaver.Testing`) stands in for a
 real source. See the [data sources guide](docs/data-sources.md) and
@@ -2224,6 +2224,7 @@ The classes of malformed rule text each report as follows.
 | Declared `Project` | `TRE0001` (DSL), `TRE0014` (JSON/YAML) | a rule without `Project` / `Project` | hint to use `COALESCE(x, True)` / `COALESCE(x, False)` or `Decision.Project(unknownAs)` |
 | Missing, unknown or mistyped predicate argument | `TRE0003`, `TRE0005`, `TRE0004` | the argument or kind / what was written | nearest declared argument name |
 | Variable reference naming an undeclared data source | `TRE0024` | a declared data source name / the name written | nearest declared source name, or a hint to declare it |
+| Variable reference whose query fails its source's validator | `TRE0025` | a query valid for the data source / the query written | none |
 
 ## Benchmarks
 

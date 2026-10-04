@@ -63,9 +63,9 @@ public sealed class JsonDataSource : IDataSource
     public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!TryParse(query, out JsonPath? path, out string? problem))
+        if (!JsonPaths.TryParse(query, out JsonPath? path, out QueryProblem? problem))
         {
-            throw new ArgumentException($"The scope query is not valid JSONPath: {problem}", nameof(query));
+            throw new ArgumentException($"The scope query is not valid JSONPath: {problem.Message} (at position {problem.Position})", nameof(query));
         }
 
         NodeList matches = path.Evaluate(this.root).Matches;
@@ -78,23 +78,6 @@ public sealed class JsonDataSource : IDataSource
 
         // A node belongs to its parent, so the scoped source holds an independent copy as its own root.
         return ValueTask.FromResult<IDataSource>(new JsonDataSource(matches[0].Value?.DeepClone()));
-    }
-
-    // JsonPath.Net signals a syntax error by throwing; this turns it into a result plus the parser's position.
-    private static bool TryParse(string query, [NotNullWhen(true)] out JsonPath? path, [NotNullWhen(false)] out string? problem)
-    {
-        try
-        {
-            path = JsonPath.Parse(query);
-            problem = null;
-            return true;
-        }
-        catch (PathParseException ex)
-        {
-            path = null;
-            problem = $"{ex.Message} (at position {ex.Index})";
-            return false;
-        }
     }
 
     private static DataQueryResult Convert(IReadOnlyList<JsonNode?> nodes)
@@ -177,9 +160,12 @@ public sealed class JsonDataSource : IDataSource
 
     private DataQueryResult Query(string query)
     {
-        if (!TryParse(query, out JsonPath? path, out string? problem))
+        if (!JsonPaths.TryParse(query, out JsonPath? path, out QueryProblem? problem))
         {
-            return DataQueryResult.Failure(DataQueryErrorKind.MalformedQuery, $"The query is not valid JSONPath: {problem}");
+            return DataQueryResult.Failure(
+                DataQueryErrorKind.MalformedQuery,
+                $"The query is not valid JSONPath: {problem.Message} (at position {problem.Position})"
+            );
         }
 
         NodeList matches = path.Evaluate(this.root).Matches;

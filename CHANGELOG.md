@@ -62,6 +62,10 @@ copyright line reads 2026.
   DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
   throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators, trace redaction options and `RuleBuilder` support follow.
+- Compile-time query validation (data-sources 05): `IQueryValidator` and `QueryProblem` in `TruthWeaver.Abstractions`; a source name
+  can be declared with a validator (`DataSourceDeclarations.Add(name, validator)` or `declarations[name] = validator`), and a
+  malformed query is then a `TRE0025` error (`DiagnosticCodes.MalformedDataQuery`) at the query string, in the DSL, JSON and YAML.
+  `TruthWeaver.DataSources.Json` ships `JsonQueryValidator.Instance`, which parses RFC 9535 JSONPath without a document.
 - New package `TruthWeaver.DataSources.Json` (data-sources 04): `JsonDataSource` (`Parse(json)`, `Create(JsonNode?)`) answers JSONPath
   (RFC 9535) queries over a JSON document and converts each matched node to a `LiteralValue` (string, `long`, `decimal`, boolean;
   an object, array or `null` is `DataQueryErrorKind.UnsupportedType`). `ScopeAsync` roots a new source at the single node a query

@@ -595,7 +595,7 @@ internal sealed class RuleNodeCompiler<TContext>
             {
                 // A variable's value, and so whether it fits the argument's kind, is known only at evaluation time
                 // (ADR-0006 decision 2); compilation checks just that the source name was declared.
-                if (this.CheckSourceDeclared(arg))
+                if (this.CheckSourceDeclared(arg) && this.CheckQuery(arg))
                 {
                     resolvedVariables[arg.Name] = new VariableReference(
                         arg.Value.Text ?? string.Empty,
@@ -660,6 +660,44 @@ internal sealed class RuleNodeCompiler<TContext>
             [.. resolvedVariables.Select(kv => new KeyValuePair<string, VariableReference>(kv.Key, kv.Value))]
         );
         return new TermExpression(identity);
+    }
+
+    /// <summary>
+    /// Reports <c>TRE0025</c>, one diagnostic per problem, when the source's declared <see cref="IQueryValidator"/> finds the
+    /// query of the variable reference in <paramref name="arg"/> malformed. A source declared without a validator is not checked.
+    /// </summary>
+    /// <returns><see langword="true"/> if the query is acceptable.</returns>
+    private bool CheckQuery(ArgumentNode arg)
+    {
+        string source = arg.Value.Text ?? string.Empty;
+        if (this.options.DataSources?[source] is not { } validator)
+        {
+            return true;
+        }
+
+        string query = arg.Value.Query ?? string.Empty;
+        IReadOnlyList<QueryProblem> problems = validator.Validate(query);
+
+        // A JSON or YAML reference points at its own "query" member; a DSL reference at the query string within from(...).
+        VariableParts? parts = arg.Value.Parts;
+        SourceSpan span = parts is null ? arg.Value.Span : parts.QuerySpan;
+        string? path = parts?.QueryPath ?? arg.Path;
+        foreach (QueryProblem problem in problems)
+        {
+            string where = problem.Position is { } position ? $" (at position {position} of the query)" : string.Empty;
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.MalformedDataQuery,
+                    $"The query for data source '{source}' is not valid: {problem.Message}{where}",
+                    span,
+                    expected: $"a query valid for data source '{source}'",
+                    found: $"\"{query}\"",
+                    path: path
+                )
+            );
+        }
+
+        return problems.Count == 0;
     }
 
     /// <summary>

@@ -6,12 +6,11 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 
 > [!NOTE]
 > This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 04): the
+> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 05): the
 > `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
-> and `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `JsonQueryValidator`,
-> `QueryProblem`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `YamlDataSource`, `EvaluationOptions.IncludeResolvedValues`
+> and `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
 > `doctest:skip` until ticket 09.
 
@@ -115,9 +114,20 @@ Decision decision = await result.CompiledRule!.EvaluateAsync(context, services, 
 A rule that uses `from(...)` but is evaluated without the source it names returns `Unknown` and records a
 fault. Existing `EvaluateAsync(context, services)` calls keep working for rules with no variables.
 
-> [!NOTE]
-> Declaring a name together with a query validator (`["user"] = JsonQueryValidator.Instance`) arrives with
-> data-sources ticket 05. Until then `DataSourceDeclarations` only collects names.
+To catch a malformed query at compile time, declare the name with the source's query validator.
+`JsonQueryValidator` (in `TruthWeaver.DataSources.Json`) parses the JSONPath without a document:
+
+```csharp
+var declarations = new DataSourceDeclarations
+{
+    ["user"] = JsonQueryValidator.Instance,   // queries against "user" are syntax-checked
+    "request",                                // no validator: a bad query surfaces at evaluation
+};
+```
+
+A rule such as `ageAtLeast(min: from("user", "$.orders["))` then fails to compile with `TRE0025`, pointing at the query
+string and carrying the validator's message and the position within the query. Each source name has its own validator,
+so each query is checked in its own dialect. A validator checks syntax only.
 
 ## Queries
 
@@ -236,14 +246,16 @@ var sources = new DataSources { ["user"] = user };
 
 ## Writing your own data source
 
-Implement `IQueryValidator` as well if you want compile-time checking of your dialect. It is stateless and needs no
-data:
+Implement `IQueryValidator` as well if you want compile-time checking of your dialect. It is stateless, thread-safe
+and needs no data. Each `QueryProblem` carries a message (no data values) and an optional 0-based position within the query:
 
 ```csharp
 public interface IQueryValidator
 {
     IReadOnlyList<QueryProblem> Validate(string query);   // empty when the query is well-formed
 }
+
+public sealed record QueryProblem(string Message, int? Position = null);
 ```
 
 Implement `IDataSource` (in `TruthWeaver.Abstractions`) for any store that can answer a query: a database
