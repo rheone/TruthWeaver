@@ -1,5 +1,6 @@
 namespace TruthWeaver.Testing;
 
+using System.Diagnostics;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -10,6 +11,7 @@ using TruthWeaver.Abstractions;
 /// </summary>
 /// <remarks>Initializes a new instance of the <see cref="DecisionAssertions"/> class.</remarks>
 /// <param name="decision">The decision under test.</param>
+[StackTraceHidden]
 public sealed class DecisionAssertions(Decision decision)
 {
     /// <summary>Gets the decision under test.</summary>
