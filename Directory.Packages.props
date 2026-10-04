@@ -37,6 +37,13 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-rc.1.26425.128" />
   </ItemGroup>
+  <!-- JsonPath.Net - TruthWeaver.DataSources.Json's JSONPath (RFC 9535) engine (ADR-0006). Pinned to 2.2.0 on purpose: it is the
+       last MIT-licensed line, and from 3.0.0 the package ships under the Open Source Maintenance Fee EULA (OSMFEULA), which
+       asks for a maintenance fee from commercial users. 2.2.0 targets net10.0 and netstandard2.0, runs on net11.0 and needs
+       only Json.More.Net 2.2.0 (also MIT). Revisit when ADR-0006's license question is answered. -->
+  <ItemGroup>
+    <PackageVersion Include="JsonPath.Net" Version="2.2.0" />
+  </ItemGroup>
   <!-- YamlDotNet - TruthWeaver.Yaml's sole dependency beyond TruthWeaver itself. -->
   <ItemGroup>
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />

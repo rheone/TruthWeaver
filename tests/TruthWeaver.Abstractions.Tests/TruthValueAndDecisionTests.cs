@@ -33,6 +33,60 @@ public sealed class TruthValueAndDecisionTests
         Decision decision = new(TruthValue.True, []);
 
         Assert.Null(decision.Trace);
-        Assert.Null(decision.EvaluatedTree);
+        Assert.Null(decision.TraceTree);
+    }
+
+    /// <summary>Collapse resolves <c>Unknown</c> according to the policy, leaving definite values unchanged.</summary>
+    [Theory]
+    [InlineData(TruthValue.True, CollapsePolicy.UnknownAsFalse, CollapseOutcome.True)]
+    [InlineData(TruthValue.True, CollapsePolicy.UnknownAsTrue, CollapseOutcome.True)]
+    [InlineData(TruthValue.True, CollapsePolicy.UnknownIsError, CollapseOutcome.True)]
+    [InlineData(TruthValue.False, CollapsePolicy.UnknownAsFalse, CollapseOutcome.False)]
+    [InlineData(TruthValue.False, CollapsePolicy.UnknownAsTrue, CollapseOutcome.False)]
+    [InlineData(TruthValue.False, CollapsePolicy.UnknownIsError, CollapseOutcome.False)]
+    [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownAsFalse, CollapseOutcome.False)]
+    [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownAsTrue, CollapseOutcome.True)]
+    [InlineData(TruthValue.Unknown, CollapsePolicy.UnknownIsError, CollapseOutcome.RejectedUnresolved)]
+    public void Collapse_ByPolicy_ResolvesOnlyUnknown_Test(TruthValue result, CollapsePolicy policy, CollapseOutcome expected)
+    {
+        Decision decision = new(result, []);
+
+        Assert.Equal(expected, decision.Collapse(policy));
+    }
+
+    /// <summary>Collapse throws for an undefined policy.</summary>
+    [Fact]
+    public void Collapse_UndefinedPolicy_ThrowsArgumentOutOfRange_Test()
+    {
+        Decision decision = new(TruthValue.Unknown, []);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => decision.Collapse((CollapsePolicy)99));
+    }
+
+    /// <summary>Collapse never modifies the decision itself; it leaves the result and faults unchanged.</summary>
+    [Fact]
+    public void Collapse_AnyPolicy_LeavesDecisionAndFailClosedSatisfactionUnchanged_Test()
+    {
+        Fault fault = new(new TermIdentity("a", []), new InvalidOperationException("boom"));
+        Decision decision = new(TruthValue.Unknown, [fault]);
+
+        CollapseOutcome outcome = decision.Collapse(CollapsePolicy.UnknownAsTrue);
+
+        Assert.Equal(CollapseOutcome.True, outcome);
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.False(decision.IsSatisfied);
+        Assert.Equal([fault], decision.Faults);
+    }
+
+    /// <summary>Collapse with <c>UnknownIsError</c> rejects but records no fault in the decision.</summary>
+    [Fact]
+    public void Collapse_RejectedPolicy_RecordsNoFault_Test()
+    {
+        Decision decision = new(TruthValue.Unknown, []);
+
+        CollapseOutcome outcome = decision.Collapse(CollapsePolicy.UnknownIsError);
+
+        Assert.Equal(CollapseOutcome.RejectedUnresolved, outcome);
+        Assert.Empty(decision.Faults);
     }
 }

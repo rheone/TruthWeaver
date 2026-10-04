@@ -52,8 +52,8 @@ public sealed class EvaluationOptionsTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
+            cancellationToken: TestContext.Current.CancellationToken
         );
 
         Assert.Equal(TruthValue.False, decision.Result);
@@ -61,7 +61,7 @@ public sealed class EvaluationOptionsTests
     }
 
     [Theory]
-    [InlineData(EvaluationMode.Default)]
+    [InlineData(EvaluationMode.ShortCircuit)]
     [InlineData(EvaluationMode.Exhaustive)]
     public async Task Result_is_identical_between_default_and_exhaustive_modes(EvaluationMode mode)
     {
@@ -73,8 +73,8 @@ public sealed class EvaluationOptionsTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(Mode: mode),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(Mode: mode),
+            cancellationToken: TestContext.Current.CancellationToken
         );
 
         Assert.Equal(TruthValue.False, decision.Result);
@@ -92,8 +92,8 @@ public sealed class EvaluationOptionsTests
             rule.EvaluateAsync(
                 new RuleTestContext(),
                 EmptyServiceProvider.Instance,
-                new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
-                TestContext.Current.CancellationToken
+                options: new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
+                cancellationToken: TestContext.Current.CancellationToken
             )
         );
     }
@@ -141,13 +141,33 @@ public sealed class EvaluationOptionsTests
         );
     }
 
+    /// <summary>A predicate's own <see cref="OperationCanceledException"/>, with the caller's token untouched, is a fault, not a propagating cancellation.</summary>
     [Fact]
-    public async Task A_predicate_that_self_cancels_without_the_callers_token_being_cancelled_is_recorded_as_a_fault()
+    public async Task EvaluateAsync_PredicateSelfCancelsWithoutTheCallersTokenBeingCancelled_IsRecordedAsAFault_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddSelfCancelingPredicate("selfCancels").Build()
         );
         CompiledRule<RuleTestContext> rule = compiler.Compile("selfCancels").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Single(decision.Faults);
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+    }
+
+    /// <summary>A predicate's own <see cref="TimeoutException"/> (its own internal deadline, not the evaluation's token) is a fault, mirroring a data source's own timeout.</summary>
+    [Fact]
+    public async Task EvaluateAsync_PredicateTimesOutOnItsOwn_IsRecordedAsAFault_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddTimingOutPredicate("timesOut").Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("timesOut").CompiledRule!;
 
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
@@ -169,8 +189,8 @@ public sealed class EvaluationOptionsTests
         return rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(FaultBudget: 1),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(FaultBudget: 1),
+            cancellationToken: TestContext.Current.CancellationToken
         );
     }
 }

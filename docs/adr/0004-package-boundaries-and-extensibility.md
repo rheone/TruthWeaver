@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -25,6 +25,14 @@ observability is deferred, not v1).
 ## Decision
 
 ### Four packages
+
+> A fifth package, `TruthWeaver.Testing` (`Decision` assertions and fake predicates, depending on
+> `TruthWeaver.Abstractions` alone), was added later; the boundaries below are unchanged.
+>
+> A sixth package, `TruthWeaver.DataSources.Json` (`JsonDataSource`, `JsonQueryValidator` and the JsonPath.Net dependency;
+> depends on `TruthWeaver.Abstractions` alone), was added by [ADR-0006](0006-data-sources-for-expression-variables.md).
+> `TruthWeaver.Yaml` now also references it for `YamlDataSource`, and `TruthWeaver.Testing` gained `FakeDataSource`; the core
+> `TruthWeaver` package still takes no JSON or YAML query dependency.
 
 - **`TruthWeaver.Abstractions`** — `IPredicate<TContext>`,
   `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`.
@@ -121,8 +129,9 @@ or registering a stateless lambda directly. There is no attribute-scanning
 or assembly-scanning discovery mechanism. New *operators* are added inside
 `TruthWeaver` itself (parser, compiler, evaluator, analyzer each
 need to know about a new operator) rather than through an operator plugin
-model — the operator set is small and closed by design
-([ADR-0003](0003-rule-syntax-and-serialization.md)), so an extensibility
+model — the operator set is closed by design
+([ADR-0003](0003-rule-syntax-and-serialization.md); its size was expanded to the full Strong K3 set by
+[ADR-0005](0005-strong-k3-language-surface.md), which keeps the no-plug-in stance), so an extensibility
 point for operators would be speculative surface area with no current
 consumer.
 
@@ -145,7 +154,7 @@ by the time `TruthWeaver.Yaml` and the JSON/canonical-text printers existed, add
 operator touched **six** independent switches over `Expression` that each re-derived the same
 structural fact — a node's op-name, its threshold `K` (when applicable), and its operand list:
 `OperatorInfo`, `CanonicalPrinter`, `JsonTreePrinter`, `YamlTreePrinter`, `Evaluator` (its trace/skip
-`Describe` helper), and `CompiledRule` (its `Describe()` operand-extraction switch). None of those six
+`Describe` helper), and `CompiledRule` (its `Outline()` operand-extraction switch). None of those six
 were the four subsystems this ADR originally scoped (parser, compiler, evaluator's actual eval
 dispatch, analyzer) — they were rendering/description call sites layered on afterward, each
 re-implementing the same structural lookup independently.
@@ -170,6 +179,18 @@ pattern-match:
 The structural duplication (six identical `Expression` switches) is gone; what remains is
 irreducible — genuinely different behavior or vocabulary per subsystem, not the same fact
 re-derived six times.
+
+> **Update (operator definition table):** item 6's per-format label and name strings are no longer
+> separate switches. `OperatorDefinitions` (internal, `src/TruthWeaver/Ast/`) holds one definition per
+> operator (canonical name, tree-format name, arity, label and description templates). `OperatorInfo`,
+> the `Evaluator` trace label, `RuleBuilder` and `TreeFormatOpNames` read it, so a new operator adds one
+> table entry instead of editing those. `CanonicalPrinter` keeps its own DSL keywords, since the table
+> holds no DSL spelling. Evaluation, analysis and rewriting still switch on the node type. A missing
+> entry fails the table completeness test.
+
+> **Update (ADR-0005):** the K3 operator slices also touch the expand/compress/canonicalize/simplify
+> rewriters (`src/TruthWeaver/Rewriting`), the structured-diagnostic suggestions and the JSON schema, in
+> addition to the six switches above.
 
 ## Consequences
 

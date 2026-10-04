@@ -2,18 +2,11 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
-      "name": "csharpier",
+      "name": "format-staged",
       "group": "pre-commit",
-      "command": "dotnet",
-      "args": ["csharpier", "check", "."],
+      "command": "pwsh",
+      "args": ["-NoProfile", "-File", "scripts/format-staged.ps1"],
       "include": ["**/*.cs"]
-    },
-    {
-      "name": "dotnet-format",
-      "group": "pre-commit",
-      "command": "dotnet",
-      "args": ["format", "--no-restore", "--verify-no-changes", "--severity", "info"],
-      "include": ["**/*.cs", "**/*.csproj", "**/*.props", "**/*.targets"]
     },
     {
       "name": "build",

@@ -5,7 +5,7 @@ using TruthWeaver.Evaluation;
 /// <summary>
 /// Renders a <see cref="RuleDiffResult"/> (ticket rule-diff/01) as human-readable text, suitable for an
 /// audit-log entry or a rule-review UI — one line per <see cref="RuleDiffEntry"/>, naming each node by
-/// its <see cref="RuleDescription.Label"/>/<see cref="RuleDescription.Description"/> rather than its
+/// its <see cref="OutlineNode.Label"/>/<see cref="OutlineNode.Description"/> rather than its
 /// closed-set AST type name (ADR-0004).
 /// </summary>
 /// <example>
@@ -41,7 +41,7 @@ public static class RuleDiffPrinter
         };
     }
 
-    private static string PrintNode(RuleDescription? node)
+    private static string PrintNode(OutlineNode? node)
     {
         return node is null ? "(none)" : $"{node.Label} — {node.Description}";
     }

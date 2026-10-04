@@ -1,13 +1,15 @@
 namespace TruthWeaver.Diffing;
 
+using TruthWeaver.Analysis;
 using TruthWeaver.Ast;
+using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 
 /// <summary>
 /// Computes a structural diff between two compiled rules: which operator, term, or constant nodes were
 /// added, removed, or changed between a "before" and an "after" tree, located by operand-index path.
-/// Built on <see cref="CompiledRule{TContext}.Describe"/> so every diff entry carries each node's
-/// human-readable <see cref="RuleDescription"/> alongside its structural position, without the caller
+/// Built on <see cref="CompiledRule{TContext}.Outline"/> so every diff entry carries each node's
+/// human-readable <see cref="OutlineNode"/> alongside its structural position, without the caller
 /// needing to re-derive it from the closed-set AST types (ADR-0004).
 /// </summary>
 public static class RuleDiff
@@ -16,26 +18,46 @@ public static class RuleDiff
     /// <typeparam name="TContext">The application context type both rules were compiled for.</typeparam>
     /// <param name="before">The rule to diff from.</param>
     /// <param name="after">The rule to diff to.</param>
+    /// <param name="options">
+    /// The bounds for the equivalence check behind <see cref="RuleDiffResult.PreservesMeaning"/>; only
+    /// <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Raise it so a large pair is decided instead of
+    /// <see langword="null"/>. Defaults to <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// </param>
     /// <returns>
     /// The structural diff, in tree order. Empty (<see cref="RuleDiffResult.HasChanges"/> is
     /// <see langword="false"/>) when <paramref name="before"/> and <paramref name="after"/> are
     /// structurally identical.
     /// </returns>
-    public static RuleDiffResult Compare<TContext>(CompiledRule<TContext> before, CompiledRule<TContext> after)
+    public static RuleDiffResult Compare<TContext>(
+        CompiledRule<TContext> before,
+        CompiledRule<TContext> after,
+        CompilerOptions? options = null
+    )
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
 
         List<RuleDiffEntry> entries = [];
-        DiffNode(before.Root, before.Describe(), after.Root, after.Describe(), [], entries);
-        return new RuleDiffResult(entries);
+        DiffNode(before.Root, before.Outline(), after.Root, after.Outline(), [], entries);
+
+        // Identical structure is trivially the same meaning; otherwise ask the K3 equivalence check.
+        bool? preservesMeaning =
+            entries.Count == 0
+                ? true
+                : RuleEquivalence.Compare(before, after, options).Outcome switch
+                {
+                    RuleEquivalenceOutcome.Equivalent => true,
+                    RuleEquivalenceOutcome.NotEquivalent => false,
+                    _ => null,
+                };
+        return new RuleDiffResult(entries, preservesMeaning);
     }
 
     private static void DiffNode(
         Expression before,
-        RuleDescription beforeDescription,
+        OutlineNode beforeDescription,
         Expression after,
-        RuleDescription afterDescription,
+        OutlineNode afterDescription,
         IReadOnlyList<int> path,
         List<RuleDiffEntry> entries
     )
@@ -92,6 +114,17 @@ public static class RuleDiff
         if (before is ThresholdExpression beforeThreshold && after is ThresholdExpression afterThreshold)
         {
             return beforeThreshold.Comparison == afterThreshold.Comparison && beforeThreshold.K == afterThreshold.K;
+        }
+
+        if (before is BetweenExpression beforeBetween && after is BetweenExpression afterBetween)
+        {
+            return beforeBetween.Min == afterBetween.Min && beforeBetween.Max == afterBetween.Max;
+        }
+
+        // Like the threshold family, these differ only in what they test or substitute, so equal types are not enough.
+        if (before is InspectionExpression beforeInspection && after is InspectionExpression afterInspection)
+        {
+            return beforeInspection.Kind == afterInspection.Kind;
         }
 
         return true;

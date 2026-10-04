@@ -179,7 +179,7 @@ public sealed class KleeneOperatorTests
 
         Assert.Equal(["a"], invocationLog);
         Assert.NotNull(decision.Trace);
-        Assert.Contains(decision.Trace.Entries, e => e.NodeDescription == "b" && e.NotEvaluated);
+        Assert.Contains(decision.Trace.Entries, e => e.Text == "b" && e.NotEvaluated);
     }
 
     [Fact]

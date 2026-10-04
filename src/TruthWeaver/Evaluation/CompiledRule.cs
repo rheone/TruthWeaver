@@ -5,9 +5,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
+using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
 using TruthWeaver.Json;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Rewriting;
 
 /// <summary>
 /// The immutable, thread-safe result of compiling a rule's text (CONTEXT.md). Safe to cache and
@@ -39,6 +42,184 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     internal Expression Root { get; }
 
+    /// <summary>
+    /// Prints this rule as DSL text with the chosen grouping delimiters. <see cref="GroupingStyle.Parentheses"/> returns
+    /// exactly <see cref="CanonicalText"/>; <see cref="GroupingStyle.DepthCycling"/> varies the delimiter by nesting depth
+    /// for readability. Every style re-parses to a tree equal to this rule's, because the DSL treats <c>()</c>, <c>[]</c>
+    /// and <c>{}</c> as the same grouping.
+    /// </summary>
+    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <returns>The DSL text.</returns>
+    public string PrintRuleText(GroupingStyle grouping)
+    {
+        return grouping == GroupingStyle.Parentheses ? this.CanonicalText : CanonicalPrinter.Print(this.Root, grouping);
+    }
+
+    /// <summary>
+    /// Rewrites every derived operator into the primitive kernel — <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>AtLeast</c>,
+    /// <c>AtMost</c>, <c>Exactly</c> and <c>COALESCE</c> — and returns the result as a new rule (ADR-0005 decision 10). The
+    /// derived operators are <c>IMPLIES</c>, <c>EQUIVALENT</c>, <c>XOR</c>, <c>NAND</c>, <c>NOR</c>, <c>PARITY</c>,
+    /// <c>ExactlyOne</c>, <c>ANY</c>, <c>ALL</c>, <c>NONE</c>, <c>BETWEEN</c>, <c>GreaterThan</c>, <c>LessThan</c>,
+    /// <c>If</c> and the four inspections; every one of them has a kernel definition, so nothing is left
+    /// unexpanded.
+    /// </summary>
+    /// <remarks>
+    /// The result evaluates to the same <see cref="TruthValue"/> as this rule for every assignment of its terms, and
+    /// records the same faults for predicates that throw. This rule is immutable and is not changed. The expanded rule prints canonical text that compiles back to the same tree, but it is usually larger:
+    /// an operator whose definition mentions an operand twice (<c>XOR</c>, <c>EQUIVALENT</c>, <c>If</c>, the inspections)
+    /// repeats that operand's text, so deeply nested rules grow quickly (exponentially in the nesting depth).
+    /// <para>
+    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree. A larger
+    /// result is not built: the call returns a failed <see cref="CompilationResult{TContext}"/> carrying a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error, and never throws for size.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose tree contains only primitive operators, constants and terms, or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToPrimitives(CompilerOptions? options = null)
+    {
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        Expression expanded = PrimitiveExpander.Expand(this.Root);
+        return this.RewriteResult(expanded, "ExpandToPrimitives", cap);
+    }
+
+    /// <summary>
+    /// Rewrites this rule so its only logical operator is <c>NAND</c>, and returns it as a new rule (ADR-0005 decision 10):
+    /// <c>NOT a</c> becomes <c>a NAND a</c>, <c>a AND b</c> becomes <c>(a NAND b) NAND (a NAND b)</c> and <c>a OR b</c>
+    /// becomes <c>(a NAND a) NAND (b NAND b)</c>; every other operator is first expanded to the primitive kernel (see
+    /// <see cref="ExpandToPrimitives"/>).
+    /// </summary>
+    /// <remarks>
+    /// The result evaluates to the same <see cref="TruthValue"/> for every assignment of its terms; this rule is not
+    /// changed. <b>One documented boundary:</b>
+    /// <c>COALESCE</c> (and therefore the inspections <c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>,
+    /// <c>IsKnown</c>, which expand to it) cannot be written with <c>NAND</c>, because every <c>NAND</c> circuit is monotone
+    /// in the information order and <c>COALESCE</c> is not. Such nodes stay as <c>COALESCE</c> with their operands rewritten,
+    /// so a rule without them is <c>NAND</c>-only. Thresholds become a disjunction over operand subsets, so wide
+    /// thresholds grow combinatorially (<c>C(n, k)</c> subsets for <c>AtLeast(k)</c> over <c>n</c> operands).
+    /// <para>
+    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree; the cost
+    /// is estimated first, so an over-cap rewrite is refused without being built. The call then returns a failed
+    /// <see cref="CompilationResult{TContext}"/> carrying a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error
+    /// and never throws for size.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose logic is <c>NAND</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToNand(CompilerOptions? options = null)
+    {
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        return this.RewriteResult(NandNorExpander.ToNand(this.Root, cap), "ExpandToNand", cap);
+    }
+
+    /// <summary>
+    /// Rewrites this rule so its only logical operator is <c>NOR</c>, and returns it as a new rule (ADR-0005 decision 10):
+    /// <c>NOT a</c> becomes <c>a NOR a</c>, <c>a OR b</c> becomes <c>(a NOR b) NOR (a NOR b)</c> and <c>a AND b</c>
+    /// becomes <c>(a NOR a) NOR (b NOR b)</c>; every other operator is first expanded to the primitive kernel.
+    /// </summary>
+    /// <remarks>
+    /// Same guarantees, cost, size cap and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
+    /// </remarks>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <returns>The new rule over the same predicates whose logic is <c>NOR</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
+    public CompilationResult<TContext> ExpandToNor(CompilerOptions? options = null)
+    {
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        return this.RewriteResult(NandNorExpander.ToNor(this.Root, cap), "ExpandToNor", cap);
+    }
+
+    /// <summary>
+    /// Rewrites this rule into readable derived operators wherever a Strong Kleene-sound pattern matches, and returns it as a
+    /// new rule (ADR-0005 decision 10). It is the inverse direction of <see cref="ExpandToPrimitives"/>: the usual input is
+    /// an expanded rule, but any rule is accepted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The recognised patterns are <c>OR(NOT a, b)</c> to <c>IMPLIES</c>; <c>NOT(AND(a, b))</c> and <c>OR(NOT a, NOT b)</c>
+    /// to <c>NAND</c>; <c>NOT(OR(a, b))</c> and <c>AND(NOT a, NOT b)</c> to <c>NOR</c>; the exact <c>XOR</c>,
+    /// <c>EQUIVALENT</c>, <c>If</c> and <c>PARITY</c> shapes <see cref="ExpandToPrimitives"/> produces; <c>AtLeast(1)</c> to
+    /// <c>ANY</c>, <c>AtLeast(n)</c> to <c>ALL</c>, <c>AtMost(0)</c> to <c>NONE</c> and <c>Exactly(1)</c> to
+    /// <c>ExactlyOne</c>; a matching <c>AtLeast</c>/<c>AtMost</c> pair under <c>AND</c> to <c>BETWEEN</c>; and
+    /// <c>COALESCE(NOT x, False)</c> to <c>IsFalse</c>, with the
+    /// <c>IsUnknown</c>/<c>IsKnown</c> pairs of those. Every pattern is an identity in Strong Kleene logic, checked against a
+    /// truth-table oracle; classical-only shortcuts are never used.
+    /// </para>
+    /// <para>
+    /// The result evaluates to the same value as this rule for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment, is
+    /// never larger (in nodes) than this rule, and compressing it again changes nothing. It is not guaranteed to recover the
+    /// exact rule that was expanded, only an equivalent, no larger one that uses derived operators. Operand order inside an
+    /// <c>OR</c>/<c>AND</c> pattern may change, so the order predicates are invoked in may differ; results do not.
+    /// </para>
+    /// </remarks>
+    /// <returns>A new rule over the same predicates, with derived operators where patterns matched.</returns>
+    public CompiledRule<TContext> CompressToDerived()
+    {
+        return new CompiledRule<TContext>(Compressor.Compress(this.Root), this.registry, this.logger);
+    }
+
+    /// <summary>
+    /// Rewrites this rule into its canonical form (ADR-0005 decision 10): one deterministic representation shared by every
+    /// rule that is equivalent under a fixed set of Strong Kleene-sound rewrites, so rules can be compared and de-duplicated
+    /// by their <see cref="CanonicalText"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The rewrites, applied bottom-up and repeated until stable, are: (1) exact aliases collapse to one spelling
+    /// (<c>ANY</c> and <c>AtLeast(1)</c> become <c>OR</c>, <c>ALL</c> and <c>AtLeast(n)</c> become <c>AND</c>,
+    /// <c>GreaterThan(k)</c> becomes <c>AtLeast(k + 1)</c>, <c>LessThan(k)</c> becomes <c>AtMost(k - 1)</c>,
+    /// <c>ExactlyOne</c> becomes <c>Exactly(1)</c>); (2) <c>NOT (NOT x)</c> becomes <c>x</c>; (3) an <c>AND</c> directly
+    /// inside an <c>AND</c>, an <c>OR</c> inside an <c>OR</c> and a <c>COALESCE</c> inside a <c>COALESCE</c> are flattened; (4) the operands of the
+    /// commutative operators (<c>AND</c>, <c>OR</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>NAND</c>, <c>NOR</c>, <c>PARITY</c> and
+    /// the threshold family including <c>BETWEEN</c>) are sorted by their canonical text, ordinally; (5) repeated operands of
+    /// <c>AND</c>/<c>OR</c> are removed (idempotence). Operators whose operand order carries meaning (<c>COALESCE</c>,
+    /// <c>IMPLIES</c>, <c>If</c>) keep it. Nothing is folded and no complement law is used: <c>a OR NOT a</c> is not
+    /// <c>True</c> in Strong Kleene logic, so it stays a two-operand <c>OR</c>.
+    /// </para>
+    /// <para>
+    /// The result evaluates to the same value as this rule for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment, is
+    /// never larger than this rule, and canonicalising it again changes nothing. <b>Evaluation order is not preserved.</b>
+    /// Reordering, deduplicating and flattening operands can change which predicate runs first, which predicates run at all
+    /// once a short-circuit applies, and therefore which faults are reported; the value never changes. Because the order is
+    /// text-based, a canonical rule is for comparison and storage keys, not for performance tuning.
+    /// </para>
+    /// </remarks>
+    /// <returns>A new rule over the same predicates in canonical form.</returns>
+    public CompiledRule<TContext> Canonicalize()
+    {
+        return new CompiledRule<TContext>(Canonicalizer.Canonicalize(this.Root), this.registry, this.logger);
+    }
+
+    /// <summary>
+    /// Replaces this rule with an equivalent, cheaper one using only Strong Kleene-sound rewrites, and returns it as a new
+    /// rule (ADR-0005 decision 10). Starts from <see cref="Canonicalize"/>, then folds and reduces until nothing changes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Applied rewrites: constant folding through the K3 tables; identity and annihilator laws with constants
+    /// (<c>a AND True = a</c>, <c>a AND False = False</c>, <c>a OR False = a</c>, <c>a OR True = True</c>; an
+    /// <c>Unknown</c> operand is kept); idempotence, double negation and flattening (from canonicalisation); absorption
+    /// (<c>a AND (a OR b) = a</c>); De Morgan and negation-pushing only where they remove nodes; <c>COALESCE</c> with a
+    /// never-<c>Unknown</c> operand; inspections of constants or never-<c>Unknown</c> operands;
+    /// <c>If</c> with a constant condition or equal branches; derived operators with a constant operand; and threshold
+    /// operators with <c>True</c>/<c>False</c> operands. Classical-only laws are <b>never</b> applied: <c>a OR NOT a</c> is
+    /// not <c>True</c>, <c>a AND NOT a</c> is not <c>False</c>, <c>a IMPLIES a</c> and <c>a EQUIVALENT a</c> are not
+    /// <c>True</c>, and complement absorption (<c>a AND (NOT a OR b) = a AND b</c>) is rejected, because each fails when
+    /// <c>a</c> is <c>Unknown</c>.
+    /// </para>
+    /// <para>
+    /// The result evaluates to the same value as this rule for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment, is
+    /// never larger (in nodes), and simplifying it again changes nothing. <b>Evaluation order and side effects are not
+    /// preserved.</b> Operands may be reordered, merged or dropped (an annihilated <c>AND</c> never evaluates its other
+    /// operands), so a predicate the original would have invoked, and any fault it would have reported, may not run;
+    /// the value never changes.
+    /// </para>
+    /// </remarks>
+    /// <returns>A new rule over the same predicates, simplified.</returns>
+    public CompiledRule<TContext> Simplify()
+    {
+        return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger);
+    }
+
     /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     public string PrintJson()
@@ -47,15 +228,15 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Describes this rule's expression tree recursively — every operator's label/description (from
+    /// Builds this rule's outline: its expression tree, recursively — every operator's label/description (from
     /// <see cref="OperatorInfo"/>) and every term's label/description (from its predicate's registered
     /// <see cref="PredicateSchema"/>), without exposing the underlying closed-set AST types
     /// themselves. Useful for a rule-authoring UI or a generated "what does this rule mean" report.
     /// </summary>
-    /// <returns>The root node's description, with every operand described the same way.</returns>
-    public RuleDescription Describe()
+    /// <returns>The root outline node, with every operand outlined the same way.</returns>
+    public OutlineNode Outline()
     {
-        return DescribeNode(this.Root, this.registry);
+        return OutlineOf(this.Root, this.registry);
     }
 
     /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI.</summary>
@@ -63,7 +244,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     public string PrintMermaid(bool showArgumentValues = true)
     {
-        return MermaidTreePrinter.Print(this.Describe(), showArgumentValues: showArgumentValues);
+        return MermaidTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>
@@ -73,14 +254,10 @@ public sealed class CompiledRule<TContext>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
-    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     public string PrintMermaid(Decision decision, bool showArgumentValues = true)
     {
-        return MermaidTreePrinter.Print(
-            this.Describe(),
-            RequireEvaluatedTree(decision),
-            showArgumentValues: showArgumentValues
-        );
+        return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
@@ -88,7 +265,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>The indented tree text.</returns>
     public string PrintPlainText(bool showArgumentValues = true)
     {
-        return PlainTextTreePrinter.Print(this.Describe(), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>
@@ -98,34 +275,41 @@ public sealed class CompiledRule<TContext>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
-    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     public string PrintPlainText(Decision decision, bool showArgumentValues = true)
     {
-        return PlainTextTreePrinter.Print(
-            this.Describe(),
-            RequireEvaluatedTree(decision),
-            showArgumentValues: showArgumentValues
-        );
+        return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
     }
 
-    /// <summary>Evaluates this rule against a context.</summary>
+    /// <summary>
+    /// Evaluates this rule against a context. Every argument after <paramref name="context"/> is optional, so a
+    /// caller supplies only what the rule needs. A variable reference (<c>from("source", "query")</c>) resolves from the
+    /// matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
+    /// whose query matches nothing or too much, whose result does not fit the argument, or whose source fails makes
+    /// its term <see cref="TruthValue.Unknown"/> and records a <see cref="Fault"/> carrying a
+    /// <see cref="VariableResolutionException"/>; the fault never contains the resolved value.
+    /// </summary>
     /// <param name="context">The application-supplied evaluation context.</param>
     /// <param name="services">
     /// The service provider to resolve class-based predicates from, fresh for this call — never
     /// captured once at registration, so scoped dependencies (a <c>DbContext</c>, a scoped
     /// <c>HttpClient</c>) resolve correctly even though this <see cref="CompiledRule{TContext}"/>
-    /// outlives any one scope (ADR-0002).
+    /// outlives any one scope (ADR-0002). <see langword="null"/> means an empty provider: a class-based
+    /// predicate then faults (<see cref="TruthValue.Unknown"/> plus a <see cref="Fault"/>) as for any missing registration.
     /// </param>
+    /// <param name="dataSources">The named data sources for this evaluation, or <see langword="null"/> when the rule has no variables.</param>
     /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
     public async Task<Decision> EvaluateAsync(
         TContext context,
-        IServiceProvider services,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
         EvaluationOptions? options = null,
         CancellationToken cancellationToken = default
     )
     {
+        services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
         if (effectiveOptions.Timeout is { } timeout)
         {
@@ -137,12 +321,21 @@ public sealed class CompiledRule<TContext>
                 this.registry,
                 effectiveOptions,
                 timeoutSource.Token,
-                this.logger
+                this.logger,
+                dataSources
             );
             return await timedEvaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
         }
 
-        Evaluator<TContext> evaluator = new(context, services, this.registry, effectiveOptions, cancellationToken, this.logger);
+        Evaluator<TContext> evaluator = new(
+            context,
+            services,
+            this.registry,
+            effectiveOptions,
+            cancellationToken,
+            this.logger,
+            dataSources
+        );
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
 
@@ -152,23 +345,23 @@ public sealed class CompiledRule<TContext>
         return this.CanonicalText;
     }
 
-    private static RuleDescription DescribeNode(Expression node, PredicateRegistry<TContext> registry)
+    private static OutlineNode OutlineOf(Expression node, PredicateRegistry<TContext> registry)
     {
         if (node is TermExpression term)
         {
             (string label, string description) = registry.TryGetSchema(term.Identity.PredicateName, out PredicateSchema? schema)
-                ? (schema!.Label, schema.Description)
+                ? (schema.Label, schema.Description)
                 : (term.Identity.PredicateName, "An unregistered predicate (CompilationMode.Lenient).");
-            return new RuleDescription(label, description, [], ArgumentText(term.Identity));
+            return new OutlineNode(label, description, [], ArgumentText(term.Identity));
         }
 
         OperatorDescriptor descriptor = OperatorInfo.Describe(node);
         IReadOnlyList<Expression> operands = (node is ConstantExpression) ? [] : ExpressionShape.Of(node).Operands;
 
-        return new RuleDescription(
+        return new OutlineNode(
             descriptor.Label,
             descriptor.Description,
-            [.. operands.Select(operand => DescribeNode(operand, registry))]
+            [.. operands.Select(operand => OutlineOf(operand, registry))]
         );
     }
 
@@ -176,38 +369,46 @@ public sealed class CompiledRule<TContext>
     /// Renders a term's rule-text arguments as comma-joined <c>name: value</c> pairs, matching the
     /// per-argument formatting <see cref="TermIdentity.ToString"/> uses for its parenthesized part, but
     /// without repeating the predicate name — that comes from the term's own
-    /// <see cref="RuleDescription.Label"/> instead.
+    /// <see cref="OutlineNode.Label"/> instead.
     /// </summary>
     /// <param name="identity">The term's identity.</param>
     /// <returns>The joined argument text, or <see langword="null"/> for a zero-argument term.</returns>
     private static string? ArgumentText(TermIdentity identity)
     {
-        if (identity.Arguments.Count == 0)
-        {
-            return null;
-        }
-
-        StringBuilder builder = new();
-        for (int i = 0; i < identity.Arguments.Count; i++)
-        {
-            if (i > 0)
-            {
-                builder.Append(", ");
-            }
-
-            KeyValuePair<string, LiteralValue> argument = identity.Arguments[i];
-            builder.Append(argument.Key).Append(": ").Append(argument.Value);
-        }
-
-        return builder.ToString();
+        return identity.FormatArguments();
     }
 
-    private static EvaluatedNode RequireEvaluatedTree(Decision decision)
+    private static TraceNode RequireTraceTree(Decision decision)
     {
-        return decision.EvaluatedTree
+        return decision.TraceTree
             ?? throw new ArgumentException(
-                "This decision has no EvaluatedTree to render — it must come from EvaluateAsync on this same rule.",
+                "This decision has no TraceTree to render — it must come from EvaluateAsync on this same rule.",
                 nameof(decision)
             );
+    }
+
+    /// <summary>
+    /// Wraps a rewrite's output as a new rule, or as the <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> failure
+    /// when the rewrite refused (<paramref name="tree"/> is <see langword="null"/>) or its tree is over the cap.
+    /// </summary>
+    private CompilationResult<TContext> RewriteResult(Expression? tree, string rewrite, int cap)
+    {
+        if (tree is not null && ExpressionTools.Size(tree) <= cap)
+        {
+            return new CompilationResult<TContext>(new CompiledRule<TContext>(tree, this.registry, this.logger), []);
+        }
+
+        Diagnostic diagnostic = Diagnostic.Error(
+            DiagnosticCodes.RewriteTooLarge,
+            $"{rewrite} would produce more than the maximum of {cap} nodes.",
+            SourceSpan.None,
+            expected: $"at most {cap} nodes",
+            found: "more nodes than that",
+            suggestion: new DiagnosticSuggestion(
+                DiagnosticSuggestionKind.Hint,
+                "Raise CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
+            )
+        );
+        return new CompilationResult<TContext>(null, [diagnostic]);
     }
 }

@@ -30,7 +30,7 @@ internal static class YamlTreePrinter
     {
         if (node is ConstantExpression c)
         {
-            return Mapping(("const", Scalar(c.Value ? "true" : "false", ScalarStyle.Plain)));
+            return Mapping(("const", Scalar(TruthValueText.TreeFormat(c.Value), ScalarStyle.Plain)));
         }
 
         if (node is TermExpression t)
@@ -40,6 +40,15 @@ internal static class YamlTreePrinter
 
         NodeShape shape = ExpressionShape.Of(node);
         string op = TreeFormatOpNames.ToTreeFormat(shape.OpName);
+        if (shape is { K: { } min, Max: { } max })
+        {
+            // BETWEEN carries its two bounds as min/max instead of a single threshold k.
+            YamlMappingNode between = OperatorNode(op, shape.Operands.Select(ToNode));
+            between.Add(new YamlScalarNode("min"), Scalar(min.ToString(CultureInfo.InvariantCulture), ScalarStyle.Plain));
+            between.Add(new YamlScalarNode("max"), Scalar(max.ToString(CultureInfo.InvariantCulture), ScalarStyle.Plain));
+            return between;
+        }
+
         return shape.K is { } k
             ? OperatorNodeWithThreshold(op, k, shape.Operands.Select(ToNode))
             : OperatorNode(op, shape.Operands.Select(ToNode));
@@ -82,12 +91,24 @@ internal static class YamlTreePrinter
             { new YamlScalarNode("predicate"), new YamlScalarNode(term.Identity.PredicateName) },
         };
 
-        if (term.Identity.Arguments.Count > 0)
+        if (term.Identity.Arguments.Count > 0 || term.Identity.Variables.Count > 0)
         {
             YamlMappingNode args = [];
             foreach ((string name, LiteralValue value) in term.Identity.Arguments)
             {
                 args.Add(new YamlScalarNode(name), LiteralToNode(value));
+            }
+
+            foreach ((string name, VariableReference reference) in term.Identity.Variables)
+            {
+                args.Add(
+                    new YamlScalarNode(name),
+                    new YamlMappingNode
+                    {
+                        { new YamlScalarNode("from"), Scalar(reference.Source, ScalarStyle.DoubleQuoted) },
+                        { new YamlScalarNode("query"), Scalar(reference.Query, ScalarStyle.DoubleQuoted) },
+                    }
+                );
             }
 
             mapping.Add(new YamlScalarNode("args"), args);

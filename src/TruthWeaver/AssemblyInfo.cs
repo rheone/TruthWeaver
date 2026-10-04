@@ -8,3 +8,8 @@ using System.Runtime.CompilerServices;
 // TruthWeaver.Tests needs direct access to internal units (Lexer, DslParser, Analyzer,
 // BddManager, etc.) so unit tests aren't forced through the public RuleCompiler pipeline.
 [assembly: InternalsVisibleTo("TruthWeaver.Tests")]
+
+// TruthWeaver.Benchmarks (k3-hardening ticket 18) measures the Parse/Validate+Build/Analyze/Lint
+// pipeline stages individually (RuleNodeCompiler, Analyzer, Linter), which RuleCompiler otherwise
+// runs as one opaque call, so compile-cost regressions can be attributed to a stage.
+[assembly: InternalsVisibleTo("TruthWeaver.Benchmarks")]

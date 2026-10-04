@@ -1,21 +1,44 @@
-* text=auto eol=crlf
+# LF is the repository default on every platform: the index, the working tree and CI agree, so a scripted
+# edit, a Linux CI runner and Windows tooling never disagree about line endings. `text=auto` lets Git
+# detect binary files; `eol=lf` pins the checked-out form regardless of core.autocrlf.
+* text=auto eol=lf
 
-*.cs text
-*.csproj text
-*.props text
-*.targets text
-*.json text
-*.yml text
-*.yaml text
-*.md text
-*.ps1 text
-*.sh text
-*.xml text
+# Files that need CRLF to work with Windows tools: cmd.exe batch files misparse labels in LF files, and
+# the legacy .sln parser in Visual Studio rewrites a file whose endings are not CRLF. (.slnx is XML and
+# stays LF.)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sln text eol=crlf
 
+# Shell scripts and Git hooks break with CRLF ("bad interpreter"), so they are LF even if the default above
+# ever changes.
+*.sh text eol=lf
+.husky/** text eol=lf
+
+# Binary artifacts: never normalised or diffed as text.
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
 *.ico binary
+*.webp binary
+*.svgz binary
 *.pdf binary
 *.zip binary
+*.gz binary
+*.7z binary
+*.nupkg binary
+*.snupkg binary
+*.snk binary
+*.pfx binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# Markdown shows readable diffs; C# gets the C# hunk-header heuristic.
+*.md text diff=markdown
+*.cs text diff=csharp

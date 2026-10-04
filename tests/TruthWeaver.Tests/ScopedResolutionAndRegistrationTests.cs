@@ -84,6 +84,49 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.Contains(nameof(ScopedFlagPredicate), exception.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>A rule built from a lambda predicate evaluates with only a context: no services, data sources or options are needed.</summary>
+    [Fact]
+    public async Task EvaluateAsync_WithOnlyAContext_RunsARuleThatNeedsNothingElse_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .Add(
+                    PredicateSchema.NoArguments("always", "Always", "Always true."),
+                    (_, _, _) => ValueTask.FromResult(TruthValue.True)
+                )
+                .Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("always").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+    }
+
+    /// <summary>A null service provider acts as an empty one: a class-based predicate yields Unknown plus a fault, never an exception.</summary>
+    [Fact]
+    public async Task EvaluateAsync_WithNullServices_FaultsAClassBasedPredicateInsteadOfThrowing_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().Add<ScopedFlagPredicate>().Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("scopedFlag").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            services: null,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Fault fault = Assert.Single(decision.Faults);
+        Assert.IsType<InvalidOperationException>(fault.Exception);
+    }
+
     [Fact]
     public async Task Service_collection_extension_wires_a_compiler_and_rule_using_only_container_resolved_services()
     {

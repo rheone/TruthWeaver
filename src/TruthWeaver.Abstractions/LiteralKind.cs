@@ -2,7 +2,8 @@ namespace TruthWeaver.Abstractions;
 
 /// <summary>
 /// The closed set of literal argument-value types a rule may use (ADR-0003): scalars, and arrays of
-/// each scalar. There is no context-path/handlebar syntax — a rule argument is always one of these.
+/// each scalar. A rule argument is either a literal of one of these kinds or a <see cref="VariableReference"/>
+/// (ADR-0006), which the engine resolves to a value of the argument's declared kind at evaluation time.
 /// </summary>
 public enum LiteralKind
 {

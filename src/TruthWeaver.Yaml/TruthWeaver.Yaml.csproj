@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+    <ProjectReference Include="../TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

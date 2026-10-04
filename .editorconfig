@@ -1,8 +1,10 @@
+# EditorConfig is read by the IDEs, `dotnet format` and CSharpier. Keep it in agreement with .gitattributes
+# (LF by default, CRLF only for the Windows-tool files below) and with .csharpierrc.json.
 root = true
 
 [*]
 charset = utf-8
-end_of_line = crlf
+end_of_line = lf
 insert_final_newline = true
 indent_style = space
 indent_size = 4
@@ -83,8 +85,8 @@ dotnet_diagnostic.SA1502.severity = none
 # a `new List<T>(capacity)` or `new HashSet<T>(comparer)` call - i.e. a constructor argument, not an
 # initializer - corrupts the call into invalid syntax like `[with(capacity)]`. Confirmed reproducible
 # against this exact Roslyn/SDK version (dotnet format 11.0.100-rc.1.26425.128) on every occurrence
-# in this repo; verified by hand each time and always reverted. Do not run `dotnet format` in apply
-# mode (only `--verify-no-changes`) until this is fixed upstream.
+# in this repo; verified by hand each time and always reverted. With the rule off, `dotnet format` is
+# safe to run in apply mode (the pre-commit hook does); re-enable the rule only after an upstream fix.
 dotnet_diagnostic.IDE0028.severity = none
 
 # CA1859 ("change return type for improved performance") is disabled for this repo's internal
@@ -94,23 +96,24 @@ dotnet_diagnostic.IDE0028.severity = none
 # without fighting that shared shape everywhere else.
 dotnet_diagnostic.CA1859.severity = none
 
-[*.csproj]
+# MSBuild, solution and data files conventionally indent two spaces.
+[*.{csproj,props,targets,slnx,xml,resx}]
 indent_size = 2
 
-[*.props]
+[*.{json,jsonc,yml,yaml}]
 indent_size = 2
 
-[*.targets]
-indent_size = 2
+[*.ps1]
+indent_size = 4
 
-[*.json]
-indent_size = 2
-
-[*.yml]
-indent_size = 2
-
-[*.yaml]
-indent_size = 2
-
+# Trailing double spaces are a hard line break in Markdown, so they must survive.
 [*.md]
 trim_trailing_whitespace = false
+
+# Windows-only formats: cmd.exe and the legacy .sln parser need CRLF (see .gitattributes).
+[*.{bat,cmd,sln}]
+end_of_line = crlf
+
+# Shell scripts and Git hooks must be LF.
+[*.sh]
+end_of_line = lf

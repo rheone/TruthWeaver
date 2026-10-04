@@ -5,37 +5,37 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 
 /// <summary>
-/// Renders a rule's <see cref="RuleDescription"/> tree (from <c>CompiledRule.Describe()</c>) as
+/// Renders a rule's <see cref="OutlineNode"/> tree (from <c>CompiledRule.Outline()</c>) as
 /// Mermaid <c>flowchart</c> syntax, for delivery to a UI that renders Mermaid diagrams. Optionally
-/// colored by one evaluation's <see cref="Decision.EvaluatedTree"/>, via the shared
+/// colored by one evaluation's <see cref="Decision.TraceTree"/>, via the shared
 /// <see cref="RuleRenderTree"/>.
 /// </summary>
 public static class MermaidTreePrinter
 {
     /// <summary>Prints a rule's structure only, with no evaluation coloring.</summary>
-    /// <param name="root">The rule's described tree.</param>
-    /// <param name="style">How to render the AND/OR/NOT/XOR/XNOR operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
+    /// <param name="root">The rule's outline.</param>
+    /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
-    public static string Print(RuleDescription root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
+    public static string Print(OutlineNode root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
     {
         return Print(RuleRenderTree.Build(root, style, showArgumentValues));
     }
 
     /// <summary>Prints a rule's structure, colored by one evaluation's result and short-circuit path.</summary>
-    /// <param name="root">The rule's described tree.</param>
-    /// <param name="evaluatedTree">The matching <see cref="Decision.EvaluatedTree"/> from that evaluation.</param>
-    /// <param name="style">How to render the AND/OR/NOT/XOR/XNOR operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
+    /// <param name="root">The rule's outline.</param>
+    /// <param name="traceTree">The matching <see cref="Decision.TraceTree"/> from that evaluation.</param>
+    /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     public static string Print(
-        RuleDescription root,
-        EvaluatedNode evaluatedTree,
+        OutlineNode root,
+        TraceNode traceTree,
         OperatorStyle style = OperatorStyle.Word,
         bool showArgumentValues = true
     )
     {
-        return Print(RuleRenderTree.Build(root, evaluatedTree, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues));
     }
 
     private static string Print(RenderNode root)

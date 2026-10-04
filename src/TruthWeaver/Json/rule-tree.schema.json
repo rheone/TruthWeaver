@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/rheone/TruthWeaver/main/src/TruthWeaver/Json/rule-tree.schema.json",
   "title": "TruthWeaver rule tree",
-  "description": "The flat, key-discriminated JSON tree shape for a TruthWeaver rule expression, as defined by ADR-0003 (docs/adr/0003-rule-syntax-and-serialization.md). A node is discriminated by which of 'const', 'predicate', or 'op' is present. This schema describes structural JSON shape only, matching what JsonTreeParser accepts before compile-time validation (e.g. XOR/XNOR binary-only, ExactlyOne/threshold k-range checks) runs; a document can be schema-valid and still fail RuleCompiler validation.",
+  "description": "The flat, key-discriminated JSON tree shape for a TruthWeaver rule expression, as defined by ADR-0003 (docs/adr/0003-rule-syntax-and-serialization.md). A node is discriminated by which of 'const', 'predicate', or 'op' is present. Constants and operator names are case-insensitive when parsed, so each 'op' is matched by a pattern that accepts every letter case (a plain enum would be case-sensitive); a constant may be the string 'unknown'. This schema describes structural JSON shape only, matching what JsonTreeParser accepts before compile-time validation (e.g. XOR/XNOR/IMPLIES binary-only, ExactlyOne/threshold k-range checks) runs; a document can be schema-valid and still fail RuleCompiler validation.",
   "$ref": "#/$defs/node",
   "$defs": {
     "node": {
@@ -14,10 +14,18 @@
       ]
     },
     "constNode": {
-      "description": "The true/false constant leaf.",
+      "description": "The K3 constant leaf: a JSON boolean (true/false), or a case-insensitive string naming a K3 value. 'unknown' is the only way to write the Unknown constant.",
       "type": "object",
       "properties": {
-        "const": { "type": "boolean" }
+        "const": {
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "string",
+              "pattern": "^(?:[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn])$"
+            }
+          ]
+        }
       },
       "required": ["const"],
       "additionalProperties": false
@@ -34,32 +42,50 @@
         }
       ]
     },
+    "variableReference": {
+      "description": "A variable reference (ADR-0006): the argument's value is read at evaluation time from the named data source. 'from' is the source name, declared when the rule is compiled; 'query' is the query in that source's own dialect (JSONPath for the JSON and YAML sources). Both are required and no other member is allowed.",
+      "type": "object",
+      "properties": {
+        "from": { "type": "string" },
+        "query": { "type": "string" }
+      },
+      "required": ["from", "query"],
+      "additionalProperties": false
+    },
+    "argumentValue": {
+      "description": "A predicate argument: a literal, or a variable reference resolved from a data source when the rule is evaluated. A variable reference is not allowed inside an array literal.",
+      "oneOf": [
+        { "$ref": "#/$defs/literal" },
+        { "$ref": "#/$defs/variableReference" }
+      ]
+    },
     "predicateNode": {
-      "description": "A term: a predicate bound to named argument literals.",
+      "description": "A term: a predicate bound to named argument values (literals or variable references).",
       "type": "object",
       "properties": {
         "predicate": { "type": "string" },
         "args": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/literal" }
+          "additionalProperties": { "$ref": "#/$defs/argumentValue" }
         }
       },
       "required": ["predicate"],
       "additionalProperties": false
     },
     "operatorNode": {
-      "description": "An operator node: unary NOT, an n-ary boolean operator, or an n-ary threshold operator.",
+      "description": "An operator node: a unary operator (NOT or an inspection), an n-ary boolean operator, an n-ary threshold operator or BETWEEN.",
       "oneOf": [
         { "$ref": "#/$defs/unaryOperatorNode" },
         { "$ref": "#/$defs/naryOperatorNode" },
-        { "$ref": "#/$defs/thresholdOperatorNode" }
+        { "$ref": "#/$defs/thresholdOperatorNode" },
+        { "$ref": "#/$defs/betweenOperatorNode" }
       ]
     },
     "unaryOperatorNode": {
-      "description": "NOT: exactly one operand.",
+      "description": "NOT, or an inspection (IsTrue, IsFalse, IsUnknown, IsKnown; case-insensitive on read): exactly one operand. An inspection always yields a definite true or false.",
       "type": "object",
       "properties": {
-        "op": { "const": "not" },
+        "op": { "type": "string", "pattern": "^(?:[nN][oO][tT]|[iI][sS][tT][rR][uU][eE]|[iI][sS][fF][aA][lL][sS][eE]|[iI][sS][uU][nN][kK][nN][oO][wW][nN]|[iI][sS][kK][nN][oO][wW][nN])$" },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" },
@@ -71,10 +97,10 @@
       "additionalProperties": false
     },
     "naryOperatorNode": {
-      "description": "AND, OR, XOR, XNOR, ExactlyOne: an operand list (XOR/XNOR are compile-time restricted to exactly two operands; that restriction is not expressible as JSON structure).",
+      "description": "AND, OR, XOR, EQUIVALENT, IMPLIES, NAND, NOR, PARITY, ANY, ALL, NONE, COALESCE, If, ExactlyOne: an operand list ('iff' and the legacy 'xnor' are accepted aliases of 'equivalent'; XOR/EQUIVALENT/IMPLIES/NAND/NOR are compile-time restricted to exactly two operands, IMPLIES as [antecedent, consequent]; that restriction is not expressible as JSON structure; COALESCE takes its operands in priority order; If is compile-time restricted to exactly three operands, [condition, whenTrue, whenFalse]).",
       "type": "object",
       "properties": {
-        "op": { "enum": ["and", "or", "xor", "xnor", "exactlyOne"] },
+        "op": { "type": "string", "pattern": "^(?:[aA][nN][dD]|[oO][rR]|[xX][oO][rR]|[eE][qQ][uU][iI][vV][aA][lL][eE][nN][tT]|[iI][fF][fF]|[xX][nN][oO][rR]|[iI][mM][pP][lL][iI][eE][sS]|[nN][aA][nN][dD]|[nN][oO][rR]|[pP][aA][rR][iI][tT][yY]|[aA][nN][yY]|[aA][lL][lL]|[nN][oO][nN][eE]|[cC][oO][aA][lL][eE][sS][cC][eE]|[iI][fF]|[eE][xX][aA][cC][tT][lL][yY][oO][nN][eE])$" },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" }
@@ -87,7 +113,7 @@
       "description": "The count-threshold family: AtLeast/AtMost/GreaterThan/LessThan/Exactly, each carrying its threshold as 'k'.",
       "type": "object",
       "properties": {
-        "op": { "enum": ["atLeast", "atMost", "greaterThan", "lessThan", "exactly"] },
+        "op": { "type": "string", "pattern": "^(?:[aA][tT][lL][eE][aA][sS][tT]|[aA][tT][mM][oO][sS][tT]|[gG][rR][eE][aA][tT][eE][rR][tT][hH][aA][nN]|[lL][eE][sS][sS][tT][hH][aA][nN]|[eE][xX][aA][cC][tT][lL][yY])$" },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" }
@@ -95,6 +121,21 @@
         "k": { "type": "integer" }
       },
       "required": ["op", "operands", "k"],
+      "additionalProperties": false
+    },
+    "betweenOperatorNode": {
+      "description": "BETWEEN: the number of true operands lies in the inclusive range [min, max]. The bounds' range (0 <= min <= max <= operand count, not the full range) is a compile-time check, not expressible as JSON structure.",
+      "type": "object",
+      "properties": {
+        "op": { "type": "string", "pattern": "^(?:[bB][eE][tT][wW][eE][eE][nN])$" },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "min": { "type": "integer" },
+        "max": { "type": "integer" }
+      },
+      "required": ["op", "operands", "min", "max"],
       "additionalProperties": false
     }
   }

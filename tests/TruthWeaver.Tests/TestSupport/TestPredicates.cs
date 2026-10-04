@@ -19,7 +19,7 @@ public static class TestPredicates
     {
         return builder.Add(
             PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', always {value}."),
-            (_, _, _) => ValueTask.FromResult(value)
+            (_, _, _) => ValueTask.FromResult(value ? TruthValue.True : TruthValue.False)
         );
     }
 
@@ -36,8 +36,31 @@ public static class TestPredicates
             (_, _, _) =>
             {
                 invocationLog.Add(name);
-                return ValueTask.FromResult(value);
+                return ValueTask.FromResult(value ? TruthValue.True : TruthValue.False);
             }
+        );
+    }
+
+    /// <summary>
+    /// Registers a zero-argument predicate that reads its value from <paramref name="read"/> on every call, so one
+    /// compiled rule can be re-evaluated against many assignments without recompiling. An <see cref="TruthValue.Unknown"/>
+    /// reading faults (surfaces as <see cref="TruthValue.Unknown"/> via a <see cref="Fault"/>), mirroring <see cref="AddThrowing"/>.
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddReadable(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name,
+        Func<TruthValue> read
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', reads a controllable external value."),
+            (_, _, _) =>
+                read() switch
+                {
+                    TruthValue.True => ValueTask.FromResult(TruthValue.True),
+                    TruthValue.False => ValueTask.FromResult(TruthValue.False),
+                    _ => throw new InvalidOperationException($"'{name}' is Unknown."),
+                }
         );
     }
 
@@ -66,7 +89,7 @@ public static class TestPredicates
             async (_, _, ct) =>
             {
                 await Task.Delay(delay, ct).ConfigureAwait(false);
-                return value;
+                return value ? TruthValue.True : TruthValue.False;
             }
         );
     }
@@ -89,7 +112,7 @@ public static class TestPredicates
             {
                 await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
                 ct.ThrowIfCancellationRequested();
-                return true;
+                return TruthValue.True;
             }
         );
     }
@@ -110,6 +133,22 @@ public static class TestPredicates
         );
     }
 
+    /// <summary>
+    /// Registers a zero-argument predicate that throws <see cref="TimeoutException"/> on its own initiative
+    /// (its own internal deadline, not the evaluation's token) — an ordinary <see cref="Fault"/>, mirroring
+    /// a data source's own timeout.
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddTimingOutPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', throws TimeoutException unprompted."),
+            (_, _, _) => throw new TimeoutException($"'{name}' timed out.")
+        );
+    }
+
     /// <summary>Registers a single-string-argument predicate whose truth is "does the argument equal <paramref name="matchValue"/>?" (case-sensitive).</summary>
     public static PredicateRegistryBuilder<RuleTestContext> AddStringArgPredicate(
         this PredicateRegistryBuilder<RuleTestContext> builder,
@@ -126,7 +165,11 @@ public static class TestPredicates
                 [new PredicateArgumentSchema(argumentName, $"The value to compare against '{matchValue}'.", LiteralKind.String)]
             ),
             (_, args, _) =>
-                ValueTask.FromResult(string.Equals(args.GetString(argumentName), matchValue, StringComparison.Ordinal))
+                ValueTask.FromResult(
+                    string.Equals(args.GetString(argumentName), matchValue, StringComparison.Ordinal)
+                        ? TruthValue.True
+                        : TruthValue.False
+                )
         );
     }
 
@@ -145,7 +188,7 @@ public static class TestPredicates
                 $"Test predicate '{name}', true iff '{argumentName}' equals '{matchValue}'.",
                 [new PredicateArgumentSchema(argumentName, $"The GUID to compare against '{matchValue}'.", LiteralKind.Guid)]
             ),
-            (_, args, _) => ValueTask.FromResult(args.GetGuid(argumentName) == matchValue)
+            (_, args, _) => ValueTask.FromResult(args.GetGuid(argumentName) == matchValue ? TruthValue.True : TruthValue.False)
         );
     }
 
@@ -170,7 +213,8 @@ public static class TestPredicates
                     ),
                 ]
             ),
-            (_, args, _) => ValueTask.FromResult(args.GetDecimal(argumentName) == matchValue)
+            (_, args, _) =>
+                ValueTask.FromResult(args.GetDecimal(argumentName) == matchValue ? TruthValue.True : TruthValue.False)
         );
     }
 
@@ -195,7 +239,7 @@ public static class TestPredicates
                     ),
                 ]
             ),
-            (_, args, _) => ValueTask.FromResult(args.GetBool(argumentName) == matchValue)
+            (_, args, _) => ValueTask.FromResult(args.GetBool(argumentName) == matchValue ? TruthValue.True : TruthValue.False)
         );
     }
 
@@ -220,7 +264,8 @@ public static class TestPredicates
                     ),
                 ]
             ),
-            (_, args, _) => ValueTask.FromResult(args.GetDateTimeOffset(argumentName) == matchValue)
+            (_, args, _) =>
+                ValueTask.FromResult(args.GetDateTimeOffset(argumentName) == matchValue ? TruthValue.True : TruthValue.False)
         );
     }
 }
