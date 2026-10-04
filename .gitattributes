@@ -42,3 +42,7 @@
 # Markdown shows readable diffs; C# gets the C# hunk-header heuristic.
 *.md text diff=markdown
 *.cs text diff=csharp
+
+# Skill files are hashed byte for byte by `npx skills` (skills-lock.json), so their line endings must never
+# depend on a contributor's core.autocrlf. LF in the index and in every working tree keeps the lock hash valid.
+.claude/skills/** text eol=lf

@@ -39,3 +39,11 @@ Notes:
 
 - `csharp-library-repo-structure` has no `license` field upstream. The license column shows the license of its source repository. Add the field upstream, then sync the copy.
 - Checked 2026-10-04: every skill directory was compared whole (all files, ignoring line endings) with its source. `csharp-builder-pattern` and `csharp-system-attributes` differed and were replaced with the upstream directories. All other skills are identical.
+
+## Lock file
+
+`skills-lock.json` lists only the vendored skill (`humanizer`). The authored skills are not locked, because the repository owner controls their source.
+
+The `computedHash` of an entry is the SHA-256 of the skill folder, as `npx skills` computes it. The tool sorts all files by relative path (forward slashes, `.git` and `node_modules` excluded). It feeds each relative path, then the raw bytes of the file, into the hash. A line-ending change therefore changes the hash. `.gitattributes` pins `.claude/skills/**` to LF, so a clone gives the same bytes with any `core.autocrlf` setting.
+
+The `humanizer` copy omits upstream files that this project does not use (`.claude-plugin/`, `.cursor-plugin/` and `.github/`). A fresh `npx skills add blader/humanizer` therefore writes a different folder, and a different hash, than the committed copy. The lock entry records the hash of the committed copy. After an update from upstream, copy the skill files with LF endings, leave out the files listed above, and compute the hash again with the method above.
