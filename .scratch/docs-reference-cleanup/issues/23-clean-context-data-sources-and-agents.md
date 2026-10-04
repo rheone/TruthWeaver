@@ -4,12 +4,16 @@
 
 **Blocked by:** 13
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `CONTEXT.md`, `docs/data-sources.md` and `AGENTS.md` pass the lint and leave the baseline
-- [ ] The two `CONTEXT.md` doctests and the four `docs/data-sources.md` doctests still pass
-- [ ] No statement that `CONTEXT.md` carries only as history remains, and no rule is lost
-- [ ] No link is broken
-- [ ] `dotnet test` passes
+- [x] `CONTEXT.md`, `docs/data-sources.md` and `AGENTS.md` pass the lint and leave the baseline
+- [x] The two `CONTEXT.md` doctests and the four `docs/data-sources.md` doctests still pass
+- [x] No statement that `CONTEXT.md` carries only as history remains, and no rule is lost
+- [x] No link is broken
+- [x] `dotnet test` passes
 
 See the [plan](../readme-breakdown-plan.md).
+
+## Comments
+
+2026-10-04: CONTEXT.md, docs/data-sources.md and AGENTS.md are clean and left the baseline, which is now empty. The baseline field is an empty set. All doctests, the lint and the full suite pass.

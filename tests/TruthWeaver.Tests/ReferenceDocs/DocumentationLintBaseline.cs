@@ -6,10 +6,5 @@ namespace TruthWeaver.Tests.ReferenceDocs;
 /// </summary>
 internal static class DocumentationLintBaseline
 {
-    internal static readonly IReadOnlySet<string> Files = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "AGENTS.md",
-        "CONTEXT.md",
-        "docs/data-sources.md",
-    };
+    internal static readonly IReadOnlySet<string> Files = new HashSet<string>(StringComparer.Ordinal);
 }

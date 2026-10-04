@@ -1,38 +1,36 @@
-# CONTEXT.md — TruthWeaver
+# CONTEXT.md: TruthWeaver
 
 This document is the shared vocabulary and domain model for the
 `TruthWeaver` library. Read it before making structural changes to the
-engine, and update it when the vocabulary changes. See `docs/adr/` for the
-reasoning behind individual decisions, and
-[`.scratch/deferred-features`](.scratch/deferred-features/spec.md) for
-capabilities intentionally left out of the current design.
+engine, and update it when the vocabulary changes. The [glossary](docs/glossary.md)
+lists every term in short form.
 
 ## What this is
 
 A general-purpose **Strong Kleene (K3)** expression engine for .NET. A **rule**
 is authored as text, compiled once into an immutable tree, and evaluated many
 times against an application-supplied context. It answers *"what is the truth
-value of this expression right now, for this context?"* — `True`, `False` or
-`Unknown` — nothing more.
+value of this expression right now, for this context?"* The answer is `True`,
+`False` or `Unknown`, and nothing more.
 
 It is not an authorization engine, a workflow engine, or a policy engine.
-Those are all things you can *build on top of it* — permission checks
-("can the current user do X"), process-flow gating, feature-flag
-combination logic — but the engine itself has no opinion about permit/deny,
-effects, or side effects. See
-[`.scratch/deferred-features`](.scratch/deferred-features/spec.md) for why
-an authorization layer is intentionally out of scope.
+You can build such things on top of it: permission checks
+("can the current user do X"), process-flow gating or feature-flag
+combination logic. The engine itself has no opinion about permit/deny,
+effects, or side effects, and it ships no authorization layer.
 
 ## Vocabulary
+
+This table keeps the terms that carry engine reasoning. The [glossary](docs/glossary.md) defines
+the rest, such as **Expression**, **CompiledRule**, `CompilerOptions` and `EvaluationOptions`.
 
 | Term | Definition |
 | --- | --- |
 | **Rule** | The authored definition of one **Expression**, in any notation (DSL text, JSON, YAML or `RuleBuilder`). Compiling it yields a **CompiledRule**. A name, version or storage record around a rule belongs to the application, not to TruthWeaver. |
-| **Expression** | The three-valued tree: operators over terms, constants and sub-expressions. Every expression evaluates to exactly one `TruthValue`. |
-| **Predicate** | A registered, reusable implementation — `IPredicate<TContext>` — such as `hasTopping` or `lovesPineapple`. The *function*, not any particular call to it. |
+| **Predicate** | A registered, reusable implementation, `IPredicate<TContext>`, such as `hasTopping` or `lovesPineapple`. The *function*, not any particular call to it. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")`. The tree's leaf node, and the unit of [term identity](#term-identity) and memoization. |
 | **Gate** | The logical concept: `NOT`, `AND` and `OR` taken as Strong Kleene truth functions. A gate is what the function *is*; an **Operator** is how the engine and its users write and run it. The word is used in the [Strong Kleene reference](docs/strong-k3/README.md) (its "Gates / Operators" category) and when discussing logic itself; the engine's code and API say Operator, never gate. |
-| **Operator** | The programmatic implementation of a logical function: the DSL word, the tree node, the JSON/YAML `op` and the `RuleBuilder` member. Spelled `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY` (renamed from `NXOR`, which conventionally means negated `XOR`; the old spelling is rejected), `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
+| **Operator** | The programmatic implementation of a logical function: the DSL word, the tree node, the JSON/YAML `op` and the `RuleBuilder` member. Spelled `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY` (`NXOR` is rejected, because it conventionally means negated `XOR`), `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
 | **Decision** | The result of evaluating an expression: a `TruthValue` plus any faults recorded along the way, and optionally a trace. |
 | **Trace** | The record of one evaluation, kept on its **Decision** when requested. It has two views of the same run: a flat log in evaluation order, one entry per node visited or skipped (including repeat lookups answered from memoization), and a tree that mirrors the rule's shape, each node carrying its own result. A node skipped by short-circuiting is recorded as not evaluated, never omitted. |
 | **Outline** | The static, human-readable tree of a compiled rule: every operator and term with its **Label** and **Description**, and a term's arguments as text. It says what the rule means and involves no evaluation, so it mirrors the rule's shape in the same operand order as the **Trace** tree. *Avoid*: "rule description" (it is not a description of one rule, but a tree of per-node ones). |
@@ -43,18 +41,17 @@ an authorization layer is intentionally out of scope.
 | **Information order** | `Unknown` below both `True` and `False`, which are incomparable. A function is monotone in it when refining an `Unknown` input never changes a definite output; Kleene's strong connectives are exactly the monotone ones. It sits beside the truth order `False < Unknown < True` (`AND` is min, `OR` is max), which is only an implementation aid. |
 | **Project** | A TruthWeaver term (not K3 literature; in relational algebra "projection" means selecting columns) and a method on the result, not part of the rule language: `Decision.Project(unknownAs)` keeps `True`/`False` and replaces only `Unknown` with the chosen definite value, so the answer is never `Unknown`. Inside a rule, `COALESCE(x, True)` / `COALESCE(x, False)` does the same; rule text, JSON and YAML that declare a `Project` are rejected with a diagnostic pointing to `COALESCE` and `Decision.Project`. It is pure, so it never records a **Fault** and never changes `Decision.Result`; `Decision.IsSatisfied` stays fail-closed. |
 | **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify`. The compiler never rewrites on its own. Whitespace tidying of rule text (`RuleText.NormalizeWhitespace`) and depth-varying delimiters (`PrintRuleText(GroupingStyle)`) are text-level formatting, not rewrites. |
-| **Diagnostic** | One structured compile-time problem: a stable code (`TRE` plus four digits; "Trinary Rule Expression", see [ADR-0007](docs/adr/0007-naming-cleanup-and-tre-diagnostic-prefix.md)), severity, message, source span (DSL) or `Path` (JSON/YAML), optional expected/found text and a `DiagnosticSuggestion` ("did you mean", or a hint). |
-| **TruthValue** | `True` / `False` / `Unknown` — a dedicated three-valued (Kleene) type, never `bool?`. A predicate returns one directly (`ValueTask<TruthValue>`); `Unknown` is never implicitly converted to `True` or `False` outside an explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` / `Decision.Collapse` on the result). `False < Unknown < True` is an implementation aid, not a numeric order of truth. |
+| **Diagnostic** | One structured compile-time problem: a stable code (`TRE` plus four digits, for "Trinary Rule Expression"), severity, message, source span (DSL) or `Path` (JSON/YAML), optional expected/found text and a `DiagnosticSuggestion` ("did you mean", or a hint). |
+| **TruthValue** | `True` / `False` / `Unknown`: a dedicated three-valued (Kleene) type, never `bool?`. A predicate returns one directly (`ValueTask<TruthValue>`); `Unknown` is never implicitly converted to `True` or `False` outside an explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` / `Decision.Collapse` on the result). `False < Unknown < True` is an implementation aid, not a numeric order of truth. |
 | **Fault** | A predicate failed to produce an answer during one evaluation (exception, timeout, cancellation). Faults become `Unknown`, not thrown exceptions, at the expression level. A predicate that simply returns `Unknown` is a normal answer and records no fault. |
-| **CompiledRule** | The immutable, thread-safe result of compiling a rule's text. Safe to cache and share; compile once, evaluate many times. |
 | **Data source** | A named, read-only store of application data (a JSON document, a YAML document, anything that can answer a query) supplied to one evaluation through `DataSources`. Each source owns its query dialect; JSON and YAML sources use JSONPath. |
-| **Variable reference** | A term argument written as `from("source", "query")` instead of a literal: it names a **data source** and a query, and is resolved afresh on each evaluation, then checked against the argument's `LiteralKind` ([ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md)). Not a predicate and not an operator. A scalar needs exactly one match; none or several is a **Fault** and the term is `Unknown`. *Avoid*: context path, binding. |
+| **Variable reference** | A term argument written as `from("source", "query")` instead of a literal: it names a **data source** and a query, and is resolved afresh on each evaluation, then checked against the argument's `LiteralKind`. Not a predicate and not an operator. A scalar needs exactly one match; none or several is a **Fault** and the term is `Unknown`. *Avoid*: context path, binding. |
 | **PredicateRegistry** | Where predicate implementations are registered under a name, with their argument schema. Every predicate carries a required, read-only `Label` and `Description`; every argument carries a required `Description`. |
 
 Avoid these near-synonyms once the term above is established: "term" and
 "predicate" are not interchangeable (a predicate is the function; a term is
 a bound call to it); "gate" names the logical concept an **Operator** implements (see **Gate**), and the code does not use it;
-`EvaluationContext` is not a type in this design — the context is just
+`EvaluationContext` is not a type in this design. The context is just
 `TContext`, owned entirely by the application.
 
 ## Conceptual model
@@ -184,13 +181,13 @@ Rule = Expression
 ```
 
 Every expression evaluates to exactly one `TruthValue`. At the API boundary,
-a `Decision.IsSatisfied` is `true` only when the result is `True` — `Unknown`
+a `Decision.IsSatisfied` is `true` only when the result is `True`; `Unknown`
 fails closed.
 
 ## Term identity
 
 Term identity is what makes memoization, canonical equality, and constant/
-contradiction analysis sound — two terms are "the same variable" if and only
+contradiction analysis sound. Two terms are "the same variable" if and only
 if:
 
 - predicate name, normalized case-insensitively to the registered casing, **and**
@@ -199,14 +196,14 @@ if:
   same variable only when both match exactly.
 
 Argument **values** are case-**sensitive** (`role: "Y"` and `role: "y"` are
-different terms — role codes are frequently case-significant, and folding
+different terms: role codes are frequently case-significant, and folding
 them silently would be a security bug in an authorization consumer).
 Argument **order** in the source text does not affect identity. Array-valued
 arguments **are** order-sensitive.
 
 ## Equivalency rules
 
-The operator set above is closed (no operator plug-in model) but not minimal — several
+The operator set above is closed (no operator plug-in model) but not minimal: several
 operators (and threshold-family edge values) are semantically equivalent to
 a composition of others. These equivalences are recorded here so authors and
 reviewers can recognize them, and so the set is never accidentally widened
@@ -227,7 +224,13 @@ with an operator that would just be a synonym for one of these:
 | `GreaterThan(0, ...)` | `OR(...)` |
 | `LessThan(n, ...)`, where `n` is the operand count | `NOT(AND(...))` |
 
-> **Superseded by [ADR-0005](docs/adr/0005-strong-k3-language-surface.md):** `ANY`, `ALL` and `NONE` now exist as first-class derived cardinality operators (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)`), kept as their own nodes so a rule round-trips as written. ADR-0003's earlier "no `All`/`None`" reasoning no longer applies. `BETWEEN` is likewise a first-class node: `BETWEEN(min, max, ...)` is `AND(AtLeast(min, ...), AtMost(max, ...))` over the interval, with the two integer bounds written first. It needs two or more operands, `0 <= min <= max <= n`, and rejects the whole range `0..n` as an always-true constant (`InvalidThresholdValue`). `COALESCE(a, b, ...)` and the infix `a ?? b ?? c` are one node that replaces only `Unknown` with the next operand (`True`/`False` pass through, short-circuiting at the first known value); a chain of `??` is accepted as one n-ary node because the operator is associative, but `??` still follows the no-mixing rule against `AND`/`OR` and other infix operators. `If(condition, whenTrue, whenFalse)` and the ternary `c ? t : f` are one node: a definite condition picks its branch (the other is not evaluated), while an `Unknown` condition does not guess, giving a value only when both branches are the same definite value (`(c AND t) OR (NOT c AND f) OR (t AND f)`); the ternary may not be mixed with other infix operators or a nested ternary without parentheses. `IsTrue(x)`, `IsFalse(x)`, `IsUnknown(x)` and `IsKnown(x)` are one `InspectionExpression` node with a kind: they test the K3 state of `x` and always yield a definite `True`/`False` (never `Unknown`), so they never collapse or fault the enclosing rule. `Project` and `Collapse` are deliberately not part of the rule language (ADR-0005 decisions 12 and 14, amended 2026-10-03): `Decision.Result` is always the raw three-valued value, `COALESCE(x, True|False)` resolves `Unknown` inside a rule, and the application chooses at the call site with `Decision.Project(bool)` or `Decision.Collapse(CollapsePolicy)`.
+`ANY`, `ALL` and `NONE` are first-class derived cardinality operators (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)`). Each is its own node, so a rule round-trips as written. The other derived and external operators follow the same rule:
+
+- `BETWEEN(min, max, ...)` is `AND(AtLeast(min, ...), AtMost(max, ...))` over the interval, with the two integer bounds written first. It needs two or more operands and `0 <= min <= max <= n`. It rejects the whole range `0..n` as an always-true constant (`InvalidThresholdValue`).
+- `COALESCE(a, b, ...)` and the infix `a ?? b ?? c` are one node that replaces only `Unknown` with the next operand. `True` and `False` pass through, and evaluation short-circuits at the first known value. A chain of `??` is accepted as one n-ary node because the operator is associative, but `??` still follows the no-mixing rule against `AND`/`OR` and other infix operators.
+- `If(condition, whenTrue, whenFalse)` and the ternary `c ? t : f` are one node. A definite condition picks its branch, and the other branch is not evaluated. An `Unknown` condition does not guess: the result is definite only when both branches are the same definite value (`(c AND t) OR (NOT c AND f) OR (t AND f)`). The ternary may not be mixed with other infix operators or a nested ternary without parentheses.
+- `IsTrue(x)`, `IsFalse(x)`, `IsUnknown(x)` and `IsKnown(x)` are one `InspectionExpression` node with a kind. They test the K3 state of `x` and always yield a definite `True` or `False`, never `Unknown`, so they never collapse or fault the enclosing rule.
+- `Project` and `Collapse` are not part of the rule language. `Decision.Result` is always the raw three-valued value, and `COALESCE(x, True|False)` resolves `Unknown` inside a rule. The application chooses at the call site with `Decision.Project(bool)` or `Decision.Collapse(CollapsePolicy)`.
 
 `ANY(...)`, `ALL(...)` and `NONE(...)` take two or more operands, like `AND`/`OR`/`ExactlyOne`. In Strong K3 they happen to coincide with `OR(...)`, `AND(...)` and `NOT(OR(...))` (the cardinality interval collapses to the same truth tables); they exist as named, intent-revealing spellings.
 
@@ -236,10 +239,9 @@ does not rewrite one form into the other (the opt-in `CompiledRule.ExpandToPrimi
 does, on request, returning a new rule built only from `NOT`, `AND`, `OR`, `AtLeast`,
 `AtMost`, `Exactly` and `COALESCE`; `CompressToDerived()` goes back to derived operators where a
 K3-sound pattern matches), and both sides of each row remain
-independently valid, distinct things a rule author can write. See the
-[threshold operator family amendment](docs/adr/0003-rule-syntax-and-serialization.md#threshold-operator-family-supersedes-the-single-atleastk-)
-in ADR-0003 for the full `AtLeast`/`AtMost`/`GreaterThan`/`LessThan`/`Exactly`
-design this table draws its threshold rows from.
+independently valid, distinct things a rule author can write. The
+[Cardinality Functions](docs/strong-k3/cardinality/README.md) reference gives the full
+`AtLeast`/`AtMost`/`GreaterThan`/`LessThan`/`Exactly` design this table draws its threshold rows from.
 
 ## The predicate-author contract
 
@@ -253,7 +255,7 @@ Nothing broader is claimed or enforced:
 
 - **No cross-evaluation guarantee.** A predicate reading `IOptions<T>` or a
   slowly-changing database row may return a different answer on the *next*
-  evaluation. That's fine — memoization is scoped to one evaluation only.
+  evaluation. That's fine: memoization is scoped to one evaluation only.
 - **Ambient state (clocks, timezones) is the predicate's problem, not the
   engine's.** `IsToday` is just a predicate that happens to read
   `TimeProvider` internally; the engine only ever sees and memoizes its
@@ -263,13 +265,12 @@ Nothing broader is claimed or enforced:
   predicate's behalf; a predicate that makes 40 sequential HTTP calls is a
   predicate-authoring problem, not an engine problem.
 
-See [ADR-0002](docs/adr/0002-evaluation-semantics.md) for the full
+See [Evaluation](docs/strong-k3/specification/evaluation.md) for the full
 evaluation model this contract supports.
 
 ## Predicate catalog rules
 
-Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. They resolve the open
-questions in the [predicate gap list](.scratch/predicate-catalog/k3-gap-list.md); each is a rule for
+Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. Each is a rule for
 catalog members, not for the engine.
 
 - **Null selected value.** The existing built-in members (`StringPredicates`, `RegexPredicates`,
@@ -300,7 +301,7 @@ may answer `Unknown` directly (no fault) and signals a failure by throwing; the 
 than aborting evaluation. Evaluation continues wherever the logic can still
 reach a determinate answer (`Unknown OR True` is `True`), because a fault
 that can't affect the outcome shouldn't turn a transient blip into a denial.
-Full reasoning and the truth tables: [ADR-0001](docs/adr/0001-kleene-failure-model.md).
+The truth tables are in [Semantics](docs/strong-k3/specification/semantics.md), and the fault rules are in [Evaluation](docs/strong-k3/specification/evaluation.md#predicates-and-faults).
 
 ## Compilation and persistence (summary)
 
@@ -308,19 +309,17 @@ Full reasoning and the truth tables: [ADR-0001](docs/adr/0001-kleene-failure-mod
 of a nullable `CompiledRule` plus a list of diagnostics (code, severity,
 message, source span or JSON/YAML path (`$.operands[1].op`), expected-versus-found pair and an
 optional "did you mean" suggestion; `CompilationResult.FormatDiagnostics`
-renders them as text). **Nothing that fails compilation is ever persisted** — the
+renders them as text). **Nothing that fails compilation is ever persisted.** The
 write path treats diagnostics as form-validation messages, and a rejected
 save leaves the previously persisted rule active. `CompiledRule` is
 immutable, so runtime rule changes are a compile-and-swap-a-reference: no
-locking, in-flight evaluations finish against the old rule. Full reasoning:
-[ADR-0002](docs/adr/0002-evaluation-semantics.md).
+locking, in-flight evaluations finish against the old rule.
 
 The analyzer step reasons in Strong K3 too (dual-rail BDD: "definitely true" /
 "possibly true"). It warns (`TRE0012` tautology, `TRE0013` contradiction) only
 when a sub-expression is `True` (resp. `False`) for every
 `{True, False, Unknown}` assignment of its terms, so `A AND NOT A` and
 `A OR NOT A` are not reported: both are `Unknown` when `A` is.
-([ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 17.)
 
 ## Syntax and serialization (summary)
 
@@ -334,20 +333,20 @@ A rule can also be assembled programmatically via `RuleBuilder`
 and compiles through the identical pipeline. The JSON tree shape is also
 published as a JSON Schema document,
 [`rule-tree.schema.json`](src/TruthWeaver/Json/rule-tree.schema.json),
-shipped as a content asset in the `TruthWeaver` package. Full grammar
-and schema: [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md).
+shipped as a content asset in the `TruthWeaver` package. The full grammar
+is in [Rule text](docs/rule-text.md#grammar), and the formats are in
+[Rule formats](docs/rule-formats.md).
 
 ## Package boundaries (summary)
 
 `TruthWeaver.Abstractions` (the kernel: `IPredicate<TContext>`,
-argument schema, `TruthValue`, `Decision` — zero dependencies, shared across
+argument schema, `TruthValue`, `Decision`, with zero dependencies, shared across
 projects that only *implement* predicates), `TruthWeaver` (AST,
 parser, compiler, analyzer, evaluator, System.Text.Json support, DI
 extensions), `TruthWeaver.Yaml` (YamlDotNet; also `YamlDataSource`), `TruthWeaver.DataSources.Json` (`JsonDataSource`, `JsonQueryValidator`
 and the JSONPath dependency, for `from("source", "query")` variable references), plus two optional add-ons that depend on the kernel
 alone: `TruthWeaver.Predicates` (ready-made predicate factories) and `TruthWeaver.Testing` (`Decision` assertions, fake predicates,
-`FakeDataSource`). Full reasoning:
-[ADR-0004](docs/adr/0004-package-boundaries-and-extensibility.md).
+`FakeDataSource`). See [Packages](docs/packages.md) for the full list.
 
 ## AOT / trim compatibility
 
@@ -363,7 +362,7 @@ packages.
 This holds by construction, not by suppression:
 
 - The rule tree's JSON support (`TruthWeaver/Json`) reads and writes `JsonElement`/
-  `JsonNode`/`JsonObject`/`JsonArray` directly — never `JsonSerializer.Deserialize<T>` — so
+  `JsonNode`/`JsonObject`/`JsonArray` directly, never `JsonSerializer.Deserialize<T>`, so
   there is no reflection-based (de)serialization to source-generate around.
 - The DI registration extension (`AddTruthWeaver<TContext>`) registers a
   closed-generic instance and a factory delegate, not an open-generic or reflection-driven
@@ -371,30 +370,31 @@ This holds by construction, not by suppression:
 - No production code path uses `Activator.CreateInstance`, `MakeGenericMethod`, assembly
   scanning, or runtime code generation (`System.Reflection.Emit`, `Expression.Compile`, etc.).
 
-**Known limitation — YamlDotNet:** `TruthWeaver.Yaml` only depends on YamlDotNet's
+**Known limitation (YamlDotNet):** `TruthWeaver.Yaml` only depends on YamlDotNet's
 low-level `RepresentationModel` DOM (`YamlStream`/`YamlNode`), not its reflection-based
 object-graph (de)serializer, so nothing in this package's own code triggers a trim/AOT
 warning today. However, YamlDotNet 18.1.0 does not itself ship `IsTrimmable`/AOT annotations
 (no `ILLink` metadata in its NuGet package), so the trim/AOT analyzer can't see into it and
-verify its internals — a real incompatibility inside YamlDotNet's own reflection paths would
+verify its internals. A real incompatibility inside YamlDotNet's own reflection paths would
 not surface as a build warning here. `TruthWeaver.Yaml` is trim/AOT-*analyzed* clean,
 not independently *proven* safe end-to-end; a consumer publishing with `PublishAot`/
 `PublishTrimmed` who reaches this package should smoke-test that specific scenario.
 
 No dedicated `PublishAot` smoke-test host was added: `PublishAot`/`PublishTrimmed` are
 publish-time settings for an executable, and none of these six packages is one. The
-build-time analyzer (`IsAotCompatible`) is the correct and sufficient check for a library —
-it's the same mechanism the .NET runtime's own libraries use to stay AOT-compatible without
+build-time analyzer (`IsAotCompatible`) is the correct and sufficient check for a library.
+It's the same mechanism the .NET runtime's own libraries use to stay AOT-compatible without
 publishing themselves.
 
 ## Related documents
 
-- [ADR-0001: Kleene failure model](docs/adr/0001-kleene-failure-model.md)
-- [ADR-0002: Evaluation semantics](docs/adr/0002-evaluation-semantics.md)
-- [ADR-0003: Rule syntax and serialization](docs/adr/0003-rule-syntax-and-serialization.md)
-- [ADR-0004: Package boundaries and extensibility](docs/adr/0004-package-boundaries-and-extensibility.md)
-- [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md)
-- [ADR-0006: Data sources for expression variables](docs/adr/0006-data-sources-for-expression-variables.md)
+- [Kleene failure model (decision record)](docs/adr/0001-kleene-failure-model.md)
+- [Evaluation semantics (decision record)](docs/adr/0002-evaluation-semantics.md)
+- [Rule syntax and serialization (decision record)](docs/adr/0003-rule-syntax-and-serialization.md)
+- [Package boundaries and extensibility (decision record)](docs/adr/0004-package-boundaries-and-extensibility.md)
+- [Strong K3 language surface (decision record)](docs/adr/0005-strong-k3-language-surface.md)
+- [Data sources for expression variables (decision record)](docs/adr/0006-data-sources-for-expression-variables.md)
 - [Data sources guide](docs/data-sources.md)
+- [Glossary](docs/glossary.md)
 - [Strong Kleene (K3) reference](docs/strong-k3/README.md)
 - [README.md](README.md)

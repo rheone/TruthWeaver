@@ -5,9 +5,8 @@ named data source on every evaluation (`min: from("user", "$.minAge")`). Use a v
 changes per request, or lives in a JSON or YAML document you do not want to write a predicate for.
 
 > [!NOTE]
-> This guide describes the design accepted in [ADR-0006](adr/0006-data-sources-for-expression-variables.md). The rule
-> examples (text, JSON and YAML) are compiled by `dotnet test` (see [doc-examples.md](doc-examples.md)); the C# snippets are
-> exercised by `DataSourcesGuideTests`.
+> The rule examples (text, JSON and YAML) are compiled by `dotnet test` (see [doc-examples.md](doc-examples.md)); the C#
+> snippets are exercised by `DataSourcesGuideTests`.
 
 ## Contents
 
