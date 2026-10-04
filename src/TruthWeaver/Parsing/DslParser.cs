@@ -671,8 +671,51 @@ internal sealed class DslParser
         Token nameToken = this.Current;
         this.Expect(TokenKind.Identifier, "an argument name");
         this.Expect(TokenKind.Colon, "':'");
-        RawLiteral value = this.ParseLiteral();
+        RawLiteral value = this.IsVariableReferenceStart() ? this.ParseVariableReference() : this.ParseLiteral();
         return new ArgumentNode(nameToken.Text, value, SpanCovering(nameToken.Span.Start, value.Span.End));
+    }
+
+    /// <summary>
+    /// Whether the current token starts a variable reference: the reserved word <c>from</c> directly followed by
+    /// <c>(</c> (ADR-0006 decision 10). A bare <c>from</c> is left to the literal parser to reject.
+    /// </summary>
+    private bool IsVariableReferenceStart()
+    {
+        return this.Current.Kind == TokenKind.Identifier
+            && string.Equals(this.Current.Text, "from", StringComparison.OrdinalIgnoreCase)
+            && this.position + 1 < this.tokens.Count
+            && this.tokens[this.position + 1].Kind == TokenKind.LParen;
+    }
+
+    /// <summary>
+    /// Parses <c>from("source", "query")</c>. It is accepted only as a whole argument value, never inside an array
+    /// literal: the argument's value is then a variable the engine resolves at evaluation time.
+    /// </summary>
+    private RawLiteral ParseVariableReference()
+    {
+        Token fromToken = this.Current;
+        this.position++;
+        Token opener = this.ExpectOpenParen();
+        string sourceName = this.ExpectQuotedText("a quoted source name");
+        this.Expect(TokenKind.Comma, "','");
+        string query = this.ExpectQuotedText("a quoted query");
+        int end = this.Current.Span.End;
+        this.ExpectClose(opener);
+        return RawLiteral.OfVariable(sourceName, query, SpanCovering(fromToken.Span.Start, end));
+    }
+
+    /// <summary>Consumes a quoted string and returns its text, or reports <paramref name="description"/> and returns an empty string.</summary>
+    private string ExpectQuotedText(string description)
+    {
+        if (this.Current.Kind != TokenKind.StringLiteral)
+        {
+            this.Expect(TokenKind.StringLiteral, description);
+            return string.Empty;
+        }
+
+        string text = this.Current.Text;
+        this.position++;
+        return text;
     }
 
     private RawLiteral ParseLiteral()

@@ -51,6 +51,16 @@ copyright line reads 2026.
   for the counted operators.
 - Benchmarks for the new operators, rewrites and diagnostics formatting.
 - `RuleDiff.Compare` takes an optional `CompilerOptions`, passed to the equivalence check, so a raised `MaxAnalysisTerms` decides `PreservesMeaning` for large rules.
+- Data sources for expression variables (see [ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md) and the
+  [guide](docs/data-sources.md)), DSL part: a term argument can be `from("source", "query")`, resolved on every evaluation from
+  a named `IDataSource` passed to the new `CompiledRule.EvaluateAsync(context, services, dataSources, options, cancellationToken)`
+  overload. New in `TruthWeaver.Abstractions`: `IDataSource`, `DataQueryResult`, `DataQueryErrorKind`, `DataSources`,
+  `VariableReference`, `VariableFailureKind` and `VariableResolutionException` (the `Fault.Exception` for a failed lookup), and
+  `TermIdentity.Variables` (references are part of a term's identity by source name and query text). Source names are declared
+  with `CompilerOptions.DataSources` (`DataSourceDeclarations`); an undeclared name is `TRE0024` with a "did you mean". A scalar
+  argument needs exactly one match, an array argument collects all matches (none gives an empty array), conversions are those of
+  DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation. `TruthWeaver.Testing` adds
+  `FakeDataSource`. JSON/YAML input of variables, query validators, trace redaction options and `RuleBuilder` support follow.
 
 ### Changed
 

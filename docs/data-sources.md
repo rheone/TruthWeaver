@@ -6,12 +6,15 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 
 > [!NOTE]
 > This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). The feature is not implemented yet, so the
-> examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is
-> marked `doctest:skip` until the implementation lands. The C# member names (`DataSourceNames`,
-> `JsonDataSource.Parse`, `Arg.From`, `GetAsync`, `FakeDataSource.With`, `EvaluationOptions`, `DataSourceDeclarations`, `JsonQueryValidator`, `QueryProblem`) are proposed,
-> not final; the implementation tickets in `.scratch/data-sources/` settle them and this guide is then
-> updated and its examples made runnable.
+> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 and 02): the
+> `from("source", "query")` syntax in the DSL, `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
+> names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: JSON and
+> YAML input of variables, `JsonDataSource`/`YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
+> and `Arg.From`. The proposed names for those (`JsonDataSource.Parse`, `Arg.From`, `GetAsync`, `JsonQueryValidator`,
+> `QueryProblem`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
+> examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
+> `doctest:skip` until ticket 09.
 
 ## Contents
 
@@ -53,7 +56,7 @@ Within one evaluation each `(source, query)` pair is queried once, however many 
 
 The reference has two quoted parts: the source name and the query. It goes anywhere a literal argument goes.
 
-<!-- doctest:skip variable references are not implemented yet -->
+<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
 ```text
 ageAtLeast(min: from("user", "$.minAge")) AND hasRole(role: from("request", "$.requiredRole"))
 ```
@@ -95,27 +98,27 @@ query validator, which turns a malformed query into a compile diagnostic too.
 
 ```csharp
 // Compile: declare which source names rules may use.
-var compiler = RuleCompiler.Create(registry, options with
-{
-    DataSources = new DataSourceDeclarations
-    {
-        ["user"] = JsonQueryValidator.Instance,   // queries on "user" are checked at compile time
-        ["request"] = null,                       // declared, but queries are not syntax-checked
-    },
-});
+var compiler = new RuleCompiler<MyContext>(
+    registry,
+    new CompilerOptions(DataSources: new DataSourceDeclarations { "user", "request" })
+);
 CompilationResult<MyContext> result = compiler.Compile(ruleText);
 
 // Evaluate: supply a source per name, usually per request.
 var sources = new DataSources
 {
-    ["user"] = JsonDataSource.Parse(userJson),
-    ["request"] = YamlDataSource.Parse(requestYaml),
+    ["user"] = userSource,
+    ["request"] = requestSource,
 };
-Decision decision = await result.Rule!.EvaluateAsync(context, sources, cancellationToken);
+Decision decision = await result.CompiledRule!.EvaluateAsync(context, services, sources, cancellationToken: cancellationToken);
 ```
 
 A rule that uses `from(...)` but is evaluated without the source it names returns `Unknown` and records a
-fault. Existing `EvaluateAsync(context)` calls keep working for rules with no variables.
+fault. Existing `EvaluateAsync(context, services)` calls keep working for rules with no variables.
+
+> [!NOTE]
+> Declaring a name together with a query validator (`["user"] = JsonQueryValidator.Instance`) arrives with
+> data-sources ticket 05. Until then `DataSourceDeclarations` only collects names.
 
 ## Queries
 

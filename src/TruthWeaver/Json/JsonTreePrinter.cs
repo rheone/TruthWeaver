@@ -71,12 +71,17 @@ internal static class JsonTreePrinter
     private static JsonNode TermToNode(TermExpression term)
     {
         JsonObject obj = new() { ["predicate"] = term.Identity.PredicateName };
-        if (term.Identity.Arguments.Count > 0)
+        if (term.Identity.Arguments.Count > 0 || term.Identity.Variables.Count > 0)
         {
             JsonObject args = [];
             foreach ((string name, LiteralValue value) in term.Identity.Arguments)
             {
                 args[name] = LiteralToNode(value);
+            }
+
+            foreach ((string name, VariableReference reference) in term.Identity.Variables)
+            {
+                args[name] = new JsonObject { ["from"] = reference.Source, ["query"] = reference.Query };
             }
 
             obj["args"] = args;

@@ -22,7 +22,8 @@ internal sealed class Evaluator<TContext>(
     PredicateRegistry<TContext> registry,
     EvaluationOptions options,
     CancellationToken cancellationToken,
-    ILogger? logger = null
+    ILogger? logger = null,
+    DataSources? dataSources = null
 )
 {
     private readonly TContext context = context;
@@ -31,7 +32,12 @@ internal sealed class Evaluator<TContext>(
     private readonly EvaluationOptions options = options;
     private readonly CancellationToken cancellationToken = cancellationToken;
     private readonly ILogger logger = logger ?? NullLogger.Instance;
+    private readonly DataSources? dataSources = dataSources;
     private readonly Dictionary<TermIdentity, TruthValue> memo = [];
+
+    // What each (source, query) pair answered, queried at most once per evaluation (ADR-0006 decision 11). A failure is
+    // stored like a value, so a repeated reference neither re-queries the source nor re-runs a failing call.
+    private readonly Dictionary<VariableReference, SourceAnswer> sourceAnswers = [];
     private readonly List<Fault> faults = [];
     private readonly List<TraceEntry> trace = [];
     private bool aborted;
@@ -530,7 +536,17 @@ internal sealed class Evaluator<TContext>(
         try
         {
             this.cancellationToken.ThrowIfCancellationRequested();
-            PredicateArguments args = new(identity.Arguments.ToDictionary(kv => kv.Key, kv => kv.Value));
+            Dictionary<string, LiteralValue> values = identity.Arguments.ToDictionary(kv => kv.Key, kv => kv.Value);
+            if (
+                identity.Variables.Count > 0
+                && !await this.ResolveVariablesAsync(identity, descriptor, values).ConfigureAwait(false)
+            )
+            {
+                // The predicate is not called with a missing argument: the term is Unknown and each failure is a fault.
+                return TruthValue.Unknown;
+            }
+
+            PredicateArguments args = new(values);
 
             // A predicate may answer Unknown directly; that is a normal value, not a fault. Only a throw
             // (including a timeout or cancellation surfaced as an exception) is recorded as a Fault.
@@ -540,21 +556,158 @@ internal sealed class Evaluator<TContext>(
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !this.cancellationToken.IsCancellationRequested)
         {
-            this.faults.Add(new Fault(identity, ex));
-            EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
-            TruthWeaverMetrics.FaultRecorded();
-
-            // Ticket 11's acceptance criteria (FaultBudget = 1 tolerates the first fault and aborts
-            // on the second) takes precedence over ADR-0002's own prose example (which reads as
-            // "budget = 1 aborts on the first fault") — the ticket is the more operationally precise
-            // of the two, so a fault count strictly greater than the budget is what triggers an abort.
-            if (this.options.FaultBudget is { } budget && this.faults.Count > budget)
-            {
-                this.aborted = true;
-            }
-
+            this.RecordFault(identity, ex);
             return TruthValue.Unknown;
         }
+    }
+
+    /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault budget is exceeded.</summary>
+    private void RecordFault(TermIdentity identity, Exception ex)
+    {
+        this.faults.Add(new Fault(identity, ex));
+        EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
+        TruthWeaverMetrics.FaultRecorded();
+
+        // Ticket 11's acceptance criteria (FaultBudget = 1 tolerates the first fault and aborts
+        // on the second) takes precedence over ADR-0002's own prose example (which reads as
+        // "budget = 1 aborts on the first fault") — the ticket is the more operationally precise
+        // of the two, so a fault count strictly greater than the budget is what triggers an abort.
+        if (this.options.FaultBudget is { } budget && this.faults.Count > budget)
+        {
+            this.aborted = true;
+        }
+    }
+
+    /// <summary>
+    /// Resolves every variable argument of a term into <paramref name="values"/> (ADR-0006 decisions 6 and 7). Every
+    /// variable is attempted, so one term with two bad references records two faults.
+    /// </summary>
+    /// <returns><see langword="true"/> if all variables resolved; otherwise a fault was recorded for each failure.</returns>
+    private async ValueTask<bool> ResolveVariablesAsync(
+        TermIdentity identity,
+        PredicateDescriptor<TContext> descriptor,
+        Dictionary<string, LiteralValue> values
+    )
+    {
+        bool resolved = true;
+        foreach ((string argumentName, VariableReference reference) in identity.Variables)
+        {
+            VariableResolutionException? failure = null;
+            SourceAnswer answer = await this.QuerySourceAsync(reference).ConfigureAwait(false);
+            PredicateArgumentSchema? argument = descriptor.Schema.Arguments.FirstOrDefault(a =>
+                string.Equals(a.Name, argumentName, StringComparison.Ordinal)
+            );
+            if (answer.Failure is { } sourceFailure)
+            {
+                failure = sourceFailure;
+            }
+            else if (argument is null)
+            {
+                // Defensive only: the compiler matched the argument name against this schema.
+                failure = new VariableResolutionException(
+                    reference,
+                    VariableFailureKind.TypeMismatch,
+                    $"Predicate '{identity.PredicateName}' declares no argument '{argumentName}'."
+                );
+            }
+            else if (
+                VariableConversion.TryConvert(
+                    answer.Matches,
+                    argument.Type,
+                    out LiteralValue value,
+                    out VariableFailureKind kind,
+                    out string message
+                )
+            )
+            {
+                values[argumentName] = value;
+            }
+            else
+            {
+                failure = new VariableResolutionException(reference, kind, $"{reference}: {message}");
+            }
+
+            if (failure is not null)
+            {
+                resolved = false;
+                this.RecordFault(identity, failure);
+            }
+        }
+
+        return resolved;
+    }
+
+    /// <summary>Asks the named source a query, once per evaluation; a failure is stored and replayed like a value.</summary>
+    private async ValueTask<SourceAnswer> QuerySourceAsync(VariableReference reference)
+    {
+        if (this.sourceAnswers.TryGetValue(reference, out SourceAnswer? known))
+        {
+            return known;
+        }
+
+        SourceAnswer answer = await this.QuerySourceUncachedAsync(reference).ConfigureAwait(false);
+        this.sourceAnswers[reference] = answer;
+        return answer;
+    }
+
+    private async ValueTask<SourceAnswer> QuerySourceUncachedAsync(VariableReference reference)
+    {
+        if (this.dataSources is null || !this.dataSources.TryGet(reference.Source, out IDataSource? source))
+        {
+            return SourceAnswer.Failed(
+                new VariableResolutionException(
+                    reference,
+                    VariableFailureKind.UnsuppliedSource,
+                    $"{reference}: data source '{reference.Source}' was not supplied to this evaluation."
+                )
+            );
+        }
+
+        DataQueryResult? result;
+        try
+        {
+            this.cancellationToken.ThrowIfCancellationRequested();
+            result = await source.QueryAsync(reference.Query, this.cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !this.cancellationToken.IsCancellationRequested)
+        {
+            // A source's own timeout or cancellation (the evaluation's token is not cancelled) is a source error;
+            // cancellation of the evaluation itself propagates exactly as it does from a predicate.
+            return SourceAnswer.Failed(
+                new VariableResolutionException(
+                    reference,
+                    VariableFailureKind.SourceError,
+                    $"{reference}: data source '{reference.Source}' failed ({ex.GetType().Name}).",
+                    ex
+                )
+            );
+        }
+
+        if (result is null)
+        {
+            return SourceAnswer.Failed(
+                new VariableResolutionException(
+                    reference,
+                    VariableFailureKind.SourceError,
+                    $"{reference}: data source '{reference.Source}' returned no result."
+                )
+            );
+        }
+
+        if (result.ErrorKind is { } errorKind)
+        {
+            // A node with no literal equivalent (an object) can never fit the argument, so it is a type mismatch;
+            // a malformed query or failing backend is a source error.
+            VariableFailureKind kind =
+                errorKind == DataQueryErrorKind.UnsupportedType
+                    ? VariableFailureKind.TypeMismatch
+                    : VariableFailureKind.SourceError;
+            return SourceAnswer.Failed(
+                new VariableResolutionException(reference, kind, $"{reference}: {errorKind}: {result.ErrorMessage}")
+            );
+        }
+
+        return SourceAnswer.Answered(result.Matches);
     }
 
     private ValueTask<TruthValue> InvokeClassBasedAsync(PredicateDescriptor<TContext> descriptor, PredicateArguments args)
@@ -576,4 +729,18 @@ internal sealed class Evaluator<TContext>(
     /// separate replay pass.
     /// </summary>
     private readonly record struct EvalResult(TruthValue Value, TraceNode Node);
+
+    /// <summary>What a data source answered to one reference: its matches, or the failure to replay.</summary>
+    private sealed record SourceAnswer(IReadOnlyList<LiteralValue> Matches, VariableResolutionException? Failure)
+    {
+        public static SourceAnswer Answered(IReadOnlyList<LiteralValue> matches)
+        {
+            return new(matches, null);
+        }
+
+        public static SourceAnswer Failed(VariableResolutionException failure)
+        {
+            return new([], failure);
+        }
+    }
 }

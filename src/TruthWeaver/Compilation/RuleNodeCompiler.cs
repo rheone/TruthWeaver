@@ -77,6 +77,7 @@ internal sealed class RuleNodeCompiler<TContext>
             RawLiteralForm.QuotedString => $"the string \"{literal.Text}\"",
             RawLiteralForm.Number => $"the number {literal.Text}",
             RawLiteralForm.Boolean => $"the boolean {(literal.BooleanValue ? "true" : "false")}",
+            RawLiteralForm.Variable => "a variable reference",
             _ => "a list",
         };
     }
@@ -85,9 +86,20 @@ internal sealed class RuleNodeCompiler<TContext>
     {
         List<KeyValuePair<string, LiteralValue>> args =
         [
-            .. node.Arguments.Select(a => new KeyValuePair<string, LiteralValue>(a.Name, LiteralConversion.Guess(a.Value))),
+            .. node
+                .Arguments.Where(a => a.Value.Form != RawLiteralForm.Variable)
+                .Select(a => new KeyValuePair<string, LiteralValue>(a.Name, LiteralConversion.Guess(a.Value))),
         ];
-        return new TermIdentity(node.PredicateName, args);
+        List<KeyValuePair<string, VariableReference>> variables =
+        [
+            .. node
+                .Arguments.Where(a => a.Value.Form == RawLiteralForm.Variable)
+                .Select(a => new KeyValuePair<string, VariableReference>(
+                    a.Name,
+                    new VariableReference(a.Value.Text ?? string.Empty, a.Value.Query ?? string.Empty)
+                )),
+        ];
+        return new TermIdentity(node.PredicateName, args, variables);
     }
 
     /// <summary>
@@ -546,6 +558,7 @@ internal sealed class RuleNodeCompiler<TContext>
 
         PredicateSchema schema = descriptor.Schema;
         Dictionary<string, LiteralValue> resolvedArgs = [];
+        Dictionary<string, VariableReference> resolvedVariables = [];
         HashSet<string> suppliedNames = new(StringComparer.Ordinal);
         foreach (ArgumentNode arg in node.Arguments)
         {
@@ -575,6 +588,21 @@ internal sealed class RuleNodeCompiler<TContext>
                         path: arg.Path
                     )
                 );
+                continue;
+            }
+
+            if (arg.Value.Form == RawLiteralForm.Variable)
+            {
+                // A variable's value, and so whether it fits the argument's kind, is known only at evaluation time
+                // (ADR-0006 decision 2); compilation checks just that the source name was declared.
+                if (this.CheckSourceDeclared(arg))
+                {
+                    resolvedVariables[arg.Name] = new VariableReference(
+                        arg.Value.Text ?? string.Empty,
+                        arg.Value.Query ?? string.Empty
+                    );
+                }
+
                 continue;
             }
 
@@ -628,8 +656,48 @@ internal sealed class RuleNodeCompiler<TContext>
 
         TermIdentity identity = new(
             schema.Name,
-            [.. resolvedArgs.Select(kv => new KeyValuePair<string, LiteralValue>(kv.Key, kv.Value))]
+            [.. resolvedArgs.Select(kv => new KeyValuePair<string, LiteralValue>(kv.Key, kv.Value))],
+            [.. resolvedVariables.Select(kv => new KeyValuePair<string, VariableReference>(kv.Key, kv.Value))]
         );
         return new TermExpression(identity);
+    }
+
+    /// <summary>
+    /// Reports <c>TRE0024</c>, with a "did you mean" when a declared name is close, if the variable reference in
+    /// <paramref name="arg"/> names a data source that was not declared in <see cref="CompilerOptions.DataSources"/>.
+    /// </summary>
+    /// <returns><see langword="true"/> if the source is declared.</returns>
+    private bool CheckSourceDeclared(ArgumentNode arg)
+    {
+        string source = arg.Value.Text ?? string.Empty;
+        DataSourceDeclarations? declared = this.options.DataSources;
+        if (declared?.Contains(source) == true)
+        {
+            return true;
+        }
+
+        IReadOnlyCollection<string> names = declared?.Names ?? [];
+        string expected =
+            names.Count == 0
+                ? "a declared data source name"
+                : $"one of {string.Join(", ", names.Order(StringComparer.Ordinal))}";
+        string hint =
+            names.Count == 0
+                ? "No data sources are declared; add the name to CompilerOptions.DataSources."
+                : $"Declare '{source}' in CompilerOptions.DataSources, or use one of: {string.Join(", ", names.Order(StringComparer.Ordinal).Select(n => $"'{n}'"))}.";
+        DiagnosticSuggestion suggestion =
+            NameSuggester.Suggest(source, names) ?? new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, hint);
+        this.diagnostics.Add(
+            Diagnostic.Error(
+                DiagnosticCodes.UndeclaredDataSource,
+                $"No data source named '{source}' is declared.",
+                arg.Value.Span,
+                expected: expected,
+                found: $"'{source}'",
+                suggestion: suggestion,
+                path: arg.Path
+            )
+        );
+        return false;
     }
 }

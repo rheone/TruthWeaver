@@ -251,7 +251,7 @@ public sealed class CompiledRule<TContext>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -272,7 +272,7 @@ public sealed class CompiledRule<TContext>
     /// Renders this rule's structure as an indented plain-text tree, annotated by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -292,9 +292,33 @@ public sealed class CompiledRule<TContext>
     /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
+    public Task<Decision> EvaluateAsync(
+        TContext context,
+        IServiceProvider services,
+        EvaluationOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return this.EvaluateAsync(context, services, dataSources: null, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// Evaluates this rule against a context, resolving each variable reference (<c>from("source", "query")</c>)
+    /// from the matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
+    /// whose query matches nothing or too much, whose result does not fit the argument, or whose source fails makes
+    /// its term <see cref="TruthValue.Unknown"/> and records a <see cref="Fault"/> carrying a
+    /// <see cref="VariableResolutionException"/>; the fault never contains the resolved value.
+    /// </summary>
+    /// <param name="context">The application-supplied evaluation context.</param>
+    /// <param name="services">The service provider to resolve class-based predicates from, fresh for this call.</param>
+    /// <param name="dataSources">The named data sources for this evaluation, or <see langword="null"/> when the rule has no variables.</param>
+    /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
+    /// <returns>The evaluation's <see cref="Decision"/>.</returns>
     public async Task<Decision> EvaluateAsync(
         TContext context,
         IServiceProvider services,
+        DataSources? dataSources,
         EvaluationOptions? options = null,
         CancellationToken cancellationToken = default
     )
@@ -310,12 +334,21 @@ public sealed class CompiledRule<TContext>
                 this.registry,
                 effectiveOptions,
                 timeoutSource.Token,
-                this.logger
+                this.logger,
+                dataSources
             );
             return await timedEvaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
         }
 
-        Evaluator<TContext> evaluator = new(context, services, this.registry, effectiveOptions, cancellationToken, this.logger);
+        Evaluator<TContext> evaluator = new(
+            context,
+            services,
+            this.registry,
+            effectiveOptions,
+            cancellationToken,
+            this.logger,
+            dataSources
+        );
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
 
@@ -355,24 +388,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>The joined argument text, or <see langword="null"/> for a zero-argument term.</returns>
     private static string? ArgumentText(TermIdentity identity)
     {
-        if (identity.Arguments.Count == 0)
-        {
-            return null;
-        }
-
-        StringBuilder builder = new();
-        for (int i = 0; i < identity.Arguments.Count; i++)
-        {
-            if (i > 0)
-            {
-                builder.Append(", ");
-            }
-
-            KeyValuePair<string, LiteralValue> argument = identity.Arguments[i];
-            builder.Append(argument.Key).Append(": ").Append(argument.Value);
-        }
-
-        return builder.ToString();
+        return identity.FormatArguments();
     }
 
     private static TraceNode RequireTraceTree(Decision decision)

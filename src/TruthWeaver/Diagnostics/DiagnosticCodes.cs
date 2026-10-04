@@ -113,4 +113,10 @@ public static class DiagnosticCodes
 
     /// <summary>Lint (opt-in via <c>CompilerOptions.Lints</c>): <c>NOT (NOT x)</c>, which is <c>x</c> in Strong K3.</summary>
     public const string DoubleNegation = "TRE0023";
+
+    /// <summary>
+    /// A variable reference, <c>from("name", "query")</c>, names a data source that was not declared in
+    /// <c>CompilerOptions.DataSources</c> (ADR-0006 decision 4). The span is the reference.
+    /// </summary>
+    public const string UndeclaredDataSource = "TRE0024";
 }

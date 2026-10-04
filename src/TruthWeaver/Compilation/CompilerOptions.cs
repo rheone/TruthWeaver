@@ -21,13 +21,18 @@ namespace TruthWeaver.Compilation;
 /// The opt-in lint rules to run after analysis. Defaults to <see cref="LintRules.None"/>, so enabling none of them
 /// leaves a rule's diagnostics exactly as they were. Findings are <c>Info</c> diagnostics and never block compilation.
 /// </param>
+/// <param name="DataSources">
+/// The data source names a rule may use in <c>from("name", "query")</c> (ADR-0006). <see langword="null"/> (the default)
+/// declares none, so any variable reference is a <c>TRE0024</c> error.
+/// </param>
 public sealed record CompilerOptions(
     int MaxDepth = 32,
     int MaxNodeCount = 512,
     int MaxAnalysisTerms = 20,
     CompilationMode Mode = CompilationMode.Strict,
     int MaxRewriteNodeCount = 100_000,
-    LintRules Lints = LintRules.None
+    LintRules Lints = LintRules.None,
+    DataSourceDeclarations? DataSources = null
 )
 {
     /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/> / 100000.</summary>

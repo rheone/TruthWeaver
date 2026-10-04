@@ -91,12 +91,24 @@ internal static class YamlTreePrinter
             { new YamlScalarNode("predicate"), new YamlScalarNode(term.Identity.PredicateName) },
         };
 
-        if (term.Identity.Arguments.Count > 0)
+        if (term.Identity.Arguments.Count > 0 || term.Identity.Variables.Count > 0)
         {
             YamlMappingNode args = [];
             foreach ((string name, LiteralValue value) in term.Identity.Arguments)
             {
                 args.Add(new YamlScalarNode(name), LiteralToNode(value));
+            }
+
+            foreach ((string name, VariableReference reference) in term.Identity.Variables)
+            {
+                args.Add(
+                    new YamlScalarNode(name),
+                    new YamlMappingNode
+                    {
+                        { new YamlScalarNode("from"), Scalar(reference.Source, ScalarStyle.DoubleQuoted) },
+                        { new YamlScalarNode("query"), Scalar(reference.Query, ScalarStyle.DoubleQuoted) },
+                    }
+                );
             }
 
             mapping.Add(new YamlScalarNode("args"), args);

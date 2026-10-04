@@ -8,7 +8,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Measures <see cref="CompiledRule{TContext}.EvaluateAsync"/>'s eval-time memoized term-lookup cost
+/// Measures <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/>'s eval-time memoized term-lookup cost
 /// (ADR-0002) against a rule shaped as an <c>OR</c> of <see cref="BranchCount"/> <c>AND</c> branches
 /// that all reference the same shared term alongside one branch-unique term
 /// (<see cref="RuleFixtures.BuildSharedTermFanOut"/>). <see cref="EvaluationMode.Exhaustive"/> forces

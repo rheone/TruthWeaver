@@ -246,11 +246,11 @@ Beyond `src`, the rest of the repository:
 
 | Package | Depends on | Ships |
 | --- | --- | --- |
-| `TruthWeaver.Abstractions` | *(nothing third-party)* | `IPredicate<TContext>`, `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault` — everything a predicate-implementing service needs. |
+| `TruthWeaver.Abstractions` | *(nothing third-party)* | `IPredicate<TContext>`, `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`, and the data source kernel (`IDataSource`, `DataQueryResult`, `DataSources`, `VariableReference`) — everything a predicate-implementing service needs. |
 | `TruthWeaver` | `Abstractions`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Logging.Abstractions` | The DSL parser, `RuleCompiler<TContext>`, `CompiledRule<TContext>`, the BDD-based analyzer, the evaluator, `System.Text.Json` tree support, printing/diffing, and DI registration extensions. |
 | `TruthWeaver.Yaml` | `TruthWeaver`, YamlDotNet | YAML tree support (`CompileYaml`/`PrintYaml`), isolated so a consumer with no interest in YAML never pulls in YamlDotNet. |
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
-| `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions and fake/scripted predicate factories for tests, without a hand-written `IPredicate<TContext>` per test. |
+| `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. |
 
 <!-- doctest:skip class diagram, structure only -->
 ```mermaid
@@ -1308,13 +1308,17 @@ A literal argument is fixed in the rule. When the value changes per request, or 
 document, write a variable reference instead: the source name and a query. It is resolved on every
 evaluation.
 
-<!-- doctest:skip variable references are not implemented yet -->
+<!-- doctest:skip needs a declared data source and a registered predicate; made runnable in data-sources ticket 09 -->
 ```text
 ageAtLeast(min: from("user", "$.minAge"))
 ```
 
-The JSON and YAML sources use JSONPath. A missing, ambiguous or mistyped result makes the term `Unknown` and
-records a fault. See the [data sources guide](docs/data-sources.md) and
+Declare the source names when you compile (`new CompilerOptions(DataSources: ...)` with a `DataSourceDeclarations`), and pass
+the sources when you evaluate (`rule.EvaluateAsync(context, services, dataSources)`). A name that was not declared is a
+`TRE0024` error. Nothing is read at compile time. A missing, ambiguous or mistyped result, an unsupplied source or a
+failing source makes the term `Unknown` and records a `Fault` carrying a `VariableResolutionException`; the fault and the
+trace name the reference, never the resolved value. In tests, `FakeDataSource` (in `TruthWeaver.Testing`) stands in for a
+real source. See the [data sources guide](docs/data-sources.md) and
 [ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md).
 
 ## Examples
@@ -2218,6 +2222,7 @@ The classes of malformed rule text each report as follows.
 | Declared `Collapse` | `TRE0001` (DSL), `TRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
 | Declared `Project` | `TRE0001` (DSL), `TRE0014` (JSON/YAML) | a rule without `Project` / `Project` | hint to use `COALESCE(x, True)` / `COALESCE(x, False)` or `Decision.Project(unknownAs)` |
 | Missing, unknown or mistyped predicate argument | `TRE0003`, `TRE0005`, `TRE0004` | the argument or kind / what was written | nearest declared argument name |
+| Variable reference naming an undeclared data source | `TRE0024` | a declared data source name / the name written | nearest declared source name, or a hint to declare it |
 
 ## Benchmarks
 
