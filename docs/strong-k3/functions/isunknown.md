@@ -117,7 +117,7 @@ Exactly one of `IsTrue(a)`, `IsFalse(a)` and `IsUnknown(a)` is `True` for every 
 
 ## Implementation Notes
 
-- The evaluator reports a `IsUnknown` node as `IsUnknown` in the trace and the evaluated tree. The four inspections are one node type distinguished by the kind they test.
+- The evaluator reports a `IsUnknown` node as `IsUnknown` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
 - `ExpandToPrimitives` expands `IsUnknown` to `COALESCE(a, True) AND COALESCE(NOT a, True)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `CompressToDerived` recognises the expanded `COALESCE` conjunction and writes it back as `IsUnknown(a)`.
 

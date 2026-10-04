@@ -147,7 +147,7 @@ flowchart LR
 
 ## Implementation Notes
 
-- The evaluator reports an `EQUIVALENT` node as `EQUIVALENT` in the trace and the evaluated tree, whichever spelling the rule used.
+- The evaluator reports an `EQUIVALENT` node as `EQUIVALENT` in the trace and the trace tree, whichever spelling the rule used.
 - `a EQUIVALENT a` is not reported as a tautology: the no-tautology theorem covers it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
 
 ## Related Operations

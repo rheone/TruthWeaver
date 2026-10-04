@@ -7,8 +7,8 @@ using TruthWeaver.Evaluation;
 /// <summary>
 /// Computes a structural diff between two compiled rules: which operator, term, or constant nodes were
 /// added, removed, or changed between a "before" and an "after" tree, located by operand-index path.
-/// Built on <see cref="CompiledRule{TContext}.Describe"/> so every diff entry carries each node's
-/// human-readable <see cref="RuleDescription"/> alongside its structural position, without the caller
+/// Built on <see cref="CompiledRule{TContext}.Outline"/> so every diff entry carries each node's
+/// human-readable <see cref="OutlineNode"/> alongside its structural position, without the caller
 /// needing to re-derive it from the closed-set AST types (ADR-0004).
 /// </summary>
 public static class RuleDiff
@@ -28,7 +28,7 @@ public static class RuleDiff
         ArgumentNullException.ThrowIfNull(after);
 
         List<RuleDiffEntry> entries = [];
-        DiffNode(before.Root, before.Describe(), after.Root, after.Describe(), [], entries);
+        DiffNode(before.Root, before.Outline(), after.Root, after.Outline(), [], entries);
 
         // Identical structure is trivially the same meaning; otherwise ask the K3 equivalence check.
         bool? preservesMeaning =
@@ -45,9 +45,9 @@ public static class RuleDiff
 
     private static void DiffNode(
         Expression before,
-        RuleDescription beforeDescription,
+        OutlineNode beforeDescription,
         Expression after,
-        RuleDescription afterDescription,
+        OutlineNode afterDescription,
         IReadOnlyList<int> path,
         List<RuleDiffEntry> entries
     )

@@ -210,7 +210,7 @@ The out-of-range values are rejected because they make the result a constant: a 
 
 ## Implementation Notes
 
-- The evaluator reports the node as `AtMost(k)` in the trace and the evaluated tree, for example `AtMost(1)`.
+- The evaluator reports the node as `AtMost(k)` in the trace and the trace tree, for example `AtMost(1)`.
 - Evaluation shares the threshold evaluator with [AtLeast](atleast.md) and compares both ends of the count interval.
 - `ExpandToPrimitives` leaves `AtMost` unchanged because it is a kernel node.
 

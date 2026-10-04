@@ -121,10 +121,10 @@ public sealed class InspectionTests
 
         Assert.Equal(TruthValue.True, decision.Result);
         Assert.Single(decision.Faults);
-        Assert.All(decision.EvaluatedTree!.Children, c => Assert.False(c.NotEvaluated));
+        Assert.All(decision.TraceTree!.Children, c => Assert.False(c.NotEvaluated));
     }
 
-    /// <summary>The evaluated tree labels the node with the operator and has the inspected operand as its only child.</summary>
+    /// <summary>The trace tree labels the node with the operator and has the inspected operand as its only child.</summary>
     [Fact]
     public async Task EvaluateAsync_Inspection_ProducesALabelledNodeWithOneChild_Test()
     {
@@ -132,9 +132,9 @@ public sealed class InspectionTests
 
         Decision decision = await rule.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
 
-        Assert.Equal("IsUnknown", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(TruthValue.True, decision.EvaluatedTree.Result);
-        EvaluatedNode child = Assert.Single(decision.EvaluatedTree.Children);
+        Assert.Equal("IsUnknown", decision.TraceTree!.Text);
+        Assert.Equal(TruthValue.True, decision.TraceTree.Result);
+        TraceNode child = Assert.Single(decision.TraceTree.Children);
         Assert.Equal(TruthValue.Unknown, child.Result);
     }
 
@@ -266,9 +266,9 @@ public sealed class InspectionTests
     [InlineData("IsFalse(a)", "IsFalse")]
     [InlineData("IsUnknown(a)", "IsUnknown")]
     [InlineData("IsKnown(a)", "IsKnown")]
-    public void Describe_Inspection_ExplainsItsDefiniteResult_Test(string text, string label)
+    public void Outline_Inspection_ExplainsItsDefiniteResult_Test(string text, string label)
     {
-        RuleDescription description = Compiler.Compile(text).CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile(text).CompiledRule!.Outline();
 
         Assert.Equal(label, description.Label);
         Assert.Contains("never Unknown", description.Description, StringComparison.Ordinal);
@@ -282,7 +282,7 @@ public sealed class InspectionTests
     [InlineData(OperatorStyle.CStyle)]
     public void Print_Inspection_KeepsTheWordInEveryStyle_Test(OperatorStyle style)
     {
-        RuleDescription tree = Compiler.Compile("IsUnknown(a)").CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile("IsUnknown(a)").CompiledRule!.Outline();
 
         Assert.Contains("IsUnknown", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains("IsUnknown", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

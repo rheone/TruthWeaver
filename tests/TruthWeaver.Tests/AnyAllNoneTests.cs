@@ -208,7 +208,7 @@ public sealed class AnyAllNoneTests
         Assert.Equal("NONE(a, NOT b, c)", RuleBuilder.None(operands).Compile(Compiler).CompiledRule!.CanonicalText);
     }
 
-    /// <summary>The evaluated tree labels the node with the operator name and keeps operand order.</summary>
+    /// <summary>The trace tree labels the node with the operator name and keeps operand order.</summary>
     [Theory]
     [InlineData("ANY(a, b, c)", "ANY")]
     [InlineData("ALL(a, b, c)", "ALL")]
@@ -222,8 +222,8 @@ public sealed class AnyAllNoneTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(label, decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(["a", "b", "c"], decision.EvaluatedTree.Children.Select(c => c.NodeDescription));
+        Assert.Equal(label, decision.TraceTree!.Text);
+        Assert.Equal(["a", "b", "c"], decision.TraceTree.Children.Select(c => c.Text));
     }
 
     /// <summary>The operator descriptions state the cardinality each stands for.</summary>
@@ -231,9 +231,9 @@ public sealed class AnyAllNoneTests
     [InlineData("ANY(a, b)", "ANY", "at least one")]
     [InlineData("ALL(a, b)", "ALL", "every operand")]
     [InlineData("NONE(a, b)", "NONE", "no operand")]
-    public void Describe_AnyAllNone_ExplainsTheCardinality_Test(string text, string label, string phrase)
+    public void Outline_AnyAllNone_ExplainsTheCardinality_Test(string text, string label, string phrase)
     {
-        RuleDescription description = Compiler.Compile(text).CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile(text).CompiledRule!.Outline();
 
         Assert.Equal(label, description.Label);
         Assert.Contains(phrase, description.Description, StringComparison.Ordinal);
@@ -250,7 +250,7 @@ public sealed class AnyAllNoneTests
     [InlineData("NONE(a, b)", "NONE", OperatorStyle.CStyle)]
     public void Print_AnyAllNone_KeepsTheWordInEveryStyle_Test(string text, string label, OperatorStyle style)
     {
-        RuleDescription tree = Compiler.Compile(text).CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile(text).CompiledRule!.Outline();
 
         Assert.Contains(label, PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains(label, MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

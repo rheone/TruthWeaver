@@ -151,7 +151,7 @@ TruthWeaver is Kleene: `IMPLIES` is `OR(NOT(a), b)`, so it stays among the conne
 
 ## Implementation Notes
 
-- The evaluator reports an `IMPLIES` node as `IMPLIES` in the trace and the evaluated tree.
+- The evaluator reports an `IMPLIES` node as `IMPLIES` in the trace and the trace tree.
 - Compression rewrites an `OR(NOT a, b)` shape to `IMPLIES`, and `ExpandToPrimitives` expands `IMPLIES` back ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
 
 ## Related Operations

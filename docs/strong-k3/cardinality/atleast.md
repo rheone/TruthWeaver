@@ -223,7 +223,7 @@ The out-of-range values are rejected because they make the result a constant: `A
 
 ## Implementation Notes
 
-- The evaluator reports the node as `AtLeast(k)` in the trace and the evaluated tree, for example `AtLeast(2)`.
+- The evaluator reports the node as `AtLeast(k)` in the trace and the trace tree, for example `AtLeast(2)`.
 - Evaluation takes the definitely-true and possibly-true counts and compares both ends of the interval, so it is linear in the operand count.
 - The simplifier collapses `AtLeast(1, ...)` to `OR` and `AtLeast(n, ...)` to `AND` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)), and `ExpandToPrimitives` leaves `AtLeast` unchanged because it is a kernel node.
 

@@ -206,7 +206,7 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 ## Implementation Notes
 
-- The evaluator reports the node as `BETWEEN(min, max)` in the trace and the evaluated tree, for example `BETWEEN(1, 2)`; the rule description label is the same. Operand order is kept.
+- The evaluator reports the node as `BETWEEN(min, max)` in the trace and the trace tree, for example `BETWEEN(1, 2)`; the rule outline label is the same. Operand order is kept.
 - Evaluation takes the two threshold results and combines them with `AND`, so it is linear in the operand count.
 - `ExpandToPrimitives` rewrites `BETWEEN(1, 2, a, b, c)` to `AtLeast(1, a, b, c) AND AtMost(2, a, b, c)`. `Simplify` and `Canonicalize` keep `BETWEEN` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `BETWEEN(1, 2, a, b, c)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "between", "operands": [...], "min": 1, "max": 2}`.

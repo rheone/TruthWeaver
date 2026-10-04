@@ -13,19 +13,14 @@ namespace TruthWeaver.Abstractions;
 /// <param name="Trace">
 /// The evaluation trace, present only when requested via <c>EvaluationOptions</c>.
 /// </param>
-/// <param name="EvaluatedTree">
+/// <param name="TraceTree">
 /// A structural mirror of the compiled expression tree from this evaluation, with every node
 /// (leaf or interior) annotated by what happened to it — its resolved result, or that it was skipped
 /// by short-circuiting. Unlike <paramref name="Trace"/>'s flat log, this preserves the tree shape, so
 /// it can drive a full-tree rendering (e.g. <c>MermaidTreePrinter</c>/<c>PlainTextTreePrinter</c>)
 /// that shows the whole rule, the path actually taken, and the parts left out.
 /// </param>
-public sealed record Decision(
-    TruthValue Result,
-    IReadOnlyList<Fault> Faults,
-    Trace? Trace = null,
-    EvaluatedNode? EvaluatedTree = null
-)
+public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
 {
     /// <summary>
     /// Gets a value indicating whether this decision is satisfied. <see langword="true"/> only when

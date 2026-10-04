@@ -65,7 +65,7 @@ public sealed class CoalesceTests
         Assert.Equal(expected, decision.Result);
     }
 
-    /// <summary>Operands after the first known value are skipped in the evaluated tree, as AND/OR skip theirs.</summary>
+    /// <summary>Operands after the first known value are skipped in the trace tree, as AND/OR skip theirs.</summary>
     [Fact]
     public async Task EvaluateAsync_AfterTheFirstKnownOperand_MarksTheRestSkipped_Test()
     {
@@ -76,8 +76,8 @@ public sealed class CoalesceTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal("COALESCE", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal([false, false, true], decision.EvaluatedTree.Children.Select(c => c.NotEvaluated));
+        Assert.Equal("COALESCE", decision.TraceTree!.Text);
+        Assert.Equal([false, false, true], decision.TraceTree.Children.Select(c => c.NotEvaluated));
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
@@ -92,7 +92,7 @@ public sealed class CoalesceTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.All(decision.EvaluatedTree!.Children, c => Assert.False(c.NotEvaluated));
+        Assert.All(decision.TraceTree!.Children, c => Assert.False(c.NotEvaluated));
     }
 
     /// <summary>Both spellings print as the canonical function-call form.</summary>
@@ -238,9 +238,9 @@ public sealed class CoalesceTests
 
     /// <summary>The operator description states that only Unknown is replaced.</summary>
     [Fact]
-    public void Describe_Coalesce_ExplainsThatOnlyUnknownIsReplaced_Test()
+    public void Outline_Coalesce_ExplainsThatOnlyUnknownIsReplaced_Test()
     {
-        RuleDescription description = Compiler.Compile("COALESCE(a, b)").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("COALESCE(a, b)").CompiledRule!.Outline();
 
         Assert.Equal("COALESCE", description.Label);
         Assert.Contains("Unknown", description.Description, StringComparison.Ordinal);
@@ -254,7 +254,7 @@ public sealed class CoalesceTests
     [InlineData(OperatorStyle.CStyle, "??")]
     public void Print_Coalesce_UsesTheStyleSpelling_Test(OperatorStyle style, string expected)
     {
-        RuleDescription tree = Compiler.Compile("COALESCE(a, b)").CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile("COALESCE(a, b)").CompiledRule!.Outline();
 
         Assert.Contains(expected, PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains(expected, MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

@@ -9,7 +9,7 @@ using TruthWeaver.Abstractions;
 /// </summary>
 internal static class TruthValueText
 {
-    /// <summary>Gets the canonical (upper camel) spelling used by the DSL printer, descriptions and evaluated trees.</summary>
+    /// <summary>Gets the canonical (upper camel) spelling used by the DSL printer, outlines and trace trees.</summary>
     /// <param name="value">The constant's value.</param>
     /// <returns><c>True</c>, <c>False</c> or <c>Unknown</c>.</returns>
     public static string Canonical(TruthValue value)

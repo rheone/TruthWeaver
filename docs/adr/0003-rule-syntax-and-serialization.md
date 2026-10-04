@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Partly superseded by [ADR-0005](0005-strong-k3-language-surface.md): the operator set, the ban on `IMPLIES` and symbol aliases, binary-only `XOR`/`XNOR` naming, and "word operators only" no longer hold. All other decisions here stand. Diagnostic codes cited in this record read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged).
+Accepted. Partly superseded by [ADR-0005](0005-strong-k3-language-surface.md): the operator set, the ban on `IMPLIES` and symbol aliases, binary-only `XOR`/`XNOR` naming, and "word operators only" no longer hold. All other decisions here stand. Diagnostic codes cited in this record read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged). Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -312,7 +312,7 @@ therefore can't casually change once rules reference it, while `Label` is
 purely presentational and free to be renamed, capitalized, or localized
 without touching a single persisted rule.
 
-### Operator label/description, and `CompiledRule.Describe()`
+### Operator label/description, and `CompiledRule.Outline()`
 
 Predicates carry `Label`/`Description` on their schema; the closed set of
 *operators* (`AND`/`OR`/`NOT`/`XOR`/`XNOR`/`ExactlyOne`/the threshold family/
@@ -320,11 +320,11 @@ the constants) needed the equivalent, so a rule-authoring UI or a generated
 "what does this rule mean" report can describe every node of a compiled
 expression tree, not just its predicate leaves. `OperatorInfo.Describe`
 (`TruthWeaver.Ast`) returns an `OperatorDescriptor` (`Label`,
-`Description`) for any operator node; `CompiledRule<TContext>.Describe()`
-walks the whole tree and returns a `RuleDescription` (`Label`, `Description`,
+`Description`) for any operator node; `CompiledRule<TContext>.Outline()`
+walks the whole tree and returns an `OutlineNode` (`Label`, `Description`,
 `Operands`) recursively, resolving each term's `Label`/`Description` from its
 predicate's registered `PredicateSchema` via the new public
-`PredicateRegistry<TContext>.TryGetSchema`. `RuleDescription` is a plain DTO,
+`PredicateRegistry<TContext>.TryGetSchema`. `OutlineNode` is a plain DTO,
 not the AST itself — the closed-set `Expression`/`RuleNode` types stay
 internal-to-the-package (ADR-0004); nothing here opens them up as a second,
 parallel public surface.

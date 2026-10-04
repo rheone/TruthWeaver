@@ -189,7 +189,7 @@ public sealed class EquivalentTests
         Assert.Equal(viaEquivalent.CanonicalText, viaXnor.CanonicalText);
     }
 
-    /// <summary>The evaluated tree and the description label the node EQUIVALENT.</summary>
+    /// <summary>The trace tree and the outline label the node EQUIVALENT.</summary>
     [Fact]
     public async Task EvaluateAsync_Equivalent_LabelsTheNodeEquivalent_Test()
     {
@@ -197,8 +197,8 @@ public sealed class EquivalentTests
 
         Decision decision = await rule.EvaluateAsync([TruthValue.True, TruthValue.True], TestContext.Current.CancellationToken);
 
-        Assert.Equal("EQUIVALENT", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal("EQUIVALENT", Compiler.Compile("a IFF b").CompiledRule!.Describe().Label);
+        Assert.Equal("EQUIVALENT", decision.TraceTree!.Text);
+        Assert.Equal("EQUIVALENT", Compiler.Compile("a IFF b").CompiledRule!.Outline().Label);
     }
 
     /// <summary>Tree renderings show the word, <c>↔</c> and <c>==</c> for the three operator styles.</summary>
@@ -210,7 +210,7 @@ public sealed class EquivalentTests
     {
         CompiledRule<RuleTestContext> rule = Compiler.Compile("a EQUIVALENT b").CompiledRule!;
 
-        Assert.Contains(expected, PlainTextTreePrinter.Print(rule.Describe(), style), StringComparison.Ordinal);
-        Assert.Contains(expected, MermaidTreePrinter.Print(rule.Describe(), style), StringComparison.Ordinal);
+        Assert.Contains(expected, PlainTextTreePrinter.Print(rule.Outline(), style), StringComparison.Ordinal);
+        Assert.Contains(expected, MermaidTreePrinter.Print(rule.Outline(), style), StringComparison.Ordinal);
     }
 }

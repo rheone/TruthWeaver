@@ -209,7 +209,7 @@ LESSTHAN(1, ...)
 
 ## Implementation Notes
 
-- The evaluator reports the node as `NONE` in the trace and the evaluated tree; the rule description label is `NONE`. Operand order is kept.
+- The evaluator reports the node as `NONE` in the trace and the trace tree; the rule outline label is `NONE`. Operand order is kept.
 - Evaluation reuses the threshold evaluator (`AtMost(0, ...)`), so it is linear in the operand count.
 - `ExpandToPrimitives` rewrites `NONE(...)` to `AtMost(0, ...)`. `Simplify` and `Canonicalize` keep `NONE` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `NONE(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "none", "operands": [...]}`.

@@ -232,7 +232,7 @@ The out-of-range values are rejected because they make the result a constant: a 
 
 ## Implementation Notes
 
-- The evaluator reports the node as `Exactly(k)` in the trace and the evaluated tree, for example `Exactly(2)`.
+- The evaluator reports the node as `Exactly(k)` in the trace and the trace tree, for example `Exactly(2)`.
 - Evaluation shares the threshold evaluator with [AtLeast](atleast.md) and [AtMost](atmost.md), with the interval test for `Exactly` described above.
 - `ExpandToPrimitives` leaves `Exactly` unchanged because it is a kernel node, and expands [ExactlyOne](exactlyone.md) and `PARITY` into `Exactly` nodes.
 

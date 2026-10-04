@@ -102,7 +102,7 @@ Entries elsewhere in this file that name a code were updated to the `TRE` prefix
 | `EvaluatedNode` | `TraceNode` |
 | `Decision.EvaluatedTree` | `Decision.TraceTree` |
 | `NodeDescription` (on `TraceEntry` and the tree node) | `Text` |
-| `RuleDescription` | `RuleOutline` / `OutlineNode` |
+| `RuleDescription` | `OutlineNode` (the root node `CompiledRule.Outline()` returns is the rule outline) |
 | `CompiledRule.Describe()` | `CompiledRule.Outline()` |
 | `EvaluationMode.Default` | `EvaluationMode.ShortCircuit` |
 | `ResolvedValuePredicates` (`resolve`, `TResolved`) | `SelectedValuePredicates` (`select`, `TSelected`) |

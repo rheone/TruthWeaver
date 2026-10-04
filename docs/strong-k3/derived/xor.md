@@ -157,7 +157,7 @@ The upper `AND` is `AND(a, NOT(b))` and the lower one is `AND(NOT(a), b)`.
 
 ## Implementation Notes
 
-- The evaluator reports an `XOR` node as `XOR` in the trace and the evaluated tree.
+- The evaluator reports an `XOR` node as `XOR` in the trace and the trace tree.
 - The no-tautology theorem covers `XOR` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17): `a XOR a` is not reported as a contradiction.
 
 ## Related Operations

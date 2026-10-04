@@ -242,8 +242,8 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.CStyle)]
     public void PlainText_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
     {
-        RuleDescription exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
-        RuleDescription atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+        OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
+        OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
 
         Assert.Contains("ExactlyOne", PlainTextTreePrinter.Print(exactlyOne, style));
         Assert.Contains("AtLeast(3)", PlainTextTreePrinter.Print(atLeast, style));
@@ -255,8 +255,8 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.CStyle)]
     public void Mermaid_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
     {
-        RuleDescription exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
-        RuleDescription atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+        OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
+        OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
 
         Assert.Contains("ExactlyOne", MermaidTreePrinter.Print(exactlyOne, style));
         Assert.Contains("AtLeast(3)", MermaidTreePrinter.Print(atLeast, style));
@@ -272,7 +272,7 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.CStyle, "?:")]
     public void PlainText_and_Mermaid_label_If_in_the_requested_style_Test(OperatorStyle style, string expected)
     {
-        RuleDescription ifNode = new("If", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+        OutlineNode ifNode = new("If", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
 
         string plain = PlainTextTreePrinter.Print(ifNode, style);
         string mermaid = MermaidTreePrinter.Print(ifNode, style);
@@ -310,7 +310,7 @@ public sealed class RuleTreeRenderingTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        string text = PlainTextTreePrinter.Print(rule.Describe(), decision.EvaluatedTree!, OperatorStyle.Symbolic);
+        string text = PlainTextTreePrinter.Print(rule.Outline(), decision.TraceTree!, OperatorStyle.Symbolic);
 
         Assert.Contains("∧", text);
     }
@@ -328,7 +328,7 @@ public sealed class RuleTreeRenderingTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        string mermaid = MermaidTreePrinter.Print(rule.Describe(), decision.EvaluatedTree!, OperatorStyle.CStyle);
+        string mermaid = MermaidTreePrinter.Print(rule.Outline(), decision.TraceTree!, OperatorStyle.CStyle);
 
         Assert.Contains("&&", mermaid);
     }
@@ -336,7 +336,7 @@ public sealed class RuleTreeRenderingTests
     [Fact]
     public void Mermaid_output_escapes_double_quotes_in_labels()
     {
-        RuleDescription node = Leaf("has \"quotes\" inside");
+        OutlineNode node = Leaf("has \"quotes\" inside");
 
         string mermaid = MermaidTreePrinter.Print(node);
 
@@ -351,7 +351,7 @@ public sealed class RuleTreeRenderingTests
     [InlineData("line one\nline two")]
     public void Mermaid_output_sanitizes_carriage_returns_and_newlines_in_labels(string label)
     {
-        RuleDescription node = Leaf(label);
+        OutlineNode node = Leaf(label);
 
         string mermaid = MermaidTreePrinter.Print(node);
 
@@ -360,19 +360,19 @@ public sealed class RuleTreeRenderingTests
         Assert.Matches(@"n0\[""line one +line two""\]", mermaid);
     }
 
-    private static RuleDescription BinaryNode(string label)
+    private static OutlineNode BinaryNode(string label)
     {
-        return new RuleDescription(label, "desc", [Leaf("a"), Leaf("b")]);
+        return new OutlineNode(label, "desc", [Leaf("a"), Leaf("b")]);
     }
 
-    private static RuleDescription UnaryNode(string label)
+    private static OutlineNode UnaryNode(string label)
     {
-        return new RuleDescription(label, "desc", [Leaf("a")]);
+        return new OutlineNode(label, "desc", [Leaf("a")]);
     }
 
-    private static RuleDescription Leaf(string label)
+    private static OutlineNode Leaf(string label)
     {
-        return new RuleDescription(label, "desc", []);
+        return new OutlineNode(label, "desc", []);
     }
 
     private static CompiledRule<RuleTestContext> Compile(

@@ -42,7 +42,7 @@ anything else.
 - [Building rules programmatically](#building-rules-programmatically)
   - [Converting between DSL, JSON, and YAML](#converting-between-dsl-json-and-yaml)
   - [`RuleBuilder` reference](#rulebuilder-reference)
-  - [Describing a compiled rule](#describing-a-compiled-rule)
+  - [Outlining a compiled rule](#outlining-a-compiled-rule)
   - [Rendering a rule as a diagram](#rendering-a-rule-as-a-diagram)
 - [Evaluation flow](#evaluation-flow)
 - [Compilation pipeline](#compilation-pipeline)
@@ -1380,7 +1380,7 @@ required on both `PredicateSchema` and `PredicateArgumentSchema`, and
 from the machine-facing `Name` used in rule text (e.g. `Name: "hasTopping"`,
 `Label: "Has Topping"`) — so a rule-authoring UI or generated documentation
 always has something to show for every predicate and argument. See
-[Describing a compiled rule](#describing-a-compiled-rule) below for how this
+[Outlining a compiled rule](#outlining-a-compiled-rule) below for how this
 pairs with operators' own label/description.
 
 A DSL string-literal argument supports four escape sequences: `\"` for a
@@ -1912,20 +1912,20 @@ Validate/Analyze pipeline described in
 too, e.g. for logging or persisting the tree a builder assembled without
 compiling it immediately.
 
-### Describing a compiled rule
+### Outlining a compiled rule
 
 Every predicate carries a required `Label`/`Description` on its
 `PredicateSchema` ([Predicate types](#predicate-types)); every operator has
 the equivalent, exposed via `OperatorInfo.Describe` in
-`TruthWeaver.Ast`. `CompiledRule<TContext>.Describe()` combines both
-into one recursive, walkable description of an entire compiled rule —
+`TruthWeaver.Ast`. `CompiledRule<TContext>.Outline()` combines both
+into one recursive, walkable outline of an entire compiled rule —
 useful for a rule-authoring UI or a generated "what does this rule mean"
 report, without needing access to the closed-set AST types themselves:
 
 ```csharp
 CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
 
-RuleDescription description = rule.Describe();
+OutlineNode description = rule.Outline();
 // description.Label       == "AND"
 // description.Description == "True iff every operand is true. Short-circuits at the first False."
 // description.Operands[0].Label == "Loves Pineapple"   (from LovesPineapple's PredicateSchema.Label)
@@ -1936,10 +1936,10 @@ A simple recursive print, for the shape of a "what does this rule mean"
 report:
 
 ```csharp
-void Print(RuleDescription node, int depth = 0)
+void Print(OutlineNode node, int depth = 0)
 {
     Console.WriteLine($"{new string(' ', depth * 2)}{node.Label} — {node.Description}");
-    foreach (RuleDescription operand in node.Operands)
+    foreach (OutlineNode operand in node.Operands)
     {
         Print(operand, depth + 1);
     }
@@ -1948,7 +1948,7 @@ void Print(RuleDescription node, int depth = 0)
 
 ### Rendering a rule as a diagram
 
-`RuleDescription` also feeds
+`OutlineNode` also feeds
 [`MermaidTreePrinter`](src/TruthWeaver/Printing/MermaidTreePrinter.cs) and
 [`PlainTextTreePrinter`](src/TruthWeaver/Printing/PlainTextTreePrinter.cs),
 which render it as a Mermaid `flowchart` or an indented ASCII tree
@@ -1957,7 +1957,7 @@ evaluation's result and short-circuit path:
 
 ```csharp
 CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
-RuleDescription description = rule.Describe();
+OutlineNode description = rule.Outline();
 
 // Structure only:
 string mermaid = MermaidTreePrinter.Print(description);
@@ -1966,8 +1966,8 @@ string plainText = PlainTextTreePrinter.Print(description);
 // Colored/annotated by one evaluation (Mermaid: green = contributed True, red = contributed False,
 // gray = short-circuited; plain text: a "[true]"/"[false]"/"[skipped]" suffix per node):
 Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
-string coloredMermaid = MermaidTreePrinter.Print(description, decision.EvaluatedTree);
-string annotatedText = PlainTextTreePrinter.Print(description, decision.EvaluatedTree);
+string coloredMermaid = MermaidTreePrinter.Print(description, decision.TraceTree);
+string annotatedText = PlainTextTreePrinter.Print(description, decision.TraceTree);
 ```
 
 `MermaidTreePrinter`'s result is plain Mermaid text — paste it into any
@@ -1985,7 +1985,7 @@ label by default (e.g. `Has Crust (crust: "thin")`) — pass
 structure-only labels instead. `CompiledRule<TContext>` also exposes both
 directly as `PrintMermaid()`/`PrintMermaid(decision)` and
 `PrintPlainText()`/`PrintPlainText(decision)`, without a separate
-`Describe()` call.
+`Outline()` call.
 
 ## Evaluation flow
 
@@ -2284,13 +2284,13 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | Kleene logic | Three-valued logic (`True`/`False`/`Unknown`) instead of two-valued boolean logic — the reason a predicate fault becomes `Unknown` rather than a thrown exception or a silently coerced `false`. See [ADR-0001](docs/adr/0001-kleene-failure-model.md). |
 | Memoization | Within one evaluation, a given term identity is invoked at most once, however many places in the tree reference it. Never carries across separate `EvaluateAsync` calls. |
 | Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
-| `OperatorInfo` / `OperatorDescriptor` | `OperatorInfo.Describe(node)` (`TruthWeaver.Ast`) returns an operator node's `OperatorDescriptor` (`Label`, `Description`) — the operator-side counterpart to a predicate's `PredicateSchema.Label`/`Description`. See [Describing a compiled rule](#describing-a-compiled-rule). |
+| `OperatorInfo` / `OperatorDescriptor` | `OperatorInfo.Describe(node)` (`TruthWeaver.Ast`) returns an operator node's `OperatorDescriptor` (`Label`, `Description`) — the operator-side counterpart to a predicate's `PredicateSchema.Label`/`Description`. See [Outlining a compiled rule](#outlining-a-compiled-rule). |
 | Predicate | A registered, reusable implementation (e.g. `hasTopping`, `lovesPineapple`) — the *function*, not any one call to it. Implements `IPredicate<TContext>` or is registered as a stateless lambda. Required to carry a `Label` and `Description`; see [Predicate types](#predicate-types). |
 | `PredicateArguments` | The non-generic accessor (`GetString`, `GetInt64`, ...) a predicate uses to read its own term's arguments inside `EvaluateAsync`. |
 | `PredicateRegistry<TContext>` | Where predicates are registered under a name, with their `PredicateSchema`. Built once via `PredicateRegistryBuilder<TContext>`; no attribute or assembly scanning. `TryGetSchema` looks one up by name. |
 | `PredicateSchema` | A predicate's registered name, a required read-only `Label` and `Description`, and its named-argument declarations (each also carrying a required `Description`), validated against a term's arguments at compile time. |
 | `RuleBuilder` | A fluent API (`TruthWeaver.Building`) for assembling a rule tree from application logic without hand-writing DSL/JSON/YAML text; renders to the same JSON tree shape and compiles through the same `CompileJson` pipeline. See [Building rules programmatically](#building-rules-programmatically). |
-| `RuleDescription` | The recursive result of `CompiledRule<TContext>.Describe()`: a node's `Label`, `Description`, and its `Operands` described the same way — the "what does this rule mean" view of a compiled tree, without exposing the AST types themselves. See [Describing a compiled rule](#describing-a-compiled-rule). |
+| `OutlineNode` | The recursive result of `CompiledRule<TContext>.Outline()`: a node's `Label`, `Description`, and its `Operands` outlined the same way — the "what does this rule mean" view of a compiled tree, without exposing the AST types themselves. See [Outlining a compiled rule](#outlining-a-compiled-rule). |
 | `RuleDiff` | Computes a structural diff between two compiled rules — which operator, term, or constant nodes were added, removed, or changed, located by operand-index path. See [Features](#features). |
 | Rule | A named unit of persistence: metadata plus one expression. What gets compiled into a `CompiledRule<TContext>`. |
 | Short-circuit | `AND` stops evaluating operands at the first `False`; `OR` stops at the first `True`. Skipped operands are recorded as `NotEvaluated` in the trace, not omitted. |

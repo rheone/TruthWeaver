@@ -116,7 +116,7 @@ OR(IsTrue(a), IsFalse(a))
 
 ## Implementation Notes
 
-- The evaluator reports a `IsFalse` node as `IsFalse` in the trace and the evaluated tree. The four inspections are one node type distinguished by the kind they test.
+- The evaluator reports a `IsFalse` node as `IsFalse` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
 - `ExpandToPrimitives` expands `IsFalse` to `COALESCE(NOT a, False)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `CompressToDerived` writes `COALESCE(NOT a, False)` back as `IsFalse(a)`.
 

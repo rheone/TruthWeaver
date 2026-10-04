@@ -8,11 +8,11 @@ using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
-/// <see cref="Decision.EvaluatedTree"/>: a structural mirror of the compiled tree, annotated per node
+/// <see cref="Decision.TraceTree"/>: a structural mirror of the compiled tree, annotated per node
 /// by what happened during evaluation, in lockstep with the flat <see cref="Trace"/> the same
 /// evaluation produces.
 /// </summary>
-public sealed class EvaluatedTreeTests
+public sealed class TraceTreeTests
 {
     [Fact]
     public async Task Every_node_in_a_fully_evaluated_tree_has_a_result()
@@ -32,8 +32,8 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        Assert.NotNull(decision.EvaluatedTree);
-        EvaluatedNode root = decision.EvaluatedTree;
+        Assert.NotNull(decision.TraceTree);
+        TraceNode root = decision.TraceTree;
         Assert.Equal(TruthValue.True, root.Result);
         Assert.False(root.NotEvaluated);
         Assert.Equal(2, root.Children.Count);
@@ -58,9 +58,9 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        EvaluatedNode root = decision.EvaluatedTree!;
+        TraceNode root = decision.TraceTree!;
         Assert.Equal(TruthValue.False, root.Result);
-        EvaluatedNode skippedOperand = root.Children[1];
+        TraceNode skippedOperand = root.Children[1];
         Assert.True(skippedOperand.NotEvaluated);
         Assert.Null(skippedOperand.Result);
         Assert.Empty(skippedOperand.Children);
@@ -87,7 +87,7 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
         Assert.Empty(skippedSubtree.Children);
     }
@@ -96,7 +96,7 @@ public sealed class EvaluatedTreeTests
     public async Task Skipped_or_subtree_is_described_as_OR()
     {
         // "a AND (b OR c)" with a = false short-circuits before the (b OR c) OrExpression is
-        // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
             .AddConstant("a", false)
@@ -113,16 +113,16 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("OR", skippedSubtree.NodeDescription);
+        Assert.Equal("OR", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Skipped_and_subtree_is_described_as_AND()
     {
         // "a OR (b AND c)" with a = true short-circuits before the (b AND c) AndExpression is
-        // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
             .AddConstant("a", true)
@@ -139,16 +139,16 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("AND", skippedSubtree.NodeDescription);
+        Assert.Equal("AND", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Skipped_not_subtree_is_described_as_NOT()
     {
         // "a AND (NOT b)" with a = false short-circuits before the (NOT b) NotExpression is
-        // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
             .AddConstant("a", false)
@@ -164,16 +164,16 @@ public sealed class EvaluatedTreeTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("NOT", skippedSubtree.NodeDescription);
+        Assert.Equal("NOT", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Skipped_xor_subtree_is_described_as_XOR()
     {
         // "a AND (b XOR c)" with a = false short-circuits before the (b XOR c) XorExpression is
-        // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
                 .CreateBuilder()
@@ -193,16 +193,16 @@ public sealed class EvaluatedTreeTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("XOR", skippedSubtree.NodeDescription);
+        Assert.Equal("XOR", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Describe_SkippedEquivalentSubtree_ReturnsEquivalent_Test()
     {
         // "a AND (b XNOR c)" with a = false short-circuits before the (b XNOR c) XnorExpression is
-        // evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
                 .CreateBuilder()
@@ -222,16 +222,16 @@ public sealed class EvaluatedTreeTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("EQUIVALENT", skippedSubtree.NodeDescription);
+        Assert.Equal("EQUIVALENT", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Skipped_exactlyone_subtree_is_described_as_ExactlyOne()
     {
         // "a AND ExactlyOne(b, c, d)" with a = false short-circuits before the ExactlyOneExpression
-        // is evaluated, so its skipped EvaluatedNode is labelled from the node's static shape alone.
+        // is evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
                 .CreateBuilder()
@@ -255,16 +255,16 @@ public sealed class EvaluatedTreeTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("ExactlyOne", skippedSubtree.NodeDescription);
+        Assert.Equal("ExactlyOne", skippedSubtree.Text);
     }
 
     [Fact]
     public async Task Skipped_threshold_subtree_is_described_using_the_default_OpName_K_format()
     {
         // "a AND AtLeast(2, b, c, d)" with a = false short-circuits before the ThresholdExpression is
-        // evaluated, so its skipped EvaluatedNode falls through to the default arm's
+        // evaluated, so its skipped TraceNode falls through to the default arm's
         // "OpName(K)" formatting rather than one of the named arms.
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -289,8 +289,8 @@ public sealed class EvaluatedTreeTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        EvaluatedNode skippedSubtree = decision.EvaluatedTree!.Children[1];
+        TraceNode skippedSubtree = decision.TraceTree!.Children[1];
         Assert.True(skippedSubtree.NotEvaluated);
-        Assert.Equal("AtLeast(2)", skippedSubtree.NodeDescription);
+        Assert.Equal("AtLeast(2)", skippedSubtree.Text);
     }
 }

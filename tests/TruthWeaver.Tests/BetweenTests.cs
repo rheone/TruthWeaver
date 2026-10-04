@@ -251,7 +251,7 @@ public sealed class BetweenTests
         Assert.Equal("BETWEEN(1, 2, a, NOT b, c)", result.CompiledRule!.CanonicalText);
     }
 
-    /// <summary>The evaluated tree labels the node with both bounds and keeps operand order.</summary>
+    /// <summary>The trace tree labels the node with both bounds and keeps operand order.</summary>
     [Fact]
     public async Task EvaluateAsync_Between_LabelsTheNodeWithItsBoundsAndKeepsOperandOrder_Test()
     {
@@ -262,15 +262,15 @@ public sealed class BetweenTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal("BETWEEN(1, 2)", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(["a", "b", "c"], decision.EvaluatedTree.Children.Select(c => c.NodeDescription));
+        Assert.Equal("BETWEEN(1, 2)", decision.TraceTree!.Text);
+        Assert.Equal(["a", "b", "c"], decision.TraceTree.Children.Select(c => c.Text));
     }
 
     /// <summary>The operator description states the interval.</summary>
     [Fact]
-    public void Describe_Between_ExplainsTheInterval_Test()
+    public void Outline_Between_ExplainsTheInterval_Test()
     {
-        RuleDescription description = Compiler.Compile("BETWEEN(1, 2, a, b, c)").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("BETWEEN(1, 2, a, b, c)").CompiledRule!.Outline();
 
         Assert.Equal("BETWEEN(1, 2)", description.Label);
         Assert.Contains("between 1 and 2", description.Description, StringComparison.Ordinal);
@@ -284,7 +284,7 @@ public sealed class BetweenTests
     [InlineData(OperatorStyle.CStyle)]
     public void Print_Between_KeepsTheWordInEveryStyle_Test(OperatorStyle style)
     {
-        RuleDescription tree = Compiler.Compile("BETWEEN(1, 2, a, b, c)").CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile("BETWEEN(1, 2, a, b, c)").CompiledRule!.Outline();
 
         Assert.Contains("BETWEEN(1, 2)", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains("BETWEEN(1, 2)", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

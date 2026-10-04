@@ -234,6 +234,6 @@ public sealed class ProjectTests
 
         Assert.DoesNotContain("project", rule.CanonicalText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("project", rule.PrintJson(), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("COALESCE", rule.Describe().Label);
+        Assert.Equal("COALESCE", rule.Outline().Label);
     }
 }

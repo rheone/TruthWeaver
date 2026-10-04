@@ -232,6 +232,6 @@ public sealed class CollapseTests
 
         Assert.DoesNotContain("collapse", rule.CanonicalText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("collapse", rule.PrintJson(), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("AND", rule.Describe().Label);
+        Assert.Equal("AND", rule.Outline().Label);
     }
 }

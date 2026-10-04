@@ -180,7 +180,7 @@ public sealed class ImpliesTests
         Assert.Equal("(a IMPLIES NOT b)", viaBuilder.CanonicalText);
     }
 
-    /// <summary>The evaluated tree labels the node IMPLIES and keeps antecedent-then-consequent order.</summary>
+    /// <summary>The trace tree labels the node IMPLIES and keeps antecedent-then-consequent order.</summary>
     [Fact]
     public async Task EvaluateAsync_Implies_LabelsTheNodeAndKeepsOperandOrder_Test()
     {
@@ -192,8 +192,8 @@ public sealed class ImpliesTests
         );
 
         Assert.Equal(TruthValue.False, decision.Result);
-        Assert.Equal("IMPLIES", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(["a", "b"], decision.EvaluatedTree.Children.Select(c => c.NodeDescription));
+        Assert.Equal("IMPLIES", decision.TraceTree!.Text);
+        Assert.Equal(["a", "b"], decision.TraceTree.Children.Select(c => c.Text));
     }
 
     /// <summary>A skipped IMPLIES subtree (short-circuited by a sibling) is still described as IMPLIES.</summary>
@@ -219,16 +219,16 @@ public sealed class ImpliesTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        EvaluatedNode skipped = decision.EvaluatedTree!.Children[1];
+        TraceNode skipped = decision.TraceTree!.Children[1];
         Assert.True(skipped.NotEvaluated);
-        Assert.Equal("IMPLIES", skipped.NodeDescription);
+        Assert.Equal("IMPLIES", skipped.Text);
     }
 
     /// <summary>The operator's label and description explain material implication, and operands keep their order.</summary>
     [Fact]
-    public void Describe_Implies_ExplainsStrongKleeneMaterialImplication_Test()
+    public void Outline_Implies_ExplainsStrongKleeneMaterialImplication_Test()
     {
-        RuleDescription description = Compiler.Compile("a IMPLIES b").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("a IMPLIES b").CompiledRule!.Outline();
 
         Assert.Equal("IMPLIES", description.Label);
         Assert.Contains("NOT", description.Description, StringComparison.Ordinal);
@@ -241,8 +241,8 @@ public sealed class ImpliesTests
     {
         CompiledRule<RuleTestContext> rule = Compiler.Compile("a IMPLIES b").CompiledRule!;
 
-        Assert.Contains("→", PlainTextTreePrinter.Print(rule.Describe(), OperatorStyle.Symbolic), StringComparison.Ordinal);
-        Assert.Contains("→", MermaidTreePrinter.Print(rule.Describe(), OperatorStyle.Symbolic), StringComparison.Ordinal);
+        Assert.Contains("→", PlainTextTreePrinter.Print(rule.Outline(), OperatorStyle.Symbolic), StringComparison.Ordinal);
+        Assert.Contains("→", MermaidTreePrinter.Print(rule.Outline(), OperatorStyle.Symbolic), StringComparison.Ordinal);
         Assert.Contains("IMPLIES", rule.PrintMermaid(), StringComparison.Ordinal);
     }
 

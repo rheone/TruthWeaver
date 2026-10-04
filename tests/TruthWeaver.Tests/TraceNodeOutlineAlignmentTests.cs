@@ -7,14 +7,14 @@ using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
-/// <see cref="Evaluator{TContext}"/>'s <see cref="EvaluatedNode"/> tree and <c>CompiledRule.DescribeNode</c>'s
-/// <see cref="RuleDescription"/> tree are two independently-invoked traversals that both consume the
+/// <see cref="Evaluator{TContext}"/>'s <see cref="TraceNode"/> tree and <c>CompiledRule.OutlineOf</c>'s
+/// <see cref="OutlineNode"/> tree are two independently-invoked traversals that both consume the
 /// same shared node-shape seam (<c>ExpressionShape.Of</c>), so they cannot structurally diverge in
 /// operand order — the two trees stay positionally zippable by construction (see
 /// <c>evaluated-node-rule-description-alignment</c> ticket 02), not merely by the two traversals
 /// happening to agree.
 /// </summary>
-public sealed class EvaluatedNodeRuleDescriptionAlignmentTests
+public sealed class TraceNodeOutlineAlignmentTests
 {
     [Theory]
     [InlineData("d AND a AND c")]
@@ -61,18 +61,18 @@ public sealed class EvaluatedNodeRuleDescriptionAlignmentTests
             TestContext.Current.CancellationToken
         );
 
-        RuleDescription description = rule.Describe();
-        EvaluatedNode evaluated = decision.EvaluatedTree!;
+        OutlineNode description = rule.Outline();
+        TraceNode evaluated = decision.TraceTree!;
 
         AssertAligned(description, evaluated);
     }
 
-    private static void AssertAligned(RuleDescription description, EvaluatedNode evaluated)
+    private static void AssertAligned(OutlineNode description, TraceNode evaluated)
     {
         Assert.Equal(description.Operands.Count, evaluated.Children.Count);
         for (int i = 0; i < description.Operands.Count; i++)
         {
-            // A leaf term's RuleDescription.Label and EvaluatedNode.NodeDescription are both derived
+            // A leaf term's OutlineNode.Label and TraceNode.Text are both derived
             // from the same predicate name here, so if either traversal reordered its operands this
             // positional comparison would catch it at the first divergent leaf.
             AssertAligned(description.Operands[i], evaluated.Children[i]);
@@ -80,7 +80,7 @@ public sealed class EvaluatedNodeRuleDescriptionAlignmentTests
 
         if (description.Operands.Count == 0 && evaluated.Children.Count == 0)
         {
-            Assert.Equal(description.Label, evaluated.NodeDescription);
+            Assert.Equal(description.Label, evaluated.Text);
         }
     }
 }

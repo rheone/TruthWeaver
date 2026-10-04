@@ -129,7 +129,7 @@ Repeating one operand gives `NOT`: `NAND(a, a)` is `NOT(a)` (see [NOT](../gates/
 
 ## Implementation Notes
 
-- The evaluator reports a `NAND` node as `NAND` in the trace and the evaluated tree.
+- The evaluator reports a `NAND` node as `NAND` in the trace and the trace tree.
 - Compression rewrites `NOT(AND(a, b))` and `OR(NOT a, NOT b)` to `NAND` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
 
 ## Related Operations

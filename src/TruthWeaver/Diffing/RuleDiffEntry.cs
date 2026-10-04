@@ -17,9 +17,4 @@ using TruthWeaver.Evaluation;
 /// <param name="After">
 /// The node's description in the "after" tree, or <see langword="null"/> for <see cref="RuleDiffChangeKind.Removed"/>.
 /// </param>
-public sealed record RuleDiffEntry(
-    RuleDiffChangeKind Kind,
-    IReadOnlyList<int> Path,
-    RuleDescription? Before,
-    RuleDescription? After
-);
+public sealed record RuleDiffEntry(RuleDiffChangeKind Kind, IReadOnlyList<int> Path, OutlineNode? Before, OutlineNode? After);

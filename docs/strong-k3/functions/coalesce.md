@@ -192,7 +192,7 @@ The [inspections](istrue.md#canonical-form) are short uses of it, and inside a r
 
 ## Implementation Notes
 
-- The evaluator reports a `COALESCE` node as `COALESCE` in the trace and the evaluated tree.
+- The evaluator reports a `COALESCE` node as `COALESCE` in the trace and the trace tree.
 - `Simplify` and `Canonicalize` flatten a nested `COALESCE` into one node (`COALESCE(COALESCE(a, b), c)` becomes `COALESCE(a, b, c)`); the plain printer keeps the nesting you wrote.
 - `ExpandToPrimitives` leaves `COALESCE` unchanged, because it is primitive. `ExpandToNand` and `ExpandToNor` leave it in place with its operands rewritten: no `NAND` or `NOR` circuit can express it, so such a rule is not `NAND`-only ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 10).
 - The analyzer folds the rule from the right over the definite and possible rails of each operand.

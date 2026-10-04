@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -113,7 +113,7 @@ public sealed record Decision(
 }
 ```
 
-> `Decision` has since gained an `EvaluatedTree` member and an explicit
+> `Decision` has since gained a `TraceTree` member and an explicit
 > `Decision.Collapse(CollapsePolicy)` method (a call-site choice that never alters
 > `Result` or records a fault); `IsSatisfied` is still fail-closed. A rule cannot declare a
 > collapse and there is no `Decision.Outcome` (amended 2026-10-03). See

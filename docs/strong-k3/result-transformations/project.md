@@ -126,7 +126,7 @@ flowchart LR
 
 ## Implementation Notes
 
-- `Decision.Project` is a pure `switch` on `Result`; it does not look at `Faults`, `Trace` or `EvaluatedTree`.
+- `Decision.Project` is a pure `switch` on `Result`; it does not look at `Faults`, `Trace` or `TraceTree`.
 - The harness ([doc-examples](../../doc-examples.md)) checks the two tables and the canonical form against an independent oracle, not against `Decision.Project`.
 - `Project` is not an `Expression` node, so the printers, `Simplify`, the `Expand` rewrites and the JSON and YAML schema never see it.
 

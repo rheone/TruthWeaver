@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Diagnostic codes cited here read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged).
+Accepted. Diagnostic codes cited here read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged). Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 Supersedes the operator-set, alias, `IMPLIES`, `XOR`/`XNOR`
 and "word operators only" decisions in
@@ -276,7 +276,7 @@ the aliases are cheap once the canonical form stays single.
     `RuleBuilder.Project`, `ProjectExpression`, `NodeShape.UnknownAs`,
     `rule-tree.schema.json`'s `projectOperatorNode`, the analyzer, evaluator,
     printer and `RuleDiff` handling, and the `Project(True)` / `Project(False)`
-    description label. The expansion and compression rewrites no longer produce or
+    outline label. The expansion and compression rewrites no longer produce or
     recognise a project node: `ExpandToPrimitives` has nothing to expand and
     `CompressToDerived` leaves `COALESCE(x, True|False)` as written, the shortest
     form (only `COALESCE(NOT x, False)` still compresses, to `IsFalse`), and
@@ -358,7 +358,7 @@ the aliases are cheap once the canonical form stays single.
     threshold evaluator; the analyzer rail reuses `AtLeast`, with `NONE` as its
     negation). The canonical printer writes `ANY(a, b, ...)` etc.; every
     tree-printer style keeps the word (no symbol or C-family spelling) and the
-    evaluated/description label is `ANY`/`ALL`/`NONE`. `rule-tree.schema.json`
+    trace/outline label is `ANY`/`ALL`/`NONE`. `rule-tree.schema.json`
     lists `any`, `all` and `none`. `RuleBuilder.Any`, `All` and `None` are new.
 
     Implemented in k3-conformance 14: `BETWEEN(min, max, op1, op2, ...)` is a
@@ -379,7 +379,7 @@ the aliases are cheap once the canonical form stays single.
     else `MalformedTree`); `rule-tree.schema.json` has a `betweenOperatorNode`.
     `NodeShape` gained an optional `Max` (its `K` carries `min`). The
     canonical printer writes `BETWEEN(1, 2, a, b, c)`; the evaluated and
-    description label is `BETWEEN(min, max)`, kept as a word in every
+    outline label is `BETWEEN(min, max)`, kept as a word in every
     `OperatorStyle`. `RuleBuilder.Between(min, max, operands)` is new.
 
     Implemented in k3-conformance 15: `COALESCE(a, b, ...)` and the infix `??`
@@ -393,7 +393,7 @@ the aliases are cheap once the canonical form stays single.
     token is infix; the word `COALESCE` is a function call only (a lone `?` is
     a lexical error). Two or more operands are required (`MalformedTree`).
     Evaluation is left to right and stops at the first non-`Unknown` operand
-    (skipped operands appear as `NotEvaluated` in the evaluated tree and trace,
+    (skipped operands appear as `NotEvaluated` in the trace tree and trace,
     like `AND`/`OR`; `EvaluationMode.Exhaustive` evaluates all). The analyzer
     rail folds from the right: with `(D, P)` the definite/possible rails of
     `x`, `COALESCE(x, y)` is `(D_x OR (P_x AND D_y), P_x AND (D_x OR P_y))`.
@@ -428,7 +428,7 @@ the aliases are cheap once the canonical form stays single.
     group: a bare `AND`/`OR` chain, a bare infix expression (`XOR`, `??`, ...)
     or an unparenthesized nested ternary in any of the three positions is
     `AmbiguousOperatorMixing`. The canonical printer writes the function-call
-    form `If(a, b, c)`; tree printers and the evaluated/description label are
+    form `If(a, b, c)`; tree printers and the trace/outline label are
     `If` in every `OperatorStyle` except `CStyle`, where the tree printers render
     `?:` (k3-followups 21; the label itself stays `If`; there is no symbolic spelling). JSON/YAML:
     `{"op": "if", "operands": [condition, whenTrue, whenFalse]}` (op name
@@ -449,7 +449,7 @@ the aliases are cheap once the canonical form stays single.
     equal definite and possible rails: with `(D, P)` the rails of `x`, `IsTrue`
     is `D`, `IsFalse` is `NOT P`, `IsUnknown` is `P AND NOT D`, `IsKnown` is `D
     OR NOT P`, so `IsUnknown(a) OR IsKnown(a)` is a genuine tautology. The
-    canonical printer writes `IsTrue(a)` etc.; the evaluated/description label
+    canonical printer writes `IsTrue(a)` etc.; the trace/outline label
     is the same word in every `OperatorStyle`. JSON/YAML: `{"op": "isTrue" |
     "isFalse" | "isUnknown" | "isKnown", "operands": [x]}` (case-insensitive on
     read, one operand checked by the compiler; the schema lists them in the
@@ -482,8 +482,8 @@ the aliases are cheap once the canonical form stays single.
     fail-closed, whatever policy a caller applies. There is no `Decision.Outcome`.
     **Removed from the rule language:** the DSL `Collapse(expr, policy)` function, the
     JSON/YAML `collapse` node and its `policy` field, `RuleBuilder.Collapse`,
-    `CompiledRule.CollapsePolicy`, the collapse root of `Describe()` and of the
-    evaluated tree, `rule-tree.schema.json`'s `collapseOperatorNode`, the printers'
+    `CompiledRule.CollapsePolicy`, the collapse root of `Outline()` and of the
+    trace tree, `rule-tree.schema.json`'s `collapseOperatorNode`, the printers'
     and `RuleDiff`'s collapse handling and the `NestedCollapse` diagnostic
     (`TRE0016`, retired and not reused). A rule that still declares one is rejected,
     wherever it appears and in any letter case, with an error whose message and hint

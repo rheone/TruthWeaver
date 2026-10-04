@@ -172,7 +172,7 @@ The `Unknown` rule differs too. `PARITY` is `Unknown` whenever any operand is. `
 
 ## Implementation Notes
 
-- The evaluator reports the node as `ExactlyOne` in the trace and the evaluated tree.
+- The evaluator reports the node as `ExactlyOne` in the trace and the trace tree.
 - `ExpandToPrimitives` rewrites `ExactlyOne(...)` to `Exactly(1, ...)`, and the simplifier does the same ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
 
 ## Related Operations

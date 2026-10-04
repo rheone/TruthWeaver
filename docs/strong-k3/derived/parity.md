@@ -293,7 +293,7 @@ For two operands all three are the same function. From three operands `XOR` is n
 
 ## Implementation Notes
 
-- The evaluator reports a `PARITY` node as `PARITY` in the trace and the evaluated tree.
+- The evaluator reports a `PARITY` node as `PARITY` in the trace and the trace tree.
 - `ExpandToPrimitives` expands `PARITY` to the odd-count disjunction rather than a fold, so the expansion grows linearly ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 10).
 
 ## Related Operations

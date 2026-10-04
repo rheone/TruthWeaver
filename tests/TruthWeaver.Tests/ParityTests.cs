@@ -202,7 +202,7 @@ public sealed class ParityTests
         Assert.Equal("PARITY(a, NOT b, c)", rule.CanonicalText);
     }
 
-    /// <summary>The evaluated tree labels the node PARITY and keeps operand order.</summary>
+    /// <summary>The trace tree labels the node PARITY and keeps operand order.</summary>
     [Fact]
     public async Task EvaluateAsync_Parity_LabelsTheNodeAndKeepsOperandOrder_Test()
     {
@@ -213,15 +213,15 @@ public sealed class ParityTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal("PARITY", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(["a", "b", "c"], decision.EvaluatedTree.Children.Select(c => c.NodeDescription));
+        Assert.Equal("PARITY", decision.TraceTree!.Text);
+        Assert.Equal(["a", "b", "c"], decision.TraceTree.Children.Select(c => c.Text));
     }
 
     /// <summary>The operator description explains parity and the Unknown rule.</summary>
     [Fact]
-    public void Describe_Parity_ExplainsParityAndUnknown_Test()
+    public void Outline_Parity_ExplainsParityAndUnknown_Test()
     {
-        RuleDescription description = Compiler.Compile("PARITY(a, b, c)").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("PARITY(a, b, c)").CompiledRule!.Outline();
 
         Assert.Equal("PARITY", description.Label);
         Assert.Contains("odd number", description.Description, StringComparison.Ordinal);
@@ -236,7 +236,7 @@ public sealed class ParityTests
     [InlineData(OperatorStyle.CStyle)]
     public void Print_Parity_KeepsTheWordInEveryStyle_Test(OperatorStyle style)
     {
-        RuleDescription tree = Compiler.Compile("PARITY(a, b, c)").CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile("PARITY(a, b, c)").CompiledRule!.Outline();
 
         Assert.Contains("PARITY", PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains("PARITY", MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

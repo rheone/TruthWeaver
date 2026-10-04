@@ -5,7 +5,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 
 /// <summary>
-/// Renders a rule's <see cref="RuleDescription"/> tree (from <c>CompiledRule.Describe()</c>) as an
+/// Renders a rule's <see cref="OutlineNode"/> tree (from <c>CompiledRule.Outline()</c>) as an
 /// indented ASCII tree — for logs, terminals, or any consumer that needs the same structure and
 /// evaluation coloring <see cref="MermaidTreePrinter"/> renders, without a diagram viewer. Shares its
 /// zip/skip-propagation logic with <see cref="MermaidTreePrinter"/> via <see cref="RuleRenderTree"/>,
@@ -14,29 +14,29 @@ using TruthWeaver.Evaluation;
 public static class PlainTextTreePrinter
 {
     /// <summary>Prints a rule's structure only, with no evaluation annotations.</summary>
-    /// <param name="root">The rule's described tree.</param>
+    /// <param name="root">The rule's outline.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
-    public static string Print(RuleDescription root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
+    public static string Print(OutlineNode root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
     {
         return Print(RuleRenderTree.Build(root, style, showArgumentValues));
     }
 
     /// <summary>Prints a rule's structure, annotated by one evaluation's result and short-circuit path.</summary>
-    /// <param name="root">The rule's described tree.</param>
-    /// <param name="evaluatedTree">The matching <see cref="Decision.EvaluatedTree"/> from that evaluation.</param>
+    /// <param name="root">The rule's outline.</param>
+    /// <param name="traceTree">The matching <see cref="Decision.TraceTree"/> from that evaluation.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
     public static string Print(
-        RuleDescription root,
-        EvaluatedNode evaluatedTree,
+        OutlineNode root,
+        TraceNode traceTree,
         OperatorStyle style = OperatorStyle.Word,
         bool showArgumentValues = true
     )
     {
-        return Print(RuleRenderTree.Build(root, evaluatedTree, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues));
     }
 
     private static string Print(RenderNode root)

@@ -197,7 +197,7 @@ GREATERTHAN(0, ...)
 
 ## Implementation Notes
 
-- The evaluator reports the node as `ANY` in the trace and the evaluated tree; the rule description label is `ANY`. Operand order is kept.
+- The evaluator reports the node as `ANY` in the trace and the trace tree; the rule outline label is `ANY`. Operand order is kept.
 - Evaluation reuses the threshold evaluator (`AtLeast(1, ...)`), so it is linear in the operand count.
 - `ExpandToPrimitives` rewrites `ANY(...)` to `AtLeast(1, ...)`. `Simplify` and `Canonicalize` collapse it to `OR` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `ANY(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "any", "operands": [...]}`.

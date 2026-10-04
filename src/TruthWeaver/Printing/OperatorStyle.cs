@@ -3,7 +3,7 @@ namespace TruthWeaver.Printing;
 /// <summary>
 /// How <see cref="PlainTextTreePrinter"/> and <see cref="MermaidTreePrinter"/> render the
 /// <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>/<c>COALESCE</c> operator labels of a rendered tree.
-/// <see cref="Evaluation.RuleDescription"/> nodes for <c>ExactlyOne</c>, <c>BETWEEN</c>, the inspections (<c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>, <c>IsKnown</c>) and the threshold family (<c>AtLeast</c>,
+/// <see cref="Evaluation.OutlineNode"/> nodes for <c>ExactlyOne</c>, <c>BETWEEN</c>, the inspections (<c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>, <c>IsKnown</c>) and the threshold family (<c>AtLeast</c>,
 /// <c>AtMost</c>, <c>GreaterThan</c>, <c>LessThan</c>, <c>Exactly</c>) always keep their
 /// word/function-call form (e.g. <c>AtLeast(3)</c>), in every style — they have no symbolic or
 /// C-style spelling to switch to. <c>If</c> keeps its word label in <see cref="Word"/> and <see cref="Symbolic"/> and renders as

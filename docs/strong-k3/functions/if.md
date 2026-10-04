@@ -197,7 +197,7 @@ flowchart TD
 
 ## Implementation Notes
 
-- The evaluator reports an `If` node as `If` in the trace and the evaluated tree, in every operator style.
+- The evaluator reports an `If` node as `If` in the trace and the trace tree, in every operator style.
 - Compression rewrites the three-term form back to `If`, and `ExpandToPrimitives` expands `If` to it ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). `Simplify` and `Canonicalize` never remove the consensus term; `Simplify` reduces `If(c, x, x)` to `x`.
 - The analyzer uses the three-term definition over the definite and possible rails, so `If(a, b OR True, c OR True)` is a tautology even for an `Unknown` `a`.
 - The semantics are pinned by an exhaustive 27-triple test in the engine suite ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 21).

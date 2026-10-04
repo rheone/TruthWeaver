@@ -235,7 +235,7 @@ public sealed class NandNorTests
         Assert.Equal("(a NOR b)", nor.CanonicalText);
     }
 
-    /// <summary>The evaluated tree labels the nodes NAND/NOR and keeps operand order.</summary>
+    /// <summary>The trace tree labels the nodes NAND/NOR and keeps operand order.</summary>
     [Theory]
     [InlineData("a NAND b", "NAND")]
     [InlineData("a NOR b", "NOR")]
@@ -248,17 +248,17 @@ public sealed class NandNorTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(label, decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(["a", "b"], decision.EvaluatedTree.Children.Select(c => c.NodeDescription));
+        Assert.Equal(label, decision.TraceTree!.Text);
+        Assert.Equal(["a", "b"], decision.TraceTree.Children.Select(c => c.Text));
     }
 
     /// <summary>The operator descriptions explain the negated primitive each is defined by.</summary>
     [Theory]
     [InlineData("a NAND b", "NAND", "AND")]
     [InlineData("a NOR b", "NOR", "OR")]
-    public void Describe_NandNor_ExplainsTheNegatedPrimitive_Test(string text, string label, string primitive)
+    public void Outline_NandNor_ExplainsTheNegatedPrimitive_Test(string text, string label, string primitive)
     {
-        RuleDescription description = Compiler.Compile(text).CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile(text).CompiledRule!.Outline();
 
         Assert.Equal(label, description.Label);
         Assert.Contains($"NOT (left {primitive} right)", description.Description, StringComparison.Ordinal);
@@ -272,8 +272,8 @@ public sealed class NandNorTests
     [InlineData(OperatorStyle.CStyle, "NAND", "NOR")]
     public void Print_NandNor_RendersTheStyleSpecificOperator_Test(OperatorStyle style, string nand, string nor)
     {
-        RuleDescription nandTree = Compiler.Compile("a NAND b").CompiledRule!.Describe();
-        RuleDescription norTree = Compiler.Compile("a NOR b").CompiledRule!.Describe();
+        OutlineNode nandTree = Compiler.Compile("a NAND b").CompiledRule!.Outline();
+        OutlineNode norTree = Compiler.Compile("a NOR b").CompiledRule!.Outline();
 
         Assert.Contains(nand, PlainTextTreePrinter.Print(nandTree, style), StringComparison.Ordinal);
         Assert.Contains(nand, MermaidTreePrinter.Print(nandTree, style), StringComparison.Ordinal);

@@ -117,7 +117,7 @@ IsFalse(NOT(a))
 
 ## Implementation Notes
 
-- The evaluator reports a `IsTrue` node as `IsTrue` in the trace and the evaluated tree. The four inspections are one node type distinguished by the kind they test.
+- The evaluator reports a `IsTrue` node as `IsTrue` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
 - `ExpandToPrimitives` expands `IsTrue` to `COALESCE(a, False)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `Simplify` rewrites `IsTrue(NOT x)` to `IsFalse(x)` and `IsTrue(IsTrue(x))` to `IsTrue(x)`. `CompressToDerived` does not fold `COALESCE(x, False)` back into `IsTrue(x)`, so an expanded rule keeps its `COALESCE` unless `Simplify` runs.
 

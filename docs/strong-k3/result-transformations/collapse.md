@@ -138,7 +138,7 @@ flowchart LR
 
 ## Implementation Notes
 
-- `Decision.Collapse` checks the policy with `Enum.IsDefined` first, then maps `True` and `False` directly and resolves `Unknown` with a `switch` on the policy. It does not look at `Faults`, `Trace` or `EvaluatedTree`.
+- `Decision.Collapse` checks the policy with `Enum.IsDefined` first, then maps `True` and `False` directly and resolves `Unknown` with a `switch` on the policy. It does not look at `Faults`, `Trace` or `TraceTree`.
 - The harness ([doc-examples](../../doc-examples.md)) checks the three tables against an independent oracle, not against `Decision.Collapse`.
 - `Collapse` is not an `Expression` node, so the printers, `Simplify`, the `Expand` rewrites and the JSON and YAML schema never see it.
 

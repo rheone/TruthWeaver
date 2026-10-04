@@ -1,16 +1,16 @@
 namespace TruthWeaver.Abstractions;
 
 /// <summary>
-/// A structural mirror of one node in a compiled expression tree, annotated with what happened to it
-/// during one evaluation. Unlike <see cref="Trace"/> (a flat, evaluation-order log of leaves and
-/// short-circuit-skip points), this preserves the tree shape itself, so every node — leaf or interior
+/// One node of a <see cref="Decision.TraceTree"/>: a structural mirror of one node in a compiled expression
+/// tree, annotated with what happened to it during one evaluation. Unlike <see cref="Trace"/> (a flat,
+/// evaluation-order log of leaves and short-circuit-skip points), this preserves the tree shape itself, so every node — leaf or interior
 /// operator — carries its own resolved result, letting a consumer (e.g. a diagram renderer) recover
 /// the full logic, the path actually taken, and the parts left out by short-circuiting, without
 /// re-deriving any of the engine's Kleene combine logic itself.
 /// </summary>
-/// <param name="NodeDescription">
-/// The node's description — a term's identity text for a leaf, or the operator's name (e.g. <c>AND</c>)
-/// for an interior node. Matches the text <see cref="TraceEntry.NodeDescription"/> would use for the
+/// <param name="Text">
+/// The node's display text — a term's identity text for a leaf, or the operator's name (e.g. <c>AND</c>)
+/// for an interior node. This is rule text, not the explanatory <c>Description</c> prose of an outline node. Matches the text <see cref="TraceEntry.Text"/> would use for the
 /// same node.
 /// </param>
 /// <param name="Result">
@@ -26,9 +26,4 @@ namespace TruthWeaver.Abstractions;
 /// This node's operand results, in source order — empty for a leaf, or for any node where
 /// <paramref name="NotEvaluated"/> is <see langword="true"/>.
 /// </param>
-public sealed record EvaluatedNode(
-    string NodeDescription,
-    TruthValue? Result,
-    bool NotEvaluated,
-    IReadOnlyList<EvaluatedNode> Children
-);
+public sealed record TraceNode(string Text, TruthValue? Result, bool NotEvaluated, IReadOnlyList<TraceNode> Children);

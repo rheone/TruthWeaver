@@ -218,20 +218,20 @@ public sealed class TruthValueConstantsTests
         Assert.Equal(expected, rule.CanonicalText);
     }
 
-    /// <summary>The rule description labels an Unknown literal as "Unknown".</summary>
+    /// <summary>The rule outline labels an Unknown literal as "Unknown".</summary>
     [Fact]
-    public void Describe_UnknownLiteral_HasUnknownLabelAndNoOperands_Test()
+    public void Outline_UnknownLiteral_HasUnknownLabelAndNoOperands_Test()
     {
-        RuleDescription description = Compiler.Compile("Unknown").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("Unknown").CompiledRule!.Outline();
 
         Assert.Equal("Unknown", description.Label);
         Assert.False(string.IsNullOrWhiteSpace(description.Description));
         Assert.Empty(description.Operands);
     }
 
-    /// <summary>The evaluated tree labels constants in the canonical spelling and records the Unknown value.</summary>
+    /// <summary>The trace tree labels constants in the canonical spelling and records the Unknown value.</summary>
     [Fact]
-    public async Task EvaluateAsync_UnknownLiteral_RecordsCanonicalConstantInEvaluatedTree_Test()
+    public async Task EvaluateAsync_UnknownLiteral_RecordsCanonicalConstantInTraceTree_Test()
     {
         CompiledRule<RuleTestContext> rule = Compiler.Compile("Unknown").CompiledRule!;
 
@@ -241,8 +241,8 @@ public sealed class TruthValueConstantsTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        Assert.Equal("Unknown", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal(TruthValue.Unknown, decision.EvaluatedTree.Result);
+        Assert.Equal("Unknown", decision.TraceTree!.Text);
+        Assert.Equal(TruthValue.Unknown, decision.TraceTree.Result);
     }
 
     /// <summary>The analyzer does not claim a contradiction for <c>Unknown AND NOT Unknown</c>, which is Unknown in K3.</summary>

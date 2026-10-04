@@ -130,7 +130,7 @@ public sealed class IfTests
         Assert.Equal(expected, decision.Result);
     }
 
-    /// <summary>A True condition skips the whenFalse branch in the evaluated tree.</summary>
+    /// <summary>A True condition skips the whenFalse branch in the trace tree.</summary>
     [Fact]
     public async Task EvaluateAsync_TrueCondition_MarksWhenFalseSkipped_Test()
     {
@@ -141,11 +141,11 @@ public sealed class IfTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal("If", decision.EvaluatedTree!.NodeDescription);
-        Assert.Equal([false, false, true], decision.EvaluatedTree.Children.Select(c => c.NotEvaluated));
+        Assert.Equal("If", decision.TraceTree!.Text);
+        Assert.Equal([false, false, true], decision.TraceTree.Children.Select(c => c.NotEvaluated));
     }
 
-    /// <summary>A False condition skips the whenTrue branch in the evaluated tree.</summary>
+    /// <summary>A False condition skips the whenTrue branch in the trace tree.</summary>
     [Fact]
     public async Task EvaluateAsync_FalseCondition_MarksWhenTrueSkipped_Test()
     {
@@ -156,7 +156,7 @@ public sealed class IfTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal([false, true, false], decision.EvaluatedTree!.Children.Select(c => c.NotEvaluated));
+        Assert.Equal([false, true, false], decision.TraceTree!.Children.Select(c => c.NotEvaluated));
     }
 
     /// <summary>An Unknown condition needs both branches to decide, so neither is skipped.</summary>
@@ -170,7 +170,7 @@ public sealed class IfTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.All(decision.EvaluatedTree!.Children, c => Assert.False(c.NotEvaluated));
+        Assert.All(decision.TraceTree!.Children, c => Assert.False(c.NotEvaluated));
     }
 
     /// <summary>The skipped branch's predicate is never invoked, so a definite condition avoids its cost.</summary>
@@ -361,9 +361,9 @@ public sealed class IfTests
 
     /// <summary>The operator description explains that an Unknown condition does not pick a branch.</summary>
     [Fact]
-    public void Describe_If_ExplainsTheUnknownConditionRule_Test()
+    public void Outline_If_ExplainsTheUnknownConditionRule_Test()
     {
-        RuleDescription description = Compiler.Compile("If(a, b, c)").CompiledRule!.Describe();
+        OutlineNode description = Compiler.Compile("If(a, b, c)").CompiledRule!.Outline();
 
         Assert.Equal("If", description.Label);
         Assert.Contains("Unknown", description.Description, StringComparison.Ordinal);
@@ -380,7 +380,7 @@ public sealed class IfTests
     [InlineData(OperatorStyle.CStyle, "?:")]
     public void Print_If_UsesTheTernarySpellingOnlyInCStyle_Test(OperatorStyle style, string expected)
     {
-        RuleDescription tree = Compiler.Compile("If(a, b, c)").CompiledRule!.Describe();
+        OutlineNode tree = Compiler.Compile("If(a, b, c)").CompiledRule!.Outline();
 
         Assert.Contains(expected, PlainTextTreePrinter.Print(tree, style), StringComparison.Ordinal);
         Assert.Contains(expected, MermaidTreePrinter.Print(tree, style), StringComparison.Ordinal);

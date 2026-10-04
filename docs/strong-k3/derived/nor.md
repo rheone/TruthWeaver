@@ -131,7 +131,7 @@ Repeating one operand gives `NOT`: `NOR(a, a)` is `NOT(a)` (see [NOT](../gates/n
 
 ## Implementation Notes
 
-- The evaluator reports a `NOR` node as `NOR` in the trace and the evaluated tree.
+- The evaluator reports a `NOR` node as `NOR` in the trace and the trace tree.
 - Compression rewrites `NOT(OR(a, b))` and `AND(NOT a, NOT b)` to `NOR` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
 
 ## Related Operations

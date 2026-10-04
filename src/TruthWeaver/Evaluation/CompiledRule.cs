@@ -228,15 +228,15 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Describes this rule's expression tree recursively — every operator's label/description (from
+    /// Builds this rule's outline: its expression tree, recursively — every operator's label/description (from
     /// <see cref="OperatorInfo"/>) and every term's label/description (from its predicate's registered
     /// <see cref="PredicateSchema"/>), without exposing the underlying closed-set AST types
     /// themselves. Useful for a rule-authoring UI or a generated "what does this rule mean" report.
     /// </summary>
-    /// <returns>The root node's description, with every operand described the same way.</returns>
-    public RuleDescription Describe()
+    /// <returns>The root outline node, with every operand outlined the same way.</returns>
+    public OutlineNode Outline()
     {
-        return DescribeNode(this.Root, this.registry);
+        return OutlineOf(this.Root, this.registry);
     }
 
     /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI.</summary>
@@ -244,7 +244,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     public string PrintMermaid(bool showArgumentValues = true)
     {
-        return MermaidTreePrinter.Print(this.Describe(), showArgumentValues: showArgumentValues);
+        return MermaidTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>
@@ -254,14 +254,10 @@ public sealed class CompiledRule<TContext>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
-    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     public string PrintMermaid(Decision decision, bool showArgumentValues = true)
     {
-        return MermaidTreePrinter.Print(
-            this.Describe(),
-            RequireEvaluatedTree(decision),
-            showArgumentValues: showArgumentValues
-        );
+        return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
@@ -269,7 +265,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>The indented tree text.</returns>
     public string PrintPlainText(bool showArgumentValues = true)
     {
-        return PlainTextTreePrinter.Print(this.Describe(), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>
@@ -279,14 +275,10 @@ public sealed class CompiledRule<TContext>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
-    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.EvaluatedTree"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     public string PrintPlainText(Decision decision, bool showArgumentValues = true)
     {
-        return PlainTextTreePrinter.Print(
-            this.Describe(),
-            RequireEvaluatedTree(decision),
-            showArgumentValues: showArgumentValues
-        );
+        return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
     }
 
     /// <summary>Evaluates this rule against a context.</summary>
@@ -333,23 +325,23 @@ public sealed class CompiledRule<TContext>
         return this.CanonicalText;
     }
 
-    private static RuleDescription DescribeNode(Expression node, PredicateRegistry<TContext> registry)
+    private static OutlineNode OutlineOf(Expression node, PredicateRegistry<TContext> registry)
     {
         if (node is TermExpression term)
         {
             (string label, string description) = registry.TryGetSchema(term.Identity.PredicateName, out PredicateSchema? schema)
                 ? (schema!.Label, schema.Description)
                 : (term.Identity.PredicateName, "An unregistered predicate (CompilationMode.Lenient).");
-            return new RuleDescription(label, description, [], ArgumentText(term.Identity));
+            return new OutlineNode(label, description, [], ArgumentText(term.Identity));
         }
 
         OperatorDescriptor descriptor = OperatorInfo.Describe(node);
         IReadOnlyList<Expression> operands = (node is ConstantExpression) ? [] : ExpressionShape.Of(node).Operands;
 
-        return new RuleDescription(
+        return new OutlineNode(
             descriptor.Label,
             descriptor.Description,
-            [.. operands.Select(operand => DescribeNode(operand, registry))]
+            [.. operands.Select(operand => OutlineOf(operand, registry))]
         );
     }
 
@@ -357,7 +349,7 @@ public sealed class CompiledRule<TContext>
     /// Renders a term's rule-text arguments as comma-joined <c>name: value</c> pairs, matching the
     /// per-argument formatting <see cref="TermIdentity.ToString"/> uses for its parenthesized part, but
     /// without repeating the predicate name — that comes from the term's own
-    /// <see cref="RuleDescription.Label"/> instead.
+    /// <see cref="OutlineNode.Label"/> instead.
     /// </summary>
     /// <param name="identity">The term's identity.</param>
     /// <returns>The joined argument text, or <see langword="null"/> for a zero-argument term.</returns>
@@ -383,11 +375,11 @@ public sealed class CompiledRule<TContext>
         return builder.ToString();
     }
 
-    private static EvaluatedNode RequireEvaluatedTree(Decision decision)
+    private static TraceNode RequireTraceTree(Decision decision)
     {
-        return decision.EvaluatedTree
+        return decision.TraceTree
             ?? throw new ArgumentException(
-                "This decision has no EvaluatedTree to render — it must come from EvaluateAsync on this same rule.",
+                "This decision has no TraceTree to render — it must come from EvaluateAsync on this same rule.",
                 nameof(decision)
             );
     }

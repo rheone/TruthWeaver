@@ -117,7 +117,7 @@ OR(IsTrue(a), IsFalse(a))
 
 ## Implementation Notes
 
-- The evaluator reports a `IsKnown` node as `IsKnown` in the trace and the evaluated tree. The four inspections are one node type distinguished by the kind they test.
+- The evaluator reports a `IsKnown` node as `IsKnown` in the trace and the trace tree. The four inspections are one node type distinguished by the kind they test.
 - `ExpandToPrimitives` expands `IsKnown` to `COALESCE(a, False) OR COALESCE(NOT a, False)`. `ExpandToNand` and `ExpandToNor` keep the `COALESCE` in that expansion, because no `NAND` or `NOR` circuit can express it.
 - `CompressToDerived` recognises the expanded `COALESCE` disjunction and writes it back as `IsKnown(a)`.
 

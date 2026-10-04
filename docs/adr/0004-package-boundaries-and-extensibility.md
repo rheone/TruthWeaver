@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -149,7 +149,7 @@ by the time `TruthWeaver.Yaml` and the JSON/canonical-text printers existed, add
 operator touched **six** independent switches over `Expression` that each re-derived the same
 structural fact — a node's op-name, its threshold `K` (when applicable), and its operand list:
 `OperatorInfo`, `CanonicalPrinter`, `JsonTreePrinter`, `YamlTreePrinter`, `Evaluator` (its trace/skip
-`Describe` helper), and `CompiledRule` (its `Describe()` operand-extraction switch). None of those six
+`Describe` helper), and `CompiledRule` (its `Outline()` operand-extraction switch). None of those six
 were the four subsystems this ADR originally scoped (parser, compiler, evaluator's actual eval
 dispatch, analyzer) — they were rendering/description call sites layered on afterward, each
 re-implementing the same structural lookup independently.

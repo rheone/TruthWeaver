@@ -7,7 +7,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary><see cref="CompiledRule{TContext}.Describe"/>: every operator's and predicate's label/description, recursively.</summary>
+/// <summary><see cref="CompiledRule{TContext}.Outline"/>: every operator's and predicate's label/description, recursively.</summary>
 public sealed class OperatorInfoTests
 {
     [Theory]
@@ -44,7 +44,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
         );
 
-        RuleDescription description = Compile(compiler, dsl).Describe();
+        OutlineNode description = Compile(compiler, dsl).Outline();
 
         Assert.Equal(expectedLabel, description.Label);
         Assert.False(string.IsNullOrWhiteSpace(description.Description));
@@ -57,7 +57,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
         );
 
-        RuleDescription description = Compile(compiler, "hasRole(role: \"Y\")").Describe();
+        OutlineNode description = Compile(compiler, "hasRole(role: \"Y\")").Outline();
 
         Assert.Equal("hasRole", description.Label);
         Assert.Contains("hasRole", description.Description, StringComparison.Ordinal);
@@ -71,7 +71,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
         );
 
-        RuleDescription description = Compile(compiler, "a AND b").Describe();
+        OutlineNode description = Compile(compiler, "a AND b").Outline();
 
         Assert.Equal("AND", description.Label);
         Assert.Equal(2, description.Operands.Count);
@@ -109,7 +109,7 @@ public sealed class OperatorInfoTests
     }
 
     [Fact]
-    public void Describe_throws_for_a_term_expression_pointing_callers_at_the_predicate_schema_instead()
+    public void Outline_throws_for_a_term_expression_pointing_callers_at_the_predicate_schema_instead()
     {
         TermExpression term = new(new TermIdentity("isManager", []));
 

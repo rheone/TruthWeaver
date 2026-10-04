@@ -33,7 +33,7 @@ public sealed class TruthValueAndDecisionTests
         Decision decision = new(TruthValue.True, []);
 
         Assert.Null(decision.Trace);
-        Assert.Null(decision.EvaluatedTree);
+        Assert.Null(decision.TraceTree);
     }
 
     [Theory]

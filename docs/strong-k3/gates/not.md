@@ -120,7 +120,7 @@ An unknown ban status does not grant access: `NOT isBanned` stays `Unknown`, and
 
 ## Implementation Notes
 
-- The evaluator reports a `NOT` node as `NOT` in the trace and the evaluated tree.
+- The evaluator reports a `NOT` node as `NOT` in the trace and the trace tree.
 - The analyzer treats `NOT` as a Strong Kleene connective, so `a AND NOT a` and `a OR NOT a` are not reported as a contradiction or a tautology ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
 
 ## Related Operations

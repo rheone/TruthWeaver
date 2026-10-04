@@ -201,7 +201,7 @@ The last row is the case a reading of `ALL` as "`False` when fewer than `n` oper
 
 ## Implementation Notes
 
-- The evaluator reports the node as `ALL` in the trace and the evaluated tree; the rule description label is `ALL`. Operand order is kept.
+- The evaluator reports the node as `ALL` in the trace and the trace tree; the rule outline label is `ALL`. Operand order is kept.
 - Evaluation reuses the threshold evaluator (`k` equal to the operand count), so it is linear in the operand count.
 - `ExpandToPrimitives` rewrites `ALL(a, b, c)` to `AtLeast(3, a, b, c)`. `Simplify` and `Canonicalize` collapse it to `AND` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)). The canonical printer writes `ALL(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "all", "operands": [...]}`.

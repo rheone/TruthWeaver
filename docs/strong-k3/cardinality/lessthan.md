@@ -212,7 +212,7 @@ The out-of-range values are rejected because they make the result a constant: `k
 
 ## Implementation Notes
 
-- The evaluator reports the node as `LessThan(k)` in the trace and the evaluated tree, for example `LessThan(2)`.
+- The evaluator reports the node as `LessThan(k)` in the trace and the trace tree, for example `LessThan(2)`.
 - `ExpandToPrimitives` rewrites `LessThan(k, ...)` to `AtMost(k - 1, ...)`, and the simplifier collapses it to `AtMost(k - 1, ...)` as well ([ADR-0005](../../adr/0005-strong-k3-language-surface.md)).
 - `RuleBuilder` has only the `params` overload for `LessThan`; there is no `IEnumerable` overload.
 
