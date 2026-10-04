@@ -39,7 +39,9 @@ public sealed partial class YamlDataSource : IDataSource
         YamlStream stream = [];
         using StringReader reader = new(yaml);
         stream.Load(reader);
-        return stream.Documents.Count == 0 ? new YamlDataSource(JsonDataSource.Create(null)) : Create(stream.Documents[0].RootNode);
+        return stream.Documents.Count == 0
+            ? new YamlDataSource(JsonDataSource.Create(null))
+            : Create(stream.Documents[0].RootNode);
     }
 
     /// <summary>Creates a source over an already-parsed YAML node, for example one entry of a larger configuration document.</summary>
@@ -49,7 +51,9 @@ public sealed partial class YamlDataSource : IDataSource
     public static YamlDataSource Create(YamlNode root)
     {
         ArgumentNullException.ThrowIfNull(root);
-        return new YamlDataSource(JsonDataSource.Create(ToJson(root, new HashSet<YamlNode>(ReferenceEqualityComparer.Instance))));
+        return new YamlDataSource(
+            JsonDataSource.Create(ToJson(root, new HashSet<YamlNode>(ReferenceEqualityComparer.Instance)))
+        );
     }
 
     /// <inheritdoc />
@@ -84,7 +88,11 @@ public sealed partial class YamlDataSource : IDataSource
 
         if (!ancestors.Add(node))
         {
-            throw new YamlException(node.Start, node.End, "An alias refers to its own ancestor, which cannot be read as JSON data.");
+            throw new YamlException(
+                node.Start,
+                node.End,
+                "An alias refers to its own ancestor, which cannot be read as JSON data."
+            );
         }
 
         try

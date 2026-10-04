@@ -204,10 +204,18 @@ public sealed class JsonDataSourceTests
         CompiledRule<object?> rule = Compile("takesInt64(v: from(\"doc\", \"$.orders[*].total\"))");
         DataSources sources = new() { ["doc"] = JsonDataSource.Parse(OrdersJson) };
 
-        Decision decision = await rule.EvaluateAsync(null, new NoServices(), sources, null, TestContext.Current.CancellationToken);
+        Decision decision = await rule.EvaluateAsync(
+            null,
+            new NoServices(),
+            sources,
+            null,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(TruthValue.Unknown, decision.Result);
-        VariableResolutionException fault = Assert.IsType<VariableResolutionException>(Assert.Single(decision.Faults).Exception);
+        VariableResolutionException fault = Assert.IsType<VariableResolutionException>(
+            Assert.Single(decision.Faults).Exception
+        );
         Assert.Equal(VariableFailureKind.Ambiguous, fault.Kind);
     }
 
@@ -218,7 +226,13 @@ public sealed class JsonDataSourceTests
         CompiledRule<object?> rule = Compile("takesInt64(v: from(\"doc\", \"$.orders[?@.id=='A7'].total\"))");
         DataSources sources = new() { ["doc"] = JsonDataSource.Parse(OrdersJson) };
 
-        Decision decision = await rule.EvaluateAsync(null, new NoServices(), sources, null, TestContext.Current.CancellationToken);
+        Decision decision = await rule.EvaluateAsync(
+            null,
+            new NoServices(),
+            sources,
+            null,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(TruthValue.True, decision.Result);
         Assert.Empty(decision.Faults);
@@ -231,7 +245,13 @@ public sealed class JsonDataSourceTests
         CompiledRule<object?> rule = Compile("takesInt64s(v: from(\"doc\", \"$.orders[*].total\"))");
         DataSources sources = new() { ["doc"] = JsonDataSource.Parse(OrdersJson) };
 
-        Decision decision = await rule.EvaluateAsync(null, new NoServices(), sources, null, TestContext.Current.CancellationToken);
+        Decision decision = await rule.EvaluateAsync(
+            null,
+            new NoServices(),
+            sources,
+            null,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(TruthValue.True, decision.Result);
     }
@@ -239,7 +259,13 @@ public sealed class JsonDataSourceTests
     private static CompiledRule<object?> Compile(string ruleText)
     {
         PredicateRegistryBuilder<object?> builder = PredicateRegistry<object?>.CreateBuilder();
-        foreach ((string name, LiteralKind kind) in new[] { ("takesInt64", LiteralKind.Int64), ("takesInt64s", LiteralKind.Int64Array) })
+        foreach (
+            (string name, LiteralKind kind) in new[]
+            {
+                ("takesInt64", LiteralKind.Int64),
+                ("takesInt64s", LiteralKind.Int64Array),
+            }
+        )
         {
             builder.Add(
                 new PredicateSchema(name, name, "Always true.", [new PredicateArgumentSchema("v", "The value.", kind)]),

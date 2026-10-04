@@ -73,9 +73,7 @@ public sealed class JsonQueryValidatorTests
     public async Task Validate_QueryEndingAfterADot_ReportsAProblemAtTheEndOfTheQuery_Test(string query)
     {
         QueryProblem problem = Assert.Single(JsonQueryValidator.Instance.Validate(query));
-        DataQueryResult result = await JsonDataSource
-            .Parse("{}")
-            .QueryAsync(query, TestContext.Current.CancellationToken);
+        DataQueryResult result = await JsonDataSource.Parse("{}").QueryAsync(query, TestContext.Current.CancellationToken);
 
         Assert.Equal(query.Length, problem.Position);
         Assert.Equal(DataQueryErrorKind.MalformedQuery, result.ErrorKind);

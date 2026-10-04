@@ -65,7 +65,10 @@ public sealed class JsonDataSource : IDataSource
         cancellationToken.ThrowIfCancellationRequested();
         if (!JsonPaths.TryParse(query, out JsonPath? path, out QueryProblem? problem))
         {
-            throw new ArgumentException($"The scope query is not valid JSONPath: {problem.Message} (at position {problem.Position})", nameof(query));
+            throw new ArgumentException(
+                $"The scope query is not valid JSONPath: {problem.Message} (at position {problem.Position})",
+                nameof(query)
+            );
         }
 
         NodeList matches = path.Evaluate(this.root).Matches;
@@ -136,7 +139,11 @@ public sealed class JsonDataSource : IDataSource
 
     // The number is read from its JSON text so the result does not depend on how the node stores it (parsed text or a CLR
     // number): "18" is an Int64, "18.0" and "1.5" are Decimal, and a number too large for a decimal has no literal.
-    private static bool TryConvertNumber(JsonValue value, out LiteralValue literal, [NotNullWhen(false)] out string? unsupportedKind)
+    private static bool TryConvertNumber(
+        JsonValue value,
+        out LiteralValue literal,
+        [NotNullWhen(false)] out string? unsupportedKind
+    )
     {
         string text = value.ToJsonString();
         if (long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long integer))

@@ -15,7 +15,11 @@ internal static class JsonPaths
     /// <param name="path">The parsed path when successful.</param>
     /// <param name="problem">What is wrong, with the offset where the parser stopped, when unsuccessful.</param>
     /// <returns><see langword="true"/> when <paramref name="query"/> is valid.</returns>
-    public static bool TryParse(string query, [NotNullWhen(true)] out JsonPath? path, [NotNullWhen(false)] out QueryProblem? problem)
+    public static bool TryParse(
+        string query,
+        [NotNullWhen(true)] out JsonPath? path,
+        [NotNullWhen(false)] out QueryProblem? problem
+    )
     {
         try
         {
@@ -35,7 +39,10 @@ internal static class JsonPaths
             // JsonPath.Net 2.2.0 reads past the end of a query that stops right after a member dot ("$." or "$.a."), where it
             // should raise a PathParseException. That is a malformed query like any other, ending where the text does.
             path = null;
-            problem = new QueryProblem("The query ends unexpectedly after '.'; a member name, '*' or a bracketed selector must follow.", query.Length);
+            problem = new QueryProblem(
+                "The query ends unexpectedly after '.'; a member name, '*' or a bracketed selector must follow.",
+                query.Length
+            );
             return false;
         }
     }

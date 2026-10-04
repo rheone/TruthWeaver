@@ -47,7 +47,13 @@ public sealed class PackageBoundaryTests
         TestResult result = Types
             .InAssembly(Abstractions)
             .Should()
-            .NotHaveDependencyOnAny([.. CoreNamespaces, "TruthWeaver.Yaml", "TruthWeaver.DataSources", "TruthWeaver.Predicates", "TruthWeaver.Testing"])
+            .NotHaveDependencyOnAny([
+                .. CoreNamespaces,
+                "TruthWeaver.Yaml",
+                "TruthWeaver.DataSources",
+                "TruthWeaver.Predicates",
+                "TruthWeaver.Testing",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
@@ -87,7 +93,12 @@ public sealed class PackageBoundaryTests
         TestResult result = Types
             .InAssembly(Core)
             .Should()
-            .NotHaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.DataSources", "TruthWeaver.Predicates", "TruthWeaver.Testing")
+            .NotHaveDependencyOnAny(
+                "TruthWeaver.Yaml",
+                "TruthWeaver.DataSources",
+                "TruthWeaver.Predicates",
+                "TruthWeaver.Testing"
+            )
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
