@@ -1,5 +1,7 @@
 namespace TruthWeaver.Ast;
 
+using TruthWeaver.Abstractions;
+
 /// <summary>
 /// Looks up the <see cref="OperatorDescriptor"/> (label + description) for any operator node in a
 /// compiled expression tree. Every operator in the closed set (ADR-0004) has one; a
@@ -9,7 +11,7 @@ namespace TruthWeaver.Ast;
 /// </summary>
 public static class OperatorInfo
 {
-    // TODO operator descriptions should be enriched with context, not be a static value unless a static value is actually called for
+    // Note: descriptors are static text today; enrich them with context only where a static value is not enough.
 
     /// <summary>Gets the label and description for an operator node.</summary>
     /// <param name="node">The expression node.</param>
@@ -19,10 +21,8 @@ public static class OperatorInfo
     {
         if (node is ConstantExpression c)
         {
-            // TODO? Add "Unknown" to possible values / descriptor
-            return c.Value
-                ? new OperatorDescriptor("True", "A fixed True value.")
-                : new OperatorDescriptor("False", "A fixed False value.");
+            string label = TruthValueText.Canonical(c.Value);
+            return new OperatorDescriptor(label, $"A fixed {label} value.");
         }
 
         if (node is TermExpression)
@@ -35,36 +35,11 @@ public static class OperatorInfo
         }
 
         NodeShape shape = ExpressionShape.Of(node);
-        return shape.OpName switch
-        {
-            // TODO add all operators
 
-            "Not" => new OperatorDescriptor("NOT", "Logical negation. Unknown stays Unknown."),
-            "And" => new OperatorDescriptor("AND", "True iff every operand is true. Short-circuits at the first False."),
-            "Or" => new OperatorDescriptor("OR", "True iff at least one operand is true. Short-circuits at the first True."),
-            "Xor" => new OperatorDescriptor(
-                "XOR",
-                "True iff exactly one of the two operands is true. Unknown if either operand is Unknown."
-            ),
-            "Xnor" => new OperatorDescriptor(
-                "XNOR",
-                "Logical biconditional (IFF) — true iff both operands agree (both true or both false). The negation of XOR."
-            ),
-            "ExactlyOne" => new OperatorDescriptor("ExactlyOne", "True iff exactly one operand is true."),
-            _ => new OperatorDescriptor($"{shape.OpName}({shape.K})", ThresholdDescription(shape)),
-        };
-    }
-
-    private static string ThresholdDescription(NodeShape threshold)
-    {
-        return threshold.OpName switch
-        {
-            "AtLeast" => $"True iff at least {threshold.K} of the operands are true.",
-            "AtMost" => $"True iff at most {threshold.K} of the operands are true.",
-            "GreaterThan" => $"True iff more than {threshold.K} of the operands are true.",
-            "LessThan" => $"True iff fewer than {threshold.K} of the operands are true.",
-            "Exactly" => $"True iff exactly {threshold.K} of the operands are true.",
-            _ => throw new InvalidOperationException($"Unhandled threshold comparison '{threshold.OpName}'."),
-        };
+        // Every operator reaches here through ExpressionShape.Of; the table completeness test guarantees a definition,
+        // so a missing one degrades to the bare op-name rather than throwing in production.
+        return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
+            ? new OperatorDescriptor(definition.Label(shape), definition.Describe(shape))
+            : new OperatorDescriptor(shape.OpName, string.Empty);
     }
 }

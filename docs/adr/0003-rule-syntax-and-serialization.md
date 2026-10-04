@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Partly superseded by [ADR-0005](0005-strong-k3-language-surface.md): the operator set, the ban on `IMPLIES` and symbol aliases, binary-only `XOR`/`XNOR` naming, and "word operators only" no longer hold. All other decisions here stand. Diagnostic codes cited in this record read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged). Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -32,6 +32,11 @@ Two specific traps drove several of the decisions below:
 
 ### Operator set
 
+> **Superseded by [ADR-0005](0005-strong-k3-language-surface.md) (decisions 3, 4, 5, 6):** the operator
+> set is no longer this list. `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`/`ALL`/`NONE`/`BETWEEN`,
+> `COALESCE`, `If`, the inspections exist (and `Project` as a method on `Decision`, not a rule operator), `EQUIVALENT` replaces `XNOR`, and `Unknown` is
+> a constant. The text below is kept as the original decision.
+
 `AND`, `OR`, `NOT`, `XOR` (**binary only** — a compile error if given more
 than two operands), `ExactlyOne(...)` (n-ary, true iff exactly one operand is
 `True`), `AtLeast(k, ...)` (n-ary threshold, e.g. "any two of these three
@@ -40,13 +45,20 @@ approvals"), and the constants `true`/`false`. See
 family (`AtMost`/`GreaterThan`/`LessThan`/`Exactly`), added after this ADR
 was first accepted.
 
-`IMPLIES` is deliberately **not** included — it saves two characters over
+> **Superseded by ADR-0005 (decision 3):** `IMPLIES` is now an operator (Strong Kleene material implication).
+
+`IMPLIES` was deliberately **not** included — it saves two characters over
 `OR(NOT(a), b)` and rule authors reliably get its truth table wrong, so the
 "convenience" is negative value. N-ary `XOR` is not supported under that
 name at all — the ambiguity above is resolved by giving the "exactly one"
 meaning its own explicit name (`ExactlyOne`) instead of overloading `XOR`.
 
 ### String DSL — canonical form
+
+> **Superseded in part by ADR-0005 (decisions 2, 8, 9):** symbol aliases and `[]`/`{}` grouping are
+> accepted on input (the canonical form is still the upper camel word with parentheses), and every
+> infix operator other than `NOT`/`AND`/`OR` follows the no-mixing rule, not just `XOR`. The
+> `NOT` > `AND` > `OR` precedence below stands.
 
 Word operators only (`AND`, `OR`, `NOT`, `XOR`, `ExactlyOne`, `AtLeast`),
 matched case-insensitively on input. No symbol aliases (`&&`, `||`) — one
@@ -67,6 +79,10 @@ lets each predicate declare an explicit argument schema (name, type,
 required/default) that the compiler validates once, at compile time, so a
 missing or mistyped argument can never surface as a runtime failure inside a
 predicate.
+
+> **Superseded in part by [ADR-0006](0006-data-sources-for-expression-variables.md):** an argument may
+> also be a variable reference, `from("source", "query")`, resolved at evaluation time from a named data
+> source. The literal-only and no-context-path statements below describe the original decision.
 
 Argument values are **literals only**, from a closed set of types: `string`,
 `long`, `decimal`, `bool`, `DateTimeOffset`, and arrays of those. There is no
@@ -147,6 +163,7 @@ schema against the compiler's own valid and malformed JSON fixtures.
 
 The `true`/`false` constant (user story 11) uses the same discrimination
 principle with a third key: `{"const": true}` / `{"const": false}`.
+(ADR-0005 decision 16 adds `{"const": "unknown"}`; the DSL constants are `True`/`False`/`Unknown`.)
 
 Both `RuleCompiler.CompileJson` and `CompileYaml` also accept an
 already-materialized node (`System.Text.Json.JsonElement` /
@@ -242,7 +259,7 @@ node parameterized by a `ThresholdComparison` enum (`AtLeast`, `AtMost`,
 composition (each expressed via the existing `AtLeast`-counting BDD helper,
 e.g. `AtMost(k, ...)` is `NOT AtLeast(k + 1, ...)`), and one compile-time
 range check: for a given operand count, a `k` outside the range that makes
-the result structurally non-constant is rejected (`BRE0008`,
+the result structurally non-constant is rejected (`TRE0008`,
 `InvalidThresholdValue`) — the same "don't silently accept a constant rule"
 rationale the original `AtLeast` validation already applied.
 
@@ -260,13 +277,16 @@ the full table and why no `All`/`None` operators exist to duplicate them.
 
 ### `XNOR` (logical biconditional / `IFF`)
 
+> **Superseded by ADR-0005 (decision 5):** the node is now `EQUIVALENT` (aliases `IFF` and `XNOR`);
+> JSON/YAML write `equivalent` and still read `xnor`. `IFF` is accepted, contrary to the paragraph below.
+
 Added as `XOR`'s natural counterpart: binary-only for the same reason `XOR`
 is (the n-ary generalization is a parity operator nobody means when they
 write `XNOR(a, b, c)`), always parenthesized by the canonical printer
 regardless of context, and included in the same ambiguous-mixing check `XOR`
 already had — mixing `XNOR` with `AND`/`OR`, or mixing `XOR` with `XNOR`, at
 the same syntactic level without parentheses is a compile error
-(`BRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
+(`TRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
 
 `IFF` was considered as an alternate/additional keyword but not added:
 `XNOR` is already the standard boolean-algebra name and adding a second
@@ -292,7 +312,7 @@ therefore can't casually change once rules reference it, while `Label` is
 purely presentational and free to be renamed, capitalized, or localized
 without touching a single persisted rule.
 
-### Operator label/description, and `CompiledRule.Describe()`
+### Operator label/description, and `CompiledRule.Outline()`
 
 Predicates carry `Label`/`Description` on their schema; the closed set of
 *operators* (`AND`/`OR`/`NOT`/`XOR`/`XNOR`/`ExactlyOne`/the threshold family/
@@ -300,11 +320,11 @@ the constants) needed the equivalent, so a rule-authoring UI or a generated
 "what does this rule mean" report can describe every node of a compiled
 expression tree, not just its predicate leaves. `OperatorInfo.Describe`
 (`TruthWeaver.Ast`) returns an `OperatorDescriptor` (`Label`,
-`Description`) for any operator node; `CompiledRule<TContext>.Describe()`
-walks the whole tree and returns a `RuleDescription` (`Label`, `Description`,
+`Description`) for any operator node; `CompiledRule<TContext>.Outline()`
+walks the whole tree and returns an `OutlineNode` (`Label`, `Description`,
 `Operands`) recursively, resolving each term's `Label`/`Description` from its
 predicate's registered `PredicateSchema` via the new public
-`PredicateRegistry<TContext>.TryGetSchema`. `RuleDescription` is a plain DTO,
+`PredicateRegistry<TContext>.TryGetSchema`. `OutlineNode` is a plain DTO,
 not the AST itself — the closed-set `Expression`/`RuleNode` types stay
 internal-to-the-package (ADR-0004); nothing here opens them up as a second,
 parallel public surface.
@@ -345,4 +365,5 @@ lower-trust path that could drift out of sync with the validated one.
 
 - [ADR-0001: Kleene failure model](0001-kleene-failure-model.md)
 - [ADR-0002: Evaluation semantics](0002-evaluation-semantics.md)
+- [ADR-0005: Strong K3 language surface](0005-strong-k3-language-surface.md)
 - [CONTEXT.md](../../CONTEXT.md)

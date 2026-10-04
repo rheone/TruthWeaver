@@ -1,6 +1,6 @@
 # Library roadmap: feature candidates, impact/complexity, and verdicts
 
-**Status:** brainstorm
+**Status:** brainstorm, re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
 
 ## Purpose
 
@@ -16,7 +16,66 @@ reason), or **Don't do** (rejected, with a reason — not "maybe later").
 Impact/complexity are both Low/Medium/High. This is a prioritization
 write-up, not a commitment — nothing here is scheduled.
 
-## At a glance
+## Re-score (2026-10-03, k3-hardening ticket 01)
+
+The Strong K3 work (k3-conformance, k3-followups, k3-hardening) built several roadmap items or changed their
+shape. Every item below was re-checked against the source and `git log` on branch `StrongK3+Operations`, not against
+the older text. **The table and notes in this section are current. The per-item sections further down are the original
+2026-09 write-up, kept for the design reasoning, and are stale wherever they disagree with this section.**
+
+Two verdict names are new: **Done** (built since the last scoring) and **Obsolete** (the premise no longer holds, with
+the reason given). The others are unchanged. Impact and complexity describe the *remaining* value and effort.
+
+| Item | Impact | Complexity | Verdict | Re-score rationale |
+| --- | --- | --- | --- | --- |
+| Rule linting (style/hygiene pass) | Low–Medium | Low–Medium | **Done** (K3 lints); residual Do (sequenced) | K3 redundancy lints shipped as opt-in `CompilerOptions.Lints` (`Linter`, `BRE0017` to `BRE0023`, commit 8f388db, k3-hardening 09). Still missing: depth-near-limit and wide-chain style lints, and spans or paths on findings (tree nodes keep none). |
+| Registry-wide unused-predicate audit | Low–Medium | Low | **Do now** | Unchanged; nothing in `src/` does it. Still a separate utility, not a compiler feature. |
+| Predicate deprecation marker + diagnostic | Medium | Low | **Do now** | Unchanged; `PredicateSchema` has no `Deprecated` or `ReplacedBy`. The next diagnostic code follows `BRE0023`. |
+| Source-generator predicate registration | Medium | Medium–High | Do (sequenced) | Unchanged. The AOT/trim analyzer gate is clean (k3-hardening 04), which keeps the compile-time-only argument valid. |
+| Ready-made predicate factories (numeric/Guid/nullability) | Medium | Low | **Do now**, re-shaped | Every factory must return `TruthValue`, not `bool`. Today every catalog member goes through `PredicateResult.FromBoolAsync`, so the catalog is effectively two-valued; new factories should use `NullBehavior` and return `Unknown` where a missing value is unknown. Scope is set by [`k3-gap-list.md`](../predicate-catalog/k3-gap-list.md) (not implemented) and batched as one ticket. |
+| Date/time: fixed cutoff before/after | Medium | Low | **Do now** | Unchanged; `LiteralKind.DateTimeOffset` still covers it. |
+| Date/time: day-of-week/month/time-window (IANA timezone) | Medium–High | Medium | Do (sequenced) | Unchanged, except the precedent moved: `EqualsConfigurable` no longer has a `culture` argument (k3-followups 20, breaking), so "timezone as a string argument like `culture`" is no longer an existing pattern. Still needs DST coverage. |
+| Date/time: calendar/holiday predicates *in the engine* | — | — | **Don't do** | Unchanged. |
+| Culture/case: extend `EqualsConfigurable` to `StartsWith`/`EndsWith`/`Contains`/`SetEquals` | — | — | **Obsolete** | `culture` was removed; `EqualsConfigurable` is ordinal with `ignoreCase` and `trim` only (k3-followups 12 and 20). Only an `ignoreCase`/`trim` extension remains, folded into the predicate-catalog batch above. The Turkish-I test pattern went with the culture argument. |
+| Unicode normalization (NFC/NFKC) support | Low–Medium | Medium | Not now | Unchanged. Ordinal comparison makes the limitation more visible, so document it rather than build it. |
+| Starter templates (`dotnet new`) | Medium | Low | Do (sequenced) | The API surface moved a lot (TruthValue predicates, breaking renames). Sequence after the breaking-change notes (k3-hardening 02) so templates are written once against the settled API. |
+| Rule complexity metrics (incl. BDD-node-count) | Medium | Low | **Do now**, re-shaped | Still not public: `RuleMetrics` exists only as a test helper, and `src/TruthWeaver/Metrics/TruthWeaverMetrics.cs` is runtime instrumentation, not rule metrics. The analyzer is now dual-rail, so a BDD node count must say which rail, or the union. `MaxRewriteNodeCount` and `ExpressionTools.Size` already define "tree size" for the rewrites. |
+| Joining compiled rules via an operator | High | Medium–High | Do (sequenced) | Unchanged. Still needs the re-validate design; the builder can express the join once both trees exist. |
+| Public `RuleFuzzer` (structural/AST fuzzing) | Medium | Low–Medium | **Do now**, re-shaped | The generator is now `K3RuleGenerator` plus `K3Oracle` in `tests/TruthWeaver.Tests/TestSupport` and drives the equivalence, rewrite and analyzer tests. Publishing it means moving it into `TruthWeaver.Testing` and decoupling it from the test predicates; the oracle gives a ready correctness check. More than "nearly free". |
+| Stryker.NET mutation testing (CI, repo-internal) | Medium | Low | **Do now** | Tracked as k3-hardening 10 (ready-for-agent). The suite is now heavy on generated tests, which makes the mutation score more informative. |
+| Predicate test harness | Medium–High | Medium | **Do now** | Unchanged in scope, plus: the harness must treat an `Unknown` result as valid and report whether it came with a `Fault`. |
+| Public rule-equivalence check (BDD-based) | — | — | **Done** | `RuleEquivalence.Compare` returns `Equivalent`, `NotEquivalent` (with a `TruthValue` counter-example over the union of terms) or `Undecided` (term cap `MaxAnalysisTerms`), and `RuleDiffResult.PreservesMeaning` reports it for diffs (commit bd92784, k3-hardening 08). It is K3-aware and built on the dual-rail analyzer, not the single-rail node-id comparison the original text sketched. Residual: `RuleDiff.Compare` takes no `CompilerOptions`, so a pair over the default 20 distinct terms reports `PreservesMeaning == null`. |
+| De Morgan's / negation-normal-form print mode | Low | Low | Not now | Mostly overlaps the rewrites: `Simplify()` already applies De Morgan and negation pushing where it removes nodes, and `Canonicalize()` fixes one deterministic form. A display-only NNF printer is still absent and would be K3-sound (De Morgan holds in K3), but no consumer needs it. |
+| BDD-based "simplify my rule" re-synthesis | — | — | **Obsolete** (rewrite goal); Not now (BDD form) | `CompiledRule.Simplify()` now delivers a K3-sound, never-larger, idempotent simplification, alongside `Canonicalize()` and `CompressToDerived()`. Shannon re-synthesis from a BDD is harder than the old text assumed: the BDD is dual-rail, so a re-synthesised tree must reproduce `Unknown` behaviour, and it would lose the "never larger" guarantee. Revisit only if a rule defeats `Simplify()`. |
+| Quine–McCluskey-style guaranteed-minimal minimization | — | — | **Don't do** | Unchanged (NP-hard). It is also a two-valued technique, so it would not respect `Unknown`. |
+| SMT/Z3 integration | — | — | **Don't do** | Unchanged: predicates are opaque, and a native dependency buys nothing over the dual-rail BDD. |
+| K-maps | — | — | **Don't do** | Unchanged. A K-map is a binary visual aid; a three-valued rule needs 3^n cells. |
+
+### New candidates
+
+Raised by the K3 work, scored on the same scale. None is scheduled.
+
+| Item | Impact | Complexity | Verdict | Rationale and source |
+| --- | --- | --- | --- | --- |
+| Predicate catalog K3 gap list (Unknown-aware, inventory names) | Medium | Medium | Do (sequenced) | [`k3-gap-list.md`](../predicate-catalog/k3-gap-list.md); gated by the open predicate-catalog questions 2, 4, 7 and 8 in the k3-conformance issues log. |
+| `RuleDiff.Compare` accepting `CompilerOptions` | Low | Low | **Do now** | One-parameter follow-up to the equivalence check (k3-hardening 08, "Not done"). Additive. |
+| Lint follow-ups: spans or paths on findings, collapse nested findings, more lint families | Low–Medium | Medium | Not now | Recorded as "Not done" in k3-hardening 09; needs expression nodes to carry a span, which is a wider change. |
+| Equivalence assertion in `TruthWeaver.Testing` (for example `AssertEquivalent(ruleA, ruleB)`) | Medium | Low | Do (sequenced) | A thin wrapper over `RuleEquivalence.Compare` for consumers who refactor rules; belongs with the predicate test harness. |
+| Public minimal satisfying assignment ("what facts make this True?") | Medium | Medium | Not now | `BddManager.FindSatisfyingAssignment` exists but is internal and only feeds counter-examples. Same item as the [deferred-features](../deferred-features/spec.md) row. |
+| In-process partial evaluation by substitution plus `Simplify()` | Medium | Medium | Not now | Binding known predicates to constants and simplifying is now feasible, but there is no substitution API today and a residual cannot be pushed to SQL (predicates stay opaque). See deferred-features. |
+| Compile-cost regression investigation | Medium | Low–Medium | Do (sequenced) | k3-hardening 04 measured compile allocation roughly 2x to 3x the 2026-09-27 baseline (Small 19 KB to 36 KB, Large 1,864 KB to 6,193 KB), not profiled. The owner decides whether it is a regression. |
+| Executable README examples | Medium | Medium | Do (sequenced) | k3-hardening 05 (ready-for-agent); keeps the 2,500-line README from rotting after API changes. |
+| Whole-branch code review before merge | High | Medium | **Do now** | k3-hardening 07 (ready-for-agent). |
+| Diagnostic properties and JSON pointer | Low–Medium | Medium | Not now | k3-followups 26, status deferred. |
+| Tracing (`ActivitySource`) beside the existing metrics | Low–Medium | Low–Medium | Not now | Metrics exist (`TruthWeaverMetrics`, meter `TruthWeaver`); there is no `ActivitySource`. Same item as the deferred OpenTelemetry row. |
+
+### Open owner decisions that touch this roadmap
+
+- k3-followups 28 (AAA and NSubstitute rules), 31 (ternary precedence wording) and 33 (`params` versus enumerable
+  overload guidance) are `needs-owner-decision`; none changes a verdict above.
+- The predicate-catalog open questions (2, 4, 7, 8) gate the catalog item and its null-behaviour defaults.
+
+## At a glance (original 2026-09 scoring, superseded by the re-score above)
 
 | Item | Impact | Complexity | Verdict |
 | --- | --- | --- | --- |

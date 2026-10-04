@@ -24,6 +24,13 @@ internal enum RawLiteralForm
 
     /// <summary>A bracketed/sequence list of raw literals, all of the same element form.</summary>
     Array,
+
+    /// <summary>
+    /// A variable reference, <c>from("source", "query")</c> (ADR-0006): not a literal but an argument whose value the
+    /// engine reads from a data source at evaluation time. <see cref="RawLiteral.Text"/> is the source name and
+    /// <see cref="RawLiteral.Query"/> the query.
+    /// </summary>
+    Variable,
 }
 
 /// <summary>A single unresolved literal value, in whichever surface form it was written.</summary>
@@ -32,12 +39,16 @@ internal enum RawLiteralForm
 /// <param name="BooleanValue">The literal's value (for <see cref="RawLiteralForm.Boolean"/>).</param>
 /// <param name="Elements">The literal's elements (for <see cref="RawLiteralForm.Array"/>).</param>
 /// <param name="Span">The literal's location in source text.</param>
+/// <param name="Query">The query (for <see cref="RawLiteralForm.Variable"/>, whose <paramref name="Text"/> is the source name).</param>
+/// <param name="Parts">Where the source name and the query sit (for <see cref="RawLiteralForm.Variable"/>), so a diagnostic can point at the part that is wrong rather than at the whole reference.</param>
 internal sealed record RawLiteral(
     RawLiteralForm Form,
     string? Text,
     bool BooleanValue,
     IReadOnlyList<RawLiteral>? Elements,
-    SourceSpan Span
+    SourceSpan Span,
+    string? Query = null,
+    VariableParts? Parts = null
 )
 {
     public static RawLiteral OfString(string text, SourceSpan span)
@@ -58,5 +69,10 @@ internal sealed record RawLiteral(
     public static RawLiteral OfArray(IReadOnlyList<RawLiteral> elements, SourceSpan span)
     {
         return new(RawLiteralForm.Array, default, default, elements, span);
+    }
+
+    public static RawLiteral OfVariable(string source, string query, SourceSpan span, VariableParts? parts = null)
+    {
+        return new(RawLiteralForm.Variable, source, default, default, span, query, parts);
     }
 }

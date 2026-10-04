@@ -13,6 +13,7 @@
     <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
     <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,7 +22,14 @@ internal static class JsonTreePrinter
     {
         if (node is ConstantExpression c)
         {
-            return new JsonObject { ["const"] = c.Value };
+            // True/False stay plain JSON booleans (compatible with existing documents); Unknown has no JSON
+            // literal, so it is written as the string "unknown".
+            return c.Value switch
+            {
+                TruthValue.True => new JsonObject { ["const"] = true },
+                TruthValue.False => new JsonObject { ["const"] = false },
+                _ => new JsonObject { ["const"] = TruthValueText.TreeFormat(c.Value) },
+            };
         }
 
         if (node is TermExpression t)
@@ -36,7 +43,13 @@ internal static class JsonTreePrinter
             ["op"] = TreeFormatOpNames.ToTreeFormat(shape.OpName),
             ["operands"] = OperandsArray(shape.Operands),
         };
-        if (shape.K is { } k)
+        if (shape.Max is { } max)
+        {
+            // BETWEEN carries its two bounds as min/max instead of a single threshold k.
+            obj["min"] = shape.K;
+            obj["max"] = max;
+        }
+        else if (shape.K is { } k)
         {
             obj["k"] = k;
         }
@@ -58,12 +71,17 @@ internal static class JsonTreePrinter
     private static JsonNode TermToNode(TermExpression term)
     {
         JsonObject obj = new() { ["predicate"] = term.Identity.PredicateName };
-        if (term.Identity.Arguments.Count > 0)
+        if (term.Identity.Arguments.Count > 0 || term.Identity.Variables.Count > 0)
         {
             JsonObject args = [];
             foreach ((string name, LiteralValue value) in term.Identity.Arguments)
             {
                 args[name] = LiteralToNode(value);
+            }
+
+            foreach ((string name, VariableReference reference) in term.Identity.Variables)
+            {
+                args[name] = new JsonObject { ["from"] = reference.Source, ["query"] = reference.Query };
             }
 
             obj["args"] = args;

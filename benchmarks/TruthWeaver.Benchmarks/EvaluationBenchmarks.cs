@@ -53,6 +53,6 @@ public class EvaluationBenchmarks
     [Benchmark]
     public Task<Decision> EvaluateAsync()
     {
-        return this.rule.EvaluateAsync(this.context, NullServiceProvider.Instance, ExhaustiveOptions);
+        return this.rule.EvaluateAsync(this.context, NullServiceProvider.Instance, options: ExhaustiveOptions);
     }
 }

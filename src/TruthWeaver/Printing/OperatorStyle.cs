@@ -2,20 +2,21 @@ namespace TruthWeaver.Printing;
 
 /// <summary>
 /// How <see cref="PlainTextTreePrinter"/> and <see cref="MermaidTreePrinter"/> render the
-/// <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>XNOR</c> operator labels of a rendered tree.
-/// <see cref="Evaluation.RuleDescription"/> nodes for <c>ExactlyOne</c> and the threshold family (<c>AtLeast</c>,
+/// <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>/<c>COALESCE</c> operator labels of a rendered tree.
+/// <see cref="Evaluation.OutlineNode"/> nodes for <c>ExactlyOne</c>, <c>BETWEEN</c>, the inspections (<c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c>, <c>IsKnown</c>) and the threshold family (<c>AtLeast</c>,
 /// <c>AtMost</c>, <c>GreaterThan</c>, <c>LessThan</c>, <c>Exactly</c>) always keep their
 /// word/function-call form (e.g. <c>AtLeast(3)</c>), in every style — they have no symbolic or
-/// C-style spelling to switch to.
+/// C-style spelling to switch to. <c>If</c> keeps its word label in <see cref="Word"/> and <see cref="Symbolic"/> and renders as
+/// <c>?:</c> in <see cref="CStyle"/>.
 /// </summary>
 public enum OperatorStyle
 {
-    /// <summary>The default: <c>AND</c>, <c>OR</c>, <c>NOT</c>, <c>XOR</c>, <c>XNOR</c>.</summary>
+    /// <summary>The default: <c>AND</c>, <c>OR</c>, <c>NOT</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>IMPLIES</c>, <c>NAND</c>, <c>NOR</c>, <c>COALESCE</c>.</summary>
     Word,
 
-    /// <summary>Mathematical logic notation: <c>∧</c>, <c>∨</c>, <c>¬</c>, <c>⊕</c>, <c>↔</c>.</summary>
+    /// <summary>Mathematical logic notation: <c>∧</c>, <c>∨</c>, <c>¬</c>, <c>⊕</c>, <c>↔</c>, <c>→</c>, <c>↑</c>, <c>↓</c>, <c>??</c>.</summary>
     Symbolic,
 
-    /// <summary>C-family operator notation: <c>&amp;&amp;</c>, <c>||</c>, <c>!</c>, <c>^</c>, <c>==</c>.</summary>
+    /// <summary>C-family operator notation: <c>&amp;&amp;</c>, <c>||</c>, <c>!</c>, <c>^</c>, <c>==</c>; <c>??</c> for <c>COALESCE</c>; <c>?:</c> for <c>If</c>; <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c> have no C-family spelling and keep their word forms. Caveat: <c>==</c> for <c>EQUIVALENT</c> follows C only for known values; in C# <c>null == null</c> is <see langword="true"/>, but <c>Unknown EQUIVALENT Unknown</c> is <c>Unknown</c>, so treat this style as a rendering aid, not as C# semantics.</summary>
     CStyle,
 }

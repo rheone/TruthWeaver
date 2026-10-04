@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
 
 ## Context
 
@@ -77,6 +77,11 @@ traces.
 | `True` | `False` |
 | `U` | `U` |
 
+> **Superseded in part by [ADR-0005](0005-strong-k3-language-surface.md) (decisions 3, 5, 15):**
+> the operator set is larger (`XNOR` is now `EQUIVALENT`, with `IMPLIES`, `NAND`, `NOR`, `PARITY`,
+> `COALESCE`, `If` and others), and a predicate may return `Unknown` directly. The truth tables and
+> the failure model below stand.
+
 `XOR`, `XNOR`, `ExactlyOne`, and the threshold family (`AtLeast(k)`/
 `AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, added after this ADR
 was first accepted — see [ADR-0003's Amendments](0003-rule-syntax-and-serialization.md#amendments))
@@ -107,6 +112,12 @@ public sealed record Decision(
     public bool IsSatisfied => Result == TruthValue.True;
 }
 ```
+
+> `Decision` has since gained a `TraceTree` member and an explicit
+> `Decision.Collapse(CollapsePolicy)` method (a call-site choice that never alters
+> `Result` or records a fault); `IsSatisfied` is still fail-closed. A rule cannot declare a
+> collapse and there is no `Decision.Outcome` (amended 2026-10-03). See
+> [ADR-0005](0005-strong-k3-language-surface.md) decision 14.
 
 `IsSatisfied` is `true` only for `TruthValue.True`. `Unknown` — whether from
 one absorbed fault or a hundred — reads as "not satisfied," which is the

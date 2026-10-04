@@ -175,7 +175,7 @@ public sealed class RuleTreeRenderingTests
     }
 
     [Theory]
-    [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "XNOR")]
+    [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "EQUIVALENT")]
     [InlineData(OperatorStyle.Symbolic, "∧", "∨", "¬", "⊕", "↔")]
     [InlineData(OperatorStyle.CStyle, "&&", "||", "!", "^", "==")]
     public void PlainText_renders_operators_in_the_requested_style(
@@ -191,11 +191,11 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(or, PlainTextTreePrinter.Print(BinaryNode("OR"), style));
         Assert.Contains(not, PlainTextTreePrinter.Print(UnaryNode("NOT"), style));
         Assert.Contains(xor, PlainTextTreePrinter.Print(BinaryNode("XOR"), style));
-        Assert.Contains(xnor, PlainTextTreePrinter.Print(BinaryNode("XNOR"), style));
+        Assert.Contains(xnor, PlainTextTreePrinter.Print(BinaryNode("EQUIVALENT"), style));
     }
 
     [Theory]
-    [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "XNOR")]
+    [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "EQUIVALENT")]
     [InlineData(OperatorStyle.Symbolic, "∧", "∨", "¬", "⊕", "↔")]
     [InlineData(OperatorStyle.CStyle, "&&", "||", "!", "^", "==")]
     public void Mermaid_renders_operators_in_the_requested_style(
@@ -211,7 +211,31 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(or, MermaidTreePrinter.Print(BinaryNode("OR"), style));
         Assert.Contains(not, MermaidTreePrinter.Print(UnaryNode("NOT"), style));
         Assert.Contains(xor, MermaidTreePrinter.Print(BinaryNode("XOR"), style));
-        Assert.Contains(xnor, MermaidTreePrinter.Print(BinaryNode("XNOR"), style));
+        Assert.Contains(xnor, MermaidTreePrinter.Print(BinaryNode("EQUIVALENT"), style));
+    }
+
+    /// <summary>Plain text and Mermaid tree printers render Nand and Nor using the requested operator style.</summary>
+    [Theory]
+    [InlineData(OperatorStyle.Word, "NAND", "NOR")]
+    [InlineData(OperatorStyle.Symbolic, "↑", "↓")]
+    [InlineData(OperatorStyle.CStyle, "NAND", "NOR")]
+    public void Render_NandAndNor_PlainTextAndMermaidUseRequestedStyle_Test(OperatorStyle style, string nand, string nor)
+    {
+        Assert.Contains(nand, PlainTextTreePrinter.Print(BinaryNode("NAND"), style));
+        Assert.Contains(nand, MermaidTreePrinter.Print(BinaryNode("NAND"), style));
+        Assert.Contains(nor, PlainTextTreePrinter.Print(BinaryNode("NOR"), style));
+        Assert.Contains(nor, MermaidTreePrinter.Print(BinaryNode("NOR"), style));
+    }
+
+    /// <summary>Plain text and Mermaid tree printers render Implies using the requested operator style.</summary>
+    [Theory]
+    [InlineData(OperatorStyle.Word, "IMPLIES")]
+    [InlineData(OperatorStyle.Symbolic, "→")]
+    [InlineData(OperatorStyle.CStyle, "IMPLIES")]
+    public void Render_Implies_PlainTextAndMermaidUseRequestedStyle_Test(OperatorStyle style, string expected)
+    {
+        Assert.Contains(expected, PlainTextTreePrinter.Print(BinaryNode("IMPLIES"), style));
+        Assert.Contains(expected, MermaidTreePrinter.Print(BinaryNode("IMPLIES"), style));
     }
 
     [Theory]
@@ -220,8 +244,8 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.CStyle)]
     public void PlainText_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
     {
-        RuleDescription exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
-        RuleDescription atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+        OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
+        OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
 
         Assert.Contains("ExactlyOne", PlainTextTreePrinter.Print(exactlyOne, style));
         Assert.Contains("AtLeast(3)", PlainTextTreePrinter.Print(atLeast, style));
@@ -233,11 +257,30 @@ public sealed class RuleTreeRenderingTests
     [InlineData(OperatorStyle.CStyle)]
     public void Mermaid_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
     {
-        RuleDescription exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
-        RuleDescription atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+        OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
+        OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
 
         Assert.Contains("ExactlyOne", MermaidTreePrinter.Print(exactlyOne, style));
         Assert.Contains("AtLeast(3)", MermaidTreePrinter.Print(atLeast, style));
+    }
+
+    /// <summary>
+    /// Under <see cref="OperatorStyle.CStyle"/> the tree printers label <c>If</c> as <c>?:</c>, mirroring the DSL
+    /// ternary; <see cref="OperatorStyle.Word"/> and <see cref="OperatorStyle.Symbolic"/> keep the label <c>If</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(OperatorStyle.Word, "If")]
+    [InlineData(OperatorStyle.Symbolic, "If")]
+    [InlineData(OperatorStyle.CStyle, "?:")]
+    public void PlainText_and_Mermaid_label_If_in_the_requested_style_Test(OperatorStyle style, string expected)
+    {
+        OutlineNode ifNode = new("If", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
+
+        string plain = PlainTextTreePrinter.Print(ifNode, style);
+        string mermaid = MermaidTreePrinter.Print(ifNode, style);
+
+        Assert.StartsWith(expected, plain);
+        Assert.Contains($"[\"{expected}\"]", mermaid);
     }
 
     [Fact]
@@ -269,7 +312,7 @@ public sealed class RuleTreeRenderingTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        string text = PlainTextTreePrinter.Print(rule.Describe(), decision.EvaluatedTree!, OperatorStyle.Symbolic);
+        string text = PlainTextTreePrinter.Print(rule.Outline(), decision.TraceTree!, OperatorStyle.Symbolic);
 
         Assert.Contains("∧", text);
     }
@@ -287,7 +330,7 @@ public sealed class RuleTreeRenderingTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        string mermaid = MermaidTreePrinter.Print(rule.Describe(), decision.EvaluatedTree!, OperatorStyle.CStyle);
+        string mermaid = MermaidTreePrinter.Print(rule.Outline(), decision.TraceTree!, OperatorStyle.CStyle);
 
         Assert.Contains("&&", mermaid);
     }
@@ -295,7 +338,7 @@ public sealed class RuleTreeRenderingTests
     [Fact]
     public void Mermaid_output_escapes_double_quotes_in_labels()
     {
-        RuleDescription node = Leaf("has \"quotes\" inside");
+        OutlineNode node = Leaf("has \"quotes\" inside");
 
         string mermaid = MermaidTreePrinter.Print(node);
 
@@ -310,7 +353,7 @@ public sealed class RuleTreeRenderingTests
     [InlineData("line one\nline two")]
     public void Mermaid_output_sanitizes_carriage_returns_and_newlines_in_labels(string label)
     {
-        RuleDescription node = Leaf(label);
+        OutlineNode node = Leaf(label);
 
         string mermaid = MermaidTreePrinter.Print(node);
 
@@ -319,19 +362,19 @@ public sealed class RuleTreeRenderingTests
         Assert.Matches(@"n0\[""line one +line two""\]", mermaid);
     }
 
-    private static RuleDescription BinaryNode(string label)
+    private static OutlineNode BinaryNode(string label)
     {
-        return new RuleDescription(label, "desc", [Leaf("a"), Leaf("b")]);
+        return new OutlineNode(label, "desc", [Leaf("a"), Leaf("b")]);
     }
 
-    private static RuleDescription UnaryNode(string label)
+    private static OutlineNode UnaryNode(string label)
     {
-        return new RuleDescription(label, "desc", [Leaf("a")]);
+        return new OutlineNode(label, "desc", [Leaf("a")]);
     }
 
-    private static RuleDescription Leaf(string label)
+    private static OutlineNode Leaf(string label)
     {
-        return new RuleDescription(label, "desc", []);
+        return new OutlineNode(label, "desc", []);
     }
 
     private static CompiledRule<RuleTestContext> Compile(

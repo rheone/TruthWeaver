@@ -118,6 +118,54 @@ internal sealed class BddManager
         return result;
     }
 
+    /// <summary>
+    /// Finds one variable assignment that makes the function represented by <paramref name="node"/> true. Because the
+    /// diagram is reduced, every node other than <see cref="False"/> has a path to <see cref="True"/>, so the walk never
+    /// backtracks.
+    /// </summary>
+    /// <param name="node">The function's node id.</param>
+    /// <returns>
+    /// The variables on the path mapped to their value, or <see langword="null"/> when the function is constantly
+    /// false. Variables the path does not mention may take either value.
+    /// </returns>
+    public IReadOnlyDictionary<int, bool>? FindSatisfyingAssignment(int node)
+    {
+        if (node == False)
+        {
+            return null;
+        }
+
+        Dictionary<int, bool> assignment = [];
+        while (node != True)
+        {
+            (int variable, int low, int high) = this.nodes[node];
+            bool takeHigh = high != False;
+            assignment[variable] = takeHigh;
+            node = takeHigh ? high : low;
+        }
+
+        return assignment;
+    }
+
+    /// <summary>
+    /// Evaluates the function represented by <paramref name="node"/> for one full variable assignment, by walking
+    /// the reduced diagram from the root to a terminal (ticket 17: pins <c>Evaluator</c> to these same rails for
+    /// every generated assignment, not only at the tautology/contradiction extremes).
+    /// </summary>
+    /// <param name="node">The function's node id.</param>
+    /// <param name="valueOf">Supplies the assignment's value for a variable index.</param>
+    /// <returns><see langword="true"/> iff the function is true under the assignment <paramref name="valueOf"/> describes.</returns>
+    public bool Evaluate(int node, Func<int, bool> valueOf)
+    {
+        while (node > True)
+        {
+            (int variable, int low, int high) = this.nodes[node];
+            node = valueOf(variable) ? high : low;
+        }
+
+        return node == True;
+    }
+
     private int TopVariable(int i, int t, int e)
     {
         int min = int.MaxValue;

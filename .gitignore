@@ -6,6 +6,7 @@ artifacts/
 # IDEs
 .vs/
 .idea/
+.fleet/
 _ReSharper*/
 *.DotSettings.user
 *.user
@@ -24,12 +25,23 @@ _ReSharper*/
 # Test output
 TestResults/
 *.trx
+
+# Coverage output
 coverage/
+coverage-results/
 *.coverage
 *.coveragexml
+lcov.info
+
+# Mutation-testing output (Stryker.NET)
+StrykerOutput/
 
 # BenchmarkDotNet run output (not the committed baseline under benchmarks/*/results/)
 BenchmarkDotNet.Artifacts/
+
+# MSBuild logs
+*.binlog
+msbuild.log
 
 # NuGet
 *.nupkg
@@ -48,8 +60,14 @@ packages/
 Thumbs.db
 Desktop.ini
 
-# Local Claude state
+# Local Claude state (project skills and settings under .claude/ are committed)
 .claude/local/
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Python bytecode (skill helper scripts)
+__pycache__/
+*.pyc
 
 # Temporary files
 *.tmp
@@ -58,8 +76,3 @@ Desktop.ini
 *.bak
 *.orig
 .tmp
-
-# Local Skills
-.claude/skills/
-
-

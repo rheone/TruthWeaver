@@ -46,14 +46,4 @@ jobs:
         run: dotnet format TruthWeaver.slnx --no-restore --verify-no-changes --severity info
 
       - name: Roslynator
-        # roslynator analyze doesn't support .slnx (Roslyn's MSBuildWorkspace has no language
-        # mapping for it - see error: "Cannot open project ... because the file extension '.slnx'
-        # is not associated with a language"), so each project is analyzed individually.
-        run: |
-          for project in \
-            src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj \
-            src/TruthWeaver/TruthWeaver.csproj \
-            src/TruthWeaver.Yaml/TruthWeaver.Yaml.csproj \
-            tests/TruthWeaver.Tests/TruthWeaver.Tests.csproj; do
-            dotnet roslynator analyze "$project"
-          done
+        run: dotnet roslynator analyze TruthWeaver.slnx

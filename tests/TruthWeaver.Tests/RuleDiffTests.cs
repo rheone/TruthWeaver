@@ -108,6 +108,47 @@ public sealed class RuleDiffTests
         Assert.Equal([1, 1], entry.Path);
     }
 
+    /// <summary>A different inspection kind is a change of the node, not an identical rule.</summary>
+    [Fact]
+    public void Diff_ChangedInspectionKind_ProducesChangedEntryAtRoot_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        CompiledRule<RuleTestContext> before = compiler.Compile("IsTrue(isManager)").CompiledRule!;
+        CompiledRule<RuleTestContext> after = compiler.Compile("IsFalse(isManager)").CompiledRule!;
+
+        RuleDiffResult diff = RuleDiff.Compare(before, after);
+
+        RuleDiffEntry entry = Assert.Single(diff.Entries);
+        Assert.Equal(RuleDiffChangeKind.Changed, entry.Kind);
+        Assert.Empty(entry.Path);
+    }
+
+    /// <summary>
+    /// A pair over the default analysis term cap is undecided by default, and decided once the cap is raised
+    /// through the optional options parameter.
+    /// </summary>
+    [Fact]
+    public void Compare_RulesOverTheDefaultTermCap_AreDecidedOnlyWhenTheCapIsRaised_Test()
+    {
+        string[] terms = [.. Enumerable.Range(1, 21).Select(i => $"t{i}")];
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        foreach (string term in terms)
+        {
+            registry.AddConstant(term, true);
+        }
+
+        RuleCompiler<RuleTestContext> compiler = new(registry.Build());
+        CompiledRule<RuleTestContext> before = compiler.Compile(string.Join(" AND ", terms)).CompiledRule!;
+        CompiledRule<RuleTestContext> after = compiler.Compile(string.Join(" AND ", terms.Reverse())).CompiledRule!;
+
+        RuleDiffResult byDefault = RuleDiff.Compare(before, after);
+        RuleDiffResult raised = RuleDiff.Compare(before, after, new CompilerOptions(MaxAnalysisTerms: 21));
+
+        Assert.True(byDefault.HasChanges);
+        Assert.Null(byDefault.PreservesMeaning);
+        Assert.True(raised.PreservesMeaning);
+    }
+
     private static RuleCompiler<RuleTestContext> CreateCompiler()
     {
         return new(

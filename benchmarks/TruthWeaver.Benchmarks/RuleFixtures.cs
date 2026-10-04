@@ -22,8 +22,10 @@ internal static class RuleFixtures
         PredicateRegistryBuilder<BenchmarkContext> builder = PredicateRegistry<BenchmarkContext>.CreateBuilder();
         for (int i = 0; i < termCount; i++)
         {
-            (PredicateSchema schema, Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<bool>> evaluate) =
-                FakePredicates.Returning<BenchmarkContext>($"term{i}", true);
+            (
+                PredicateSchema schema,
+                Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
+            ) = FakePredicates.Returning<BenchmarkContext>($"term{i}", true);
             builder.Add(schema, evaluate);
         }
 
@@ -64,7 +66,8 @@ internal static class RuleFixtures
                 members.Add(RuleBuilder.Predicate("term0"));
             }
 
-            groups[g] = RuleBuilder.Or([.. members]);
+            RuleBuilder[] memberArray = [.. members];
+            groups[g] = RuleBuilder.Or(memberArray);
         }
 
         return RuleBuilder.And(groups);
@@ -105,13 +108,15 @@ internal static class RuleFixtures
         PredicateRegistryBuilder<BenchmarkContext> builder = PredicateRegistry<BenchmarkContext>.CreateBuilder();
         (
             PredicateSchema sharedSchema,
-            Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<bool>> sharedEvaluate
+            Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> sharedEvaluate
         ) = FakePredicates.Returning<BenchmarkContext>(sharedTermName, true);
         builder.Add(sharedSchema, sharedEvaluate);
         for (int b = 0; b < branchCount; b++)
         {
-            (PredicateSchema schema, Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<bool>> evaluate) =
-                FakePredicates.Returning<BenchmarkContext>($"branch{b}", true);
+            (
+                PredicateSchema schema,
+                Func<BenchmarkContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
+            ) = FakePredicates.Returning<BenchmarkContext>($"branch{b}", true);
             builder.Add(schema, evaluate);
         }
 

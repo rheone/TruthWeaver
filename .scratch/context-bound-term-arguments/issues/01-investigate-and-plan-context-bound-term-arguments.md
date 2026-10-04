@@ -221,3 +221,7 @@ factory for the safe-to-share-resolving-client case. `CONTEXT.md`'s `Deferred` t
 this ticket now links to that section directly. This recommendation (remain deferred) and its
 reasoning are unchanged; this note only points a future reader at the concrete, shipped
 alternative rather than leaving it implicit in "the existing selector-factory pattern."
+
+### Superseded (2026-10-03)
+
+[ADR-0006](../../../docs/adr/0006-data-sources-for-expression-variables.md) supersedes the "remain deferred" recommendation above. Rule arguments may now be variable references, `from("source", "query")`, resolved at evaluation time from a named data source supplied by the caller, instead of a path into `TContext`. The two objections recorded here are answered there: the query language belongs to each data source, and term identity compares the reference text, not the resolved value. The investigation above is kept as the historical record.

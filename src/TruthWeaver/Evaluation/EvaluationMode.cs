@@ -4,7 +4,7 @@ namespace TruthWeaver.Evaluation;
 public enum EvaluationMode
 {
     /// <summary>Left-to-right with short-circuiting: <c>AND</c> stops at the first <c>False</c>, <c>OR</c> at the first <c>True</c>.</summary>
-    Default,
+    ShortCircuit,
 
     /// <summary>
     /// Evaluates every reachable term (no short-circuit) and collects every fault, for

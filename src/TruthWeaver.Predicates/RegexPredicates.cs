@@ -27,19 +27,25 @@ public static class RegexPredicates
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">
     /// Reads the string value to test from the context. A <see langword="null"/> result is treated as
-    /// not-matching (false), never a fault.
+    /// not-matching (false), never a fault, unless <paramref name="nullBehavior"/> is
+    /// <see cref="NullBehavior.Unknown"/>.
     /// </param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the regular-expression pattern.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
+    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
-        Func<TContext, PredicateArguments, CancellationToken, ValueTask<bool>> Evaluate
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
     ) Matches<TContext>(
         string name,
         Func<TContext, string?> selector,
         string label = "Matches",
-        string argumentName = "pattern"
+        string argumentName = "pattern",
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
@@ -48,7 +54,7 @@ public static class RegexPredicates
             + "string, not recompiled per evaluation. The pattern is not validated at registration or "
             + "compile time; an invalid pattern surfaces as an evaluation-time fault (Unknown), per "
             + "ADR-0001's Kleene failure model. A null selected value is treated as not-matching "
-            + "(false), never a fault.";
+            + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         PredicateSchema schema = new(
             name,
             label,
@@ -63,11 +69,11 @@ public static class RegexPredicates
                 string? selected = selector(context);
                 if (selected is null)
                 {
-                    return ValueTask.FromResult(false);
+                    return PredicateResult.ForNullAsync(nullBehavior);
                 }
 
                 string pattern = args.GetString(argumentName);
-                return ValueTask.FromResult(CompiledPattern(pattern).IsMatch(selected));
+                return PredicateResult.FromBoolAsync(CompiledPattern(pattern).IsMatch(selected));
             }
         );
     }

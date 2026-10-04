@@ -1,6 +1,5 @@
 namespace TruthWeaver.Tests;
 
-using System.Reflection;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
@@ -8,7 +7,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary><see cref="CompiledRule{TContext}.Describe"/>: every operator's and predicate's label/description, recursively.</summary>
+/// <summary><see cref="CompiledRule{TContext}.Outline"/>: every operator's and predicate's label/description, recursively.</summary>
 public sealed class OperatorInfoTests
 {
     [Theory]
@@ -18,7 +17,21 @@ public sealed class OperatorInfoTests
     [InlineData("a OR b", "OR")]
     [InlineData("NOT a", "NOT")]
     [InlineData("(a XOR b)", "XOR")]
-    [InlineData("(a XNOR b)", "XNOR")]
+    [InlineData("(a EQUIVALENT b)", "EQUIVALENT")]
+    [InlineData("(a IMPLIES b)", "IMPLIES")]
+    [InlineData("(a NAND b)", "NAND")]
+    [InlineData("(a NOR b)", "NOR")]
+    [InlineData("PARITY(a, b)", "PARITY")]
+    [InlineData("ANY(a, b)", "ANY")]
+    [InlineData("ALL(a, b)", "ALL")]
+    [InlineData("NONE(a, b)", "NONE")]
+    [InlineData("BETWEEN(0, 1, a, b)", "BETWEEN(0, 1)")]
+    [InlineData("COALESCE(a, b)", "COALESCE")]
+    [InlineData("If(a, b, a)", "If")]
+    [InlineData("IsTrue(a)", "IsTrue")]
+    [InlineData("IsFalse(a)", "IsFalse")]
+    [InlineData("IsUnknown(a)", "IsUnknown")]
+    [InlineData("IsKnown(a)", "IsKnown")]
     [InlineData("ExactlyOne(a, b)", "ExactlyOne")]
     [InlineData("AtLeast(1, a, b)", "AtLeast(1)")]
     [InlineData("AtMost(1, a, b)", "AtMost(1)")]
@@ -31,7 +44,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
         );
 
-        RuleDescription description = Compile(compiler, dsl).Describe();
+        OutlineNode description = Compile(compiler, dsl).Outline();
 
         Assert.Equal(expectedLabel, description.Label);
         Assert.False(string.IsNullOrWhiteSpace(description.Description));
@@ -44,7 +57,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
         );
 
-        RuleDescription description = Compile(compiler, "hasRole(role: \"Y\")").Describe();
+        OutlineNode description = Compile(compiler, "hasRole(role: \"Y\")").Outline();
 
         Assert.Equal("hasRole", description.Label);
         Assert.Contains("hasRole", description.Description, StringComparison.Ordinal);
@@ -58,7 +71,7 @@ public sealed class OperatorInfoTests
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
         );
 
-        RuleDescription description = Compile(compiler, "a AND b").Describe();
+        OutlineNode description = Compile(compiler, "a AND b").Outline();
 
         Assert.Equal("AND", description.Label);
         Assert.Equal(2, description.Operands.Count);
@@ -96,7 +109,7 @@ public sealed class OperatorInfoTests
     }
 
     [Fact]
-    public void Describe_throws_for_a_term_expression_pointing_callers_at_the_predicate_schema_instead()
+    public void Outline_throws_for_a_term_expression_pointing_callers_at_the_predicate_schema_instead()
     {
         TermExpression term = new(new TermIdentity("isManager", []));
 
@@ -104,27 +117,6 @@ public sealed class OperatorInfoTests
 
         Assert.Equal("node", exception.ParamName);
         Assert.Contains("PredicateSchema", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ThresholdDescriptions_default_branch_throws_for_an_unhandled_comparison_name()
-    {
-        // ThresholdComparison's five values (ADR-0004's closed set) are all handled by
-        // OperatorInfo's private ThresholdDescription switch, so its `default` arm is unreachable
-        // through the public API today - it exists defensively so a future comparison value added to
-        // the enum without updating this switch fails loudly instead of silently. Exercised directly
-        // via reflection since no public path reaches it, matching the precedent set by ticket 08's
-        // direct-constructor coverage for similarly unreachable defensive code.
-        MethodInfo method = typeof(OperatorInfo).GetMethod(
-            "ThresholdDescription",
-            BindingFlags.NonPublic | BindingFlags.Static
-        )!;
-        NodeShape bogusShape = new("Bogus", 1, []);
-
-        TargetInvocationException wrapped = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, [bogusShape]));
-
-        Assert.IsType<InvalidOperationException>(wrapped.InnerException);
-        Assert.Contains("Unhandled threshold comparison", wrapped.InnerException.Message, StringComparison.Ordinal);
     }
 
     private static CompiledRule<RuleTestContext> Compile(RuleCompiler<RuleTestContext> compiler, string dsl)
