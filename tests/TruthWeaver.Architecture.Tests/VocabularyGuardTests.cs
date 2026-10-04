@@ -73,9 +73,17 @@ public sealed partial class VocabularyGuardTests
         Assert.Empty(retired);
     }
 
-    // "Gate" as a whole PascalCase word, so Delegate, Negate or Aggregate do not match. The other names are
-    // matched as substrings. "ResolvedValue" is narrowed to "ResolvedValuePredicates" and "TResolved": the
-    // data-source feature of ADR-0006 legitimately has resolved values (EvaluationOptions.IncludeResolvedValues).
+    /// <summary>
+    /// Matches the retired identifiers of ADR-0007, each listed as a whole name. <c>Gate</c> matches as a whole
+    /// PascalCase word, so <c>Delegate</c>, <c>Negate</c> and <c>Aggregate</c> do not match. "ResolvedValue" is not
+    /// retired as a prefix: <c>ResolvedValuePredicates</c> and <c>TResolved</c> are retired, while
+    /// <c>EvaluationOptions.IncludeResolvedValues</c> keeps "resolved" for data sources (ADR-0006).
+    /// </summary>
+    /// <remarks>
+    /// <c>Gate</c> became <c>NandNorExpander</c>; <c>RuleDescription</c> became <c>OutlineNode</c>;
+    /// <c>EvaluatedNode</c> became <c>TraceNode</c>; <c>ResolvedValuePredicates</c> became
+    /// <c>SelectedValuePredicates</c>; <c>TResolved</c> became <c>TSelected</c>.
+    /// </remarks>
     [GeneratedRegex("Gate(?![a-z])|RuleDescription|EvaluatedNode|ResolvedValuePredicates|TResolved")]
     private static partial Regex RetiredName();
 }

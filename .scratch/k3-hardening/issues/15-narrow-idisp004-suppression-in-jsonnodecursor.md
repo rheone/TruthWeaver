@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] No file-wide IDISP004 disable remains in `src`
 - [ ] No analyzer severity is lowered

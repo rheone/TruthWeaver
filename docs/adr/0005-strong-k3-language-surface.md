@@ -254,11 +254,16 @@ the aliases are cheap once the canonical form stays single.
     `xnor`/`iff` aliases); an
     unknown predicate in a tree is only ever answered with a registered predicate
     name, never a DSL operator word. YAML diagnostics also carry the `Span` of the
-    offending node (from YamlDotNet's marks); JSON diagnostics have none, because
-    `JsonElement` keeps no positions, except invalid-syntax diagnostics, which use
-    the reader's line and byte position. For invalid syntax the path is the
-    innermost container still open when the reader stopped. `FormatDiagnostics`
-    prints `at $.path` (plus ` (line L, column C)` when there is a span).
+    offending node (from YamlDotNet's marks); JSON diagnostics carry a span only from
+    `RuleCompiler.CompileJson(string)`, which uses `JsonSpanLocator` to re-read the text
+    and find node positions; `CompileJson(JsonElement)` and `JsonTreeParser.Parse` report
+    `SourceSpan.None`, because the input source has no positions. Invalid-syntax diagnostics
+    from JSON parsing carry the reader's line and byte position. For invalid syntax the path is
+    the innermost container still open when the reader stopped. `FormatDiagnostics` prints
+    `at $.path` (plus ` (line L, column C)` when there is a span).
+
+    *Amended 2026-10-03 (k3-hardening 12); the sentence originally said JSON diagnostics have
+    no span because `JsonElement` keeps no positions.*
 
 12. **Project is a method on the result, not part of the rule.**
     *Amended 2026-10-03 (k3-followups 05); this replaces the original decision,

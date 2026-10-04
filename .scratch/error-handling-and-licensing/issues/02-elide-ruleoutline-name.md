@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] ADR-0007, the CHANGELOG rename table and `CONTEXT.md` say "outline" (concept) and `OutlineNode` (type) and never name a `RuleOutline` type
 - [ ] The naming-cleanup spec's rename table is left as historical; a note says `RuleOutline` was elided on 2026-10-04

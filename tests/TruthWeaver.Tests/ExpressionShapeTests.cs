@@ -59,6 +59,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Equivalent</c> shape exposes its operands in left-then-right order.</summary>
     [Fact]
     public void EquivalentShape_Operands_ExposeLeftThenRight_Test()
     {
@@ -70,6 +71,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Nand</c> shape exposes its operands in left-then-right order.</summary>
     [Fact]
     public void NandShape_Operands_ExposeLeftThenRight_Test()
     {
@@ -82,6 +84,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Nor</c> shape exposes its operands in left-then-right order.</summary>
     [Fact]
     public void NorShape_Operands_ExposeLeftThenRight_Test()
     {
@@ -94,6 +97,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Implies</c> shape exposes its operands as antecedent then consequent.</summary>
     [Fact]
     public void ImpliesShape_Operands_ExposeAntecedentThenConsequent_Test()
     {
@@ -105,6 +109,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Parity</c> shape exposes its operands in order.</summary>
     [Fact]
     public void ParityShape_Operands_AreInOrder_Test()
     {
@@ -117,6 +122,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB, TermA], shape.Operands);
     }
 
+    /// <summary>The <c>Any</c> shape exposes its operands in order.</summary>
     [Fact]
     public void AnyShape_Operands_AreInOrder_Test()
     {
@@ -129,6 +135,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>All</c> shape exposes its operands in order.</summary>
     [Fact]
     public void AllShape_Operands_AreInOrder_Test()
     {
@@ -141,6 +148,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>None</c> shape exposes its operands in order.</summary>
     [Fact]
     public void NoneShape_Operands_AreInOrder_Test()
     {
@@ -153,6 +161,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The <c>Between</c> shape exposes bounds and operands in order.</summary>
     [Fact]
     public void BetweenShape_BoundsAndOperands_AreInOrder_Test()
     {
@@ -166,6 +175,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB, TermA], shape.Operands);
     }
 
+    /// <summary>The <c>If</c> shape exposes its operands as condition then both branches in order.</summary>
     [Fact]
     public void IfShape_Operands_AreConditionThenBothBranchesInOrder_Test()
     {
@@ -196,6 +206,7 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA], shape.Operands);
     }
 
+    /// <summary>The <c>Coalesce</c> shape exposes its operands in order.</summary>
     [Fact]
     public void CoalesceShape_Operands_AreInOrder_Test()
     {

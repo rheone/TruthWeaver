@@ -214,6 +214,7 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(xnor, MermaidTreePrinter.Print(BinaryNode("EQUIVALENT"), style));
     }
 
+    /// <summary>Plain text and Mermaid tree printers render Nand and Nor using the requested operator style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word, "NAND", "NOR")]
     [InlineData(OperatorStyle.Symbolic, "↑", "↓")]
@@ -226,6 +227,7 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(nor, MermaidTreePrinter.Print(BinaryNode("NOR"), style));
     }
 
+    /// <summary>Plain text and Mermaid tree printers render Implies using the requested operator style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word, "IMPLIES")]
     [InlineData(OperatorStyle.Symbolic, "→")]

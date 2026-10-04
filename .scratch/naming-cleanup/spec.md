@@ -32,6 +32,8 @@ Rename the public and internal names so each concept has one name and each name 
 | NAND/NOR rewrite helper | `UniversalGateExpander` ("gate") | `NandNorExpander` (no "gate") |
 | Diagnostic code prefix | `BRExxxx` | `TRExxxx` ("Trinary Rule Expression"), numbers unchanged |
 
+**Note (2026-10-04):** The type name `RuleOutline` in the "After" column for the static per-rule tree was elided from documentation; the rename table is kept as historical. "Outline" is the concept; `OutlineNode` is the type.
+
 ## User Stories
 
 1. As a rule author reading a diagnostic, I want the code prefix to describe a three-valued engine, so that the code does not suggest this is a binary rule engine.

@@ -7,11 +7,6 @@ using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
 
-// IDISP004 false-positives on `foreach (var x in jsonElement.EnumerateObject()/.EnumerateArray())`:
-// JsonElement's enumerators are disposable structs, but a `foreach` loop already compiles to a
-// `using`-equivalent dispose in its generated finally block: there is no undisposed value here.
-#pragma warning disable IDISP004
-
 /// <summary>
 /// The JSON adapter for the shared <see cref="TreeFormatReader"/>: a view of one <see cref="JsonElement"/>. A
 /// <see cref="JsonElement"/> keeps no source positions, so <see cref="Span"/> is always <see cref="SourceSpan.None"/>;
@@ -136,17 +131,21 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
 
     private static IEnumerable<ITreeNodeCursor> ElementsOf(JsonElement array)
     {
+#pragma warning disable IDISP004 // JsonElement's enumerator is a disposable struct, but foreach already disposes it.
         foreach (JsonElement item in array.EnumerateArray())
         {
             yield return new JsonNodeCursor(item);
         }
+#pragma warning restore IDISP004
     }
 
     private static IEnumerable<TreeMember> MembersOf(JsonElement obj)
     {
+#pragma warning disable IDISP004 // JsonElement's enumerator is a disposable struct, but foreach already disposes it.
         foreach (JsonProperty property in obj.EnumerateObject())
         {
             yield return new TreeMember(property.Name, new JsonNodeCursor(property.Value));
         }
+#pragma warning restore IDISP004
     }
 }

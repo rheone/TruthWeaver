@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every test added on the branch has an XML summary (re-run an added-lines diff of `tests/` to confirm zero)
 - [ ] No behaviour change; the same tests pass

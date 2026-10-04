@@ -30,6 +30,7 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("(isManager XOR isDepartmentHead)", rule.CanonicalText);
     }
 
+    /// <summary>Printing Nand and Nor parenthesizes and uses the word operator name.</summary>
     [Theory]
     [InlineData("isManager ↑ isDepartmentHead", "(isManager NAND isDepartmentHead)")]
     [InlineData("isManager nor isDepartmentHead", "(isManager NOR isDepartmentHead)")]
@@ -42,6 +43,7 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(expected, rule.CanonicalText);
     }
 
+    /// <summary>Printing Implies parenthesizes and uses the word operator name.</summary>
     [Fact]
     public void Print_Implies_ParenthesizesAndUsesWordOperator_Test()
     {

@@ -31,10 +31,12 @@ The library's names had drifted from its glossary (`CONTEXT.md`), and several mi
    the tree does not.
 2. **A node's display text is `Text`**, on both `TraceEntry` and `TraceNode` (was `NodeDescription`). It stays the
    rule-text form: a term's identity text, an operator's name or a constant.
-3. **The static per-rule tree is `RuleOutline` with node type `OutlineNode`**, returned by
+3. **The static per-rule outline is a tree of `OutlineNode`**, returned by
    `CompiledRule.Outline()` (was `RuleDescription` and `Describe()`). The outline and the trace tree keep sharing
    one node-shape traversal, so their operand order cannot diverge. `Label` and `Description` keep meaning
    "friendly name" and "explanatory prose".
+
+   *Amended 2026-10-04 (error-handling-and-licensing 02); elided the type name `RuleOutline` from the docs.*
 4. **`EvaluationMode.Default` is `EvaluationMode.ShortCircuit`.** `Exhaustive` and `CompilationMode` are unchanged.
 5. **`ResolvedValuePredicates` is `SelectedValuePredicates`**, its `resolve` parameter is `select` and `TResolved`
    is `TSelected`. "Resolve" now means only reading a variable reference from a data source.
@@ -65,4 +67,4 @@ The library's names had drifted from its glossary (`CONTEXT.md`), and several mi
 - Anyone who knows the old names will find them gone; the changelog is the migration guide.
 - Host code that filters, suppresses or compares diagnostics by code must switch to the `TRE` prefix.
 - A vocabulary guard test in the architecture test project fails if a retired name (`Gate`, `RuleDescription`,
-  `EvaluatedNode`, `ResolvedValue`, `EvaluationMode.Default`, a `BRE` code) returns.
+  `EvaluatedNode`, `ResolvedValuePredicates`, `TResolved`, `EvaluationMode.Default`, a `BRE` code) returns.

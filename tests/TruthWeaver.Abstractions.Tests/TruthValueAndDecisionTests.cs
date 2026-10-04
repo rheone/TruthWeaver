@@ -36,6 +36,7 @@ public sealed class TruthValueAndDecisionTests
         Assert.Null(decision.TraceTree);
     }
 
+    /// <summary>Collapse resolves <c>Unknown</c> according to the policy, leaving definite values unchanged.</summary>
     [Theory]
     [InlineData(TruthValue.True, CollapsePolicy.UnknownAsFalse, CollapseOutcome.True)]
     [InlineData(TruthValue.True, CollapsePolicy.UnknownAsTrue, CollapseOutcome.True)]
@@ -53,6 +54,7 @@ public sealed class TruthValueAndDecisionTests
         Assert.Equal(expected, decision.Collapse(policy));
     }
 
+    /// <summary>Collapse throws for an undefined policy.</summary>
     [Fact]
     public void Collapse_UndefinedPolicy_ThrowsArgumentOutOfRange_Test()
     {
@@ -61,6 +63,7 @@ public sealed class TruthValueAndDecisionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => decision.Collapse((CollapsePolicy)99));
     }
 
+    /// <summary>Collapse never modifies the decision itself; it leaves the result and faults unchanged.</summary>
     [Fact]
     public void Collapse_AnyPolicy_LeavesDecisionAndFailClosedSatisfactionUnchanged_Test()
     {
@@ -75,6 +78,7 @@ public sealed class TruthValueAndDecisionTests
         Assert.Equal([fault], decision.Faults);
     }
 
+    /// <summary>Collapse with <c>UnknownIsError</c> rejects but records no fault in the decision.</summary>
     [Fact]
     public void Collapse_RejectedPolicy_RecordsNoFault_Test()
     {

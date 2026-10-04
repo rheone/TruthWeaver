@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The ADR sentence states which entry points carry JSON spans and which do not, with the amendment note
 - [ ] No other ADR text changes

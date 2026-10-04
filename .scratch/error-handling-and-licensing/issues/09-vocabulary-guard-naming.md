@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The retired-name list reads as exact identifiers, each with its replacement in a comment
 - [ ] The guard still fails if a retired name returns (verify by temporarily reintroducing one) and does not flag `IncludeResolvedValues`

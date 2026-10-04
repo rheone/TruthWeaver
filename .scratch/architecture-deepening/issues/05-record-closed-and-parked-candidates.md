@@ -4,7 +4,7 @@
 
 **Blocked by:** None (04 is done; the owner gave the go-ahead on 2026-10-03)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The owner decided the note lives in this effort's folder, beside the spec, not in an ADR; it cites the final operator-definition-table and shared tree-format-reader shape
 - [ ] The note records the reason each candidate was closed or parked, and the condition that would reopen the parked one
