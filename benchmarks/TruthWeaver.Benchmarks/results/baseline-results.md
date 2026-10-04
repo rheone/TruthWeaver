@@ -35,14 +35,13 @@ being skipped past the default 20-term cap.
 
 Compared with the 2026-09-27 baseline (Small 8.4 μs / 19.09 KB, Large 1,062 μs / 1,864 KB), compile
 cost rose about 1.4x (Small) and 2.8x (Large) in time and 1.9x and 3.3x in allocation. The allocation
-growth is deterministic, so it is a real change and not run noise. It has not been root-caused; see the
-comments on ticket 04 in `.scratch/k3-hardening/issues/`.
+growth is deterministic, so it is a real change and not run noise. It has not been root-caused.
 
 ## Eval-time memoized term lookup (`EvaluationBenchmarks.EvaluateAsync`)
 
 A rule shaped as an `OR` of `BranchCount` `AND` branches, every branch referencing the same shared term
 alongside one branch-unique term (`RuleFixtures.BuildSharedTermFanOut`), evaluated in
-`EvaluationMode.Exhaustive` so every branch actually runs. Per-evaluation term memoization (ADR-0002)
+`EvaluationMode.Exhaustive` so every branch actually runs. Per-evaluation term memoization
 means the shared term is invoked at most once per evaluation regardless of `BranchCount`, while each
 branch-unique term is invoked exactly once.
 

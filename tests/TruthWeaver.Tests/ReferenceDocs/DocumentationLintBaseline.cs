@@ -11,7 +11,6 @@ internal static class DocumentationLintBaseline
         "AGENTS.md",
         "CONTEXT.md",
         "README.md",
-        "benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md",
         "docs/data-sources.md",
     };
 }
