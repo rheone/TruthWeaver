@@ -14,3 +14,12 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: [gap list, Type tests section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+Owner decision (2026-10-04), recorded before implementation as the ticket requires:
+
+- **Selector shape:** both overloads. Each type test has a `string?` (parse-based) member and an `object?` (runtime-type) member under the same name. A `null` selected value is `Unknown`.
+- **`IsNumeric`:** `NumberStyles.Float` with `InvariantCulture`. A sign, a decimal point and an exponent are accepted. Thousands separators and currency symbols are rejected.
+- **`IsUrl`:** an absolute URI with the `http` or `https` scheme only (`Uri.TryCreate` with `UriKind.Absolute`).
+- **`IsDateTimeOffset`:** ISO 8601 with an explicit offset or `Z`, `DateTimeStyles.None`, `InvariantCulture`. Text without an offset is rejected, so the instant is never guessed.
