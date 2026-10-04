@@ -69,24 +69,30 @@ A new "Documentation" section in the README lists each page with one sentence. I
 - `AGENTS.md`: replace the two em dashes.
 - `baseline-results.md`: see decision 2.
 
-## 6. Proposed tickets for the second pass
+## 6. Second-pass tickets
 
-1. Extend `DocumentationLint` with link and anchor checks over the in-scope set.
-2. Move the architecture material and the packages detail (`docs/architecture.md`, `docs/packages.md`).
-3. Move the rule text, rule formats and `RuleBuilder` material (`docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`) and delete the Operators section.
-4. Move the rewriting rules (`docs/rewriting-rules.md`).
-5. Move the predicate text (`docs/predicates.md`).
-6. Move the examples with their doctests (`docs/examples.md`).
-7. Move the diagnostics and benchmarks text (`docs/diagnostics.md`, `docs/benchmarks.md`).
-8. Delete the truth-table appendix and the design documents list, add the Documentation section and shrink the table of contents.
-9. Clean `CONTEXT.md`, `docs/data-sources.md` and `AGENTS.md`.
-10. Empty the lint baseline and run the full validation list.
+Tickets 13 to 24 in `issues/`. Tickets 16 to 21 all edit `README.md`, so they run one after another and each updates the table of contents. Tickets 13, 14 and 15 have no blockers and can start at once.
 
-Tickets 2 to 7 can run in parallel after ticket 1. Ticket 8 follows them.
+| # | Ticket | Blocked by |
+| --- | --- | --- |
+| 13 | Check links and anchors in every in-scope file | None |
+| 14 | Put `docs/agents/` on the stop list | None |
+| 15 | Fix the benchmark generator wording and regenerate the results | None |
+| 16 | Move the architecture and packages material | 13 |
+| 17 | Move rule text, rule formats and `RuleBuilder`; delete the Operators section | 16 |
+| 18 | Move the rewriting rules | 17 |
+| 19 | Move the predicate text | 18 |
+| 20 | Move the examples with their doctests | 19 |
+| 21 | Move the diagnostics and benchmarks text | 15, 20 |
+| 22 | Delete the truth-table appendix and the design documents list; add the Documentation section | 21 |
+| 23 | Clean `CONTEXT.md`, `docs/data-sources.md` and `AGENTS.md` | 13 |
+| 24 | Empty the lint baseline and run the full validation list | 14, 15, 22, 23 |
 
-## 7. Decisions for the owner
+## 7. Decisions
 
-1. **Where the EBNF grammar lives.** Recommended: `docs/rule-text.md`, because it describes rule text and not K3 semantics. The alternative is `docs/strong-k3/specification/syntax.md`, which then needs a doctest registration and keeps K3 pages free of links to the README.
-2. **The generated benchmark file.** Recommended: change the benchmark generator so the file it writes has no ticket or ADR wording, and add the file to no baseline. The alternative is a `<!-- docs-lint: off -->` line, which the generator must preserve.
-3. **Agent files.** Recommended: keep `docs/agents/*.md` out of scope. They are written for coding agents, and an ADR link is correct there.
-4. **Page names.** The names in section 2 are proposals. Say if any should change.
+The owner settled these on 2026-10-04.
+
+1. The EBNF grammar lives in `docs/rule-text.md`, with the `GroupingStyle` and `RuleText.NormalizeWhitespace` text and the case rules. The EBNF block keeps its `doctest:skip` marker, and the page joins the doctest list.
+2. The benchmark generator is changed so the file it writes passes the lint. The results file is regenerated and leaves the baseline.
+3. `docs/agents/` joins the stop list in `DocumentationLint` and in the `CLAUDE.md` sentence.
+4. The ten page names in section 2 stay as proposed.

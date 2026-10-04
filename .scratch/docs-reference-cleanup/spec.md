@@ -19,7 +19,7 @@ Recorded in the planning session of 2026-10-04. The owner approved each one.
 9. Documentation standard scope: every root `*.md`, every `README.md` outside `.claude/`, and every file they link to recursively. Recursion stops at `docs/adr/**`, `.scratch/**`, `CHANGELOG.md` and `.agents/**`. A dev can opt other files in with a marker comment. The standard is written into `CLAUDE.md` (about 25 lines) and enforced by a lint test.
 10. The lint test starts with a baseline list of in-scope files that are not yet cleaned. The list shrinks as tickets land.
 11. Threshold arity needs no new work. [k3-followups 36](../k3-followups/issues/36-threshold-family-accepts-one-operand.md) is done: the table minimum is 1. The documents state "1 or more operands".
-12. The root `README.md` breakdown is a second pass. Ticket 12 audits and plans it. Nothing in the first pass edits `README.md` beyond ticket 10.
+12. The root `README.md` breakdown is a second pass. Ticket 12 audited and planned it, and the owner approved the plan on 2026-10-04. Tickets 13 to 24 carry it out. See [the plan](readme-breakdown-plan.md).
 
 ## Related tickets
 
