@@ -60,6 +60,36 @@ timeout, a connection failure) is the expected, low-friction path and
 requires no special handling by the predicate author beyond letting the
 exception propagate naturally.
 
+> **Amended 2026-10-04:** the exact rule for cancellation and timeouts, for both a predicate and a
+> data source, is pinned below as a dedicated subsection. This was previously only implied by the
+> catch-filter shape in `Evaluator` and the general "exceptions become faults" prose above; it is now
+> stated once, here, so code and docs cannot drift apart again.
+
+### Cancellation and timeout: fault, or propagate
+
+Two different things can stop an in-flight evaluation, and they are deliberately not treated the
+same:
+
+- **The evaluation's own token** — the `CancellationToken` the caller passed to `EvaluateAsync`, or
+  the token `EvaluationOptions.Timeout` is linked into — is the one thing that ends the whole
+  evaluation. When *that* token is the one cancelled, `OperationCanceledException` propagates out of
+  `EvaluateAsync`, exactly as it would from any other cancellable async API. A caller who cancelled, or
+  a timeout that elapsed, asked for the call to stop; a `Decision` whose `Result` is `Unknown` would
+  look like an ordinary predicate failure and hide that.
+- **A predicate's or a data source's own cancellation or timeout** — it throws
+  `OperationCanceledException` or `TimeoutException` on its own initiative (its own internal deadline,
+  its own linked `CancellationTokenSource`) while the evaluation's token is still live — is a fault like
+  any other exception: the term becomes `Unknown`, a `Fault` is recorded (see
+  [ADR-0001](0001-kleene-failure-model.md)), and evaluation continues. The predicate or source is
+  reporting "I could not answer," not "stop the whole evaluation," and nothing upstream can tell those
+  two cases apart except by checking which token fired.
+
+The rule is mechanical, and `Evaluator` applies it identically to a predicate invocation and to a data
+source `QueryAsync` call: an `OperationCanceledException` propagates only when the evaluation's own
+`CancellationToken.IsCancellationRequested` is true at the point it is caught. Every other case —
+every `TimeoutException`, and an `OperationCanceledException` thrown while the evaluation's token is
+not cancelled — is an ordinary fault, exactly like any other thrown exception.
+
 ### Term identity and per-evaluation memoization
 
 A term's identity is the normalized predicate name plus its arguments sorted

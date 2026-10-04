@@ -110,6 +110,22 @@ public static class TestPredicates
         );
     }
 
+    /// <summary>
+    /// Registers a zero-argument predicate that throws <see cref="TimeoutException"/> on its own initiative
+    /// (its own internal deadline, not the evaluation's token) — an ordinary <see cref="Fault"/>, mirroring
+    /// a data source's own timeout.
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddTimingOutPredicate(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', throws TimeoutException unprompted."),
+            (_, _, _) => throw new TimeoutException($"'{name}' timed out.")
+        );
+    }
+
     /// <summary>Registers a single-string-argument predicate whose truth is "does the argument equal <paramref name="matchValue"/>?" (case-sensitive).</summary>
     public static PredicateRegistryBuilder<RuleTestContext> AddStringArgPredicate(
         this PredicateRegistryBuilder<RuleTestContext> builder,
