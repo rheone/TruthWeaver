@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 Open point the implementer settles and records: parameter order. Keeping `services` second preserves existing positional callers; passing `dataSources` by name is then the norm. Do not leave two overloads that make a call ambiguous.
 
@@ -15,3 +15,7 @@ Open point the implementer settles and records: parameter order. Keeping `servic
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 3).
+
+## Decision
+
+Parameter order is `EvaluateAsync(context, services = null, dataSources = null, options = null, cancellationToken = default)`. `services` stays second and `dataSources` third, so existing `(context, services, dataSources, ...)` calls and every `cancellationToken:` call compile unchanged. `CancellationToken` stays last (CA1068). The one source break is a call that passed `options` as the third positional argument: it names the argument (`options: options`). There is one overload, so no call is ambiguous. A null `services` becomes an internal `NoServiceProvider`, so a class-based predicate faults instead of throwing. Recorded in the CHANGELOG.

@@ -251,7 +251,7 @@ public sealed class CompiledRule<TContext>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -272,7 +272,7 @@ public sealed class CompiledRule<TContext>
     /// Renders this rule's structure as an indented plain-text tree, annotated by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -281,48 +281,35 @@ public sealed class CompiledRule<TContext>
         return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
     }
 
-    /// <summary>Evaluates this rule against a context.</summary>
-    /// <param name="context">The application-supplied evaluation context.</param>
-    /// <param name="services">
-    /// The service provider to resolve class-based predicates from, fresh for this call — never
-    /// captured once at registration, so scoped dependencies (a <c>DbContext</c>, a scoped
-    /// <c>HttpClient</c>) resolve correctly even though this <see cref="CompiledRule{TContext}"/>
-    /// outlives any one scope (ADR-0002).
-    /// </param>
-    /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
-    /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
-    /// <returns>The evaluation's <see cref="Decision"/>.</returns>
-    public Task<Decision> EvaluateAsync(
-        TContext context,
-        IServiceProvider services,
-        EvaluationOptions? options = null,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return this.EvaluateAsync(context, services, dataSources: null, options, cancellationToken);
-    }
-
     /// <summary>
-    /// Evaluates this rule against a context, resolving each variable reference (<c>from("source", "query")</c>)
-    /// from the matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
+    /// Evaluates this rule against a context. Every argument after <paramref name="context"/> is optional, so a
+    /// caller supplies only what the rule needs. A variable reference (<c>from("source", "query")</c>) resolves from the
+    /// matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
     /// whose query matches nothing or too much, whose result does not fit the argument, or whose source fails makes
     /// its term <see cref="TruthValue.Unknown"/> and records a <see cref="Fault"/> carrying a
     /// <see cref="VariableResolutionException"/>; the fault never contains the resolved value.
     /// </summary>
     /// <param name="context">The application-supplied evaluation context.</param>
-    /// <param name="services">The service provider to resolve class-based predicates from, fresh for this call.</param>
+    /// <param name="services">
+    /// The service provider to resolve class-based predicates from, fresh for this call — never
+    /// captured once at registration, so scoped dependencies (a <c>DbContext</c>, a scoped
+    /// <c>HttpClient</c>) resolve correctly even though this <see cref="CompiledRule{TContext}"/>
+    /// outlives any one scope (ADR-0002). <see langword="null"/> means an empty provider: a class-based
+    /// predicate then faults (<see cref="TruthValue.Unknown"/> plus a <see cref="Fault"/>) as for any missing registration.
+    /// </param>
     /// <param name="dataSources">The named data sources for this evaluation, or <see langword="null"/> when the rule has no variables.</param>
     /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
     public async Task<Decision> EvaluateAsync(
         TContext context,
-        IServiceProvider services,
-        DataSources? dataSources,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
         EvaluationOptions? options = null,
         CancellationToken cancellationToken = default
     )
     {
+        services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
         if (effectiveOptions.Timeout is { } timeout)
         {

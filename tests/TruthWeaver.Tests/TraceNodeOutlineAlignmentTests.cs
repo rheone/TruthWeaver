@@ -57,8 +57,8 @@ public sealed class TraceNodeOutlineAlignmentTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
+            cancellationToken: TestContext.Current.CancellationToken
         );
 
         OutlineNode description = rule.Outline();

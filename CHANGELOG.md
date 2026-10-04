@@ -90,6 +90,11 @@ copyright line reads 2026.
 ### Changed
 
 - Every break below. Each one has a migration step in the sections that follow.
+- `CompiledRule<TContext>.EvaluateAsync` is one method: `EvaluateAsync(context, services = null, dataSources = null, options = null, cancellationToken = default)`.
+  It replaces the two overloads. A caller supplies only what the rule needs, and a null `services` is an empty provider
+  (a class-based predicate yields `Unknown` plus a `Fault`). Parameter order: `services` stays second and `dataSources`
+  third, so existing `(context, services, dataSources, ...)` calls and all `cancellationToken:` calls compile unchanged.
+  A call that passed `options` as the third positional argument must name it: `EvaluateAsync(context, services, options: options)`.
 
 ### Breaking changes: naming cleanup (ADR-0007)
 

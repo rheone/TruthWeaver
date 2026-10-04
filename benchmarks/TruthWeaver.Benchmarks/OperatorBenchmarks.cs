@@ -9,7 +9,7 @@ using TruthWeaver.Registry;
 using TruthWeaver.Testing;
 
 /// <summary>
-/// Measures <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider, EvaluationOptions, CancellationToken)"/> for each operator family the Strong K3
+/// Measures <see cref="CompiledRule{TContext}.EvaluateAsync"/> for each operator family the Strong K3
 /// language surface added (ADR-0005), so a slowdown in one family's evaluator path is visible on its
 /// own. Every rule is a single operator (or a small group of them) over predicates that answer
 /// <see cref="TruthValue.True"/>, <see cref="TruthValue.False"/> and <see cref="TruthValue.Unknown"/> in turn,
@@ -95,6 +95,6 @@ public class OperatorBenchmarks
     [Benchmark]
     public Task<Decision> EvaluateAsync()
     {
-        return this.rule.EvaluateAsync(this.context, NullServiceProvider.Instance, ExhaustiveOptions);
+        return this.rule.EvaluateAsync(this.context, NullServiceProvider.Instance, options: ExhaustiveOptions);
     }
 }

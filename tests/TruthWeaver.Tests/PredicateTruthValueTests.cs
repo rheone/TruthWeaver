@@ -131,8 +131,8 @@ public sealed class PredicateTruthValueTests
             rule.EvaluateAsync(
                 new RuleTestContext(),
                 EmptyServiceProvider.Instance,
-                new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
-                TestContext.Current.CancellationToken
+                options: new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
+                cancellationToken: TestContext.Current.CancellationToken
             )
         );
     }

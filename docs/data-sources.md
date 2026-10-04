@@ -106,7 +106,9 @@ Decision decision = await result.CompiledRule!.EvaluateAsync(context, services, 
 ```
 
 A rule that uses `from(...)` but is evaluated without the source it names returns `Unknown` and records a
-fault. Existing `EvaluateAsync(context, services)` calls keep working for rules with no variables.
+fault. Every `EvaluateAsync` argument after `context` is optional. Pass `services` only when the rule uses class-based
+predicates, and `sources` only when the rule has variables. A null `services` is an empty provider: a class-based
+predicate then returns `Unknown` and records a fault.
 
 To catch a malformed query at compile time, declare the name with the source's query validator.
 `JsonQueryValidator` (in `TruthWeaver.DataSources.Json`) parses the JSONPath without a document:

@@ -52,8 +52,8 @@ public sealed class EvaluationOptionsTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(Mode: EvaluationMode.Exhaustive),
+            cancellationToken: TestContext.Current.CancellationToken
         );
 
         Assert.Equal(TruthValue.False, decision.Result);
@@ -73,8 +73,8 @@ public sealed class EvaluationOptionsTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(Mode: mode),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(Mode: mode),
+            cancellationToken: TestContext.Current.CancellationToken
         );
 
         Assert.Equal(TruthValue.False, decision.Result);
@@ -92,8 +92,8 @@ public sealed class EvaluationOptionsTests
             rule.EvaluateAsync(
                 new RuleTestContext(),
                 EmptyServiceProvider.Instance,
-                new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
-                TestContext.Current.CancellationToken
+                options: new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
+                cancellationToken: TestContext.Current.CancellationToken
             )
         );
     }
@@ -169,8 +169,8 @@ public sealed class EvaluationOptionsTests
         return rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            new EvaluationOptions(FaultBudget: 1),
-            TestContext.Current.CancellationToken
+            options: new EvaluationOptions(FaultBudget: 1),
+            cancellationToken: TestContext.Current.CancellationToken
         );
     }
 }
