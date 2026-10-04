@@ -10,7 +10,6 @@ internal static class DocumentationLintBaseline
     {
         "AGENTS.md",
         "CONTEXT.md",
-        "README.md",
         "docs/data-sources.md",
     };
 }
