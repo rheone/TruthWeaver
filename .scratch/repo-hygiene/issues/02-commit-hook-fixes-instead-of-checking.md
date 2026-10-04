@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Staging a deliberately mis-formatted C# file and committing produces a formatted commit, not a failure
 - [ ] Only staged files are re-staged; unrelated unstaged edits are never swept into the commit
