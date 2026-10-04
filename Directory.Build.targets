@@ -23,4 +23,30 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
+
+  <!--
+    Installs the Git hooks (Husky.Net, .husky/task-runner.json) the first time a developer restores the
+    solution, so a fresh clone needs no manual step. Skipped in CI (the CI variable), outside a Git work
+    tree, when HUSKY=0, and for every project except one so it runs once. A failure never fails the build.
+  -->
+  <Target
+    Name="InstallGitHooks"
+    BeforeTargets="Restore;CollectPackageReferences"
+    Condition="'$(MSBuildProjectName)' == 'TruthWeaver' and '$(CI)' != 'true' and '$(HUSKY)' != '0' and Exists('$(MSBuildThisFileDirectory).git')"
+  >
+    <Exec
+      Command="dotnet tool restore"
+      WorkingDirectory="$(MSBuildThisFileDirectory)"
+      StandardOutputImportance="Low"
+      StandardErrorImportance="High"
+      IgnoreExitCode="true"
+    />
+    <Exec
+      Command="dotnet husky install"
+      WorkingDirectory="$(MSBuildThisFileDirectory)"
+      StandardOutputImportance="Low"
+      StandardErrorImportance="High"
+      IgnoreExitCode="true"
+    />
+  </Target>
 </Project>

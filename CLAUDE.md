@@ -111,8 +111,8 @@ Reference documents describe the package as it behaves now. They are not a recor
 ## Git
 
 - Use work trees when appropriate
-- Husky.Net provides local pre-commit validation. The hook formats staged C# files (`csharpier format`, `dotnet format`) and re-stages them, so a commit never fails on formatting. Build and test still fail the commit on a real error. Roslynator runs in CI and in the validation above, not in the hook. Run `dotnet husky install` once per clone to activate the hook.
-- Line endings: `.gitattributes` sets `* text=auto eol=lf`, so working-tree text files are LF on every platform; only `*.bat`, `*.cmd` and `*.sln` are CRLF. `.editorconfig` (`end_of_line`) and CSharpier agree, and `dotnet format --verify-no-changes` reports a deviation. There is no separate line-ending check. If Git warns that LF will be replaced by CRLF, `.gitattributes` is not being applied: run `git add --renormalize .`.
+- Husky.Net provides local pre-commit validation, installed automatically by the first `dotnet restore` of a clone (skipped when `CI=true` or `HUSKY=0`). The hook formats fully staged C# files (`scripts/format-staged.ps1`: `csharpier format`, then `dotnet format`) and re-stages them, so a commit never fails on formatting. A partly staged C# file is only checked and fails the commit if it needs formatting, because re-staging it would stage the unstaged edits: format it, then stage the hunks you want. Build and test still fail the commit on a real error. Roslynator runs in CI and in the validation above, not in the hook.
+- Line endings: `.gitattributes` sets `* text=auto eol=lf`, so working-tree text files are LF on every platform; only `*.bat`, `*.cmd` and `*.sln` are CRLF. `.editorconfig` (`end_of_line`) and CSharpier agree, and `dotnet format --verify-no-changes` reports a deviation. There is no separate line-ending check. A global `core.autocrlf=true` does not change this: `eol=lf` takes precedence, and a fresh clone is LF either way. If Git warns that LF will be replaced by CRLF, run `git add --renormalize .`.
 - CI is authoritative; hooks provide fast local feedback.
 
 ## Claude Code

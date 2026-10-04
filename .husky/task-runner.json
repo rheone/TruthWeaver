@@ -2,24 +2,10 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
-      "name": "csharpier",
+      "name": "format-staged",
       "group": "pre-commit",
-      "command": "dotnet",
-      "args": ["csharpier", "format", "${staged}"],
-      "include": ["**/*.cs"]
-    },
-    {
-      "name": "dotnet-format",
-      "group": "pre-commit",
-      "command": "dotnet",
-      "args": ["format", "--no-restore", "--severity", "info", "--include", "${staged}"],
-      "include": ["**/*.cs"]
-    },
-    {
-      "name": "restage",
-      "group": "pre-commit",
-      "command": "git",
-      "args": ["add", "--", "${staged}"],
+      "command": "pwsh",
+      "args": ["-NoProfile", "-File", "scripts/format-staged.ps1"],
       "include": ["**/*.cs"]
     },
     {
