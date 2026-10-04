@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `.gitattributes`, `.editorconfig` and `.gitignore` follow the file-type rules above, and each choice that is not obvious has a one-line comment saying why
 - [ ] After renormalising, `git status` is clean and a fresh clone shows no line-ending diffs

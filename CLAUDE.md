@@ -69,6 +69,8 @@ dotnet format --verify-no-changes --severity info
 dotnet roslynator analyze
 ```
 
+The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
+
 ### Running a subset of tests
 
 The test runner is Microsoft.Testing.Platform (xUnit v3), configured in `global.json`:
@@ -109,8 +111,8 @@ Reference documents describe the package as it behaves now. They are not a recor
 ## Git
 
 - Use work trees when appropriate
-- Husky.Net provides local pre-commit validation.
-- Line endings: `.gitattributes` sets `eol=crlf`, so working-tree text files must be CRLF. Scripted or tool edits (sed, Python, `Set-Content`, agents) can write LF, and Git normalises that silently, so diffs and CI never show it. The `line-endings` pre-commit task runs `scripts/check-line-endings.ps1` on staged files and fails on any bare LF. Repair with `sed -i 's/\r*$/\r/' <file>`. There is no CI step: CI checks out with `eol=crlf`, so it can never see LF in the working tree.
+- Husky.Net provides local pre-commit validation. The hook formats staged C# files (`csharpier format`, `dotnet format`) and re-stages them, so a commit never fails on formatting. Build and test still fail the commit on a real error. Roslynator runs in CI and in the validation above, not in the hook. Run `dotnet husky install` once per clone to activate the hook.
+- Line endings: `.gitattributes` sets `* text=auto eol=lf`, so working-tree text files are LF on every platform; only `*.bat`, `*.cmd` and `*.sln` are CRLF. `.editorconfig` (`end_of_line`) and CSharpier agree, and `dotnet format --verify-no-changes` reports a deviation. There is no separate line-ending check. If Git warns that LF will be replaced by CRLF, `.gitattributes` is not being applied: run `git add --renormalize .`.
 - CI is authoritative; hooks provide fast local feedback.
 
 ## Claude Code

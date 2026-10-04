@@ -8,6 +8,9 @@
       "documentPrivateFields": false,
       "xmlHeader": false
     },
+    "layoutRules": {
+      "newlineAtEndOfFile": "require"
+    },
     "orderingRules": {
       "usingDirectivesPlacement": "insideNamespace"
     },

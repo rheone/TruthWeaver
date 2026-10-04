@@ -6,6 +6,7 @@ artifacts/
 # IDEs
 .vs/
 .idea/
+.fleet/
 _ReSharper*/
 *.DotSettings.user
 *.user
@@ -24,12 +25,23 @@ _ReSharper*/
 # Test output
 TestResults/
 *.trx
+
+# Coverage output
 coverage/
+coverage-results/
 *.coverage
 *.coveragexml
+lcov.info
+
+# Mutation-testing output (Stryker.NET)
+StrykerOutput/
 
 # BenchmarkDotNet run output (not the committed baseline under benchmarks/*/results/)
 BenchmarkDotNet.Artifacts/
+
+# MSBuild logs
+*.binlog
+msbuild.log
 
 # NuGet
 *.nupkg

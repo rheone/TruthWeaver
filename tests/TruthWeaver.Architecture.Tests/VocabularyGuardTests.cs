@@ -7,7 +7,7 @@ using TruthWeaver.Evaluation;
 
 /// <summary>
 /// Guards the naming cleanup of ADR-0007: a name or diagnostic prefix the glossary retired must not return to a
-/// shipped assembly. Each test fails on a repository-wide rule, like <see cref="LineEndingGuardTests"/>.
+/// shipped assembly. Each test fails on a repository-wide rule.
 /// </summary>
 public sealed partial class VocabularyGuardTests
 {

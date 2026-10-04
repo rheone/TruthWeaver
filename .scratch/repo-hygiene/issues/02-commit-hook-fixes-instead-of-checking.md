@@ -13,3 +13,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
+
+## Comments
+
+- 2026-10-04: The line-endings guard (script, test, hook task, CLAUDE.md note) was retired with ticket 01. Still open here: the hook runs `csharpier format` and `dotnet format` and re-stages instead of the check variants.

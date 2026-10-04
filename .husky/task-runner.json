@@ -2,25 +2,25 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
-      "name": "line-endings",
-      "group": "pre-commit",
-      "command": "pwsh",
-      "args": ["-NoProfile", "-File", "scripts/check-line-endings.ps1", "${staged}"],
-      "include": ["**/*.cs", "**/*.csproj", "**/*.props", "**/*.targets", "**/*.json", "**/*.yml", "**/*.yaml", "**/*.md", "**/*.ps1", "**/*.sh", "**/*.xml", "**/*.slnx"]
-    },
-    {
       "name": "csharpier",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["csharpier", "check", "."],
+      "args": ["csharpier", "format", "${staged}"],
       "include": ["**/*.cs"]
     },
     {
       "name": "dotnet-format",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["format", "--no-restore", "--verify-no-changes", "--severity", "info"],
-      "include": ["**/*.cs", "**/*.csproj", "**/*.props", "**/*.targets"]
+      "args": ["format", "--no-restore", "--severity", "info", "--include", "${staged}"],
+      "include": ["**/*.cs"]
+    },
+    {
+      "name": "restage",
+      "group": "pre-commit",
+      "command": "git",
+      "args": ["add", "--", "${staged}"],
+      "include": ["**/*.cs"]
     },
     {
       "name": "build",
