@@ -7,7 +7,7 @@ using System.Text;
 /// from the structured <see cref="Diagnostic"/> are laid out as a header line, the offending source line with a caret
 /// underline, then the expected/found pair and any suggestion:
 /// <code>
-/// BRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expression.
+/// TRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expression.
 ///   a ANDD b
 ///     ^^^^
 ///   Expected: an operator or the end of the rule

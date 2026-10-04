@@ -21,7 +21,7 @@ Derived. `ALL(x1, ..., xn)` is defined as `AtLeast(n, x1, ..., xn)` (see [Canoni
 
 ## Arity
 
-Two or more operands, and no parameter: the threshold `n` is the operand count. Fewer is the compile error `MalformedTree` (`BRE0014`).
+Two or more operands, and no parameter: the threshold `n` is the operand count. Fewer is the compile error `MalformedTree` (`TRE0014`).
 
 > [!NOTE]
 > Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `ALL` rejects fewer than two operands: a one-operand `ALL` would only be that operand. `OperatorDefinitions` and the compiler agree on this minimum ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a).
@@ -186,8 +186,8 @@ The last row is the case a reading of `ALL` as "`False` when fewer than `n` oper
 
 | Input | Diagnostic |
 | --- | --- |
-| One operand, `ALL(a)` | `MalformedTree` (`BRE0014`): "This operator requires at least 2 operands but found 1." |
-| JSON or YAML node with fewer than two operands | The same `MalformedTree` (`BRE0014`) diagnostic. |
+| One operand, `ALL(a)` | `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found 1." |
+| JSON or YAML node with fewer than two operands | The same `MalformedTree` (`TRE0014`) diagnostic. |
 
 - **`False` only when `T + U < n`.** At least one `False` operand is required for a definite `False`; see the [last example row](#examples).
 - **Empty and single-operand conventions.** Only `RuleBuilder.All(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. `RuleBuilder.All(params RuleBuilder[])` rejects fewer than two operands like the rule languages.

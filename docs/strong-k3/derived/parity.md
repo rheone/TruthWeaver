@@ -21,7 +21,7 @@ Derived. `PARITY` is defined as the disjunction of `Exactly(k, ...)` over every 
 
 ## Arity
 
-Two or more operands. Fewer than two operands is a compile error, `MalformedTree` (`BRE0014`): "This operator requires at least 2 operands but found N." This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input Domain
 
@@ -257,7 +257,7 @@ Three operations are easy to confuse because they agree on two operands:
 | `True` when | the operands differ | an odd number are `True` | exactly one is `True` |
 | An `Unknown` operand | always gives `Unknown` | always gives `Unknown` | can still give a definite value |
 
-For two operands all three are the same function. From three operands `XOR` is not available (a chain is `BRE0006`, whose message names the other two), and `PARITY` and `ExactlyOne` part ways:
+For two operands all three are the same function. From three operands `XOR` is not available (a chain is `TRE0006`, whose message names the other two), and `PARITY` and `ExactlyOne` part ways:
 
 | `True` operands out of three, none unknown | `PARITY` | `ExactlyOne` |
 | --- | --- | --- |

@@ -21,7 +21,7 @@ Primitive. `AND` has no definition in other Operations. It is one of the three c
 
 ## Arity
 
-Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`BRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input Domain
 

@@ -9,7 +9,7 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>
 /// The expanding rewrites (<c>ExpandToPrimitives</c>, <c>ExpandToNand</c>, <c>ExpandToNor</c>) can produce a tree far
 /// larger than the rule they started from, so each is capped by <see cref="CompilerOptions.MaxRewriteNodeCount"/> and
-/// reports an over-cap result as a <c>BRE0016</c> diagnostic instead of exhausting memory or time.
+/// reports an over-cap result as a <c>TRE0016</c> diagnostic instead of exhausting memory or time.
 /// </summary>
 public sealed class RewriteResourceLimitsTests
 {

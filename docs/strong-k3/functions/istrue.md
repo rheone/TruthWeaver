@@ -27,7 +27,7 @@ Derived. `IsTrue` is defined from `COALESCE` (see [Canonical Form](#canonical-fo
 
 ## Arity
 
-Exactly one operand. `IsTrue(a, b)` and `IsTrue()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`BRE0014`): "IsTrue requires exactly 1 operand but found N." `RuleBuilder.IsTrue` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsTrue(a, b)` and `IsTrue()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsTrue requires exactly 1 operand but found N." `RuleBuilder.IsTrue` takes one argument, so a wrong count cannot be written there.
 
 ## Input Domain
 
@@ -50,7 +50,7 @@ The operand is a value in `{T, F, U}`.
 | YAML | `op: isTrue` with an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.IsTrue(operand)` |
 
-`IsTrue` is a reserved word in any letter case (`istrue(a)`), so a predicate cannot be named `IsTrue`. It has only the call form: `IsTrue a` without parentheses is a syntax error (`BRE0001`). A call has no precedence, so `NOT IsTrue(a)` and `IsTrue(a) AND b` compile as written.
+`IsTrue` is a reserved word in any letter case (`istrue(a)`), so a predicate cannot be named `IsTrue`. It has only the call form: `IsTrue a` without parentheses is a syntax error (`TRE0001`). A call has no precedence, so `NOT IsTrue(a)` and `IsTrue(a) AND b` compile as written.
 
 ## Aliases
 

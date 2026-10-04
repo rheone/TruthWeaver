@@ -37,7 +37,7 @@ public sealed class DiagnosticFormatterTests
 
         string expected = string.Join(
             "\n",
-            "BRE0001 error at line 1, column 3: " + diagnostic.Message,
+            "TRE0001 error at line 1, column 3: " + diagnostic.Message,
             "  a ANDD b",
             "    ^^^^",
             "  Expected: an operator or the end of the rule",
@@ -56,7 +56,7 @@ public sealed class DiagnosticFormatterTests
 
         string text = DiagnosticFormatter.Format(diagnostic, source);
 
-        Assert.StartsWith("BRE0006 error at line 2, column 2:", text);
+        Assert.StartsWith("TRE0006 error at line 2, column 2:", text);
         Assert.Contains("\n  (b XOR b XOR a)\n   ^^^^^^^^^^^^^\n", text);
     }
 
@@ -81,7 +81,7 @@ public sealed class DiagnosticFormatterTests
 
         string text = DiagnosticFormatter.Format(diagnostic);
 
-        Assert.StartsWith("BRE0001 error at offset 2:", text);
+        Assert.StartsWith("TRE0001 error at offset 2:", text);
         Assert.DoesNotContain("^", text);
     }
 
@@ -89,11 +89,11 @@ public sealed class DiagnosticFormatterTests
     [Fact]
     public void Format_DiagnosticWithoutLocation_OmitsTheLocationClause_Test()
     {
-        Diagnostic diagnostic = Diagnostic.Warning("BRE0012", "always true", SourceSpan.None);
+        Diagnostic diagnostic = Diagnostic.Warning("TRE0012", "always true", SourceSpan.None);
 
         string text = DiagnosticFormatter.Format(diagnostic, "a OR b");
 
-        Assert.Equal("BRE0012 warning: always true", text);
+        Assert.Equal("TRE0012 warning: always true", text);
     }
 
     /// <summary>Several diagnostics render one after another, separated by a line break.</summary>

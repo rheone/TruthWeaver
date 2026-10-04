@@ -21,7 +21,7 @@ Derived. `ExactlyOne(...)` is defined as `Exactly(1, ...)` (see [Canonical Form]
 
 ## Arity
 
-Two or more operands, and no parameter. Fewer than two operands is a compile error, `MalformedTree` (`BRE0014`): "This operator requires at least 2 operands but found N." This holds for `ExactlyOne(a)` and `ExactlyOne()` in the DSL and for JSON, YAML and `RuleBuilder.ExactlyOne(params RuleBuilder[])`. The threshold operations are different: `Exactly(1, a)` compiles. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands, and no parameter. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." This holds for `ExactlyOne(a)` and `ExactlyOne()` in the DSL and for JSON, YAML and `RuleBuilder.ExactlyOne(params RuleBuilder[])`. The threshold operations are different: `Exactly(1, a)` compiles. See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input Domain
 

@@ -27,7 +27,7 @@ Derived. `IsKnown` is defined from `COALESCE` (see [Canonical Form](#canonical-f
 
 ## Arity
 
-Exactly one operand. `IsKnown(a, b)` and `IsKnown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`BRE0014`): "IsKnown requires exactly 1 operand but found N." `RuleBuilder.IsKnown` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsKnown(a, b)` and `IsKnown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsKnown requires exactly 1 operand but found N." `RuleBuilder.IsKnown` takes one argument, so a wrong count cannot be written there.
 
 ## Input Domain
 
@@ -50,7 +50,7 @@ The operand is a value in `{T, F, U}`.
 | YAML | `op: isKnown` with an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.IsKnown(operand)` |
 
-`IsKnown` is a reserved word in any letter case (`isknown(a)`), so a predicate cannot be named `IsKnown`. It has only the call form: `IsKnown a` without parentheses is a syntax error (`BRE0001`). A call has no precedence, so `NOT IsKnown(a)` and `IsKnown(a) AND b` compile as written.
+`IsKnown` is a reserved word in any letter case (`isknown(a)`), so a predicate cannot be named `IsKnown`. It has only the call form: `IsKnown a` without parentheses is a syntax error (`TRE0001`). A call has no precedence, so `NOT IsKnown(a)` and `IsKnown(a) AND b` compile as written.
 
 ## Aliases
 

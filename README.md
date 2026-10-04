@@ -752,14 +752,14 @@ can produce a tree far larger than the rule they start from, so each returns a
 `CompilerOptions.MaxRewriteNodeCount` (default **100,000** nodes, counted as a printed
 tree, so a sub-expression shared in memory but written twice counts twice). An
 over-cap rewrite never throws and is not built: `Succeeded` is `false`, `CompiledRule`
-is `null`, and a single `BRE0016` error says which rewrite hit which cap. To allow a bigger
+is `null`, and a single `TRE0016` error says which rewrite hit which cap. To allow a bigger
 result, pass options with a larger cap:
 
 ```csharp
 CompilationResult<MyContext> expanded = rule.ExpandToNand(new CompilerOptions(MaxRewriteNodeCount: 1_000_000));
 if (!expanded.Succeeded)
 {
-    Console.WriteLine(expanded.FormatDiagnostics());   // BRE0016: ExpandToNand would produce more than ...
+    Console.WriteLine(expanded.FormatDiagnostics());   // TRE0016: ExpandToNand would produce more than ...
 }
 ```
 
@@ -2065,7 +2065,7 @@ out itself and a log can print it as is.
 
 | Member          | Meaning                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
-| `Code`          | Stable identifier such as `BRE0001` (see `DiagnosticCodes`).                                         |
+| `Code`          | Stable identifier such as `TRE0001` (see `DiagnosticCodes`).                                         |
 | `Severity`      | `Error` blocks compilation; `Warning` and `Info` do not.                                             |
 | `Message`       | A plain-language explanation of the problem.                                                         |
 | `Span`          | Where it is in the rule text (0-based offset and length). `Span.GetLocation(source)` gives line and column. |
@@ -2090,7 +2090,7 @@ Console.WriteLine(result.FormatDiagnostics(source));
 
 <!-- doctest:diagnostics-dsl a ANDD b -->
 ```text
-BRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expression.
+TRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expression.
   a ANDD b
     ^^^^
   Expected: an operator or the end of the rule
@@ -2121,7 +2121,7 @@ compiling clean; switch them on with `CompilerOptions.Lints`:
 ```csharp
 RuleCompiler<MyContext> compiler = new(registry, new CompilerOptions(Lints: LintRules.All));
 CompilationResult<MyContext> result = compiler.Compile("NOT NOT isAdmin");
-// BRE0023 info: a negation of a negation cancels out ... Did you mean: isAdmin
+// TRE0023 info: a negation of a negation cancels out ... Did you mean: isAdmin
 ```
 
 Each finding is an `Info` diagnostic (it never blocks compilation) with a `Replacement` suggestion holding the simpler
@@ -2133,18 +2133,18 @@ repeated `PARITY` operand are left alone).
 
 | `LintRules` flag | Code | Flags | Suggests |
 | --- | --- | --- | --- |
-| `RedundantInspection` | `BRE0017` | `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` over an operand that can never be `Unknown`, or never be known (`IsKnown(IsTrue(a))`) | `True`/`False`, the operand, or its negation |
-| `RedundantCoalesce` | `BRE0018` | a `COALESCE` operand that can never be `Unknown`, so the operands after it are unreachable | the operands up to and including it |
-| `ConstantIfCondition` | `BRE0019` | an `If` whose condition is always `True` or always `False` | the branch that is always chosen |
-| `IdenticalIfBranches` | `BRE0020` | `If(c, t, t)` | `t` |
-| `VacuousCardinality` | `BRE0021` | a threshold or `BETWEEN` whose constant operands already fix the result (`AtLeast(1, a, TRUE)`) | the constant |
-| `DuplicateOperands` | `BRE0022` | a structurally identical operand repeated inside `AND`, `OR`, `ANY`, `ALL` or `COALESCE` | the operator with each operand once |
-| `DoubleNegation` | `BRE0023` | `NOT NOT x` | `x` |
+| `RedundantInspection` | `TRE0017` | `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` over an operand that can never be `Unknown`, or never be known (`IsKnown(IsTrue(a))`) | `True`/`False`, the operand, or its negation |
+| `RedundantCoalesce` | `TRE0018` | a `COALESCE` operand that can never be `Unknown`, so the operands after it are unreachable | the operands up to and including it |
+| `ConstantIfCondition` | `TRE0019` | an `If` whose condition is always `True` or always `False` | the branch that is always chosen |
+| `IdenticalIfBranches` | `TRE0020` | `If(c, t, t)` | `t` |
+| `VacuousCardinality` | `TRE0021` | a threshold or `BETWEEN` whose constant operands already fix the result (`AtLeast(1, a, TRUE)`) | the constant |
+| `DuplicateOperands` | `TRE0022` | a structurally identical operand repeated inside `AND`, `OR`, `ANY`, `ALL` or `COALESCE` | the operator with each operand once |
+| `DoubleNegation` | `TRE0023` | `NOT NOT x` | `x` |
 
 `LintRules` is a flags enum: combine the ones you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`) or use
-`LintRules.All`. The semantic lints (`BRE0017` to `BRE0019`, `BRE0021`) use the analyzer's BDD and are skipped for a
-sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms; the structural ones (`BRE0020`,
-`BRE0022`, `BRE0023`) always run.
+`LintRules.All`. The semantic lints (`TRE0017` to `TRE0019`, `TRE0021`) use the analyzer's BDD and are skipped for a
+sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms; the structural ones (`TRE0020`,
+`TRE0022`, `TRE0023`) always run.
 
 ### JSON and YAML rules
 
@@ -2164,7 +2164,7 @@ Console.WriteLine(compiler.CompileJson(json).FormatDiagnostics(json));
 
 <!-- doctest:diagnostics-json {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]} -->
 ```text
-BRE0014 error at $.operands[1].op (line 1, column 46): Unknown operator 'orr'.
+TRE0014 error at $.operands[1].op (line 1, column 46): Unknown operator 'orr'.
   {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}
                                                ^^^^^
   Expected: a known operator
@@ -2183,7 +2183,7 @@ the parser's position:
 
 <!-- doctest:diagnostics-json {"op":"and","operands":[{"const":true}, -->
 ```text
-BRE0014 error at $.operands (line 1, column 39): Malformed JSON: Expected start of a property name or value, but instead reached end of data. LineNumber: 0 | BytePositionInLine: 38.
+TRE0014 error at $.operands (line 1, column 39): Malformed JSON: Expected start of a property name or value, but instead reached end of data. LineNumber: 0 | BytePositionInLine: 38.
   {"op":"and","operands":[{"const":true},
                                         ^
   Expected: well-formed JSON
@@ -2194,17 +2194,17 @@ The classes of malformed rule text each report as follows.
 
 | Problem | Code | Expected / found | Suggestion |
 | ------- | ---- | ---------------- | ---------- |
-| Unknown predicate or operator name | `BRE0002` | a registered name or an operator / the name | nearest known name |
-| Misspelt operator between operands, trailing tokens | `BRE0001` | an operator or the end of the rule / the token | nearest word operator |
-| Missing operand or literal | `BRE0001` | a term, constant or `(` (or a literal) / the token or end of rule | none |
-| Mismatched, unclosed or unmatched delimiter | `BRE0001` | the closer / the token or end of rule (an unclosed group is reported at its opener) | none |
-| Unterminated string, bad escape | `BRE0001`, `BRE0015` | a closing `"`, or the supported escapes / end of rule or the escape | none |
-| Wrong operand count, `XOR` and the other binary operators | `BRE0006`, `BRE0014` | `2 operands` / `3 operands` | `PARITY` / `ExactlyOne` for `XOR`, parentheses for the others |
-| Ambiguous mixing without parentheses | `BRE0007` | parentheses around one of the groups / the operators sharing a level | hint showing the parenthesised text |
-| Threshold or `BETWEEN` bounds, non-integer bound | `BRE0008`, `BRE0001` | the valid range, or an integer / the value | none |
-| Declared `Collapse` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
-| Declared `Project` | `BRE0001` (DSL), `BRE0014` (JSON/YAML) | a rule without `Project` / `Project` | hint to use `COALESCE(x, True)` / `COALESCE(x, False)` or `Decision.Project(unknownAs)` |
-| Missing, unknown or mistyped predicate argument | `BRE0003`, `BRE0005`, `BRE0004` | the argument or kind / what was written | nearest declared argument name |
+| Unknown predicate or operator name | `TRE0002` | a registered name or an operator / the name | nearest known name |
+| Misspelt operator between operands, trailing tokens | `TRE0001` | an operator or the end of the rule / the token | nearest word operator |
+| Missing operand or literal | `TRE0001` | a term, constant or `(` (or a literal) / the token or end of rule | none |
+| Mismatched, unclosed or unmatched delimiter | `TRE0001` | the closer / the token or end of rule (an unclosed group is reported at its opener) | none |
+| Unterminated string, bad escape | `TRE0001`, `TRE0015` | a closing `"`, or the supported escapes / end of rule or the escape | none |
+| Wrong operand count, `XOR` and the other binary operators | `TRE0006`, `TRE0014` | `2 operands` / `3 operands` | `PARITY` / `ExactlyOne` for `XOR`, parentheses for the others |
+| Ambiguous mixing without parentheses | `TRE0007` | parentheses around one of the groups / the operators sharing a level | hint showing the parenthesised text |
+| Threshold or `BETWEEN` bounds, non-integer bound | `TRE0008`, `TRE0001` | the valid range, or an integer / the value | none |
+| Declared `Collapse` | `TRE0001` (DSL), `TRE0014` (JSON/YAML) | a rule without `Collapse` / `Collapse` | hint to call `Decision.Collapse(policy)` on the result |
+| Declared `Project` | `TRE0001` (DSL), `TRE0014` (JSON/YAML) | a rule without `Project` / `Project` | hint to use `COALESCE(x, True)` / `COALESCE(x, False)` or `Decision.Project(unknownAs)` |
+| Missing, unknown or mistyped predicate argument | `TRE0003`, `TRE0005`, `TRE0004` | the argument or kind / what was written | nearest declared argument name |
 
 ## Benchmarks
 
@@ -2257,7 +2257,7 @@ with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
 | Term | Meaning |
 | --- | --- |
 | `AtLeast(k, ...)` / `AtMost(k, ...)` / `GreaterThan(k, ...)` / `LessThan(k, ...)` / `Exactly(k, ...)` | The threshold operator family: n-ary comparisons against the true-operand count, all compiling to one shared `ThresholdExpression` node — see [Operators](#operators). |
-| BDD analyzer | The compiler's constant/contradiction-detection pass, backed by a real binary decision diagram rather than brute-force truth tables. It reasons in Strong K3 with a dual-rail BDD ("definitely true" / "possibly true" per sub-expression, each term contributing an independent `True`/`False`/`Unknown` state), so its warnings (`BRE0012` tautology, `BRE0013` contradiction) mean the sub-expression is `True` (resp. `False`) for every `{True, False, Unknown}` assignment: `A AND NOT A` and `A OR NOT A` are not reported because they are `Unknown` when `A` is (ADR-0005 decision 17) — see [Compilation pipeline](#compilation-pipeline). |
+| BDD analyzer | The compiler's constant/contradiction-detection pass, backed by a real binary decision diagram rather than brute-force truth tables. It reasons in Strong K3 with a dual-rail BDD ("definitely true" / "possibly true" per sub-expression, each term contributing an independent `True`/`False`/`Unknown` state), so its warnings (`TRE0012` tautology, `TRE0013` contradiction) mean the sub-expression is `True` (resp. `False`) for every `{True, False, Unknown}` assignment: `A AND NOT A` and `A OR NOT A` are not reported because they are `Unknown` when `A` is (ADR-0005 decision 17) — see [Compilation pipeline](#compilation-pipeline). |
 | `CompilationMode` | `Strict` (default — an unregistered predicate is a compile error) or `Lenient` (an unregistered predicate compiles to a permanent `Unknown` term, for services sharing a rule store with different predicate sets). |
 | `CompilationResult<TContext>` | What `Compile`/`CompileJson`/`CompileYaml` return: a nullable `CompiledRule<TContext>` plus every `Diagnostic` raised. |
 | `CompiledRule<TContext>` | The immutable, thread-safe result of a successful compile. Safe to cache, share, and evaluate repeatedly; swapping the reference that holds it is how a host applies a rule edit at runtime. |

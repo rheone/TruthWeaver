@@ -27,7 +27,7 @@ Derived. `IsFalse` is defined from `COALESCE` (see [Canonical Form](#canonical-f
 
 ## Arity
 
-Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`BRE0014`): "IsFalse requires exactly 1 operand but found N." `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsFalse requires exactly 1 operand but found N." `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
 
 ## Input Domain
 
@@ -50,7 +50,7 @@ The operand is a value in `{T, F, U}`.
 | YAML | `op: isFalse` with an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.IsFalse(operand)` |
 
-`IsFalse` is a reserved word in any letter case (`isfalse(a)`), so a predicate cannot be named `IsFalse`. It has only the call form: `IsFalse a` without parentheses is a syntax error (`BRE0001`). A call has no precedence, so `NOT IsFalse(a)` and `IsFalse(a) AND b` compile as written.
+`IsFalse` is a reserved word in any letter case (`isfalse(a)`), so a predicate cannot be named `IsFalse`. It has only the call form: `IsFalse a` without parentheses is a syntax error (`TRE0001`). A call has no precedence, so `NOT IsFalse(a)` and `IsFalse(a) AND b` compile as written.
 
 ## Aliases
 

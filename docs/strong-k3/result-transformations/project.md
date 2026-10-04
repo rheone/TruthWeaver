@@ -45,7 +45,7 @@ The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{true, fals
 | C# | `decision.Project(unknownAs: true)` or `decision.Project(unknownAs: false)` |
 | DSL, JSON, YAML, `RuleBuilder` | none |
 
-`Project` is not part of the rule language. A rule that spells `Project(...)` is the compile error `BRE0001`: "Project is not part of the rule language. To replace Unknown inside a rule write COALESCE(x, True) or COALESCE(x, False); to make the final result definite call Decision.Project(unknownAs) on the Decision." The call is pure, never throws and never records a `Fault`.
+`Project` is not part of the rule language. A rule that spells `Project(...)` is the compile error `TRE0001`: "Project is not part of the rule language. To replace Unknown inside a rule write COALESCE(x, True) or COALESCE(x, False); to make the final result definite call Decision.Project(unknownAs) on the Decision." The call is pure, never throws and never records a `Fault`.
 
 ## Aliases
 

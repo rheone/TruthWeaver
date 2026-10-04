@@ -21,7 +21,7 @@ Derived. `IMPLIES` is defined as `NOT a OR b` (see [Canonical Form](#canonical-f
 
 ## Arity
 
-Exactly two operands. `IMPLIES` is binary only. A chain with more operands (`a IMPLIES b IMPLIES c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`BRE0006`): "IMPLIES is binary only; found N operands. Add parentheses (or nest IMPLIES nodes) to say how chained implications group." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
+Exactly two operands. `IMPLIES` is binary only. A chain with more operands (`a IMPLIES b IMPLIES c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`): "IMPLIES is binary only; found N operands. Add parentheses (or nest IMPLIES nodes) to say how chained implications group." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
 
 The first operand is the antecedent (the "if") and the second the consequent (the "then").
 
@@ -47,11 +47,11 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: implies` with an `operands:` list of exactly two items |
 | `RuleBuilder` | `RuleBuilder.Implies(antecedent, consequent)` |
 
-`IMPLIES` is an infix operator with no call form: `IMPLIES(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a IMPLIES b` is `(NOT a) IMPLIES b`, and mixing `IMPLIES` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`BRE0007`). The canonical printer writes the word form.
+`IMPLIES` is an infix operator with no call form: `IMPLIES(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a IMPLIES b` is `(NOT a) IMPLIES b`, and mixing `IMPLIES` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`TRE0007`). The canonical printer writes the word form.
 
 In this reference the function-call spelling `IMPLIES(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
 
-Because implication is not associative, the DSL never groups a chain for you: `a IMPLIES b IMPLIES c` is the compile error `BRE0006`. Write `a IMPLIES (b IMPLIES c)` or `(a IMPLIES b) IMPLIES c`.
+Because implication is not associative, the DSL never groups a chain for you: `a IMPLIES b IMPLIES c` is the compile error `TRE0006`. Write `a IMPLIES (b IMPLIES c)` or `(a IMPLIES b) IMPLIES c`.
 
 ## Aliases
 
@@ -137,7 +137,7 @@ TruthWeaver is Kleene: `IMPLIES` is `OR(NOT(a), b)`, so it stays among the conne
 
 ## Edge Cases
 
-- **More than two operands.** A chain, or a JSON or YAML node with any other operand count, is rejected with `BRE0006`; group with parentheses.
+- **More than two operands.** A chain, or a JSON or YAML node with any other operand count, is rejected with `TRE0006`; group with parentheses.
 - **Operand order matters.** `a IMPLIES b` and `b IMPLIES a` differ. Swapping operands needs `NOT` on both, as in contraposition.
 - **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault. A `False` antecedent already gives `True`, but the consequent is still run.
 - **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:

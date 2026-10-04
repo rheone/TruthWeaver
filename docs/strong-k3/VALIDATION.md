@@ -71,18 +71,18 @@ To check claims the harness cannot, a throwaway xunit test (not committed, delet
 
 | Claim in the reference | Probe | Result |
 | --- | --- | --- |
-| `a XOR b XOR c` is `BRE0006` pointing at `PARITY` and `ExactlyOne` | compile | Confirmed, message matches |
-| `XOR(a, b)`, `AND(a, b, c)`, `NAND(a, b)`, `OR(a)` have no call form (`BRE0001`) | compile | Confirmed |
+| `a XOR b XOR c` is `TRE0006` pointing at `PARITY` and `ExactlyOne` | compile | Confirmed, message matches |
+| `XOR(a, b)`, `AND(a, b, c)`, `NAND(a, b)`, `OR(a)` have no call form (`TRE0001`) | compile | Confirmed |
 | `a AND b AND c` is one flat three-operand node | compile, print | Confirmed |
 | `NXOR` is rejected, `XNOR` and `IFF` are accepted as `EQUIVALENT` | compile | Confirmed |
-| `PARITY(a)`, `ExactlyOne(a)`, `ANY(a)`, `ALL(a)`, `NONE(a)`, `COALESCE(a)` need two operands (`BRE0014`) | compile | Confirmed |
-| `AtLeast(3, a, b)` is `BRE0008` with the quoted message | compile | Confirmed, message identical |
-| `AtLeast(1)` is `BRE0014` "requires at least one operand"; `AtLeast(a, b)` is `BRE0001` | compile | Confirmed |
+| `PARITY(a)`, `ExactlyOne(a)`, `ANY(a)`, `ALL(a)`, `NONE(a)`, `COALESCE(a)` need two operands (`TRE0014`) | compile | Confirmed |
+| `AtLeast(3, a, b)` is `TRE0008` with the quoted message | compile | Confirmed, message identical |
+| `AtLeast(1)` is `TRE0014` "requires at least one operand"; `AtLeast(a, b)` is `TRE0001` | compile | Confirmed |
 | `AtLeast(1, a)`, `Exactly(1, a)`, `GreaterThan(0, a)`, `LessThan(1, a)` compile with one operand | compile | Confirmed (see U1) |
-| `AtMost(1, a)` is rejected because `k` must be `0..n-1` | compile | Confirmed, `BRE0008` |
-| `BETWEEN(0, 2, a, b)` and `BETWEEN(1, 3, a, b)` are `BRE0008`, `BETWEEN(1, 1, a)` is `BRE0014` | compile | Confirmed, messages identical |
-| `If` with 2 or 4 operands is `BRE0014`; `a AND b ? x : y` and `a ? b ? x : y : z` are `BRE0007`; `(a AND b) ? x : y` compiles; `if(a, b, c)` is accepted | compile | Confirmed |
-| `IsTrue(a, b)` is a one-operand error; `Collapse(...)` and `Project(...)` are `BRE0001` with the pointer to the `Decision` methods | compile | Confirmed |
+| `AtMost(1, a)` is rejected because `k` must be `0..n-1` | compile | Confirmed, `TRE0008` |
+| `BETWEEN(0, 2, a, b)` and `BETWEEN(1, 3, a, b)` are `TRE0008`, `BETWEEN(1, 1, a)` is `TRE0014` | compile | Confirmed, messages identical |
+| `If` with 2 or 4 operands is `TRE0014`; `a AND b ? x : y` and `a ? b ? x : y : z` are `TRE0007`; `(a AND b) ? x : y` compiles; `if(a, b, c)` is accepted | compile | Confirmed |
+| `IsTrue(a, b)` is a one-operand error; `Collapse(...)` and `Project(...)` are `TRE0001` with the pointer to the `Decision` methods | compile | Confirmed |
 | `If(boom, isOn, isOn)` is `True` with 1 fault | evaluate | Confirmed |
 | `If(boom, isOn, isOff)` is `Unknown`, 1 fault | evaluate | Confirmed |
 | `If(isOn, isOff, boom)` is `False`, 0 faults (branch not run) | evaluate | Confirmed |
@@ -92,7 +92,7 @@ To check claims the harness cannot, a throwaway xunit test (not committed, delet
 
 Two further discrepancies came out of the probe, both outside the reference:
 
-- `README.md` line 559 says `AND` and the other n-ary operators are written like `AND(a, b, c)`. The DSL rejects every call form of an infix operator (`BRE0001`). See U2.
+- `README.md` line 559 says `AND` and the other n-ary operators are written like `AND(a, b, c)`. The DSL rejects every call form of an infix operator (`TRE0001`). See U2.
 - `OperatorDefinitions` records a minimum of 2 operands for `AtLeast`, `AtMost`, `Exactly`, `GreaterThan` and `LessThan`, while the compiler accepts 1. See U1.
 
 ## Missing operations, categories and ambiguities

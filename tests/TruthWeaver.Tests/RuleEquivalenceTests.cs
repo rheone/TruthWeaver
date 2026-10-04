@@ -139,7 +139,7 @@ public sealed class RuleEquivalenceTests
             CompiledRule<RuleTestContext>? otherRule = compiler.Compile(other.Text).CompiledRule;
             if (leftRule is null || otherRule is null)
             {
-                // Out-of-range thresholds (BRE0008) are authoring errors, not equivalence input.
+                // Out-of-range thresholds (TRE0008) are authoring errors, not equivalence input.
                 continue;
             }
 

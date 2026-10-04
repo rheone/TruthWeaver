@@ -265,7 +265,7 @@ public sealed class AnalyzerTests
                 CompilationResult<RuleTestContext> result = compiler.Compile(node.Text);
                 if (result.CompiledRule is null)
                 {
-                    // Out-of-range thresholds (BRE0008) are authoring errors, not analyzer input.
+                    // Out-of-range thresholds (TRE0008) are authoring errors, not analyzer input.
                     continue;
                 }
 

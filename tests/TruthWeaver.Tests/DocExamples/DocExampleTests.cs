@@ -65,7 +65,7 @@ public sealed class DocExampleTests
     [Fact]
     public void Check_DiagnosticsOutputThatIsStale_ReportsAFailure_Test()
     {
-        const string markdown = "<!-- doctest:diagnostics-dsl a ANDD b -->\n```text\nBRE9999 something else\n```\n";
+        const string markdown = "<!-- doctest:diagnostics-dsl a ANDD b -->\n```text\nTRE9999 something else\n```\n";
 
         IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
 

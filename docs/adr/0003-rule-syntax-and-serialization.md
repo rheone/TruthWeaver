@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Partly superseded by [ADR-0005](0005-strong-k3-language-surface.md): the operator set, the ban on `IMPLIES` and symbol aliases, binary-only `XOR`/`XNOR` naming, and "word operators only" no longer hold. All other decisions here stand.
+Accepted. Partly superseded by [ADR-0005](0005-strong-k3-language-surface.md): the operator set, the ban on `IMPLIES` and symbol aliases, binary-only `XOR`/`XNOR` naming, and "word operators only" no longer hold. All other decisions here stand. Diagnostic codes cited in this record read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged).
 
 ## Context
 
@@ -259,7 +259,7 @@ node parameterized by a `ThresholdComparison` enum (`AtLeast`, `AtMost`,
 composition (each expressed via the existing `AtLeast`-counting BDD helper,
 e.g. `AtMost(k, ...)` is `NOT AtLeast(k + 1, ...)`), and one compile-time
 range check: for a given operand count, a `k` outside the range that makes
-the result structurally non-constant is rejected (`BRE0008`,
+the result structurally non-constant is rejected (`TRE0008`,
 `InvalidThresholdValue`) — the same "don't silently accept a constant rule"
 rationale the original `AtLeast` validation already applied.
 
@@ -286,7 +286,7 @@ write `XNOR(a, b, c)`), always parenthesized by the canonical printer
 regardless of context, and included in the same ambiguous-mixing check `XOR`
 already had — mixing `XNOR` with `AND`/`OR`, or mixing `XOR` with `XNOR`, at
 the same syntactic level without parentheses is a compile error
-(`BRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
+(`TRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
 
 `IFF` was considered as an alternate/additional keyword but not added:
 `XNOR` is already the standard boolean-algebra name and adding a second

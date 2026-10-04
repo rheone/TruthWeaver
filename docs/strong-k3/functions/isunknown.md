@@ -27,7 +27,7 @@ Derived. `IsUnknown` is defined from `COALESCE` (see [Canonical Form](#canonical
 
 ## Arity
 
-Exactly one operand. `IsUnknown(a, b)` and `IsUnknown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`BRE0014`): "IsUnknown requires exactly 1 operand but found N." `RuleBuilder.IsUnknown` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsUnknown(a, b)` and `IsUnknown()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`): "IsUnknown requires exactly 1 operand but found N." `RuleBuilder.IsUnknown` takes one argument, so a wrong count cannot be written there.
 
 ## Input Domain
 
@@ -50,7 +50,7 @@ The operand is a value in `{T, F, U}`.
 | YAML | `op: isUnknown` with an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.IsUnknown(operand)` |
 
-`IsUnknown` is a reserved word in any letter case (`isunknown(a)`), so a predicate cannot be named `IsUnknown`. It has only the call form: `IsUnknown a` without parentheses is a syntax error (`BRE0001`). A call has no precedence, so `NOT IsUnknown(a)` and `IsUnknown(a) AND b` compile as written.
+`IsUnknown` is a reserved word in any letter case (`isunknown(a)`), so a predicate cannot be named `IsUnknown`. It has only the call form: `IsUnknown a` without parentheses is a syntax error (`TRE0001`). A call has no precedence, so `NOT IsUnknown(a)` and `IsUnknown(a) AND b` compile as written.
 
 ## Aliases
 

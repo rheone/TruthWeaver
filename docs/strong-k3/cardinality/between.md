@@ -21,7 +21,7 @@ Derived. `BETWEEN(min, max, ...)` is defined as `AND(AtLeast(min, ...), AtMost(m
 
 ## Arity
 
-Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `MalformedTree` (`BRE0014`).
+Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `MalformedTree` (`TRE0014`).
 
 > [!NOTE]
 > Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `BETWEEN` rejects fewer than two operands, like [ANY](any.md), [ALL](all.md) and [NONE](none.md). `OperatorDefinitions` and the compiler agree on this minimum ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a).
@@ -185,11 +185,11 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`BRE0008`). For two operands and `BETWEEN(1, 3, a, b)`: "BETWEEN's bounds min=1, max=3 are invalid: it must satisfy 0 <= min <= max <= 2 for 2 operand(s)." |
-| The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`BRE0008`). For `BETWEEN(0, 2, a, b)`: "BETWEEN's bounds min=0, max=2 are invalid: the full range 0..2 is always True (a structural constant)." |
-| Fewer than two operands | `MalformedTree` (`BRE0014`): "BETWEEN requires at least 2 operands but found 1." (or "found 0"). |
-| A bound missing or not an integer in the DSL | `SyntaxError` (`BRE0001`): "Expected an integer minimum as BETWEEN's first argument." or "Expected an integer maximum as BETWEEN's second argument." |
-| `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`BRE0014`): "'between' requires integer 'min' and 'max'." |
+| `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`TRE0008`). For two operands and `BETWEEN(1, 3, a, b)`: "BETWEEN's bounds min=1, max=3 are invalid: it must satisfy 0 <= min <= max <= 2 for 2 operand(s)." |
+| The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`TRE0008`). For `BETWEEN(0, 2, a, b)`: "BETWEEN's bounds min=0, max=2 are invalid: the full range 0..2 is always True (a structural constant)." |
+| Fewer than two operands | `MalformedTree` (`TRE0014`): "BETWEEN requires at least 2 operands but found 1." (or "found 0"). |
+| A bound missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer minimum as BETWEEN's first argument." or "Expected an integer maximum as BETWEEN's second argument." |
+| `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`TRE0014`): "'between' requires integer 'min' and 'max'." |
 
 - **The bound rules.** `min` must satisfy `0 <= min <= max <= n`. The whole range `0..n` is rejected because every count lies in it, so the node would be the constant `True`, the same structural-constant reason as for the threshold family.
 - **An empty range is rejected, not evaluated.** `min > max` describes no count at all, so the right result would be `False` for every completion. The composition `AND(AtLeast(min), AtMost(max))` does not give that: with `min > max` and `Unknown` operands it can return `Unknown` where the correct answer is `False` (for `min = 2`, `max = 1` and two `Unknown` operands it gives `Unknown`). The bounds are therefore enforced, and the rewrites build a `BETWEEN` only when `min <= max`.

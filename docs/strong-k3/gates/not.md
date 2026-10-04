@@ -21,7 +21,7 @@ Primitive. `NOT` has no definition in other Operations. It is one of the three c
 
 ## Arity
 
-Exactly one operand. In JSON and YAML any other count is a compile error, `MalformedTree` (`BRE0014`): "'not' requires exactly one operand." In the DSL the operand is whatever follows the prefix, so the count cannot be wrong.
+Exactly one operand. In JSON and YAML any other count is a compile error, `MalformedTree` (`TRE0014`): "'not' requires exactly one operand." In the DSL the operand is whatever follows the prefix, so the count cannot be wrong.
 
 ## Input Domain
 

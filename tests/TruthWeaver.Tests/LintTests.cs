@@ -178,8 +178,8 @@ public sealed class LintTests
 
     private static bool IsLint(Diagnostic diagnostic)
     {
-        return string.CompareOrdinal(diagnostic.Code, "BRE0017") >= 0
-            && string.CompareOrdinal(diagnostic.Code, "BRE0023") <= 0
+        return string.CompareOrdinal(diagnostic.Code, "TRE0017") >= 0
+            && string.CompareOrdinal(diagnostic.Code, "TRE0023") <= 0
             && diagnostic.Severity == DiagnosticSeverity.Info;
     }
 

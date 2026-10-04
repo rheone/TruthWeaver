@@ -21,7 +21,7 @@ Primitive. `OR` has no definition in other Operations. It is one of the three co
 
 ## Arity
 
-Two or more operands. The engine builds one flat node holding all operands, so `a OR b OR c` is a single three-operand `OR`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`BRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. The engine builds one flat node holding all operands, so `a OR b OR c` is a single three-operand `OR`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`): "This operator requires at least 2 operands but found N." See [Edge Cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input Domain
 

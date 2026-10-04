@@ -47,7 +47,7 @@ The choice is always explicit. `Unknown` is a normal value, not an error, and th
 | C# | `decision.Collapse(CollapsePolicy.UnknownAsFalse)`, `decision.Collapse(CollapsePolicy.UnknownAsTrue)` or `decision.Collapse(CollapsePolicy.UnknownIsError)` |
 | DSL, JSON, YAML, `RuleBuilder` | none |
 
-`Collapse` is not part of the rule language ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 14). Rule text that declares one, in the DSL (`BRE0001`) or in JSON and YAML (`BRE0014`), is the compile error "Collapse is not part of the rule language: a rule always yields the three-valued result. Evaluate the rule, then call Decision.Collapse(policy) on the Decision to choose how Unknown is resolved." A rule always yields the raw three-valued result, so a persisted rule cannot change how its own `Unknown` is resolved.
+`Collapse` is not part of the rule language ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 14). Rule text that declares one, in the DSL (`TRE0001`) or in JSON and YAML (`TRE0014`), is the compile error "Collapse is not part of the rule language: a rule always yields the three-valued result. Evaluate the rule, then call Decision.Collapse(policy) on the Decision to choose how Unknown is resolved." A rule always yields the raw three-valued result, so a persisted rule cannot change how its own `Unknown` is resolved.
 
 ### Policy values
 

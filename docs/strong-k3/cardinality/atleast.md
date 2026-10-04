@@ -202,10 +202,10 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 | Input | Diagnostic |
 | --- | --- |
-| `k` below 1 or above n | `InvalidThresholdValue` (`BRE0008`). For two operands and `k` = 3: "AtLeast's threshold k=3 must satisfy 1 <= k <= 2 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
-| No operands | `MalformedTree` (`BRE0014`): "AtLeast requires at least one operand." |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`BRE0001`): "Expected an integer threshold as AtLeast's first argument." |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`BRE0014`): "'atLeast' requires a numeric 'k'." |
+| `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`). For two operands and `k` = 3: "AtLeast's threshold k=3 must satisfy 1 <= k <= 2 for 2 operand(s) (any value outside that range makes the result a structural constant)." |
+| No operands | `MalformedTree` (`TRE0014`): "AtLeast requires at least one operand." |
+| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`): "Expected an integer threshold as AtLeast's first argument." |
+| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`): "'atLeast' requires a numeric 'k'." |
 
 The out-of-range values are rejected because they make the result a constant: `AtLeast(0, ...)` is always `True`; `AtLeast(n + 1, ...)` is always `False`.
 

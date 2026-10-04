@@ -301,7 +301,7 @@ public sealed class TreeDiagnosticsTests
 
         string expected = string.Join(
             "\n",
-            "BRE0014 error at $.op (line 1, column 7): Unknown operator 'annd'.",
+            "TRE0014 error at $.op (line 1, column 7): Unknown operator 'annd'.",
             "  " + json,
             "        ^^^^^^",
             "  Expected: a known operator",
@@ -332,7 +332,7 @@ public sealed class TreeDiagnosticsTests
 
         string text = result.FormatDiagnostics(yaml);
 
-        Assert.StartsWith("BRE0014 error at $.operands[1].op (line 4, column 9): Unknown operator 'orr'.", text);
+        Assert.StartsWith("TRE0014 error at $.operands[1].op (line 4, column 9): Unknown operator 'orr'.", text);
         Assert.Contains("\n    - op: orr\n          ^^^\n", text);
         Assert.Contains("Did you mean: or", text);
     }

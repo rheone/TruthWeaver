@@ -47,8 +47,8 @@ copyright line still reads 2024-2025.
   spans), `DiagnosticFormatter`.
 - `RuleEquivalence.Compare` (equivalent, not equivalent with a counter-example, or undecided) and
   `RuleDiffResult.PreservesMeaning`.
-- Opt-in lint rules through `CompilerOptions.Lints` (`BRE0017` to `BRE0023`).
-- `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `BRE0016` for oversized expansions.
+- Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`).
+- `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `TRE0016` for oversized expansions.
 - `NullBehavior` option on the built-in string, regex and collection predicates; `IEnumerable<RuleBuilder>` overloads
   for the counted operators.
 - Benchmarks for the new operators, rewrites and diagnostics formatting.
@@ -57,6 +57,56 @@ copyright line still reads 2024-2025.
 
 - Every break below. Each one has a migration step in the sections that follow.
 
+### Breaking changes: naming cleanup (ADR-0007)
+
+Public names and diagnostic codes were aligned with the glossary in [ADR-0007](docs/adr/0007-naming-cleanup-and-tre-diagnostic-prefix.md). Behavior is unchanged. No `[Obsolete]` forwarders exist; this section is the migration guide.
+
+#### Diagnostic code prefix `BRE` is now `TRE`
+
+"TRE" stands for "Trinary Rule Expression". Every code keeps its number, so the mapping is a prefix swap. Update any filter, suppression list or string comparison that uses the old prefix.
+
+| Old | New | `DiagnosticCodes` member |
+| --- | --- | --- |
+| `BRE0001` | `TRE0001` | `SyntaxError` |
+| `BRE0002` | `TRE0002` | `UnknownPredicate` |
+| `BRE0003` | `TRE0003` | `MissingArgument` |
+| `BRE0004` | `TRE0004` | `ArgumentTypeMismatch` |
+| `BRE0005` | `TRE0005` | `UnknownArgument` |
+| `BRE0006` | `TRE0006` | `InfixArityViolation` |
+| `BRE0007` | `TRE0007` | `AmbiguousOperatorMixing` |
+| `BRE0008` | `TRE0008` | `InvalidThresholdValue` |
+| `BRE0009` | `TRE0009` | `MaxDepthExceeded` |
+| `BRE0010` | `TRE0010` | `MaxNodeCountExceeded` |
+| `BRE0011` | `TRE0011` | `AnalysisSkippedTooManyTerms` |
+| `BRE0012` | `TRE0012` | `StructuralTautology` |
+| `BRE0013` | `TRE0013` | `StructuralContradiction` |
+| `BRE0014` | `TRE0014` | `MalformedTree` |
+| `BRE0015` | `TRE0015` | `InvalidEscapeSequence` |
+| `BRE0016` | `TRE0016` | `RewriteTooLarge` |
+| `BRE0017` | `TRE0017` | `RedundantInspection` |
+| `BRE0018` | `TRE0018` | `RedundantCoalesce` |
+| `BRE0019` | `TRE0019` | `ConstantIfCondition` |
+| `BRE0020` | `TRE0020` | `IdenticalIfBranches` |
+| `BRE0021` | `TRE0021` | `VacuousCardinality` |
+| `BRE0022` | `TRE0022` | `DuplicateOperands` |
+| `BRE0023` | `TRE0023` | `DoubleNegation` |
+
+Entries elsewhere in this file that name a code were updated to the `TRE` prefix.
+
+#### Type and member renames
+
+<!-- Placeholder: later groups of the naming cleanup fill in this table as each rename lands. -->
+
+| Old | New |
+| --- | --- |
+| `EvaluatedNode` | `TraceNode` |
+| `Decision.EvaluatedTree` | `Decision.TraceTree` |
+| `NodeDescription` (on `TraceEntry` and the tree node) | `Text` |
+| `RuleDescription` | `RuleOutline` / `OutlineNode` |
+| `CompiledRule.Describe()` | `CompiledRule.Outline()` |
+| `EvaluationMode.Default` | `EvaluationMode.ShortCircuit` |
+| `ResolvedValuePredicates` (`resolve`, `TResolved`) | `SelectedValuePredicates` (`select`, `TSelected`) |
+
 ### Breaking changes at a glance
 
 | Area | Change | Section |
@@ -64,7 +114,7 @@ copyright line still reads 2024-2025.
 | Predicates | `IPredicate<T>.EvaluateAsync` returns `ValueTask<TruthValue>`, not `ValueTask<bool>` | [K3 1](#1-predicates-return-truthvalue) |
 | Constants | `ConstantExpression` holds a `TruthValue`; canonical text is `True`/`False`/`Unknown` | [K3 2](#2-constants-are-truthvalue-and-print-capitalised) |
 | Biconditional | `XnorExpression` is `EquivalentExpression`; canonical label and JSON/YAML op are `EQUIVALENT`/`equivalent` | [K3 3](#3-xnor-became-equivalent) |
-| Diagnostics | `DiagnosticCodes.XorArityViolation` is `InfixArityViolation` (code `BRE0006` unchanged) | [K3 4](#4-the-arity-diagnostic-constant-was-renamed) |
+| Diagnostics | `DiagnosticCodes.XorArityViolation` is `InfixArityViolation` (code `TRE0006` unchanged) | [K3 4](#4-the-arity-diagnostic-constant-was-renamed) |
 | Analyzer | Tautology and contradiction diagnostics are now Strong K3 results | [K3 5](#5-tautology-and-contradiction-diagnostics-are-k3-results) |
 | Predicate names | New operator words are reserved in rule text | [K3 6](#6-new-operator-words-are-reserved) |
 | Built-in predicates | `EqualsConfigurable` has no `culture` argument and is ordinal | [K3 7](#7-equalsconfigurable-lost-its-culture-argument) |
@@ -111,9 +161,9 @@ form and the migration step.
 ### 4. The arity diagnostic constant was renamed
 
 - **Old:** `DiagnosticCodes.XorArityViolation`.
-- **New:** `DiagnosticCodes.InfixArityViolation`. The code string `BRE0006` is unchanged. It now also covers `EQUIVALENT`,
+- **New:** `DiagnosticCodes.InfixArityViolation`. The code string `TRE0006` is unchanged. It now also covers `EQUIVALENT`,
   `IMPLIES`, `NAND` and `NOR` given other than two operands.
-- **Migrate:** rename the constant. Comparisons against the string `"BRE0006"` need no change.
+- **Migrate:** rename the constant. Comparisons against the string `"TRE0006"` need no change.
 
 ### 5. Tautology and contradiction diagnostics are K3 results
 
@@ -181,7 +231,7 @@ mid-effort may use them; a consumer starting from `57cf2c9` or `df8f4b9` never s
 | `Collapse(expr, policy)` rule operator; `Decision.Outcome`; `CompiledRule.CollapsePolicy` | `Decision.Collapse(CollapsePolicy)` on the result; the rule language no longer has it and rejects it | A rule cannot carry an evaluation boundary |
 | `Project(expr, True\|False)` rule operator | `Decision.Project(...)` on the result; rejected in rule text | Same reason |
 | `CompiledRule.PrintText(GroupingStyle)` | `CompiledRule.PrintRuleText(GroupingStyle)` | Naming pass |
-| `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()` returning `CompiledRule<TContext>` | Each takes an optional `CompilerOptions` and returns `CompilationResult<TContext>`; read `.CompiledRule`. An over-cap result is a `BRE0016` error with no rule | Size guard (`MaxRewriteNodeCount`) |
+| `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()` returning `CompiledRule<TContext>` | Each takes an optional `CompilerOptions` and returns `CompilationResult<TContext>`; read `.CompiledRule`. An over-cap result is a `TRE0016` error with no rule | Size guard (`MaxRewriteNodeCount`) |
 | JSON/YAML keys `collapse` and `project` | Rejected with a diagnostic | As above |
 | `If` printed with its word label in C-style trees | `If` prints as `?:` in C-style trees | Notation pass |
 
@@ -200,7 +250,7 @@ these breaks landed between that commit and `57cf2c9`:
 - **Canonical text parenthesises mixed `AND`/`OR`** (commit `578cce8`). An `AND` operand under an `OR` (and the reverse)
   is parenthesised even where precedence would make it unambiguous. **Migrate:** regenerate stored canonical text.
 - **String literal escaping** (commit `f3272f1`). `LiteralValue.ToString()` and the canonical printer escape `\` and
-  `"` in string arguments, and an unknown escape such as `\q` in rule text is now diagnostic `BRE0015` instead of the
+  `"` in string arguments, and an unknown escape such as `\q` in rule text is now diagnostic `TRE0015` instead of the
   backslash being dropped silently. **Migrate:** fix rule text that relied on an unrecognised escape.
 
 Other changes in that range were additive (threshold family, `XNOR`/`IFF`, `RuleBuilder`, Guid literals,

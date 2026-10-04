@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted. Supersedes the operator-set, alias, `IMPLIES`, `XOR`/`XNOR`
+Accepted. Diagnostic codes cited here read `TRE`, not `BRE`, after [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place, numbers unchanged).
+
+Supersedes the operator-set, alias, `IMPLIES`, `XOR`/`XNOR`
 and "word operators only" decisions in
 [ADR-0003](0003-rule-syntax-and-serialization.md). Source requirements: `.scratch/2026-10-02-TODO.md`; planning
 spec: `.scratch/k3-conformance/spec.md`.
@@ -224,13 +226,13 @@ the aliases are cheap once the canonical form stays single.
     structure is additive. `SourceSpan.GetLocation(source)` derives the 1-based
     line and column (`SourceLocation`). `DiagnosticFormatter.Format` (one or
     many) and `CompilationResult.FormatDiagnostics(source)` render the plain
-    text: a header (`BRE0001 error at line 1, column 3: ...`), the source line
+    text: a header (`TRE0001 error at line 1, column 3: ...`), the source line
     with a caret underline, then `Expected:`, `Found:` and `Did you mean:` /
     `Hint:` lines. Suggestions use an internal, deterministic
     optimal-string-alignment distance (case-insensitive, cut-off 1/2/3 edits for
     words of up to 4/8/more characters, ties to the ordinally first candidate)
     over the DSL vocabulary and the registry's predicate names. The shared
-    `InfixArityViolation` code (`BRE0006`) is kept for the five binary operators;
+    `InfixArityViolation` code (`TRE0006`) is kept for the five binary operators;
     its `Expected`/`Found` carry the operand counts and the `Suggestion` names
     `PARITY`/`ExactlyOne` for `XOR` and nesting for the others. The
     no-mixing "add parentheses" advice is now also a `Hint` suggestion that
@@ -281,8 +283,8 @@ the aliases are cheap once the canonical form stays single.
     `Simplify` treats a `COALESCE` with a definite operand as definite. A rule that
     still declares a `Project` is rejected, wherever it appears and in any letter
     case, with an error whose message and hint point to `COALESCE` and
-    `Decision.Project`: `SyntaxError` (`BRE0001`) spanning the whole call in DSL
-    text, and `MalformedTree` (`BRE0014`) at the node's path in JSON and YAML.
+    `Decision.Project`: `SyntaxError` (`TRE0001`) spanning the whole call in DSL
+    text, and `MalformedTree` (`TRE0014`) at the node's path in JSON and YAML.
     `Project` stays a reserved word so a predicate cannot shadow it.
 13. **JSON/YAML node shapes** for `If`, inspection, boundaries and the
     `Unknown` literal follow the existing `{"op": ..., "operands": [...]}`
@@ -483,10 +485,10 @@ the aliases are cheap once the canonical form stays single.
     `CompiledRule.CollapsePolicy`, the collapse root of `Describe()` and of the
     evaluated tree, `rule-tree.schema.json`'s `collapseOperatorNode`, the printers'
     and `RuleDiff`'s collapse handling and the `NestedCollapse` diagnostic
-    (`BRE0016`, retired and not reused). A rule that still declares one is rejected,
+    (`TRE0016`, retired and not reused). A rule that still declares one is rejected,
     wherever it appears and in any letter case, with an error whose message and hint
-    point to `Decision.Collapse`: `SyntaxError` (`BRE0001`) spanning the whole call in
-    DSL text, and `MalformedTree` (`BRE0014`) at the node's path in JSON and YAML.
+    point to `Decision.Collapse`: `SyntaxError` (`TRE0001`) spanning the whole call in
+    DSL text, and `MalformedTree` (`TRE0014`) at the node's path in JSON and YAML.
     `Collapse` stays a reserved word so a predicate cannot shadow it.
 15. **Predicates return `TruthValue`.** `IPredicate` and every predicate
     delegate return `TruthValue` (breaking change, pre-1.0). A returned
@@ -506,8 +508,8 @@ the aliases are cheap once the canonical form stays single.
     not a tautology. Implemented in k3-conformance 06 (the interim relabel
     from ticket 05 is superseded). Each term contributes two independent BDD
     variables (is `True`; is `Unknown`), so every variable setting is a valid
-    K3 state. A sub-expression is reported as a tautology (`BRE0012`) when its
-    definitely-true rail is constant true and as a contradiction (`BRE0013`)
+    K3 state. A sub-expression is reported as a tautology (`TRE0012`) when its
+    definitely-true rail is constant true and as a contradiction (`TRE0013`)
     when its possibly-true rail is constant false. The `Structural*` constant
     names and codes are kept for stability. Each later operator slice extends
     the analyzer with its own rail definition.

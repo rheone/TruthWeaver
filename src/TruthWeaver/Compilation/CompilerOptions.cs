@@ -14,7 +14,7 @@ namespace TruthWeaver.Compilation;
 /// <param name="Mode">How an unregistered predicate name is treated.</param>
 /// <param name="MaxRewriteNodeCount">
 /// The maximum node count, counted as a printed tree, that <c>ExpandToPrimitives</c>, <c>ExpandToNand</c> and
-/// <c>ExpandToNor</c> may produce. A rewrite that would exceed it is refused with a <c>BRE0016</c> error diagnostic
+/// <c>ExpandToNor</c> may produce. A rewrite that would exceed it is refused with a <c>TRE0016</c> error diagnostic
 /// instead of being built. Pass a larger value to those methods to allow bigger results.
 /// </param>
 /// <param name="Lints">

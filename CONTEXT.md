@@ -42,7 +42,7 @@ an authorization layer is intentionally out of scope.
 | **Information order** | `Unknown` below both `True` and `False`, which are incomparable. A function is monotone in it when refining an `Unknown` input never changes a definite output; Kleene's strong connectives are exactly the monotone ones. It sits beside the truth order `False < Unknown < True` (`AND` is min, `OR` is max), which is only an implementation aid. |
 | **Project** | A TruthWeaver term (not K3 literature; in relational algebra "projection" means selecting columns) and a method on the result, not part of the rule language: `Decision.Project(unknownAs)` keeps `True`/`False` and replaces only `Unknown` with the chosen definite value, so the answer is never `Unknown`. Inside a rule, `COALESCE(x, True)` / `COALESCE(x, False)` does the same; rule text, JSON and YAML that declare a `Project` are rejected with a diagnostic pointing to `COALESCE` and `Decision.Project`. It is pure, so it never records a **Fault** and never changes `Decision.Result`; `Decision.IsSatisfied` stays fail-closed. |
 | **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify`. The compiler never rewrites on its own. Whitespace tidying of rule text (`RuleText.NormalizeWhitespace`) and depth-varying delimiters (`PrintRuleText(GroupingStyle)`) are text-level formatting, not rewrites. |
-| **Diagnostic** | One structured compile-time problem: a stable code, severity, message, source span (DSL) or `Path` (JSON/YAML), optional expected/found text and a `DiagnosticSuggestion` ("did you mean", or a hint). |
+| **Diagnostic** | One structured compile-time problem: a stable code (`TRE` plus four digits; "Trinary Rule Expression", see [ADR-0007](docs/adr/0007-naming-cleanup-and-tre-diagnostic-prefix.md)), severity, message, source span (DSL) or `Path` (JSON/YAML), optional expected/found text and a `DiagnosticSuggestion` ("did you mean", or a hint). |
 | **TruthValue** | `True` / `False` / `Unknown` — a dedicated three-valued (Kleene) type, never `bool?`. A predicate returns one directly (`ValueTask<TruthValue>`); `Unknown` is never implicitly converted to `True` or `False` outside an explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` / `Decision.Collapse` on the result). `False < Unknown < True` is an implementation aid, not a numeric order of truth. |
 | **Fault** | A predicate failed to produce an answer during one evaluation (exception, timeout, cancellation). Faults become `Unknown`, not thrown exceptions, at the expression level. A predicate that simply returns `Unknown` is a normal answer and records no fault. |
 | **CompiledRule** | The immutable, thread-safe result of compiling a rule's text. Safe to cache and share; compile once, evaluate many times. |
@@ -315,7 +315,7 @@ locking, in-flight evaluations finish against the old rule. Full reasoning:
 [ADR-0002](docs/adr/0002-evaluation-semantics.md).
 
 The analyzer step reasons in Strong K3 too (dual-rail BDD: "definitely true" /
-"possibly true"). It warns (`BRE0012` tautology, `BRE0013` contradiction) only
+"possibly true"). It warns (`TRE0012` tautology, `TRE0013` contradiction) only
 when a sub-expression is `True` (resp. `False`) for every
 `{True, False, Unknown}` assignment of its terms, so `A AND NOT A` and
 `A OR NOT A` are not reported: both are `Unknown` when `A` is.

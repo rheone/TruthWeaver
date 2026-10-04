@@ -21,7 +21,7 @@ Derived. `XOR` is defined from `AND`, `OR` and `NOT` (see [Canonical Form](#cano
 
 ## Arity
 
-Exactly two operands. `XOR` is binary only. A chain with more operands (`a XOR b XOR c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`BRE0006`): "XOR is binary only; found N operands. Use PARITY(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
+Exactly two operands. `XOR` is binary only. A chain with more operands (`a XOR b XOR c`) and a JSON or YAML node with any other operand count are compile errors, `InfixArityViolation` (`TRE0006`): "XOR is binary only; found N operands. Use PARITY(...) for n-ary parity (an odd number of True operands) or ExactlyOne(...) for n-ary 'exactly one'." `RuleBuilder` takes exactly two arguments, so a wrong count cannot be written there. See [Edge Cases](#edge-cases).
 
 ## Input Domain
 
@@ -45,7 +45,7 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: xor` with an `operands:` list of exactly two items |
 | `RuleBuilder` | `RuleBuilder.Xor(left, right)` |
 
-`XOR` is an infix operator with no call form: `XOR(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a XOR b` is `(NOT a) XOR b`, and mixing `XOR` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`BRE0007`). The canonical printer writes the word form.
+`XOR` is an infix operator with no call form: `XOR(a, b)` is a syntax error in the DSL. It sits outside the `NOT` > `AND` > `OR` precedence chain: `NOT` binds tighter, so `NOT a XOR b` is `(NOT a) XOR b`, and mixing `XOR` with `AND`, `OR` or another of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `??` or the ternary at one level without parentheses is the compile error `AmbiguousOperatorMixing` (`TRE0007`). The canonical printer writes the word form.
 
 In this reference the function-call spelling `XOR(a, b)` is only a plain-text convention for tables and canonical forms ([notation](../specification/notation.md#code-conventions)). It is not DSL input.
 
@@ -145,7 +145,7 @@ The upper `AND` is `AND(a, NOT(b))` and the lower one is `AND(NOT(a), b)`.
 
 ## Edge Cases
 
-- **More than two operands.** `a XOR b XOR c` (also with `⊕`, and the same node in JSON or YAML) is rejected with `BRE0006`; the message points at `PARITY(...)` for an odd number of `True` operands and at `ExactlyOne(...)` for exactly one. The two differ from three operands on, see [PARITY](parity.md#parity-versus-exactlyone-versus-xor). A chain is never silently regrouped. Nest explicitly with parentheses, `(a XOR b) XOR c`, which for definite operands is the same as `PARITY(a, b, c)`.
+- **More than two operands.** `a XOR b XOR c` (also with `⊕`, and the same node in JSON or YAML) is rejected with `TRE0006`; the message points at `PARITY(...)` for an odd number of `True` operands and at `ExactlyOne(...)` for exactly one. The two differ from three operands on, see [PARITY](parity.md#parity-versus-exactlyone-versus-xor). A chain is never silently regrouped. Nest explicitly with parentheses, `(a XOR b) XOR c`, which for definite operands is the same as `PARITY(a, b, c)`.
 - **Unknown propagates.** One `Unknown` operand makes the result `Unknown`, whatever the other is.
 - **No short-circuit.** Every operand is evaluated, in the default mode as well as in `EvaluationMode.Exhaustive`, and none is recorded as `NotEvaluated`, so a faulting operand always records its fault.
 - **Faults are Unknown.** A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault` ([ADR-0001](../../adr/0001-kleene-failure-model.md)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:

@@ -24,7 +24,7 @@ Derived. `If` is defined as the multiplexer plus its consensus term (see [Canoni
 
 ## Arity
 
-Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `MalformedTree` (`BRE0014`): "If requires exactly 3 operands (condition, whenTrue, whenFalse) but found N." This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
+Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `MalformedTree` (`TRE0014`): "If requires exactly 3 operands (condition, whenTrue, whenFalse) but found N." This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
 
 ## Input Domain
 
@@ -48,7 +48,7 @@ Each operand is a value in `{T, F, U}`.
 | YAML | `op: if` with an `operands:` list of exactly three items |
 | `RuleBuilder` | `RuleBuilder.If(condition, whenTrue, whenFalse)` |
 
-`If` is a reserved word in any letter case (`if(c, t, f)`), so a predicate cannot be named `If`. The call form has no precedence. The ternary is the lowest-precedence construct and is accepted wherever a full expression is: the rule root, parentheses and call arguments. The condition and each branch must each be a single operand or a parenthesized group: a bare `AND` or `OR` chain, a bare infix expression (`XOR`, `??` and the others) or an unparenthesized nested ternary in any of the three positions is the compile error `AmbiguousOperatorMixing` (`BRE0007`). `(a AND b) ? x : y` is fine; `a AND b ? x : y` and `a ? b ? x : y : z` are not. A lone `?` without its `:`, or the reverse, is a syntax error (`BRE0001`). The canonical printer writes the call form `If(a, b, c)`. The tree printers label the node `If`, except in the C-style tree style, which renders `?:`; the evaluated and description label stays `If`.
+`If` is a reserved word in any letter case (`if(c, t, f)`), so a predicate cannot be named `If`. The call form has no precedence. The ternary is the lowest-precedence construct and is accepted wherever a full expression is: the rule root, parentheses and call arguments. The condition and each branch must each be a single operand or a parenthesized group: a bare `AND` or `OR` chain, a bare infix expression (`XOR`, `??` and the others) or an unparenthesized nested ternary in any of the three positions is the compile error `AmbiguousOperatorMixing` (`TRE0007`). `(a AND b) ? x : y` is fine; `a AND b ? x : y` and `a ? b ? x : y : z` are not. A lone `?` without its `:`, or the reverse, is a syntax error (`TRE0001`). The canonical printer writes the call form `If(a, b, c)`. The tree printers label the node `If`, except in the C-style tree style, which renders `?:`; the evaluated and description label stays `If`.
 
 ## Aliases
 
