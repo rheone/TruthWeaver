@@ -38,7 +38,7 @@ A failure is reported as `path:line: message`.
 | Truth table | `<!-- k3:truth OP [param=value ...] -->` above a table | Operand columns then a result column; all 3^n rows present once and equal to the oracle. |
 | Evaluation table | `<!-- k3:eval OP n=N [param=value ...] -->` above a table | Columns definitely-true count, possibly-true count, result; every `0 <= d <= p <= N` present once and equal to the oracle. |
 | Canonical form | `<!-- k3:canonical OP vars=a,b -->` or `n=2..4` above a fenced block | One function-call expression (for example `OR(NOT(a), b)`, `ATLEAST(k + 1, ...)`; `...` splices all operands) equal to the oracle for every assignment, operand count and valid parameter. |
-| Operation document | Any `docs/strong-k3/<category>/<name>.md` except `README.md` | The name is in the approved inventory ([PROPOSAL.md](strong-k3/PROPOSAL.md) section 4), in the right category directory, with that Kind and a matching `Category:` line; all required sections are present and non-empty; each Truth Table, Evaluation Table or Canonical Form section holds its marker. |
+| Operation document | Any `docs/strong-k3/<category>/<name>.md` except `README.md` | The name is in the approved inventory ([operations.md](strong-k3/specification/operations.md)), in the right category directory, with that Kind and a matching `Category:` line; all required sections are present and non-empty; each Truth Table, Evaluation Table or Canonical Form section holds its marker. |
 
 Cells use `T`, `F`, `U` (or the full words), backticks allowed. `OP` is an inventory name, case-insensitive; the inventory and its
 oracle bindings are in `K3Operation.cs`. Run the checks with

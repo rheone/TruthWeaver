@@ -20,7 +20,7 @@ Reduces an evaluated result to a final outcome under a chosen policy for `Unknow
 
 ## Kind
 
-Primitive. Nothing in the rule language expresses it: `UnknownIsError` is not a truth function, and a `CollapseOutcome` is not a `TruthValue`. It is recorded as Primitive and "result transformation, not a rule node" ([proposal](../PROPOSAL.md#6-project-and-collapse-kind), owner-accepted recommendation A). It therefore has no canonical form; two of its three policies match [Project](project.md), see [Equivalent Forms](#equivalent-forms).
+Primitive. Nothing in the rule language expresses it: `UnknownIsError` is not a truth function, and a `CollapseOutcome` is not a `TruthValue`. It is a result transformation, not a rule node. It therefore has no canonical form; two of its three policies match [Project](project.md), see [Equivalent Forms](#equivalent-forms).
 
 ## Arity
 

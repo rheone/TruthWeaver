@@ -6,7 +6,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
-/// One entry of the approved inventory (docs/strong-k3/PROPOSAL.md section 4) together with the independent oracle that
+/// One entry of the approved inventory (docs/strong-k3/specification/operations.md) together with the independent oracle that
 /// computes it. The oracle is <see cref="K3Oracle"/>, not the engine, so a documented table can disagree with the engine
 /// only because one of them is wrong, never because both share a bug.
 /// </summary>

@@ -23,9 +23,6 @@ Derived. `LessThan(k, ...)` is defined as `AtMost(k - 1, ...)` (see [Canonical F
 
 One or more operands after the integer `k`, with 1 <= k <= n for n operands. These are exactly the values for which `AtMost(k - 1, ...)` is valid, so the definition never leaves the valid range.
 
-> [!NOTE]
-> The engine accepts a single operand for this operation. `OperatorDefinitions` records a minimum of two operands for the threshold family, but the compiler does not enforce it. This reference follows the compiler; the mismatch is tracked in hardening ticket 11 ([PROPOSAL.md](../PROPOSAL.md), open question 10).
-
 ## Input Domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 1 <= k <= n.

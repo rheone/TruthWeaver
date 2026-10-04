@@ -8,7 +8,7 @@ Formulas are LaTeX in GitHub Flavored Markdown: inline as `$...$` and displayed 
 
 - A value is written with `\mathsf`, as $\mathsf{T}$, $\mathsf{F}$, $\mathsf{U}$ in formulas and plain `T`, `F`, `U` in tables.
 - Operation names inside a formula use `\operatorname`, for example $\operatorname{AtLeast}_k$.
-- Anything a reader might type or search for (an Operation's name, a canonical form) is also given as plain text in a code span or fenced block. The plain text is what the test suite verifies; the LaTeX restates it.
+- Anything a reader might type or search for (an Operation's name, a canonical form) is also given as plain text in a code span or fenced block. The plain text is the authoritative form; the LaTeX restates it.
 - A formula never sits inside a table cell with a literal pipe character.
 
 ## Values and variables
@@ -90,4 +90,3 @@ The symbol column is the accepted spelling on input. The canonical printer write
 ## Related
 
 - [values](values.md), [semantics](semantics.md) and [terminology](terminology.md).
-- [docs/doc-examples.md](../../doc-examples.md) describes the checked markers.

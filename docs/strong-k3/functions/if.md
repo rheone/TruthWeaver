@@ -15,8 +15,7 @@ The conditional: `True` selects the first branch, `False` the second, and an `Un
 - Category index: [Functions](README.md)
 - A Strong Kleene connective: it is monotone in the [information order](../specification/values.md#information-order). It is not an external operator, so unlike [COALESCE](coalesce.md) and the [inspections](istrue.md) it is covered by the no-tautology theorem and can be rewritten with `NAND` alone.
 
-> [!NOTE]
-> `If` is a connective that sits in the Functions category because it is ternary and selects a value rather than combining truth values ([proposal](../PROPOSAL.md#5-if-connective-or-function)). The owner accepted the recommendation: Functions, Derived, flagged as a connective. The category stays on the unresolved-questions list for the validation report.
+`If` is a Strong Kleene connective. It is in the Functions category because it has three operands and selects a value instead of combining truth values.
 
 ## Kind
 

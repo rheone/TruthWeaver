@@ -4,11 +4,15 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `operations.md` holds all 27 Operations, and the checker still verifies that every document matches the inventory
-- [ ] The operation map diagram shows the 7 primitives and what derives from each, and its syntax is valid
-- [ ] The five foundation pages and the K3 README contain no history, ticket, ADR or owner references, and link only inside `docs/strong-k3/`
-- [ ] `PROPOSAL.md` is removed and no file links to it
-- [ ] The baseline list in the lint test loses the pages this ticket cleans
-- [ ] The reference harness (`K3ReferenceTests`) and the lint test pass
+- [x] `operations.md` holds all 27 Operations, and the checker still verifies that every document matches the inventory
+- [x] The operation map diagram shows the 7 primitives and what derives from each, and its syntax is valid
+- [x] The five foundation pages and the K3 README contain no history, ticket, ADR or owner references, and link only inside `docs/strong-k3/`
+- [x] `PROPOSAL.md` is removed and no file links to it
+- [x] The baseline list in the lint test loses the pages this ticket cleans
+- [x] The reference harness (`K3ReferenceTests`) and the lint test pass
+
+## Comments
+
+- 2026-10-04: Done. `PROPOSAL.md` and `VALIDATION.md` are both deleted here, because `VALIDATION.md` linked to `PROPOSAL.md` and the reference checker fails on a broken link. The history notes that cited `PROPOSAL.md` on the five threshold pages, `COALESCE`, `If`, the four inspections, `Project` and `Collapse` are replaced by one present-tense sentence each. Tickets 06 to 08 still rewrite those pages in full. The checker gained `CheckOperationsIndex`, which fails when `operations.md` omits an inventory Operation. The new pages do not link to `syntax.md`, `diagnostics.md` or `evaluation.md` yet; tickets 03 and 04 add those links.

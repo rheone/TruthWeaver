@@ -46,6 +46,8 @@ internal static partial class K3ReferenceChecker
 {
     private const string ReferenceRoot = "docs/strong-k3";
 
+    private const string OperationsIndexPath = "docs/strong-k3/specification/operations.md";
+
     private static readonly string[] RequiredSections =
     [
         "Name",
@@ -60,7 +62,7 @@ internal static partial class K3ReferenceChecker
         "Formal Semantics",
     ];
 
-    // The category label each directory's documents must declare (PROPOSAL.md sections 1.3 and open question 1).
+    // The category label each directory's documents must declare (docs/strong-k3/specification/operations.md).
     private static readonly Dictionary<string, string> CategoryLabels = new(StringComparer.Ordinal)
     {
         ["gates"] = "Gates / Operators",
@@ -100,7 +102,33 @@ internal static partial class K3ReferenceChecker
             failures.AddRange(Check(relative, File.ReadAllText(file), Exists, Read));
         }
 
+        failures.AddRange(CheckOperationsIndex(Read(OperationsIndexPath)));
         return failures;
+    }
+
+    /// <summary>Checks that the operations index links the document of every inventory Operation.</summary>
+    /// <param name="markdown">The text of <c>specification/operations.md</c>, or <see langword="null"/> when it does not exist.</param>
+    /// <returns>One message per Operation that the index does not link; empty when the index is complete.</returns>
+    internal static IReadOnlyList<string> CheckOperationsIndex(string? markdown)
+    {
+        if (markdown is null)
+        {
+            return [$"{OperationsIndexPath}: the operations index does not exist"];
+        }
+
+        return
+        [
+            .. K3Operation
+                .Inventory.Values.Where(operation =>
+                    !markdown.Contains(
+                        $"](../{operation.Directory}/{operation.Name.ToLowerInvariant()}.md)",
+                        StringComparison.Ordinal
+                    )
+                )
+                .Select(operation =>
+                    $"{OperationsIndexPath}: the inventory Operation '{operation.Name}' has no link to ../{operation.Directory}/{operation.Name.ToLowerInvariant()}.md"
+                ),
+        ];
     }
 
     /// <summary>Checks one Markdown document.</summary>
@@ -126,6 +154,48 @@ internal static partial class K3ReferenceChecker
         CheckMarkers(lines, inFence, Fail);
         CheckOperationDocument(path, lines, inFence, Fail);
         return failures;
+    }
+
+    /// <summary>Resolves a relative link against a directory; <see langword="null"/> when it climbs out of the repository.</summary>
+    internal static string? Resolve(string directory, string relative)
+    {
+        List<string> segments = [.. directory.Split('/', StringSplitOptions.RemoveEmptyEntries)];
+        foreach (string segment in relative.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment == "..")
+            {
+                if (segments.Count == 0)
+                {
+                    return null;
+                }
+
+                segments.RemoveAt(segments.Count - 1);
+            }
+            else if (segment != ".")
+            {
+                segments.Add(segment);
+            }
+        }
+
+        return string.Join('/', segments);
+    }
+
+    /// <summary>Marks every line that is inside (or is a delimiter of) a fenced code block.</summary>
+    internal static bool[] FenceMap(string[] lines)
+    {
+        bool[] map = new bool[lines.Length];
+        bool open = false;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            bool delimiter = lines[i].TrimStart().StartsWith("```", StringComparison.Ordinal);
+            map[i] = open || delimiter;
+            if (delimiter)
+            {
+                open = !open;
+            }
+        }
+
+        return map;
     }
 
     private static void CheckLinks(
@@ -180,30 +250,6 @@ internal static partial class K3ReferenceChecker
         }
     }
 
-    /// <summary>Resolves a relative link against a directory; <see langword="null"/> when it climbs out of the repository.</summary>
-    internal static string? Resolve(string directory, string relative)
-    {
-        List<string> segments = [.. directory.Split('/', StringSplitOptions.RemoveEmptyEntries)];
-        foreach (string segment in relative.Split('/', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (segment == "..")
-            {
-                if (segments.Count == 0)
-                {
-                    return null;
-                }
-
-                segments.RemoveAt(segments.Count - 1);
-            }
-            else if (segment != ".")
-            {
-                segments.Add(segment);
-            }
-        }
-
-        return string.Join('/', segments);
-    }
-
     /// <summary>The GitHub heading anchors of a document: lower-cased, punctuation dropped, spaces to hyphens, duplicates numbered.</summary>
     private static HashSet<string> Anchors(string markdown)
     {
@@ -239,24 +285,6 @@ internal static partial class K3ReferenceChecker
         }
 
         return anchors;
-    }
-
-    /// <summary>Marks every line that is inside (or is a delimiter of) a fenced code block.</summary>
-    internal static bool[] FenceMap(string[] lines)
-    {
-        bool[] map = new bool[lines.Length];
-        bool open = false;
-        for (int i = 0; i < lines.Length; i++)
-        {
-            bool delimiter = lines[i].TrimStart().StartsWith("```", StringComparison.Ordinal);
-            map[i] = open || delimiter;
-            if (delimiter)
-            {
-                open = !open;
-            }
-        }
-
-        return map;
     }
 
     private static void CheckMarkers(string[] lines, bool[] inFence, Action<int, string> fail)
@@ -604,11 +632,11 @@ internal static partial class K3ReferenceChecker
         K3Operation.Inventory.TryGetValue(stem.ToUpperInvariant(), out K3Operation? operation);
         if (operation is null)
         {
-            fail(1, $"'{stem}' is not in the approved inventory (docs/strong-k3/PROPOSAL.md section 4)");
+            fail(1, $"'{stem}' is not in the inventory (docs/strong-k3/specification/operations.md)");
         }
         else if (operation.Directory != directory)
         {
-            fail(1, $"{operation.Name} belongs in '{operation.Directory}/' per the approved inventory, not '{directory}/'");
+            fail(1, $"{operation.Name} belongs in '{operation.Directory}/' per the inventory, not '{directory}/'");
         }
 
         Dictionary<string, (int Start, int End)> sections = Sections(lines, inFence);

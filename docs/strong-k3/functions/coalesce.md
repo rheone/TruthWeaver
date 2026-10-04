@@ -18,8 +18,7 @@ The first operand that is not `Unknown`: `True` and `False` pass through unchang
 - Category index: [Functions](README.md)
 - An external operator, not a Strong Kleene connective: it is not monotone in the [information order](../specification/values.md#information-order), because it can answer something definite because an operand is `Unknown`. The [no-tautology theorem](../specification/semantics.md#no-tautologies-no-contradictions) and the `NAND`-only and `NOR`-only rewrites do not extend to it ([semantics](../specification/semantics.md#strong-kleene-connectives-and-external-operators)).
 
-> [!NOTE]
-> The category and kind of `COALESCE` were an open question in the approved [proposal](../PROPOSAL.md#3-coalesce-gate-like-but-external): it folds its operands like `OR`, which would suggest the gates. The owner accepted the recommendation, so it is a Functions document, Primitive and flagged external. The classification stays on the unresolved-questions list for the validation report.
+`COALESCE` folds its operands like `OR`, but it can observe `Unknown`. It is therefore a function and an external operator, not a gate.
 
 ## Kind
 

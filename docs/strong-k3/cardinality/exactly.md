@@ -23,9 +23,6 @@ Primitive. `Exactly` has no definition in other Operations. It is one of the thr
 
 One or more operands after the integer `k`, with 0 <= k <= n for n operands. Unlike [AtLeast](atleast.md) and [AtMost](atmost.md), both ends of the count range are allowed: `Exactly(0, ...)` and `Exactly(n, ...)` are meaningful, not constants.
 
-> [!NOTE]
-> The engine accepts a single operand for this operation. `OperatorDefinitions` records a minimum of two operands for the threshold family, but the compiler does not enforce it. This reference follows the compiler; the mismatch is tracked in hardening ticket 11 ([PROPOSAL.md](../PROPOSAL.md), open question 10).
-
 ## Input Domain
 
 Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 <= k <= n.

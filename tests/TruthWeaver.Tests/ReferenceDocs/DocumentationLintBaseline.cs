@@ -13,9 +13,6 @@ internal static class DocumentationLintBaseline
         "README.md",
         "benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md",
         "docs/data-sources.md",
-        "docs/strong-k3/PROPOSAL.md",
-        "docs/strong-k3/README.md",
-        "docs/strong-k3/VALIDATION.md",
         "docs/strong-k3/cardinality/all.md",
         "docs/strong-k3/cardinality/any.md",
         "docs/strong-k3/cardinality/atleast.md",
@@ -43,9 +40,5 @@ internal static class DocumentationLintBaseline
         "docs/strong-k3/gates/or.md",
         "docs/strong-k3/result-transformations/collapse.md",
         "docs/strong-k3/result-transformations/project.md",
-        "docs/strong-k3/specification/notation.md",
-        "docs/strong-k3/specification/semantics.md",
-        "docs/strong-k3/specification/terminology.md",
-        "docs/strong-k3/specification/values.md",
     };
 }

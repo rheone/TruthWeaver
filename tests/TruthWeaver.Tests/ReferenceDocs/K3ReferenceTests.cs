@@ -81,6 +81,34 @@ public sealed class K3ReferenceTests
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
+    /// <summary>An operations index that omits an inventory Operation is reported by name.</summary>
+    [Fact]
+    public void CheckOperationsIndex_IndexMissingAnOperation_ReportsTheOperation_Test()
+    {
+        string index = string.Join(
+            "\n",
+            K3Operation
+                .Inventory.Values.Where(o => o.Name != "NAND")
+                .Select(o => $"[`{o.Name}`](../{o.Directory}/{o.Name.ToLowerInvariant()}.md)")
+        );
+
+        string failure = Assert.Single(K3ReferenceChecker.CheckOperationsIndex(index));
+
+        Assert.Contains("'NAND'", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>A complete operations index produces no failures.</summary>
+    [Fact]
+    public void CheckOperationsIndex_IndexLinkingEveryOperation_ReportsNoFailures_Test()
+    {
+        string index = string.Join(
+            "\n",
+            K3Operation.Inventory.Values.Select(o => $"[`{o.Name}`](../{o.Directory}/{o.Name.ToLowerInvariant()}.md)")
+        );
+
+        Assert.Empty(K3ReferenceChecker.CheckOperationsIndex(index));
+    }
+
     /// <summary>A complete, correct operation document produces no failures.</summary>
     [Fact]
     public void Check_ValidOperationDocument_ReportsNoFailures_Test()

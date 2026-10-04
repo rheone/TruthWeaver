@@ -18,8 +18,7 @@
 - Category index: [Functions](README.md)
 - An external operator, not a Strong Kleene connective: it is not monotone in the [information order](../specification/values.md#information-order), because it answers something definite because its operand is `Unknown`. The [no-tautology theorem](../specification/semantics.md#no-tautologies-no-contradictions) and the `NAND`-only and `NOR`-only rewrites do not extend to it ([semantics](../specification/semantics.md#strong-kleene-connectives-and-external-operators)).
 
-> [!NOTE]
-> The inspections are Derived (they expand to [COALESCE](coalesce.md)) and external, which puts them in Functions rather than next to the connectives ([proposal](../PROPOSAL.md#4-inspections-derived-but-external)). The owner accepted the recommendation. The classification stays on the unresolved-questions list for the validation report.
+The inspections are Derived: each expands to [COALESCE](coalesce.md). They are external operators, so they are in Functions and not next to the connectives.
 
 ## Kind
 

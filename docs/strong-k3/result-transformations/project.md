@@ -20,7 +20,7 @@ Replaces `Unknown` with a chosen definite value and passes `True` and `False` th
 
 ## Kind
 
-Derived. `Project` is `COALESCE(rule, unknownAs)` applied to the result instead of inside the rule (see [Canonical Form](#canonical-form); [ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 12). It is recorded as Derived and "result transformation, not a rule node" ([proposal](../PROPOSAL.md#6-project-and-collapse-kind), owner-accepted recommendation A).
+Derived. `Project` is `COALESCE(rule, unknownAs)` applied to the result instead of inside the rule (see [Canonical Form](#canonical-form)). It is a result transformation, not a rule node.
 
 ## Arity
 

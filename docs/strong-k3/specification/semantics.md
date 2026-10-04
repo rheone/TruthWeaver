@@ -2,7 +2,7 @@
 
 How the Strong Kleene (K3) connectives are defined, how a compound expression is evaluated, and which classical laws survive. Back to the [specification index](README.md). Values and orders are in [values](values.md); symbols in [notation](notation.md).
 
-Every claim below is a table or canonical form checked against the independent oracle on each `dotnet test` (see [docs/doc-examples.md](../../doc-examples.md)), or an identity confirmed by evaluating every assignment of `T`, `F` and `U` to its variables.
+Every table, canonical form and law below holds for every assignment of `T`, `F` and `U` to its variables.
 
 ## The three primitive connectives
 
@@ -87,7 +87,7 @@ For operands $x_1, \dots, x_n$ let $d$ be the number of definite `True` operands
 
 ## Laws that hold
 
-The following hold for every assignment of $\mathsf{T}$, $\mathsf{F}$, $\mathsf{U}$ to $a$, $b$ and $c$. Each was confirmed by evaluating all 27 assignments; De Morgan's laws are also repeated below as canonical forms that the test suite checks.
+The following hold for every assignment of $\mathsf{T}$, $\mathsf{F}$, $\mathsf{U}$ to $a$, $b$ and $c$. Each holds for all 27 assignments. De Morgan's laws are also given below as canonical forms.
 
 | Law | Statement |
 | --- | --- |
@@ -159,7 +159,7 @@ Distributivity of `AND` over `XOR` fails as well: with $a = \mathsf{U}$ and $b =
 
 ### No tautologies, no contradictions
 
-An expression built only from variables and the Strong Kleene connectives (no `True`, `False` or `Unknown` constants) evaluates to `Unknown` when every variable is `Unknown`. So such an expression is never `True` for every assignment (a tautology) and never `False` for every assignment (a contradiction). The argument is by induction: every connective maps all-`Unknown` operands to `Unknown`. This was also confirmed on 20 000 random expressions over `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND` and `NOR`. TruthWeaver's analyzer is built on it: `a OR NOT a` is not reported as a tautology ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 17).
+An expression built only from variables and the Strong Kleene connectives (no `True`, `False` or `Unknown` constants) evaluates to `Unknown` when every variable is `Unknown`. So such an expression is never `True` for every assignment (a tautology) and never `False` for every assignment (a contradiction). The argument is by induction: every connective maps all-`Unknown` operands to `Unknown`. The analyzer relies on this: it does not report `a OR NOT a` as a tautology.
 
 The complement laws hold for definite values only, which is why a rewrite may apply them to constants but not to variables.
 
@@ -181,7 +181,7 @@ OR(AND(c, t), AND(NOT(c), f), AND(t, f))
 
 ## Strong Kleene connectives and external operators
 
-A **Strong Kleene connective** is monotone in the [information order](values.md#information-order): refining an `Unknown` operand never changes a definite result. These are `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operations (`AtLeast`, `AtMost`, `Exactly`, `ExactlyOne`, `GreaterThan`, `LessThan`, `ANY`, `ALL`, `NONE`, `BETWEEN`) and `If` ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 18).
+A **Strong Kleene connective** is monotone in the [information order](values.md#information-order): refining an `Unknown` operand never changes a definite result. These are `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operations (`AtLeast`, `AtMost`, `Exactly`, `ExactlyOne`, `GreaterThan`, `LessThan`, `ANY`, `ALL`, `NONE`, `BETWEEN`) and `If`.
 
 An **external operator** can observe `Unknown` and answer something definite because of it, so it is not monotone. These are `COALESCE` and the four inspections `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`. Their precedents are SQL (`COALESCE`, `IS [NOT] TRUE/FALSE/UNKNOWN`) and Bochvar's external connectives. Each Operation's document states which kind it is.
 
@@ -212,9 +212,9 @@ The no-tautology theorem does not extend to them. `IsKnown(a) OR IsUnknown(a)` i
 
 `NAND` and `NOR` cannot express them. Every circuit built from `NOT`, `AND`, `OR`, `NAND` and `NOR` is monotone, and `COALESCE` is not (see the example in [values](values.md#information-order)).
 
-`Project` and `Collapse` are neither connectives nor external rule operators: they are methods on an evaluated decision, described in [terminology](terminology.md).
+`Project` and `Collapse` are neither connectives nor external rule operators: they are methods on an evaluated decision, described in the [result transformations](../result-transformations/README.md).
 
 ## Related
 
 - [values](values.md), [terminology](terminology.md) and [notation](notation.md) complete the specification.
-- The [reference index](../README.md) lists the Operations that apply these definitions.
+- [operations](operations.md) lists the Operations that apply these definitions.
