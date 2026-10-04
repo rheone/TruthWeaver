@@ -16,6 +16,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly Abstractions = typeof(TruthWeaver.Abstractions.TruthValue).Assembly;
     private static readonly Assembly Core = typeof(RuleCompiler<>).Assembly;
     private static readonly Assembly Yaml = typeof(TruthWeaver.Yaml.YamlRuleExtensions).Assembly;
+    private static readonly Assembly JsonDataSources = typeof(TruthWeaver.DataSources.Json.JsonDataSource).Assembly;
     private static readonly Assembly Predicates = typeof(TruthWeaver.Predicates.StringPredicates).Assembly;
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
 
@@ -46,7 +47,7 @@ public sealed class PackageBoundaryTests
         TestResult result = Types
             .InAssembly(Abstractions)
             .Should()
-            .NotHaveDependencyOnAny([.. CoreNamespaces, "TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.Testing"])
+            .NotHaveDependencyOnAny([.. CoreNamespaces, "TruthWeaver.Yaml", "TruthWeaver.DataSources", "TruthWeaver.Predicates", "TruthWeaver.Testing"])
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
@@ -86,7 +87,38 @@ public sealed class PackageBoundaryTests
         TestResult result = Types
             .InAssembly(Core)
             .Should()
-            .NotHaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.Testing")
+            .NotHaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.DataSources", "TruthWeaver.Predicates", "TruthWeaver.Testing")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    /// <summary>
+    /// ADR-0006 decision 14: the core package takes no JSONPath dependency (and so none of its transitive packages); only
+    /// <c>TruthWeaver.DataSources.Json</c> does.
+    /// </summary>
+    [Fact]
+    public void Core_and_abstractions_reference_no_jsonpath_assembly()
+    {
+        string[] jsonAssemblies = ["JsonPath.Net", "Json.More"];
+
+        foreach (Assembly assembly in new[] { Core, Abstractions })
+        {
+            string[] referenced = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(referenced, name => jsonAssemblies.Contains(name, StringComparer.Ordinal));
+        }
+    }
+
+    /// <summary>The JSON data source package depends on the abstractions alone: never the core compiler, the YAML package or the predicates.</summary>
+    [Fact]
+    public void JsonDataSources_depends_on_abstractions_alone()
+    {
+        TestResult result = Types
+            .InAssembly(JsonDataSources)
+            .That()
+            .ResideInNamespace("TruthWeaver.DataSources.Json")
+            .ShouldNot()
+            .HaveDependencyOnAny([.. CoreNamespaces, "TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.Testing"])
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));

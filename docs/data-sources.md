@@ -6,11 +6,11 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 
 > [!NOTE]
 > This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 03): the
+> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 04): the
 > `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `JsonDataSource`/`YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
-> and `Arg.From`. The proposed names for those (`JsonDataSource.Parse`, `Arg.From`, `GetAsync`, `JsonQueryValidator`,
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
+> and `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `JsonQueryValidator`,
 > `QueryProblem`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
 > `doctest:skip` until ticket 09.
@@ -132,11 +132,23 @@ model as JSON, so one query works against either.
 | `$.orders[?@.id=='A7'].total` | The `total` of the order whose `id` is `A7`. |
 | `$.roles[*]` | Every element of `roles`. |
 
+`JsonDataSource` (package `TruthWeaver.DataSources.Json`) wraps a JSON document. A matched string, number or boolean
+becomes a literal of its natural kind (an integer that fits is an `Int64`, any other number a `Decimal`); a matched
+object, array or `null` has no literal equivalent and is reported as an unsupported type, so select their members
+(`$.roles[*]`) instead.
+
+```csharp
+var user = JsonDataSource.Parse("""{ "minAge": 18, "roles": ["admin", "auditor"] }""");
+var sources = new DataSources { ["user"] = user };
+```
+
 A document often repeats a shape, for example many `orders` with a `total` each. Pin the node you want
 with an index or a filter. A query meant to give one value that matches several is an error, not a guess.
 
 To work with one repeated subtree as its own source, scope it. `ScopeAsync` returns a new source rooted at
-the node the query matches, and queries on it stay absolute within that node:
+the node the query matches, and queries on it stay absolute within that node. The query must match exactly one
+node; scoping is host code, so a query that matches none or several throws `InvalidOperationException`, and one that is
+not valid JSONPath throws `ArgumentException`:
 
 ```csharp
 IDataSource order = await orders.ScopeAsync("$.orders[?@.id=='A7']", cancellationToken);

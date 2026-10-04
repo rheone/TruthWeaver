@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>6f1b7c2e-3a54-4d0e-9b8a-5c2d7e4f1a93</ProjectGuid>
+    <RootNamespace>TruthWeaver.DataSources.Json</RootNamespace>
+    <Description>
+      JSON data source for TruthWeaver variable references (ADR-0006): JsonDataSource answers JSONPath
+      (RFC 9535) queries against a JSON document, and JsonQueryValidator checks a query's syntax at
+      compile time. Isolated in its own package so TruthWeaver itself takes no JSONPath dependency.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonPath.Net" />
+  </ItemGroup>
+</Project>
