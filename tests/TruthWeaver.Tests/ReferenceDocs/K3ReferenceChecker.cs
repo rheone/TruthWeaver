@@ -214,7 +214,10 @@ internal static partial class K3ReferenceChecker
         return map;
     }
 
-    private static void CheckLinks(
+    /// <summary>
+    /// Reports every relative link in a document whose file or heading anchor does not exist; shared with <see cref="DocumentationLint"/>.
+    /// </summary>
+    internal static void CheckLinks(
         string path,
         string[] lines,
         bool[] inFence,

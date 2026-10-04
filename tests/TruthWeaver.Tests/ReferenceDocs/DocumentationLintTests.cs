@@ -97,6 +97,35 @@ public sealed class DocumentationLintTests
         Assert.StartsWith(ReferencePage + ":3:", failure, StringComparison.Ordinal);
     }
 
+    /// <summary>A link to a file that does not exist is reported with its file and line.</summary>
+    [Fact]
+    public void Check_LinkToMissingFile_ReportsFileAndLine_Test()
+    {
+        string failure = Assert.Single(CheckWithFiles("docs/guide.md", "# Guide\n\nSee [it](missing.md).\n"));
+
+        Assert.StartsWith("docs/guide.md:3: broken link 'missing.md'", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>A link to a heading anchor that the target file lacks is reported with its file and line.</summary>
+    [Fact]
+    public void Check_LinkToMissingAnchor_ReportsFileAndLine_Test()
+    {
+        string failure = Assert.Single(
+            CheckWithFiles("docs/guide.md", "# Guide\n\nSee [it](other.md#nowhere).\n", ("docs/other.md", "# Other\n"))
+        );
+
+        Assert.StartsWith("docs/guide.md:3: broken link 'other.md#nowhere'", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>A link to an existing file and heading, and a same-file anchor, report no failures.</summary>
+    [Fact]
+    public void Check_LinksToExistingFileAndAnchor_ReportNoFailures_Test()
+    {
+        const string markdown = "# Guide\n\nSee [it](other.md#other-heading) and [top](#guide).\n";
+
+        Assert.Empty(CheckWithFiles("docs/guide.md", markdown, ("docs/other.md", "# Other heading\n")));
+    }
+
     /// <summary>The in-scope set follows links recursively, stops at the stop list and honors the opt markers.</summary>
     [Fact]
     public void InScope_FollowsLinksStopsAtStopListAndHonorsMarkers_Test()
@@ -160,5 +189,16 @@ public sealed class DocumentationLintTests
         string full = Path.Combine(root, relative);
         System.IO.Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         File.WriteAllText(full, content);
+    }
+
+    private static IReadOnlyList<string> CheckWithFiles(string path, string markdown, params (string Path, string Text)[] files)
+    {
+        Dictionary<string, string> repository = files.ToDictionary(
+            file => file.Path,
+            file => file.Text,
+            StringComparer.Ordinal
+        );
+        repository[path] = markdown;
+        return DocumentationLint.Check(path, markdown, repository.ContainsKey, file => repository.GetValueOrDefault(file));
     }
 }

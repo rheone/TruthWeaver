@@ -4,12 +4,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every in-scope file has its relative links and heading anchors checked
-- [ ] Fixture tests fail on a missing file and on a missing anchor, each with a `file:line` message
-- [ ] The current repository passes, or each broken link found is fixed or listed in the baseline
-- [ ] The K3 checker and the lint share the link code, so the rules cannot drift
-- [ ] `dotnet test` passes
+- [x] Every in-scope file has its relative links and heading anchors checked
+- [x] Fixture tests fail on a missing file and on a missing anchor, each with a `file:line` message
+- [x] The current repository passes, or each broken link found is fixed or listed in the baseline
+- [x] The K3 checker and the lint share the link code, so the rules cannot drift
+- [x] `dotnet test` passes
 
 See the [plan](../readme-breakdown-plan.md).
+
+## Comments
+
+- 2026-10-04: `DocumentationLint.Check` now calls the K3 checker's `CheckLinks` (made `internal`), so both share one rule set. `CheckTree` reads the real repository and reports every broken relative link and missing heading anchor as `file:line`. Three fixture tests cover a missing file, a missing anchor and valid links. The repository had no broken link in a non-baseline file; baseline files are still skipped. The two-argument `Check` assumes every link resolves, for the rule tests that need no repository.

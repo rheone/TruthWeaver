@@ -104,10 +104,23 @@ internal static partial class DocumentationLint
     internal static IReadOnlyList<string> CheckTree(string repositoryRoot, IReadOnlySet<string> baseline)
     {
         IReadOnlyList<string> inScope = InScope(repositoryRoot);
+
+        bool Exists(string path)
+        {
+            string full = Path.Combine(repositoryRoot, path);
+            return File.Exists(full) || Directory.Exists(full);
+        }
+
+        string? Read(string path)
+        {
+            string full = Path.Combine(repositoryRoot, path);
+            return File.Exists(full) ? File.ReadAllText(full) : null;
+        }
+
         List<string> failures = [];
         foreach (string path in inScope)
         {
-            IReadOnlyList<string> violations = Check(path, File.ReadAllText(Path.Combine(repositoryRoot, path)));
+            IReadOnlyList<string> violations = Check(path, File.ReadAllText(Path.Combine(repositoryRoot, path)), Exists, Read);
             if (!baseline.Contains(path))
             {
                 failures.AddRange(violations);
@@ -132,8 +145,15 @@ internal static partial class DocumentationLint
     /// <summary>Checks one Markdown document against the standard.</summary>
     /// <param name="path">The document's repository-relative path, with <c>/</c> separators.</param>
     /// <param name="markdown">The document text.</param>
+    /// <param name="exists">Whether a repository-relative path names an existing file or directory.</param>
+    /// <param name="read">Reads a repository-relative Markdown file, or returns <see langword="null"/> when it does not exist.</param>
     /// <returns>One <c>path:line: message</c> per violation; empty when the document is clean.</returns>
-    internal static IReadOnlyList<string> Check(string path, string markdown)
+    internal static IReadOnlyList<string> Check(
+        string path,
+        string markdown,
+        Func<string, bool> exists,
+        Func<string, string?> read
+    )
     {
         List<string> failures = [];
         string[] lines = SplitLines(markdown);
@@ -141,6 +161,15 @@ internal static partial class DocumentationLint
         bool agentFile = AgentFiles.Contains(path, StringComparer.Ordinal);
         bool navigationFile = NavigationFiles.Contains(path, StringComparer.Ordinal);
         string directory = DirectoryOf(path);
+
+        K3ReferenceChecker.CheckLinks(
+            path,
+            lines,
+            inFence,
+            exists,
+            read,
+            (line, message) => failures.Add($"{path}:{line}: {message}")
+        );
 
         for (int i = 0; i < lines.Length; i++)
         {
@@ -191,6 +220,12 @@ internal static partial class DocumentationLint
         }
 
         return failures;
+    }
+
+    /// <summary>Checks one Markdown document with every relative link assumed to resolve; the link rules need the repository.</summary>
+    internal static IReadOnlyList<string> Check(string path, string markdown)
+    {
+        return Check(path, markdown, static _ => true, static _ => null);
     }
 
     private static bool InStopList(string path)
