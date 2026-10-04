@@ -62,6 +62,10 @@ copyright line reads 2026.
   DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
   throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators, trace redaction options and `RuleBuilder` support follow.
+- `YamlDataSource` in `TruthWeaver.Yaml` (data-sources 06): `Parse(yaml)` and `Create(YamlNode)` read a YAML document into the JSON data
+  model (quoted scalars are strings, plain scalars follow the core schema limited to JSON's types, an alias is a copy of its
+  anchor) and answer queries with the JSON package's JSONPath engine, so one query gives the same result against equivalent JSON
+  and YAML and `JsonQueryValidator` serves YAML sources too. `TruthWeaver.Yaml` now references `TruthWeaver.DataSources.Json`.
 - Compile-time query validation (data-sources 05): `IQueryValidator` and `QueryProblem` in `TruthWeaver.Abstractions`; a source name
   can be declared with a validator (`DataSourceDeclarations.Add(name, validator)` or `declarations[name] = validator`), and a
   malformed query is then a `TRE0025` error (`DiagnosticCodes.MalformedDataQuery`) at the query string, in the DSL, JSON and YAML.

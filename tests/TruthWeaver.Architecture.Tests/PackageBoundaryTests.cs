@@ -124,6 +124,20 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>
+    /// ADR-0006 decision 14: the YAML data source reuses the JSON package's query engine, so the YAML package references that
+    /// package and takes no JSONPath library of its own.
+    /// </summary>
+    [Fact]
+    public void Yaml_references_the_json_data_source_package_but_not_the_jsonpath_library_directly()
+    {
+        string[] referenced = [.. Yaml.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.DataSources.Json", referenced);
+        Assert.DoesNotContain("JsonPath.Net", referenced);
+        Assert.DoesNotContain("Json.More", referenced);
+    }
+
     [Fact]
     public void Yaml_has_no_dependency_on_predicates_or_testing()
     {

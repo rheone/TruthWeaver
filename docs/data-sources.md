@@ -6,10 +6,10 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 
 > [!NOTE]
 > This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 05): the
+> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 06): the
 > `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `YamlDataSource`, `EvaluationOptions.IncludeResolvedValues`
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `EvaluationOptions.IncludeResolvedValues`
 > and `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
 > `doctest:skip` until ticket 09.
@@ -150,6 +150,14 @@ object, array or `null` has no literal equivalent and is reported as an unsuppor
 ```csharp
 var user = JsonDataSource.Parse("""{ "minAge": 18, "roles": ["admin", "auditor"] }""");
 var sources = new DataSources { ["user"] = user };
+```
+
+`YamlDataSource` (package `TruthWeaver.Yaml`) does the same for YAML, so the same query gives the same result against
+equivalent documents. A quoted scalar is a string (`"18"`), a plain one follows the core schema limited to JSON's types
+(`18` is a number, `yes` and `2026-10-03` stay strings), and `JsonQueryValidator` validates its queries too:
+
+```csharp
+var user = YamlDataSource.Parse("minAge: 18\nroles: [admin, auditor]\n");
 ```
 
 A document often repeats a shape, for example many `orders` with a `total` each. Pin the node you want
