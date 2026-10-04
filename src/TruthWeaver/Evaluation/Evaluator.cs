@@ -562,7 +562,7 @@ internal sealed class Evaluator<TContext>(
 
     private async ValueTask<TruthValue> InvokeAsync(TermIdentity identity)
     {
-        if (!this.registry.TryGet(identity.PredicateName, out PredicateDescriptor<TContext>? descriptor) || descriptor is null)
+        if (!this.registry.TryGet(identity.PredicateName, out PredicateDescriptor<TContext>? descriptor))
         {
             // Defensive only: a successfully Strict-mode-compiled rule cannot reference an
             // unregistered predicate, so this path is unreachable in practice.

@@ -1,5 +1,6 @@
 namespace TruthWeaver.Rewriting;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
@@ -60,7 +61,12 @@ internal static class Compressor
         }
 
         /// <summary><c>XOR(l, r) = (l AND NOT r) OR (NOT l AND r)</c>.</summary>
-        private static bool IsXor(Expression first, Expression second, out Expression? left, out Expression? right)
+        private static bool IsXor(
+            Expression first,
+            Expression second,
+            [NotNullWhen(true)] out Expression? left,
+            [NotNullWhen(true)] out Expression? right
+        )
         {
             left = null;
             right = null;
@@ -82,7 +88,12 @@ internal static class Compressor
         }
 
         /// <summary><c>EQUIVALENT(l, r) = (l AND r) OR (NOT l AND NOT r)</c>.</summary>
-        private static bool IsEquivalent(Expression first, Expression second, out Expression? left, out Expression? right)
+        private static bool IsEquivalent(
+            Expression first,
+            Expression second,
+            [NotNullWhen(true)] out Expression? left,
+            [NotNullWhen(true)] out Expression? right
+        )
         {
             left = null;
             right = null;
@@ -106,9 +117,9 @@ internal static class Compressor
         /// <summary><c>If(c, t, f) = (c AND t) OR (NOT c AND f) OR (t AND f)</c> (the multiplexer plus the consensus term).</summary>
         private static bool IsIf(
             EquatableArray<Expression> ops,
-            out Expression? condition,
-            out Expression? whenTrue,
-            out Expression? whenFalse
+            [NotNullWhen(true)] out Expression? condition,
+            [NotNullWhen(true)] out Expression? whenTrue,
+            [NotNullWhen(true)] out Expression? whenFalse
         )
         {
             condition = null;
@@ -137,7 +148,12 @@ internal static class Compressor
         /// <c>COALESCE(x, fallback)</c> beside <c>COALESCE(NOT x, fallback)</c>: the two halves of <c>IsKnown</c> (fallback
         /// <c>False</c>) and <c>IsUnknown</c> (fallback <c>True</c>).
         /// </summary>
-        private static bool IsInspectionPair(Expression first, Expression second, bool falseFallback, out Expression? operand)
+        private static bool IsInspectionPair(
+            Expression first,
+            Expression second,
+            bool falseFallback,
+            [NotNullWhen(true)] out Expression? operand
+        )
         {
             operand = null;
             TruthValue fallback = falseFallback ? TruthValue.False : TruthValue.True;
@@ -215,7 +231,7 @@ internal static class Compressor
                 // XOR and EQUIVALENT expand to a two-term OR of two-term ANDs (see PrimitiveExpander); OR is commutative.
                 if (IsXor(ops[0], ops[1], out Expression? xl, out Expression? xr) || IsXor(ops[1], ops[0], out xl, out xr))
                 {
-                    return new XorExpression(this.Visit(xl!), this.Visit(xr!));
+                    return new XorExpression(this.Visit(xl), this.Visit(xr));
                 }
 
                 if (
@@ -223,7 +239,7 @@ internal static class Compressor
                     || IsEquivalent(ops[1], ops[0], out el, out er)
                 )
                 {
-                    return new EquivalentExpression(this.Visit(el!), this.Visit(er!));
+                    return new EquivalentExpression(this.Visit(el), this.Visit(er));
                 }
 
                 // IsKnown(x) = COALESCE(x, False) OR COALESCE(NOT x, False).
@@ -232,7 +248,7 @@ internal static class Compressor
                     || IsInspectionPair(ops[1], ops[0], true, out known)
                 )
                 {
-                    return new InspectionExpression(InspectionKind.IsKnown, this.Visit(known!));
+                    return new InspectionExpression(InspectionKind.IsKnown, this.Visit(known));
                 }
 
                 // NOT a OR b is a implication; with both sides negated it is a NAND (De Morgan holds in K3).
@@ -254,7 +270,7 @@ internal static class Compressor
 
             if (ops.Count == 3 && IsIf(ops, out Expression? c, out Expression? t, out Expression? f))
             {
-                return new IfExpression(this.Visit(c!), this.Visit(t!), this.Visit(f!));
+                return new IfExpression(this.Visit(c), this.Visit(t), this.Visit(f));
             }
 
             return IsParity(ops, out EquatableArray<Expression> parityOperands)
@@ -278,7 +294,7 @@ internal static class Compressor
                     || IsInspectionPair(ops[1], ops[0], false, out unknown)
                 )
                 {
-                    return new InspectionExpression(InspectionKind.IsUnknown, this.Visit(unknown!));
+                    return new InspectionExpression(InspectionKind.IsUnknown, this.Visit(unknown));
                 }
             }
 

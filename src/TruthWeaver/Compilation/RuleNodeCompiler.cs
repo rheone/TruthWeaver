@@ -535,7 +535,7 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression BuildTerm(TermNode node)
     {
-        if (!this.registry.TryGet(node.PredicateName, out PredicateDescriptor<TContext>? descriptor) || descriptor is null)
+        if (!this.registry.TryGet(node.PredicateName, out PredicateDescriptor<TContext>? descriptor))
         {
             if (this.options.Mode == CompilationMode.Lenient)
             {

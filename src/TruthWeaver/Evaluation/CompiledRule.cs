@@ -363,7 +363,7 @@ public sealed class CompiledRule<TContext>
         if (node is TermExpression term)
         {
             (string label, string description) = registry.TryGetSchema(term.Identity.PredicateName, out PredicateSchema? schema)
-                ? (schema!.Label, schema.Description)
+                ? (schema.Label, schema.Description)
                 : (term.Identity.PredicateName, "An unregistered predicate (CompilationMode.Lenient).");
             return new OutlineNode(label, description, [], ArgumentText(term.Identity));
         }

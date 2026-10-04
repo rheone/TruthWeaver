@@ -1,5 +1,6 @@
 namespace TruthWeaver.Registry;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -36,11 +37,11 @@ public sealed class PredicateRegistry<TContext>
     /// <param name="name">The predicate name as written in rule text.</param>
     /// <param name="schema">The matching schema, if found.</param>
     /// <returns><see langword="true"/> if a predicate with this name (case-insensitive) is registered.</returns>
-    public bool TryGetSchema(string name, out PredicateSchema? schema)
+    public bool TryGetSchema(string name, [NotNullWhen(true)] out PredicateSchema? schema)
     {
         if (this.TryGet(name, out PredicateDescriptor<TContext>? descriptor))
         {
-            schema = descriptor!.Schema;
+            schema = descriptor.Schema;
             return true;
         }
 
@@ -52,7 +53,7 @@ public sealed class PredicateRegistry<TContext>
     /// <param name="name">The predicate name as written in rule text.</param>
     /// <param name="descriptor">The matching descriptor, if found.</param>
     /// <returns><see langword="true"/> if a predicate with this name (case-insensitive) is registered.</returns>
-    internal bool TryGet(string name, out PredicateDescriptor<TContext>? descriptor)
+    internal bool TryGet(string name, [NotNullWhen(true)] out PredicateDescriptor<TContext>? descriptor)
     {
         return this.descriptorsByName.TryGetValue(name.ToUpperInvariant(), out descriptor);
     }
