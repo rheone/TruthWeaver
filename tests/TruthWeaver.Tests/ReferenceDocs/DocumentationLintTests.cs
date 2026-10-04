@@ -156,6 +156,24 @@ public sealed class DocumentationLintTests
         }
     }
 
+    /// <summary>A root file that links to a <c>docs/agents/</c> file does not pull that file into scope.</summary>
+    [Fact]
+    public void InScope_LinkIntoDocsAgents_DoesNotPullFileIntoScope_Test()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "tw-lint-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Write(root, "README.md", "[agents](docs/agents/domain.md)");
+            Write(root, "docs/agents/domain.md", "agent file");
+
+            Assert.Equal(["README.md"], DocumentationLint.InScope(root));
+        }
+        finally
+        {
+            System.IO.Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>A baseline file is skipped while it breaks a rule, and reported once it is clean.</summary>
     [Fact]
     public void CheckTree_BaselineFile_IsSkippedUntilCleanThenReported_Test()

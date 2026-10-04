@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 /// <remarks>
 /// <para>
 /// The in-scope set is every <c>*.md</c> in the repository root except <c>CHANGELOG.md</c>, every <c>README.md</c> outside the
-/// stop list, and every Markdown file those link to, followed recursively. The stop list is <c>docs/adr/</c>,
+/// stop list, and every Markdown file those link to, followed recursively. The stop list is <c>docs/adr/</c>, <c>docs/agents/</c>,
 /// <c>.scratch/</c>, <c>.agents/</c>, <c>.claude/</c> and <c>CHANGELOG.md</c>: history, work-tracking, tool and third-party
 /// files that describe the past by design. A line <c>&lt;!-- docs-lint: on --&gt;</c> opts a file in wherever it is, and
 /// <c>&lt;!-- docs-lint: off --&gt;</c> opts a file out.
@@ -28,7 +28,7 @@ internal static partial class DocumentationLint
 {
     private const string ReferencePrefix = "docs/strong-k3/";
 
-    private static readonly string[] StopList = ["docs/adr/", ".scratch/", ".agents/", ".claude/"];
+    private static readonly string[] StopList = ["docs/adr/", "docs/agents/", ".scratch/", ".agents/", ".claude/"];
 
     // Directories that hold build output, caches or tool state, never project documentation.
     private static readonly string[] NonSourceSegments = ["bin", "obj", "node_modules", ".git", ".codegraph", ".vs"];
