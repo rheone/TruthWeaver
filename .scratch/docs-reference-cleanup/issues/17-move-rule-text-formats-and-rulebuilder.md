@@ -4,13 +4,17 @@
 
 **Blocked by:** 16
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The three new pages follow the standard and are not on the baseline
-- [ ] `docs/rule-text.md` is added to the doctest list, and its EBNF block keeps its `doctest:skip` marker
-- [ ] Every statement from the deleted Operators section is either on a K3 page, on one of the new pages, or dropped as a duplicate; none is lost
-- [ ] The README table of contents and every anchor that pointed into the Operators section are updated
-- [ ] No link is broken, and the README doctests still pass
-- [ ] `dotnet test` passes
+- [x] The three new pages follow the standard and are not on the baseline
+- [x] `docs/rule-text.md` is added to the doctest list, and its EBNF block keeps its `doctest:skip` marker
+- [x] Every statement from the deleted Operators section is either on a K3 page, on one of the new pages, or dropped as a duplicate; none is lost
+- [x] The README table of contents and every anchor that pointed into the Operators section are updated
+- [x] No link is broken, and the README doctests still pass
+- [x] `dotnet test` passes
 
 See the [plan](../readme-breakdown-plan.md).
+
+## Comments
+
+2026-10-04: Created `docs/rule-text.md`, `docs/rule-formats.md` and `docs/rulebuilder.md`; deleted the README Operators section and replaced it with a short "Writing rules" section of links. No statement was added to a K3 page. The delimiter diagnostic messages, the grammar context rules, the case rules and the `CStyle` ternary label went to `docs/rule-text.md`. Dropped as obsolete: the `UnknownRequiresResolution` remark. `CONTEXT.md` now links to `docs/rule-text.md#grammar`. Doctests registered for the three new pages.

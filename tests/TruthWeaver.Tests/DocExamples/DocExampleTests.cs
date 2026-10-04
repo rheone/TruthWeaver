@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tests.DocExamples;
 
 /// <summary>
-/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md and docs/packages.md are checked on every build by <see cref="DocExampleChecker"/>, so a
+/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md, docs/packages.md, docs/rule-text.md, docs/rule-formats.md and docs/rulebuilder.md are checked on every build by <see cref="DocExampleChecker"/>, so a
 /// change that breaks a documented example, or changes documented output, fails the build. The checker itself is proven to
 /// fail on a deliberately broken example. The procedure for adding an example is in docs/doc-examples.md.
 /// </summary>
@@ -17,6 +17,9 @@ public sealed class DocExampleTests
     [InlineData("docs/data-sources.md")]
     [InlineData("docs/architecture.md")]
     [InlineData("docs/packages.md")]
+    [InlineData("docs/rule-text.md")]
+    [InlineData("docs/rule-formats.md")]
+    [InlineData("docs/rulebuilder.md")]
     public void Check_DocumentationFile_ReportsNoFailures_Test(string fileName)
     {
         string markdown = File.ReadAllText(Path.Combine(DocExampleChecker.FindRepositoryRoot(), fileName));

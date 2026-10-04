@@ -20,30 +20,15 @@ anything else.
 - [Packages](#packages)
 - [Architecture](#architecture)
 - [Features](#features)
-- [Operators](#operators)
-  - [Symbol notation](#symbol-notation)
-  - [Grammar](#grammar)
-  - [Order of operations](#order-of-operations)
-  - [Grouping delimiters](#grouping-delimiters)
-  - [Whitespace](#whitespace)
-  - [Binary vs. unary operators](#binary-vs-unary-operators)
-  - [All operators](#all-operators)
-  - [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators)
-  - [Collapse: the final boundary](#collapse-the-final-boundary)
+- [Writing rules](#writing-rules)
 - [Rewriting rules](#rewriting-rules)
   - [Expand to primitives](#expand-to-primitives)
   - [NAND-only and NOR-only](#nand-only-and-nor-only)
   - [Compress to derived operators](#compress-to-derived-operators)
   - [Canonical form](#canonical-form)
   - [Simplify](#simplify)
-- [Choosing a rule format](#choosing-a-rule-format)
 - [Predicate types](#predicate-types)
 - [Examples](#examples)
-- [Building rules programmatically](#building-rules-programmatically)
-  - [Converting between DSL, JSON, and YAML](#converting-between-dsl-json-and-yaml)
-  - [`RuleBuilder` reference](#rulebuilder-reference)
-  - [Outlining a compiled rule](#outlining-a-compiled-rule)
-  - [Rendering a rule as a diagram](#rendering-a-rule-as-a-diagram)
 - [Reading diagnostics](#reading-diagnostics)
   - [JSON and YAML rules](#json-and-yaml-rules)
 - [Benchmarks](#benchmarks)
@@ -70,7 +55,7 @@ engine, not what the engine itself is.
 | **Expression** | The three-valued tree — operators over terms, constants and sub-expressions. |
 | **Predicate** | A registered, reusable implementation, e.g. `hasTopping`, `lovesPineapple`. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")` — the tree's leaf node. |
-| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `PARITY` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Project` and `Collapse` are not part of the rule language: they are methods on the result (`Decision.Project(unknownAs)` and `Decision.Collapse(policy)`, see [Collapse](#collapse-the-final-boundary)); inside a rule use `COALESCE(x, True)` / `COALESCE(x, False)`. See [Operators](#operators) below. |
+| **Operator** | `AND` `OR` `NOT` `XOR` `EQUIVALENT` `IMPLIES` `NAND` `NOR` `PARITY` `ANY` `ALL` `NONE` `BETWEEN(min, max)` `COALESCE` `If` `IsTrue` `IsFalse` `IsUnknown` `IsKnown` `ExactlyOne` and the threshold family (`AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`), plus the constants `True`/`False`/`Unknown`. Operators are case-insensitive and most have a symbol spelling (`&&`, `||`, `!`, `∧`, `∨`, `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??`, `? :`). `Project` and `Collapse` are not part of the rule language: they are methods on the result (`Decision.Project(unknownAs)` and `Decision.Collapse(policy)`, see [Collapse](docs/strong-k3/result-transformations/collapse.md)); inside a rule use `COALESCE(x, True)` / `COALESCE(x, False)`. See [Operations](docs/strong-k3/specification/operations.md). |
 | **Decision** | The evaluation result: a `TruthValue` plus any faults, and optionally a trace. `IsSatisfied` is fail-closed: only `True` is satisfied. |
 
 Full vocabulary and the predicate-author contract: [CONTEXT.md](CONTEXT.md).
@@ -178,13 +163,13 @@ The source layout, the compilation pipeline and the evaluation flow are in [Arch
   `IsKnown`) are external operators, not K3 connectives. `Unknown` is also a
   constant. Operators are case-insensitive, have symbol spellings, and every
   notation compiles to the same tree with one canonical form. See
-  [Operators](#operators) and
-  [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators).
+  [Operations](docs/strong-k3/specification/operations.md) and
+  [Strong Kleene connectives and external operators](docs/strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators).
 - **Explicit boundaries.** `COALESCE(x, True|False)` resolves `Unknown` anywhere
   inside a rule; `Decision.Project(unknownAs)` and `Decision.Collapse(policy)` turn
   the rule's three-valued result into a definite value or a two-valued answer at the
   call site, and are not part of the rule. See
-  [Collapse](#collapse-the-final-boundary).
+  [Result transformations](docs/strong-k3/result-transformations/README.md).
 - **Rule rewriting.** Opt-in, value-preserving transforms return a new rule:
   expand to primitives, to NAND-only or NOR-only, compress back to derived
   operators, canonicalize, simplify, plus whitespace normalization. See
@@ -239,7 +224,7 @@ The source layout, the compilation pipeline and the evaluation flow are in [Arch
 - **Diagram rendering.** A compiled rule renders as a Mermaid flowchart or
   an indented plain-text tree, optionally colored by one evaluation's
   result and short-circuit path — see
-  [Rendering a rule as a diagram](#rendering-a-rule-as-a-diagram). Entry
+  [Rendering a rule as a diagram](docs/rulebuilder.md#rendering-a-rule-as-a-diagram). Entry
   points: [`MermaidTreePrinter`](src/TruthWeaver/Printing/MermaidTreePrinter.cs),
   [`PlainTextTreePrinter`](src/TruthWeaver/Printing/PlainTextTreePrinter.cs).
 - **Ready-made predicates.** `TruthWeaver.Predicates` ships generic
@@ -252,319 +237,14 @@ The source layout, the compilation pipeline and the evaluation flow are in [Arch
   `IPredicate<TContext>` per test. Entry point:
   [`src/TruthWeaver.Testing`](src/TruthWeaver.Testing).
 
-## Operators
+## Writing rules
 
-### Symbol notation
+Rule text, JSON, YAML and `RuleBuilder` all compile to the same immutable tree.
 
-Every existing operator can also be written with a symbol. Symbols compile to
-exactly the same tree as the named operator, so notation is a style choice and
-never a semantic one; the canonical printer (and persisted DSL text) always
-prints the named form.
-
-| Named | Symbols |
-| --- | --- |
-| `AND` | `&&`, `∧` |
-| `OR` | `\|\|`, `∨` |
-| `NOT` | `!`, `¬` |
-| `XOR` | `⊕`, `⊻` |
-| `IMPLIES` | `→`, `⇒` |
-| `NAND` | `↑`, `⊼` |
-| `NOR` | `↓`, `⊽` |
-| `COALESCE` | `??` (infix; the word `COALESCE` is the function-call form only) |
-| `If` | `c ? t : f` (ternary; `If(c, t, f)` is the function-call form; the `CStyle` tree printers label it `?:`, the other styles `If`) |
-| `EQUIVALENT` | `↔`, `⇔` (words `IFF` and the legacy `XNOR` are accepted too) |
-
-Symbols and words mix freely (`a && b OR c`) and follow the same precedence
-and no-mixing rules as the named operators. A lone `&` or `|` is a syntax error; a lone `?` is only valid as the ternary's `?`.
-
-### Grammar
-
-The whole DSL in EBNF (`{ x }` is zero or more, `[ x ]` optional, `|` a choice). Keywords and
-constants are case-insensitive; a term name may not be a reserved word.
-
-<!-- doctest:skip grammar notation, not a rule -->
-```ebnf
-rule        = expression ;
-
-expression  = or_expr [ "?" or_expr ":" or_expr ] ;          (* ternary = If *)
-or_expr     = and_expr { ( "OR" | "||" | "∨" ) and_expr } ;
-and_expr    = infix_expr { ( "AND" | "&&" | "∧" ) infix_expr } ;
-infix_expr  = not_expr [ infix_op not_expr ]                 (* at most one *)
-            | not_expr { "??" not_expr } ;                   (* COALESCE chain *)
-infix_op    = "XOR" | "⊕" | "⊻" | "EQUIVALENT" | "IFF" | "XNOR" | "↔" | "⇔"
-            | "IMPLIES" | "→" | "⇒" | "NAND" | "↑" | "⊼" | "NOR" | "↓" | "⊽" ;
-not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
-
-primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"
-            | constant | call | term ;
-constant    = "True" | "False" | "Unknown" ;
-call        = list_op "(" expression { "," expression } ")"
-            | threshold "(" integer "," expression { "," expression } ")"
-            | "BETWEEN" "(" integer "," integer "," expression { "," expression } ")"
-            | "If" "(" expression "," expression "," expression ")"
-            | inspection "(" expression ")" ;
-list_op     = "PARITY" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
-threshold   = "AtLeast" | "AtMost" | "GreaterThan" | "LessThan" | "Exactly" ;
-inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
-
-term        = identifier [ "(" [ argument { "," argument } ] ")" ] ;
-argument    = identifier ":" literal ;
-literal     = string | number | "true" | "false" | "[" [ literal { "," literal } ] "]" ;
-```
-
-Two rules sit outside the grammar because they are context rules, not syntax:
-
-- **No implicit mixing.** An `infix_op` expression (or `??`, or the ternary) may not sit next to
-  `AND`/`OR`, another infix operator or a nested ternary at the same level without parentheses
-  (`AmbiguousOperatorMixing`); see [Order of operations](#order-of-operations).
-- **`NXOR` is not part of the language.** It was renamed `PARITY` (`NXOR` conventionally means negated
-  `XOR`, which is `EQUIVALENT`, the opposite of n-ary parity). The old spelling is rejected in the DSL,
-  JSON and YAML with a "did you mean `PARITY`" suggestion.
-- **`Collapse` is not part of the language.** It is rejected wherever it appears, with a diagnostic
-  that points to `Decision.Collapse`. Operand counts, threshold bounds and argument schemas are
-  checked after parsing, as diagnostics.
-
-Precedence, tightest first: grouping, `NOT`, `AND`, `OR`. Everything else is a one-step infix form
-that needs parentheses to combine.
-
-### Order of operations
-
-Precedence governs *parsing* the DSL only — the canonical printer always
-disambiguates explicitly (see [below](#choosing-a-rule-format)), so a
-persisted or printed rule never depends on a reader holding this table in
-their head.
-
-1. **Grouping** — `(...)`, `[...]` and `{...}` are interchangeable and always evaluated first, exactly as written
-   (see [Grouping delimiters](#grouping-delimiters)).
-2. **`NOT`** — binds tightest of the operators; right-associative (`NOT NOT
-   a` is valid, if odd).
-3. **`AND`** — binds tighter than `OR`.
-4. **`OR`** — binds loosest of the infix operators.
-
-`lovesPineapple AND NOT isBanned OR isVip` therefore parses as
-`(lovesPineapple AND (NOT isBanned)) OR isVip`.
-
-Every infix operator other than `NOT`/`AND`/`OR` (today `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` and `??`)
-is **not** part of this precedence chain: mixing one with `AND`/`OR`, or with
-a *different* infix operator, at the same syntactic level without explicit
-parentheses is a **compile error** (`AmbiguousOperatorMixing`) rather than
-resolved by an implicit precedence guess. The diagnostic points at the
-offending operator (or at the bare infix expression sitting next to
-`AND`/`OR`) and tells you to add parentheses — see
-[ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 8 (which
-extends [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md)'s rule) for
-why. The coalescing operator `??` follows the same rule (`a ?? b AND c` is an error, `(a ?? b) AND c` is fine) but, unlike
-the binary-only infix operators, a chain of it is accepted: `a ?? b ?? c` is one n-ary `COALESCE(a, b, c)` node, because
-coalescing is associative. Its operands are `NOT`-level expressions, so `NOT a ?? b` is `COALESCE(NOT a, b)`.
-The ternary `condition ? whenTrue : whenFalse` (the same node as `If(condition, whenTrue, whenFalse)`) follows the
-no-mixing rule too: its condition and each branch must be a single operand or a parenthesized group, so `a AND b ? c : d`,
-`a ? b XOR c : d` and a nested `a ? b : c ? d : e` are all `AmbiguousOperatorMixing` errors, while `(a AND b) ? c : d` and
-`a ? b : (c ? d : e)` are fine. Everywhere a full expression is allowed (the root, parentheses, call arguments such as
-`ANY(a ? b : c, d)`) a ternary may appear without extra parentheses.
-Function-call-style operators (`PARITY(...)`, `ANY(...)`, `ALL(...)`, `NONE(...)`, `BETWEEN(...)`, `COALESCE(...)`, `If(...)`, `IsTrue(...)`, `IsFalse(...)`, `IsUnknown(...)`, `IsKnown(...)`, `ExactlyOne(...)` and the threshold
-family) are self-delimiting — their parentheses are part of the call syntax,
-not grouping, so they never participate in precedence at all.
-
-### Grouping delimiters
-
-`()`, `[]` and `{}` all group a sub-expression and mean exactly the same thing, so
-`a AND (b OR c)`, `a AND [b OR c]` and `a AND {b OR c}` compile to equal trees and print identically
-(`CanonicalText` always uses parentheses). The tree does not remember which delimiter you wrote. Delimiters must
-nest and each closer must match its opener, so `(a AND b]` is an error. Function calls (`ANY(...)`, `Role(name: "x")`)
-keep `(` as their own argument-list syntax; only a grouped *sub-expression* may use `[` or `{`. Brackets and braces
-inside a quoted string are ordinary text.
-
-Delimiter mistakes are `SyntaxError` diagnostics with the exact span:
-
-| Mistake | Example | Message (span) |
-| ------- | ------- | -------------- |
-| Mismatched closer | `a AND (b OR c]` | `Expected ')' to close '(' at offset 6 but found ']'.` (the `]`) |
-| Unclosed group | `a AND (b OR c` | `Unclosed '(' at offset 6: expected ')' before the end of the rule.` (the `(`) |
-| Closer with no opener | `a AND b)` | `Unexpected closing ')' with no matching opener.` (the `)`) |
-
-To print a rule with delimiters that vary by nesting depth, pass a `GroupingStyle` to `CompiledRule.PrintRuleText`:
-
-```csharp
-CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").CompiledRule!;
-
-rule.CanonicalText;                                  // a AND (b OR (c AND (d OR (e AND (f OR g)))))  (parentheses only)
-rule.PrintRuleText(GroupingStyle.Parentheses);           // same as CanonicalText
-rule.PrintRuleText(GroupingStyle.DepthCycling);          // a AND (b OR [c AND {d OR (e AND [f OR g])}])
-```
-
-`DepthCycling` is opt-in and deterministic: the delimiter depends only on how many groups enclose it, cycling `(`,
-`[`, `{` and repeating. It is a readability aid for people; the output always re-parses to a tree equal to the
-original, so `CanonicalText` stays the form to persist. Function-call argument lists keep `(`.
-
-### Whitespace
-
-Whitespace between tokens never matters, so rule text can be laid out freely. `CanonicalText` always prints a
-single space around each infix operator and after each comma, with no leading or trailing whitespace, whatever spacing the rule
-was written with. To tidy text *as written* (keeping your operators, letter case and delimiters, and without compiling it
-or needing a predicate registry), use `RuleText.NormalizeWhitespace`:
-
-```csharp
-RuleText.NormalizeWhitespace("  a&&b ||\n  !c  ");          // "a && b || !c"
-RuleText.NormalizeWhitespace("ANY( a ,b,	c )");            // "ANY(a, b, c)"
-RuleText.NormalizeWhitespace("named( value :\"x  y\" )");   // "named(value: \"x  y\")" (string contents untouched)
-```
-
-The result is deterministic for any input spacing, idempotent, and compiles to a tree equal to the input's. Prefix `!`/`¬`
-hugs its operand, a call or term's argument list hugs its name, and nothing pads the inside of `()`, `[]` or `{}`.
-Characters the DSL does not recognise are kept in place, so the text of a rule that does not compile yet is never lost.
-
-### Binary vs. unary operators
-
-| Arity | Operators | Notes |
-| --- | --- | --- |
-| **Unary** | `NOT`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown` | Take exactly one operand (`MalformedTree` otherwise). The four inspections are function calls (`IsUnknown(a)`). |
-| **Binary only** | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` | Always exactly two operands — a compile error otherwise (`InfixArityViolation`). `XOR` with three or more operands is an error whose message points at `PARITY` (n-ary parity) and `ExactlyOne` (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 7); a chain such as `a IMPLIES b IMPLIES c` or `a NAND b NAND c` is rejected too — parenthesize it. |
-| **Ternary** | `If` | Takes exactly three operands, `[condition, whenTrue, whenFalse]` — `MalformedTree` otherwise. |
-| **N-ary (≥ 2)** | `AND`, `OR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`a AND b AND c`, not `(a AND b) AND c`). |
-| **Threshold family (≥ 1)** | `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take one or more operands after the integer `k`. A single operand is accepted and simplifies to that operand or its negation. |
-| **0-ary** | `True`, `False`, `Unknown` | Constants, not operators over operands. Written in any letter case; printed upper camel. |
-
-### All operators
-
-| Operator | Arity | Description |
-| --- | --- | --- |
-| `AND` / `&&` / `∧` | n-ary | True iff every operand is true. Short-circuits at the first `False`. |
-| `OR` / `\|\|` / `∨` | n-ary | True iff at least one operand is true. Short-circuits at the first `True`. |
-| `NOT a` / `!a` / `¬a` | unary | Logical negation. `Unknown` stays `Unknown`. |
-| `a XOR b` / `a ⊕ b` | binary | True iff exactly one of the two operands is true. `Unknown` if either operand is `Unknown`. |
-| `a EQUIVALENT b` / `a ↔ b` | binary | Logical biconditional — true iff both operands agree (both true or both false). The negation of `XOR`; `Unknown` if either operand is `Unknown`. `IFF` and the legacy `XNOR` are accepted on input and compile to the same node; the canonical printer writes `EQUIVALENT`. |
-| `a IMPLIES b` / `a → b` | binary | Strong Kleene material implication, `NOT a OR b`. `True` when `a` is `False` or `b` is `True`; `False` only for `True → False`; otherwise `Unknown`. |
-| `a NAND b` / `a ↑ b` | binary | Negated conjunction, `NOT (a AND b)`. `False` only when both operands are `True`; `True` if either is `False`; otherwise `Unknown`. Both operands are always evaluated. |
-| `a NOR b` / `a ↓ b` | binary | Negated disjunction, `NOT (a OR b)`. `True` only when both operands are `False`; `False` if either is `True`; otherwise `Unknown`. Both operands are always evaluated. |
-| `PARITY(a, b, ...)` | n-ary | Parity: `True` iff an odd number of operands are `True`, `False` iff an even number are, and `Unknown` whenever any operand is `Unknown`. At two operands it equals `XOR`; from three operands it differs from `ExactlyOne` (`PARITY(a, b, c)` is `True` when all three are `True`). A function call, so it has no precedence and needs no parentheses next to other operators. |
-| `ANY(a, b, ...)` | n-ary | At least one operand is `True` (`AtLeast(1, ...)`): `True` if any operand is `True`, `False` if every operand is `False`, otherwise `Unknown`. |
-| `ALL(a, b, ...)` | n-ary | Every operand is `True` (`AtLeast(n, ...)`): `True` if all are `True`, `False` if any is `False`, otherwise `Unknown`. |
-| `NONE(a, b, ...)` | n-ary | No operand is `True` (`AtMost(0, ...)`): `True` if all are `False`, `False` if any is `True`, otherwise `Unknown`. |
-| `BETWEEN(min, max, a, b, ...)` | n-ary | The number of `True` operands lies in `[min, max]`, defined as `AtLeast(min, ...) AND AtMost(max, ...)` over the definitely-true / possibly-true interval. The two integer bounds come first; they must satisfy `0 <= min <= max <= n` and may not be the whole range `0..n` (always `True`), otherwise `InvalidThresholdValue`. Needs two or more operands. |
-| `COALESCE(a, b, ...)` / `a ?? b` | n-ary | Replaces only `Unknown`: the first operand that is not `Unknown`, with `True` and `False` passing through unchanged (`Unknown` only if every operand is). Operands are evaluated left to right and the rest are skipped (recorded as `NotEvaluated`) once a known value is found; `EvaluationMode.Exhaustive` evaluates them all. `a ?? b ?? c` is one three-operand node. |
-| `If(c, t, f)` / `c ? t : f` | ternary | K3-aware conditional. `True` condition: `t`; `False`: `f`; an `Unknown` condition does not guess a branch: the result is the branch value only when `t` and `f` are the same definite value, otherwise `Unknown` (definition: `(c AND t) OR (NOT c AND f) OR (t AND f)`). Only the needed branch is evaluated for a definite condition (the other is recorded as `NotEvaluated`); an `Unknown` condition evaluates both, and `EvaluationMode.Exhaustive` always does. |
-| `IsTrue(x)` | unary | Inspection: `True` iff `x` is `True`; `False` when it is `False` or `Unknown`. |
-| `IsFalse(x)` | unary | Inspection: `True` iff `x` is `False`; `False` when it is `True` or `Unknown`. |
-| `IsUnknown(x)` | unary | Inspection: `True` iff `x` is `Unknown`; `False` when it is `True` or `False`. |
-| `IsKnown(x)` | unary | Inspection: `True` iff `x` is `True` or `False`; `False` when it is `Unknown`. |
-| `ExactlyOne(...)` | n-ary | True iff exactly one operand is true — the unambiguous name for what `XOR` only means at exactly two operands. |
-| `AtLeast(k, ...)` | n-ary | True iff at least `k` operands are true. |
-| `AtMost(k, ...)` | n-ary | True iff at most `k` operands are true. |
-| `GreaterThan(k, ...)` | n-ary | True iff more than `k` operands are true. |
-| `LessThan(k, ...)` | n-ary | True iff fewer than `k` operands are true. |
-| `Exactly(k, ...)` | n-ary | True iff exactly `k` operands are true. |
-| `True` / `False` / `Unknown` | constant | Fixed K3 truth value (any letter case; the canonical printer writes `True`, `False`, `Unknown`). `Unknown` models an indeterminate constant, e.g. when stubbing out incomplete logic. In JSON a constant is `{"const": true}` or, for `Unknown`, `{"const": "unknown"}`; in YAML `const: unknown`. Operator names are case-insensitive in every format. |
-
-The binary logical operators are infix only (`a XOR b`); there is no `XOR(a, b)` call form. The n-ary
-operators, the threshold family and the other functions are calls (`PARITY(a, b, c)`).
-
-The connectives follow the Strong Kleene truth tables in
-[ADR-0001](docs/adr/0001-kleene-failure-model.md); `COALESCE` and the inspections
-are external operators with their own tables (next section). See the
-[truth table appendix](#appendix-truth-tables) for every table.
-
-### Strong Kleene connectives and external operators
-
-Only the connectives are Strong Kleene (K3): `NOT`, `AND`, `OR`, `IMPLIES`,
-`EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators (`AtLeast`,
-`AtMost`, `Exactly`, `ExactlyOne`, the threshold family, `ANY`, `ALL`, `NONE`,
-`BETWEEN`) and `If`. `COALESCE` / `??` and the four inspections `IsTrue`,
-`IsFalse`, `IsUnknown` and `IsKnown` are **external operators**: they test or
-replace `Unknown` itself, as SQL's `COALESCE` and `IS [NOT] TRUE/FALSE/UNKNOWN`
-do and as Bochvar's external connectives do. They are useful and well defined,
-but they are not part of Kleene's logic.
-
-Two orders on the values explain the difference.
-
-| Order | Definition | Used for |
-| --- | --- | --- |
-| Truth order | `False < Unknown < True`. `AND` is the minimum, `OR` the maximum and `NOT` reverses it. | Truth functions and cardinality bounds. It is an implementation aid, not a numeric order of truth. |
-| Information order | `Unknown` is below both `True` and `False`, which are incomparable. | Monotonicity: replacing an `Unknown` input by `True` or `False` may refine an output but never changes a definite one. |
-
-Every K3 connective is monotone in the information order. `COALESCE` and the
-inspections are not: `COALESCE(Unknown, False)` is `False` but `COALESCE(True, False)`
-is `True`, and `IsUnknown` flips from `True` to `False` when its operand is
-refined. Three consequences:
-
-- **The "no tautologies" theorem does not extend to them.** A formula built only
-  from terms, `NOT`, `AND` and `OR` is `Unknown` when every term is, so it is
-  never a tautology. `IsKnown(a) OR IsUnknown(a)` is one, because the inspections
-  can observe `Unknown`.
-- **`NAND` and `NOR` are not expressive enough for them.** Every `NAND`-only or
-  `NOR`-only circuit is monotone, so it cannot compute them (see
-  [NAND-only and NOR-only](#nand-only-and-nor-only)).
-- **Each rewrite is verified per operator.** The K3 laws (De Morgan, absorption,
-  double negation) hold for the connectives only; `Simplify` handles the external
-  operators with their own rules.
-
-`If` is a connective in this sense: it is the strongest extension of the
-classical conditional, so it is monotone, and its `(t AND f)` consensus term is
-what keeps it so (see [Ternary](#ternary-ifc-t-f-c--t--f)).
-
-The names `Project` and `Collapse` are TruthWeaver's own terms, not terms from
-the K3 literature (in relational algebra "projection" means selecting columns).
-Both are methods on the result (`Decision.Project`, `Decision.Collapse`), not
-rule operators; see [Collapse](#collapse-the-final-boundary).
-
-### Collapse: the final boundary
-
-`Unknown` is a normal Strong Kleene value, never an error, and the engine never
-turns it into `True` or `False` on its own. A rule always yields its raw
-three-valued result: `Decision.Result` is exactly what the expression produced.
-An application that needs a plain yes/no answer decides how at the call site,
-with `Decision.Collapse(CollapsePolicy)`. Collapse is a method on the result, not
-a feature of the rule language.
-
-| Policy | `True` | `False` | `Unknown` | Use it when |
-| --- | --- | --- | --- | --- |
-| `UnknownAsFalse` | `True` | `False` | `False` | Fail closed: only a definite `True` is accepted. |
-| `UnknownAsTrue` | `True` | `False` | `True` | Fail open: only a definite `False` is refused. Choose it deliberately. |
-| `UnknownIsError` | `True` | `False` | `RejectedUnresolved` | You want "not known" reported as its own outcome. |
-
-The answer is a `CollapseOutcome`: `True`, `False`, or `RejectedUnresolved`. A
-rejected outcome is **not** a `Fault` and nothing is thrown, so "the answer is not
-known" stays distinguishable from "something broke": a faulting predicate still
-puts its exception in `Decision.Faults`, while a clean `Unknown` leaves that list
-empty.
-
-```csharp
-Decision decision = await rule.EvaluateAsync(context, services);
-CollapseOutcome outcome = decision.Collapse(CollapsePolicy.UnknownIsError);
-if (outcome == CollapseOutcome.RejectedUnresolved)
-{
-    // not known; decision.Faults.Count > 0 would additionally mean a predicate broke
-}
-```
-
-`Decision.Project(unknownAs)` is the lighter-weight sibling for when you want a
-definite `TruthValue` rather than a `CollapseOutcome`: `True` and `False` pass
-through and `Unknown` becomes the `bool` you pass (`true` for `True`, `false` for
-`False`; an `Unknown` replacement cannot be requested). Like `Collapse` it is a pure
-method on the result, so `Decision.Result`, `Faults` and the fail-closed
-`IsSatisfied` are untouched.
-
-```csharp
-TruthValue lenient = decision.Project(unknownAs: true);   // Unknown becomes True
-TruthValue strict = decision.Project(unknownAs: false);   // Unknown becomes False
-```
-
-`Decision.Collapse(policy)` is pure: it never changes the decision, its `Result`,
-its `Faults` or `IsSatisfied`. `Decision.IsSatisfied` stays fail-closed regardless
-of any policy you apply: it is `true` only when `Decision.Result` is `True`, so
-`decision.Collapse(CollapsePolicy.UnknownAsTrue)` on an `Unknown` decision returns
-`CollapseOutcome.True` but leaves `IsSatisfied` `false`.
-
-Rule text, JSON and YAML cannot declare a `Collapse`: a `Collapse(expr, policy)`
-call or a `collapse` node is rejected (`SyntaxError` in the DSL, `MalformedTree` in
-JSON and YAML) with a diagnostic that points to `Decision.Collapse`. Use
-`COALESCE(expr, True)` / `COALESCE(expr, False)` to resolve `Unknown` *inside* a rule.
-`UnknownRequiresResolution` is not supported.
-
-`Project` follows the same split. A `Project(expr, True|False)` call or a `project`
-node in rule text, JSON or YAML is rejected (`SyntaxError` in the DSL, `MalformedTree`
-in JSON and YAML) with a diagnostic that points to `COALESCE` and `Decision.Project`.
-`COALESCE(x, True)` is the in-rule form and `Decision.Project(true)` the call-site
-form; both give the same value for every input.
+- [Rule text](docs/rule-text.md): the grammar, grouping delimiters, whitespace and case.
+- [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
+- [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
+- [Strong Kleene (K3) reference](docs/strong-k3/README.md): the meaning of every operator. See [Syntax](docs/strong-k3/specification/syntax.md) for spellings, precedence and operand counts, [Operations](docs/strong-k3/specification/operations.md) for the operator list, [Semantics](docs/strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators) for connectives and external operators, and [Result transformations](docs/strong-k3/result-transformations/README.md) for `Collapse` and `Project`.
 
 ## Rewriting rules
 
@@ -839,37 +519,6 @@ Limits to know:
 when the rules are equivalent (including when structurally identical), `false`
 when not, and `null` when the term cap makes it undecidable (default 20). Call
 `RuleEquivalence.Compare` directly, or pass `new CompilerOptions(MaxAnalysisTerms: n)` as the optional third argument of `RuleDiff.Compare(before, after, options)`, to use a larger cap; only that option is read and omitting it behaves as before.
-
-## Choosing a rule format
-
-DSL, JSON, and YAML compile to the exact same tree through the exact same
-Parse → Validate → Analyze → Build pipeline (see
-[Compilation pipeline](docs/architecture.md#compilation-pipeline)) — none of them is more
-"real" than another at evaluation time. What differs is who's meant to
-write and read each one:
-
-| | DSL string | JSON tree | YAML tree |
-| --- | --- | --- | --- |
-| **Canonical / persisted form?** | Yes — this is what a `CompiledRule<TContext>` prints back to. | No — an interchange format. | No — an interchange format. |
-| **Best for** | A human author or reviewer typing/reading a rule directly (a database column, a code review, a log line). | A UI rule builder generating or consuming a tree without writing a parser. | The same as JSON, when the host's tooling already prefers YAML (config files, GitOps). |
-| **Package** | `TruthWeaver` | `TruthWeaver` | `TruthWeaver.Yaml` |
-| **Compile with** | `compiler.Compile(text)` | `compiler.CompileJson(json)` | `compiler.CompileYaml(yaml)` |
-| **Print with** | `rule.CanonicalText` | `rule.PrintJson()` | `rule.PrintYaml()` |
-| **Round-trips losslessly?** | Yes, by definition. | Yes — `parse(print(x))` is structurally equal to `x` (ticket 07). | Yes — same guarantee (ticket 08). |
-| **Nesting for `AND`/`OR`/`XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR`/`??`** | Infix with precedence (see [Operators](#operators)); `XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR`/`??` mixed with `AND`/`OR`, or with each other, needs explicit parens. | Explicit `{"op": "...", "operands": [...]}` nodes — no precedence to get wrong. | Same explicit `op`/`operands` shape as JSON. |
-| **Comments** | No | No (JSON has none) | Yes (`#`) — a practical reason to prefer YAML for hand-maintained rule files. |
-
-See [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md) for the full
-grammar and tree schema. There's also a fourth way to produce a rule without
-writing text in any of these formats by hand — see
-[Building rules programmatically](#building-rules-programmatically) below.
-
-A fifth format, of sorts: `CanonicalText` isn't merely "minimal" — it
-parenthesizes an operand whenever it's a different operator than the one
-it's nested under (e.g. `a AND b OR c` prints as `(a AND b) OR c`), even
-where precedence alone already makes the parse unambiguous. The goal is a
-rule that reads clearly at a glance without the reader reconstructing
-precedence mentally, not merely one that reparses correctly.
 
 ## Predicate types
 
@@ -1249,7 +898,7 @@ required on both `PredicateSchema` and `PredicateArgumentSchema`, and
 from the machine-facing `Name` used in rule text (e.g. `Name: "hasTopping"`,
 `Label: "Has Topping"`) — so a rule-authoring UI or generated documentation
 always has something to show for every predicate and argument. See
-[Outlining a compiled rule](#outlining-a-compiled-rule) below for how this
+[Outlining a compiled rule](docs/rulebuilder.md#outlining-a-compiled-rule) for how this
 pairs with operators' own label/description.
 
 A DSL string-literal argument supports four escape sequences: `\"` for a
@@ -1262,7 +911,7 @@ compiled rule back to DSL text reproduces `hasTopping(topping: "Chef's
 silently-corrupted literal value — the compilation fails rather than
 guessing what you meant. This escaping rule is specific to the DSL text
 format: the JSON and YAML forms (see
-[Converting between DSL, JSON, and YAML](#converting-between-dsl-json-and-yaml))
+[Converting between DSL, JSON, and YAML](docs/rule-formats.md#converting-between-dsl-json-and-yaml))
 use their own format's native string escaping (`System.Text.Json` and
 YamlDotNet respectively), not this rule.
 
@@ -1312,7 +961,7 @@ AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)
 `AtMost(1, ...)`, `GreaterThan(1, ...)`, `LessThan(2, ...)`, and
 `Exactly(2, ...)` all compile to one shared `ThresholdExpression` node,
 differing only in which comparison against the true-operand count they
-apply (see [Operators](#operators) for the full table).
+apply (see [Operations](docs/strong-k3/specification/operations.md) for every operator).
 
 `ExactlyOne(a, b, c)` is the n-ary "exactly one of these" operator; `XOR` is
 binary-only — a third operand is a compile error that points at both
@@ -1541,7 +1190,7 @@ compiler behavior for optional arguments), which is also why the two
 `hasCrust` terms are visually distinct here, unlike a predicate label alone.
 Pass `showArgumentValues: false` to either `PrintMermaid`/`PrintPlainText`
 overload to render structure-only labels instead (see
-[Rendering a rule as a diagram](#rendering-a-rule-as-a-diagram)).
+[Rendering a rule as a diagram](docs/rulebuilder.md#rendering-a-rule-as-a-diagram)).
 
 `RuleBuilder` is not a fourth parallel parser into the AST — every builder
 method renders to the exact same flat JSON tree shape [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md)
@@ -1551,7 +1200,7 @@ diagnostic a hand-written one would — an unknown predicate, a bad argument,
 an out-of-range threshold, `XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR` arity, resource limits, structural
 tautology/contradiction — nothing here bypasses the Validate/Analyze stages
 of the [compilation pipeline](docs/architecture.md#compilation-pipeline). See
-[Building rules programmatically](#building-rules-programmatically) below
+[RuleBuilder](docs/rulebuilder.md)
 for the full API.
 
 ### 7. Matching against a constant, or any of several constants
@@ -1694,179 +1343,6 @@ if (!decision.IsSatisfied && decision.Faults.Count > 0)
     }
 }
 ```
-
-## Building rules programmatically
-
-### Converting between DSL, JSON, and YAML
-
-Any compiled rule converts losslessly to any of the three surfaces by
-printing from one and compiling from the other — nothing about the compiled
-tree itself is format-specific:
-
-```csharp
-CompiledRule<PizzaOrder> rule = compiler.Compile(dslText).CompiledRule!;
-
-string json = rule.PrintJson();                       // DSL -> JSON
-string yaml = rule.PrintYaml();                        // DSL -> YAML (TruthWeaver.Yaml)
-
-CompiledRule<PizzaOrder> fromJson = compiler.CompileJson(json).CompiledRule!;
-string backToDsl = fromJson.CanonicalText;              // JSON -> DSL
-
-// backToDsl == rule.CanonicalText always: parse(print(x)) is structurally
-// equal to x in every direction (ADR-0003), so converting formats never
-// silently changes a rule's meaning.
-```
-
-This is exactly how a rule-authoring UI would offer "export as JSON/YAML" or
-"paste JSON, get back DSL to review" without needing its own parser for
-anything but the format it's currently editing.
-
-### `RuleBuilder` reference
-
-[Example 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text)
-shows `RuleBuilder` end to end. Every operator has a matching static factory
-on `TruthWeaver.Building.RuleBuilder`:
-
-| Operator | Factory method |
-| --- | --- |
-| `True` / `False` / `Unknown` | `RuleBuilder.Constant(bool value)` / `RuleBuilder.Constant(TruthValue value)` |
-| A term | `RuleBuilder.Predicate(string name)` / `RuleBuilder.Predicate(string name, params (string Name, object Value)[] arguments)` |
-| `AND` | `RuleBuilder.And(params RuleBuilder[] operands)` |
-| `OR` | `RuleBuilder.Or(params RuleBuilder[] operands)` |
-| `NOT` | `RuleBuilder.Not(RuleBuilder operand)` |
-| `XOR` | `RuleBuilder.Xor(RuleBuilder left, RuleBuilder right)` |
-| `EQUIVALENT` | `RuleBuilder.Equivalent(RuleBuilder left, RuleBuilder right)` (`RuleBuilder.Xnor` is kept and forwards to it) |
-| `IMPLIES` | `RuleBuilder.Implies(RuleBuilder antecedent, RuleBuilder consequent)` |
-| `NAND` | `RuleBuilder.Nand(RuleBuilder left, RuleBuilder right)` |
-| `NOR` | `RuleBuilder.Nor(RuleBuilder left, RuleBuilder right)` |
-| `PARITY` | `RuleBuilder.Parity(params RuleBuilder[] operands)` |
-| `ANY` / `ALL` / `NONE` | `RuleBuilder.Any(params RuleBuilder[] operands)` / `RuleBuilder.All(...)` / `RuleBuilder.None(...)` |
-| `BETWEEN(min, max)` | `RuleBuilder.Between(int min, int max, params RuleBuilder[] operands)` (JSON/YAML: `{"op": "between", "min": 1, "max": 2, "operands": [...]}`) |
-| `COALESCE` | `RuleBuilder.Coalesce(params RuleBuilder[] operands)` |
-| `IsTrue` / `IsFalse` / `IsUnknown` / `IsKnown` | `RuleBuilder.IsTrue(RuleBuilder operand)` / `RuleBuilder.IsFalse(...)` / `RuleBuilder.IsUnknown(...)` / `RuleBuilder.IsKnown(...)` (JSON/YAML: `{"op": "isTrue", "operands": [x]}`, `isFalse`, `isUnknown`, `isKnown`) |
-| `If` | `RuleBuilder.If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)` (JSON/YAML: `{"op": "if", "operands": [condition, whenTrue, whenFalse]}`) |
-| `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
-| `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
-
-For operand lists whose length is only known at run time, `And`, `Or`,
-`Parity`, `Any`, `All`, `None`, `ExactlyOne` and `Coalesce` also have an
-`IEnumerable<RuleBuilder>` overload. It folds short lists at build time instead
-of producing a node the compiler would reject (`MalformedTree`); two or more
-items build the same node as the `params` overload:
-
-| Operator | 0 items | 1 item `x` |
-| -------- | ------- | ---------- |
-| `And` / `All` | `Constant(True)` | `x` |
-| `Or` / `Any` | `Constant(False)` | `x` |
-| `Parity` / `ExactlyOne` | `Constant(False)` | `x` |
-| `None` | `Constant(True)` | `Not(x)` |
-| `Coalesce` | `Constant(Unknown)` | `x` |
-
-An empty list silently becoming a constant can hide a mistake (an empty list of
-role checks under `And` is `True`), so check the count first when that matters.
-
-The two forms differ for the same operands, which is easy to trip over: an
-array (or an explicit argument list) binds the `params` overload and a
-`List<RuleBuilder>` binds the `IEnumerable` one. The fold is deliberate and does
-not change.
-
-```csharp
-RuleBuilder x = RuleBuilder.Predicate("isActive");
-
-RuleBuilder.And(new[] { x });                 // params: one operand, MalformedTree at compile time
-RuleBuilder.And(new List<RuleBuilder> { x }); // IEnumerable: folds to x
-```
-
-`Between`, `AtLeast`, `AtMost` and `Exactly` also have an `IEnumerable<RuleBuilder>`
-overload, but it never folds: a counted operator has no identity constant, so
-the sequence builds the same node as the `params` overload and goes through the
-same count validation. An unmeetable count such as `AtLeast(2, [])` is the same
-compile diagnostic as with `params`. An empty list passed to a counted operator
-is probably a bug, so treat that diagnostic as a prompt to check how the list was
-built. A `null` sequence throws `ArgumentNullException`, and the sequence is
-enumerated once. `GreaterThan` and `LessThan` have no enumerable overload.
-
-`RuleBuilder.Compile(compiler)` is a thin wrapper around
-`compiler.CompileJson(builder.ToJson())` — nothing bypasses the
-Validate/Analyze pipeline described in
-[Compilation pipeline](docs/architecture.md#compilation-pipeline). `ToJson()` alone is useful
-too, e.g. for logging or persisting the tree a builder assembled without
-compiling it immediately.
-
-### Outlining a compiled rule
-
-Every predicate carries a required `Label`/`Description` on its
-`PredicateSchema` ([Predicate types](#predicate-types)); every operator has
-the equivalent, exposed via `OperatorInfo.Describe` in
-`TruthWeaver.Ast`. `CompiledRule<TContext>.Outline()` combines both
-into one recursive, walkable outline of an entire compiled rule —
-useful for a rule-authoring UI or a generated "what does this rule mean"
-report, without needing access to the closed-set AST types themselves:
-
-```csharp
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
-
-OutlineNode description = rule.Outline();
-// description.Label       == "AND"
-// description.Description == "True iff every operand is true. Short-circuits at the first False."
-// description.Operands[0].Label == "Loves Pineapple"   (from LovesPineapple's PredicateSchema.Label)
-// description.Operands[1].Label == "Has Topping"       (from hasTopping's PredicateSchema.Label)
-```
-
-A simple recursive print, for the shape of a "what does this rule mean"
-report:
-
-```csharp
-void Print(OutlineNode node, int depth = 0)
-{
-    Console.WriteLine($"{new string(' ', depth * 2)}{node.Label} — {node.Description}");
-    foreach (OutlineNode operand in node.Operands)
-    {
-        Print(operand, depth + 1);
-    }
-}
-```
-
-### Rendering a rule as a diagram
-
-`OutlineNode` also feeds
-[`MermaidTreePrinter`](src/TruthWeaver/Printing/MermaidTreePrinter.cs) and
-[`PlainTextTreePrinter`](src/TruthWeaver/Printing/PlainTextTreePrinter.cs),
-which render it as a Mermaid `flowchart` or an indented ASCII tree
-respectively — either structure only, or colored/annotated by one
-evaluation's result and short-circuit path:
-
-```csharp
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
-OutlineNode description = rule.Outline();
-
-// Structure only:
-string mermaid = MermaidTreePrinter.Print(description);
-string plainText = PlainTextTreePrinter.Print(description);
-
-// Colored/annotated by one evaluation (Mermaid: green = contributed True, red = contributed False,
-// gray = short-circuited; plain text: a "[true]"/"[false]"/"[skipped]" suffix per node):
-Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
-string coloredMermaid = MermaidTreePrinter.Print(description, decision.TraceTree);
-string annotatedText = PlainTextTreePrinter.Print(description, decision.TraceTree);
-```
-
-`MermaidTreePrinter`'s result is plain Mermaid text — paste it into any
-Mermaid renderer, or hand it to a UI that already embeds one, to see the
-rule's structure (and optionally, why one particular evaluation came out the
-way it did) as a diagram instead of a nested expression. Its output always
-includes a synthetic `Start` node pointing at the root, so the diagram shows
-where evaluation begins without the reader having to infer it from "the node
-with no incoming edge." `PlainTextTreePrinter`'s result needs no renderer at
-all — the same information as an indented tree, suitable for a log line or a
-terminal. Both printers include each term's rule-text argument values in its
-label by default (e.g. `Has Crust (crust: "thin")`) — pass
-`showArgumentValues: false` to either `Print` overload (or to
-`CompiledRule<TContext>`'s `PrintMermaid`/`PrintPlainText` below) for
-structure-only labels instead. `CompiledRule<TContext>` also exposes both
-directly as `PrintMermaid()`/`PrintMermaid(decision)` and
-`PrintPlainText()`/`PrintPlainText(decision)`, without a separate
-`Outline()` call.
 
 ## Reading diagnostics
 

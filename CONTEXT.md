@@ -148,8 +148,8 @@ classDiagram
 ```
 
 The same shape, as an abstract (tree) grammar. This is the shape of the tree, so binary operators are
-written as calls here; in the text DSL they are infix (`a XOR b`). The complete text grammar and
-precedence summary is in the [README](README.md#grammar).
+written as calls here; in the text DSL they are infix (`a XOR b`). The complete text grammar is in
+[Rule text](docs/rule-text.md#grammar), and the precedence summary is in [Precedence and grouping](docs/strong-k3/specification/syntax.md#precedence-and-grouping).
 
 <!-- doctest:skip abstract grammar notation, not a rule -->
 ```text
