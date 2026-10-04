@@ -4,7 +4,7 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// A generic factory for the externally-selected-value predicate pattern (see
-/// <c>README.md</c>'s "n arguments, class-based, externally-selected value" section): a rule-text
+/// <c>docs/predicates.md</c>'s "n arguments, class-based, externally-selected value" section): a rule-text
 /// literal argument and/or a <c>TContext</c>-supplied value is a key looked up live through some
 /// external source (the selected value), then tested to produce the predicate's Kleene answer (which may be <see cref="TruthValue.Unknown"/>).
 /// </summary>
