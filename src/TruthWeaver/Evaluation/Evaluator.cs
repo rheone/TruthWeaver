@@ -431,6 +431,8 @@ internal sealed class Evaluator<TContext>(
 
             case ThresholdExpression th:
             {
+                // Every operand is evaluated: the test needs both the definite and the possible true count, so a
+                // threshold never short-circuits. The cost is linear in the operand count.
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = EvaluateThreshold(th.Comparison, th.K, [.. results.Select(r => r.Value)]);
@@ -482,6 +484,13 @@ internal sealed class Evaluator<TContext>(
         return new EvalResult(TruthValue.Unknown, new TraceNode(skippedDescription, null, true, []));
     }
 
+    /// <summary>
+    /// Folds the operands of an <c>AND</c> or <c>OR</c> chain from left to right, starting from <paramref name="identity"/>
+    /// (<c>True</c> for <c>AND</c>, <c>False</c> for <c>OR</c>). Once an operand produces a value for which
+    /// <paramref name="stops"/> holds, the rest are skipped and recorded as <c>NotEvaluated</c>, unless
+    /// <see cref="EvaluationMode.Exhaustive"/> is on. The fold is the Strong Kleene minimum or maximum, so stopping never
+    /// changes the result.
+    /// </summary>
     private async ValueTask<EvalResult> EvalChainAsync(
         string description,
         IReadOnlyList<Expression> operands,
