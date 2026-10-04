@@ -10,7 +10,7 @@ Operations over the count of true operands. `AtLeast`, `AtMost` and `Exactly` ar
 | [ExactlyOne](exactlyone.md) | Derived | Exactly one operand is true; contrast with `PARITY` |
 | [GreaterThan](greaterthan.md) | Derived | More than `k` operands are true; `AtLeast(k + 1)` |
 | [LessThan](lessthan.md) | Derived | Fewer than `k` operands are true; `AtMost(k - 1)` |
-| ANY | Derived | At least one operand is true (pending) |
-| ALL | Derived | Every operand is true (pending) |
-| NONE | Derived | No operand is true (pending) |
-| BETWEEN | Derived | The true count lies within `min` and `max` (pending) |
+| [ANY](any.md) | Derived | At least one operand is true; `AtLeast(1, ...)`, the same value as `OR` |
+| [ALL](all.md) | Derived | Every operand is true; `AtLeast(n, ...)`, the same value as `AND` |
+| [NONE](none.md) | Derived | No operand is true; `AtMost(0, ...)`, the same value as `NOT OR` |
+| [BETWEEN](between.md) | Derived | The true count lies within `min` and `max`; `AND(AtLeast(min), AtMost(max))` |
