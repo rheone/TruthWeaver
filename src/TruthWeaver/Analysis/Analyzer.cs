@@ -129,6 +129,43 @@ internal static class Analyzer
         return terms;
     }
 
+    /// <summary>
+    /// Reads a tree's Strong K3 value for one assignment of its terms directly from the analyzer's own dual-rail
+    /// BDD, by walking both rails for that assignment (ticket 17). Used to pin <c>Evaluator</c> to the analyzer:
+    /// today the two are compared only at the tautology/contradiction extremes (<see cref="Analyze"/>), so a
+    /// property test instead checks every generated assignment, not only those two.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <param name="assignment">Each term's value, keyed by predicate name (terms in this analysis are zero-argument).</param>
+    /// <returns>The tree's Strong K3 value under <paramref name="assignment"/>.</returns>
+    internal static TruthValue ValueAt(Expression root, IReadOnlyDictionary<string, TruthValue> assignment)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        DualRail rail = Build(root, bdd, variableIndex, []);
+
+        // Each term's two BDD variables (2i definite, 2i+1 unknown) read back from the assignment by name.
+        Dictionary<int, TruthValue> valueByVariableIndex = variableIndex.ToDictionary(
+            kv => kv.Value,
+            kv => assignment[kv.Key.PredicateName]
+        );
+
+        bool ValueOf(int variable)
+        {
+            TruthValue value = valueByVariableIndex[variable / 2];
+            return variable % 2 == 0 ? value == TruthValue.True : value == TruthValue.Unknown;
+        }
+
+        bool definite = bdd.Evaluate(rail.Definite, ValueOf);
+        bool possible = bdd.Evaluate(rail.Possible, ValueOf);
+        if (definite)
+        {
+            return TruthValue.True;
+        }
+
+        return possible ? TruthValue.Unknown : TruthValue.False;
+    }
+
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
         switch (node)

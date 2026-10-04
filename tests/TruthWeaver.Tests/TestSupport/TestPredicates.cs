@@ -41,6 +41,29 @@ public static class TestPredicates
         );
     }
 
+    /// <summary>
+    /// Registers a zero-argument predicate that reads its value from <paramref name="read"/> on every call, so one
+    /// compiled rule can be re-evaluated against many assignments without recompiling. An <see cref="TruthValue.Unknown"/>
+    /// reading faults (surfaces as <see cref="TruthValue.Unknown"/> via a <see cref="Fault"/>), mirroring <see cref="AddThrowing"/>.
+    /// </summary>
+    public static PredicateRegistryBuilder<RuleTestContext> AddReadable(
+        this PredicateRegistryBuilder<RuleTestContext> builder,
+        string name,
+        Func<TruthValue> read
+    )
+    {
+        return builder.Add(
+            PredicateSchema.NoArguments(name, name, $"Test predicate '{name}', reads a controllable external value."),
+            (_, _, _) =>
+                read() switch
+                {
+                    TruthValue.True => ValueTask.FromResult(TruthValue.True),
+                    TruthValue.False => ValueTask.FromResult(TruthValue.False),
+                    _ => throw new InvalidOperationException($"'{name}' is Unknown."),
+                }
+        );
+    }
+
     /// <summary>Registers a zero-argument predicate that always throws (surfaces as a <see cref="Fault"/>, i.e. <see cref="TruthValue.Unknown"/>).</summary>
     public static PredicateRegistryBuilder<RuleTestContext> AddThrowing(
         this PredicateRegistryBuilder<RuleTestContext> builder,

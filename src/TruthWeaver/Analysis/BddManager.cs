@@ -147,6 +147,25 @@ internal sealed class BddManager
         return assignment;
     }
 
+    /// <summary>
+    /// Evaluates the function represented by <paramref name="node"/> for one full variable assignment, by walking
+    /// the reduced diagram from the root to a terminal (ticket 17: pins <c>Evaluator</c> to these same rails for
+    /// every generated assignment, not only at the tautology/contradiction extremes).
+    /// </summary>
+    /// <param name="node">The function's node id.</param>
+    /// <param name="valueOf">Supplies the assignment's value for a variable index.</param>
+    /// <returns><see langword="true"/> iff the function is true under the assignment <paramref name="valueOf"/> describes.</returns>
+    public bool Evaluate(int node, Func<int, bool> valueOf)
+    {
+        while (node > True)
+        {
+            (int variable, int low, int high) = this.nodes[node];
+            node = valueOf(variable) ? high : low;
+        }
+
+        return node == True;
+    }
+
     private int TopVariable(int i, int t, int e)
     {
         int min = int.MaxValue;

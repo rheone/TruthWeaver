@@ -166,24 +166,6 @@ internal sealed class Evaluator<TContext>(
         return operandValues.Count(v => v == TruthValue.True) % 2 == 1 ? TruthValue.True : TruthValue.False;
     }
 
-    private static TruthValue EvaluateExactlyOne(IReadOnlyList<TruthValue> operandValues)
-    {
-        int trueCount = operandValues.Count(v => v == TruthValue.True);
-        int unknownCount = operandValues.Count(v => v == TruthValue.Unknown);
-
-        if (trueCount >= 2)
-        {
-            return TruthValue.False;
-        }
-
-        if (unknownCount > 0)
-        {
-            return TruthValue.Unknown;
-        }
-
-        return trueCount == 1 ? TruthValue.True : TruthValue.False;
-    }
-
     /// <summary>
     /// Evaluates any count-threshold comparison against the range of true-operand counts still
     /// reachable given how many operands remain <see cref="TruthValue.Unknown"/> — determinate only
@@ -409,9 +391,11 @@ internal sealed class Evaluator<TContext>(
 
             case ExactlyOneExpression:
             {
+                // ExactlyOne is Exactly(1, ...) over the same definite/possible interval as every other
+                // cardinality operator (ticket 17: folded into the one threshold path, no separate evaluation).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateExactlyOne([.. results.Select(r => r.Value)]);
+                TruthValue value = EvaluateThreshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
                 return new EvalResult(value, new TraceNode("ExactlyOne", value, false, [.. results.Select(r => r.Node)]));
             }
 

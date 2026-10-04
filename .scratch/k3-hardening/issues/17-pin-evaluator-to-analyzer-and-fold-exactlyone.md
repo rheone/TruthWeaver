@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A property test compares evaluator values with analyzer-rail values across generated rules and all assignments, and a deliberately wrong analyzer rail makes it fail
-- [ ] The separate ExactlyOne evaluation is removed in favour of the threshold path with no change to the K3 conformance tests
-- [ ] k3-hardening 11 is marked resolved by this ticket
-- [ ] The full validation from CLAUDE.md passes
+- [x] A property test compares evaluator values with analyzer-rail values across generated rules and all assignments, and a deliberately wrong analyzer rail makes it fail
+- [x] The separate ExactlyOne evaluation is removed in favour of the threshold path with no change to the K3 conformance tests
+- [x] k3-hardening 11 is marked resolved by this ticket
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
