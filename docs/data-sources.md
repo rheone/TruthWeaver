@@ -9,7 +9,7 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 > [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 06): the
 > `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. `EvaluationOptions.IncludeResolvedValues` (ticket 07). Not yet implemented: `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. `EvaluationOptions.IncludeResolvedValues` (ticket 07). `Arg.From` and the build-time `GetAsync` helper (ticket 08). The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
 > `doctest:skip` until ticket 09.
 
@@ -202,6 +202,9 @@ rule text:
 RuleBuilder rule = RuleBuilder.Predicate("ageAtLeast", ("min", Arg.From("user", "$.minAge")));
 ```
 
+`Arg.From(source, query, validator)` takes an optional `IQueryValidator` (for example `JsonQueryValidator.Instance`) and throws
+`ArgumentException` at once for a malformed query, instead of waiting for the compile diagnostic.
+
 To read a value once, while you assemble the rule, query a source yourself and pass the literal. This fixes
 the value in the rule; it does not create a variable.
 
@@ -209,6 +212,10 @@ the value in the rule; it does not create a variable.
 long limit = await configSource.GetAsync<long>("$.limits.age", cancellationToken);
 RuleBuilder rule = RuleBuilder.Predicate("ageAtLeast", ("min", limit));
 ```
+
+`GetAsync<T>` (an extension on `IDataSource` in `TruthWeaver.Building`) supports `string`, `long`, `decimal`, `bool`,
+`DateTimeOffset` and `Guid`, converts like a variable would, and throws `InvalidOperationException` (never echoing data) when
+the query matches nothing, several nodes, the wrong kind, or the source fails.
 
 ## Failures
 

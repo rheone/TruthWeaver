@@ -62,6 +62,10 @@ copyright line reads 2026.
   DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
   throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators and `RuleBuilder` support follow.
+- `RuleBuilder` support for data sources (data-sources 08): `Arg.From(source, query, validator = null)` (in `TruthWeaver.Building`) returns a `VariableReference` that
+  `RuleBuilder.Predicate` renders as the `{ "from", "query" }` argument form, so it compiles to the same canonical text as the DSL (an optional
+  `IQueryValidator` rejects a malformed query with `ArgumentException` immediately). `IDataSource.GetAsync<T>(query, cancellationToken)` reads a value at
+  build time for use as an ordinary literal. `RuleBuilder` argument values now also accept `Guid`.
 - Trace redaction (data-sources 07): `EvaluationOptions.IncludeResolvedValues` (default `false`) adds the resolved value after each variable
   reference in the trace text (`min: from("user", "$.minAge") = 18`). By default the trace names only the reference, and fault messages never contain values.
 - `YamlDataSource` in `TruthWeaver.Yaml` (data-sources 06): `Parse(yaml)` and `Create(YamlNode)` read a YAML document into the JSON data

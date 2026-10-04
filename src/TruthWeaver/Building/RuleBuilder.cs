@@ -48,8 +48,8 @@ public abstract class RuleBuilder
     /// <param name="arguments">
     /// The named argument values. Supported value types are <see cref="string"/>, <see cref="bool"/>,
     /// <see cref="int"/>, <see cref="long"/>, <see cref="double"/>, <see cref="decimal"/>,
-    /// <see cref="DateTimeOffset"/>, and <see cref="IEnumerable{T}"/> of any of those (for an
-    /// array-valued argument).
+    /// <see cref="DateTimeOffset"/>, <see cref="Guid"/>, a deferred variable reference from <see cref="Arg.From"/>, and
+    /// <see cref="IEnumerable{T}"/> of any of those (for an array-valued argument).
     /// </param>
     /// <returns>A builder for the term.</returns>
     public static RuleBuilder Predicate(string name, params (string Name, object Value)[] arguments)
@@ -633,6 +633,8 @@ public abstract class RuleBuilder
             double d => JsonValue.Create(d),
             decimal m => JsonValue.Create(m),
             DateTimeOffset dto => JsonValue.Create(dto.ToString("O", CultureInfo.InvariantCulture)),
+            Guid g => JsonValue.Create(g.ToString()),
+            VariableReference reference => new JsonObject { ["from"] = reference.Source, ["query"] = reference.Query },
             IEnumerable<object> items => ArrayToNode(items),
             _ => throw new ArgumentException($"Unsupported argument value type '{value.GetType()}'.", nameof(value)),
         };
