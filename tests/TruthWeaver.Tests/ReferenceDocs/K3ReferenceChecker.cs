@@ -181,7 +181,7 @@ internal static partial class K3ReferenceChecker
     }
 
     /// <summary>Resolves a relative link against a directory; <see langword="null"/> when it climbs out of the repository.</summary>
-    private static string? Resolve(string directory, string relative)
+    internal static string? Resolve(string directory, string relative)
     {
         List<string> segments = [.. directory.Split('/', StringSplitOptions.RemoveEmptyEntries)];
         foreach (string segment in relative.Split('/', StringSplitOptions.RemoveEmptyEntries))
@@ -242,7 +242,7 @@ internal static partial class K3ReferenceChecker
     }
 
     /// <summary>Marks every line that is inside (or is a delimiter of) a fenced code block.</summary>
-    private static bool[] FenceMap(string[] lines)
+    internal static bool[] FenceMap(string[] lines)
     {
         bool[] map = new bool[lines.Length];
         bool open = false;

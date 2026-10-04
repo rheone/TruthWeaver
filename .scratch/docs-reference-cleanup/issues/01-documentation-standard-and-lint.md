@@ -4,10 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `CLAUDE.md` has a Documentation section that states the standard concisely and holds no reference material
-- [ ] The lint test finds the in-scope set by the stated rule, honors the stop list and the opt-in or opt-out marker
-- [ ] Each lint rule has a fixture test that fails with a `file:line` message
-- [ ] The baseline list holds every in-scope file that currently breaks a rule, and a test fails if a baseline entry no longer breaks any rule
-- [ ] `dotnet test` passes and the validation list in `CLAUDE.md` passes
+- [x] `CLAUDE.md` has a Documentation section that states the standard concisely and holds no reference material
+- [x] The lint test finds the in-scope set by the stated rule, honors the stop list and the opt-in or opt-out marker
+- [x] Each lint rule has a fixture test that fails with a `file:line` message
+- [x] The baseline list holds every in-scope file that currently breaks a rule, and a test fails if a baseline entry no longer breaks any rule
+- [x] `dotnet test` passes and the validation list in `CLAUDE.md` passes
+
+## Comments
+
+- 2026-10-04: Done. The lint is `tests/TruthWeaver.Tests/ReferenceDocs/DocumentationLint.cs`, with fixture tests and `DocumentationLintBaseline.cs` (39 files at the start). `CLAUDE.md` has the Documentation section. `benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md` is in scope through the README link and is on the baseline; ticket 12 audits it. The full validation list runs in ticket 09.

@@ -93,6 +93,19 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 - Prefer one logical behavior per test.
 - Runnable examples in `README.md`/`CONTEXT.md` are tested: put a `<!-- doctest:... -->` marker above each `text`/`json`/`yaml`/`mermaid` block (procedure in `docs/doc-examples.md`); an untagged block fails `dotnet test`.
 
+## Documentation
+
+Reference documents describe the package as it behaves now. They are not a record of how the project got there.
+
+- **Scope.** The standard covers the root `*.md` files, every `README.md` outside `.claude/`, and every file they link to, recursively. Recursion stops at `docs/adr/`, `.scratch/`, `.agents/` and `CHANGELOG.md`, which are history or tool files. `<!-- docs-lint: on -->` or `<!-- docs-lint: off -->` opts a file in or out. `DocumentationLint` enforces the rules below on `dotnet test`; `DocumentationLintBaseline` lists files not yet cleaned and may only shrink.
+- **Content.** Document the resulting behavior or rule. Leave out project history, tickets, ADRs, superseded designs, pending decisions and developer-only detail. Never link a reference document to an ADR, `.scratch` or `CHANGELOG.md` to explain behavior. Developer-only detail goes in code comments.
+- **Voice.** Present tense and direct statements. Use "may", "could" and "should" only when the behavior is optional. No first person, no future tense for defined behavior, and no text about the document itself or its cleanup.
+- **Language.** ASD-STE100 Simplified Technical English (US): short sentences, one meaning per sentence, one term per concept. Keep established project, mathematical and proper-noun terms (see `CONTEXT.md` and `docs/glossary.md`). Run `/humanizer` over prose.
+- **Kinds of statement.** Keep normative statements (what the system does), explanations (why) and examples apart. An example adds no rule. Do not add a rule only to improve prose.
+- **Structure.** Follow `/github-markdown`: sentence-case headings, relative links, tables where they communicate better than prose, LaTeX for formulas. State a fact once and link to it elsewhere. Do not repeat reference content in a README.
+- **Diagrams.** Add a Mermaid diagram (`/mermaid-diagram-generator`) only when it shows something a table or prose does not.
+- **K3 reference.** Pages under `docs/strong-k3/` link only to other pages under `docs/strong-k3/`. The root `README.md` and `docs/glossary.md` may link into them.
+
 ## Git
 
 - Use work trees when appropriate
@@ -116,8 +129,3 @@ Issues are tracked as local markdown files under `.scratch/<feature>/`. See `doc
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 .tmp may contain additional context or information.
-
-### Markdown Documentation
-
-- When writing markdown use the `github-markdown` skill
-- When it would be value added to the documentation to include diagrams use the `mermaid-diagram-generator` skill
