@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (the engine swap may change `JsonDataSource` internals; do this after it)
 
-**Status:** ready-for-agent
+**Status:** done
 
 Rule: failures driven by external input get a `Try` form; programmer errors keep throwing (see spec).
 
@@ -14,3 +14,7 @@ Rule: failures driven by external input get a `Try` form; programmer errors keep
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (Try-candidate survey).
+
+## Comments
+
+- Added `JsonDataSource.TryParse` and `YamlDataSource.TryParse` (positions only in the error text, null argument still throws). Tests cover malformed JSON/YAML, duplicate YAML key, self-referential alias and no content echo. `Parse` unchanged. Docs in `docs/data-sources.md`, CHANGELOG updated.

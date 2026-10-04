@@ -52,9 +52,12 @@ source, not to TruthWeaver, and equality compares the reference text, not the re
 8. **Scoping.** Queries are absolute within a source. `IDataSource.ScopeAsync` returns a new source rooted at
    the single node a query matches, so a host can narrow one repeated subtree and evaluate against it.
    There are no relative (`@.`) queries in rule text and no iteration over repeated subtrees; both are
-   out of scope.
+   out of scope. *(Amended 2026-10-04.)* `ScopeAsync` returns a `DataScopeResult`, not the source itself: a
+   malformed query, a query that matches no node or several, and an unsupported node are failure results
+   (`MalformedQuery`, `NoMatch`, `AmbiguousMatch`, `UnsupportedType`), never exceptions. The interface has no other
+   error channel, async members cannot use `out`, and a scope query can come from external input.
 9. **The interface.** `IDataSource` (in `TruthWeaver.Abstractions`) is async, converts each matched node to
-   `LiteralValue`, and reports malformed queries and source failures as data in `DataQueryResult`. The
+   `LiteralValue`, and reports malformed queries and source failures as data in `DataQueryResult` (and, for scoping, `DataScopeResult`). The
    evaluator still catches a thrown exception as a backstop ([ADR-0001](0001-kleene-failure-model.md)).
 10. **Syntax.** `from("user", "$.minAge")` in the DSL; `{ "from": "user", "query": "$.minAge" }` as an
     argument value in JSON and YAML; `Arg.From("user", "$.minAge")` in `RuleBuilder`. The query is an ordinary

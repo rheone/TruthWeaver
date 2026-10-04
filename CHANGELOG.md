@@ -91,8 +91,20 @@ copyright line reads 2026.
   accepts it (a reference is not allowed inside an array literal). A malformed reference is a `TRE0014` diagnostic at the wrong
   member, and an undeclared source name (`TRE0024`) points at the `from` member.
 
+- `JsonDataSource.TryParse(text, out source, out error)` and `YamlDataSource.TryParse(text, out source, out error)` for host code that
+  reads untrusted or user-edited documents. They return `false` for malformed JSON or YAML, a duplicate YAML key and a
+  self-referential alias. The error text gives the position and never repeats document content. `Parse` still throws.
+- `DataScopeResult` (in `TruthWeaver.Abstractions`) and the `DataQueryErrorKind` values `NoMatch` and `AmbiguousMatch`; see the
+  breaking change to `IDataSource.ScopeAsync` below. `FakeDataSource.FailingScope(query, message, kind)` scripts a failed scope.
+
 ### Changed
 
+- Breaking: `IDataSource.ScopeAsync` returns `ValueTask<DataScopeResult>` instead of `ValueTask<IDataSource>`. A scope query that is
+  malformed, matches no node, matches several nodes or reaches an unsupported node is a failure result, no longer an
+  `ArgumentException` or `InvalidOperationException`. Migration: read `result.Source` when `result.Succeeded`, otherwise
+  `result.ErrorKind` and `result.ErrorMessage`; an implementation returns `DataScopeResult.Success(source)` or
+  `DataScopeResult.Failure(kind, message)`. `FakeDataSource` returns a `NoMatch` failure for a scope nobody scripted (it threw
+  before). [ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md) decision 8 is amended in place.
 - Every break below. Each one has a migration step in the sections that follow.
 - `CompiledRule<TContext>.EvaluateAsync` is one method: `EvaluateAsync(context, services = null, dataSources = null, options = null, cancellationToken = default)`.
   It replaces the two overloads. A caller supplies only what the rule needs, and a null `services` is an empty provider

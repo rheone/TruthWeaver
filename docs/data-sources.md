@@ -156,17 +156,43 @@ equivalent documents. A quoted scalar is a string (`"18"`), a plain one follows 
 var user = YamlDataSource.Parse("minAge: 18\nroles: [admin, auditor]\n");
 ```
 
+`Parse` throws `JsonException` (or `YamlException`) when the text is malformed. Use `TryParse` for a document that a
+user edits or that comes from outside the host. It returns `false` and sets `error` instead of throwing. For YAML,
+a duplicate mapping key and an alias that refers to its own ancestor are also errors. The error text gives the
+position of the problem and never repeats document content, because the content can be sensitive. A null argument
+still throws `ArgumentNullException`.
+
+```csharp
+if (!JsonDataSource.TryParse(text, out JsonDataSource? user, out string? error))
+{
+    logger.LogWarning("Rejected the user document: {Error}", error);
+    return;
+}
+```
+
 A document often repeats a shape, for example many `orders` with a `total` each. Pin the node you want
 with an index or a filter. A query meant to give one value that matches several is an error, not a guess.
 
 To work with one repeated subtree as its own source, scope it. `ScopeAsync` returns a new source rooted at
 the node the query matches, and queries on it stay absolute within that node. The query must match exactly one
-node; scoping is host code, so a query that matches none or several throws `InvalidOperationException`, and one that is
-not valid JSONPath throws `ArgumentException`:
+node. `ScopeAsync` never throws for a wrong query. It returns a `DataScopeResult`. When `Succeeded` is `true`,
+`Source` is the scoped source. Otherwise `ErrorKind` and `ErrorMessage` describe the failure. The message never contains
+document values.
+
+| `ErrorKind` | Meaning |
+| --- | --- |
+| `MalformedQuery` | The query is not valid in the source's dialect. |
+| `NoMatch` | The query matches no node. |
+| `AmbiguousMatch` | The query matches more than one node. |
+| `SourceFailure` | The source or its backend failed. |
+| `UnsupportedType` | The matched node cannot be used as a source. |
 
 ```csharp
-IDataSource order = await orders.ScopeAsync("$.orders[?@.id=='A7']", cancellationToken);
-var sources = new DataSources { ["order"] = order };   // from("order", "$.total")
+DataScopeResult scope = await orders.ScopeAsync("$.orders[?@.id=='A7']", cancellationToken);
+if (scope.Succeeded)
+{
+    var sources = new DataSources { ["order"] = scope.Source };   // from("order", "$.total")
+}
 ```
 
 Rule text cannot use relative queries (`@.total`) or loop over the repeated subtrees. If the rule and the
@@ -281,7 +307,7 @@ row, a feature-flag service, an XML document. The source chooses its own query d
 public interface IDataSource
 {
     ValueTask<DataQueryResult> QueryAsync(string query, CancellationToken cancellationToken);
-    ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken);
+    ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken);
 }
 ```
 
@@ -289,6 +315,8 @@ public interface IDataSource
   reported as an unsupported type in the result.
 - Report a malformed query or a failing backend as an error inside `DataQueryResult`. The engine also catches
   a thrown exception, but an error you return carries a better message.
+- Report a scope query that is malformed, matches no node or matches several as a failed `DataScopeResult`
+  (`DataScopeResult.Failure`). Do not throw for these.
 - Honour the cancellation token. If the source gives up on its own (it throws a timeout or its own cancellation) the term
   becomes `Unknown` plus a source-error fault. If the evaluation itself is cancelled, by the caller's token or by
   `EvaluationOptions.Timeout`, the evaluation is cancelled and throws, exactly as it does for a slow predicate.
@@ -297,7 +325,7 @@ public interface IDataSource
 
 | Package | Contains |
 | --- | --- |
-| `TruthWeaver.Abstractions` | `IDataSource`, `IQueryValidator`, `QueryProblem`, `DataQueryResult`, `DataSources`, `VariableReference`. |
+| `TruthWeaver.Abstractions` | `IDataSource`, `IQueryValidator`, `QueryProblem`, `DataQueryResult`, `DataScopeResult`, `DataSources`, `VariableReference`. |
 | `TruthWeaver` | `DataSourceDeclarations` (with `CompilerOptions.DataSources`), `EvaluationOptions.IncludeResolvedValues`, `Arg.From` and `IDataSource.GetAsync<T>` for `RuleBuilder`. |
 | `TruthWeaver.DataSources.Json` | `JsonDataSource`, `JsonQueryValidator` and the JSONPath dependency. |
 | `TruthWeaver.Yaml` | `YamlDataSource`, reusing the JSON source's query engine and validator. |

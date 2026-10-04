@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 This is a breaking change to a public interface. Nothing has been released and the only consumers are in this repository, so record it in the CHANGELOG and amend ADR-0006 in place.
 
@@ -15,3 +15,7 @@ This is a breaking change to a public interface. Nothing has been released and t
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (Try-candidate survey).
+
+## Comments
+
+- Added `DataScopeResult`; `IDataSource.ScopeAsync` now returns it. Zero and several matches needed distinct kinds, so `DataQueryErrorKind` gained `NoMatch` and `AmbiguousMatch` (owner may veto). JSON/YAML/Fake sources and all test stubs updated; `FakeDataSource.FailingScope` added and an unscripted scope is a `NoMatch` failure. ADR-0006 decision 8, `docs/data-sources.md` and CHANGELOG updated.

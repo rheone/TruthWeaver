@@ -207,7 +207,7 @@ public sealed class RuleBuilderVariableTests
             return ValueTask.FromResult(result);
         }
 
-        public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
+        public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
         {
             throw new NotSupportedException();
         }

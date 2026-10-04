@@ -133,7 +133,7 @@ public sealed class JsonDataSourceTests
     {
         JsonDataSource source = JsonDataSource.Parse(OrdersJson);
 
-        IDataSource order = await source.ScopeAsync("$.orders[?@.id=='B2']", TestContext.Current.CancellationToken);
+        IDataSource order = await ScopeOrFailAsync(source, "$.orders[?@.id=='B2']");
         DataQueryResult total = await order.QueryAsync("$.total", TestContext.Current.CancellationToken);
         DataQueryResult sku = await order.QueryAsync("$.lines[*].sku", TestContext.Current.CancellationToken);
 
@@ -147,7 +147,7 @@ public sealed class JsonDataSourceTests
     {
         JsonDataSource source = JsonDataSource.Parse(OrdersJson);
 
-        IDataSource order = await source.ScopeAsync("$.orders[0]", TestContext.Current.CancellationToken);
+        IDataSource order = await ScopeOrFailAsync(source, "$.orders[0]");
         DataQueryResult outside = await order.QueryAsync("$.limits.age", TestContext.Current.CancellationToken);
 
         Assert.True(outside.Succeeded);
@@ -160,23 +160,55 @@ public sealed class JsonDataSourceTests
     {
         JsonDataSource source = JsonDataSource.Parse(OrdersJson);
 
-        IDataSource order = await source.ScopeAsync("$.orders[?@.id=='A7']", TestContext.Current.CancellationToken);
-        IDataSource line = await order.ScopeAsync("$.lines[1]", TestContext.Current.CancellationToken);
+        IDataSource order = await ScopeOrFailAsync(source, "$.orders[?@.id=='A7']");
+        IDataSource line = await ScopeOrFailAsync(order, "$.lines[1]");
         DataQueryResult sku = await line.QueryAsync("$.sku", TestContext.Current.CancellationToken);
 
         Assert.Equal(LiteralValue.OfString("y"), Assert.Single(sku.Matches));
     }
 
-    /// <summary>A scope query must match exactly one node: none, several or a malformed query is a caller error.</summary>
+    /// <summary>A scope query must match exactly one node: none, several or a malformed query is a failure result with the matching kind, never an exception.</summary>
     [Theory]
-    [InlineData("$.orders[?@.id=='nope']", typeof(InvalidOperationException))]
-    [InlineData("$.orders[*]", typeof(InvalidOperationException))]
-    [InlineData("$.orders[", typeof(ArgumentException))]
-    public Task ScopeAsync_QueryNotMatchingExactlyOneNode_Throws_Test(string query, Type expected)
+    [InlineData("$.orders[?@.id=='nope']", DataQueryErrorKind.NoMatch)]
+    [InlineData("$.orders[*]", DataQueryErrorKind.AmbiguousMatch)]
+    [InlineData("$.orders[", DataQueryErrorKind.MalformedQuery)]
+    public async Task ScopeAsync_QueryNotMatchingExactlyOneNode_ReturnsFailureResult_Test(
+        string query,
+        DataQueryErrorKind expected
+    )
     {
         JsonDataSource source = JsonDataSource.Parse(OrdersJson);
 
-        return Assert.ThrowsAsync(expected, () => source.ScopeAsync(query, TestContext.Current.CancellationToken).AsTask());
+        DataScopeResult result = await source.ScopeAsync(query, TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Null(result.Source);
+        Assert.Equal(expected, result.ErrorKind);
+        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>A scope failure message states the problem but never repeats document values, which may be sensitive.</summary>
+    [Fact]
+    public async Task ScopeAsync_AmbiguousQuery_MessageDoesNotEchoDocumentValues_Test()
+    {
+        JsonDataSource source = JsonDataSource.Parse("""{ "items": [ { "pin": "hunter2" }, { "pin": "hunter3" } ] }""");
+
+        DataScopeResult result = await source.ScopeAsync("$.items[*]", TestContext.Current.CancellationToken);
+
+        Assert.Equal(DataQueryErrorKind.AmbiguousMatch, result.ErrorKind);
+        Assert.DoesNotContain("hunter", result.ErrorMessage);
+    }
+
+    /// <summary>A scalar node can be scoped; the scoped source is rooted at a copy of that node.</summary>
+    [Fact]
+    public async Task ScopeAsync_ScalarNode_RootsAtThatScalar_Test()
+    {
+        JsonDataSource source = JsonDataSource.Parse(OrdersJson);
+
+        IDataSource scoped = await ScopeOrFailAsync(source, "$.limits.age");
+        DataQueryResult root = await scoped.QueryAsync("$", TestContext.Current.CancellationToken);
+
+        Assert.Equal(LiteralValue.OfInt64(18), Assert.Single(root.Matches));
     }
 
     /// <summary>Text that is not JSON is rejected when the source is created.</summary>
@@ -184,6 +216,50 @@ public sealed class JsonDataSourceTests
     public void Parse_MalformedJson_ThrowsJsonException_Test()
     {
         Assert.ThrowsAny<JsonException>(() => JsonDataSource.Parse("{ not json"));
+    }
+
+    /// <summary>Malformed JSON makes <c>TryParse</c> return false with an error and no source, and never throws.</summary>
+    [Theory]
+    [InlineData("{ not json")]
+    [InlineData("""{ "a": [1, 2""")]
+    [InlineData("")]
+    public void TryParse_MalformedJson_ReturnsFalseWithError_Test(string json)
+    {
+        bool parsed = JsonDataSource.TryParse(json, out JsonDataSource? source, out string? error);
+
+        Assert.False(parsed);
+        Assert.Null(source);
+        Assert.False(string.IsNullOrWhiteSpace(error));
+    }
+
+    /// <summary>The error names where the document is wrong but never repeats document content, which may be sensitive.</summary>
+    [Fact]
+    public void TryParse_MalformedJson_ErrorDoesNotEchoDocumentContent_Test()
+    {
+        Assert.False(JsonDataSource.TryParse("""{ "secret": "hunter2" x }""", out _, out string? error));
+
+        Assert.NotNull(error);
+        Assert.DoesNotContain("hunter2", error);
+        Assert.DoesNotContain("secret", error);
+    }
+
+    /// <summary>A well-formed document gives a source that answers queries exactly as <c>Parse</c> does.</summary>
+    [Fact]
+    public async Task TryParse_WellFormedJson_ReturnsAWorkingSource_Test()
+    {
+        bool parsed = JsonDataSource.TryParse("""{ "a": 1 }""", out JsonDataSource? source, out string? error);
+
+        Assert.True(parsed);
+        Assert.Null(error);
+        DataQueryResult result = await source!.QueryAsync("$.a", TestContext.Current.CancellationToken);
+        Assert.Equal(LiteralValue.OfInt64(1), Assert.Single(result.Matches));
+    }
+
+    /// <summary>A null document is a programming error and still throws, as it does for <c>Parse</c>.</summary>
+    [Fact]
+    public void TryParse_NullText_ThrowsArgumentNullException_Test()
+    {
+        Assert.Throws<ArgumentNullException>(() => JsonDataSource.TryParse(null!, out _, out _));
     }
 
     /// <summary>A source can be created over an already-parsed document node.</summary>
@@ -278,6 +354,13 @@ public sealed class JsonDataSourceTests
             new CompilerOptions(DataSources: new DataSourceDeclarations { "doc" })
         );
         return compiler.Compile(ruleText).CompiledRule ?? throw new InvalidOperationException("Test rule did not compile.");
+    }
+
+    private static async Task<IDataSource> ScopeOrFailAsync(IDataSource source, string query)
+    {
+        DataScopeResult result = await source.ScopeAsync(query, TestContext.Current.CancellationToken);
+        Assert.True(result.Succeeded, result.ErrorMessage);
+        return result.Source;
     }
 
     private sealed class NoServices : IServiceProvider
