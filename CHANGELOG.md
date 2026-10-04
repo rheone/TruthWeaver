@@ -59,7 +59,8 @@ copyright line reads 2026.
   `TermIdentity.Variables` (references are part of a term's identity by source name and query text). Source names are declared
   with `CompilerOptions.DataSources` (`DataSourceDeclarations`); an undeclared name is `TRE0024` with a "did you mean". A scalar
   argument needs exactly one match, an array argument collects all matches (none gives an empty array), conversions are those of
-  DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation. `TruthWeaver.Testing` adds
+  DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
+  throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators, trace redaction options and `RuleBuilder` support follow.
 
 ### Changed

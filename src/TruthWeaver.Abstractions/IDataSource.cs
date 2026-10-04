@@ -9,7 +9,7 @@ public interface IDataSource
 {
     /// <summary>Answers a query with every matched node converted to a <see cref="LiteralValue"/>.</summary>
     /// <param name="query">The query, in this source's dialect. Queries are absolute within the source.</param>
-    /// <param name="cancellationToken">A token to honour; a timeout or cancellation becomes <c>Unknown</c> plus a fault.</param>
+    /// <param name="cancellationToken">A token to honour. Cancellation of the evaluation cancels it; a source that gives up by itself should return a <see cref="DataQueryErrorKind.SourceFailure"/> result or throw, which becomes <c>Unknown</c> plus a fault.</param>
     /// <returns>The matches, or an error described as data (a malformed query, a failing backend, an unsupported node type).</returns>
     public ValueTask<DataQueryResult> QueryAsync(string query, CancellationToken cancellationToken);
 

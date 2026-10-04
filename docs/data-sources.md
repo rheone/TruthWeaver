@@ -193,7 +193,7 @@ A failed lookup never throws out of the evaluation. The term becomes `Unknown`, 
 | Missing | A scalar query matched nothing. | `Unknown` plus a fault. |
 | Ambiguous | A scalar query matched more than one node. | `Unknown` plus a fault. |
 | Type mismatch | The match cannot convert to the argument's kind. | `Unknown` plus a fault naming the expected and actual kinds. |
-| Source error | The source failed or timed out, or a query nobody validated turned out to be malformed. | `Unknown` plus a fault. |
+| Source error | The source returned an error, threw, gave up on its own timeout, or a query nobody validated turned out to be malformed. The thrown exception is the fault's inner exception. | `Unknown` plus a fault. |
 | Undeclared source | The rule names a source that was not declared at compile time. | A compile diagnostic. |
 | Malformed query | The query fails its source's validator at compile time. | A compile diagnostic pointing at the query string. |
 | Unsupplied source | The source is declared but not passed to `EvaluateAsync`. | `Unknown` plus a fault. |
@@ -250,7 +250,9 @@ public interface IDataSource
   reported as an unsupported type in the result.
 - Report a malformed query or a failing backend as an error inside `DataQueryResult`. The engine also catches
   a thrown exception, but an error you return carries a better message.
-- Honour the cancellation token. A timeout or cancellation becomes `Unknown` plus a fault.
+- Honour the cancellation token. If the source gives up on its own (it throws a timeout or its own cancellation) the term
+  becomes `Unknown` plus a source-error fault. If the evaluation itself is cancelled, by the caller's token or by
+  `EvaluationOptions.Timeout`, the evaluation is cancelled and throws, exactly as it does for a slow predicate.
 
 ## Packages
 
