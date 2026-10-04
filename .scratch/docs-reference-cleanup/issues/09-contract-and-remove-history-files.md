@@ -4,10 +4,14 @@
 
 **Blocked by:** 06, 07, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The checker accepts only the new section names and sentence-case headings, and a fixture proves the old ones fail
-- [ ] `TODO.md` is gone, and no file links to it
-- [ ] The lint baseline holds no `docs/strong-k3/` entries
-- [ ] `dotnet restore --locked-mode`, `dotnet build`, `dotnet test`, `dotnet csharpier check .`, `dotnet format --verify-no-changes --severity info` and `dotnet roslynator analyze` pass
-- [ ] Line endings in every touched file are CRLF
+- [x] The checker accepts only the new section names and sentence-case headings, and a fixture proves the old ones fail
+- [x] `TODO.md` is gone, and no file links to it
+- [x] The lint baseline holds no `docs/strong-k3/` entries
+- [x] `dotnet restore --locked-mode`, `dotnet build`, `dotnet test`, `dotnet csharpier check .`, `dotnet format --verify-no-changes --severity info` and `dotnet roslynator analyze` pass
+- [x] Line endings in every touched file are CRLF
+
+## Comments
+
+- 2026-10-04: Done. The checker requires the exact sentence-case section names and rejects "Implementation notes". `TODO.md` is deleted. The lint baseline holds no `docs/strong-k3/` entry. The full validation list from `CLAUDE.md` passed with `CI=true`: restore, build (0 warnings), 2531 tests, CSharpier, `dotnet format` and Roslynator (0 diagnostics).

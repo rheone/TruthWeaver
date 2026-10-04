@@ -36,11 +36,11 @@ public sealed class K3ReferenceTests
 
         One operand.
 
-        ## Input Domain
+        ## Input domain
 
         `{T, F, U}`
 
-        ## Output Domain
+        ## Output domain
 
         `{T, F, U}`
 
@@ -56,11 +56,11 @@ public sealed class K3ReferenceTests
 
         `!`
 
-        ## Formal Semantics
+        ## Formal semantics
 
         Reverses the truth order.
 
-        ## Truth Table
+        ## Truth table
 
         <!-- k3:truth NOT -->
         | a | NOT a |
@@ -109,19 +109,35 @@ public sealed class K3ReferenceTests
         Assert.Empty(K3ReferenceChecker.CheckOperationsIndex(index));
     }
 
-    /// <summary>Sentence-case section names and the Evaluation behavior section are accepted.</summary>
+    /// <summary>The Evaluation behavior section is accepted.</summary>
     [Fact]
-    public void Check_SentenceCaseHeadingsAndEvaluationBehavior_ReportsNoFailures_Test()
+    public void Check_EvaluationBehaviorSection_ReportsNoFailures_Test()
     {
-        string renamed =
-            ValidNot
-                .Replace("## Input Domain", "## Input domain", StringComparison.Ordinal)
-                .Replace("## Output Domain", "## Output domain", StringComparison.Ordinal)
-                .Replace("## Formal Semantics", "## Formal semantics", StringComparison.Ordinal)
-                .Replace("## Truth Table", "## Truth table", StringComparison.Ordinal)
-            + "\n## Evaluation behavior\n\nThe operand always runs.\n\n## Implementation notes\n\nThe previous section name.\n";
+        string withBehavior = ValidNot + "\n## Evaluation behavior\n\nThe operand always runs.\n";
 
-        Assert.Empty(Check(NotPath, renamed));
+        Assert.Empty(Check(NotPath, withBehavior));
+    }
+
+    /// <summary>A Title Case section name is reported with the required spelling.</summary>
+    [Fact]
+    public void Check_TitleCaseSectionName_ReportsTheRequiredSpelling_Test()
+    {
+        string titleCase = ValidNot.Replace("## Input domain", "## Input Domain", StringComparison.Ordinal);
+
+        string failure = Assert.Single(Check(NotPath, titleCase));
+
+        Assert.Contains("must be spelled '## Input domain'", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>The previous section name Implementation notes is no longer accepted.</summary>
+    [Fact]
+    public void Check_ImplementationNotesSection_IsReportedAsUnknown_Test()
+    {
+        string old = ValidNot + "\n## Implementation notes\n\nThe evaluator folds the operands.\n";
+
+        string failure = Assert.Single(Check(NotPath, old));
+
+        Assert.Contains("unknown section '## Implementation notes'", failure, StringComparison.Ordinal);
     }
 
     /// <summary>A section name outside the template is reported at its heading.</summary>
@@ -297,7 +313,7 @@ public sealed class K3ReferenceTests
         Assert.Contains("inventory", failure, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>A Truth Table section with no verified table marker cannot slip through unchecked.</summary>
+    /// <summary>A Truth table section with no verified table marker cannot slip through unchecked.</summary>
     [Fact]
     public void Check_TruthTableSectionWithoutMarker_IsReported_Test()
     {

@@ -4,10 +4,14 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `docs/glossary.md` follows the documentation standard and its terms agree with `CONTEXT.md` and `terminology.md`
-- [ ] Every K3 term links into `docs/strong-k3/`, and no K3 page links back to the glossary or to `README.md`
-- [ ] The README Glossary section is a link, and every README link into `docs/strong-k3/` resolves
-- [ ] The doctest checks on `README.md` and `CONTEXT.md` still pass
-- [ ] The lint test passes, with `docs/glossary.md` outside the baseline
+- [x] `docs/glossary.md` follows the documentation standard and its terms agree with `CONTEXT.md` and `terminology.md`
+- [x] Every K3 term links into `docs/strong-k3/`, and no K3 page links back to the glossary or to `README.md`
+- [x] The README Glossary section is a link, and every README link into `docs/strong-k3/` resolves
+- [x] The doctest checks on `README.md` and `CONTEXT.md` still pass
+- [x] The lint test passes, with `docs/glossary.md` outside the baseline
+
+## Comments
+
+- 2026-10-04: Done. `docs/glossary.md` has about 50 entries in four alphabetical groups, each with a link to the defining page. The README Glossary section is a link to it. No other README text changed. The README doctests and the lint test pass.

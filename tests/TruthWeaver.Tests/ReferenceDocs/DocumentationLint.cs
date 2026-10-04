@@ -180,8 +180,8 @@ internal static partial class DocumentationLint
                     );
                 }
 
-                bool outside = resolved is null || !resolved.StartsWith(ReferencePrefix, StringComparison.Ordinal);
-                if (path.StartsWith(ReferencePrefix, StringComparison.Ordinal) && outside)
+                bool inside = resolved?.StartsWith(ReferencePrefix, StringComparison.Ordinal) ?? false;
+                if (path.StartsWith(ReferencePrefix, StringComparison.Ordinal) && !inside)
                 {
                     failures.Add(
                         $"{path}:{number}: link '{target}' leaves docs/strong-k3; reference pages link only to reference pages"
@@ -193,19 +193,26 @@ internal static partial class DocumentationLint
         return failures;
     }
 
-    private static bool InStopList(string path) =>
-        path == "CHANGELOG.md" || StopList.Any(prefix => path.StartsWith(prefix, StringComparison.Ordinal));
+    private static bool InStopList(string path)
+    {
+        return path == "CHANGELOG.md" || StopList.Any(prefix => path.StartsWith(prefix, StringComparison.Ordinal));
+    }
 
-    private static string DirectoryOf(string path) =>
-        path.Contains('/', StringComparison.Ordinal) ? path[..path.LastIndexOf('/')] : string.Empty;
+    private static string DirectoryOf(string path)
+    {
+        return path.Contains('/', StringComparison.Ordinal) ? path[..path.LastIndexOf('/')] : string.Empty;
+    }
 
-    private static string[] SplitLines(string markdown) => [.. markdown.Split('\n').Select(line => line.TrimEnd('\r'))];
+    private static string[] SplitLines(string markdown)
+    {
+        return [.. markdown.Split('\n').Select(line => line.TrimEnd('\r'))];
+    }
 
     private static bool HasMarker(string markdown, string state)
     {
         string[] lines = SplitLines(markdown);
         bool[] inFence = K3ReferenceChecker.FenceMap(lines);
-        return lines.Where((line, i) => !inFence[i]).Any(line => line.Trim() == $"<!-- docs-lint: {state} -->");
+        return lines.Where((_, i) => !inFence[i]).Any(line => line.Trim() == $"<!-- docs-lint: {state} -->");
     }
 
     /// <summary>The repository-relative Markdown files a document links to.</summary>

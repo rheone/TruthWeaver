@@ -37,8 +37,8 @@ using TruthWeaver.Tests.TestSupport;
 /// <para>
 /// A file in a category directory other than <c>README.md</c> is an operation document: it must be in the
 /// inventory with the matching category directory and Kind, carry every required section non-empty, use only the known
-/// section names, and its Truth table, Evaluation table and Canonical form sections must each contain the marker that
-/// verifies them. Section names match without regard to case. Relative links, including
+/// section names, spelled exactly as in the template, and its Truth table, Evaluation table and Canonical form sections
+/// must each contain the marker that verifies them. Relative links, including
 /// heading anchors in Markdown targets, must resolve everywhere. Code spans and fenced blocks are not scanned for links.
 /// </para>
 /// <para>Failures are returned, not thrown, so the checker can be shown to fail on deliberately wrong fixtures.</para>
@@ -63,7 +63,7 @@ internal static partial class K3ReferenceChecker
         "Formal semantics",
     ];
 
-    // Sections that appear only where they apply. "Implementation notes" is the previous name of "Evaluation behavior".
+    // Sections that appear only where they apply.
     private static readonly string[] OptionalSections =
     [
         "Formula",
@@ -75,7 +75,6 @@ internal static partial class K3ReferenceChecker
         "Edge cases",
         "Mermaid diagram",
         "Evaluation behavior",
-        "Implementation notes",
         "Related operations",
     ];
 
@@ -673,12 +672,20 @@ internal static partial class K3ReferenceChecker
         foreach ((string title, (int Start, int End) range) in sections)
         {
             if (
-                !RequiredSections.Contains(title, StringComparer.OrdinalIgnoreCase)
-                && !OptionalSections.Contains(title, StringComparer.OrdinalIgnoreCase)
+                RequiredSections.Contains(title, StringComparer.Ordinal)
+                || OptionalSections.Contains(title, StringComparer.Ordinal)
             )
             {
-                fail(range.Start + 1, $"unknown section '## {title}'");
+                continue;
             }
+
+            string? spelling = RequiredSections
+                .Concat(OptionalSections)
+                .FirstOrDefault(known => known.Equals(title, StringComparison.OrdinalIgnoreCase));
+            fail(
+                range.Start + 1,
+                spelling is null ? $"unknown section '## {title}'" : $"section '## {title}' must be spelled '## {spelling}'"
+            );
         }
 
         if (

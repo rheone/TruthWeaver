@@ -2270,56 +2270,7 @@ dotnet run -c Release --no-build --project benchmarks/TruthWeaver.Benchmarks -- 
 
 ## Glossary
 
-The short version lives in the [concept table](#what-it-is-and-isnt) above;
-this is the full vocabulary, alphabetically. The authoritative version,
-with the reasoning behind each term, is [CONTEXT.md](CONTEXT.md).
-
-| Term | Meaning |
-| --- | --- |
-| `AtLeast(k, ...)` / `AtMost(k, ...)` / `GreaterThan(k, ...)` / `LessThan(k, ...)` / `Exactly(k, ...)` | The threshold operator family: n-ary comparisons against the true-operand count, all compiling to one shared `ThresholdExpression` node — see [Operators](#operators). |
-| BDD analyzer | The compiler's constant/contradiction-detection pass, backed by a real binary decision diagram rather than brute-force truth tables. It reasons in Strong K3 with a dual-rail BDD ("definitely true" / "possibly true" per sub-expression, each term contributing an independent `True`/`False`/`Unknown` state), so its warnings (`TRE0012` tautology, `TRE0013` contradiction) mean the sub-expression is `True` (resp. `False`) for every `{True, False, Unknown}` assignment: `A AND NOT A` and `A OR NOT A` are not reported because they are `Unknown` when `A` is (ADR-0005 decision 17) — see [Compilation pipeline](#compilation-pipeline). |
-| `CompilationMode` | `Strict` (default — an unregistered predicate is a compile error) or `Lenient` (an unregistered predicate compiles to a permanent `Unknown` term, for services sharing a rule store with different predicate sets). |
-| `CompilationResult<TContext>` | What `Compile`/`CompileJson`/`CompileYaml` return: a nullable `CompiledRule<TContext>` plus every `Diagnostic` raised. |
-| `CompiledRule<TContext>` | The immutable, thread-safe result of a successful compile. Safe to cache, share, and evaluate repeatedly; swapping the reference that holds it is how a host applies a rule edit at runtime. |
-| `CompilerOptions` | Compile-time resource bounds — max tree depth, max node count, the BDD analyzer's term cap — plus `CompilationMode`. |
-| `Decision` | The result of one evaluation: a `TruthValue`, the `Fault`s absorbed along the way, and optionally a `Trace`. `Decision.IsSatisfied` is true only when the result is `TruthValue.True`. `Decision.Result` is always the rule's raw value; `Decision.Collapse(policy)` turns it into a final `CollapseOutcome` and `Decision.Project(unknownAs)` into a definite `TruthValue`, both at the call site. |
-| `Collapse` / `CollapsePolicy` / `CollapseOutcome` | A method on the result, not part of the rule (ADR-0005 decision 14). `CollapsePolicy` (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`) says how `Unknown` becomes a two-valued answer; `CollapseOutcome` (`True`, `False`, `RejectedUnresolved`) is the answer. `RejectedUnresolved` is a normal outcome, not a `Fault`. Rule text, JSON and YAML cannot declare it. See [Collapse](#collapse-the-final-boundary). |
-| `Diagnostic` | One compile-time problem: a code, a `DiagnosticSeverity` (`Error`/`Warning`/`Info`), a message, a source span or JSON/YAML `Path`, optional expected/found text and a `DiagnosticSuggestion`. See [Reading diagnostics](#reading-diagnostics). `Error` severity is what blocks `CompiledRule<TContext>` from being populated. |
-| `EvaluationOptions` | Per-call evaluation knobs: `FaultBudget` (abort after N faults), `Mode` (`Default` or `Exhaustive`), and an overall timeout. |
-| `PARITY(...)` | N-ary parity: true iff an odd number of operands are true; `Unknown` whenever any operand is `Unknown`. The unambiguous name for what `XOR` would mean past two operands. |
-| `ANY(...)` / `ALL(...)` / `NONE(...)` | N-ary cardinality operators over the definitely-true / possibly-true interval: `AtLeast(1, ...)`, `AtLeast(n, ...)` and `AtMost(0, ...)`, kept as their own nodes so a rule round-trips as written. They take two or more operands. |
-| `BETWEEN(min, max, ...)` | N-ary operator: the number of true operands lies in `[min, max]` (`AtLeast(min, ...) AND AtMost(max, ...)`); the bounds are validated at compile time and a rule prints them first. |
-| `COALESCE(...)` / `??` | N-ary operator that replaces only `Unknown` with the next operand (`True`/`False` pass through); short-circuits at the first known value. `??` is the infix spelling and chains into one node. |
-| `IsTrue(...)` / `IsFalse(...)` / `IsUnknown(...)` / `IsKnown(...)` | Inspection operators: test the K3 state of their operand and always answer a definite `True` or `False`, so they never collapse or fault the enclosing rule. |
-| `If(...)` / `c ? t : f` | Ternary conditional. A definite condition picks its branch (the other is not evaluated); an `Unknown` condition yields a value only when both branches are the same definite value. |
-| `ExactlyOne(...)` | N-ary operator: true iff exactly one operand is true. The explicit name for "exactly one," so it's never confused with `XOR`'s binary-only meaning or `PARITY`'s parity. |
-| Expression | The three-valued tree itself — operators over terms, constants and sub-expressions. What a `CompiledRule<TContext>` wraps. |
-| `Fault` | A record of one predicate failing to produce an answer during one evaluation: the faulting term's identity plus the exception. Faults are absorbed as `Unknown`, never rethrown. |
-| `a IMPLIES b` / `→` | Strong Kleene material implication, `NOT a OR b`; a first-class binary node that prints as written (`(a IMPLIES b)`). Mixing it with `AND`/`OR` or another infix operator without parentheses is a compile error. See [Operators](#operators). |
-| Inspection | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: external operators that test the K3 state of their operand and always answer a definite `True`/`False`. |
-| External operator | An operator that is not a Strong Kleene connective because it is not monotone in the information order: `COALESCE` / `??` and the four inspections. The "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to them. See [Strong Kleene connectives and external operators](#strong-kleene-connectives-and-external-operators). |
-| Information order | `Unknown` below both `True` and `False`. Strong Kleene connectives are monotone in it; external operators are not. The truth order `False < Unknown < True` is separate. |
-| Rewrite | An opt-in, value-preserving transform of a compiled rule returning a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify`. See [Rewriting rules](#rewriting-rules). |
-| `GroupingStyle` / `RuleText` | `CompiledRule.PrintRuleText(GroupingStyle)` prints with `()` only or depth-cycling `()` `[]` `{}`; `RuleText.NormalizeWhitespace` tidies rule text as written without compiling it. See [Grouping delimiters](#grouping-delimiters). |
-| Kleene logic | Three-valued logic (`True`/`False`/`Unknown`) instead of two-valued boolean logic — the reason a predicate fault becomes `Unknown` rather than a thrown exception or a silently coerced `false`. See [ADR-0001](docs/adr/0001-kleene-failure-model.md). |
-| Memoization | Within one evaluation, a given term identity is invoked at most once, however many places in the tree reference it. Never carries across separate `EvaluateAsync` calls. |
-| Operator | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `If`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `ExactlyOne`, the threshold family, and the `True`/`False`/`Unknown` constants — the closed set of ways to combine terms and sub-expressions. Every operator has a `Label`/`Description` via `OperatorInfo.Describe`. See [Operators](#operators). |
-| `OperatorInfo` / `OperatorDescriptor` | `OperatorInfo.Describe(node)` (`TruthWeaver.Ast`) returns an operator node's `OperatorDescriptor` (`Label`, `Description`) — the operator-side counterpart to a predicate's `PredicateSchema.Label`/`Description`. See [Outlining a compiled rule](#outlining-a-compiled-rule). |
-| Predicate | A registered, reusable implementation (e.g. `hasTopping`, `lovesPineapple`) — the *function*, not any one call to it. Implements `IPredicate<TContext>` or is registered as a stateless lambda. Required to carry a `Label` and `Description`; see [Predicate types](#predicate-types). |
-| `PredicateArguments` | The non-generic accessor (`GetString`, `GetInt64`, ...) a predicate uses to read its own term's arguments inside `EvaluateAsync`. |
-| `PredicateRegistry<TContext>` | Where predicates are registered under a name, with their `PredicateSchema`. Built once via `PredicateRegistryBuilder<TContext>`; no attribute or assembly scanning. `TryGetSchema` looks one up by name. |
-| `PredicateSchema` | A predicate's registered name, a required read-only `Label` and `Description`, and its named-argument declarations (each also carrying a required `Description`), validated against a term's arguments at compile time. |
-| `RuleBuilder` | A fluent API (`TruthWeaver.Building`) for assembling a rule tree from application logic without hand-writing DSL/JSON/YAML text; renders to the same JSON tree shape and compiles through the same `CompileJson` pipeline. See [Building rules programmatically](#building-rules-programmatically). |
-| `OutlineNode` | The recursive result of `CompiledRule<TContext>.Outline()`: a node's `Label`, `Description`, and its `Operands` outlined the same way — the "what does this rule mean" view of a compiled tree, without exposing the AST types themselves. See [Outlining a compiled rule](#outlining-a-compiled-rule). |
-| `RuleDiff` | Computes a structural diff between two compiled rules — which operator, term, or constant nodes were added, removed, or changed, located by operand-index path. See [Features](#features). |
-| Rule | A named unit of persistence: metadata plus one expression. What gets compiled into a `CompiledRule<TContext>`. |
-| Short-circuit | `AND` stops evaluating operands at the first `False`; `OR` stops at the first `True`. Skipped operands are recorded as `NotEvaluated` in the trace, not omitted. |
-| Term | A predicate bound to concrete, literal arguments (e.g. `hasTopping(topping: "greenOlives")`) — the tree's leaf node, and the unit of memoization. |
-| Term identity | What makes two term references "the same variable": predicate name (normalized to registered casing) plus arguments sorted by name and compared by exact, case-sensitive value. Argument order in source text never matters; array-valued arguments are order-sensitive. |
-| `Trace` | An ordered, literal record of every node an evaluation visited or explicitly skipped — the "why was this denied" explanation. |
-| `TruthValue` | The three-valued result type: `True`, `False`, or `Unknown`. Never `bool?`. |
-| `a EQUIVALENT b` / `↔` | The Strong Kleene biconditional (`IFF`; formerly and still readable as `XNOR`) — the negation of `XOR`, deliberately binary. Mixing `EQUIVALENT` with `AND`/`OR`, or with `XOR`, at the same level without parentheses is a compile error — see [Examples #4](#4-xor-equivalent-exactlyone-and-the-threshold-family). |
-| `a XOR b` | Binary exclusive-or (infix only); `PARITY(...)` is the n-ary parity operator. Mixing `XOR` with `AND`/`OR`, or with `EQUIVALENT`, at the same level without parentheses is a compile error — see [Examples #4](#4-xor-equivalent-exactlyone-and-the-threshold-family). |
+The [glossary](docs/glossary.md) explains the vocabulary of TruthWeaver, including the terms that are new or easy to confuse. [CONTEXT.md](CONTEXT.md) gives the reasoning behind each engine term.
 
 ## Appendix: Truth tables
 

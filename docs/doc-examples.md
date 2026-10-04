@@ -47,7 +47,7 @@ oracle bindings are in `K3Operation.cs`. Run the checks with
 
 ## Operation page template
 
-One Markdown file describes one Operation. The file name is the lower-case canonical name, such as `xor.md` or `atleast.md`. The sections appear in this order. A section that does not apply is omitted, never left empty. Section names are in sentence case, and the checker matches them without regard to case.
+One Markdown file describes one Operation. The file name is the lower-case canonical name, such as `xor.md` or `atleast.md`. The sections appear in this order. A section that does not apply is omitted, never left empty. Section names are in sentence case, and the checker requires these exact spellings.
 
 | Required section | Content |
 | --- | --- |
