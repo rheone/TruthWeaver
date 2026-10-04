@@ -152,7 +152,7 @@ The predicate's argument declares a `LiteralKind`, and that decides what a query
 | Argument kind | Required result |
 | --- | --- |
 | Scalar (`String`, `Int64`, `Decimal`, `Boolean`, `DateTimeOffset`, `Guid`) | Exactly one match of a convertible type. |
-| Array (`StringArray`, `Int64Array`, and so on) | Every match, each convertible to the element type. No match gives an empty array. |
+| Array (`StringArray`, `Int64Array`, and so on) | Every match, each convertible to the element type. No match, including a path to a missing property, gives an empty array. |
 
 Conversions are deliberately the same as for literals written in a rule:
 
@@ -187,7 +187,7 @@ A failed lookup never throws out of the evaluation. The term becomes `Unknown`, 
 
 | Outcome | When | Result |
 | --- | --- | --- |
-| Missing | A scalar query matched nothing, or the path leads to a missing property. | `Unknown` plus a fault. |
+| Missing | A scalar query matched nothing. | `Unknown` plus a fault. |
 | Ambiguous | A scalar query matched more than one node. | `Unknown` plus a fault. |
 | Type mismatch | The match cannot convert to the argument's kind. | `Unknown` plus a fault naming the expected and actual kinds. |
 | Source error | The source failed or timed out, or a query nobody validated turned out to be malformed. | `Unknown` plus a fault. |

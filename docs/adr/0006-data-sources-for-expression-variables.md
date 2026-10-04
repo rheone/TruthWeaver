@@ -42,8 +42,9 @@ source, not to TruthWeaver, and equality compares the reference text, not the re
    sources use JSONPath (RFC 9535); YAML is read into the same data model as JSON.
 6. **Cardinality.** A scalar argument needs exactly one match: zero matches (missing) and two or more
    (ambiguous) are faults, so the term is `Unknown`. A path or filter selects the node, for example
-   `$.orders[?@.id=='A7'].total`. An array argument collects every match; zero matches give an empty array,
-   unless the source reports a definite path to a missing property as missing.
+   `$.orders[?@.id=='A7'].total`. An array argument collects every match; zero matches always give an empty array,
+   including a path to a missing property, because a query result cannot tell the two apart. A scalar query on
+   the same path faults as missing, and a query validator catches mistyped syntax at compile time.
 7. **Conversions follow the DSL literal rules and nothing wider.** A string parses to `DateTimeOffset` and
    `Guid`; a JSON integer widens to `Decimal`; a whole-number `Decimal` narrows to `Int64` only when exactly
    representable. A string is never coerced to a number or boolean, and a number is never coerced to a
