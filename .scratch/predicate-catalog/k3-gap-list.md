@@ -133,21 +133,24 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 Inventory: `IsEmpty`, `IsNotEmpty`, `Contains`, `In`, `NotIn`, `CountEqual`, `CountLessThan`,
 `CountGreaterThan`, `CountLessThanOrEqual`, `CountGreaterThanOrEqual`.
 
-Today only `CollectionPredicates.SetEquals` exists, over `IReadOnlyCollection<string>?`. Element type is
+`CollectionPredicates` provides the whole collection family (ticket 05, with `NotX` twins `IsNotEmpty`, `NotContains`, `NotContainsAny`, `NotContainsAll`, `IsNotSubsetOf`, `NotIn` and `NotCount*`) beside `SetEquals`, over `IReadOnlyCollection<string>?`. Element type is
 therefore `string` only; `Int64`/`Decimal`/`Guid` collections need generic or per-kind overloads.
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `IsEmpty` | missing | none | A `null` collection is treated as empty by `SetEquals`; `IsEmpty(null)` would be `True` by that convention. |
-| `IsNotEmpty` | missing | none | As `IsEmpty`, so `IsNotEmpty(null)` is `False`. |
-| `Contains` | missing | none | Collection contains the literal value: arguments `value` (`String`, or per-kind). Distinct from `StringPredicates.Contains`. |
-| `In` | missing | none | Resolved (question 4): `In` is scalar-only membership, so a collection selector is a compile error. The collection predicates are `ContainsAny`, `ContainsAll` and `IsSubsetOf`, each with a twin. |
-| `NotIn` | missing | none | As `In`. |
-| `CountEqual` | missing | none | Argument `count` (`Int64`). Null collection counts as 0 (issue 01 convention) or yields `Unknown`. |
-| `CountLessThan` | missing | none | As `CountEqual`. |
-| `CountGreaterThan` | missing | none | As `CountEqual`. |
-| `CountLessThanOrEqual` | missing | none | As `CountEqual`. |
-| `CountGreaterThanOrEqual` | missing | none | As `CountEqual`. |
+| `IsEmpty` | present | `CollectionPredicates` | A `null` collection is treated as empty by `SetEquals`; `IsEmpty(null)` would be `True` by that convention. |
+| `IsNotEmpty` | present | `CollectionPredicates` | As `IsEmpty`, so `IsNotEmpty(null)` is `False`. |
+| `Contains` | present | `CollectionPredicates` | Collection contains the literal value: arguments `value` (`String`, or per-kind). Distinct from `StringPredicates.Contains`. |
+| `ContainsAny` | present | `CollectionPredicates` | Added by decision 4: at least one element is in the candidate array. Twin `NotContainsAny`. |
+| `ContainsAll` | present | `CollectionPredicates` | Added by decision 4: every candidate is an element. Twin `NotContainsAll`. |
+| `IsSubsetOf` | present | `CollectionPredicates` | Added by decision 4: every element is in the candidate array. Twin `IsNotSubsetOf`. |
+| `In` | present | `CollectionPredicates` | Resolved (question 4): `In` is scalar-only membership, so a collection selector is a compile error. The collection predicates are `ContainsAny`, `ContainsAll` and `IsSubsetOf`, each with a twin. |
+| `NotIn` | present | `CollectionPredicates` | As `In`. |
+| `CountEqual` | present | `CollectionPredicates` | Argument `count` (`Int64`). Null collection yields `Unknown` by default (`NullBehavior.False` is the host option). Twins `NotCount*`. |
+| `CountLessThan` | present | `CollectionPredicates` | As `CountEqual`. |
+| `CountGreaterThan` | present | `CollectionPredicates` | As `CountEqual`. |
+| `CountLessThanOrEqual` | present | `CollectionPredicates` | As `CountEqual`. |
+| `CountGreaterThanOrEqual` | present | `CollectionPredicates` | As `CountEqual`. |
 
 ## DateTimeOffset
 
@@ -158,12 +161,12 @@ arguments), `Between` (each with `DateTimeOffset` and `DateTime` arguments).
 | --- | --- | --- | --- |
 | `AfterNow` | missing | none | **Needs a time provider** (`TimeProvider`). CONTEXT.md says ambient state "is the predicate's problem, not the engine's", and issue 01 explicitly rejected catalog predicates that read the clock. The factory would take a `TimeProvider` parameter at registration, which resolves that objection only if the owner accepts a clock-reading catalog member. Also determines whether "now" is read once per evaluation (consistency within one `Evaluate`) or per term. |
 | `BeforeNow` | missing | none | As `AfterNow`. |
-| `After(value, DateTimeOffset)` | missing | none | Argument kind `DateTimeOffset` already exists. Strict `>`. |
-| `After(value, DateTime)` | missing | none | **Needs a new `LiteralKind`** (`DateTime`) or a documented conversion. `DateTime` has no offset and a `Kind` of `Utc`/`Local`/`Unspecified`, so conversion to `DateTimeOffset` is host-timezone-dependent for `Local`/`Unspecified`. Adding a `LiteralKind` is a closed-set extension (ADR-0003, CONTEXT.md) and a breaking change for exhaustive switches. Recommend not adding it: accept the `DateTimeOffset` literal and let the host convert. |
-| `Before(value, DateTimeOffset)` | missing | none | As `After`. |
-| `Before(value, DateTime)` | missing | none | As `After(value, DateTime)`. |
-| `Between(value, DateTimeOffset, DateTimeOffset)` | missing | none | Inclusive on both ends; reversed bounds are an authoring error (question 7). |
-| `Between(value, DateTime, DateTime)` | missing | none | As `After(value, DateTime)`. |
+| `After(value, DateTimeOffset)` | present | `DateTimePredicates` | Argument kind `DateTimeOffset` already exists. Strict `>`. |
+| `After(value, DateTime)` | not added (decided: host converts) | none | **Needs a new `LiteralKind`** (`DateTime`) or a documented conversion. `DateTime` has no offset and a `Kind` of `Utc`/`Local`/`Unspecified`, so conversion to `DateTimeOffset` is host-timezone-dependent for `Local`/`Unspecified`. Adding a `LiteralKind` is a closed-set extension (ADR-0003, CONTEXT.md) and a breaking change for exhaustive switches. Recommend not adding it: accept the `DateTimeOffset` literal and let the host convert. |
+| `Before(value, DateTimeOffset)` | present | `DateTimePredicates` | As `After`. |
+| `Before(value, DateTime)` | not added (decided: host converts) | none | As `After(value, DateTime)`. |
+| `Between(value, DateTimeOffset, DateTimeOffset)` | present | `DateTimePredicates` | Inclusive on both ends; reversed bounds are an authoring error (question 7). |
+| `Between(value, DateTime, DateTime)` | not added (decided: host converts) | none | As `After(value, DateTime)`. |
 
 Overload by argument type is not expressible in a single predicate schema (one name, one schema), so the
 `DateTime` overloads are either separate predicate names or are dropped in favour of the `DateTimeOffset`

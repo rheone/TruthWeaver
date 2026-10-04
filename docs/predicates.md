@@ -76,6 +76,48 @@ StringPredicates.Equals<PizzaOrder>(
 NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Quantity In Range");
 ```
 
+### Collection predicates
+
+`CollectionPredicates` selects an `IReadOnlyCollection<string>?`. Comparison is ordinal and case-sensitive. Every predicate has a `NotX` twin that is its Strong Kleene complement: `True` becomes `False`, `False` becomes `True`, and `Unknown` stays `Unknown`.
+
+| Predicate | Twin | Argument | `True` when |
+| --- | --- | --- | --- |
+| `IsEmpty` | `IsNotEmpty` | none | The collection has no elements. |
+| `Contains` | `NotContains` | `value` (`String`) | The collection contains the value. |
+| `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
+| `ContainsAll` | `NotContainsAll` | `values` (`StringArray`) | Every string in the array is an element. |
+| `IsSubsetOf` | `IsNotSubsetOf` | `values` (`StringArray`) | Every element is in the array. |
+| `In` | `NotIn` | `values` (`StringArray`) | The selected scalar string is in the array. |
+| `CountEqual` | `NotCountEqual` | `count` (`Int64`) | The element count equals `count`. |
+| `CountLessThan` | `NotCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
+| `CountGreaterThan` | `NotCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
+| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` | `count` (`Int64`) | The element count is at most `count`. |
+| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` | `count` (`Int64`) | The element count is at least `count`. |
+
+`In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
+
+A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two predicates always return a definite answer and have no `nullBehavior` option. All other predicates in this table return `Unknown` for a null selected value. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead. The twin then returns `True`.
+
+### Date and time predicates
+
+`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. Values compare by instant, so the same moment with a different offset is equal.
+
+| Predicate | Twin | Arguments | `True` when |
+| --- | --- | --- | --- |
+| `After` | `NotAfter` | `value` | The selected instant is later than `value`. An equal instant is `False`. |
+| `Before` | `NotBefore` | `value` | The selected instant is earlier than `value`. An equal instant is `False`. |
+| `Between` | `Outside` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `Outside` is the exact complement. |
+
+Reversed bounds (`lower` later than `upper`) are an authoring error. The predicate throws `ArgumentException`, the evaluation records a fault and the result is `Unknown`. The bounds are never swapped.
+
+A null selected value returns `Unknown`. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead.
+
+There is no `DateTime` literal kind and no `DateTime` overload. A `DateTime` can have an unspecified `Kind`, so its meaning depends on the host time zone. Convert it to a `DateTimeOffset` in the selector:
+
+```csharp
+DateTimePredicates.After<Order>("placedAfter", order => new DateTimeOffset(order.PlacedUtc, TimeSpan.Zero));
+```
+
 ## 0 arguments, stateless lambda
 
 ```csharp

@@ -4,7 +4,7 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run is shown before the implementation
 - [ ] Each listed predicate is registerable and returns the documented value for a null, empty, one-item and many-item collection
@@ -16,3 +16,7 @@
 - [ ] The full validation from CLAUDE.md passes
 
 Source: [gap list, Collection section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+- 2026-10-04: Done. `CollectionPredicates` gains `IsEmpty`, `Contains`, `ContainsAny`, `ContainsAll`, `IsSubsetOf`, scalar-`string` `In` and the five `Count*` predicates, each with a `NotX` twin (`IsNotEmpty`, `NotContains`, `NotContainsAny`, `NotContainsAll`, `IsNotSubsetOf`, `NotIn`, `NotCount*`). `In`/`NotIn` take a `string?` selector, so a collection selector fails to compile (no runtime diagnostic is needed). Emptiness is definite (null is empty, no `nullBehavior`); the other families default to `NullBehavior.Unknown` and the twin is the K3 complement of the configured null answer. Element type is `string` only. Tests: `CollectionFamilyPredicatesTests`. Docs: `docs/predicates.md`.
