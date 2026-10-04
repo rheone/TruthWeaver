@@ -1,5 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// An immutable, order-sensitive, structurally-equatable list. Record types compare reference-typed
 /// properties with <see cref="EqualityComparer{T}.Default"/>, which for <c>IReadOnlyList&lt;T&gt;</c>
@@ -10,6 +12,7 @@ namespace TruthWeaver.Abstractions;
 /// <typeparam name="T">The element type.</typeparam>
 /// <remarks>Initializes a new instance of the <see cref="EquatableArray{T}"/> struct.</remarks>
 /// <param name="items">The elements, copied into an immutable backing array.</param>
+[DebuggerDisplay("Count = {Count}")]
 public readonly struct EquatableArray<T>(IEnumerable<T> items) : IEquatable<EquatableArray<T>>, IReadOnlyList<T>
 {
     private readonly ImmutableArray<T> items = [.. items];

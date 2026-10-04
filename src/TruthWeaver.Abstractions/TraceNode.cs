@@ -1,5 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// One node of a <see cref="Decision.TraceTree"/>: a structural mirror of one node in a compiled expression
 /// tree, annotated with what happened to it during one evaluation. Unlike <see cref="Trace"/> (a flat,
@@ -26,4 +28,10 @@ namespace TruthWeaver.Abstractions;
 /// This node's operand results, in source order — empty for a leaf, or for any node where
 /// <paramref name="NotEvaluated"/> is <see langword="true"/>.
 /// </param>
-public sealed record TraceNode(string Text, TruthValue? Result, bool NotEvaluated, IReadOnlyList<TraceNode> Children);
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
+public sealed record TraceNode(string Text, TruthValue? Result, bool NotEvaluated, IReadOnlyList<TraceNode> Children)
+{
+    // One line per node (text, outcome, child count) instead of the default record ToString, which prints every descendant.
+    private string DebuggerDisplay =>
+        $"{this.Text} => {(this.NotEvaluated ? "not evaluated" : this.Result)} ({this.Children.Count} children)";
+}

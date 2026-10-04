@@ -1,6 +1,8 @@
 namespace TruthWeaver.Ast;
 
+using System.Diagnostics;
 using TruthWeaver.Abstractions;
+using TruthWeaver.Printing;
 
 // SA1402 (one type per file) is intentionally relaxed here: these records are a single closed-set
 // discriminated union (the operator set is closed by design, ADR-0004) and are far more readable
@@ -47,9 +49,13 @@ public enum InspectionKind
 /// model). Every node type below is a closed set by design (ADR-0004) — adding an operator is a
 /// versioned change to this package, not a plugin point.
 /// </summary>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public abstract record Expression
 {
     private protected Expression() { }
+
+    // The default record ToString nests every operand's full property dump; the canonical rule text is the readable form.
+    private string DebuggerDisplay => CanonicalPrinter.Print(this);
 }
 
 /// <summary>

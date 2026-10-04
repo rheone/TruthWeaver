@@ -1,5 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// The result of evaluating a rule against a context: a <see cref="TruthValue"/> plus any faults
 /// recorded along the way, and optionally a trace (ADR-0001).
@@ -20,6 +22,7 @@ namespace TruthWeaver.Abstractions;
 /// it can drive a full-tree rendering (e.g. <c>MermaidTreePrinter</c>/<c>PlainTextTreePrinter</c>)
 /// that shows the whole rule, the path actually taken, and the parts left out.
 /// </param>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
 {
     /// <summary>
@@ -28,6 +31,9 @@ public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Tr
     /// closed, the correct default for an authorization consumer (ADR-0001).
     /// </summary>
     public bool IsSatisfied => this.Result == TruthValue.True;
+
+    // Shows the answer and the fault count; the default record ToString expands the whole trace and every fault.
+    private string DebuggerDisplay => $"{this.Result} ({this.Faults.Count} faults)";
 
     /// <summary>
     /// Collapses <see cref="Result"/> to a final answer under <paramref name="policy"/>. <see cref="TruthValue.True"/> and

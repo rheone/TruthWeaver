@@ -1,5 +1,7 @@
 namespace TruthWeaver.Diagnostics;
 
+using System.Diagnostics;
+
 /// <summary>
 /// One compile-time diagnostic: a stable code, a severity, a plain-language message, where the problem is, and, where
 /// they apply, what was expected versus found and a suggested remedy (ADR-0002, ADR-0003, ADR-0005 decision 11).
@@ -10,6 +12,7 @@ namespace TruthWeaver.Diagnostics;
 /// <param name="Severity">The diagnostic's severity.</param>
 /// <param name="Message">A plain-language explanation of the problem.</param>
 /// <param name="Span">The location in the original source text this diagnostic refers to.</param>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed record Diagnostic(string Code, DiagnosticSeverity Severity, string Message, SourceSpan Span)
 {
     /// <summary>
@@ -26,6 +29,9 @@ public sealed record Diagnostic(string Code, DiagnosticSeverity Severity, string
 
     /// <summary>Gets a "did you mean" replacement or a short piece of advice, or <see langword="null"/> when there is none.</summary>
     public DiagnosticSuggestion? Suggestion { get; init; }
+
+    // Code, severity and message are what identify a diagnostic; the optional members make the default ToString long.
+    private string DebuggerDisplay => $"{this.Code} {this.Severity}: {this.Message}";
 
     /// <summary>Creates an <see cref="DiagnosticSeverity.Error"/>-severity diagnostic.</summary>
     /// <param name="code">The diagnostic code.</param>
