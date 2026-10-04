@@ -1,6 +1,6 @@
 # Data sources for expression variables
 
-**Status:** ready-for-agent
+**Status:** done
 
 Authority: [ADR-0006](../../docs/adr/0006-data-sources-for-expression-variables.md). Usage documentation: [docs/data-sources.md](../../docs/data-sources.md).
 

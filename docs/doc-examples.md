@@ -1,6 +1,6 @@
 # Executable documentation examples
 
-The runnable examples in `README.md` and `CONTEXT.md` are checked on every `dotnet test` by
+The runnable examples in `README.md`, `CONTEXT.md` and `docs/data-sources.md` are checked on every `dotnet test` by
 `tests/TruthWeaver.Tests/DocExamples/DocExampleChecker.cs` (run by `DocExampleTests`). A change that breaks a documented
 rule, or changes documented output, fails the build. C# fragments are not checked.
 
@@ -19,7 +19,9 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 | `<!-- doctest:skip REASON -->` | any | Not runnable (pseudo-grammar, class diagram). The reason is mandatory. |
 
 3. Predicates the examples use come from `BuildRegistry` in `DocExampleChecker.cs`. Add a predicate there (same name,
-   label and argument defaults the documentation shows) when a new example needs one.
+   label and argument defaults the documentation shows) when a new example needs one. The checker
+   declares the data source names `user` and `request` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
+   source name needs adding to the `Compiler` declarations in the same file.
 4. An untagged `text`, `json`, `yaml`, `mermaid` or `ebnf` block fails the check, so a new example cannot be forgotten.
 5. Run `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExampleTests"`. A failure names the file, line and marker
    and prints the documented and actual output side by side; fix the documentation (or the code, if the example is right).

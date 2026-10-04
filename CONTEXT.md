@@ -343,9 +343,10 @@ and schema: [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md).
 argument schema, `TruthValue`, `Decision` — zero dependencies, shared across
 projects that only *implement* predicates), `TruthWeaver` (AST,
 parser, compiler, analyzer, evaluator, System.Text.Json support, DI
-extensions), `TruthWeaver.Yaml` (YamlDotNet only), plus two optional add-ons that depend on the kernel alone:
-`TruthWeaver.Predicates` (ready-made predicate factories) and `TruthWeaver.Testing` (`Decision`
-assertions, fake predicates). Full reasoning:
+extensions), `TruthWeaver.Yaml` (YamlDotNet; also `YamlDataSource`), `TruthWeaver.DataSources.Json` (`JsonDataSource`, `JsonQueryValidator`
+and the JSONPath dependency, for `from("source", "query")` variable references), plus two optional add-ons that depend on the kernel
+alone: `TruthWeaver.Predicates` (ready-made predicate factories) and `TruthWeaver.Testing` (`Decision` assertions, fake predicates,
+`FakeDataSource`). Full reasoning:
 [ADR-0004](docs/adr/0004-package-boundaries-and-extensibility.md).
 
 ## AOT / trim compatibility
@@ -381,7 +382,7 @@ not independently *proven* safe end-to-end; a consumer publishing with `PublishA
 `PublishTrimmed` who reaches this package should smoke-test that specific scenario.
 
 No dedicated `PublishAot` smoke-test host was added: `PublishAot`/`PublishTrimmed` are
-publish-time settings for an executable, and none of these five packages is one. The
+publish-time settings for an executable, and none of these six packages is one. The
 build-time analyzer (`IsAotCompatible`) is the correct and sufficient check for a library —
 it's the same mechanism the .NET runtime's own libraries use to stay AOT-compatible without
 publishing themselves.

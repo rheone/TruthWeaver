@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tests.DocExamples;
 
 /// <summary>
-/// The runnable examples in README.md and CONTEXT.md are checked on every build by <see cref="DocExampleChecker"/>, so a
+/// The runnable examples in README.md, CONTEXT.md and docs/data-sources.md are checked on every build by <see cref="DocExampleChecker"/>, so a
 /// change that breaks a documented example, or changes documented output, fails the build. The checker itself is proven to
 /// fail on a deliberately broken example. The procedure for adding an example is in docs/doc-examples.md.
 /// </summary>
@@ -14,6 +14,7 @@ public sealed class DocExampleTests
     [Theory]
     [InlineData("README.md")]
     [InlineData("CONTEXT.md")]
+    [InlineData("docs/data-sources.md")]
     public void Check_DocumentationFile_ReportsNoFailures_Test(string fileName)
     {
         string markdown = File.ReadAllText(Path.Combine(DocExampleChecker.FindRepositoryRoot(), fileName));
@@ -21,6 +22,17 @@ public sealed class DocExampleTests
         IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, fileName);
 
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    /// <summary>A variable example that names a source the checker does not declare is reported, so the data-source examples are really compiled.</summary>
+    [Fact]
+    public void Check_VariableExampleWithUndeclaredSource_ReportsAFailure_Test()
+    {
+        const string markdown = "<!-- doctest:rule v -->\n```text\nageAtLeast(min: from(\"nobody\", \"$.minAge\"))\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Single(failures);
     }
 
     /// <summary>A tagged rule example whose text no longer compiles is reported, naming the example.</summary>

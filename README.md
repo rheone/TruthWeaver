@@ -232,7 +232,7 @@ Starting points for common tasks:
 Beyond `src`, the rest of the repository:
 
 - [`tests/TruthWeaver.Tests`](tests/TruthWeaver.Tests) — unit tests for all
-  five packages, one file per behavior area (parsing, compilation,
+  six packages, one file per behavior area (parsing, compilation,
   evaluation, memoization, YAML/JSON round-tripping, diffing, and so on).
 - [`benchmarks/TruthWeaver.Benchmarks`](benchmarks/TruthWeaver.Benchmarks) —
   a BenchmarkDotNet suite measuring compile-time and evaluation-time cost
@@ -249,7 +249,7 @@ Beyond `src`, the rest of the repository:
 | `TruthWeaver.Abstractions` | *(nothing third-party)* | `IPredicate<TContext>`, `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`, and the data source kernel (`IDataSource`, `DataQueryResult`, `DataSources`, `VariableReference`) — everything a predicate-implementing service needs. |
 | `TruthWeaver` | `Abstractions`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Logging.Abstractions` | The DSL parser, `RuleCompiler<TContext>`, `CompiledRule<TContext>`, the BDD-based analyzer, the evaluator, `System.Text.Json` tree support, printing/diffing, and DI registration extensions. |
 | `TruthWeaver.Yaml` | `TruthWeaver`, `TruthWeaver.DataSources.Json`, YamlDotNet | YAML tree support (`CompileYaml`/`PrintYaml`) and `YamlDataSource` (a YAML document as a data source, queried with the JSON package's JSONPath engine), isolated so a consumer with no interest in YAML never pulls in YamlDotNet. |
-| `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, JsonPath.Net | `JsonDataSource`: a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath (RFC 9535). Isolated so the core package takes no JSONPath dependency. |
+| `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, JsonPath.Net | `JsonDataSource` (a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath, RFC 9535) and `JsonQueryValidator` (compile-time syntax check of those queries). Isolated so the core package takes no JSONPath dependency. |
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
 | `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. |
 
@@ -1309,7 +1309,7 @@ A literal argument is fixed in the rule. When the value changes per request, or 
 document, write a variable reference instead: the source name and a query. It is resolved on every
 evaluation.
 
-<!-- doctest:skip needs a declared data source and a registered predicate; made runnable in data-sources ticket 09 -->
+<!-- doctest:rule ageVariable -->
 ```text
 ageAtLeast(min: from("user", "$.minAge"))
 ```
@@ -2582,7 +2582,7 @@ are covered by the evaluator's behavior described in
   the DSL grammar, the JSON/YAML tree form and the compile pipeline (its operator set
   is superseded by ADR-0005).
 - [ADR-0004: Package boundaries and extensibility](docs/adr/0004-package-boundaries-and-extensibility.md) —
-  why the library ships as five packages and how predicates and operators
+  why the library ships as six packages and how predicates and operators
   are extended.
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md) —
   the full K3 operator set, notations, boundaries (`Decision.Project` and `Decision.Collapse` on the result), rewrites,

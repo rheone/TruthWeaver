@@ -5,13 +5,9 @@ named data source on every evaluation (`min: from("user", "$.minAge")`). Use a v
 changes per request, or lives in a JSON or YAML document you do not want to write a predicate for.
 
 > [!NOTE]
-> This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 06): the
-> `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
-> names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. `EvaluationOptions.IncludeResolvedValues` (ticket 07). `Arg.From` and the build-time `GetAsync` helper (ticket 08). The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
-> examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
-> `doctest:skip` until ticket 09.
+> This guide describes the design accepted in [ADR-0006](adr/0006-data-sources-for-expression-variables.md). The rule
+> examples (text, JSON and YAML) are compiled by `dotnet test` (see [doc-examples.md](doc-examples.md)); the C# snippets are
+> exercised by `DataSourcesGuideTests`.
 
 ## Contents
 
@@ -53,14 +49,14 @@ Within one evaluation each `(source, query)` pair is queried once, however many 
 
 The reference has two quoted parts: the source name and the query. It goes anywhere a literal argument goes.
 
-<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
+<!-- doctest:rule ageAndRole -->
 ```text
 ageAtLeast(min: from("user", "$.minAge")) AND hasRole(role: from("request", "$.requiredRole"))
 ```
 
 The same rule as JSON and YAML. The reference is an object with `from` and `query`:
 
-<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
+<!-- doctest:json ageAndRole -->
 ```json
 {
   "op": "and",
@@ -71,7 +67,7 @@ The same rule as JSON and YAML. The reference is an object with `from` and `quer
 }
 ```
 
-<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
+<!-- doctest:yaml ageAndRole -->
 ```yaml
 op: and
 operands:
@@ -119,8 +115,8 @@ To catch a malformed query at compile time, declare the name with the source's q
 ```csharp
 var declarations = new DataSourceDeclarations
 {
-    ["user"] = JsonQueryValidator.Instance,   // queries against "user" are syntax-checked
-    "request",                                // no validator: a bad query surfaces at evaluation
+    { "user", JsonQueryValidator.Instance },   // queries against "user" are syntax-checked
+    "request",                                 // no validator: a bad query surfaces at evaluation
 };
 ```
 
@@ -240,7 +236,12 @@ Faults and the evaluation trace name the reference and the outcome, but not the 
 data may be sensitive. To include values in the trace while debugging:
 
 ```csharp
-Decision decision = await rule.EvaluateAsync(context, sources, new EvaluationOptions(IncludeResolvedValues: true));
+Decision decision = await rule.EvaluateAsync(
+    context,
+    services,
+    sources,
+    new EvaluationOptions(IncludeResolvedValues: true),
+    cancellationToken);
 ```
 
 Faults never include values, even then.
@@ -295,7 +296,8 @@ public interface IDataSource
 
 | Package | Contains |
 | --- | --- |
-| `TruthWeaver.Abstractions` | `IDataSource`, `IQueryValidator`, `DataQueryResult`, `DataSources`. |
+| `TruthWeaver.Abstractions` | `IDataSource`, `IQueryValidator`, `QueryProblem`, `DataQueryResult`, `DataSources`, `VariableReference`. |
+| `TruthWeaver` | `DataSourceDeclarations` (with `CompilerOptions.DataSources`), `EvaluationOptions.IncludeResolvedValues`, `Arg.From` and `IDataSource.GetAsync<T>` for `RuleBuilder`. |
 | `TruthWeaver.DataSources.Json` | `JsonDataSource`, `JsonQueryValidator` and the JSONPath dependency. |
 | `TruthWeaver.Yaml` | `YamlDataSource`, reusing the JSON source's query engine and validator. |
 | `TruthWeaver.Testing` | `FakeDataSource`. |

@@ -4,13 +4,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
+using TruthWeaver.DataSources.Json;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
 /// <summary>
-/// Checks the runnable examples in a Markdown file (README.md, CONTEXT.md) against the real compiler and printers, so a
+/// Checks the runnable examples in a Markdown file (README.md, CONTEXT.md, docs/data-sources.md) against the real compiler and printers, so a
 /// documented example that stops compiling, or documented output that stops matching, fails the build.
 /// </summary>
 /// <remarks>
@@ -32,7 +33,17 @@ internal static partial class DocExampleChecker
 {
     private static readonly string[] CheckedLanguages = ["text", "json", "yaml", "mermaid", "ebnf"];
 
-    private static readonly RuleCompiler<RuleTestContext> Compiler = new(BuildRegistry());
+    // The data source names the documentation's variable examples use; "user" carries the JSONPath validator.
+    private static readonly RuleCompiler<RuleTestContext> Compiler = new(
+        BuildRegistry(),
+        new CompilerOptions(
+            DataSources: new DataSourceDeclarations
+            {
+                ["user"] = JsonQueryValidator.Instance,
+                ["request"] = JsonQueryValidator.Instance,
+            }
+        )
+    );
 
     /// <summary>Walks up from the test binary to the directory that holds <c>TruthWeaver.slnx</c>.</summary>
     /// <returns>The repository root, where README.md and CONTEXT.md live.</returns>
@@ -292,6 +303,24 @@ internal static partial class DocExampleChecker
                         LiteralValue.OfBoolean(false)
                     ),
                 ]
+            ),
+            ConstantAsync
+        );
+        builder.Add(
+            new PredicateSchema(
+                "ageAtLeast",
+                "Age At Least",
+                "Is the user at least the given age?",
+                [new PredicateArgumentSchema("min", "The minimum age.", LiteralKind.Int64)]
+            ),
+            ConstantAsync
+        );
+        builder.Add(
+            new PredicateSchema(
+                "hasRole",
+                "Has Role",
+                "Does the user have the given role?",
+                [new PredicateArgumentSchema("role", "The role to check for.", LiteralKind.String)]
             ),
             ConstantAsync
         );

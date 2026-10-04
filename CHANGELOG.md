@@ -20,10 +20,10 @@ All notable changes to TruthWeaver are recorded here. The format follows
 **Version policy.** The version stays `1.0.0-dev` until the first release. Until `1.0.0` ships, any change may break
 compatibility, and this file is where each break is recorded with its migration step. From `1.0.0` the packages follow
 [Semantic Versioning](https://semver.org/): breaking changes only in a major version, new backward-compatible features
-in a minor version, fixes in a patch version. All five packages share one version.
+in a minor version, fixes in a patch version. All six packages share one version.
 
-**Package metadata** (checked on the 1.0.0-dev build): the five packages (`TruthWeaver`, `TruthWeaver.Abstractions`,
-`TruthWeaver.Predicates`, `TruthWeaver.Testing`, `TruthWeaver.Yaml`) are packable, target `net11.0`, carry the Apache-2.0
+**Package metadata** (checked on the 1.0.0-dev build): the six packages (`TruthWeaver`, `TruthWeaver.Abstractions`,
+`TruthWeaver.DataSources.Json`, `TruthWeaver.Predicates`, `TruthWeaver.Testing`, `TruthWeaver.Yaml`) are packable, target `net11.0`, carry the Apache-2.0
 license expression, the repository URL, symbol packages (`.snupkg`), SourceLink and the repository `README.md` as the
 package readme. Open items, deliberately not changed here: there is no `PackageIcon` (no icon asset exists), and the
 copyright line reads 2026.
@@ -62,6 +62,7 @@ copyright line reads 2026.
   DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
   throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators and `RuleBuilder` support follow.
+- Executable data-source documentation (data-sources 09): the rule, JSON and YAML examples in `docs/data-sources.md` and the README are checked by `DocExampleTests` (the checker now declares the `user` and `request` sources with `JsonQueryValidator`, and knows `ageAtLeast` and `hasRole`), and the guide's C# snippets run in `DataSourcesGuideTests`. The new `TruthWeaver.DataSources.Json` package is listed with the others.
 - `RuleBuilder` support for data sources (data-sources 08): `Arg.From(source, query, validator = null)` (in `TruthWeaver.Building`) returns a `VariableReference` that
   `RuleBuilder.Predicate` renders as the `{ "from", "query" }` argument form, so it compiles to the same canonical text as the DSL (an optional
   `IQueryValidator` rejects a malformed query with `ArgumentException` immediately). `IDataSource.GetAsync<T>(query, cancellationToken)` reads a value at
