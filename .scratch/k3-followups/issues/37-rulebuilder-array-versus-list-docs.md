@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each affected overload pair's XML docs show the array-versus-list case
-- [ ] The README has the note
-- [ ] k3-followups 33 is marked resolved by this ticket
-- [ ] The full validation from CLAUDE.md passes
+- [x] Each affected overload pair's XML docs show the array-versus-list case
+- [x] The README has the note
+- [x] k3-followups 33 is marked resolved by this ticket
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

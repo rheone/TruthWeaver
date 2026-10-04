@@ -59,6 +59,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for logical conjunction.</summary>
     /// <param name="operands">The conjuncts (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="And(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>AND</c> expression.</returns>
     public static RuleBuilder And(params RuleBuilder[] operands)
     {
@@ -73,6 +74,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>AND</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.And(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.And(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.And(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder And(IEnumerable<RuleBuilder> operands)
     {
@@ -81,6 +94,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for logical disjunction.</summary>
     /// <param name="operands">The disjuncts (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Or(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>OR</c> expression.</returns>
     public static RuleBuilder Or(params RuleBuilder[] operands)
     {
@@ -95,6 +109,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>OR</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.Or(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.Or(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.Or(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Or(IEnumerable<RuleBuilder> operands)
     {
@@ -168,6 +194,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for n-ary parity (<c>PARITY(a, b, ...)</c>): <c>Unknown</c> if any operand is <c>Unknown</c>, otherwise <c>True</c> for an odd number of <c>True</c> operands.</summary>
     /// <param name="operands">The operands (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Parity(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>PARITY</c> expression.</returns>
     public static RuleBuilder Parity(params RuleBuilder[] operands)
     {
@@ -182,6 +209,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>PARITY</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.Parity(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.Parity(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.Parity(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Parity(IEnumerable<RuleBuilder> operands)
     {
@@ -190,6 +229,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for <c>ANY(...)</c>: at least one operand is true (<c>AtLeast(1, ...)</c>).</summary>
     /// <param name="operands">The operands (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Any(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>ANY</c> expression.</returns>
     public static RuleBuilder Any(params RuleBuilder[] operands)
     {
@@ -204,6 +244,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>ANY</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.Any(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.Any(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.Any(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Any(IEnumerable<RuleBuilder> operands)
     {
@@ -212,6 +264,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for <c>ALL(...)</c>: every operand is true (<c>AtLeast(n, ...)</c>).</summary>
     /// <param name="operands">The operands (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="All(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>ALL</c> expression.</returns>
     public static RuleBuilder All(params RuleBuilder[] operands)
     {
@@ -226,6 +279,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>ALL</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.All(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.All(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.All(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder All(IEnumerable<RuleBuilder> operands)
     {
@@ -234,6 +299,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for <c>NONE(...)</c>: no operand is true (<c>AtMost(0, ...)</c>).</summary>
     /// <param name="operands">The operands (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="None(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>NONE</c> expression.</returns>
     public static RuleBuilder None(params RuleBuilder[] operands)
     {
@@ -248,6 +314,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>NONE</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.None(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.None(list);  // IEnumerable overload: folds to Not(x)
+    /// RuleBuilder.None(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder None(IEnumerable<RuleBuilder> operands)
     {
@@ -256,6 +334,7 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for the n-ary "exactly one of these is true" operator.</summary>
     /// <param name="operands">The operands (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="ExactlyOne(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>ExactlyOne</c> expression.</returns>
     public static RuleBuilder ExactlyOne(params RuleBuilder[] operands)
     {
@@ -270,6 +349,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>ExactlyOne</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.ExactlyOne(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.ExactlyOne(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.ExactlyOne(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder ExactlyOne(IEnumerable<RuleBuilder> operands)
     {
@@ -281,6 +372,7 @@ public abstract class RuleBuilder
     /// <c>False</c> pass through).
     /// </summary>
     /// <param name="operands">The operands in priority order (at least two).</param>
+    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Coalesce(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
     /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)
     {
@@ -295,6 +387,18 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>COALESCE</c> expression.</returns>
+    /// <example>
+    /// The same single operand through both overloads:
+    /// <code>
+    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
+    /// RuleBuilder[] array = [x];
+    /// List&lt;RuleBuilder&gt; list = [x];
+    ///
+    /// RuleBuilder.Coalesce(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
+    /// RuleBuilder.Coalesce(list);  // IEnumerable overload: folds to x
+    /// RuleBuilder.Coalesce(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.Unknown)
+    /// </code>
+    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Coalesce(IEnumerable<RuleBuilder> operands)
     {

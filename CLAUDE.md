@@ -50,7 +50,7 @@ The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/
 - All non-trivial code should have value added comments.
 - Do not add dependencies without a concrete reason.
 - Keep tests focused on observable behavior.
-- Prefer NSubstitute for test doubles.
+- Test doubles: `FakePredicates` (the `TruthWeaver.Testing` package, a deliberate part of the library) is the default double for predicates; use NSubstitute for other seams.
 - Do not suppress analyzers merely to make a build pass.
 - Do not weaken analyzer severity without documenting why.
 - Exception, documented in `src/Directory.Build.props`: S1135 (a `TODO` comment) is a warning in CI, not a failure. Every other warning still fails a `CI=true` build.
@@ -86,10 +86,10 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 
 ## Testing
 
-- Tests should follow Arrange / Act / Assert.
+- Tests follow Arrange / Act / Assert by shape (set up, one action, assertions), not by comment markers; `// Arrange` style comments are optional.
 - Tests should be named in the format "{MemberUnderTest}_{Scenario}_{Expectation}_Test"
 - Tests should describe behavior rather than implementation details.
-- Tests should have XML comments to describe what is being tested.
+- New and touched tests carry an XML `<summary>` describing the behavior. Untouched pre-existing tests are not backfilled.
 - Prefer one logical behavior per test.
 - Runnable examples in `README.md`/`CONTEXT.md` are tested: put a `<!-- doctest:... -->` marker above each `text`/`json`/`yaml`/`mermaid` block (procedure in `docs/doc-examples.md`); an untagged block fails `dotnet test`.
 

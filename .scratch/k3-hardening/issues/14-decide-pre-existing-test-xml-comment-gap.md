@@ -15,3 +15,4 @@ See also [spec](../spec.md).
 ## Comments
 
 - 2026-10-03: Owner chose option 1: the XML-summary rule applies to new and touched tests only. Work tracked by k3-followups 35.
+- 2026-10-03: Resolved by k3-followups 35 (CLAUDE.md and AGENTS.md state the scope; decision recorded in the k3-conformance issues log, row 44).

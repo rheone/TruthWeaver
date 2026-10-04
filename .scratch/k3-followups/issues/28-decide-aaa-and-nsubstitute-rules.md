@@ -16,3 +16,4 @@ Source: review of PR #4, Standards axis, hard violation 2 and judgement call on 
 ## Comments
 
 - 2026-10-03: Owner chose to amend the rules to describe the real convention. Work tracked by k3-followups 35.
+- 2026-10-03: Resolved by k3-followups 35 (CLAUDE.md and AGENTS.md amended; decision recorded in the k3-conformance issues log, row 44).

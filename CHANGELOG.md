@@ -26,11 +26,9 @@ in a minor version, fixes in a patch version. All five packages share one versio
 `TruthWeaver.Predicates`, `TruthWeaver.Testing`, `TruthWeaver.Yaml`) are packable, target `net11.0`, carry the Apache-2.0
 license expression, the repository URL, symbol packages (`.snupkg`), SourceLink and the repository `README.md` as the
 package readme. Open items, deliberately not changed here: there is no `PackageIcon` (no icon asset exists), and the
-copyright line still reads 2024-2025.
+copyright line reads 2026.
 
-**Consumer requirement.** The packages are built with `EnablePreviewFeatures`, so a consuming project must also set
-`<EnablePreviewFeatures>true</EnablePreviewFeatures>`, otherwise every use of the public API fails with `CA2252`
-("requires opting into preview features"). This is checked by compiling the README quick-start in a fresh project.
+**Consumer requirement.** None. The packages no longer set `EnablePreviewFeatures`, so they carry no requires-preview-features marker and a consuming project needs no preview opt-in (no `CA2252`). This is checked by compiling the README quick-start in a fresh project.
 
 ## [Unreleased]
 

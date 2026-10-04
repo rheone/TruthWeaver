@@ -424,8 +424,9 @@ the aliases are cheap once the canonical form stays single.
     `If(a, b OR True, c OR True)` is a tautology even for an `Unknown` `a`.
     **Syntax:** `If` is a reserved function-call word (any case) taking
     exactly three operands (`MalformedTree` otherwise). The lone `?` and `:`
-    form the ternary, the lowest-precedence construct, accepted wherever a full
-    expression is (the root, parentheses, call arguments). Under decision 8 the
+    form the ternary, accepted wherever a full expression is (the root,
+    parentheses, call arguments). The ternary is not an operand of a bare infix
+    expression and must be parenthesised when mixed with one. Under decision 8 the
     condition and each branch must each be a single operand or a parenthesized
     group: a bare `AND`/`OR` chain, a bare infix expression (`XOR`, `??`, ...)
     or an unparenthesized nested ternary in any of the three positions is
@@ -594,12 +595,13 @@ decisions of the same day follow the list.
   `TruthWeaver.Printing`; prefix `!` is accepted with a space (`! a`) and
   `NormalizeWhitespace` prints `!a` (pinned by tests, k3-followups 21). The
   canonical printer is word-only and prints `NOT a` either way (decision 1).
-- **Open, ternary mixing (log row 18).** The owner kept the strict behaviour:
-  a ternary mixed with a bare `AND`/`OR` chain or another infix operator
-  (`a AND b ? c : d`) is `AmbiguousOperatorMixing`. Decision 13 still calls the
-  ternary "the lowest-precedence construct", which does not fit that rule, so
-  the wording (or the parser) must change. Tracked by k3-followups 31, which
-  awaits an owner decision; nothing else is open.
+- **Decided, ternary mixing (log row 18).** The owner kept the strict parser
+  (2026-10-03, k3-followups 31): a ternary mixed with a bare `AND`/`OR` chain or
+  another infix operator (`a AND b ? c : d`) is `AmbiguousOperatorMixing`.
+  Precedence stays `NOT > AND > OR`; every other infix operator and the ternary
+  need parentheses when mixed. Decision 13 is worded to match: the ternary is
+  not an operand of a bare infix expression and must be parenthesised. Pinned
+  by `IfTests.Compile_TernaryMixedWithoutParentheses_ReportsAmbiguousMixing_Test`.
 
 - **Decided, `EqualsConfigurable` has no `culture` argument (log row 42).**
   Comparison is ordinal, or ordinal-ignore-case with `ignoreCase`; no culture-sensitive

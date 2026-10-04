@@ -4,11 +4,11 @@
 
 **Blocked by:** None (30 is done)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The owner decided (2026-10-03): keep the parser strict, so `a AND b ? c : d` stays `AmbiguousOperatorMixing`. Precedence stays `NOT` > `AND` > `OR`, every other infix operator and the ternary need parentheses when mixed, and no parser change is made
-- [ ] A test pins that a bare ternary after infix operands is `AmbiguousOperatorMixing` (it may already exist, in which case say so)
-- [ ] ADR-0005 decision 13 is reworded to "the ternary is not an operand of a bare infix expression and must be parenthesised", and the ADR, the log row and the diagnostic text describe the same rule
-- [ ] The full validation from CLAUDE.md passes
+- [x] A test pins that a bare ternary after infix operands is `AmbiguousOperatorMixing` (it already exists: `IfTests.Compile_TernaryMixedWithoutParentheses_ReportsAmbiguousMixing_Test`)
+- [x] ADR-0005 decision 13 is reworded to "the ternary is not an operand of a bare infix expression and must be parenthesised", and the ADR, the log row and the diagnostic text describe the same rule
+- [x] The full validation from CLAUDE.md passes
 
 Source: review of PR #4, Spec axis, questionable item on ADR line 424. Related: [21](21-if-cstyle-tree-spelling.md).

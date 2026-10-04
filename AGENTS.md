@@ -8,3 +8,10 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
+
+## Testing
+
+- Tests follow Arrange / Act / Assert by shape (set up, one action, assertions), not by comment markers; `// Arrange` style comments are optional.
+- Test doubles: `FakePredicates` (the `TruthWeaver.Testing` package, a deliberate part of the library) is the default double for predicates; use NSubstitute for other seams.
+- New and touched tests carry an XML `<summary>` describing the behavior. Untouched pre-existing tests are not backfilled.
+- Test names follow "{MemberUnderTest}_{Scenario}_{Expectation}_Test". See CLAUDE.md for the full testing rules.

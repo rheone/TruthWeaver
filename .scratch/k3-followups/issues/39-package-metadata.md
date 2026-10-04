@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Packed assemblies no longer carry the requires-preview-features marker, or the one project that still needs it is named with the reason
-- [ ] A fresh consumer project that references the packages compiles the README quick-start with no preview opt-in
-- [ ] The copyright line reads 2026 and the holder name is checked
-- [ ] The CHANGELOG mention of the opt-in requirement is removed or updated to match
-- [ ] The AOT/trim gate still passes
-- [ ] The full validation from CLAUDE.md passes
+- [x] Packed assemblies no longer carry the requires-preview-features marker, or the one project that still needs it is named with the reason
+- [x] A fresh consumer project that references the packages compiles the README quick-start with no preview opt-in
+- [x] The copyright line reads 2026 and the holder name is checked
+- [x] The CHANGELOG mention of the opt-in requirement is removed or updated to match
+- [x] The AOT/trim gate still passes
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

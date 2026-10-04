@@ -1896,6 +1896,18 @@ items build the same node as the `params` overload:
 An empty list silently becoming a constant can hide a mistake (an empty list of
 role checks under `And` is `True`), so check the count first when that matters.
 
+The two forms differ for the same operands, which is easy to trip over: an
+array (or an explicit argument list) binds the `params` overload and a
+`List<RuleBuilder>` binds the `IEnumerable` one. The fold is deliberate and does
+not change.
+
+```csharp
+RuleBuilder x = RuleBuilder.Predicate("isActive");
+
+RuleBuilder.And(new[] { x });                 // params: one operand, MalformedTree at compile time
+RuleBuilder.And(new List<RuleBuilder> { x }); // IEnumerable: folds to x
+```
+
 `Between`, `AtLeast`, `AtMost` and `Exactly` also have an `IEnumerable<RuleBuilder>`
 overload, but it never folds: a counted operator has no identity constant, so
 the sequence builds the same node as the `params` overload and goes through the

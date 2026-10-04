@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <TargetFrameworks>net11.0</TargetFrameworks>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
@@ -11,7 +10,7 @@
     <Authors>Robert H. Engelhardt</Authors>
     <!-- No Company: this is an individual-authored project, not published under a company entity - Authors
          above already carries attribution. Deliberately omitted rather than a placeholder value. -->
-    <Copyright>Copyright 2024-2025 Robert H. Engelhardt</Copyright>
+    <Copyright>Copyright 2026 Robert H. Engelhardt</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/rheone/TruthWeaver</RepositoryUrl>

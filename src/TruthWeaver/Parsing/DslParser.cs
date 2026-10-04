@@ -240,7 +240,7 @@ internal sealed class DslParser
 
     /// <summary>
     /// Parses one complete expression: an <c>OR</c>-level expression, optionally the condition of the ternary
-    /// <c>condition ? whenTrue : whenFalse</c>. The ternary has the lowest precedence and, like every infix operator
+    /// <c>condition ? whenTrue : whenFalse</c>. The ternary is not an operand of a bare infix expression and, like every infix operator
     /// outside <c>NOT</c> &gt; <c>AND</c> &gt; <c>OR</c>, may not be mixed with another at one level without parentheses
     /// (ADR-0005 decision 8): its condition and both branches must each be a single operand or a parenthesized group.
     /// Every place that accepts a full expression (the root, parentheses, call arguments) goes through here.

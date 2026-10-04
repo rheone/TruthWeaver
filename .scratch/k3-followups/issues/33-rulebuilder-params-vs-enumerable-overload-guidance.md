@@ -14,3 +14,4 @@ Source: review of PR #4, Spec axis, questionable item on `RuleBuilder`. Related:
 ## Comments
 
 - 2026-10-03: Owner chose documentation only. Work tracked by k3-followups 37.
+- 2026-10-03: Resolved by k3-followups 37 (XML docs and README note added).

@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] CLAUDE.md Testing and Development rules and AGENTS.md state the amended convention and agree with each other
-- [ ] k3-followups 28 and k3-hardening 14 are marked resolved by this ticket, with the decision recorded in the issues log
-- [ ] The k3-hardening 13 ticket text still matches the amended scope
+- [x] CLAUDE.md Testing and Development rules and AGENTS.md state the amended convention and agree with each other
+- [x] k3-followups 28 and k3-hardening 14 are marked resolved by this ticket, with the decision recorded in the issues log
+- [x] The k3-hardening 13 ticket text still matches the amended scope
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
