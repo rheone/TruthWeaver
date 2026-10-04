@@ -35,7 +35,55 @@ being skipped past the default 20-term cap.
 
 Compared with the 2026-09-27 baseline (Small 8.4 μs / 19.09 KB, Large 1,062 μs / 1,864 KB), compile
 cost rose about 1.4x (Small) and 2.8x (Large) in time and 1.9x and 3.3x in allocation. The allocation
-growth is deterministic, so it is a real change and not run noise. It has not been root-caused.
+growth is deterministic, so it is a real change and not run noise. Root-caused below.
+
+### Compile cost by stage (`CompileStageBenchmarks`)
+
+Captured 2026-10-04, same host/job as above (ShortRun). Each stage runs in isolation on the
+already-produced output of the stage before it (e.g. `Analyze` runs on the tree `ValidateAndBuild`
+already produced in `[GlobalSetup]`), so a stage's own number does not double-count an earlier one.
+`ParseYaml` parses the same rule rendered as YAML (`CompiledRule.PrintYaml()`), to attribute how much
+of Parse is the `TreeFormatReader` the JSON and YAML front ends share versus each front end's own
+document parser.
+
+| Stage                    | Size  | Mean         | Allocated   |
+|------------------------- |------ |-------------:|------------:|
+| Parse (JSON)              | Small |     4.772 μs |     7.07 KB |
+| Parse (YAML)              | Small |    24.607 μs |    44.22 KB |
+| Validate+Build            | Small |     2.404 μs |     9.75 KB |
+| Analyze (dual-rail BDD)   | Small |     6.728 μs |    24.72 KB |
+| Lint (opt-in, all rules)  | Small |     1.862 μs |     4.82 KB |
+| Parse (JSON)              | Large |    67.164 μs |    99.66 KB |
+| Parse (YAML)              | Large |   356.967 μs |   553.58 KB |
+| Validate+Build            | Large |    49.828 μs |   195.30 KB |
+| Analyze (dual-rail BDD)   | Large | 2,751.533 μs | 5,990.86 KB |
+| Lint (opt-in, all rules)  | Large |    31.050 μs |    68.34 KB |
+
+Attribution: on the Large rule, **Analyze accounts for 93% of time (2,752 of 2,957 μs) and 97% of
+allocation (5,991 of 6,193 KB)** of the full `Compile` cost recorded above; Parse and Validate+Build
+together are 117 μs / 295 KB, and Lint is not in a default compile at all (`CompilerOptions.Lints`
+defaults to `LintRules.None`, so `CompileBenchmarks.Compile` never runs it). The regression is the
+dual-rail BDD analyzer (`Analysis.Analyzer.Build` / `Analysis.BddManager`), not the shared tree reader:
+`ParseYaml` is about 5.3x slower and 5.6x more allocating than `ParseJson` at Large size even though
+both end in the same `TreeFormatReader.Read` walk, so that gap is YamlDotNet's own document parser, not
+the shared reader. Small-rule stage totals (4.8 + 2.4 + 6.7 = 13.9 μs) and Large-rule stage totals
+(67.2 + 49.8 + 2,751.5 = 2,868.5 μs) both land close to the corresponding `Compile` mean above, confirming
+the stages add up to the whole.
+
+### Compile-cost budget
+
+**Budget:** the Large-rule `Compile` cost stays at or under 1.5x the 2026-09-27 baseline:
+**at most 1,593 μs and 2,796 KB** (baseline: 1,062 μs / 1,864 KB). This budget, and the attribution
+above, are recorded here because this file is where the project's benchmark baselines already live.
+
+**Verdict: budget not met.** The 2026-10-03 baseline measures 2,957 μs / 6,193 KB on the Large rule,
+1.86x the time budget and 2.2x the allocation budget. The cost is attributed entirely above to the
+dual-rail BDD analyzer, not Parse, Validate+Build or Lint. Changing `BddManager`'s fixed
+first-occurrence variable ordering (or the dual-rail encoding itself) is an algorithmic change, not a
+small fix, so it is out of scope here and is tracked separately in the project's issue tracker. This
+Large case only reaches the regressed cost because it raises `CompilerOptions.MaxAnalysisTerms` to
+200; at the default cap of 20 terms, the analyzer is skipped past (an `Info` diagnostic) rather than
+running at this cost.
 
 ## Eval-time memoized term lookup (`EvaluationBenchmarks.EvaluateAsync`)
 

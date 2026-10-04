@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The benchmark results record how much of the compile cost each stage accounts for
 - [ ] A budget is written down with the baseline it is measured against
