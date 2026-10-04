@@ -26,25 +26,29 @@ Every method on `StringPredicates` except one is ordinal-only and has a fixed be
 
 ### Null selected values
 
-A null selected value is a definite `False` by default, with no fault. These members take an optional `nullBehavior` parameter that the host sets at registration:
+A null selected value never faults. A member with an optional `nullBehavior` parameter answers it as the host sets at registration:
 
-- every `StringPredicates` comparison (`Equals`, `EqualsIgnoreCase`, `StartsWith`, `EndsWith`, `Contains` and `EqualsConfigurable`)
-- `RegexPredicates.Matches`
-- `CollectionPredicates.SetEquals`
+- `NullBehavior.Unknown`: the member answers `Unknown`. `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust, and `Decision.IsSatisfied` stays fail-closed.
+- `NullBehavior.False`: a positive member answers `False`.
 
-The new members and their twins are listed below. Each `NotX` twin is the Strong Kleene complement of its positive member: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. These members are new, so their `nullBehavior` defaults to `NullBehavior.Unknown` and a null selected value never becomes `True`:
+A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Under `NullBehavior.False` a twin answers `True` for a null selected value. Register both members of a pair with the same setting.
+
+| Default | Members |
+| --- | --- |
+| `NullBehavior.False` | The `StringPredicates` comparisons `Equals`, `EqualsIgnoreCase`, `StartsWith`, `EndsWith`, `Contains` and `EqualsConfigurable`, `RegexPredicates.Matches` and `CollectionPredicates.SetEquals` |
+| `NullBehavior.Unknown` | Every other member with a `nullBehavior` parameter |
+
+The `StringPredicates` and `RegexPredicates` twins are:
 
 | Member | Class | Meaning |
 | --- | --- | --- |
 | `NotEqual` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
-| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern still faults to `Unknown` with a `Fault`. |
+| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern faults to `Unknown` with a `Fault`. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
 
-`NullBehavior.False` on a `NotX` twin makes a null selected value answer a definite `False`, not `True`. The twin and its positive member then no longer complement each other for null. Register both with `NullBehavior.Unknown` to keep them exact complements.
-
-`NullBehavior.Unknown` makes a null selected value answer `Unknown` instead, still without a fault. With this setting, `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust and does not become `True`. `Decision.IsSatisfied` stays fail-closed. The default is `NullBehavior.False` for the members listed above and `NullBehavior.Unknown` for the new members in the table. `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` (all in `StringPredicates`) have no option. They are null tests and always return a definite answer: a null selected value is `True` for `IsNullOrEmpty` and `IsNullOrWhiteSpace`, and `False` for their complements. White space follows `char.IsWhiteSpace`.
+`IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` (all in `StringPredicates`) have no option. They are null tests and always return a definite answer: a null selected value is `True` for `IsNullOrEmpty` and `IsNullOrWhiteSpace`, and `False` for their complements. White space follows `char.IsWhiteSpace`.
 
 ```csharp
 StringPredicates.Equals<PizzaOrder>(
@@ -71,7 +75,7 @@ StringPredicates.Equals<PizzaOrder>(
 - `In` and `NotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
 - No value is promoted between kinds. A `long?` selector takes `Int64` literals. A `decimal?` selector takes `Decimal` literals, and a whole number such as `5` is a valid `Decimal` literal. To compare an integer value with a decimal literal, widen it in the selector: `c => (decimal?)c.Count`. Decimal values compare by value, so `1.0` equals `1.00`.
 - `DateTimeOffset` values compare by instant, so the same instant in two offsets is equal.
-- A null selected value answers `Unknown` by default. Pass `NullBehavior.False` to answer `False`. `IsNull` and `IsNotNull` are definite and have no option. `IsDefault` tests `default(T)`: `0`, `false`, `Guid.Empty` or the default `DateTimeOffset`. A null selection is a missing value, not a default.
+- A null selected value answers `Unknown` by default. Pass `NullBehavior.False` to make the positive member answer `False` and its twin `True`. `IsNull` and `IsNotNull` are definite and have no option. `IsDefault` tests `default(T)`: `0`, `false`, `Guid.Empty` or the default `DateTimeOffset`. A null selection is a missing value, not a default.
 
 ```csharp
 NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Quantity In Range");
@@ -126,7 +130,7 @@ The predicate reads the clock each time the engine evaluates it, never at regist
 
 Reversed bounds (`lower` later than `upper`) are an authoring error. The predicate throws `ArgumentException`, the evaluation records a fault and the result is `Unknown`. The bounds are never swapped.
 
-A null selected value returns `Unknown`. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead.
+A null selected value returns `Unknown`. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead. The twin then returns `True`.
 
 There is no `DateTime` literal kind and no `DateTime` overload. A `DateTime` can have an unspecified `Kind`, so its meaning depends on the host time zone. Convert it to a `DateTimeOffset` in the selector:
 

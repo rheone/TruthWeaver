@@ -16,7 +16,8 @@ using TruthWeaver.Abstractions;
 /// A null selection is a missing value. <c>Equal</c>, <c>NotEqual</c>, <c>In</c>, <c>NotIn</c>, <c>IsDefault</c> and
 /// <c>IsNotDefault</c> answer <see cref="TruthValue.Unknown"/> for it by default, and a host can pass
 /// <see cref="NullBehavior.False"/>. The null tests are definite. Every positive member has a registered <c>NotX</c>
-/// twin that is the Strong Kleene complement.
+/// twin that is the Strong Kleene complement for every selection, a null one included, so under
+/// <see cref="NullBehavior.False"/> a twin answers <see cref="TruthValue.True"/> for a null selection.
 /// </para>
 /// </summary>
 public static class ScalarPredicates
@@ -132,15 +133,16 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/> (never <see cref="TruthValue.True"/>).</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -155,7 +157,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected boolean value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected boolean value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Boolean,
             name,
@@ -165,19 +167,21 @@ public static class ScalarPredicates
             nullBehavior,
             argumentName,
             "The boolean value the selected value must not equal.",
-            static r => r != 0
+            static r => r == 0,
+            negate: true
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/> (never <see cref="TruthValue.True"/>).</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -192,7 +196,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected GUID value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected GUID value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Guid,
             name,
@@ -202,19 +206,21 @@ public static class ScalarPredicates
             nullBehavior,
             argumentName,
             "The GUID value the selected value must not equal.",
-            static r => r != 0
+            static r => r == 0,
+            negate: true
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/> (never <see cref="TruthValue.True"/>).</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -229,7 +235,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected date-time value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected date-time value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.DateTimeOffset,
             name,
@@ -239,7 +245,8 @@ public static class ScalarPredicates
             nullBehavior,
             argumentName,
             "The date-time value the selected value must not equal.",
-            static r => r != 0
+            static r => r == 0,
+            negate: true
         );
     }
 
@@ -351,15 +358,16 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -374,7 +382,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected boolean value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected boolean value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Boolean,
             name,
@@ -387,15 +395,16 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -410,7 +419,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected GUID value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected GUID value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Guid,
             name,
@@ -423,15 +432,16 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -446,7 +456,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected date-time value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected date-time value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.DateTimeOffset,
             name,
@@ -627,14 +637,15 @@ public static class ScalarPredicates
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -648,18 +659,19 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected boolean value is not default(bool) (false). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected boolean value is not default(bool) (false). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -673,18 +685,19 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected GUID value is not default(Guid) (Guid.Empty). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected GUID value is not default(Guid) (Guid.Empty). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -698,7 +711,7 @@ public static class ScalarPredicates
     )
     {
         const string description =
-            "True when the selected date-time value is not default(DateTimeOffset) (0001-01-01T00:00:00+00:00). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected date-time value is not default(DateTimeOffset) (0001-01-01T00:00:00+00:00). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
     }
 }

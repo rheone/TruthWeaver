@@ -21,8 +21,9 @@ using TruthWeaver.Abstractions;
 /// A null selection is a missing value. The comparison, range, membership and default members answer
 /// <see cref="TruthValue.Unknown"/> for it by default, and a host can pass <see cref="NullBehavior.False"/>. The null
 /// tests (<c>IsNull</c>, <c>IsNotNull</c>) are definite. Every positive member has a registered <c>NotX</c> twin that is
-/// the Strong Kleene complement: <c>Equal</c>/<c>NotEqual</c>, <c>LessThan</c>/<c>GreaterThanOrEqual</c>,
-/// <c>GreaterThan</c>/<c>LessThanOrEqual</c>, <c>Between</c>/<c>Outside</c>, <c>In</c>/<c>NotIn</c>,
+/// the Strong Kleene complement for every selection, a null one included, so under <see cref="NullBehavior.False"/> a
+/// twin answers <see cref="TruthValue.True"/> for a null selection. The pairs are <c>Equal</c>/<c>NotEqual</c>,
+/// <c>LessThan</c>/<c>GreaterThanOrEqual</c>, <c>GreaterThan</c>/<c>LessThanOrEqual</c>, <c>Between</c>/<c>Outside</c>, <c>In</c>/<c>NotIn</c>,
 /// <c>IsNull</c>/<c>IsNotNull</c> and <c>IsDefault</c>/<c>IsNotDefault</c>.
 /// </para>
 /// <para>
@@ -107,15 +108,16 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/> (never <see cref="TruthValue.True"/>).</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the integer value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -130,7 +132,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Int64,
             name,
@@ -140,19 +142,21 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The integer value the selected value must not equal.",
-            static r => r != 0
+            static r => r == 0,
+            negate: true
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/> (never <see cref="TruthValue.True"/>).</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the decimal value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -167,7 +171,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Decimal,
             name,
@@ -177,7 +181,8 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The decimal value the selected value must not equal.",
-            static r => r != 0
+            static r => r == 0,
+            negate: true
         );
     }
 
@@ -336,8 +341,9 @@ public static class NumericPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -352,7 +358,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value is less than or equal to the argument. The K3 complement of GreaterThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value is less than or equal to the argument. The K3 complement of GreaterThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Int64,
             name,
@@ -362,7 +368,8 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The integer value to compare the selected value against.",
-            static r => r <= 0
+            static r => r > 0,
+            negate: true
         );
     }
 
@@ -373,8 +380,9 @@ public static class NumericPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -389,7 +397,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value is less than or equal to the argument. The K3 complement of GreaterThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value is less than or equal to the argument. The K3 complement of GreaterThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Decimal,
             name,
@@ -399,7 +407,8 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The decimal value to compare the selected value against.",
-            static r => r <= 0
+            static r => r > 0,
+            negate: true
         );
     }
 
@@ -410,8 +419,9 @@ public static class NumericPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -426,7 +436,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value is greater than or equal to the argument. The K3 complement of LessThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value is greater than or equal to the argument. The K3 complement of LessThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Int64,
             name,
@@ -436,7 +446,8 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The integer value to compare the selected value against.",
-            static r => r >= 0
+            static r => r < 0,
+            negate: true
         );
     }
 
@@ -447,8 +458,9 @@ public static class NumericPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -463,7 +475,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value is greater than or equal to the argument. The K3 complement of LessThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value is greater than or equal to the argument. The K3 complement of LessThan. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Decimal,
             name,
@@ -473,7 +485,8 @@ public static class NumericPredicates
             nullBehavior,
             argumentName,
             "The decimal value to compare the selected value against.",
-            static r => r >= 0
+            static r => r < 0,
+            negate: true
         );
     }
 
@@ -563,8 +576,9 @@ public static class NumericPredicates
     /// <param name="lowerName">The rule-text argument name for the inclusive lower bound.</param>
     /// <param name="upperName">The rule-text argument name for the inclusive upper bound.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -580,7 +594,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Int64,
             name,
@@ -602,8 +616,9 @@ public static class NumericPredicates
     /// <param name="lowerName">The rule-text argument name for the inclusive lower bound.</param>
     /// <param name="upperName">The rule-text argument name for the inclusive upper bound.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -619,7 +634,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Decimal,
             name,
@@ -705,15 +720,16 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the integer value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -728,7 +744,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Int64,
             name,
@@ -741,15 +757,16 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the decimal value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -764,7 +781,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Decimal,
             name,
@@ -889,14 +906,15 @@ public static class NumericPredicates
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the integer value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -910,18 +928,19 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value is not default(long) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value is not default(long) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, where a null selection stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the decimal value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -935,7 +954,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value is not default(decimal) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value is not default(decimal) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
     }
 }

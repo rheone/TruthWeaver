@@ -121,16 +121,19 @@ public class StringCompletionPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
-    /// <summary>The host can choose a definite False for a null selection, never True.</summary>
+    /// <summary>
+    /// Under <c>NullBehavior.False</c>, <c>Equals</c> answers False for a null selection, so its twin answers the
+    /// complement, True.
+    /// </summary>
     [Fact]
-    public async Task NotEqual_NullSelectionWithFalseBehavior_ReturnsFalse_Test()
+    public async Task NotEqual_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.NotEqual<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.True, result);
     }
 
     /// <summary>An invalid pattern throws at evaluation time, which the evaluator turns into Unknown plus a Fault.</summary>

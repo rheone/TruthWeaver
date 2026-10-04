@@ -5,7 +5,8 @@ using TruthWeaver.Abstractions;
 /// <summary>
 /// The shared builders behind <see cref="NumericPredicates"/> and <see cref="ScalarPredicates"/>. Every
 /// builder returns a predicate schema and a stateless evaluation delegate. Comparison, range, membership and default
-/// builders answer a null selection per <see cref="NullBehavior"/>. The null-test builder is definite.
+/// builders answer a null selection per <see cref="NullBehavior"/>, and a <c>NotX</c> twin answers the Strong Kleene
+/// complement of its positive predicate for every selection, a null one included. The null-test builder is definite.
 /// </summary>
 internal static class ScalarPredicateCore
 {
@@ -18,7 +19,8 @@ internal static class ScalarPredicateCore
     /// <param name="nullBehavior">What a null selection answers.</param>
     /// <param name="argumentName">The rule-text argument name.</param>
     /// <param name="argumentDescription">The argument description.</param>
-    /// <param name="test">Maps the three-way comparison result (selected against argument) to the answer.</param>
+    /// <param name="test">Maps the three-way comparison result (selected against argument) to the positive answer.</param>
+    /// <param name="negate"><see langword="true"/> for the <c>NotX</c> twin, which answers the complement of <paramref name="test"/>.</param>
     /// <typeparam name="TContext">The application context type.</typeparam>
     /// <typeparam name="T">The scalar value type.</typeparam>
     /// <returns>The schema and delegate.</returns>
@@ -34,7 +36,8 @@ internal static class ScalarPredicateCore
         NullBehavior nullBehavior,
         string argumentName,
         string argumentDescription,
-        Func<int, bool> test
+        Func<int, bool> test,
+        bool negate = false
     )
         where T : struct, IComparable<T>, IEquatable<T>
     {
@@ -52,8 +55,8 @@ internal static class ScalarPredicateCore
                 T target = kind.Get(args, argumentName);
                 T? selected = selector(context);
                 return selected is null
-                    ? PredicateResult.ForNullAsync(nullBehavior)
-                    : PredicateResult.FromBoolAsync(test(selected.Value.CompareTo(target)));
+                    ? PredicateResult.ForNullAsync(nullBehavior, negate)
+                    : PredicateResult.FromBoolAsync(test(selected.Value.CompareTo(target)) != negate);
             }
         );
     }
@@ -122,7 +125,7 @@ internal static class ScalarPredicateCore
                 T? selected = selector(context);
                 if (selected is null)
                 {
-                    return PredicateResult.ForNullAsync(nullBehavior);
+                    return PredicateResult.ForNullAsync(nullBehavior, outside);
                 }
 
                 bool inRange = selected.Value.CompareTo(lower) >= 0 && selected.Value.CompareTo(upper) <= 0;
@@ -173,7 +176,7 @@ internal static class ScalarPredicateCore
                 T? selected = selector(context);
                 if (selected is null)
                 {
-                    return PredicateResult.ForNullAsync(nullBehavior);
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
                 }
 
                 T value = selected.Value;
@@ -234,7 +237,7 @@ internal static class ScalarPredicateCore
             {
                 T? selected = selector(context);
                 return selected is null
-                    ? PredicateResult.ForNullAsync(nullBehavior)
+                    ? PredicateResult.ForNullAsync(nullBehavior, negate)
                     : PredicateResult.FromBoolAsync(selected.Value.Equals(default) != negate);
             }
         );

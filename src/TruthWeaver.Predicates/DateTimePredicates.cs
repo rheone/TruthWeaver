@@ -73,7 +73,11 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the instant to compare against.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -141,7 +145,11 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the instant to compare against.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -211,7 +219,11 @@ public static class DateTimePredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="lowerName">The rule-text argument name for the inclusive lower bound of the excluded range.</param>
     /// <param name="upperName">The rule-text argument name for the inclusive upper bound of the excluded range.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers for <c>Between</c>: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -279,7 +291,11 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="timeProvider">The host-supplied clock. There is no ambient default.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static (
@@ -339,7 +355,11 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="timeProvider">The host-supplied clock. There is no ambient default.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static (
@@ -384,7 +404,7 @@ public static class DateTimePredicates
                 DateTimeOffset? selected = selector(context);
                 if (selected is not { } value)
                 {
-                    return NullAnswerAsync(nullBehavior, negate);
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
                 }
 
                 // The clock is read here, per evaluation, never at registration or from an ambient source.
@@ -429,7 +449,7 @@ public static class DateTimePredicates
                 DateTimeOffset? selected = selector(context);
                 return selected is { } value
                     ? PredicateResult.FromBoolAsync(test(value, args.GetDateTimeOffset(argumentName)) != negate)
-                    : NullAnswerAsync(nullBehavior, negate);
+                    : PredicateResult.ForNullAsync(nullBehavior, negate);
             }
         );
     }
@@ -476,17 +496,8 @@ public static class DateTimePredicates
                 DateTimeOffset? selected = selector(context);
                 return selected is { } value
                     ? PredicateResult.FromBoolAsync((value >= lower && value <= upper) != negate)
-                    : NullAnswerAsync(nullBehavior, negate);
+                    : PredicateResult.ForNullAsync(nullBehavior, negate);
             }
         );
-    }
-
-    /// <summary>Gets the answer for a null selection: the configured positive answer, complemented for a twin.</summary>
-    private static ValueTask<TruthValue> NullAnswerAsync(NullBehavior nullBehavior, bool negate)
-    {
-        // Unknown complements to itself; a configured False complements to True for the twin.
-        return negate && nullBehavior == NullBehavior.False
-            ? PredicateResult.FromBoolAsync(true)
-            : PredicateResult.ForNullAsync(nullBehavior);
     }
 }

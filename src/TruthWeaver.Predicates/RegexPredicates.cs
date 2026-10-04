@@ -55,34 +55,23 @@ public static class RegexPredicates
             + "compile time; an invalid pattern surfaces as an evaluation-time fault (Unknown), per "
             + "ADR-0001's Kleene failure model. A null selected value is treated as not-matching "
             + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
-        PredicateSchema schema = new(
+        return Create(
             name,
             label,
             description,
-            [new PredicateArgumentSchema(argumentName, "The regular-expression pattern to match against.", LiteralKind.String)]
-        );
-
-        return (
-            schema,
-            (context, args, _) =>
-            {
-                string? selected = selector(context);
-                if (selected is null)
-                {
-                    return PredicateResult.ForNullAsync(nullBehavior);
-                }
-
-                string pattern = args.GetString(argumentName);
-                return PredicateResult.FromBoolAsync(CompiledPattern(pattern).IsMatch(selected));
-            }
+            selector,
+            nullBehavior,
+            argumentName,
+            "The regular-expression pattern to match against.",
+            negate: false
         );
     }
 
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="Matches{TContext}"/>: true when the selected string does not match
     /// the pattern. It is the Strong Kleene complement of <c>Matches</c>, so a <see langword="null"/> selection
-    /// answers per <paramref name="nullBehavior"/> (<see cref="NullBehavior.Unknown"/> by default) and never
-    /// <see cref="TruthValue.True"/>. An invalid pattern throws at evaluation time exactly as <c>Matches</c> does, which
+    /// answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>. An invalid pattern throws at evaluation time exactly as <c>Matches</c> does, which
     /// the evaluator records as a <c>Fault</c> and <see cref="TruthValue.Unknown"/> (ADR-0001).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -91,8 +80,9 @@ public static class RegexPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the regular-expression pattern.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// member) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -109,19 +99,44 @@ public static class RegexPredicates
         const string description =
             "True when the selected string does not match the given regular-expression pattern "
             + "(System.Text.RegularExpressions). The K3 complement of Matches: a null selected value answers "
-            + "Unknown (never a fault, never true) unless the host registers it with NullBehavior.False. "
+            + "Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes Matches False "
+            + "and this twin True. "
             + "An invalid pattern surfaces as an evaluation-time fault (Unknown), per ADR-0001's Kleene failure model.";
+        return Create(
+            name,
+            label,
+            description,
+            selector,
+            nullBehavior,
+            argumentName,
+            "The regular-expression pattern the selected value must not match.",
+            negate: true
+        );
+    }
+
+    /// <summary>
+    /// Builds a pattern predicate. A null selection answers per <paramref name="nullBehavior"/>, and
+    /// <paramref name="negate"/> applies the Strong Kleene complement to every answer, the null one included.
+    /// </summary>
+    private static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) Create<TContext>(
+        string name,
+        string label,
+        string description,
+        Func<TContext, string?> selector,
+        NullBehavior nullBehavior,
+        string argumentName,
+        string argumentDescription,
+        bool negate
+    )
+    {
         PredicateSchema schema = new(
             name,
             label,
             description,
-            [
-                new PredicateArgumentSchema(
-                    argumentName,
-                    "The regular-expression pattern the selected value must not match.",
-                    LiteralKind.String
-                ),
-            ]
+            [new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.String)]
         );
 
         return (
@@ -131,11 +146,11 @@ public static class RegexPredicates
                 string? selected = selector(context);
                 if (selected is null)
                 {
-                    return PredicateResult.ForNullAsync(nullBehavior);
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
                 }
 
                 string pattern = args.GetString(argumentName);
-                return PredicateResult.FromBoolAsync(!CompiledPattern(pattern).IsMatch(selected));
+                return PredicateResult.FromBoolAsync(CompiledPattern(pattern).IsMatch(selected) != negate);
             }
         );
     }

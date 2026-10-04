@@ -294,8 +294,10 @@ catalog members, not for the engine.
   [predicate-author contract](#the-predicate-author-contract).
 - **Every positive predicate has a `NotX` twin.** The catalog registers a first-class `NotX` predicate
   for each positive predicate `X`. `NotX` is the Strong Kleene complement of `X`: `True` becomes
-  `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Rationale: a twin keeps a null input
-  `Unknown` instead of an accidental `True`, and rule text can name the negation directly.
+  `False`, `False` becomes `True` and `Unknown` stays `Unknown`. The complement holds for a null
+  selected value too: under `NullBehavior.False`, `X` answers `False` and `NotX` answers `True`.
+  Rationale: under the default `NullBehavior.Unknown` a twin keeps a null input `Unknown` instead of an
+  accidental `True`, one rule covers every pair, and rule text can name the negation directly.
 - **`In` and `NotIn` test scalar membership.** The selector returns one scalar value, and the
   predicate is `True` when that value is in the literal candidate array. A collection selector is a
   compile error. The collection predicates are `ContainsAny` (at least one element is in the candidate

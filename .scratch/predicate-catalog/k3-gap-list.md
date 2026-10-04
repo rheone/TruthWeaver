@@ -120,11 +120,11 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 | `Equal` | present-under-another-name | `StringPredicates.Equals` (exact), `EqualsIgnoreCase`, `EqualsConfigurable` | `EqualsConfigurable` is the only member with `ignoreCase` and `trim` arguments (defaults `true`, `false`). It is ordinal and has no `culture` argument (k3-followups 12 and 20, open question 3). |
 | `IsNullOrEmpty` | present | `StringPredicates.IsNullOrEmpty` | No arguments. `Trim` is meaningless here and `ignoreCase`/`Culture` do not apply. Returns `True` for `null`. |
 | `Matches` | present | `RegexPredicates.Matches` | `pattern` only; `RegexOptions.None`, 1-second timeout, cached per pattern. `ignoreCase` would map to `RegexOptions.IgnoreCase` (a new optional `Boolean` argument); `Culture` maps to `CultureInvariant`; `Trim` is questionable for a regex. |
-| `IsEmpty` | present | `StringPredicates.IsEmpty` (twin `IsNotEmpty` | Non-null empty string. Null input: `False` or `Unknown`, see open question 1. |
+| `IsEmpty` | present | `StringPredicates.IsEmpty` (twin `IsNotEmpty`) | Non-null empty string. Null input: `Unknown` by default, `False` under `NullBehavior.False` (twin `True`). |
 | `IsNotNullOrEmpty` | present | `StringPredicates.IsNotNullOrEmpty` | Negation of `IsNullOrEmpty`; returns `False` for `null`. |
 | `IsNullOrWhiteSpace` | present | `StringPredicates.IsNullOrWhiteSpace` | `Trim` is implied. Listed in issue 01 as a candidate. |
 | `IsNotNullOrWhiteSpace` | present | `StringPredicates.IsNotNullOrWhiteSpace` | Negation of `IsNullOrWhiteSpace`. |
-| `NotContains` | present | `StringPredicates.NotContains` | K3 complement of `Contains`. If null selects `False` for `Contains`, `NotContains` of null must not be `True` by accident; decide per open question 1. |
+| `NotContains` | present | `StringPredicates.NotContains` | K3 complement of `Contains` for every input, null included: `Unknown` under `NullBehavior.Unknown`, `True` under `NullBehavior.False` (owner decision 2026-10-04). |
 | `NotEqual` | present | `StringPredicates.NotEqual` | As `NotContains`, against `Equal`. |
 | `NotMatches` | present | `RegexPredicates.NotMatches` | As `NotContains`, against `Matches`. An invalid pattern still faults to `Unknown`. |
 
@@ -204,7 +204,8 @@ Resolution status: the rules are recorded in
 - Question 5 (`DateTime` arguments): **resolved**. `DateTimeOffset` only.
 - Question 6 (clock predicates): **resolved**. `TimeProvider` supplied at registration.
 - Question 2 (`NotX` shape): **resolved**. Every positive predicate has a registered first-class `NotX`
-  twin, defined as the Strong Kleene complement (`Unknown` stays `Unknown`).
+  twin, defined as the Strong Kleene complement (`Unknown` stays `Unknown`). Owner decision 2026-10-04: the
+  twin is the strict complement for a null selection too, so under `NullBehavior.False` the twin answers `True`.
 - Question 4 (collection `In`/`NotIn`): **resolved**. `In`/`NotIn` are scalar-only membership and a
   collection selector is a compile error. `ContainsAny`, `ContainsAll` and `IsSubsetOf` are the
   collection predicates, each with a twin.

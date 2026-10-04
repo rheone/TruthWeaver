@@ -111,6 +111,13 @@ copyright line reads 2026.
 
 ### Changed
 
+- Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null
+  selected value too. Under `NullBehavior.False` the positive predicate answers `False` and its twin now answers `True`
+  (the `StringPredicates`, `RegexPredicates`, `NumericPredicates` and `ScalarPredicates` twins answered `False` before).
+  This covers `NotEqual`, `NotContains`, `IsNotEmpty`, `NotMatches`, the numeric and scalar `NotEqual`, `NotIn`,
+  `Outside` and `IsNotDefault`, and `GreaterThanOrEqual` and `LessThanOrEqual` (the twins of `LessThan` and
+  `GreaterThan`). Under the default `NullBehavior.Unknown` both members still answer `Unknown`. Positive predicates and
+  the definite null tests are unchanged.
 - Breaking: `IDataSource.ScopeAsync` returns `ValueTask<DataScopeResult>` instead of `ValueTask<IDataSource>`. A scope query that is
   malformed, matches no node, matches several nodes or reaches an unsupported node is a failure result, no longer an
   `ArgumentException` or `InvalidOperationException`. Migration: read `result.Source` when `result.Succeeded`, otherwise
