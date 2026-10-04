@@ -159,8 +159,8 @@ arguments), `Between` (each with `DateTimeOffset` and `DateTime` arguments).
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `AfterNow` | missing | none | **Needs a time provider** (`TimeProvider`). CONTEXT.md says ambient state "is the predicate's problem, not the engine's", and issue 01 explicitly rejected catalog predicates that read the clock. The factory would take a `TimeProvider` parameter at registration, which resolves that objection only if the owner accepts a clock-reading catalog member. Also determines whether "now" is read once per evaluation (consistency within one `Evaluate`) or per term. |
-| `BeforeNow` | missing | none | As `AfterNow`. |
+| `AfterNow` | present | `DateTimePredicates` | Takes a required `TimeProvider` at registration and no rule-text arguments. The clock is read once per predicate evaluation; the engine memoizes per term, so there is no cross-term snapshot. Twin `NotAfterNow`. |
+| `BeforeNow` | present | `DateTimePredicates` | As `AfterNow`. Twin `NotBeforeNow`. |
 | `After(value, DateTimeOffset)` | present | `DateTimePredicates` | Argument kind `DateTimeOffset` already exists. Strict `>`. |
 | `After(value, DateTime)` | not added (decided: host converts) | none | **Needs a new `LiteralKind`** (`DateTime`) or a documented conversion. `DateTime` has no offset and a `Kind` of `Utc`/`Local`/`Unspecified`, so conversion to `DateTimeOffset` is host-timezone-dependent for `Local`/`Unspecified`. Adding a `LiteralKind` is a closed-set extension (ADR-0003, CONTEXT.md) and a breaking change for exhaustive switches. Recommend not adding it: accept the `DateTimeOffset` literal and let the host convert. |
 | `Before(value, DateTimeOffset)` | present | `DateTimePredicates` | As `After`. |

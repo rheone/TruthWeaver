@@ -4,14 +4,18 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The failing test run is shown before the implementation
-- [ ] The factory requires a `TimeProvider`, and tests drive it with a fake provider across the boundary instant
-- [ ] `NotAfterNow` and `NotBeforeNow` are registered with a required `TimeProvider` and agree with the K3 complement of their positive form, including at the boundary instant and for `Unknown`
-- [ ] The read-once versus read-per-term behavior is documented and tested
-- [ ] No ambient clock is read anywhere in the catalog
-- [ ] README and the gap list show the predicates as present
-- [ ] The full validation from CLAUDE.md passes
+- [x] The failing test run is shown before the implementation
+- [x] The factory requires a `TimeProvider`, and tests drive it with a fake provider across the boundary instant
+- [x] `NotAfterNow` and `NotBeforeNow` are registered with a required `TimeProvider` and agree with the K3 complement of their positive form, including at the boundary instant and for `Unknown`
+- [x] The read-once versus read-per-term behavior is documented and tested
+- [x] No ambient clock is read anywhere in the catalog
+- [x] README and the gap list show the predicates as present
+- [x] The full validation from CLAUDE.md passes
 
 Source: [gap list, DateTimeOffset section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+- 2026-10-04: Done. `DateTimePredicates` adds `AfterNow`, `BeforeNow`, `NotAfterNow` and `NotBeforeNow`: `(name, selector, TimeProvider timeProvider, label, nullBehavior)`, no rule-text arguments, a null `timeProvider` throws `ArgumentNullException` at registration, and no ambient clock is read. Read-once versus read-per-term: the predicate delegate has no per-evaluation state, so the clock is read once per predicate evaluation, and the engine memoizes per term identity, so a repeated term sees one instant but different terms can differ. A shared snapshot needs an engine change; a host can supply a `TimeProvider` that returns a fixed instant per evaluation. Documented in the XML docs and `docs/predicates.md`, and tested. The compile-time diagnostic for reversed bounds is not part of this ticket (no bounds here). Tests: `ClockPredicatesTests` with a counting manual `TimeProvider` (no fake-time package is referenced).

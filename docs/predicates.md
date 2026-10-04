@@ -108,6 +108,21 @@ A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two pred
 | `Before` | `NotBefore` | `value` | The selected instant is earlier than `value`. An equal instant is `False`. |
 | `Between` | `Outside` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `Outside` is the exact complement. |
 
+`AfterNow` and `BeforeNow` compare the selected instant with the current time. They take a required `TimeProvider` at registration and no rule-text arguments. There is no ambient default clock.
+
+| Predicate | Twin | `True` when |
+| --- | --- | --- |
+| `AfterNow` | `NotAfterNow` | The selected instant is later than now. An instant equal to now is `False`. |
+| `BeforeNow` | `NotBeforeNow` | The selected instant is earlier than now. An instant equal to now is `False`. |
+
+An instant equal to now makes `AfterNow` and `BeforeNow` both `False`. Neither is the complement of the other, so each has its own twin.
+
+```csharp
+DateTimePredicates.AfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, TimeProvider.System);
+```
+
+The predicate reads the clock each time the engine evaluates it, never at registration. The engine evaluates one term once per `Evaluate` call, so a repeated term sees one instant. Two different terms each read the clock and can see different instants if the clock advances between them. To give every term one instant, register a `TimeProvider` that returns a fixed instant for each evaluation.
+
 Reversed bounds (`lower` later than `upper`) are an authoring error. The predicate throws `ArgumentException`, the evaluation records a fault and the result is `Unknown`. The bounds are never swapped.
 
 A null selected value returns `Unknown`. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead.
