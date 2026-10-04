@@ -27,14 +27,17 @@ an authorization layer is intentionally out of scope.
 
 | Term | Definition |
 | --- | --- |
-| **Rule** | A named, versioned unit of persistence: metadata plus one `Expression`. |
+| **Rule** | The authored definition of one **Expression**, in any notation (DSL text, JSON, YAML or `RuleBuilder`). Compiling it yields a **CompiledRule**. A name, version or storage record around a rule belongs to the application, not to TruthWeaver. |
 | **Expression** | The three-valued tree: operators over terms, constants and sub-expressions. Every expression evaluates to exactly one `TruthValue`. |
 | **Predicate** | A registered, reusable implementation — `IPredicate<TContext>` — such as `hasTopping` or `lovesPineapple`. The *function*, not any particular call to it. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")`. The tree's leaf node, and the unit of [term identity](#term-identity) and memoization. |
 | **Operator** | `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY` (renamed from `NXOR`, which conventionally means negated `XOR`; the old spelling is rejected), `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Never called a "gate." Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
 | **Decision** | The result of evaluating an expression: a `TruthValue` plus any faults recorded along the way, and optionally a trace. |
+| **Trace** | The record of one evaluation, kept on its **Decision** when requested. It has two views of the same run: a flat log in evaluation order, one entry per node visited or skipped (including repeat lookups answered from memoization), and a tree that mirrors the rule's shape, each node carrying its own result. A node skipped by short-circuiting is recorded as not evaluated, never omitted. |
+| **Outline** | The static, human-readable tree of a compiled rule: every operator and term with its **Label** and **Description**, and a term's arguments as text. It says what the rule means and involves no evaluation, so it mirrors the rule's shape in the same operand order as the **Trace** tree. *Avoid*: "rule description" (it is not a description of one rule, but a tree of per-node ones). |
 | **Collapse** | A TruthWeaver term (not K3 literature) and a method on the result, not part of the rule language: `Decision.Collapse(policy)` turns a three-valued result into a **CollapseOutcome** (`True`, `False`, `RejectedUnresolved`) under a **CollapsePolicy** (`UnknownAsFalse`, `UnknownAsTrue`, `UnknownIsError`). `Decision.Result` is always the rule's raw value; rule text, JSON and YAML that declare a `Collapse` are rejected with a diagnostic pointing to `Decision.Collapse`. It is pure, so it never records a **Fault** and never changes the decision. `RejectedUnresolved` means "not known"; it is a normal outcome, not a **Fault**, and `Decision.IsSatisfied` stays fail-closed (true only for `True`). |
 | **Inspection** | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: external operators that test the K3 state of their operand. They always yield a definite `True`/`False`, so they never make the enclosing rule `Unknown`. |
+| **Connective** | An **operator** that is a Strong Kleene (K3) operator: monotone in the **information order**, so refining an `Unknown` operand never changes a definite result. `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators and `If`. The rest of the operator set is the **external operators**. |
 | **External operator** | An operator that is not a Strong Kleene connective because it is not monotone in the **information order**: `COALESCE` (`??`) and the four inspections. They are the SQL (`COALESCE`, `IS [NOT] TRUE/FALSE/UNKNOWN`) and Bochvar (external connectives) precedents applied to truth values. Only the connectives (`NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators and `If`) are Strong K3, so the "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to external operators (`IsKnown(a) OR IsUnknown(a)` is a tautology). |
 | **Information order** | `Unknown` below both `True` and `False`, which are incomparable. A function is monotone in it when refining an `Unknown` input never changes a definite output; Kleene's strong connectives are exactly the monotone ones. It sits beside the truth order `False < Unknown < True` (`AND` is min, `OR` is max), which is only an implementation aid. |
 | **Project** | A TruthWeaver term (not K3 literature; in relational algebra "projection" means selecting columns) and a method on the result, not part of the rule language: `Decision.Project(unknownAs)` keeps `True`/`False` and replaces only `Unknown` with the chosen definite value, so the answer is never `Unknown`. Inside a rule, `COALESCE(x, True)` / `COALESCE(x, False)` does the same; rule text, JSON and YAML that declare a `Project` are rejected with a diagnostic pointing to `COALESCE` and `Decision.Project`. It is pure, so it never records a **Fault** and never changes `Decision.Result`; `Decision.IsSatisfied` stays fail-closed. |
@@ -58,9 +61,6 @@ a bound call to it); "gate" is circuit vocabulary, not used here;
 <!-- doctest:skip class diagram, structure only -->
 ```mermaid
 classDiagram
-    class Rule {
-        +Expression Expression
-    }
     class Expression {
         <<abstract>>
     }
@@ -105,7 +105,6 @@ classDiagram
         +EvaluateAsync() TruthValue
     }
 
-    Rule "1" *-- "1" Expression : has
     Expression <|-- TermExpression
     Expression <|-- AndExpression
     Expression <|-- OrExpression
