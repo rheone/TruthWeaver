@@ -9,8 +9,7 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 > [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 06): the
 > `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `EvaluationOptions.IncludeResolvedValues`
-> and `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. `EvaluationOptions.IncludeResolvedValues` (ticket 07). Not yet implemented: `Arg.From`. The proposed names for those (`Arg.From`, `GetAsync`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
 > `doctest:skip` until ticket 09.
 
@@ -234,7 +233,7 @@ Faults and the evaluation trace name the reference and the outcome, but not the 
 data may be sensitive. To include values in the trace while debugging:
 
 ```csharp
-Decision decision = await rule.EvaluateAsync(context, sources, new EvaluationOptions { IncludeResolvedValues = true });
+Decision decision = await rule.EvaluateAsync(context, sources, new EvaluationOptions(IncludeResolvedValues: true));
 ```
 
 Faults never include values, even then.

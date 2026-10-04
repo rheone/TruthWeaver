@@ -35,6 +35,9 @@ internal sealed class Evaluator<TContext>(
     private readonly DataSources? dataSources = dataSources;
     private readonly Dictionary<TermIdentity, TruthValue> memo = [];
 
+    // Trace text of terms whose variables resolved, with the values shown; filled only when IncludeResolvedValues is set.
+    private readonly Dictionary<TermIdentity, string> valueDescriptions = [];
+
     // What each (source, query) pair answered, queried at most once per evaluation (ADR-0006 decision 11). A failure is
     // stored like a value, so a repeated reference neither re-queries the source nor re-runs a failing call.
     private readonly Dictionary<VariableReference, SourceAnswer> sourceAnswers = [];
@@ -223,6 +226,27 @@ internal sealed class Evaluator<TContext>(
         }
 
         return !satisfiesMin && !satisfiesMax ? TruthValue.False : TruthValue.Unknown;
+    }
+
+    /// <summary>
+    /// Renders <paramref name="identity"/> as in the canonical text but with each variable followed by the value it
+    /// resolved to (<c>v: from("user", "$.age") = 18</c>). Used for the trace only, and only on request.
+    /// </summary>
+    private static string DescribeWithValues(TermIdentity identity, Dictionary<string, LiteralValue> values)
+    {
+        IEnumerable<KeyValuePair<string, string>> literals = identity.Arguments.Select(a => new KeyValuePair<string, string>(
+            a.Key,
+            a.Value.ToString()
+        ));
+        IEnumerable<KeyValuePair<string, string>> references = identity.Variables.Select(v => new KeyValuePair<string, string>(
+            v.Key,
+            $"{v.Value} = {values[v.Key]}"
+        ));
+        string arguments = string.Join(
+            ", ",
+            literals.Concat(references).OrderBy(a => a.Key, StringComparer.Ordinal).Select(a => $"{a.Key}: {a.Value}")
+        );
+        return $"{identity.PredicateName}({arguments})";
     }
 
     private async ValueTask<EvalResult> EvalAsync(Expression node)
@@ -514,12 +538,15 @@ internal sealed class Evaluator<TContext>(
 
         if (this.memo.TryGetValue(term.Identity, out TruthValue cached))
         {
+            // A repeat of a term that resolved earlier shows the same values as its first occurrence.
+            description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
             this.trace.Add(new TraceEntry(description, cached, false));
             return new EvalResult(cached, new TraceNode(description, cached, false, []));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
         this.memo[term.Identity] = result;
+        description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
         this.trace.Add(new TraceEntry(description, result, false));
         return new EvalResult(result, new TraceNode(description, result, false, []));
     }
@@ -544,6 +571,11 @@ internal sealed class Evaluator<TContext>(
             {
                 // The predicate is not called with a missing argument: the term is Unknown and each failure is a fault.
                 return TruthValue.Unknown;
+            }
+
+            if (this.options.IncludeResolvedValues && identity.Variables.Count > 0)
+            {
+                this.valueDescriptions[identity] = DescribeWithValues(identity, values);
             }
 
             PredicateArguments args = new(values);

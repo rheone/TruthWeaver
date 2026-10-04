@@ -14,10 +14,16 @@ namespace TruthWeaver.Evaluation;
 /// An overall wall-clock bound for the evaluation, linked into the caller's
 /// <see cref="CancellationToken"/>. <see langword="null"/> (the default) means no timeout.
 /// </param>
+/// <param name="IncludeResolvedValues">
+/// <see langword="true"/> to show the value each variable reference resolved to in the trace (ADR-0006 decision 13); the
+/// default <see langword="false"/> names only the reference, because resolved data may be sensitive. Faults never include
+/// resolved values whatever this is set to.
+/// </param>
 public sealed record EvaluationOptions(
     int? FaultBudget = null,
     EvaluationMode Mode = EvaluationMode.ShortCircuit,
-    TimeSpan? Timeout = null
+    TimeSpan? Timeout = null,
+    bool IncludeResolvedValues = false
 )
 {
     /// <summary>Gets the default options: unlimited fault budget, <see cref="EvaluationMode.ShortCircuit"/>, no timeout.</summary>
