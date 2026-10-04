@@ -37,6 +37,9 @@ copyright line reads 2026.
 - `Arg.TryFrom` (returns the validator's `QueryProblem` list instead of throwing `ArgumentException`) and
   `IDataSource.TryGetAsync<T>` in `TruthWeaver.Building`, which returns a `DataReadResult<T>` (`Succeeded`, `Value`,
   `FailureKind`, `ErrorMessage`) instead of throwing `InvalidOperationException`. `Arg.From` and `GetAsync<T>` still throw.
+- `TypePredicates`: the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset` and their `IsNot...` twins
+  (the Strong Kleene complement). Each has a `string?` (parse-based) and an `object?` (runtime-type) overload; a null
+  selected value is `Unknown`.
 - `Try` forms for reading optional or mixed-kind arguments without exception handling: `LiteralValue.TryAsString`, `TryAsInt64`,
   `TryAsDecimal`, `TryAsBoolean`, `TryAsDateTimeOffset`, `TryAsGuid` and `TryAsArray`, and `PredicateArguments.TryGetString`,
   `TryGetInt64`, `TryGetDecimal`, `TryGetBool`, `TryGetDateTimeOffset`, `TryGetGuid`, the matching `TryGet…Array` forms and

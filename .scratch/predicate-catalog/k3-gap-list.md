@@ -67,12 +67,12 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
 | Primitive types | 10 | 10 | 0 | 0 |
 | Numeric | 4 | 4 | 0 | 0 |
 | String | 13 | 12 | 1 | 0 |
-| Collection | 10 | 0 | 0 | 10 |
-| DateTimeOffset | 8 | 0 | 0 | 8 |
-| Type tests (`Predicate`) | 10 | 0 | 0 | 10 |
-| **Total** | **55** | **26** | **1** | **28** |
+| Collection | 10 | 10 | 0 | 0 |
+| DateTimeOffset | 8 | 5 | 0 | 3 |
+| Type tests (`Predicate`) | 10 | 10 | 0 | 0 |
+| **Total** | **55** | **51** | **1** | **3** |
 
-Ordering and range members are defined for `Int64` and `Decimal` only. For `Boolean` and `Guid` they are not defined, and for `DateTimeOffset` they are the date-time comparison predicates. `IsEmpty` also ships an `IsNotEmpty` twin.
+Ordering and range members are defined for `Int64` and `Decimal` only. For `Boolean` and `Guid` they are not defined, and for `DateTimeOffset` they are the date-time comparison predicates. `IsEmpty` also ships an `IsNotEmpty` twin. The three `DateTime` overloads of `After`, `Before` and `Between` are not added: the host converts to `DateTimeOffset` in the selector.
 
 Present members that are **not** in the inventory: `StringPredicates.EqualsIgnoreCase` (covered by the
 inventory's `ignoreCase` option) and `CollectionPredicates.SetEquals` (no inventory counterpart; the
@@ -182,16 +182,16 @@ takes an `object?` selector today. They belong to the per-kind static class `Typ
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `IsGuid` | missing | none | `string?` selector: `Guid.TryParse`; `object?` selector: also accepts a `Guid` instance. Format specifiers accepted by `TryParse` (braces, no hyphens) need a decision. |
-| `IsNotGuid` | missing | none | K3 complement of `IsGuid`. |
-| `IsNumeric` | missing | none | Parse test must use `CultureInfo.InvariantCulture` to honour the no-culture-sensitive rule; define `NumberStyles` (integers only, decimals, exponent, thousands separators). Also decide whether a numeric-typed `object` counts. |
-| `IsNotNumeric` | missing | none | K3 complement of `IsNumeric`. |
-| `IsUrl` | missing | none | Needs a definition: `Uri.TryCreate(..., UriKind.Absolute)`, restricted to `http`/`https`, or any scheme. |
-| `IsNotUrl` | missing | none | K3 complement of `IsUrl`. |
-| `IsString` | missing | none | Only meaningful for an `object?` selector (is the runtime type `string`). With a `string?` selector it degenerates to a null test. |
-| `IsNotString` | missing | none | K3 complement of `IsString`. |
-| `IsDateTimeOffset` | missing | none | `string?` selector: `DateTimeOffset.TryParse` with `InvariantCulture` and a defined `DateTimeStyles`/format (ISO 8601 only is the safest); `object?` selector: runtime type test. |
-| `IsNotDateTimeOffset` | missing | none | K3 complement of `IsDateTimeOffset`. |
+| `IsGuid` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNotGuid` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNumeric` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNotNumeric` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsUrl` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNotUrl` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsString` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNotString` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsDateTimeOffset` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
+| `IsNotDateTimeOffset` | present | `TypePredicates` (ticket 08) | Both `string?` and `object?` overloads; definitions in the XML docs. |
 
 ## Open questions for the repo owner
 

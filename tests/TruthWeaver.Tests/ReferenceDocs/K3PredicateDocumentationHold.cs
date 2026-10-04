@@ -86,5 +86,15 @@ internal static class K3PredicateDocumentationHold
         "string-notcontains",
         "string-notequal",
         "string-startswith",
+        "type-isdatetimeoffset",
+        "type-isguid",
+        "type-isnotdatetimeoffset",
+        "type-isnotguid",
+        "type-isnotnumeric",
+        "type-isnoturl",
+        "type-isnotstring",
+        "type-isnumeric",
+        "type-isstring",
+        "type-isurl",
     ];
 }

@@ -4,14 +4,14 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The failing test run is shown before the implementation
-- [ ] Each test has a written definition in its XML docs and is tested with accepted and rejected inputs at the format boundaries
-- [ ] Parsing uses `InvariantCulture` throughout
-- [ ] Negated members agree with the K3 complement of the positive form, including for `Unknown`
-- [ ] README and the gap list show the predicates as present
-- [ ] The full validation from CLAUDE.md passes
+- [x] The failing test run is shown before the implementation
+- [x] Each test has a written definition in its XML docs and is tested with accepted and rejected inputs at the format boundaries
+- [x] Parsing uses `InvariantCulture` throughout
+- [x] Negated members agree with the K3 complement of the positive form, including for `Unknown`
+- [x] README and the gap list show the predicates as present
+- [x] The full validation from CLAUDE.md passes
 
 Source: [gap list, Type tests section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
 
@@ -23,3 +23,5 @@ Owner decision (2026-10-04), recorded before implementation as the ticket requir
 - **`IsNumeric`:** `NumberStyles.Float` with `InvariantCulture`. A sign, a decimal point and an exponent are accepted. Thousands separators and currency symbols are rejected.
 - **`IsUrl`:** an absolute URI with the `http` or `https` scheme only (`Uri.TryCreate` with `UriKind.Absolute`).
 - **`IsDateTimeOffset`:** ISO 8601 with an explicit offset or `Z`, `DateTimeStyles.None`, `InvariantCulture`. Text without an offset is rejected, so the instant is never guessed.
+
+- 2026-10-04: Implemented in `src/TruthWeaver.Predicates/TypePredicates.cs` (10 names, each with `string?` and `object?` overloads, null is `Unknown`, no `nullBehavior` option). Definitions follow the owner decision above; `IsNumeric` parses a finite `double` (NaN, Infinity and overflow rejected; numeric-typed objects count except non-finite floats), `IsDateTimeOffset` needs seconds and an offset or `Z`. Tests are in `TypePredicatesTests`. The ten predicates are on the `K3PredicateDocumentationHold` list (no `docs/strong-k3/predicates/` pages yet).

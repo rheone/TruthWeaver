@@ -19,6 +19,7 @@ Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/Tr
 
 - `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching.
 - `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
+- `TypePredicates` covers the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset`. Each has an `IsNot...` twin that is its Strong Kleene complement. See [Type tests](#type-tests).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
 
 Every method on `StringPredicates` except one is ordinal-only and has a fixed behavior. A case-insensitive variant is a separate predicate (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception is `StringPredicates.EqualsConfigurable`. It is one predicate whose `ignoreCase` and `trim` arguments the rule sets. It is case-insensitive by default. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `EqualsConfigurable` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
@@ -132,6 +133,18 @@ There is no `DateTime` literal kind and no `DateTime` overload. A `DateTime` can
 ```csharp
 DateTimePredicates.After<Order>("placedAfter", order => new DateTimeOffset(order.PlacedUtc, TimeSpan.Zero));
 ```
+
+### Type tests
+
+Each `TypePredicates` test has two overloads under one name. The `string?` overload tests text. The `object?` overload tests the runtime type and also reads text. A null selected value answers `Unknown`. All parsing uses the invariant culture.
+
+| Test | True when |
+| --- | --- |
+| `IsGuid` | `Guid.TryParse` accepts the text (`N`, `D`, `B`, `P` and `X` forms). An `object?` selector also accepts a `Guid`. |
+| `IsNumeric` | The text parses as a finite `double` with `NumberStyles.Float`: a sign, a decimal point and an exponent. A thousands separator, a currency symbol, `NaN` and `Infinity` are rejected. An `object?` selector also accepts a numeric-typed value. |
+| `IsUrl` | The text is an absolute URI with the `http` or `https` scheme. An `object?` selector also accepts such a `Uri`. |
+| `IsString` | The value is a string. With a `string?` selector every non-null value is a string. |
+| `IsDateTimeOffset` | The text is ISO 8601 with seconds and an explicit offset or `Z`, such as `2026-10-04T12:00:00Z`. Text without an offset is rejected. An `object?` selector also accepts a `DateTimeOffset`. |
 
 ## 0 arguments, stateless lambda
 
