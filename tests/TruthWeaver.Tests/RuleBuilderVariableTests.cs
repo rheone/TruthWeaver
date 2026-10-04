@@ -166,6 +166,128 @@ public sealed class RuleBuilderVariableTests
         );
     }
 
+    /// <summary><see cref="Arg.TryFrom"/> with a validator that accepts the query returns the same reference as <see cref="Arg.From"/>.</summary>
+    [Fact]
+    public void TryFrom_ValidatorAcceptsTheQuery_ReturnsTheReferenceAndNoProblems_Test()
+    {
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate("$.minAge").Returns([]);
+
+        bool ok = Arg.TryFrom(
+            "user",
+            "$.minAge",
+            validator,
+            out VariableReference? reference,
+            out IReadOnlyList<QueryProblem> problems
+        );
+
+        Assert.True(ok);
+        Assert.Equal(new VariableReference("user", "$.minAge"), reference);
+        Assert.Empty(problems);
+    }
+
+    /// <summary>A validator rejection is returned as problems and never thrown.</summary>
+    [Fact]
+    public void TryFrom_ValidatorRejectsTheQuery_ReturnsFalseWithTheProblemsAndNoReference_Test()
+    {
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate("$.orders[").Returns([new QueryProblem("unterminated bracket", 8)]);
+
+        bool ok = Arg.TryFrom(
+            "user",
+            "$.orders[",
+            validator,
+            out VariableReference? reference,
+            out IReadOnlyList<QueryProblem> problems
+        );
+
+        Assert.False(ok);
+        Assert.Null(reference);
+        Assert.Equal("unterminated bracket", Assert.Single(problems).Message);
+    }
+
+    /// <summary>Without a validator the query is unchecked, so <see cref="Arg.TryFrom"/> succeeds.</summary>
+    [Fact]
+    public void TryFrom_NoValidator_ReturnsTheReference_Test()
+    {
+        bool ok = Arg.TryFrom("user", "$.a", null, out VariableReference? reference, out IReadOnlyList<QueryProblem> problems);
+
+        Assert.True(ok);
+        Assert.NotNull(reference);
+        Assert.Empty(problems);
+    }
+
+    /// <summary>A null source or query is a programming error, so <see cref="Arg.TryFrom"/> still throws.</summary>
+    [Fact]
+    public void TryFrom_NullSourceOrQuery_Throws_Test()
+    {
+        Assert.Throws<ArgumentNullException>(() => Arg.TryFrom(null!, "$.a", null, out _, out _));
+        Assert.Throws<ArgumentNullException>(() => Arg.TryFrom("user", null!, null, out _, out _));
+    }
+
+    /// <summary>A single convertible match is a success carrying the value.</summary>
+    [Fact]
+    public async Task TryGetAsync_Int64Match_SucceedsWithTheValue_Test()
+    {
+        DataReadResult<long> result = await SourceReturning(LiteralValue.OfInt64(18))
+            .TryGetAsync<long>("$.limits.age", TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(18, result.Value);
+        Assert.Null(result.FailureKind);
+        Assert.Null(result.ErrorMessage);
+    }
+
+    /// <summary>A string match converts to a Guid like a variable would.</summary>
+    [Fact]
+    public async Task TryGetAsync_StringMatch_ConvertsToGuid_Test()
+    {
+        Guid id = Guid.NewGuid();
+
+        DataReadResult<Guid> result = await SourceReturning(LiteralValue.OfString(id.ToString()))
+            .TryGetAsync<Guid>("$.id", TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(id, result.Value);
+    }
+
+    /// <summary>Each failure kind is a failure result, never an exception, and the message holds no data.</summary>
+    [Theory]
+    [InlineData(0, VariableFailureKind.Missing)]
+    [InlineData(1, VariableFailureKind.Ambiguous)]
+    [InlineData(2, VariableFailureKind.TypeMismatch)]
+    [InlineData(3, VariableFailureKind.SourceError)]
+    public async Task TryGetAsync_NoSingleConvertibleMatch_ReturnsFailureWithoutTheData_Test(
+        int scenario,
+        VariableFailureKind expected
+    )
+    {
+        IDataSource source = scenario switch
+        {
+            0 => SourceReturning(),
+            1 => SourceReturning(LiteralValue.OfInt64(1), LiteralValue.OfInt64(2)),
+            2 => SourceReturning(LiteralValue.OfString("hunter2")),
+            _ => FailingSource(),
+        };
+
+        DataReadResult<long> result = await source.TryGetAsync<long>("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(expected, result.FailureKind);
+        Assert.DoesNotContain("hunter2", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    /// <summary>An unsupported type is a programmer error, so the result form throws like <c>GetAsync</c>.</summary>
+    [Fact]
+    public Task TryGetAsync_UnsupportedType_ThrowsNotSupported_Test()
+    {
+        StubSource source = SourceReturning(LiteralValue.OfInt64(1));
+
+        return Assert.ThrowsAsync<NotSupportedException>(async () =>
+            await source.TryGetAsync<int>("$.x", TestContext.Current.CancellationToken)
+        );
+    }
+
     private static StubSource SourceReturning(params LiteralValue[] matches)
     {
         return new StubSource(DataQueryResult.Success(matches));

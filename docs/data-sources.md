@@ -226,7 +226,9 @@ RuleBuilder rule = RuleBuilder.Predicate("ageAtLeast", ("min", Arg.From("user", 
 ```
 
 `Arg.From(source, query, validator)` takes an optional `IQueryValidator` (for example `JsonQueryValidator.Instance`) and throws
-`ArgumentException` at once for a malformed query, instead of waiting for the compile diagnostic.
+`ArgumentException` at once for a malformed query, instead of waiting for the compile diagnostic. For a query that comes
+from external input, `Arg.TryFrom(source, query, validator, out reference, out problems)` returns `false` and the validator's
+`QueryProblem` list instead of throwing.
 
 To read a value once, while you assemble the rule, query a source yourself and pass the literal. This fixes
 the value in the rule; it does not create a variable.
@@ -239,6 +241,16 @@ RuleBuilder rule = RuleBuilder.Predicate("ageAtLeast", ("min", limit));
 `GetAsync<T>` (an extension on `IDataSource` in `TruthWeaver.Building`) supports `string`, `long`, `decimal`, `bool`,
 `DateTimeOffset` and `Guid`, converts like a variable would, and throws `InvalidOperationException` (never echoing data) when
 the query matches nothing, several nodes, the wrong kind, or the source fails.
+
+`TryGetAsync<T>` takes the same arguments and returns a `DataReadResult<T>` instead of throwing for those four cases.
+`Succeeded` tells which, `Value` holds the value, and a failed result has a `FailureKind` (`Missing`, `Ambiguous`,
+`TypeMismatch` or `SourceError`) and an `ErrorMessage` that never contains data. A `T` outside the list still throws
+`NotSupportedException`.
+
+```csharp
+DataReadResult<long> limit = await configSource.TryGetAsync<long>("$.limits.age", cancellationToken);
+RuleBuilder rule = RuleBuilder.Predicate("ageAtLeast", ("min", limit.Succeeded ? limit.Value : 18L));
+```
 
 ## Failures
 
