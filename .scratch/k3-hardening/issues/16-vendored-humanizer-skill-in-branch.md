@@ -15,3 +15,4 @@ See also [spec](../spec.md).
 ## Comments
 
 - 2026-10-03: Owner chose to remove the skill from the repo and keep it at user level. Work tracked by repo-hygiene 03.
+- 2026-10-04: Owner reversed this: the humanizer skill stays committed in the repo (`.claude/skills/humanizer`). repo-hygiene 03 was removed.
