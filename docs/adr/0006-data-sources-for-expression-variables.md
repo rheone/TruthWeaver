@@ -73,7 +73,7 @@ source, not to TruthWeaver, and equality compares the reference text, not the re
 14. **Packages.** `IDataSource`, `IQueryValidator`, `DataQueryResult` and `DataSources` go in
     `TruthWeaver.Abstractions`. A new
     package `TruthWeaver.DataSources.Json` holds the JSON source, its JSONPath validator and the JSONPath
-    dependency (JsonPath.Net). `TruthWeaver.Yaml` references it for the YAML source, which reuses that
+    dependency (Meziantou.Framework.JsonPath; see the amendment below). `TruthWeaver.Yaml` references it for the YAML source, which reuses that
     validator. `TruthWeaver` stays free of
     third-party packages other than the existing DI and logging abstractions. `TruthWeaver.Testing` gains a
     `FakeDataSource`.
@@ -105,3 +105,32 @@ source, not to TruthWeaver, and equality compares the reference text, not the re
   (same answer for the same term identity within one evaluation) is kept by the per-evaluation memoization
   in decision 11.
 - Before the JSON package ships, its dependency's license and .NET 11 compatibility must be confirmed.
+
+## Amendment (2026-10-04): the JSONPath engine
+
+> **Amended in place.** Decision 14 first named JsonPath.Net, pinned at 2.2.0. The package is now Meziantou.Framework.JsonPath.
+
+The engine must be free to use at every tier: no license, fee or EULA obligation for binaries or source.
+JsonPath.Net 3.0.0 and later ship their binaries under the Open Source Maintenance Fee EULA, and 2.2.0 gets no updates.
+Each candidate's license was read from its published `.nuspec` and `LICENSE` file and its repository.
+
+| Candidate | License | RFC 9535 | Targets and dependencies | Maintenance | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| **Meziantou.Framework.JsonPath 3.0.7** | MIT | Yes; tested against the JSONPath Compliance Test Suite | `net10.0` and `net11.0`; no dependencies; reads `JsonNode` directly | Active; commits to September 2026 | **Chosen** |
+| Blazing.Json.JSONPath 1.1.0 | MIT | Claims full compliance with its own test suite | `net10.0` only; works on `JsonElement`, so every `JsonNode` needs a conversion | One author; first commit 2026-01-11, last 2026-01-12, 2 stars | Rejected: no activity since release and no `JsonNode` support |
+| JsonCons.JsonPath 1.1.0 | Apache-2.0 | No; the .NET package follows the older JsonCons dialect | `netstandard2.1`; depends on `JsonCons.Utilities` and `System.Text.Json` 5.0.2; `JsonElement` only | Last push 2024-01-27 | Rejected: not RFC 9535 |
+| Hyperbee.Json 3.3.2 | MIT | Yes | `net8.0` to `net10.0`; pulls `Microsoft.CodeAnalysis.CSharp.Scripting` and an expression compiler | Active | Rejected: heavy dependencies and no `net11.0` build |
+| Corvus.Text.Json.JsonPath 5.7.5 | Apache-2.0 | Yes | `net10.0`; works on its own `Corvus.Text.Json` model | Active | Rejected: forces a second JSON object model |
+| JsonPath.Net 3.0.2 | OSMF EULA (binaries) | Yes | `net10.0` | Active | Rejected: fee and EULA |
+| JsonPath.Net 2.2.0 | MIT | Yes | `net10.0`, `netstandard2.0`; needs Json.More.Net | None | Replaced: no updates and a known `IndexOutOfRangeException` on a query ending in `.` |
+| Own RFC 9535 subset | Ours | Partial | None | Ours | Rejected: filters and functions are a large surface to own |
+
+Consequences of the swap:
+
+- `JsonPaths` parses with `JsonPath.Parse` and turns its `FormatException` into a `QueryProblem`. The parser has no offset
+  property, so the position is read from the "at position N" text in the message. `JsonPath.TryParse` is not used because it
+  reports neither message nor offset. The `$.` workaround for JsonPath.Net 2.2.0 is gone.
+- Filter expressions compare numbers as IEEE 754 doubles, so integers beyond 2^53 and some decimals can compare as equal
+  inside a filter. Value extraction is unaffected: it reads the node's JSON text.
+- `match()` and `search()` accept I-Regexp (RFC 9485) patterns only, as RFC 9535 requires; a pattern such as `\d` matches nothing.
+- The trim and AOT analyzers (`IsAotCompatible`) report no warning for the package.

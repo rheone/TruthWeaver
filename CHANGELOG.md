@@ -34,6 +34,10 @@ copyright line reads 2026.
 
 ### Added
 
+- `Try` forms for reading optional or mixed-kind arguments without exception handling: `LiteralValue.TryAsString`, `TryAsInt64`,
+  `TryAsDecimal`, `TryAsBoolean`, `TryAsDateTimeOffset`, `TryAsGuid` and `TryAsArray`, and `PredicateArguments.TryGetString`,
+  `TryGetInt64`, `TryGetDecimal`, `TryGetBool`, `TryGetDateTimeOffset`, `TryGetGuid`, the matching `TryGet…Array` forms and
+  `TryGetRaw`. Each returns `false` for a missing name or a different kind. The existing `As…` and `Get…` members still throw.
 - Strong Kleene (K3) language surface (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md)): `Unknown` as a first
   class value and constant; the operators `IMPLIES`, `EQUIVALENT` (`IFF`), `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`,
   `BETWEEN`, `COALESCE`, `If` (`? :`) and the inspections `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`; symbol and Unicode
@@ -80,8 +84,8 @@ copyright line reads 2026.
 - New package `TruthWeaver.DataSources.Json` (data-sources 04): `JsonDataSource` (`Parse(json)`, `Create(JsonNode?)`) answers JSONPath
   (RFC 9535) queries over a JSON document and converts each matched node to a `LiteralValue` (string, `long`, `decimal`, boolean;
   an object, array or `null` is `DataQueryErrorKind.UnsupportedType`). `ScopeAsync` roots a new source at the single node a query
-  matches. It depends on `TruthWeaver.Abstractions` and JsonPath.Net 2.2.0 (MIT; 3.x ships under the Open Source Maintenance Fee
-  EULA), and the core `TruthWeaver` package gains no third-party dependency.
+  matches. It depends on `TruthWeaver.Abstractions` and Meziantou.Framework.JsonPath 3.0.7 (MIT, no further dependencies; it replaced
+  JsonPath.Net, whose 3.x binaries ship under the Open Source Maintenance Fee EULA), and the core `TruthWeaver` package gains no third-party dependency.
 - Variable references in JSON and YAML (data-sources 03): an argument value of `{ "from": "user", "query": "$.minAge" }` (the same
   mapping in YAML) is a variable reference and compiles to the same tree as `from("user", "$.minAge")`; `rule-tree.schema.json`
   accepts it (a reference is not allowed inside an array literal). A malformed reference is a `TRE0014` diagnostic at the wrong

@@ -3,7 +3,7 @@ namespace TruthWeaver.DataSources.Json;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using global::Json.Path;
+using Meziantou.Framework.Json;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -71,7 +71,7 @@ public sealed class JsonDataSource : IDataSource
             );
         }
 
-        NodeList matches = path.Evaluate(this.root).Matches;
+        JsonPathResult matches = path.Evaluate(this.root);
         if (matches.Count != 1)
         {
             throw new InvalidOperationException(
@@ -175,7 +175,7 @@ public sealed class JsonDataSource : IDataSource
             );
         }
 
-        NodeList matches = path.Evaluate(this.root).Matches;
+        JsonPathResult matches = path.Evaluate(this.root);
         return Convert([.. matches.Select(match => match.Value)]);
     }
 }

@@ -111,7 +111,7 @@ public sealed class PackageBoundaryTests
     [Fact]
     public void Core_and_abstractions_reference_no_jsonpath_assembly()
     {
-        string[] jsonAssemblies = ["JsonPath.Net", "Json.More"];
+        string[] jsonAssemblies = ["Meziantou.Framework.JsonPath", "JsonPath.Net", "Json.More"];
 
         foreach (Assembly assembly in new[] { Core, Abstractions })
         {
@@ -145,6 +145,7 @@ public sealed class PackageBoundaryTests
         string[] referenced = [.. Yaml.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
 
         Assert.Contains("TruthWeaver.DataSources.Json", referenced);
+        Assert.DoesNotContain("Meziantou.Framework.JsonPath", referenced);
         Assert.DoesNotContain("JsonPath.Net", referenced);
         Assert.DoesNotContain("Json.More", referenced);
     }

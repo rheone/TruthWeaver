@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 Known so far (verify each; web results are not authoritative):
 
@@ -23,3 +23,9 @@ Known so far (verify each; web results are not authoritative):
 - [ ] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 1).
+
+## Comments
+
+2026-10-04: Done. Recommendation: Meziantou.Framework.JsonPath 3.0.7 (MIT, `net11.0` build, no dependencies, RFC 9535 tested against the compliance suite, reads `JsonNode` directly, active). Rejected, with reasons, in ADR-0006's amendment: Blazing.Json.JSONPath (net10.0 only, `JsonElement` only, no activity after its first two days), JsonCons.JsonPath (not RFC 9535, stale), Hyperbee.Json (Roslyn scripting dependencies), Corvus.Text.Json.JsonPath (second JSON model), JsonPath.Net 3.x (EULA), own subset (too large). Licenses were read from each package's `.nuspec` and `LICENSE` file.
+
+Swap: `JsonPaths` uses `JsonPath.Parse`; the position is read from the "at position N" text of the `FormatException` (no offset property exists), and the `$.` workaround is removed (the package reports it natively). Filter number comparison uses doubles and `match()`/`search()` take I-Regexp only (noted in the ADR). `Directory.Packages.props`, CHANGELOG, `docs/packages.md`, the ADR-0004 note and the architecture test were updated. No lock files are tracked. Build, `dotnet test` (2554), csharpier, `dotnet format` and roslynator pass; the Json and Yaml data source tests are unchanged.
