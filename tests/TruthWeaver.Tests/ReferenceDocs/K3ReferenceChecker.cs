@@ -35,9 +35,10 @@ using TruthWeaver.Tests.TestSupport;
 /// </item>
 /// </list>
 /// <para>
-/// A file in a category directory other than <c>README.md</c> is an operation document: it must be in the approved
-/// inventory with the matching category directory and Kind, carry every required section non-empty, and its Truth Table,
-/// Evaluation Table and Canonical Form sections must each contain the marker that verifies them. Relative links, including
+/// A file in a category directory other than <c>README.md</c> is an operation document: it must be in the
+/// inventory with the matching category directory and Kind, carry every required section non-empty, use only the known
+/// section names, and its Truth table, Evaluation table and Canonical form sections must each contain the marker that
+/// verifies them. Section names match without regard to case. Relative links, including
 /// heading anchors in Markdown targets, must resolve everywhere. Code spans and fenced blocks are not scanned for links.
 /// </para>
 /// <para>Failures are returned, not thrown, so the checker can be shown to fail on deliberately wrong fixtures.</para>
@@ -54,12 +55,28 @@ internal static partial class K3ReferenceChecker
         "Classification",
         "Kind",
         "Arity",
-        "Input Domain",
-        "Output Domain",
+        "Input domain",
+        "Output domain",
         "Definition",
         "Syntax",
         "Aliases",
-        "Formal Semantics",
+        "Formal semantics",
+    ];
+
+    // Sections that appear only where they apply. "Implementation notes" is the previous name of "Evaluation behavior".
+    private static readonly string[] OptionalSections =
+    [
+        "Formula",
+        "Truth table",
+        "Evaluation table",
+        "Canonical form",
+        "Equivalent forms",
+        "Examples",
+        "Edge cases",
+        "Mermaid diagram",
+        "Evaluation behavior",
+        "Implementation notes",
+        "Related operations",
     ];
 
     // The category label each directory's documents must declare (docs/strong-k3/specification/operations.md).
@@ -653,6 +670,17 @@ internal static partial class K3ReferenceChecker
             }
         }
 
+        foreach ((string title, (int Start, int End) range) in sections)
+        {
+            if (
+                !RequiredSections.Contains(title, StringComparer.OrdinalIgnoreCase)
+                && !OptionalSections.Contains(title, StringComparer.OrdinalIgnoreCase)
+            )
+            {
+                fail(range.Start + 1, $"unknown section '## {title}'");
+            }
+        }
+
         if (
             sections.TryGetValue("Kind", out (int Start, int End) kindRange)
             && SectionLines(lines, kindRange) is [var kindLine, ..]
@@ -676,15 +704,15 @@ internal static partial class K3ReferenceChecker
         }
 
         if (
-            sections.ContainsKey("Truth Table") && sections.TryGetValue("Evaluation Table", out (int Start, int End) evaluation)
+            sections.ContainsKey("Truth table") && sections.TryGetValue("Evaluation table", out (int Start, int End) evaluation)
         )
         {
-            fail(evaluation.Start + 1, "Truth Table and Evaluation Table are mutually exclusive");
+            fail(evaluation.Start + 1, "Truth table and Evaluation table are mutually exclusive");
         }
 
-        RequireMarker(lines, sections, "Truth Table", "k3:truth", fail);
-        RequireMarker(lines, sections, "Evaluation Table", "k3:eval", fail);
-        RequireMarker(lines, sections, "Canonical Form", "k3:canonical", fail);
+        RequireMarker(lines, sections, "Truth table", "k3:truth", fail);
+        RequireMarker(lines, sections, "Evaluation table", "k3:eval", fail);
+        RequireMarker(lines, sections, "Canonical form", "k3:canonical", fail);
     }
 
     private static void CheckCategory(string[] lines, (int Start, int End) range, string expected, Action<int, string> fail)
@@ -730,7 +758,7 @@ internal static partial class K3ReferenceChecker
     /// <summary>The level-2 sections, by title, as 0-based start (the heading line) and exclusive end indexes.</summary>
     private static Dictionary<string, (int Start, int End)> Sections(string[] lines, bool[] inFence)
     {
-        Dictionary<string, (int, int)> sections = new(StringComparer.Ordinal);
+        Dictionary<string, (int, int)> sections = new(StringComparer.OrdinalIgnoreCase);
         string? current = null;
         int start = 0;
         for (int i = 0; i <= lines.Length; i++)

@@ -109,6 +109,32 @@ public sealed class K3ReferenceTests
         Assert.Empty(K3ReferenceChecker.CheckOperationsIndex(index));
     }
 
+    /// <summary>Sentence-case section names and the Evaluation behavior section are accepted.</summary>
+    [Fact]
+    public void Check_SentenceCaseHeadingsAndEvaluationBehavior_ReportsNoFailures_Test()
+    {
+        string renamed =
+            ValidNot
+                .Replace("## Input Domain", "## Input domain", StringComparison.Ordinal)
+                .Replace("## Output Domain", "## Output domain", StringComparison.Ordinal)
+                .Replace("## Formal Semantics", "## Formal semantics", StringComparison.Ordinal)
+                .Replace("## Truth Table", "## Truth table", StringComparison.Ordinal)
+            + "\n## Evaluation behavior\n\nThe operand always runs.\n\n## Implementation notes\n\nThe previous section name.\n";
+
+        Assert.Empty(Check(NotPath, renamed));
+    }
+
+    /// <summary>A section name outside the template is reported at its heading.</summary>
+    [Fact]
+    public void Check_UnknownSection_ReportsFileAndLine_Test()
+    {
+        string unknown = ValidNot + "\n## Open questions\n\nNone.\n";
+
+        string failure = Assert.Single(Check(NotPath, unknown));
+
+        Assert.Contains("unknown section '## Open questions'", failure, StringComparison.Ordinal);
+    }
+
     /// <summary>A complete, correct operation document produces no failures.</summary>
     [Fact]
     public void Check_ValidOperationDocument_ReportsNoFailures_Test()

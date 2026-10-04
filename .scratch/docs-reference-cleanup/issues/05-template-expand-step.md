@@ -4,10 +4,14 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The checker accepts either heading name and either case for each affected section
-- [ ] A fixture proves each new heading is accepted and an unknown heading is still rejected
-- [ ] `docs/doc-examples.md` describes the template, markers and checks in present tense and links to no history document
-- [ ] All 27 current operation pages pass the checker without edits
-- [ ] The reference harness and the lint test pass
+- [x] The checker accepts either heading name and either case for each affected section
+- [x] A fixture proves each new heading is accepted and an unknown heading is still rejected
+- [x] `docs/doc-examples.md` describes the template, markers and checks in present tense and links to no history document
+- [x] All 27 current operation pages pass the checker without edits
+- [x] The reference harness and the lint test pass
+
+## Comments
+
+- 2026-10-04: Done. The checker matches section names without regard to case, accepts "Evaluation behavior" and the old "Implementation notes", and rejects a section outside the known list. The checker never required "Implementation Notes", so no page changes were needed. Ticket 09 removes the old name and requires exact sentence case.
