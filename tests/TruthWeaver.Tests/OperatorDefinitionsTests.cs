@@ -92,6 +92,27 @@ public sealed class OperatorDefinitionsTests
         Assert.Equal(max, d.MaxOperands);
     }
 
+    /// <summary>
+    /// Verifies the threshold family records a one-operand minimum, matching what the compiler accepts, while the
+    /// other n-ary operators keep their minimum of two.
+    /// </summary>
+    [Theory]
+    [InlineData("AtLeast", 1)]
+    [InlineData("AtMost", 1)]
+    [InlineData("Exactly", 1)]
+    [InlineData("GreaterThan", 1)]
+    [InlineData("LessThan", 1)]
+    [InlineData("Or", 2)]
+    [InlineData("Parity", 2)]
+    [InlineData("Any", 2)]
+    [InlineData("ExactlyOne", 2)]
+    [InlineData("Coalesce", 2)]
+    public void TryGet_threshold_family_minimum_is_one_and_others_unchanged_Test(string opName, int min)
+    {
+        Assert.True(OperatorDefinitions.TryGet(opName, out OperatorDefinition? d));
+        Assert.Equal(min, d.MinOperands);
+    }
+
     /// <summary>Verifies a parameterised label substitutes the node's K and Max.</summary>
     [Fact]
     public void Label_substitutes_k_and_max_Test()

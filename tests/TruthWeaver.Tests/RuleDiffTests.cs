@@ -123,6 +123,32 @@ public sealed class RuleDiffTests
         Assert.Empty(entry.Path);
     }
 
+    /// <summary>
+    /// A pair over the default analysis term cap is undecided by default, and decided once the cap is raised
+    /// through the optional options parameter.
+    /// </summary>
+    [Fact]
+    public void Compare_RulesOverTheDefaultTermCap_AreDecidedOnlyWhenTheCapIsRaised_Test()
+    {
+        string[] terms = [.. Enumerable.Range(1, 21).Select(i => $"t{i}")];
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        foreach (string term in terms)
+        {
+            registry.AddConstant(term, true);
+        }
+
+        RuleCompiler<RuleTestContext> compiler = new(registry.Build());
+        CompiledRule<RuleTestContext> before = compiler.Compile(string.Join(" AND ", terms)).CompiledRule!;
+        CompiledRule<RuleTestContext> after = compiler.Compile(string.Join(" AND ", terms.Reverse())).CompiledRule!;
+
+        RuleDiffResult byDefault = RuleDiff.Compare(before, after);
+        RuleDiffResult raised = RuleDiff.Compare(before, after, new CompilerOptions(MaxAnalysisTerms: 21));
+
+        Assert.True(byDefault.HasChanges);
+        Assert.Null(byDefault.PreservesMeaning);
+        Assert.True(raised.PreservesMeaning);
+    }
+
     private static RuleCompiler<RuleTestContext> CreateCompiler()
     {
         return new(

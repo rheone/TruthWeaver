@@ -50,6 +50,7 @@ copyright line reads 2026.
 - `NullBehavior` option on the built-in string, regex and collection predicates; `IEnumerable<RuleBuilder>` overloads
   for the counted operators.
 - Benchmarks for the new operators, rewrites and diagnostics formatting.
+- `RuleDiff.Compare` takes an optional `CompilerOptions`, passed to the equivalence check, so a raised `MaxAnalysisTerms` decides `PreservesMeaning` for large rules.
 
 ### Changed
 

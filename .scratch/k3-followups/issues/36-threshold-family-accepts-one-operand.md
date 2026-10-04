@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A test fails first, then passes, showing the table minimum is 1 for the five threshold operators and unchanged for the others
 - [ ] The README no longer claims a minimum of 2 for the threshold family and shows the AND/OR chain in its working infix spelling

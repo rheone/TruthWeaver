@@ -2,6 +2,7 @@ namespace TruthWeaver.Diffing;
 
 using TruthWeaver.Analysis;
 using TruthWeaver.Ast;
+using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 
 /// <summary>
@@ -17,12 +18,21 @@ public static class RuleDiff
     /// <typeparam name="TContext">The application context type both rules were compiled for.</typeparam>
     /// <param name="before">The rule to diff from.</param>
     /// <param name="after">The rule to diff to.</param>
+    /// <param name="options">
+    /// The bounds for the equivalence check behind <see cref="RuleDiffResult.PreservesMeaning"/>; only
+    /// <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Raise it so a large pair is decided instead of
+    /// <see langword="null"/>. Defaults to <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// </param>
     /// <returns>
     /// The structural diff, in tree order. Empty (<see cref="RuleDiffResult.HasChanges"/> is
     /// <see langword="false"/>) when <paramref name="before"/> and <paramref name="after"/> are
     /// structurally identical.
     /// </returns>
-    public static RuleDiffResult Compare<TContext>(CompiledRule<TContext> before, CompiledRule<TContext> after)
+    public static RuleDiffResult Compare<TContext>(
+        CompiledRule<TContext> before,
+        CompiledRule<TContext> after,
+        CompilerOptions? options = null
+    )
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
@@ -34,7 +44,7 @@ public static class RuleDiff
         bool? preservesMeaning =
             entries.Count == 0
                 ? true
-                : RuleEquivalence.Compare(before, after).Outcome switch
+                : RuleEquivalence.Compare(before, after, options).Outcome switch
                 {
                     RuleEquivalenceOutcome.Equivalent => true,
                     RuleEquivalenceOutcome.NotEquivalent => false,

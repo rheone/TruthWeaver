@@ -556,7 +556,8 @@ Characters the DSL does not recognise are kept in place, so the text of a rule t
 | **Unary** | `NOT`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown` | Take exactly one operand (`MalformedTree` otherwise). The four inspections are function calls (`IsUnknown(a)`). |
 | **Binary only** | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` | Always exactly two operands — a compile error otherwise (`InfixArityViolation`). `XOR` with three or more operands is an error whose message points at `PARITY` (n-ary parity) and `ExactlyOne` (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) decision 7); a chain such as `a IMPLIES b IMPLIES c` or `a NAND b NAND c` is rejected too — parenthesize it. |
 | **Ternary** | `If` | Takes exactly three operands, `[condition, whenTrue, whenFalse]` — `MalformedTree` otherwise. |
-| **N-ary (≥ 2)** | `AND`, `OR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`AND(a, b, c)`, not `AND(AND(a, b), c)`). |
+| **N-ary (≥ 2)** | `AND`, `OR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne` | Take two or more operands. `AND`/`OR` are commonly thought of as "binary" from C-family languages, but this engine treats them as flat n-ary chains (`a AND b AND c`, not `(a AND b) AND c`). |
+| **Threshold family (≥ 1)** | `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` | Take one or more operands after the integer `k`. A single operand is accepted and simplifies to that operand or its negation. |
 | **0-ary** | `True`, `False`, `Unknown` | Constants, not operators over operands. Written in any letter case; printed upper camel. |
 
 ### All operators
@@ -972,8 +973,8 @@ Limits to know:
 
 `RuleDiff.Compare` uses this check: `RuleDiffResult.PreservesMeaning` is `true`
 when the rules are equivalent (including when structurally identical), `false`
-when not, and `null` when the default term cap makes it undecidable. Call
-`RuleEquivalence.Compare` directly to use a larger cap.
+when not, and `null` when the term cap makes it undecidable (default 20). Call
+`RuleEquivalence.Compare` directly, or pass `new CompilerOptions(MaxAnalysisTerms: n)` as the optional third argument of `RuleDiff.Compare(before, after, options)`, to use a larger cap; only that option is read and omitting it behaves as before.
 
 ## Choosing a rule format
 

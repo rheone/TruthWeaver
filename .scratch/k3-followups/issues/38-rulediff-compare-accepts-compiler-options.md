@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A test fails first: a pair of rules over the default term cap has `PreservesMeaning` null by default and decided when the cap is raised through the new parameter
 - [ ] Omitting the parameter behaves exactly as before

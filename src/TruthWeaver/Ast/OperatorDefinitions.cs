@@ -88,11 +88,11 @@ internal static class OperatorDefinitions
             "True iff no operand is true (AtMost(0, ...)). False iff any operand is true; Unknown when no operand is true yet some are Unknown."
         ),
         new("ExactlyOne", "exactlyOne", 2, null, "ExactlyOne", "True iff exactly one operand is true."),
-        new("AtLeast", "atLeast", 2, null, "AtLeast({K})", "True iff at least {K} of the operands are true."),
-        new("AtMost", "atMost", 2, null, "AtMost({K})", "True iff at most {K} of the operands are true."),
-        new("GreaterThan", "greaterThan", 2, null, "GreaterThan({K})", "True iff more than {K} of the operands are true."),
-        new("LessThan", "lessThan", 2, null, "LessThan({K})", "True iff fewer than {K} of the operands are true."),
-        new("Exactly", "exactly", 2, null, "Exactly({K})", "True iff exactly {K} of the operands are true."),
+        new("AtLeast", "atLeast", 1, null, "AtLeast({K})", "True iff at least {K} of the operands are true."),
+        new("AtMost", "atMost", 1, null, "AtMost({K})", "True iff at most {K} of the operands are true."),
+        new("GreaterThan", "greaterThan", 1, null, "GreaterThan({K})", "True iff more than {K} of the operands are true."),
+        new("LessThan", "lessThan", 1, null, "LessThan({K})", "True iff fewer than {K} of the operands are true."),
+        new("Exactly", "exactly", 1, null, "Exactly({K})", "True iff exactly {K} of the operands are true."),
         new(
             "Between",
             "between",
