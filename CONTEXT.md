@@ -389,4 +389,5 @@ publishing themselves.
 - [ADR-0003: Rule syntax and serialization](docs/adr/0003-rule-syntax-and-serialization.md)
 - [ADR-0004: Package boundaries and extensibility](docs/adr/0004-package-boundaries-and-extensibility.md)
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md)
+- [Strong Kleene (K3) reference](docs/strong-k3/README.md)
 - [README.md](README.md)

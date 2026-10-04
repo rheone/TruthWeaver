@@ -2552,6 +2552,8 @@ are covered by the evaluator's behavior described in
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md) —
   the full K3 operator set, notations, boundaries (`Decision.Project` and `Decision.Collapse` on the result), rewrites,
   structured diagnostics and `TruthValue`-returning predicates.
+- [Strong Kleene (K3) reference](docs/strong-k3/README.md) —
+  one document per operation with truth tables, formulas, canonical forms and the shared specification.
 
 ## License
 

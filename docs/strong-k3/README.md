@@ -5,7 +5,7 @@ A navigable reference for the Strong Kleene (K3) operations of TruthWeaver: one 
 The value set is `{True, False, Unknown}`, written T, F and U in tables.
 
 > [!NOTE]
-> Documents are being added category by category. An operation listed as *pending* in an index has no document yet. The model, categories and document template are fixed in [PROPOSAL.md](PROPOSAL.md), approved by the owner on 2026-10-03.
+> Every Strong Kleene operation has a document, except the predicates, which are on hold until they are implemented. The model, categories and document template are fixed in [PROPOSAL.md](PROPOSAL.md), approved by the owner on 2026-10-03. The latest check of the whole reference is in [VALIDATION.md](VALIDATION.md).
 
 ## Navigation
 
@@ -13,7 +13,7 @@ The value set is `{True, False, Unknown}`, written T, F and U in tables.
 | --- | --- | --- |
 | Specification | Values, semantics, terminology and notation | [specification/](specification/README.md) |
 | Gates / Operators | The primitive connectives `NOT`, `AND`, `OR` | [gates/](gates/README.md) |
-| Derived Operations | Logical connectives defined by composing gates | [derived/](derived/README.md) |
+| Derived Logical Operations | Logical connectives defined by composing gates | [derived/](derived/README.md) |
 | Cardinality Functions | Operations over the count of true operands | [cardinality/](cardinality/README.md) |
 | Functions | `COALESCE`, `If` and the four inspections | [functions/](functions/README.md) |
 | Result Transformations | `Project` and `Collapse`, methods on an evaluated decision | [result-transformations/](result-transformations/README.md) |
