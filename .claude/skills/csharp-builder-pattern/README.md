@@ -35,6 +35,7 @@ also invoke it directly by asking for it or typing `/csharp-builder-pattern`.
 | Init-only setters and records narrowing when a builder is still needed | [references/csharp9-init-only-setters-and-records.md](references/csharp9-init-only-setters-and-records.md) |
 | `required` members enforcing mandatory fields without a builder | [references/csharp11-required-members.md](references/csharp11-required-members.md) |
 | Primary constructors and collection expressions shrinking builder boilerplate | [references/csharp12-primary-constructors.md](references/csharp12-primary-constructors.md) |
+| The plain fluent builder form: chaining, naming, and in-chain validation | [specialized/fluent-builder-form.md](specialized/fluent-builder-form.md) |
 | The generic, self-typed `Builder<TSelf, TProduct>` base in depth | [specialized/generic-self-typed-builder-base.md](specialized/generic-self-typed-builder-base.md) |
 | Step builders that enforce build order via a chain of interfaces | [specialized/step-builders-and-build-order-type-state.md](specialized/step-builders-and-build-order-type-state.md) |
 | The decision list for choosing a builder versus a modern construction alternative | [specialized/builder-vs-modern-alternatives.md](specialized/builder-vs-modern-alternatives.md) |

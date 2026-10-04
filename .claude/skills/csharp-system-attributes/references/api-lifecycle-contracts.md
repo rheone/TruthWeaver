@@ -82,9 +82,43 @@ you want IntelliSense to nudge callers toward instead. Don't use this as a subst
 `internal`/`private` — if something genuinely shouldn't be called from outside the assembly, use
 accessibility modifiers, not `EditorBrowsableState.Never`, which offers no real encapsulation.
 
+## `[Experimental]`
+
+`System.Diagnostics.CodeAnalysis.ExperimentalAttribute(string diagnosticId)` — since .NET 8 /
+C# 12.
+
+The mirror image of `[Obsolete]`: marks a member (or an entire type/assembly) as *too new* to use
+without acknowledging the risk, rather than too old. Every caller gets a compiler error
+(diagnostic ID of your choosing, e.g. `"MYLIB001"`) unless they explicitly suppress it — there's
+no warning-only tier the way `[Obsolete]` has one.
+
+```csharp
+[Experimental("MYLIB001")]
+public sealed class PreviewParser { /* shape may still change before stabilizing */ }
+
+#pragma warning disable MYLIB001 // acknowledged: API may change before it stabilizes
+var parser = new PreviewParser();
+#pragma warning restore MYLIB001
+```
+
+- Unlike `[Obsolete]`, the diagnostic ID is *required*, not optional — there's no generic
+  "this is experimental" warning; every experimental API needs its own ID so callers can suppress
+  exactly the one they've reviewed and accepted, not every experimental feature in the library at
+  once.
+- Applying it to an `assembly`-level target marks everything in that assembly experimental in one
+  declaration — useful for an entire preview package, rather than tagging every public type.
+
+**When to add it proactively**: a genuinely pre-stable public API you're shipping ahead of a
+final design — a preview feature, an API surface still gathering feedback. Don't use it as a
+substitute for proper semantic versioning (a 0.x package's whole surface being "unstable" doesn't
+need per-member `[Experimental]`); reach for it when *most* of a stable-looking library is settled
+but one specific corner isn't yet.
+
 ## Fallback / no-op behavior
 
-All three are old BCL attributes (.NET Framework 1.0/1.1) with no version-gating concerns for any
-currently supported target. `[Conditional]`'s effect is purely compile-time and symbol-driven —
-there is no runtime fallback to reason about; a caller compiling without the symbol simply never
-emits the call.
+`[Obsolete]`, `[Conditional]`, and `[EditorBrowsable]` are old BCL attributes (.NET Framework
+1.0/1.1) with no version-gating concerns for any currently supported target. `[Conditional]`'s
+effect is purely compile-time and symbol-driven — there is no runtime fallback to reason about; a
+caller compiling without the symbol simply never emits the call. `[Experimental]` needs .NET 8 /
+C# 12; on an older target, omit it and rely on documentation/versioning alone to signal
+pre-stability — there is no lesser-version equivalent.

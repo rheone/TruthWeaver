@@ -26,6 +26,7 @@ public sealed class K3ReferenceTests
         ## Classification
 
         - Category: Gates / Operators
+        - Category index: [Gates / Operators](README.md)
         - Strong Kleene connective
 
         ## Kind
@@ -304,6 +305,33 @@ public sealed class K3ReferenceTests
         Assert.Contains("Category", failure, StringComparison.Ordinal);
     }
 
+    /// <summary>A Classification section with no <c>Category index:</c> line is reported with its line.</summary>
+    [Fact]
+    public void Check_OperationDocumentWithoutCategoryIndexLine_IsReported_Test()
+    {
+        string missing = ValidNot.Replace(
+            "- Category index: [Gates / Operators](README.md)\n",
+            string.Empty,
+            StringComparison.Ordinal
+        );
+
+        string failure = Assert.Single(Check(NotPath, missing));
+
+        Assert.Contains("Category index", failure, StringComparison.Ordinal);
+        Assert.StartsWith(NotPath + ":", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>A <c>Category index:</c> link that points at another category's index is reported.</summary>
+    [Fact]
+    public void Check_OperationDocumentWithCategoryIndexLinkingAnotherCategory_IsReported_Test()
+    {
+        string wrongLink = ValidNot.Replace("](README.md)", "](../functions/README.md)", StringComparison.Ordinal);
+
+        string failure = Assert.Single(Check(NotPath, wrongLink));
+
+        Assert.Contains("Category index", failure, StringComparison.Ordinal);
+    }
+
     /// <summary>A document whose name is not in the approved inventory is reported.</summary>
     [Fact]
     public void Check_OperationDocumentNotInInventory_IsReported_Test()
@@ -324,13 +352,13 @@ public sealed class K3ReferenceTests
         Assert.Contains("k3:truth", failure, StringComparison.Ordinal);
     }
 
-    /// <summary>Checks <paramref name="markdown"/> as if it lived at <paramref name="path"/> in a tree holding only itself.</summary>
+    /// <summary>Checks <paramref name="markdown"/> as if it lived at <paramref name="path"/> in a tree holding only itself and category indexes.</summary>
     private static IReadOnlyList<string> Check(string path, string markdown)
     {
         return K3ReferenceChecker.Check(
             path,
             markdown,
-            exists: candidate => candidate == path,
+            exists: candidate => candidate == path || candidate.EndsWith("/README.md", StringComparison.Ordinal),
             read: candidate => candidate == path ? markdown : null
         );
     }

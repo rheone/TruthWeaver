@@ -58,6 +58,24 @@ public void Log_CapturesCallingMemberName()
 }
 ```
 
+## Testing `[StringSyntax]`
+
+Purely an IDE-tooling hint with zero compile-time or runtime effect — there is nothing for a unit
+test to observe. The only "verification" is visual: open the call site in an IDE that supports it
+and confirm the embedded-language editing experience actually activates. Don't write a test for
+this attribute's presence unless something downstream (a custom analyzer, a source generator)
+actually reads it as metadata.
+
+## Testing trimming/AOT attributes (`DynamicallyAccessedMembers`, `RequiresUnreferencedCode`, etc.)
+
+These affect a static analysis pass (the IL trimmer / Native AOT compiler), not runtime behavior
+under an ordinary unit test run — a test executed against the full, untrimmed assembly can't
+observe a `[DynamicallyAccessedMembers]` annotation being wrong the way it could observe a runtime
+bug. Verify these the way you'd verify `[Conditional]`: publish a small test fixture with
+`<PublishTrimmed>true</PublishTrimmed>` or `<PublishAot>true</PublishAot>` and run the published
+output, or rely on the trimmer/AOT analyzer's own build-time warnings (`IL2026`, `IL3050`, ...) as
+the actual signal — not something a routine unit test suite asserts on directly.
+
 ## Testing `[SuppressMessage]`/`[UnconditionalSuppressMessage]` suppressions
 
 A suppression attribute is a claim that a specific analyzer warning is a false positive at this
