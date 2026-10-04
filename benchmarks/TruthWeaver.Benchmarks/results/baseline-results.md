@@ -76,14 +76,45 @@ the stages add up to the whole.
 **at most 1,593 μs and 2,796 KB** (baseline: 1,062 μs / 1,864 KB). This budget, and the attribution
 above, are recorded here because this file is where the project's benchmark baselines already live.
 
-**Verdict: budget not met.** The 2026-10-03 baseline measures 2,957 μs / 6,193 KB on the Large rule,
-1.86x the time budget and 2.2x the allocation budget. The cost is attributed entirely above to the
-dual-rail BDD analyzer, not Parse, Validate+Build or Lint. Changing `BddManager`'s fixed
-first-occurrence variable ordering (or the dual-rail encoding itself) is an algorithmic change, not a
-small fix, so it is out of scope here and is tracked separately in the project's issue tracker. This
-Large case only reaches the regressed cost because it raises `CompilerOptions.MaxAnalysisTerms` to
-200; at the default cap of 20 terms, the analyzer is skipped past (an `Info` diagnostic) rather than
-running at this cost.
+On 2026-10-03 the Large rule measured 2,957 μs / 6,193 KB, 1.86x the time budget and 2.2x the
+allocation budget. The analyzer folded each n-ary `AND` and `OR` from the first operand to the last.
+Operands get BDD variables in first-occurrence order, so every later operand sits below the accumulated
+BDD, and each fold step rebuilt the whole accumulated BDD. That cost is quadratic in the operand count.
+The analyzer now builds the operands from first to last (so variable order and diagnostic order do not
+change) and combines them from last to first. Each step then walks only the earlier operand and reuses
+the accumulated BDD below it. The BDDs are canonical, so every rail, verdict and diagnostic is the same.
+
+### Re-run after the analyzer change
+
+Captured 2026-10-04 on the same machine (OS build 10.0.26300) with the same job (ShortRun, in-process).
+This session ran slower than the session above: `ParseJson`, `ValidateAndBuild` and `Lint` run on
+unchanged code and take about 1.7x to 1.8x longer. So compare time against the same-session `Analyze`
+figure before the change, and use allocation (deterministic) for the cross-session comparison.
+
+| Benchmark                 | Size  | Mean       | Allocated |
+|-------------------------- |------ |-----------:|----------:|
+| `Compile`                 | Small |  24.54 μs  |  36.30 KB |
+| `Compile`                 | Large | 621.62 μs  | 876.75 KB |
+| Parse (JSON)              | Small |   8.892 μs |   7.07 KB |
+| Parse (YAML)              | Small |  48.203 μs |  44.22 KB |
+| Validate+Build            | Small |   4.376 μs |   9.75 KB |
+| Analyze (dual-rail BDD)   | Small |   9.226 μs |  19.22 KB |
+| Lint (opt-in, all rules)  | Small |   3.329 μs |   4.82 KB |
+| Parse (JSON)              | Large | 118.893 μs |  99.66 KB |
+| Parse (YAML)              | Large | 681.565 μs | 553.58 KB |
+| Validate+Build            | Large |  85.578 μs | 195.30 KB |
+| Analyze (dual-rail BDD)   | Large | 373.929 μs | 581.57 KB |
+| Lint (opt-in, all rules)  | Large |  54.777 μs |  68.34 KB |
+
+In the same session, before the change, `Analyze` measured 4,516 μs / 5,993.59 KB (Large) and
+12.34 μs / 24.72 KB (Small). The change cuts Large-rule `Analyze` time about 12x and allocation about
+10.3x (5,994 KB to 582 KB). Small-rule `Analyze` allocation drops from 24.72 KB to 19.22 KB.
+
+**Verdict: budget met.** The Large-rule `Compile` measures 621.62 μs / 876.75 KB. That is under the
+budget of 1,593 μs / 2,796 KB even in this slower session (0.39x of the time budget and 0.31x of the
+allocation budget). Large-rule allocation is now 0.47x the 2026-09-27 baseline of 1,864 KB.
+`CompilerOptions.MaxAnalysisTerms` stays at 20 by default, so a default compile of a rule with more
+distinct terms still skips the analyzer and reports an `Info` diagnostic.
 
 ## Eval-time memoized term lookup (`EvaluationBenchmarks.EvaluateAsync`)
 
