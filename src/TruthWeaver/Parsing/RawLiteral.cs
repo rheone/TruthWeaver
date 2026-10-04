@@ -40,13 +40,15 @@ internal enum RawLiteralForm
 /// <param name="Elements">The literal's elements (for <see cref="RawLiteralForm.Array"/>).</param>
 /// <param name="Span">The literal's location in source text.</param>
 /// <param name="Query">The query (for <see cref="RawLiteralForm.Variable"/>, whose <paramref name="Text"/> is the source name).</param>
+/// <param name="Parts">Where the source name and the query sit (for <see cref="RawLiteralForm.Variable"/>), so a diagnostic can point at the part that is wrong rather than at the whole reference.</param>
 internal sealed record RawLiteral(
     RawLiteralForm Form,
     string? Text,
     bool BooleanValue,
     IReadOnlyList<RawLiteral>? Elements,
     SourceSpan Span,
-    string? Query = null
+    string? Query = null,
+    VariableParts? Parts = null
 )
 {
     public static RawLiteral OfString(string text, SourceSpan span)
@@ -69,8 +71,8 @@ internal sealed record RawLiteral(
         return new(RawLiteralForm.Array, default, default, elements, span);
     }
 
-    public static RawLiteral OfVariable(string source, string query, SourceSpan span)
+    public static RawLiteral OfVariable(string source, string query, SourceSpan span, VariableParts? parts = null)
     {
-        return new(RawLiteralForm.Variable, source, default, default, span, query);
+        return new(RawLiteralForm.Variable, source, default, default, span, query, parts);
     }
 }

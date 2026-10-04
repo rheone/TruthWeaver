@@ -138,7 +138,7 @@ public sealed class JsonTreeTests
     [InlineData("""{"const": "notabool"}""", "'const' must be a JSON boolean or one of")]
     [InlineData("""{"predicate": 123}""", "'predicate' must be a JSON string.")]
     [InlineData("""{"predicate": "isManager", "args": [1, 2]}""", "'args' must be a JSON object.")]
-    [InlineData("""{"predicate": "isManager", "args": {"x": {"weird": 1}}}""", "Unsupported literal JSON value kind")]
+    [InlineData("""{"predicate": "isManager", "args": {"x": {"weird": 1}}}""", "A variable reference has only")]
     [InlineData("""{"op": "and"}""", "requires an 'operands' array")]
     [InlineData("""{"op": "not", "operands": [{"const": true}, {"const": false}]}""", "'not' requires exactly one operand.")]
     [InlineData("""{"op": "bogus", "operands": []}""", "Unknown operator 'bogus'.")]

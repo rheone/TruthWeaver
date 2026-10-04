@@ -160,7 +160,10 @@ internal sealed class TreeFormatReader
                 }
 
                 string argumentPath = TreePath.Property(argsPath, name);
-                RawLiteral? literal = this.ReadLiteral(value, argumentPath);
+                RawLiteral? literal =
+                    value.Shape == TreeNodeShape.Mapping
+                        ? this.ReadVariable(value, argumentPath)
+                        : this.ReadLiteral(value, argumentPath);
                 if (literal is null)
                 {
                     return null;
@@ -359,6 +362,96 @@ internal sealed class TreeFormatReader
             "an integer",
             present ? child!.DescribeValue() : $"no '{key}' {this.words.KeyNoun}",
             present ? TreePath.Property(path, key) : path
+        );
+        return false;
+    }
+
+    // A mapping in argument position is a variable reference (ADR-0006 decision 10): exactly a "from" source name and a
+    // "query" string. Anything else is reported at the member that is wrong, so the author sees which part to fix.
+    private RawLiteral? ReadVariable(ITreeNodeCursor node, string path)
+    {
+        string? source = null;
+        string? query = null;
+        ITreeNodeCursor? sourceNode = null;
+        ITreeNodeCursor? queryNode = null;
+        foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in node.Members)
+        {
+            switch (name)
+            {
+                case "from":
+                    sourceNode = value;
+                    source = value.StringValue;
+                    break;
+                case "query":
+                    queryNode = value;
+                    query = value.StringValue;
+                    break;
+                default:
+                    this.Report(
+                        $"A variable reference has only 'from' and 'query' members, but found {(name is null ? key!.DescribeValue() : $"'{name}'")}.",
+                        (name is null ? key! : value).Span,
+                        "only 'from' and 'query'",
+                        name is null ? key!.DescribeValue() : $"'{name}'",
+                        name is null ? path : TreePath.Property(path, name)
+                    );
+                    return null;
+            }
+        }
+
+        string sourcePath = TreePath.Property(path, "from");
+        string queryPath = TreePath.Property(path, "query");
+        if (!this.CheckVariableMember(node, sourceNode, source, "from", "source name", sourcePath, path))
+        {
+            return null;
+        }
+
+        if (!this.CheckVariableMember(node, queryNode, query, "query", "query", queryPath, path))
+        {
+            return null;
+        }
+
+        return RawLiteral.OfVariable(
+            source!,
+            query!,
+            node.Span,
+            new VariableParts(sourceNode!.Span, queryNode!.Span, sourcePath, queryPath)
+        );
+    }
+
+    // A variable reference member must be present and a string; reports the missing or mistyped member and returns false.
+    private bool CheckVariableMember(
+        ITreeNodeCursor reference,
+        ITreeNodeCursor? member,
+        string? text,
+        string key,
+        string meaning,
+        string memberPath,
+        string referencePath
+    )
+    {
+        if (text is not null)
+        {
+            return true;
+        }
+
+        if (member is null)
+        {
+            this.Report(
+                $"A variable reference requires a '{key}' {this.words.KeyNoun} holding the {meaning}.",
+                reference.Span,
+                $"a '{key}' {this.words.KeyNoun}",
+                $"no '{key}' {this.words.KeyNoun}",
+                referencePath
+            );
+            return false;
+        }
+
+        this.Report(
+            $"The '{key}' of a variable reference must be a {this.words.StringNoun} holding the {meaning}.",
+            member.Span,
+            $"a {this.words.StringNoun}",
+            member.Describe(),
+            memberPath
         );
         return false;
     }

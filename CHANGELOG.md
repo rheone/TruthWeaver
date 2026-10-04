@@ -62,6 +62,10 @@ copyright line reads 2026.
   DSL literals and no wider, and each `(source, query)` pair is queried once per evaluation (a failure is replayed, not retried). A source that errors,
   throws or times out by itself gives `Unknown` plus a `Fault`; cancelling the evaluation cancels it, as for predicates. `TruthWeaver.Testing` adds
   `FakeDataSource`. JSON/YAML input of variables, query validators, trace redaction options and `RuleBuilder` support follow.
+- Variable references in JSON and YAML (data-sources 03): an argument value of `{ "from": "user", "query": "$.minAge" }` (the same
+  mapping in YAML) is a variable reference and compiles to the same tree as `from("user", "$.minAge")`; `rule-tree.schema.json`
+  accepts it (a reference is not allowed inside an array literal). A malformed reference is a `TRE0014` diagnostic at the wrong
+  member, and an undeclared source name (`TRE0024`) points at the `from` member.
 
 ### Changed
 

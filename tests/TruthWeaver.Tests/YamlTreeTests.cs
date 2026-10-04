@@ -243,7 +243,7 @@ public sealed class YamlTreeTests
     [InlineData("op: not\noperands:\n  - const: true\n  - const: false", "'not' requires exactly one operand.")]
     [InlineData("op: bogus\noperands: []", "Unknown operator 'bogus'.")]
     [InlineData("op: atLeast\noperands:\n  - const: true", "requires a numeric 'k'")]
-    [InlineData("predicate: isManager\nargs:\n  x:\n    weird: 1", "Unsupported YAML node type")]
+    [InlineData("predicate: isManager\nargs:\n  x:\n    weird: 1", "A variable reference has only")]
     public void Every_distinct_malformed_tree_branch_raises_its_specific_message(string yaml, string expectedMessageSubstring)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();

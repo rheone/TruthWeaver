@@ -42,14 +42,31 @@
         }
       ]
     },
+    "variableReference": {
+      "description": "A variable reference (ADR-0006): the argument's value is read at evaluation time from the named data source. 'from' is the source name, declared when the rule is compiled; 'query' is the query in that source's own dialect (JSONPath for the JSON and YAML sources). Both are required and no other member is allowed.",
+      "type": "object",
+      "properties": {
+        "from": { "type": "string" },
+        "query": { "type": "string" }
+      },
+      "required": ["from", "query"],
+      "additionalProperties": false
+    },
+    "argumentValue": {
+      "description": "A predicate argument: a literal, or a variable reference resolved from a data source when the rule is evaluated. A variable reference is not allowed inside an array literal.",
+      "oneOf": [
+        { "$ref": "#/$defs/literal" },
+        { "$ref": "#/$defs/variableReference" }
+      ]
+    },
     "predicateNode": {
-      "description": "A term: a predicate bound to named argument literals.",
+      "description": "A term: a predicate bound to named argument values (literals or variable references).",
       "type": "object",
       "properties": {
         "predicate": { "type": "string" },
         "args": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/literal" }
+          "additionalProperties": { "$ref": "#/$defs/argumentValue" }
         }
       },
       "required": ["predicate"],

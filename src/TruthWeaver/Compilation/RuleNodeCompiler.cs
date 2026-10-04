@@ -687,15 +687,20 @@ internal sealed class RuleNodeCompiler<TContext>
                 : $"Declare '{source}' in CompilerOptions.DataSources, or use one of: {string.Join(", ", names.Order(StringComparer.Ordinal).Select(n => $"'{n}'"))}.";
         DiagnosticSuggestion suggestion =
             NameSuggester.Suggest(source, names) ?? new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, hint);
+
+        // A JSON or YAML reference points at its own "from" member; a DSL reference at the whole from(...).
+        VariableParts? parts = arg.Value.Parts;
+        SourceSpan span = parts?.SourcePath is not null ? parts.SourceSpan : arg.Value.Span;
+        string? path = parts?.SourcePath ?? arg.Path;
         this.diagnostics.Add(
             Diagnostic.Error(
                 DiagnosticCodes.UndeclaredDataSource,
                 $"No data source named '{source}' is declared.",
-                arg.Value.Span,
+                span,
                 expected: expected,
                 found: $"'{source}'",
                 suggestion: suggestion,
-                path: arg.Path
+                path: path
             )
         );
         return false;

@@ -6,11 +6,10 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 
 > [!NOTE]
 > This guide describes the design accepted in
-> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 and 02): the
-> `from("source", "query")` syntax in the DSL, `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
+> [ADR-0006](adr/0006-data-sources-for-expression-variables.md). Implemented so far (tickets 01 to 03): the
+> `from("source", "query")` syntax in the DSL, JSON and YAML (ticket 03), `DataSources`, `IDataSource`, `DataQueryResult`, the declared source
 > names (`DataSourceDeclarations`, `TRE0024`), resolution with cardinality, conversion, failure and memoization rules,
-> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: JSON and
-> YAML input of variables, `JsonDataSource`/`YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
+> the `EvaluateAsync(context, services, dataSources)` overload and `FakeDataSource`. Not yet implemented: `JsonDataSource`/`YamlDataSource`, query validators, `EvaluationOptions.IncludeResolvedValues`
 > and `Arg.From`. The proposed names for those (`JsonDataSource.Parse`, `Arg.From`, `GetAsync`, `JsonQueryValidator`,
 > `QueryProblem`, `IncludeResolvedValues`) are not final; the tickets in `.scratch/data-sources/` settle them. The
 > examples below are not run by the documentation checker (see [doc-examples.md](doc-examples.md)); each is marked
@@ -63,7 +62,7 @@ ageAtLeast(min: from("user", "$.minAge")) AND hasRole(role: from("request", "$.r
 
 The same rule as JSON and YAML. The reference is an object with `from` and `query`:
 
-<!-- doctest:skip variable references are not implemented yet -->
+<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
 ```json
 {
   "op": "and",
@@ -74,7 +73,7 @@ The same rule as JSON and YAML. The reference is an object with `from` and `quer
 }
 ```
 
-<!-- doctest:skip variable references are not implemented yet -->
+<!-- doctest:skip needs declared data sources; made runnable in data-sources ticket 09 -->
 ```yaml
 op: and
 operands:

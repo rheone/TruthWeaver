@@ -14,6 +14,9 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class RuleTreeSchemaTests
 {
+    // Shared with VariableTreeFormatTests: the schema registers its $id globally, so it must be loaded exactly once.
+    internal static readonly JsonSchema Schema = JsonSchema.FromFile(SchemaFilePath());
+
     private const string WorkedExampleJson = """
         {
           "op": "and",
@@ -36,8 +39,6 @@ public sealed class RuleTreeSchemaTests
           ]
         }
         """;
-
-    private static readonly JsonSchema Schema = JsonSchema.FromFile(SchemaFilePath());
 
     public static TheoryData<string> ValidFixtures()
     {

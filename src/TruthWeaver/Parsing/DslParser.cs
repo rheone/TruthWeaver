@@ -696,12 +696,19 @@ internal sealed class DslParser
         Token fromToken = this.Current;
         this.position++;
         Token opener = this.ExpectOpenParen();
+        SourceSpan sourceSpan = this.Current.Span;
         string sourceName = this.ExpectQuotedText("a quoted source name");
         this.Expect(TokenKind.Comma, "','");
+        SourceSpan querySpan = this.Current.Span;
         string query = this.ExpectQuotedText("a quoted query");
         int end = this.Current.Span.End;
         this.ExpectClose(opener);
-        return RawLiteral.OfVariable(sourceName, query, SpanCovering(fromToken.Span.Start, end));
+        return RawLiteral.OfVariable(
+            sourceName,
+            query,
+            SpanCovering(fromToken.Span.Start, end),
+            new VariableParts(sourceSpan, querySpan)
+        );
     }
 
     /// <summary>Consumes a quoted string and returns its text, or reports <paramref name="description"/> and returns an empty string.</summary>
