@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The glossary defines Gate and Operator and no longer says operators are never called gates
-- [ ] The reference terminology page and the glossary agree
-- [ ] The validation report marks U3 resolved
-- [ ] The reference verification harness and doctest harness still pass
+- [x] The glossary defines Gate and Operator and no longer says operators are never called gates
+- [x] The reference terminology page and the glossary agree
+- [x] The validation report marks U3 resolved
+- [x] The reference verification harness and doctest harness still pass
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

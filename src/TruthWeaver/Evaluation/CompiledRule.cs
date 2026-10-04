@@ -109,7 +109,7 @@ public sealed class CompiledRule<TContext>
     public CompilationResult<TContext> ExpandToNand(CompilerOptions? options = null)
     {
         int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
-        return this.RewriteResult(UniversalGateExpander.ToNand(this.Root, cap), "ExpandToNand", cap);
+        return this.RewriteResult(NandNorExpander.ToNand(this.Root, cap), "ExpandToNand", cap);
     }
 
     /// <summary>
@@ -125,7 +125,7 @@ public sealed class CompiledRule<TContext>
     public CompilationResult<TContext> ExpandToNor(CompilerOptions? options = null)
     {
         int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
-        return this.RewriteResult(UniversalGateExpander.ToNor(this.Root, cap), "ExpandToNor", cap);
+        return this.RewriteResult(NandNorExpander.ToNor(this.Root, cap), "ExpandToNor", cap);
     }
 
     /// <summary>

@@ -9,17 +9,17 @@ namespace TruthWeaver.Evaluation;
 /// Once this many faults have been recorded during one evaluation, evaluation aborts immediately.
 /// <see langword="null"/> (the default) means unlimited.
 /// </param>
-/// <param name="Mode">Whether short-circuiting applies (<see cref="EvaluationMode.Default"/>) or every reachable term runs (<see cref="EvaluationMode.Exhaustive"/>).</param>
+/// <param name="Mode">Whether short-circuiting applies (<see cref="EvaluationMode.ShortCircuit"/>) or every reachable term runs (<see cref="EvaluationMode.Exhaustive"/>).</param>
 /// <param name="Timeout">
 /// An overall wall-clock bound for the evaluation, linked into the caller's
 /// <see cref="CancellationToken"/>. <see langword="null"/> (the default) means no timeout.
 /// </param>
 public sealed record EvaluationOptions(
     int? FaultBudget = null,
-    EvaluationMode Mode = EvaluationMode.Default,
+    EvaluationMode Mode = EvaluationMode.ShortCircuit,
     TimeSpan? Timeout = null
 )
 {
-    /// <summary>Gets the default options: unlimited fault budget, <see cref="EvaluationMode.Default"/>, no timeout.</summary>
+    /// <summary>Gets the default options: unlimited fault budget, <see cref="EvaluationMode.ShortCircuit"/>, no timeout.</summary>
     public static EvaluationOptions Default { get; } = new();
 }

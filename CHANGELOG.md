@@ -95,8 +95,6 @@ Entries elsewhere in this file that name a code were updated to the `TRE` prefix
 
 #### Type and member renames
 
-<!-- Placeholder: later groups of the naming cleanup fill in this table as each rename lands. -->
-
 | Old | New |
 | --- | --- |
 | `EvaluatedNode` | `TraceNode` |
@@ -106,6 +104,7 @@ Entries elsewhere in this file that name a code were updated to the `TRE` prefix
 | `CompiledRule.Describe()` | `CompiledRule.Outline()` |
 | `EvaluationMode.Default` | `EvaluationMode.ShortCircuit` |
 | `ResolvedValuePredicates` (`resolve`, `TResolved`) | `SelectedValuePredicates` (`select`, `TSelected`) |
+| `UniversalGateExpander` (internal; the public `ExpandToNand` and `ExpandToNor` are unchanged) | `NandNorExpander` |
 
 ### Breaking changes at a glance
 

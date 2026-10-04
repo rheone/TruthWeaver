@@ -4,7 +4,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
 /// <summary>
-/// Rewrites an <see cref="Expression"/> tree so its only logical operator is a single universal gate, <c>NAND</c> or
+/// Rewrites an <see cref="Expression"/> tree so its only logical operator is a single universal connective, <c>NAND</c> or
 /// <c>NOR</c> (ADR-0005 decision 10). It first expands to the primitive kernel (<see cref="PrimitiveExpander"/>) and then
 /// rewrites each kernel operator. The input is never modified.
 /// </summary>
@@ -33,7 +33,7 @@ using TruthWeaver.Ast;
 /// left in place with its operands rewritten.
 /// </para>
 /// </remarks>
-internal static class UniversalGateExpander
+internal static class NandNorExpander
 {
     /// <summary>Rewrites <paramref name="node"/> into <c>NAND</c>-only form (plus the <c>COALESCE</c> boundary).</summary>
     /// <param name="node">The tree to rewrite.</param>
@@ -62,7 +62,7 @@ internal static class UniversalGateExpander
     {
         Expression primitive = PrimitiveExpander.Expand(node);
 
-        // The gate form is never smaller than the primitive form, so a primitive tree over the cap is already too big. This
+        // The NAND-only or NOR-only form is never smaller than the primitive form, so a primitive tree over the cap is already too big. This
         // also bounds the conversion walk, which would otherwise be exponential on nested XOR/EQUIVALENT/If.
         if (ExpressionTools.Size(primitive) > maxNodes)
         {
@@ -144,7 +144,7 @@ internal static class UniversalGateExpander
             AndExpression a => Fold(ConvertAll(a.Operands, nand), (l, r) => And(l, r, nand)),
             OrExpression o => Fold(ConvertAll(o.Operands, nand), (l, r) => Or(l, r, nand)),
 
-            // The boundary: not expressible with a monotone gate, so only the operands are rewritten.
+            // The boundary: not expressible with a monotone connective, so only the operands are rewritten.
             CoalesceExpression c => new CoalesceExpression(new EquatableArray<Expression>(ConvertAll(c.Operands, nand))),
             ThresholdExpression t => ConvertThreshold(t, ConvertAll(t.Operands, nand), nand),
 
@@ -169,28 +169,28 @@ internal static class UniversalGateExpander
         return result;
     }
 
-    private static Expression Gate(Expression left, Expression right, bool nand)
+    private static Expression Apply(Expression left, Expression right, bool nand)
     {
         return nand ? new NandExpression(left, right) : new NorExpression(left, right);
     }
 
-    /// <summary><c>NOT a = a GATE a</c> for both gates.</summary>
+    /// <summary><c>NOT a = a NAND a</c> (or <c>a NOR a</c> for NOR).</summary>
     private static Expression Not(Expression operand, bool nand)
     {
-        return Gate(operand, operand, nand);
+        return Apply(operand, operand, nand);
     }
 
-    /// <summary>The operator the gate negates (<c>AND</c> for NAND, <c>OR</c> for NOR): <c>GATE(GATE(a, b), GATE(a, b))</c>.</summary>
+    /// <summary>The operator the target connective negates (<c>AND</c> for NAND, <c>OR</c> for NOR): <c>X(X(a, b), X(a, b))</c> with <c>X</c> the target connective.</summary>
     private static Expression Negated(Expression left, Expression right, bool nand)
     {
-        Expression inner = Gate(left, right, nand);
-        return Gate(inner, inner, nand);
+        Expression inner = Apply(left, right, nand);
+        return Apply(inner, inner, nand);
     }
 
-    /// <summary>The dual operator (<c>OR</c> for NAND, <c>AND</c> for NOR): <c>GATE(NOT a, NOT b)</c>.</summary>
+    /// <summary>The dual operator (<c>OR</c> for NAND, <c>AND</c> for NOR): <c>X(NOT a, NOT b)</c> with <c>X</c> the target connective.</summary>
     private static Expression Dual(Expression left, Expression right, bool nand)
     {
-        return Gate(Not(left, nand), Not(right, nand), nand);
+        return Apply(Not(left, nand), Not(right, nand), nand);
     }
 
     private static Expression And(Expression left, Expression right, bool nand)
@@ -204,7 +204,7 @@ internal static class UniversalGateExpander
     }
 
     /// <summary>
-    /// Builds the threshold from the (already gate-converted) operands. <c>AtLeast(k)</c> / <c>AtMost(k)</c> /
+    /// Builds the threshold from the (already converted) operands. <c>AtLeast(k)</c> / <c>AtMost(k)</c> /
     /// <c>Exactly(k)</c> only reach here with the compiler's valid <c>k</c>, so <c>AtLeast</c> is asked for only
     /// <c>1..n</c> and <c>Exactly(k)</c> drops whichever side would be vacuous (<c>AtLeast(0)</c> / <c>AtMost(n)</c>).
     /// </summary>

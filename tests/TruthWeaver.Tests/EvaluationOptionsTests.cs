@@ -61,7 +61,7 @@ public sealed class EvaluationOptionsTests
     }
 
     [Theory]
-    [InlineData(EvaluationMode.Default)]
+    [InlineData(EvaluationMode.ShortCircuit)]
     [InlineData(EvaluationMode.Exhaustive)]
     public async Task Result_is_identical_between_default_and_exhaustive_modes(EvaluationMode mode)
     {

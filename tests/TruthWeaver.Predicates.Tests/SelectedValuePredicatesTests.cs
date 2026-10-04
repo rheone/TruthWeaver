@@ -2,41 +2,41 @@ namespace TruthWeaver.Predicates.Tests;
 
 using TruthWeaver.Abstractions;
 
-public class ResolvedValuePredicatesTests
+public class SelectedValuePredicatesTests
 {
     [Fact]
-    public async Task Create_WithResolveAndTest_SchemaMatchesSuppliedValues()
+    public async Task Create_WithSelectAndTest_SchemaMatchesSuppliedValues()
     {
-        (PredicateSchema schema, _) = ResolvedValuePredicates.Create<TestContext, decimal>(
+        (PredicateSchema schema, _) = SelectedValuePredicates.Create<TestContext, decimal>(
             "isWithinBudget",
             "Is Within Budget",
-            "Is the amount within the resolved limit?",
+            "Is the amount within the selected limit?",
             (_, args, _) =>
                 ValueTask.FromResult(decimal.Parse(args.GetString("limit"), System.Globalization.CultureInfo.InvariantCulture)),
-            static resolved => resolved >= 100m ? TruthValue.True : TruthValue.False,
-            new PredicateArgumentSchema("limit", "The limit to resolve.", LiteralKind.String)
+            static selected => selected >= 100m ? TruthValue.True : TruthValue.False,
+            new PredicateArgumentSchema("limit", "The limit to select.", LiteralKind.String)
         );
 
         Assert.Equal("isWithinBudget", schema.Name);
         Assert.Equal("Is Within Budget", schema.Label);
-        Assert.Equal("Is the amount within the resolved limit?", schema.Description);
+        Assert.Equal("Is the amount within the selected limit?", schema.Description);
         Assert.Equal("limit", Assert.Single(schema.Arguments).Name);
     }
 
     [Fact]
-    public async Task Create_WithResolveAndTest_EvaluatesByComposingResolveThenTest()
+    public async Task Create_WithSelectAndTest_EvaluatesByComposingSelectThenTest()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            ResolvedValuePredicates.Create<TestContext, decimal>(
+            SelectedValuePredicates.Create<TestContext, decimal>(
                 "isWithinBudget",
                 "Is Within Budget",
-                "Is the amount within the resolved limit?",
+                "Is the amount within the selected limit?",
                 (_, args, _) =>
                     ValueTask.FromResult(
                         decimal.Parse(args.GetString("limit"), System.Globalization.CultureInfo.InvariantCulture)
                     ),
-                static resolved => resolved >= 100m ? TruthValue.True : TruthValue.False,
-                new PredicateArgumentSchema("limit", "The limit to resolve.", LiteralKind.String)
+                static selected => selected >= 100m ? TruthValue.True : TruthValue.False,
+                new PredicateArgumentSchema("limit", "The limit to select.", LiteralKind.String)
             );
 
         TruthValue result = await evaluate(new TestContext(null), Args("limit", "150"), CancellationToken.None);
@@ -45,19 +45,19 @@ public class ResolvedValuePredicatesTests
     }
 
     [Fact]
-    public async Task Create_WithResolveAndTest_TestRejectsResolvedValue_EvaluatesFalse()
+    public async Task Create_WithSelectAndTest_TestRejectsSelectedValue_EvaluatesFalse()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            ResolvedValuePredicates.Create<TestContext, decimal>(
+            SelectedValuePredicates.Create<TestContext, decimal>(
                 "isWithinBudget",
                 "Is Within Budget",
-                "Is the amount within the resolved limit?",
+                "Is the amount within the selected limit?",
                 (_, args, _) =>
                     ValueTask.FromResult(
                         decimal.Parse(args.GetString("limit"), System.Globalization.CultureInfo.InvariantCulture)
                     ),
-                static resolved => resolved >= 100m ? TruthValue.True : TruthValue.False,
-                new PredicateArgumentSchema("limit", "The limit to resolve.", LiteralKind.String)
+                static selected => selected >= 100m ? TruthValue.True : TruthValue.False,
+                new PredicateArgumentSchema("limit", "The limit to select.", LiteralKind.String)
             );
 
         TruthValue result = await evaluate(new TestContext(null), Args("limit", "50"), CancellationToken.None);
@@ -65,18 +65,18 @@ public class ResolvedValuePredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>A test delegate that cannot decide from the resolved value may answer Unknown, and that answer passes through unchanged.</summary>
+    /// <summary>A test delegate that cannot decide from the selected value may answer Unknown, and that answer passes through unchanged.</summary>
     [Fact]
-    public async Task Create_WithResolveAndTest_TestReturnsUnknown_EvaluatesUnknown_Test()
+    public async Task Create_WithSelectAndTest_TestReturnsUnknown_EvaluatesUnknown_Test()
     {
         // Arrange
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            ResolvedValuePredicates.Create<TestContext, decimal?>(
+            SelectedValuePredicates.Create<TestContext, decimal?>(
                 "isWithinBudget",
                 "Is Within Budget",
-                "Is the amount within the resolved limit?",
+                "Is the amount within the selected limit?",
                 (_, _, _) => ValueTask.FromResult<decimal?>(null),
-                static resolved => resolved is null ? TruthValue.Unknown : TruthValue.True
+                static selected => selected is null ? TruthValue.Unknown : TruthValue.True
             );
 
         // Act
@@ -87,10 +87,10 @@ public class ResolvedValuePredicatesTests
     }
 
     [Fact]
-    public async Task Create_SingleValueOverload_EvaluatesToExactlyWhatResolveReturns()
+    public async Task Create_SingleValueOverload_EvaluatesToExactlyWhatSelectReturns()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            ResolvedValuePredicates.Create<TestContext>(
+            SelectedValuePredicates.Create<TestContext>(
                 "isFeatureEnabled",
                 "Is Feature Enabled",
                 "Is the given feature flag enabled?",
@@ -116,17 +116,17 @@ public class ResolvedValuePredicatesTests
     }
 
     [Fact]
-    public async Task Create_WithResolveAndTest_ResolveThrows_ExceptionSurfacesUnwrapped()
+    public async Task Create_WithSelectAndTest_SelectThrows_ExceptionSurfacesUnwrapped()
     {
         InvalidOperationException expected = new("lookup failed");
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            ResolvedValuePredicates.Create<TestContext, decimal>(
+            SelectedValuePredicates.Create<TestContext, decimal>(
                 "isWithinBudget",
                 "Is Within Budget",
-                "Is the amount within the resolved limit?",
+                "Is the amount within the selected limit?",
                 (_, _, _) => throw expected,
                 static _ => TruthValue.True,
-                new PredicateArgumentSchema("limit", "The limit to resolve.", LiteralKind.String)
+                new PredicateArgumentSchema("limit", "The limit to select.", LiteralKind.String)
             );
 
         InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -136,23 +136,23 @@ public class ResolvedValuePredicatesTests
     }
 
     [Fact]
-    public async Task Create_TwoPredicatesWithSameSchemaDifferentResolveClosures_RemainIndependent()
+    public async Task Create_TwoPredicatesWithSameSchemaDifferentSelectClosures_RemainIndependent()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> first) =
-            ResolvedValuePredicates.Create<TestContext, string>(
+            SelectedValuePredicates.Create<TestContext, string>(
                 "sameName",
                 "Same Name",
                 "Same schema, different closures.",
                 (_, _, _) => ValueTask.FromResult("first"),
-                static resolved => resolved == "first" ? TruthValue.True : TruthValue.False
+                static selected => selected == "first" ? TruthValue.True : TruthValue.False
             );
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> second) =
-            ResolvedValuePredicates.Create<TestContext, string>(
+            SelectedValuePredicates.Create<TestContext, string>(
                 "sameName",
                 "Same Name",
                 "Same schema, different closures.",
                 (_, _, _) => ValueTask.FromResult("second"),
-                static resolved => resolved == "second" ? TruthValue.True : TruthValue.False
+                static selected => selected == "second" ? TruthValue.True : TruthValue.False
             );
 
         TruthValue firstResult = await first(new TestContext(null), PredicateArguments.Empty, CancellationToken.None);

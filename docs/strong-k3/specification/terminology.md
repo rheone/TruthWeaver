@@ -15,7 +15,7 @@ Prose writes "Strong Kleene (K3)", never "K3" and "Strong K3" as two different s
 | **Derived** | An Operation that has a definition in terms of primitives. "Derived" means it is defined that way, not that the engine desugars it: a derived Operation stays a first-class node and keeps its own evaluation, printing and round-trip ([ADR-0005](../../adr/0005-strong-k3-language-surface.md) decision 3a). |
 | **Strong Kleene connective** | An Operation that is monotone in the [information order](values.md#information-order). See [semantics](semantics.md#strong-kleene-connectives-and-external-operators) for the list. |
 | **External operator** | An Operation that is not monotone in the information order, so it is not a Strong Kleene connective: `COALESCE` and the inspections `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`. Flagged on every such document. |
-| **Gate** | A label this reference uses for the primitive connectives `NOT`, `AND` and `OR`, which is the name of the Gates / Operators category. It is reference vocabulary only; the engine's own term is Operator ([CONTEXT.md](../../../CONTEXT.md)). |
+| **Gate** | The logical concept: `NOT`, `AND` and `OR` as Strong Kleene truth functions, and the name of the Gates / Operators category. An **Operator** is the programmatic implementation of a gate (the DSL word, tree node, JSON `op` or `RuleBuilder` member); the engine's own code and API say Operator ([CONTEXT.md](../../../CONTEXT.md)). |
 
 ## Forms of an Operation
 

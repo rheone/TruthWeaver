@@ -249,7 +249,7 @@ Beyond `src`, the rest of the repository:
 | `TruthWeaver.Abstractions` | *(nothing third-party)* | `IPredicate<TContext>`, `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault` — everything a predicate-implementing service needs. |
 | `TruthWeaver` | `Abstractions`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Logging.Abstractions` | The DSL parser, `RuleCompiler<TContext>`, `CompiledRule<TContext>`, the BDD-based analyzer, the evaluator, `System.Text.Json` tree support, printing/diffing, and DI registration extensions. |
 | `TruthWeaver.Yaml` | `TruthWeaver`, YamlDotNet | YAML tree support (`CompileYaml`/`PrintYaml`), isolated so a consumer with no interest in YAML never pulls in YamlDotNet. |
-| `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-resolved-value predicates for a safe-to-share resolving client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
+| `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
 | `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions and fake/scripted predicate factories for tests, without a hand-written `IPredicate<TContext>` per test. |
 
 <!-- doctest:skip class diagram, structure only -->
@@ -768,7 +768,7 @@ How the size grows, so you can predict a refusal:
 | Rewrite | Growth |
 | --- | --- |
 | `ExpandToPrimitives()` | Linear for most operators. `XOR`, `EQUIVALENT`, `If` and the inspections repeat an operand, so nesting them multiplies the printed size by about two per level (exponential in nesting depth). |
-| `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the gates, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a gate conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
+| `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the NAND or NOR rewrite, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a NAND or NOR conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
 
 `CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and
 have no cap.
@@ -776,14 +776,14 @@ have no cap.
 ### NAND-only and NOR-only
 
 `ExpandToNand()` and `ExpandToNor()` rewrite a rule so the only logical operator is
-one universal gate. They expand to the primitive kernel first, then rewrite it:
+one universal connective (`NAND` or `NOR`). They expand to the primitive kernel first, then rewrite it:
 
 | Primitive | `ExpandToNand()` | `ExpandToNor()` |
 | --- | --- | --- |
 | `NOT a` | `a NAND a` | `a NOR a` |
 | `a AND b` | `(a NAND b) NAND (a NAND b)` | `(a NOR a) NOR (b NOR b)` |
 | `a OR b` | `(a NAND a) NAND (b NAND b)` | `(a NOR b) NOR (a NOR b)` |
-| `AtLeast(k, ...)` | `OR` over every k-subset of the `AND` of that subset | same, with the gate's `AND`/`OR` |
+| `AtLeast(k, ...)` | `OR` over every k-subset of the `AND` of that subset | same, with the target connective's `AND`/`OR` |
 | `AtMost(k, ...)` | `NOT AtLeast(k + 1, ...)` | same |
 | `Exactly(k, ...)` | `AtLeast(k) AND AtMost(k)` (a vacuous side is dropped) | same |
 
@@ -1026,8 +1026,8 @@ Before writing one by hand, check whether
 `StringPredicates`, `CollectionPredicates`, and `RegexPredicates` cover
 string comparison, null/empty checks, set equality, and regex matching as
 generic factories parameterized by a value selector, and
-`ResolvedValuePredicates` covers the externally-resolved-value pattern
-(below) for a safe-to-share resolving client. Every method on
+`SelectedValuePredicates` covers the externally-selected-value pattern
+(below) for a safe-to-share lookup client. Every method on
 `StringPredicates` except one is ordinal-only and fixed-behavior by
 design — a case-insensitive variant is a separate predicate
 (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception,
@@ -1150,14 +1150,14 @@ declares, never a difference in rule text or how the compiler validates a
 term. See
 [ADR-0002](docs/adr/0002-evaluation-semantics.md#predicate-registration-and-dependency-lifetimes).
 
-### n arguments, class-based, externally-resolved value
+### n arguments, class-based, externally-selected value
 
 `HasEarnedEnoughLoyaltyStamps` above injects a dependency to read a value it
 already knows how to interpret (`minCount`, `withinDays` are values, used
 directly). A related but distinct shape: a rule-text literal argument and/or
-a `TContext`-supplied value is a **key to be resolved** — not a value
+a `TContext`-supplied value is a **key to be looked up** — not a value
 already ready to use — and a constructor-injected service performs that
-live resolution before the predicate can answer anything. There is no
+live lookup before the predicate can answer anything. There is no
 single canonical shape here; it covers three distinct cases, none more
 central than the others:
 
@@ -1173,7 +1173,7 @@ central than the others:
            new(
                "isPromoActive",
                "Is Promo Active",
-               "Is the given promo code currently active, resolved live from the promotions service?",
+               "Is the given promo code currently active, selected live from the promotions service?",
                [new PredicateArgumentSchema("promoCode", "The promo code to look up.", LiteralKind.String)]);
 
        public async ValueTask<TruthValue> EvaluateAsync(object? context, PredicateArguments args, CancellationToken ct) =>
@@ -1272,32 +1272,32 @@ This is the documented alternative to the deferred
 "[context-bound term arguments](.scratch/deferred-features/spec.md)" feature (a
 path-expression mini-language like `IsManagerOf({{resource.ownerId}})`) —
 every shape above is expressible today, with no engine changes, by letting
-the predicate itself resolve whatever it needs.
+the predicate itself select whatever it needs.
 
 **All three examples above are class-based**, which is the right choice
-whenever the thing doing the resolving is a scoped dependency (a
-`DbContext`, a per-request `HttpClient`) that must be re-resolved fresh on
-every evaluation. When the resolving client is instead safe to capture once
+whenever the thing doing the selecting is a scoped dependency (a
+`DbContext`, a per-request `HttpClient`) that must be re-created fresh on
+every evaluation. When the lookup client is instead safe to capture once
 — a long-lived, thread-safe instance such as a cached feature-flag reader or
 an `HttpClient`-backed lookup wrapper already held by the host —
-`ResolvedValuePredicates` in [`TruthWeaver.Predicates`](src/TruthWeaver.Predicates)
+`SelectedValuePredicates` in [`TruthWeaver.Predicates`](src/TruthWeaver.Predicates)
 covers the same pattern as a lighter-weight lambda factory, with no one-off
 class needed. The single-value convenience overload matches shape 1 above:
 
 ```csharp
 (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-    ResolvedValuePredicates.Create<object?>(
+    SelectedValuePredicates.Create<object?>(
         "isPromoActive",
         "Is Promo Active",
-        "Is the given promo code currently active, resolved live from the promotions service?",
+        "Is the given promo code currently active, selected live from the promotions service?",
         async (_, args, ct) => await promos.IsActiveAsync(args.GetString("promoCode"), ct) ? TruthValue.True : TruthValue.False,
         new PredicateArgumentSchema("promoCode", "The promo code to look up.", LiteralKind.String));
 ```
 
 A second overload takes a separate `test` delegate for shapes 2 and 3 above,
-when it reads more clearly to keep "resolve" and "turn the resolved value
+when it reads more clearly to keep "select" and "turn the selected value
 into an answer" apart. Both paths solve the same conceptual pattern; neither
-replaces the other — reach for `ResolvedValuePredicates` when the resolving
+replaces the other — reach for `SelectedValuePredicates` when the lookup
 client is safe to share, and a hand-written `IPredicate<TContext>` (as shown
 above) when it isn't.
 

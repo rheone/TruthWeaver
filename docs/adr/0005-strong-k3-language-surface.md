@@ -149,9 +149,11 @@ the aliases are cheap once the canonical form stays single.
     memory; the printed text repeats them), so a deeply nested expansion can
     exceed the default compile node limit when recompiled.
 
-    Implemented in k3-conformance 24 (universal gates):
+    Implemented in k3-conformance 24 (universal connectives; the word "gate" in the
+    original text was retired by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md)
+    and replaced here in place):
     `CompiledRule<TContext>.ExpandToNand()` and `ExpandToNor()` expand to the
-    kernel and then rewrite it with a single gate: `NOT a` = `a GATE a`; for NAND,
+    kernel and then rewrite it with a single connective: `NOT a` = `a NAND a` (`a NOR a` for NOR); for NAND,
     `a AND b` = `(a NAND b) NAND (a NAND b)` and `a OR b` = `(a NAND a) NAND (b NAND
     b)`, and for NOR the duals; longer chains fold left. `AtLeast(k)` is the
     disjunction over every k-subset of the subset's conjunction (a monotone
@@ -160,7 +162,7 @@ the aliases are cheap once the canonical form stays single.
     dropped; the subset count is `C(n, k)`. **`COALESCE` is a documented semantic
     boundary:** every `NAND`/`NOR`/`AND`/`OR`/`NOT` circuit is monotone in the
     information order and `COALESCE` is not (`COALESCE(Unknown, True)` = `True` but
-    `COALESCE(False, True)` = `False`), so it has no gate-only form and stays in
+    `COALESCE(False, True)` = `False`), so it has no NAND-only or NOR-only form and stays in
     place with its operands rewritten, as do the inspections that
     expand to it. A rule without them is purely `NAND` (or `NOR`).
 
@@ -539,7 +541,7 @@ Where they differ from the original wording above they take precedence.
     expressiveness of `NAND`/`NOR` (decision 10, k3-conformance 24) hold for the
     connectives and do not extend to the external operators, so
     `IsKnown(a) OR IsUnknown(a)` is a genuine tautology (decision 13,
-    k3-conformance 17) and `COALESCE` stays outside the universal gates. The
+    k3-conformance 17) and `COALESCE` stays outside the universal connectives. The
     language as a whole is Strong Kleene (K3) plus external operators. Prose
     uses "Strong Kleene (K3)", not "K3" and "Strong K3" as two systems.
 19. **`Project` and `Collapse` are TruthWeaver terms and are methods on the

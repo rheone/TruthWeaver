@@ -1,6 +1,6 @@
 # Naming cleanup: align code, diagnostics and docs with the glossary
 
-Status: ready-for-agent
+Status: done
 
 Source: domain-modeling and grilling session, 2026-10-03. The glossary edits (**Connective**, **Trace**, **Outline**, **Rule**, class diagram) are already made in `CONTEXT.md`; this spec covers the code, tests, diagnostics and docs that must catch up.
 
