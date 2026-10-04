@@ -2,7 +2,7 @@
 
 **What to build:** Collection predicates the catalog lacks become registerable: `IsEmpty` and `IsNotEmpty`, `Contains` (the collection contains a literal value, distinct from `StringPredicates.Contains`), `In` and `NotIn`, and the count family (`CountEqual`, `CountLessThan`, `CountGreaterThan`, `CountLessThanOrEqual`, `CountGreaterThanOrEqual`). The meaning of `In`/`NotIn` (subset, intersection or scalar membership) and the `NotX` form come from the owner's answers in ticket 02. A null collection follows the catalog rules: the count and comparison families return `Unknown` for null and honour `NullBehavior`, while the emptiness tests stay definite as `SetEquals` treats a null collection today. Each predicate has XML docs, a schema description and README coverage, and argument kinds use the existing `LiteralKind` set.
 
-**Blocked by:** 02
+**Blocked by:** 10
 
 **Status:** ready-for-agent
 

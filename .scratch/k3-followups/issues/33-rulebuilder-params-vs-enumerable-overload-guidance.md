@@ -4,9 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** resolved
 
 - [ ] The owner picks: documentation only, or an API or analyzer change
 - [ ] The chosen change is made, with the array-versus-list case shown in the XML docs
 
 Source: review of PR #4, Spec axis, questionable item on `RuleBuilder`. Related: [22](22-counted-operator-enumerable-overloads.md).
+
+## Comments
+
+- 2026-10-03: Owner chose documentation only. Work tracked by k3-followups 37.

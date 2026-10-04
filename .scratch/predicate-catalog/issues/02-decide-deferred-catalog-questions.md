@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** resolved
 
 - [ ] Questions 2, 4, 7 and 8 each have a recorded owner answer
 - [ ] `CONTEXT.md` states the resulting rules beside the existing predicate catalog rules
@@ -12,3 +12,7 @@
 - [ ] Tickets 03 to 08 are re-read and amended where an answer changes their scope
 
 Source: [gap list](../k3-gap-list.md), [research findings, section 7](../../k3-conformance/research-findings.md#7-predicate-catalog), k3-followups ticket 10.
+
+## Comments
+
+- 2026-10-03: Questions 2, 4, 7 and 8 were answered in the 2026-10-03 owner grilling session; recording is tracked by ticket 09 and ticket amendments by ticket 10.

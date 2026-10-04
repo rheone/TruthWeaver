@@ -4,10 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** resolved
 
 - [ ] The owner picks 1, 2 or 3
 - [ ] The licence terms of the vendored files are acceptable for the repository
 - [ ] `skills-lock.json` matches whatever is kept
 
 See also [spec](../spec.md).
+
+## Comments
+
+- 2026-10-03: Owner chose to remove the skill from the repo and keep it at user level. Work tracked by repo-hygiene 03.

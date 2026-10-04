@@ -2,7 +2,7 @@
 
 **What to build:** `DateTimeOffset` comparison predicates the catalog lacks become registerable: `After` (strict `>`), `Before` (strict `<`) and `Between` against `DateTimeOffset` literal arguments. There is no `DateTime` literal kind and no `DateTime` overload; a host with a `DateTime` converts at the selector, and the docs say so (catalog rule). Bounds inclusivity and the reversed-bounds result follow the owner's answers in ticket 02. A null selection returns `Unknown` and honours `NullBehavior`. Each predicate has XML docs, a schema description and README coverage. Clock predicates are a separate ticket.
 
-**Blocked by:** 02
+**Blocked by:** 10
 
 **Status:** ready-for-agent
 

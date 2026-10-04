@@ -4,10 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** resolved
 
 - [ ] The owner picks 1, 2 or 3
 - [ ] If 1, CLAUDE.md and AGENTS.md state the scope of the rule
 - [ ] If 2, batches are listed per test file and tracked
 
 See also [spec](../spec.md).
+
+## Comments
+
+- 2026-10-03: Owner chose option 1: the XML-summary rule applies to new and touched tests only. Work tracked by k3-followups 35.
