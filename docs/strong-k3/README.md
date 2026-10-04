@@ -28,3 +28,7 @@ An Operation document has these sections, in this order:
 - Where they apply: Formula, Truth table or Evaluation table, Canonical form, Equivalent forms, Examples, Edge cases, a Mermaid diagram, Evaluation behavior and Related operations.
 
 A truth table lists every assignment for an Operation with a fixed number of operands. An evaluation table lists the definitely true and possibly true counts for a parameterised or variadic Operation.
+
+## Keeping the reference current
+
+Every Operation and every predicate has one document. A change that adds, renames or removes an Operation or a predicate adds, renames or removes its document in the same change. The same change updates the directory index and the table in [Reading order](#reading-order). A document for a predicate is named `<kind>-<factory>.md`, in lower case, for example `string-equals.md`. The `dotnet test` run fails when the documents and the engine disagree.

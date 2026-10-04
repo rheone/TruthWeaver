@@ -40,6 +40,7 @@ A failure is reported as `path:line: message`.
 | Canonical form | `<!-- k3:canonical OP vars=a,b -->` or `n=2..4` above a fenced block | One function-call expression (for example `OR(NOT(a), b)`, `ATLEAST(k + 1, ...)`; `...` splices all operands) equal to the oracle for every assignment, operand count and valid parameter. |
 | Operation document | Any `docs/strong-k3/<category>/<name>.md` except `README.md` | The name is in the inventory ([operations.md](strong-k3/specification/operations.md)), in the right category directory, with that Kind and the two-line category convention (see below). Every required section is present and non-empty. Every section name is known. Each Truth table, Evaluation table or Canonical form section holds its marker. |
 | Operations index | `docs/strong-k3/specification/operations.md` | The index links the document of every inventory Operation. |
+| Sync with the engine | `docs/strong-k3/` against the engine | `K3ReferenceSyncChecker` (run by `K3ReferenceSyncTests`) fails when an engine operator, a `Decision` result transformation or a predicate factory has no document, or a document names something the engine lacks. A predicate without a document is allowed only while listed in `K3PredicateDocumentationHold`; the failure message names that list. A document for a listed predicate fails until the entry is removed. |
 
 Cells use `T`, `F`, `U` (or the full words), backticks allowed. `OP` is an inventory name, case-insensitive; the inventory and its
 oracle bindings are in `K3Operation.cs`. Run the checks with
