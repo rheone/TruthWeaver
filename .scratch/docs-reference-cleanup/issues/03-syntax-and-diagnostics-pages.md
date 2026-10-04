@@ -4,10 +4,14 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `syntax.md` covers precedence, the mixing rule, call forms, infix forms, symbol aliases, case rules and the JSON and YAML shape
-- [ ] `diagnostics.md` lists each code used by the operation pages once, with name, cause and fix
-- [ ] A throwaway probe or an added test shows each stated syntax and diagnostic claim holds in the compiler
-- [ ] Both pages follow the documentation standard and link only inside `docs/strong-k3/`
-- [ ] The reference harness and the lint test pass
+- [x] `syntax.md` covers precedence, the mixing rule, call forms, infix forms, symbol aliases, case rules and the JSON and YAML shape
+- [x] `diagnostics.md` lists each code used by the operation pages once, with name, cause and fix
+- [x] A throwaway probe or an added test shows each stated syntax and diagnostic claim holds in the compiler
+- [x] Both pages follow the documentation standard and link only inside `docs/strong-k3/`
+- [x] The reference harness and the lint test pass
+
+## Comments
+
+- 2026-10-04: Done. Every syntax and diagnostic claim was checked with a throwaway compile probe of about 90 rule texts (DSL, JSON and YAML); the probe was deleted afterward. The probe showed that `TRE0011` is Info, and that `a XOR b EQUIVALENT c` is `TRE0007`.

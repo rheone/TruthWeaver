@@ -8,7 +8,7 @@ The value set is `{True, False, Unknown}`. Tables write the values as T, F and U
 
 | Section | What it holds | Index |
 | --- | --- | --- |
-| Specification | Values, semantics, the list of Operations, terminology and notation | [specification/](specification/README.md) |
+| Specification | Values, semantics, the list of Operations, syntax, diagnostics, terminology and notation | [specification/](specification/README.md) |
 | Gates / Operators | The primitive connectives `NOT`, `AND` and `OR` | [gates/](gates/README.md) |
 | Derived Logical Operations | The connectives defined by composing gates | [derived/](derived/README.md) |
 | Cardinality Functions | The operations over the count of true operands | [cardinality/](cardinality/README.md) |
