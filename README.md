@@ -17,8 +17,8 @@ anything else.
 - [What it is (and isn't)](#what-it-is-and-isnt)
 - [Requirements](#requirements)
 - [Getting started](#getting-started)
-- [A tour of the codebase](#a-tour-of-the-codebase)
 - [Packages](#packages)
+- [Architecture](#architecture)
 - [Features](#features)
 - [Operators](#operators)
   - [Symbol notation](#symbol-notation)
@@ -44,8 +44,6 @@ anything else.
   - [`RuleBuilder` reference](#rulebuilder-reference)
   - [Outlining a compiled rule](#outlining-a-compiled-rule)
   - [Rendering a rule as a diagram](#rendering-a-rule-as-a-diagram)
-- [Evaluation flow](#evaluation-flow)
-- [Compilation pipeline](#compilation-pipeline)
 - [Reading diagnostics](#reading-diagnostics)
   - [JSON and YAML rules](#json-and-yaml-rules)
 - [Benchmarks](#benchmarks)
@@ -142,162 +140,27 @@ isn't a pin to that exact patch.
    ```
 
 That's the whole lifecycle: implement → register → compile once → evaluate
-many times. [A tour of the codebase](#a-tour-of-the-codebase) below maps
+many times. [Architecture](docs/architecture.md) maps
 that lifecycle onto the actual folders, and [Examples](#examples) builds up
 from here to named arguments, the full operator set, and the full ADR-0003
 worked example in DSL, JSON, and YAML.
 
-## A tour of the codebase
-
-The five `src` projects mirror the rule lifecycle from
-[Getting started](#getting-started): a predicate-implementing service only
-needs the zero-dependency kernel, while a rule-authoring host pulls in the
-parser, compiler, analyzer, and evaluator.
-
-<!-- doctest:skip class diagram, structure only -->
-```mermaid
-flowchart TD
-    subgraph Kernel["TruthWeaver.Abstractions — the zero-dependency kernel"]
-        IPredicate["IPredicate&lt;TContext&gt;, PredicateSchema"]
-        Types["TruthValue, Decision, Fault, Trace"]
-    end
-
-    subgraph Core["TruthWeaver — parse, compile, analyze, evaluate"]
-        direction TB
-        Parsing["Parsing<br/>DSL lexer + parser"]
-        Ast["Ast<br/>Expression tree, operator metadata"]
-        Rewriting["Rewriting<br/>expand, compress, canonicalize, simplify"]
-        Compilation["Compilation<br/>RuleCompiler, CompilerOptions"]
-        Analysis["Analysis<br/>BddManager, constant/contradiction analyzer"]
-        Building["Building<br/>RuleBuilder (assemble without text)"]
-        Registry["Registry<br/>PredicateRegistry(Builder)"]
-        Evaluation["Evaluation<br/>Evaluator, CompiledRule, EvaluationOptions"]
-        Diagnostics["Diagnostics<br/>Diagnostic, suggestions, DiagnosticFormatter"]
-        Json["Json<br/>JSON tree parser/printer + schema"]
-        Printing["Printing<br/>CanonicalPrinter, RuleText, MermaidTreePrinter"]
-        Diffing["Diffing<br/>RuleDiff, RuleDiffPrinter"]
-        Logging["Logging<br/>structured log events"]
-        Metrics["Metrics<br/>TruthWeaverMetrics (Meter)"]
-        DI["DependencyInjection<br/>AddTruthWeaver extension"]
-
-        Parsing --> Ast
-        Building --> Ast
-        Json --> Ast
-        Ast --> Compilation
-        Compilation --> Analysis
-        Compilation --> Registry
-        Analysis --> Diagnostics
-        Compilation --> Diagnostics
-        Ast --> Evaluation
-        Ast --> Rewriting
-        Ast --> Printing
-        Ast --> Diffing
-    end
-
-    subgraph YamlPkg["TruthWeaver.Yaml"]
-        Yaml["YAML tree parser/printer"]
-    end
-
-    subgraph Extras["Optional add-ons"]
-        Predicates["TruthWeaver.Predicates<br/>ready-made IPredicate implementations"]
-        Testing["TruthWeaver.Testing<br/>Decision assertions, fake predicates"]
-    end
-
-    Core --> Kernel
-    YamlPkg --> Core
-    Predicates --> Kernel
-    Testing --> Kernel
-```
-
-Starting points for common tasks:
-
-| Task | Start here |
-| --- | --- |
-| Implement a new predicate | [`IPredicate<TContext>`](src/TruthWeaver.Abstractions/IPredicate.cs), or a factory in [`TruthWeaver.Predicates`](src/TruthWeaver.Predicates) if it's a generic string/collection/regex check |
-| Register predicates and compile a rule | [`PredicateRegistryBuilder`](src/TruthWeaver/Registry/PredicateRegistryBuilder.cs), [`RuleCompiler`](src/TruthWeaver/Compilation/RuleCompiler.cs) |
-| Understand DSL parsing | [`Lexer`](src/TruthWeaver/Parsing/Lexer.cs) → [`DslParser`](src/TruthWeaver/Parsing/DslParser.cs) |
-| Understand the compiled tree shape | [`Expression`](src/TruthWeaver/Ast/Expression.cs) |
-| Understand constant/contradiction detection | [`BddManager`](src/TruthWeaver/Analysis/BddManager.cs), [`Analyzer`](src/TruthWeaver/Analysis/Analyzer.cs) |
-| Understand evaluation and short-circuiting | [`Evaluator`](src/TruthWeaver/Evaluation/Evaluator.cs), [`CompiledRule`](src/TruthWeaver/Evaluation/CompiledRule.cs) |
-| Assemble a rule without hand-writing text | [`RuleBuilder`](src/TruthWeaver/Building/RuleBuilder.cs) |
-| Rewrite a rule (expand, compress, canonicalize, simplify) | [`CompiledRule`](src/TruthWeaver/Evaluation/CompiledRule.cs) and [`Rewriting`](src/TruthWeaver/Rewriting) |
-| Understand compile diagnostics and "did you mean" | [`Diagnostic`](src/TruthWeaver/Diagnostics/Diagnostic.cs), [`DiagnosticFormatter`](src/TruthWeaver/Diagnostics/DiagnosticFormatter.cs) |
-| Print or diagram a compiled rule | [`CanonicalPrinter`](src/TruthWeaver/Printing/CanonicalPrinter.cs), [`MermaidTreePrinter`](src/TruthWeaver/Printing/MermaidTreePrinter.cs) |
-| Diff two compiled rules | [`RuleDiff`](src/TruthWeaver/Diffing/RuleDiff.cs) |
-| Check two rules for Strong K3 equivalence | [`RuleEquivalence`](src/TruthWeaver/Analysis/RuleEquivalence.cs) |
-| Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
-| Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](src/TruthWeaver.Yaml/YamlTreeParser.cs) |
-| Write a unit test against a `Decision` | [`DecisionAssertions`](src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](src/TruthWeaver.Testing/FakePredicates.cs) |
-
-Beyond `src`, the rest of the repository:
-
-- [`tests/TruthWeaver.Tests`](tests/TruthWeaver.Tests) — unit tests for all
-  six packages, one file per behavior area (parsing, compilation,
-  evaluation, memoization, YAML/JSON round-tripping, diffing, and so on).
-- [`benchmarks/TruthWeaver.Benchmarks`](benchmarks/TruthWeaver.Benchmarks) —
-  a BenchmarkDotNet suite measuring compile-time and evaluation-time cost
-  (dev-only; see [Benchmarks](#benchmarks)).
-- [`docs/adr/`](docs/adr/) — the architecture decision records behind every
-  major design choice.
-- [`CONTEXT.md`](CONTEXT.md) — the domain vocabulary and conceptual model,
-  kept in sync with the code.
-
 ## Packages
 
-| Package | Depends on | Ships |
-| --- | --- | --- |
-| `TruthWeaver.Abstractions` | *(nothing third-party)* | `IPredicate<TContext>`, `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`, and the data source kernel (`IDataSource`, `DataQueryResult`, `DataSources`, `VariableReference`) — everything a predicate-implementing service needs. |
-| `TruthWeaver` | `Abstractions`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Logging.Abstractions` | The DSL parser, `RuleCompiler<TContext>`, `CompiledRule<TContext>`, the BDD-based analyzer, the evaluator, `System.Text.Json` tree support, printing/diffing, and DI registration extensions. |
-| `TruthWeaver.Yaml` | `TruthWeaver`, `TruthWeaver.DataSources.Json`, YamlDotNet | YAML tree support (`CompileYaml`/`PrintYaml`) and `YamlDataSource` (a YAML document as a data source, queried with the JSON package's JSONPath engine), isolated so a consumer with no interest in YAML never pulls in YamlDotNet. |
-| `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, JsonPath.Net | `JsonDataSource` (a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath, RFC 9535) and `JsonQueryValidator` (compile-time syntax check of those queries). Isolated so the core package takes no JSONPath dependency. |
-| `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories — string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client — for a consumer that wants common checks without writing a class, and without acquiring the parser, compiler, or analyzer. |
-| `TruthWeaver.Testing` | `TruthWeaver.Abstractions` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. |
+| Package | Use it to |
+| --- | --- |
+| `TruthWeaver.Abstractions` | Implement predicates. It has no third-party dependency. |
+| `TruthWeaver` | Parse, compile, analyze and evaluate rules. |
+| `TruthWeaver.Yaml` | Read and write rules and data sources as YAML. |
+| `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
+| `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
+| `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests. |
 
-<!-- doctest:skip class diagram, structure only -->
-```mermaid
-flowchart LR
-    subgraph Abstractions["TruthWeaver.Abstractions<br/>(zero third-party dependencies)"]
-        IPredicate["IPredicate&lt;TContext&gt;"]
-        Schema["PredicateSchema / PredicateArguments"]
-        Truth["TruthValue / Decision / Fault"]
-    end
+A service that only implements predicates references `TruthWeaver.Abstractions` alone. For the dependencies and the contents of each package, see [Packages](docs/packages.md).
 
-    subgraph Core["TruthWeaver"]
-        Parser["DSL parser"]
-        Compiler["RuleCompiler&lt;TContext&gt;"]
-        Analyzer["Analyzer (BDD)"]
-        Evaluator["Evaluator"]
-        Json["System.Text.Json tree support"]
-        DI["DI registration extensions"]
-    end
+## Architecture
 
-    subgraph YamlPkg["TruthWeaver.Yaml"]
-        Yaml["YAML tree support"]
-    end
-
-    subgraph PredicatesPkg["TruthWeaver.Predicates"]
-        ReadyMade["Ready-made predicate factories"]
-    end
-
-    subgraph TestingPkg["TruthWeaver.Testing"]
-        Assertions["Decision assertions + fake predicates"]
-    end
-
-    Core --> Abstractions
-    YamlPkg --> Core
-    PredicatesPkg --> Abstractions
-    TestingPkg --> Abstractions
-
-    App["Predicate-implementing service"] -.->|"references only"| Abstractions
-    Host["Rule-authoring / evaluation host"] -->|"references"| Core
-    Host -.->|"optional"| YamlPkg
-    Host -.->|"optional"| PredicatesPkg
-    Host -.->|"optional, test projects only"| TestingPkg
-```
-
-A service that only *implements* domain predicates references
-`Abstractions` alone — no parser, no BDD analyzer, no YAML library. See
-[ADR-0004](docs/adr/0004-package-boundaries-and-extensibility.md).
+The source layout, the compilation pipeline and the evaluation flow are in [Architecture](docs/architecture.md). The evaluation behavior is in [Evaluation](docs/strong-k3/specification/evaluation.md).
 
 ## Features
 
@@ -981,7 +844,7 @@ when not, and `null` when the term cap makes it undecidable (default 20). Call
 
 DSL, JSON, and YAML compile to the exact same tree through the exact same
 Parse → Validate → Analyze → Build pipeline (see
-[Compilation pipeline](#compilation-pipeline) below) — none of them is more
+[Compilation pipeline](docs/architecture.md#compilation-pipeline)) — none of them is more
 "real" than another at evaluation time. What differs is who's meant to
 write and read each one:
 
@@ -1687,7 +1550,7 @@ JSON-producing tool would use. A builder-assembled rule therefore gets every
 diagnostic a hand-written one would — an unknown predicate, a bad argument,
 an out-of-range threshold, `XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR` arity, resource limits, structural
 tautology/contradiction — nothing here bypasses the Validate/Analyze stages
-of the [compilation pipeline](#compilation-pipeline). See
+of the [compilation pipeline](docs/architecture.md#compilation-pipeline). See
 [Building rules programmatically](#building-rules-programmatically) below
 for the full API.
 
@@ -1926,7 +1789,7 @@ enumerated once. `GreaterThan` and `LessThan` have no enumerable overload.
 `RuleBuilder.Compile(compiler)` is a thin wrapper around
 `compiler.CompileJson(builder.ToJson())` — nothing bypasses the
 Validate/Analyze pipeline described in
-[Compilation pipeline](#compilation-pipeline). `ToJson()` alone is useful
+[Compilation pipeline](docs/architecture.md#compilation-pipeline). `ToJson()` alone is useful
 too, e.g. for logging or persisting the tree a builder assembled without
 compiling it immediately.
 
@@ -2004,75 +1867,6 @@ structure-only labels instead. `CompiledRule<TContext>` also exposes both
 directly as `PrintMermaid()`/`PrintMermaid(decision)` and
 `PrintPlainText()`/`PrintPlainText(decision)`, without a separate
 `Outline()` call.
-
-## Evaluation flow
-
-<!-- doctest:skip class diagram, structure only -->
-```mermaid
-flowchart TD
-    Start(["Evaluate(context, ct)"]) --> Visit["Visit next operand<br/>(left to right)"]
-    Visit --> IsTerm{"Term or operator?"}
-
-    IsTerm -->|"Term"| Memo{"Already evaluated<br/>this term identity<br/>in this evaluation?"}
-    Memo -->|"Yes"| Reuse["Reuse memoized TruthValue"]
-    Memo -->|"No"| Invoke["Invoke predicate"]
-
-    Invoke -->|"returns True, False or Unknown"| Record["Memoize TruthValue"]
-    Invoke -->|"throws"| Fault["Record Fault →<br/>treat as Unknown"]
-
-    Reuse --> Combine
-    Record --> Combine
-    Fault --> Combine["Combine via operator's<br/>Kleene truth table"]
-
-    IsTerm -->|"Operator"| Combine
-
-    Combine --> ShortCircuit{"Result already<br/>determinate?<br/>(short-circuit)"}
-    ShortCircuit -->|"Yes"| SkipRest["Mark remaining operands<br/>NotEvaluated in trace"]
-    ShortCircuit -->|"No, more operands"| Visit
-
-    SkipRest --> Done
-    ShortCircuit -->|"No operands remain"| Done(["Decision<br/>(TruthValue + Faults + Trace)"])
-```
-
-Short-circuit is real (an `AND` stops at the first `False`, an `OR` stops at
-the first `True`) but the trace still records what was skipped, rather than
-omitting it — the point of a trace is to explain a decision, and a hole
-where an unevaluated branch should be defeats that. Faults don't abort
-evaluation; they become `Unknown` and are absorbed wherever the operator's
-truth table allows. Full reasoning: [ADR-0001](docs/adr/0001-kleene-failure-model.md)
-and [ADR-0002](docs/adr/0002-evaluation-semantics.md).
-
-## Compilation pipeline
-
-Rule text — DSL, JSON, or YAML — all funnel through the same
-Parse → Validate → Analyze → Build pipeline, which is why
-`parse(print(x))` round-trips structurally regardless of which surface a
-rule came from:
-
-<!-- doctest:skip state diagram, structure only -->
-```mermaid
-flowchart TD
-    Source["Rule text<br/>(DSL, JSON, or YAML)"] --> Parse[Parse]
-    Parse -->|"syntax error"| Diag1[["Diagnostics<br/>(Error)"]]
-    Parse -->|"raw tree"| Validate["Validate<br/>(known predicates, argument schema,<br/>depth/node limits, CompilerOptions)"]
-    Validate -->|"validation error"| Diag2[["Diagnostics<br/>(Error / Warning / Info)"]]
-    Validate -->|"valid tree"| Analyze["Analyze<br/>(dual-rail BDD Strong K3 constant/contradiction detection)"]
-    Analyze --> Diag3[["Diagnostics<br/>(Warning / Info)"]]
-    Analyze --> Build["Build immutable expression tree"]
-    Build --> Result["CompilationResult&lt;TContext&gt;<br/>CompiledRule&lt;TContext&gt;? + Diagnostics"]
-
-    Diag1 --> Result
-    Diag2 --> Result
-    Diag3 --> Result
-```
-
-`Compile` never throws for an authoring error — every problem, from a
-syntax error to a Strong K3 tautology, becomes a `Diagnostic` (code,
-severity, source span) in the returned `CompilationResult<TContext>`.
-`CompiledRule<TContext>` is populated only when there are no `Error`-severity
-diagnostics, which is what makes "a bad edit is rejected, the previously
-persisted rule stays active" true by construction rather than by convention.
-Full reasoning: [ADR-0003](docs/adr/0003-rule-syntax-and-serialization.md).
 
 ## Reading diagnostics
 
@@ -2517,7 +2311,7 @@ they're n-ary counting operators over the *number* of `True` operands, not
 fixed two-input truth tables; their exact Kleene semantics (what counts as
 "certain" vs. "still possibly reachable" when some operands are `Unknown`)
 are covered by the evaluator's behavior described in
-[Evaluation flow](#evaluation-flow) and tested directly in
+[Evaluation](docs/strong-k3/specification/evaluation.md) and tested directly in
 `XorExactlyOneThresholdTests`.
 
 ## Design documents
