@@ -6,7 +6,7 @@ How to assemble a rule in code, describe a compiled rule as a tree of labels, an
 
 `RuleBuilder` assembles a rule from C# calls instead of text. Every `RuleBuilder` method renders to the same flat JSON tree that `CompileJson` reads, and `Compile` passes that JSON to `CompileJson`. A rule from a builder therefore gets every diagnostic that a hand-written rule gets: an unknown predicate, a bad argument, an out-of-range threshold, a wrong operand count, a resource limit and a structural tautology or contradiction. No builder call skips the Validate and Analyze stages of the [compilation pipeline](architecture.md#compilation-pipeline). To convert a rule between the text formats, see [Rule formats](rule-formats.md#converting-between-dsl-json-and-yaml).
 
-[Example 6](../README.md#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) shows `RuleBuilder` from start to finish.
+[Example 6](examples.md#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) shows `RuleBuilder` from start to finish.
 
 ## RuleBuilder reference
 

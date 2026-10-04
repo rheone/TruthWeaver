@@ -1,6 +1,6 @@
 # Executable documentation examples
 
-The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md` and `docs/predicates.md` are checked on every `dotnet test` by
+The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/predicates.md` and `docs/examples.md` are checked on every `dotnet test` by
 `tests/TruthWeaver.Tests/DocExamples/DocExampleChecker.cs` (run by `DocExampleTests`). A change that breaks a documented
 rule, or changes documented output, fails the build. C# fragments are not checked.
 

@@ -48,11 +48,11 @@ StringPredicates.Equals<PizzaOrder>(
 
 ## 1 argument, stateless lambda
 
-[Example 3](../README.md#3-named-arguments) shows `hasTopping(topping: "greenOlives")`. It has a single named `string` argument and no injected dependency.
+[Example 3](examples.md#3-named-arguments) shows `hasTopping(topping: "greenOlives")`. It has a single named `string` argument and no injected dependency.
 
 ## 0 arguments, class-based (DI)
 
-[Example 1](../README.md#1-a-single-predicate) shows `LovesPineapple`. It is a class that implements `IPredicate<TContext>`. DI resolves it again from `IServiceProvider` on every evaluation. Use this shape when a scoped dependency, for example a `DbContext`, is involved, even when the predicate has no rule-authored parameter.
+[Example 1](examples.md#1-a-single-predicate) shows `LovesPineapple`. It is a class that implements `IPredicate<TContext>`. DI resolves it again from `IServiceProvider` on every evaluation. Use this shape when a scoped dependency, for example a `DbContext`, is involved, even when the predicate has no rule-authored parameter.
 
 ## n arguments, class-based, multiple injected dependencies
 
