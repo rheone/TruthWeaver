@@ -1301,6 +1301,21 @@ replaces the other — reach for `ResolvedValuePredicates` when the resolving
 client is safe to share, and a hand-written `IPredicate<TContext>` (as shown
 above) when it isn't.
 
+### Arguments read from a data source
+
+A literal argument is fixed in the rule. When the value changes per request, or lives in a JSON or YAML
+document, write a variable reference instead: the source name and a query. It is resolved on every
+evaluation.
+
+<!-- doctest:skip variable references are not implemented yet -->
+```text
+ageAtLeast(min: from("user", "$.minAge"))
+```
+
+The JSON and YAML sources use JSONPath. A missing, ambiguous or mistyped result makes the term `Unknown` and
+records a fault. See the [data sources guide](docs/data-sources.md) and
+[ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md).
+
 ## Examples
 
 Seven examples, each adding one more piece — a single predicate, combining

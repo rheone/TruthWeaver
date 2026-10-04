@@ -80,6 +80,10 @@ required/default) that the compiler validates once, at compile time, so a
 missing or mistyped argument can never surface as a runtime failure inside a
 predicate.
 
+> **Superseded in part by [ADR-0006](0006-data-sources-for-expression-variables.md):** an argument may
+> also be a variable reference, `from("source", "query")`, resolved at evaluation time from a named data
+> source. The literal-only and no-context-path statements below describe the original decision.
+
 Argument values are **literals only**, from a closed set of types: `string`,
 `long`, `decimal`, `bool`, `DateTimeOffset`, and arrays of those. There is no
 `{{handlebar}}` or path-expression syntax referencing the evaluation context

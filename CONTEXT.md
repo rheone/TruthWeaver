@@ -43,6 +43,8 @@ an authorization layer is intentionally out of scope.
 | **TruthValue** | `True` / `False` / `Unknown` — a dedicated three-valued (Kleene) type, never `bool?`. A predicate returns one directly (`ValueTask<TruthValue>`); `Unknown` is never implicitly converted to `True` or `False` outside an explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` / `Decision.Collapse` on the result). `False < Unknown < True` is an implementation aid, not a numeric order of truth. |
 | **Fault** | A predicate failed to produce an answer during one evaluation (exception, timeout, cancellation). Faults become `Unknown`, not thrown exceptions, at the expression level. A predicate that simply returns `Unknown` is a normal answer and records no fault. |
 | **CompiledRule** | The immutable, thread-safe result of compiling a rule's text. Safe to cache and share; compile once, evaluate many times. |
+| **Data source** | A named, read-only store of application data (a JSON document, a YAML document, anything that can answer a query) supplied to one evaluation through `DataSources`. Each source owns its query dialect; JSON and YAML sources use JSONPath. |
+| **Variable reference** | A term argument written as `from("source", "query")` instead of a literal: it names a **data source** and a query, and is resolved afresh on each evaluation, then checked against the argument's `LiteralKind` ([ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md)). Not a predicate and not an operator. A scalar needs exactly one match; none or several is a **Fault** and the term is `Unknown`. *Avoid*: context path, binding. |
 | **PredicateRegistry** | Where predicate implementations are registered under a name, with their argument schema. Every predicate carries a required, read-only `Label` and `Description`; every argument carries a required `Description`. |
 
 Avoid these near-synonyms once the term above is established: "term" and
@@ -192,7 +194,9 @@ contradiction analysis sound — two terms are "the same variable" if and only
 if:
 
 - predicate name, normalized case-insensitively to the registered casing, **and**
-- arguments, sorted by name, each compared by exact type-normalized value.
+- arguments, sorted by name, each compared by exact type-normalized value. A **variable reference**
+  compares by its source name and query text, never by the value it resolves to, so two references are the
+  same variable only when both match exactly.
 
 Argument **values** are case-**sensitive** (`role: "Y"` and `role: "y"` are
 different terms — role codes are frequently case-significant, and folding
@@ -389,5 +393,7 @@ publishing themselves.
 - [ADR-0003: Rule syntax and serialization](docs/adr/0003-rule-syntax-and-serialization.md)
 - [ADR-0004: Package boundaries and extensibility](docs/adr/0004-package-boundaries-and-extensibility.md)
 - [ADR-0005: Strong K3 language surface](docs/adr/0005-strong-k3-language-surface.md)
+- [ADR-0006: Data sources for expression variables](docs/adr/0006-data-sources-for-expression-variables.md)
+- [Data sources guide](docs/data-sources.md)
 - [Strong Kleene (K3) reference](docs/strong-k3/README.md)
 - [README.md](README.md)
