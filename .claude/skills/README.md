@@ -44,6 +44,8 @@ Notes:
 
 `skills-lock.json` lists only the vendored skill (`humanizer`). The authored skills are not locked, because the repository owner controls their source.
 
-The `computedHash` of an entry is the SHA-256 of the skill folder, as `npx skills` computes it. The tool sorts all files by relative path (forward slashes, `.git` and `node_modules` excluded). It feeds each relative path, then the raw bytes of the file, into the hash. A line-ending change therefore changes the hash. `.gitattributes` pins `.claude/skills/**` to LF, so a clone gives the same bytes with any `core.autocrlf` setting.
+The `computedHash` of an entry is the SHA-256 of the skill folder, as `npx skills` computes it. The tool sorts all files by relative path with a locale-aware comparison, so `agents/openai.yaml` sorts before `AGENTS.md` (forward slashes, `.git` and `node_modules` excluded). It feeds each relative path, then the raw bytes of the file, into the hash. A line-ending change therefore changes the hash. `.gitattributes` pins `.claude/skills/**` to LF, so a clone gives the same bytes with any `core.autocrlf` setting.
 
 The `humanizer` copy omits upstream files that this project does not use (`.claude-plugin/`, `.cursor-plugin/` and `.github/`). A fresh `npx skills add blader/humanizer` therefore writes a different folder, and a different hash, than the committed copy. The lock entry records the hash of the committed copy. After an update from upstream, copy the skill files with LF endings, leave out the files listed above, and compute the hash again with the method above.
+
+`SkillProvenanceTests` (`tests/TruthWeaver.Tests/ReferenceDocs`) fails `dotnet test` when a skill directory has no row in the table, a row or lock entry names a missing skill, a vendored skill has no lock entry, or a locked skill no longer matches its `computedHash`. Each message names the skill and the fix.
