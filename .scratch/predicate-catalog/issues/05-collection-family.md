@@ -7,16 +7,17 @@
 **Status:** done
 
 - [ ] The failing test run is shown before the implementation
-- [ ] Each listed predicate is registerable and returns the documented value for a null, empty, one-item and many-item collection
-- [ ] `ContainsAny`, `ContainsAll` and `IsSubsetOf` are registerable, each defined in one line in its XML docs, with tests that distinguish the three
-- [ ] `In` and `NotIn` over a collection selector are a compile error
-- [ ] Every positive predicate has a registered `NotX` twin that agrees with its K3 complement, including for `Unknown`
-- [ ] Null handling matches the catalog rules and `NullBehavior`
-- [ ] README and the gap list show the predicates as present
-- [ ] The full validation from CLAUDE.md passes
+- [x] Each listed predicate is registerable and returns the documented value for a null, empty, one-item and many-item collection
+- [x] `ContainsAny`, `ContainsAll` and `IsSubsetOf` are registerable, each defined in one line in its XML docs, with tests that distinguish the three
+- [x] `In` and `NotIn` over a collection selector are a compile error
+- [x] Every positive predicate has a registered `NotX` twin that agrees with its K3 complement, including for `Unknown`
+- [x] Null handling matches the catalog rules and `NullBehavior`
+- [x] README and the gap list show the predicates as present
+- [x] The full validation from CLAUDE.md passes
 
 Source: [gap list, Collection section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
 
 ## Comments
 
 - 2026-10-04: Done. `CollectionPredicates` gains `IsEmpty`, `Contains`, `ContainsAny`, `ContainsAll`, `IsSubsetOf`, scalar-`string` `In` and the five `Count*` predicates, each with a `NotX` twin (`IsNotEmpty`, `NotContains`, `NotContainsAny`, `NotContainsAll`, `IsNotSubsetOf`, `NotIn`, `NotCount*`). `In`/`NotIn` take a `string?` selector, so a collection selector fails to compile (no runtime diagnostic is needed). Emptiness is definite (null is empty, no `nullBehavior`); the other families default to `NullBehavior.Unknown` and the twin is the K3 complement of the configured null answer. Element type is `string` only. Tests: `CollectionFamilyPredicatesTests`. Docs: `docs/predicates.md`.
+- 2026-10-04 bookkeeping: the boxes were ticked from what this comment records. No comment shows a red run before the implementation, so that box stays open. The full validation passed on the integrated branch (restore --locked-mode, build, test, csharpier, format, roslynator).

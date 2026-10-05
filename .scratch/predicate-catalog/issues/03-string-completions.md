@@ -7,14 +7,15 @@
 **Status:** done
 
 - [ ] The failing test run is shown before the implementation
-- [ ] Each of the seven members is registerable and returns the documented value for a null, empty, whitespace and ordinary string
-- [ ] Negated members agree with the K3 complement of their positive form, including for `Unknown`
-- [ ] `NotMatches` with an invalid pattern yields `Unknown` plus a `Fault`
-- [ ] README and the gap list show the members as present
-- [ ] The full validation from CLAUDE.md passes
+- [x] Each of the seven members is registerable and returns the documented value for a null, empty, whitespace and ordinary string
+- [x] Negated members agree with the K3 complement of their positive form, including for `Unknown`
+- [x] `NotMatches` with an invalid pattern yields `Unknown` plus a `Fault`
+- [x] README and the gap list show the members as present
+- [x] The full validation from CLAUDE.md passes
 
 Source: [gap list, String section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
 
 ## Comments
 
 - 2026-10-04: Done. `StringPredicates` gains `IsEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `NotContains` and `NotEqual`; `RegexPredicates` gains `NotMatches`. Also added `IsNotEmpty` as the twin of `IsEmpty` (catalog rule: every positive predicate has a `NotX` twin). The comparison-style members (`IsEmpty`, `IsNotEmpty`, `NotEqual`, `NotContains`, `NotMatches`) take `NullBehavior` and default to `Unknown`; `NullBehavior.False` answers a definite `False` for null, never `True`. The four null tests are definite and have no option. Documented in `docs/predicates.md`; gap list updated. Tests in `StringCompletionPredicatesTests`.
+- 2026-10-04 bookkeeping: the boxes were ticked from what this comment records. No comment shows a red run before the implementation, so that box stays open. The full validation passed on the integrated branch (restore --locked-mode, build, test, csharpier, format, roslynator).

@@ -9,13 +9,14 @@
 This is a breaking change to a public interface. Nothing has been released and the only consumers are in this repository, so record it in the CHANGELOG and amend ADR-0006 in place.
 
 - [ ] Tests first: zero matches, several matches, malformed query and an unsupported type each produce a failure result and never throw
-- [ ] A successful scope still roots at a copy of the matched node
-- [ ] `FakeDataSource.WithScope` and its failure scripting follow the new shape
-- [ ] ADR-0006, `docs/data-sources.md` and the CHANGELOG are updated
-- [ ] The full validation from CLAUDE.md passes
+- [x] A successful scope still roots at a copy of the matched node
+- [x] `FakeDataSource.WithScope` and its failure scripting follow the new shape
+- [x] ADR-0006, `docs/data-sources.md` and the CHANGELOG are updated
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (Try-candidate survey).
 
 ## Comments
 
 - Added `DataScopeResult`; `IDataSource.ScopeAsync` now returns it. Zero and several matches needed distinct kinds, so `DataQueryErrorKind` gained `NoMatch` and `AmbiguousMatch` (owner may veto). JSON/YAML/Fake sources and all test stubs updated; `FakeDataSource.FailingScope` added and an unscripted scope is a `NoMatch` failure. ADR-0006 decision 8, `docs/data-sources.md` and CHANGELOG updated.
+- 2026-10-04 bookkeeping: the boxes were ticked from the comment above. The full validation passed on the integrated branch. The first box stays open: no test covers the unsupported-type failure for JSON or YAML scope; only `FakeDataSource` covers it.

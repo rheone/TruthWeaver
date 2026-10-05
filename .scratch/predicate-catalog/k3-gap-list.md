@@ -103,7 +103,7 @@ Inventory: `Between(value, n, k)`, `Outside(value, n, k)`, `In(value, candidate1
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `Between` | present | `NumericPredicates.Between` (`Int64`, `Decimal`) | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error: a compile-time diagnostic for literal bounds, an argument error otherwise. |
+| `Between` | present | `NumericPredicates.Between` (`Int64`, `Decimal`) | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error. The predicate throws an `ArgumentException` at evaluation time. The compile-time diagnostic for literal bounds is not implemented. |
 | `Outside` | present | `NumericPredicates.Outside` (`Int64`, `Decimal`) | Exact complement of `Between` and its registered twin: the K3 complement (`Unknown` stays `Unknown`), not a boolean negation. |
 | `In` | present | `NumericPredicates.In`, `ScalarPredicates.In` | Scalar membership only. Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
 | `NotIn` | present | `NumericPredicates.NotIn`, `ScalarPredicates.NotIn` | As `In`; the registered twin of `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |

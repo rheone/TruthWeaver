@@ -9,7 +9,7 @@
 - [x] Tests first: each failure kind returns a failure and does not throw; messages contain no resolved data
 - [x] `GetAsync<T>` and `Arg.From` behaviour is unchanged
 - [x] Unsupported `T` still throws `NotSupportedException` (programmer error)
-- [x] XML docs, README builder section and CHANGELOG updated
+- [x] XML docs, `docs/data-sources.md` and CHANGELOG updated
 - [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 5 and the Try-candidate survey).
@@ -17,3 +17,4 @@ Source: owner review, 2026-10-04 (question 5 and the Try-candidate survey).
 ## Comments
 
 - Added `Arg.TryFrom` (`Arg.From` now uses it) and `DataSourceExtensions.TryGetAsync<T>` returning the new `DataReadResult<T>` (`Succeeded`, `Value`, `FailureKind` reusing `VariableFailureKind`, `ErrorMessage`). `GetAsync<T>` delegates to it with unchanged exceptions. `docs/data-sources.md` and CHANGELOG updated.
+- 2026-10-04 bookkeeping: `README.md` was not changed. The documentation went into `docs/data-sources.md`, and the box text now says so.

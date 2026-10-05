@@ -11,7 +11,7 @@
 - [x] CLAUDE.md, the reference README and the ticket workflow notes state the rule that adding or changing a predicate or operation updates its reference document in the same change
 - [x] Future predicate tickets are given an acceptance criterion pointing at this rule (add it to the predicate catalog track's ticket notes)
 - [x] The check is wired into the same gates as the rest of the validation set and documented
-- [ ] Built test-first; the full validation set in CLAUDE.md passes
+- [x] Built test-first; the full validation set in CLAUDE.md passes
 
 Source: owner request 2026-10-03 (keep the document in sync with additionally added predicates). See also [spec](../spec.md) and [predicate gap list](../../predicate-catalog/k3-gap-list.md).
 
@@ -19,6 +19,7 @@ Source: owner request 2026-10-03 (keep the document in sync with additionally ad
 
 - Check: `tests/TruthWeaver.Tests/ReferenceDocs/K3ReferenceSyncChecker.cs` (run by `K3ReferenceSyncTests` in `dotnet test`, so it is in the same gate as the harness). It compares the engine's `OperatorDefinitions` table, the `Decision` methods `Project` and `Collapse`, and the public predicate factories of `TruthWeaver.Predicates` (found by reflection; the test project now references that package) with the files under `docs/strong-k3/`. Fixtures prove each failure: operator without a document, document for an unknown operator, unknown transformation, predicate without document or hold, stale hold, unknown hold entry, document for an unknown predicate.
 - Predicate documents are named `<kind>-<factory>.md` (for example `string-equals.md`): factory class without `Predicates`, hyphen, method name, lower-case. This naming is my choice for ticket 13 to confirm.
-- Allow-list: `K3PredicateDocumentationHold.Stems` (10 predicates, all undocumented). The failure messages name it. Ticket 13 removes entries as it documents each predicate; an entry that has a document fails the check.
+- Allow-list: `K3PredicateDocumentationHold.Stems` (the predicates that have no document yet; the list in the file is the current set). The failure messages name it. Ticket 13 removes entries as it documents each predicate; an entry that has a document fails the check.
 - Rule added to CLAUDE.md (Documentation, "Reference sync"), `docs/strong-k3/README.md`, `docs/agents/issue-tracker.md` (ticket workflow notes), `docs/doc-examples.md` (check table) and `.scratch/predicate-catalog/README.md` (acceptance criterion for predicate tickets).
 - Remainder, not done: full predicate coverage waits for ticket 13 and each predicate's own ticket. The "full validation set" item is left for the integration run.
+- 2026-10-04 bookkeeping: the full validation passed on the integrated branch, so the last box is ticked.

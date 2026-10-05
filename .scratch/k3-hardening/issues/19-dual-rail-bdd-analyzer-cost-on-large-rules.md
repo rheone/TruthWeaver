@@ -22,14 +22,14 @@ meets the 1.5x-of-2026-09-27-baseline budget ticket 18 recorded, or record a rev
 
 **Status:** done
 
-- [ ] The dual-rail BDD analyzer's large-rule time and allocation are reduced, or the default
+- [x] The dual-rail BDD analyzer's large-rule time and allocation are reduced, or the default
       `MaxAnalysisTerms` cap is kept and documented as the mitigation with the cost made explicit in
       `CompilerOptions.MaxAnalysisTerms`'s doc comment and the compile-cost budget note
-- [ ] `CompileStageBenchmarks` is re-run after any code change and the results are recorded next to the
+- [x] `CompileStageBenchmarks` is re-run after any code change and the results are recorded next to the
       ticket 18 baseline in `benchmarks/TruthWeaver.Benchmarks/results/baseline-results.md`
-- [ ] The Large-rule compile-cost budget from ticket 18 (<= 1.5x the 2026-09-27 baseline: 1,593 us /
+- [x] The Large-rule compile-cost budget from ticket 18 (<= 1.5x the 2026-09-27 baseline: 1,593 us /
       2,796 KB) is met, or a revised budget is recorded with its own justification
-- [ ] The full validation from CLAUDE.md passes
+- [x] The full validation from CLAUDE.md passes
 
 Source: k3-hardening ticket 18 (profile the compile-cost regression and set a budget), 2026-10-04.
 
@@ -57,3 +57,4 @@ Measurement (ShortRun, in-process; recorded in `benchmarks/TruthWeaver.Benchmark
 Full CLAUDE.md validation passed: restore --locked-mode, build (0 warnings), test (2,555 passed),
 csharpier check, dotnet format --verify-no-changes, roslynator analyze (0 diagnostics).
 `Parity` still left-folds `Xor`. The Large fixture does not exercise it, so it is out of scope here.
+**2026-10-04 bookkeeping:** all boxes ticked from the comment above, which records the benchmark results, the met budget and the validation run.
