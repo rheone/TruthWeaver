@@ -229,8 +229,7 @@ public static class StringPredicates
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// member) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (

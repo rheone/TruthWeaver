@@ -29,8 +29,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -66,8 +65,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -103,8 +101,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -257,8 +254,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -293,8 +289,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -329,8 +324,7 @@ public static class ScalarPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the candidate array.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -568,8 +562,7 @@ public static class ScalarPredicates
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -593,8 +586,7 @@ public static class ScalarPredicates
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -618,8 +610,7 @@ public static class ScalarPredicates
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this
-    /// family) or <see cref="NullBehavior.False"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (

@@ -39,7 +39,7 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the instant to compare against.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -111,7 +111,7 @@ public static class DateTimePredicates
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the instant to compare against.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -190,7 +190,7 @@ public static class DateTimePredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="lowerName">The rule-text argument name for the inclusive lower bound.</param>
     /// <param name="upperName">The rule-text argument name for the inclusive upper bound.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,

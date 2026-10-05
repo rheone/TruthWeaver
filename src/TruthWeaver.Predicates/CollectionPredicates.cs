@@ -144,7 +144,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the value.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -214,7 +214,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -286,7 +286,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -358,7 +358,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -430,7 +430,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the string from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected string answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected string answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -500,7 +500,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -570,7 +570,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -640,7 +640,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -710,7 +710,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
@@ -780,7 +780,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
-    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default for this comparison family) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
