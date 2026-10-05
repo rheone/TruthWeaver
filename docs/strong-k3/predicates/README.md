@@ -59,6 +59,15 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `CountGreaterThan` | `NotCountGreaterThan` |
 | `CountLessThanOrEqual` | `NotCountLessThanOrEqual` |
 | `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` |
+| `After` | `NotAfter` |
+| `Before` | `NotBefore` |
+| `AfterNow` | `NotAfterNow` |
+| `BeforeNow` | `NotBeforeNow` |
+| `IsGuid` | `IsNotGuid` |
+| `IsNumeric` | `IsNotNumeric` |
+| `IsUrl` | `IsNotUrl` |
+| `IsString` | `IsNotString` |
+| `IsDateTimeOffset` | `IsNotDateTimeOffset` |
 
 Each predicate and each twin has its own page.
 
@@ -189,6 +198,54 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 | [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | [CountLessThanOrEqual](collection-countlessthanorequal.md) | `NotCountLessThanOrEqual` is `True` when the number of elements is more than the argument. |
 | [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | `CountGreaterThanOrEqual` is `True` when the number of elements is at least the argument. |
 | [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | `NotCountGreaterThanOrEqual` is `True` when the number of elements is less than the argument. |
+
+## Date-time predicates
+
+The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
+
+- `After`, `Before` and their twins compare with one instant. `Between` and `Outside` use a range with inclusive bounds. Reversed literal bounds are a compile error.
+- `AfterNow`, `BeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.
+
+| Predicate | Twin | Summary |
+| --- | --- | --- |
+| [After](datetime-after.md) | [NotAfter](datetime-notafter.md) | `After` is `True` when the selected instant is later than the argument. |
+| [NotAfter](datetime-notafter.md) | [After](datetime-after.md) | `NotAfter` is `True` when the selected instant is equal to or earlier than the argument. |
+| [Before](datetime-before.md) | [NotBefore](datetime-notbefore.md) | `Before` is `True` when the selected instant is earlier than the argument. |
+| [NotBefore](datetime-notbefore.md) | [Before](datetime-before.md) | `NotBefore` is `True` when the selected instant is equal to or later than the argument. |
+| [Between](datetime-between.md) | [Outside](datetime-outside.md) | `Between` is `True` when the selected instant lies in a range. |
+| [Outside](datetime-outside.md) | [Between](datetime-between.md) | `Outside` is `True` when the selected instant lies outside a range. |
+| [AfterNow](datetime-afternow.md) | [NotAfterNow](datetime-notafternow.md) | `AfterNow` is `True` when the selected instant is later than now. |
+| [NotAfterNow](datetime-notafternow.md) | [AfterNow](datetime-afternow.md) | `NotAfterNow` is `True` when the selected instant is equal to now or earlier. |
+| [BeforeNow](datetime-beforenow.md) | [NotBeforeNow](datetime-notbeforenow.md) | `BeforeNow` is `True` when the selected instant is earlier than now. |
+| [NotBeforeNow](datetime-notbeforenow.md) | [BeforeNow](datetime-beforenow.md) | `NotBeforeNow` is `True` when the selected instant is equal to now or later. |
+
+## Type-test predicates
+
+The `TypePredicates` factories test what a value is. Each has two overloads: a `string?` selector, which parses the text, and an `object?` selector, which tests the runtime type and also reads text. They take no rule argument. Parsing uses the invariant culture.
+
+- A null selected value always answers `Unknown`. A type test has no `nullBehavior` option, because the type of a missing value is not known.
+- A twin answers `Unknown` for a null selected value too.
+
+| Predicate | Twin | Summary |
+| --- | --- | --- |
+| [IsGuid](type-isguid.md) | [IsNotGuid](type-isnotguid.md) | `IsGuid` is `True` when the selected value is a GUID. |
+| [IsNotGuid](type-isnotguid.md) | [IsGuid](type-isguid.md) | `IsNotGuid` is `True` when the selected value is not a GUID. |
+| [IsNumeric](type-isnumeric.md) | [IsNotNumeric](type-isnotnumeric.md) | `IsNumeric` is `True` when the selected value is numeric. |
+| [IsNotNumeric](type-isnotnumeric.md) | [IsNumeric](type-isnumeric.md) | `IsNotNumeric` is `True` when the selected value is not numeric. |
+| [IsUrl](type-isurl.md) | [IsNotUrl](type-isnoturl.md) | `IsUrl` is `True` when the selected value is an absolute `http` or `https` URL. |
+| [IsNotUrl](type-isnoturl.md) | [IsUrl](type-isurl.md) | `IsNotUrl` is `True` when the selected value is not an absolute `http` or `https` URL. |
+| [IsString](type-isstring.md) | [IsNotString](type-isnotstring.md) | `IsString` is `True` when the selected value is a string. |
+| [IsNotString](type-isnotstring.md) | [IsString](type-isstring.md) | `IsNotString` is `True` when the selected value is not a string. |
+| [IsDateTimeOffset](type-isdatetimeoffset.md) | [IsNotDateTimeOffset](type-isnotdatetimeoffset.md) | `IsDateTimeOffset` is `True` when the selected value is an ISO 8601 date and time with an offset. |
+| [IsNotDateTimeOffset](type-isnotdatetimeoffset.md) | [IsDateTimeOffset](type-isdatetimeoffset.md) | `IsNotDateTimeOffset` is `True` when the selected value is not an ISO 8601 date and time with an offset. |
+
+## Selected-value factory
+
+`SelectedValuePredicates.Create` is not a fixed predicate. It is a factory that builds a predicate over a value that the host reads from an external source. It has no twin and no `nullBehavior` option.
+
+| Factory | Summary |
+| --- | --- |
+| [Create](selectedvalue-create.md) | `Create` builds a predicate from a select delegate, and optionally a test delegate, that the host supplies. |
 
 ## How a predicate page is organized
 
