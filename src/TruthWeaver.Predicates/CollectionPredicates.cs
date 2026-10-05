@@ -51,30 +51,43 @@ public static class CollectionPredicates
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "
             + "collection is treated as empty, never a fault, unless the host registers it with "
             + "NullBehavior.Unknown, which makes it Unknown.";
-        PredicateSchema schema = new(
-            name,
-            label,
-            description,
-            [new PredicateArgumentSchema(argumentName, "The set of string values to compare against.", LiteralKind.StringArray)]
-        );
+        return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: false);
+    }
 
-        return (
-            schema,
-            (context, args, _) =>
-            {
-                IReadOnlyCollection<string>? selected = selector(context);
-                if (selected is null && nullBehavior == NullBehavior.Unknown)
-                {
-                    return PredicateResult.ForNullAsync(nullBehavior);
-                }
-
-                HashSet<string> selectedSet = selected is null
-                    ? new(StringComparer.Ordinal)
-                    : new(selected, StringComparer.Ordinal);
-                HashSet<string> targetSet = new(args.GetStringArray(argumentName), StringComparer.Ordinal);
-                return PredicateResult.FromBoolAsync(selectedSet.SetEquals(targetSet));
-            }
-        );
+    /// <summary>
+    /// Creates the <c>NotSetEquals</c> twin of <see cref="SetEquals{TContext}"/>: true when the selected collection and the
+    /// literal array argument do not contain the same distinct elements. It is the Strong Kleene complement of
+    /// <c>SetEquals</c>. A <see langword="null"/> collection answers <see cref="TruthValue.Unknown"/> by default; under
+    /// <see cref="NullBehavior.False"/> it is an empty collection, as for <c>SetEquals</c>, and the answer is the complement.
+    /// </summary>
+    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="selector">Reads the collection to compare from the context.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="argumentName">The rule-text argument name for the comparison set.</param>
+    /// <param name="nullBehavior">
+    /// How <c>SetEquals</c> reads a <see langword="null"/> selected collection: <see cref="NullBehavior.Unknown"/> (the
+    /// default) or <see cref="NullBehavior.False"/>, which reads it as an empty collection. This twin answers the
+    /// complement. Neither is a fault.
+    /// </param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) NotSetEquals<TContext>(
+        string name,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        string label = "Not Set Equals",
+        string argumentName = "values",
+        NullBehavior nullBehavior = NullBehavior.Unknown
+    )
+    {
+        const string description =
+            "The Strong Kleene complement of SetEquals: True when the selected collection and the argument array do not "
+            + "contain the same elements, ignoring order and duplicates. Comparison is case-sensitive (ordinal). A null "
+            + "selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which "
+            + "reads it as an empty collection.";
+        return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: true);
     }
 
     /// <summary>
@@ -897,6 +910,50 @@ public static class CollectionPredicates
 
                 bool answer = test(selected, args, argumentName);
                 return PredicateResult.FromBoolAsync(answer != negate);
+            }
+        );
+    }
+
+    /// <summary>
+    /// Builds the set-equality predicate. Under <see cref="NullBehavior.False"/> a null collection is an empty one;
+    /// under <see cref="NullBehavior.Unknown"/> it answers Unknown. <paramref name="negate"/> applies the Strong Kleene
+    /// complement to every answer.
+    /// </summary>
+    private static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) BuildSetEquals<TContext>(
+        string name,
+        string label,
+        string description,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        NullBehavior nullBehavior,
+        string argumentName,
+        bool negate
+    )
+    {
+        PredicateSchema schema = new(
+            name,
+            label,
+            description,
+            [new PredicateArgumentSchema(argumentName, "The set of string values to compare against.", LiteralKind.StringArray)]
+        );
+
+        return (
+            schema,
+            (context, args, _) =>
+            {
+                IReadOnlyCollection<string>? selected = selector(context);
+                if (selected is null && nullBehavior == NullBehavior.Unknown)
+                {
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
+                }
+
+                HashSet<string> selectedSet = selected is null
+                    ? new(StringComparer.Ordinal)
+                    : new(selected, StringComparer.Ordinal);
+                HashSet<string> targetSet = new(args.GetStringArray(argumentName), StringComparer.Ordinal);
+                return PredicateResult.FromBoolAsync(selectedSet.SetEquals(targetSet) != negate);
             }
         );
     }

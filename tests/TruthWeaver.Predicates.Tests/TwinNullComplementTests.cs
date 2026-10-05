@@ -44,6 +44,35 @@ public sealed class TwinNullComplementTests
                 nb => StringPredicates.NotContains<Selections>("t", c => c.Text, nullBehavior: nb),
                 Args(("value", LiteralValue.OfString("a")))
             ),
+            ["String.EqualsIgnoreCase/NotEqualsIgnoreCase"] = new(
+                nb => StringPredicates.EqualsIgnoreCase<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotEqualsIgnoreCase<Selections>("t", c => c.Text, nullBehavior: nb),
+                Args(("value", LiteralValue.OfString("a")))
+            ),
+            ["String.StartsWith/NotStartsWith"] = new(
+                nb => StringPredicates.StartsWith<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotStartsWith<Selections>("t", c => c.Text, nullBehavior: nb),
+                Args(("value", LiteralValue.OfString("a")))
+            ),
+            ["String.EndsWith/NotEndsWith"] = new(
+                nb => StringPredicates.EndsWith<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotEndsWith<Selections>("t", c => c.Text, nullBehavior: nb),
+                Args(("value", LiteralValue.OfString("a")))
+            ),
+            ["String.EqualsConfigurable/NotEqualsConfigurable"] = new(
+                nb => StringPredicates.EqualsConfigurable<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotEqualsConfigurable<Selections>("t", c => c.Text, nullBehavior: nb),
+                Args(
+                    ("value", LiteralValue.OfString("a")),
+                    ("ignoreCase", LiteralValue.OfBoolean(true)),
+                    ("trim", LiteralValue.OfBoolean(false))
+                )
+            ),
+            ["Collection.SetEquals/NotSetEquals"] = new(
+                nb => CollectionPredicates.SetEquals<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotSetEquals<Selections>("t", c => c.Items, nullBehavior: nb),
+                Args(("values", Strings("a")))
+            ),
             ["String.IsEmpty/IsNotEmpty"] = new(
                 nb => StringPredicates.IsEmpty<Selections>("p", c => c.Text, nullBehavior: nb),
                 nb => StringPredicates.IsNotEmpty<Selections>("t", c => c.Text, nullBehavior: nb),

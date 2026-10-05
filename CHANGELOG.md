@@ -34,6 +34,8 @@ copyright line reads 2026.
 
 ### Added
 
+- `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals` in `CollectionPredicates`: the Strong Kleene complements of their positive members.
+
 - `Arg.TryFrom` (returns the validator's `QueryProblem` list instead of throwing `ArgumentException`) and
   `IDataSource.TryGetAsync<T>` in `TruthWeaver.Building`, which returns a `DataReadResult<T>` (`Succeeded`, `Value`,
   `FailureKind`, `ErrorMessage`) instead of throwing `InvalidOperationException`. `Arg.From` and `GetAsync<T>` still throw.
