@@ -52,8 +52,8 @@ public static class RegexPredicates
             "True when the selected string matches the given regular-expression pattern "
             + "(System.Text.RegularExpressions). The compiled pattern is cached per distinct pattern "
             + "string, not recompiled per evaluation. The pattern is not validated at registration or "
-            + "compile time; an invalid pattern surfaces as an evaluation-time fault (Unknown), per "
-            + "ADR-0001's Kleene failure model. A null selected value is treated as not-matching "
+            + "compile time; an invalid pattern surfaces as an evaluation-time fault (Unknown). "
+            + "A null selected value is treated as not-matching "
             + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
         return Create(
             name,
@@ -101,7 +101,7 @@ public static class RegexPredicates
             + "(System.Text.RegularExpressions). The K3 complement of Matches: a null selected value answers "
             + "Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes Matches False "
             + "and this twin True. "
-            + "An invalid pattern surfaces as an evaluation-time fault (Unknown), per ADR-0001's Kleene failure model.";
+            + "An invalid pattern surfaces as an evaluation-time fault (Unknown).";
         return Create(
             name,
             label,

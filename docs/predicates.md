@@ -43,6 +43,10 @@ The `StringPredicates` and `RegexPredicates` twins are:
 | Member | Class | Meaning |
 | --- | --- | --- |
 | `NotEqual` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
+| `NotEqualsIgnoreCase` | `StringPredicates` | Twin of `EqualsIgnoreCase` |
+| `NotStartsWith` | `StringPredicates` | Twin of `StartsWith` |
+| `NotEndsWith` | `StringPredicates` | Twin of `EndsWith` |
+| `NotEqualsConfigurable` | `StringPredicates` | Twin of `EqualsConfigurable`. It takes the same `ignoreCase` and `trim` arguments. |
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
 | `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern faults to `Unknown` with a `Fault`. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
@@ -88,6 +92,7 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 | Predicate | Twin | Argument | `True` when |
 | --- | --- | --- | --- |
 | `IsEmpty` | `IsNotEmpty` | none | The collection has no elements. |
+| `SetEquals` | `NotSetEquals` | `values` (`StringArray`) | The collection and the array hold the same set of strings. |
 | `Contains` | `NotContains` | `value` (`String`) | The collection contains the value. |
 | `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
 | `ContainsAll` | `NotContainsAll` | `values` (`StringArray`) | Every string in the array is an element. |
