@@ -73,7 +73,9 @@ public sealed class DataSourcesGuideTests
             """{ "orders": [ { "id": "A7", "total": 40 }, { "id": "B2", "total": 9 } ] }"""
         );
 
-        IDataSource order = await orders.ScopeAsync("$.orders[?@.id=='A7']", token);
+        DataScopeResult scope = await orders.ScopeAsync("$.orders[?@.id=='A7']", token);
+        Assert.True(scope.Succeeded);
+        IDataSource order = scope.Source;
 
         Assert.Equal(
             (await json.QueryAsync("$.roles[*]", token)).Matches,

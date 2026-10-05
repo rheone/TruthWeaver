@@ -34,6 +34,29 @@ copyright line reads 2026.
 
 ### Added
 
+- Reversed literal bounds on `Between` and `Outside` (`NumericPredicates` for `Int64` and `Decimal`, and
+  `DateTimePredicates`) are now a compile-time error, the new `DiagnosticCodes.InvalidArgumentValue` (`TRE0026`), at the
+  predicate call in rule text, JSON, YAML and `RuleBuilder` rules, with a suggestion to swap the bounds. `Compile` returns
+  no rule. Equal bounds still compile. A bound that is not a literal, such as a value read from a data source, still
+  throws `ArgumentException` at evaluation (`Unknown` plus a `Fault`). The bounds are never swapped.
+- `PredicateSchema.ArgumentValidator` and `PredicateArgumentProblem`: an optional check over the literal argument values
+  of a predicate call. Each problem it returns is a `TRE0026` error. It is `null` by default, so existing schemas are
+  unchanged.
+
+- `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals`
+  in `CollectionPredicates`: the Strong Kleene complements of their positive members.
+
+- `Arg.TryFrom` (returns the validator's `QueryProblem` list instead of throwing `ArgumentException`) and
+  `IDataSource.TryGetAsync<T>` in `TruthWeaver.Building`, which returns a `DataReadResult<T>` (`Succeeded`, `Value`,
+  `FailureKind`, `ErrorMessage`) instead of throwing `InvalidOperationException`. `Arg.From` and `GetAsync<T>` still throw.
+- `TypePredicates`: the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset` and their `IsNot...` twins
+  (the Strong Kleene complement). Each has a `string?` (parse-based) and an `object?` (runtime-type) overload; a null
+  selected value is `Unknown`.
+- `Try` forms for reading optional or mixed-kind arguments without exception handling: `LiteralValue.TryAsString`, `TryAsInt64`,
+  `TryAsDecimal`, `TryAsBoolean`, `TryAsDateTimeOffset`, `TryAsGuid` and `TryAsArray`, and `PredicateArguments.TryGetString`,
+  `TryGetInt64`, `TryGetDecimal`, `TryGetBool`, `TryGetDateTimeOffset`, `TryGetGuid`, the matching `TryGet…Array` forms and
+  `TryGetRaw`. Each returns `false` for a missing name or a different kind. The existing `As…` and `Get…` members still throw.
+- Collection and date/time predicates in `TruthWeaver.Predicates`: `CollectionPredicates` adds `IsEmpty`, `Contains`, `ContainsAny`, `ContainsAll`, `IsSubsetOf`, scalar `In` and the `Count*` comparisons, and the new `DateTimePredicates` adds `After`, `Before` and `Between` over `DateTimeOffset`. Each has a `NotX` Strong Kleene twin (`Outside` for `Between`). Null selections return `Unknown` by default, with `NullBehavior.False` as the host option, and reversed `Between` bounds throw `ArgumentException`. `DateTimePredicates` also adds the clock predicates `AfterNow` and `BeforeNow` with twins `NotAfterNow` and `NotBeforeNow`; each factory requires a `TimeProvider` and there is no ambient clock.
 - Strong Kleene (K3) language surface (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md)): `Unknown` as a first
   class value and constant; the operators `IMPLIES`, `EQUIVALENT` (`IFF`), `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`,
   `BETWEEN`, `COALESCE`, `If` (`? :`) and the inspections `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`; symbol and Unicode
@@ -47,6 +70,11 @@ copyright line reads 2026.
   `RuleDiffResult.PreservesMeaning`.
 - Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`).
 - `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `TRE0016` for oversized expansions.
+- Predicate catalog additions: the string members `IsEmpty`, `IsNotEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`,
+  `IsNotNullOrWhiteSpace`, `NotEqual`, `NotContains` and `RegexPredicates.NotMatches`; `NumericPredicates` (`Int64` and
+  `Decimal` equality, ordering, `Between`/`Outside`, `In`/`NotIn`, null and default tests); and `ScalarPredicates`
+  (`Boolean`, `Guid` and `DateTimeOffset` equality, `In`/`NotIn`, null and default tests). Every positive member has a
+  `NotX` twin that is the Strong Kleene complement.
 - `NullBehavior` option on the built-in string, regex and collection predicates; `IEnumerable<RuleBuilder>` overloads
   for the counted operators.
 - Benchmarks for the new operators, rewrites and diagnostics formatting.
@@ -80,21 +108,61 @@ copyright line reads 2026.
 - New package `TruthWeaver.DataSources.Json` (data-sources 04): `JsonDataSource` (`Parse(json)`, `Create(JsonNode?)`) answers JSONPath
   (RFC 9535) queries over a JSON document and converts each matched node to a `LiteralValue` (string, `long`, `decimal`, boolean;
   an object, array or `null` is `DataQueryErrorKind.UnsupportedType`). `ScopeAsync` roots a new source at the single node a query
-  matches. It depends on `TruthWeaver.Abstractions` and JsonPath.Net 2.2.0 (MIT; 3.x ships under the Open Source Maintenance Fee
-  EULA), and the core `TruthWeaver` package gains no third-party dependency.
+  matches. It depends on `TruthWeaver.Abstractions` and Meziantou.Framework.JsonPath 3.0.7 (MIT, no further dependencies; it replaced
+  JsonPath.Net, whose 3.x binaries ship under the Open Source Maintenance Fee EULA), and the core `TruthWeaver` package gains no third-party dependency.
 - Variable references in JSON and YAML (data-sources 03): an argument value of `{ "from": "user", "query": "$.minAge" }` (the same
   mapping in YAML) is a variable reference and compiles to the same tree as `from("user", "$.minAge")`; `rule-tree.schema.json`
   accepts it (a reference is not allowed inside an array literal). A malformed reference is a `TRE0014` diagnostic at the wrong
   member, and an undeclared source name (`TRE0024`) points at the `from` member.
 
+- `JsonDataSource.TryParse(text, out source, out error)` and `YamlDataSource.TryParse(text, out source, out error)` for host code that
+  reads untrusted or user-edited documents. They return `false` for malformed JSON or YAML, a duplicate YAML key and a
+  self-referential alias. The error text gives the position and never repeats document content. `Parse` still throws.
+- `DataScopeResult` (in `TruthWeaver.Abstractions`) and the `DataQueryErrorKind` values `NoMatch` and `AmbiguousMatch`; see the
+  breaking change to `IDataSource.ScopeAsync` below. `FakeDataSource.FailingScope(query, message, kind)` scripts a failed scope.
+
 ### Changed
 
+- Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null
+  selected value too. Under `NullBehavior.False` the positive predicate answers `False` and its twin now answers `True`
+  (the `StringPredicates`, `RegexPredicates`, `NumericPredicates` and `ScalarPredicates` twins answered `False` before).
+  This covers `NotEqual`, `NotContains`, `IsNotEmpty`, `NotMatches`, the numeric and scalar `NotEqual`, `NotIn`,
+  `Outside` and `IsNotDefault`, and `GreaterThanOrEqual` and `LessThanOrEqual` (the twins of `LessThan` and
+  `GreaterThan`). Under `NullBehavior.Unknown` both members still answer `Unknown`. Positive predicates and the definite
+  null tests are unchanged.
+- Breaking: every built-in predicate in `TruthWeaver.Predicates` answers `Unknown` for a null selected value by default
+  (`NullBehavior.Unknown`), because it cannot evaluate a missing value. `Equals`, `EqualsIgnoreCase`, `StartsWith`,
+  `EndsWith`, `Contains` and `EqualsConfigurable` in `StringPredicates`, `RegexPredicates.Matches` and
+  `CollectionPredicates.SetEquals` defaulted to `NullBehavior.False` and answered `False` (`SetEquals` read a null
+  collection as empty, so it answered `True` for an empty argument array). Their twins `NotEqual`, `NotEqualsIgnoreCase`,
+  `NotStartsWith`, `NotEndsWith`, `NotContains`, `NotEqualsConfigurable`, `NotMatches` and `NotSetEquals` default to
+  `NullBehavior.Unknown` too, so both members of a pair registered with the defaults answer `Unknown`. Migration: pass
+  `nullBehavior: NullBehavior.False` at registration to keep the earlier answer; the twin then answers `True`, and
+  `SetEquals` keeps the empty-set reading. The definite null tests are unchanged.
+- `DateTimePredicates.Between` and `Outside` throw the same reversed-bounds `ArgumentException` as the numeric range
+  predicates: `ParamName` is `args` (it was `lower`) and the message is
+  `Predicate '<name>' has reversed bounds: 'lower' (<lower>) is greater than 'upper' (<upper>).`, with both bounds in the
+  round-trip `O` format of the invariant culture. The `lower` and `upper` argument descriptions are now
+  `The inclusive lower bound (date-time).` and `The inclusive upper bound (date-time). It must not be less than the lower
+  bound.`
+
+- Breaking: `IDataSource.ScopeAsync` returns `ValueTask<DataScopeResult>` instead of `ValueTask<IDataSource>`. A scope query that is
+  malformed, matches no node, matches several nodes or reaches an unsupported node is a failure result, no longer an
+  `ArgumentException` or `InvalidOperationException`. Migration: read `result.Source` when `result.Succeeded`, otherwise
+  `result.ErrorKind` and `result.ErrorMessage`; an implementation returns `DataScopeResult.Success(source)` or
+  `DataScopeResult.Failure(kind, message)`. `FakeDataSource` returns a `NoMatch` failure for a scope nobody scripted (it threw
+  before). [ADR-0006](docs/adr/0006-data-sources-for-expression-variables.md) decision 8 is amended in place.
 - Every break below. Each one has a migration step in the sections that follow.
 - `CompiledRule<TContext>.EvaluateAsync` is one method: `EvaluateAsync(context, services = null, dataSources = null, options = null, cancellationToken = default)`.
   It replaces the two overloads. A caller supplies only what the rule needs, and a null `services` is an empty provider
   (a class-based predicate yields `Unknown` plus a `Fault`). Parameter order: `services` stays second and `dataSources`
   third, so existing `(context, services, dataSources, ...)` calls and all `cancellationToken:` calls compile unchanged.
   A call that passed `options` as the third positional argument must name it: `EvaluateAsync(context, services, options: options)`.
+
+### Fixed
+
+- `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
+  supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
 
 ### Breaking changes: naming cleanup (ADR-0007)
 

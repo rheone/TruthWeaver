@@ -70,18 +70,44 @@ public sealed class FakeDataSourceTests
         Assert.Equal(["$.a", "$.a", "$.b"], source.Queries);
     }
 
-    /// <summary>A scripted scope is returned and an unscripted scope is a clear error.</summary>
+    /// <summary>A scripted scope is returned as a successful result.</summary>
     [Fact]
-    public async Task ScopeAsync_ScriptedAndUnscripted_ReturnScopeAndThrow_Test()
+    public async Task ScopeAsync_Scripted_ReturnsTheScope_Test()
     {
         FakeDataSource inner = new();
         FakeDataSource source = new FakeDataSource().WithScope("$.orders[0]", inner);
 
-        IDataSource scoped = await source.ScopeAsync("$.orders[0]", TestContext.Current.CancellationToken);
+        DataScopeResult result = await source.ScopeAsync("$.orders[0]", TestContext.Current.CancellationToken);
 
-        Assert.Same(inner, scoped);
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await source.ScopeAsync("$.orders[1]", TestContext.Current.CancellationToken)
-        );
+        Assert.True(result.Succeeded);
+        Assert.Same(inner, result.Source);
+    }
+
+    /// <summary>An unscripted scope is a no-match failure result and never throws.</summary>
+    [Fact]
+    public async Task ScopeAsync_Unscripted_ReturnsNoMatchFailure_Test()
+    {
+        FakeDataSource source = new();
+
+        DataScopeResult result = await source.ScopeAsync("$.orders[1]", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(DataQueryErrorKind.NoMatch, result.ErrorKind);
+    }
+
+    /// <summary>A scripted scope failure returns the scripted kind and message, including an unsupported type.</summary>
+    [Theory]
+    [InlineData(DataQueryErrorKind.AmbiguousMatch)]
+    [InlineData(DataQueryErrorKind.MalformedQuery)]
+    [InlineData(DataQueryErrorKind.UnsupportedType)]
+    public async Task ScopeAsync_ScriptedFailure_ReturnsTheKindAndMessage_Test(DataQueryErrorKind kind)
+    {
+        FakeDataSource source = new FakeDataSource().FailingScope("$.orders[*]", "scripted", kind);
+
+        DataScopeResult result = await source.ScopeAsync("$.orders[*]", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(kind, result.ErrorKind);
+        Assert.Equal("scripted", result.ErrorMessage);
     }
 }

@@ -14,6 +14,8 @@
     <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
+    <!-- The reference sync check reflects over the predicate factories to compare them with docs/strong-k3/predicates. -->
+    <ProjectReference Include="../../src/TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
   </ItemGroup>
 
   <ItemGroup>

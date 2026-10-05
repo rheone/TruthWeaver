@@ -5,7 +5,7 @@ license: Apache-2.0
 user-invocable: true
 metadata:
   author: Robert H. Engelhardt <rheone@gmail.com>
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # C# Builder Pattern
@@ -74,6 +74,7 @@ unchanged.
 
 ## Specialized patterns
 
+- [specialized/fluent-builder-form.md](specialized/fluent-builder-form.md) — the plain fluent builder on its own terms: mutators returning the concrete type to enable chaining, naming conventions, eager vs. deferred in-chain validation, and reuse/thread-safety caveats
 - [specialized/generic-self-typed-builder-base.md](specialized/generic-self-typed-builder-base.md) — the CRTP `Builder<TSelf, TProduct>` pattern in depth: multi-level hierarchies, a shared validation base, and the runtime-cast failure mode when `TSelf` is mismatched
 - [specialized/step-builders-and-build-order-type-state.md](specialized/step-builders-and-build-order-type-state.md) — enforcing construction order at compile time with a chain of narrow step interfaces (the type-state pattern), including a generic step-interface shape reusable across product hierarchies
 - [specialized/builder-vs-modern-alternatives.md](specialized/builder-vs-modern-alternatives.md) — the decision list for object initializer vs. `required`+`init` vs. record `with`-expression vs. an actual builder, plus the cross-field-validation case where a builder still wins

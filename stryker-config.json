@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/stryker-config.schema.json",
+  "stryker-config": {
+    "solution": "TruthWeaver.slnx",
+    "project": "TruthWeaver.csproj",
+    "test-projects": ["tests/TruthWeaver.Tests/TruthWeaver.Tests.csproj"],
+    "test-runner": "mtp",
+    "mutate": [
+      "Evaluation/**/*.cs",
+      "Analysis/**/*.cs",
+      "Parsing/**/*.cs",
+      "Rewriting/**/*.cs"
+    ],
+    "reporters": ["json", "html", "progress"],
+    "concurrency": 6,
+    "thresholds": { "high": 80, "low": 60, "break": 0 }
+  }
+}

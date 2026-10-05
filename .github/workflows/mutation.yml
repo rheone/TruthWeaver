@@ -1,0 +1,42 @@
+name: Mutation testing
+
+# Stryker.NET mutation testing of the evaluator, analyzer, parser and rewriters. One run takes about an hour,
+# so it runs weekly and on demand, never on a pull request. The report is the output; the build does not fail
+# on the score (thresholds.break is 0 in stryker-config.json).
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore TruthWeaver.slnx --locked-mode
+
+      - name: Mutation testing
+        run: dotnet dotnet-stryker -f stryker-config.json -O artifacts/stryker
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: mutation-report
+          path: artifacts/stryker/reports

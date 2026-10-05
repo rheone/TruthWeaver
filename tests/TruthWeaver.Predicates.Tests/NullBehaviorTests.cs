@@ -4,8 +4,8 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Pins the host-chosen <see cref="NullBehavior"/> option on every built-in string, regex and collection
-/// predicate factory: the default keeps a definite False for a null selected value, and the Unknown
-/// option answers Unknown (never a thrown fault) for the same input.
+/// predicate factory: the default and the Unknown option answer Unknown (never a thrown fault) for a null selected
+/// value, and the False option answers a definite False for the same input.
 /// </summary>
 public class NullBehaviorTests
 {
@@ -13,20 +13,20 @@ public class NullBehaviorTests
     public static TheoryData<string> FactoryNames =>
         ["Equals", "EqualsIgnoreCase", "StartsWith", "EndsWith", "Contains", "EqualsConfigurable", "Matches", "SetEquals"];
 
-    /// <summary>
-    /// A null selected value with no explicit option stays a definite False for every existing member.
-    /// SetEquals is checked against a non-empty literal, since a null collection is an empty set there.
-    /// </summary>
+    /// <summary>A null selected value with no explicit option answers Unknown, because a missing value cannot be evaluated.</summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]
-    public async Task Evaluate_NullSelectedValueWithDefaultOption_ReturnsFalse_Test(string factoryName)
+    public async Task Evaluate_NullSelectedValueWithDefaultOption_ReturnsUnknown_Test(string factoryName)
     {
         TruthValue result = await EvaluateNullAsync(factoryName, nullBehavior: null);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
-    /// <summary>An explicit <see cref="NullBehavior.False"/> behaves exactly like the default.</summary>
+    /// <summary>
+    /// An explicit <see cref="NullBehavior.False"/> makes a null selected value a definite False. SetEquals is checked
+    /// against a non-empty literal, since under this option a null collection is an empty set.
+    /// </summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]
     public async Task Evaluate_NullSelectedValueWithFalseOption_ReturnsFalse_Test(string factoryName)

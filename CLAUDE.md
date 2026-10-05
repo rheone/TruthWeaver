@@ -107,6 +107,7 @@ Reference documents describe the package as it behaves now. They are not a recor
 - **Structure.** Follow `/github-markdown`: sentence-case headings, relative links, tables where they communicate better than prose, LaTeX for formulas. State a fact once and link to it elsewhere. Do not repeat reference content in a README.
 - **Diagrams.** Add a Mermaid diagram (`/mermaid-diagram-generator`) only when it shows something a table or prose does not.
 - **K3 reference.** Pages under `docs/strong-k3/` link only to other pages under `docs/strong-k3/`. The root `README.md` and `docs/glossary.md` may link into them.
+- **Reference sync.** Any change that adds, renames or removes a predicate or an operation adds, renames or removes its document under `docs/strong-k3/` in the same change, updates the category index and the root navigation, and re-runs `dotnet test tests/TruthWeaver.Tests --filter-class "*K3Reference*"`. `K3ReferenceSyncChecker` fails otherwise. A predicate may lack a document only while listed in `K3PredicateDocumentationHold` (the list is empty: every predicate has a document).
 
 ## Git
 

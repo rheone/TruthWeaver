@@ -12,7 +12,7 @@ using TruthWeaver.Abstractions;
 public sealed class FakeDataSource : IDataSource
 {
     private readonly Dictionary<string, Func<DataQueryResult>> answers = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IDataSource> scopes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DataScopeResult> scopes = new(StringComparer.Ordinal);
     private readonly List<string> queries = [];
 
     /// <summary>Gets every query this source has been asked, in order, including repeats.</summary>
@@ -128,7 +128,18 @@ public sealed class FakeDataSource : IDataSource
     /// <returns>This source, for chaining.</returns>
     public FakeDataSource WithScope(string query, IDataSource scope)
     {
-        this.scopes[query] = scope;
+        this.scopes[query] = DataScopeResult.Success(scope);
+        return this;
+    }
+
+    /// <summary>Scripts <see cref="ScopeAsync"/> for <paramref name="query"/> to fail as data, the way a source reports a query that matches no node or several.</summary>
+    /// <param name="query">The exact query text.</param>
+    /// <param name="message">The failure description.</param>
+    /// <param name="kind">Why the scope failed; defaults to <see cref="DataQueryErrorKind.NoMatch"/>.</param>
+    /// <returns>This source, for chaining.</returns>
+    public FakeDataSource FailingScope(string query, string message, DataQueryErrorKind kind = DataQueryErrorKind.NoMatch)
+    {
+        this.scopes[query] = DataScopeResult.Failure(kind, message);
         return this;
     }
 
@@ -142,11 +153,13 @@ public sealed class FakeDataSource : IDataSource
     }
 
     /// <inheritdoc />
-    /// <exception cref="InvalidOperationException">No scope was scripted for <paramref name="query"/> with <see cref="WithScope"/>.</exception>
-    public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
+    /// <remarks>A query nobody scripted with <see cref="WithScope"/> or <see cref="FailingScope"/> matches no node, so it is a <see cref="DataQueryErrorKind.NoMatch"/> failure.</remarks>
+    public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
     {
-        return this.scopes.TryGetValue(query, out IDataSource? scope)
-            ? ValueTask.FromResult(scope)
-            : throw new InvalidOperationException($"No scope was scripted for query '{query}'. Use WithScope.");
+        return ValueTask.FromResult(
+            this.scopes.TryGetValue(query, out DataScopeResult? scope)
+                ? scope
+                : DataScopeResult.Failure(DataQueryErrorKind.NoMatch, "No scope was scripted for this query. Use WithScope.")
+        );
     }
 }

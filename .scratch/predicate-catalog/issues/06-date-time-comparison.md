@@ -1,17 +1,26 @@
 # 06: Date/time comparison predicates
 
-**What to build:** `DateTimeOffset` comparison predicates the catalog lacks become registerable: `After` (strict `>`), `Before` (strict `<`) and `Between` against `DateTimeOffset` literal arguments. There is no `DateTime` literal kind and no `DateTime` overload; a host with a `DateTime` converts at the selector, and the docs say so (catalog rule). Bounds inclusivity and the reversed-bounds result follow the owner's answers in ticket 02. A null selection returns `Unknown` and honours `NullBehavior`. Each predicate has XML docs, a schema description and README coverage. Clock predicates are a separate ticket.
+**What to build:** `DateTimeOffset` comparison predicates the catalog lacks become registerable: `After` (strict `>`), `Before` (strict `<`) and `Between` against `DateTimeOffset` literal arguments. There is no `DateTime` literal kind and no `DateTime` overload; a host with a `DateTime` converts at the selector, and the docs say so (catalog rule). `Between` is inclusive on both ends (`n <= value <= k`) and its twin `Outside` is the exact complement. Reversed bounds (`n > k`) are an authoring error: a compile-time diagnostic when both bounds are literals, an argument error otherwise, and never swapped silently. Every positive predicate ships with its registered `NotX` twin, the K3 complement with `Unknown` staying `Unknown` (`NotAfter`, `NotBefore`, `Outside`). The members live in the per-kind static class `DateTimePredicates` with selectors typed for `DateTimeOffset`. A null selection returns `Unknown` and honours `NullBehavior`. Each predicate has XML docs, a schema description and README coverage. Clock predicates are a separate ticket.
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The failing test run is shown before the implementation
-- [ ] `After`, `Before` and `Between` are registerable and correct at, just before and just after each boundary, including across offsets
-- [ ] Bounds and reversed-bounds behavior match the recorded owner decision
-- [ ] Null selections follow the catalog rules and `NullBehavior`
-- [ ] No `DateTime` literal kind or overload is added, and the docs explain the host-side conversion
-- [ ] README and the gap list show the predicates as present
-- [ ] The full validation from CLAUDE.md passes
+- [x] `After`, `Before` and `Between` are registerable and correct at, just before and just after each boundary, including across offsets
+- [x] `Between` is inclusive on both ends and `Outside` is its exact complement
+- [x] Reversed bounds are a compile-time diagnostic for literal bounds and an argument error otherwise, and are never swapped
+- [x] `NotAfter`, `NotBefore` and `Outside` are registered and agree with the K3 complement of their positive form, including for `Unknown`
+- [x] Null selections follow the catalog rules and `NullBehavior`
+- [x] No `DateTime` literal kind or overload is added, and the docs explain the host-side conversion
+- [x] README and the gap list show the predicates as present
+- [x] The full validation from CLAUDE.md passes
 
 Source: [gap list, DateTimeOffset section](../k3-gap-list.md). Rules: [CONTEXT.md](../../../CONTEXT.md).
+
+## Comments
+
+- 2026-10-04: Done. New `DateTimePredicates` with `After`, `Before`, `Between` and twins `NotAfter`, `NotBefore`, `Outside`; selector `Func<TContext, DateTimeOffset?>`, comparison by instant. Bounds are inclusive; reversed `Between`/`Outside` bounds throw `ArgumentException` at evaluation (a fault, so the result is `Unknown`). The compile-time diagnostic for reversed literal bounds is not implemented: `PredicateSchema` has no argument-validation hook, so it needs an engine change that is shared with ticket 04 and is left for the owner. Null selection is `Unknown` by default (`NullBehavior.False` is the host option). No `DateTime` kind or overload; the docs show the host-side conversion. Tests: `DateTimePredicatesTests`.
+- 2026-10-04 bookkeeping: the boxes were ticked from what this comment records. No comment shows a red run before the implementation, so that box stays open. The full validation passed on the integrated branch (restore --locked-mode, build, test, csharpier, format, roslynator).
+- 2026-10-04 bookkeeping: the reversed-bounds box stays open because the compile-time diagnostic is not implemented (see ticket 12).
+- 2026-10-04: Reversed-bounds box ticked. [Ticket 12](12-reversed-literal-bounds-diagnostic.md) adds the compile-time `TRE0026` diagnostic for reversed literal bounds; a bound that is not a literal still throws `ArgumentException` at evaluation.

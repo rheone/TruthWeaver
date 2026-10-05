@@ -28,6 +28,27 @@ public sealed record PredicateSchema(
     IReadOnlyList<PredicateArgumentSchema> Arguments
 )
 {
+    /// <summary>
+    /// Gets an optional check over the values of a call's literal arguments, for a rule between arguments that their
+    /// kinds cannot express (for example "lower must not be greater than upper"). <see langword="null"/> (the default)
+    /// checks nothing more than the argument declarations.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The compiler calls it once per call of this predicate, after every argument is present and of its declared kind,
+    /// and only when that check found no error. Its input holds only the literal arguments, defaults included. An argument
+    /// whose value comes from a data source is absent, because its value is known only at evaluation, so a check that
+    /// needs it must skip. Each returned <see cref="PredicateArgumentProblem"/> becomes one <c>TRE0026</c> error at the call,
+    /// and the rule does not compile. An empty list means the arguments are acceptable.
+    /// </para>
+    /// <para>
+    /// The check must be pure, stateless and thread-safe, and must not throw: the compiler may share it across
+    /// compilations and threads. A predicate that can receive a non-literal value must still check that value at
+    /// evaluation.
+    /// </para>
+    /// </remarks>
+    public Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>>? ArgumentValidator { get; init; }
+
     /// <summary>Creates a schema for a zero-argument predicate.</summary>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>

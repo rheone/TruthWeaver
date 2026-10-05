@@ -8,7 +8,7 @@ Owner decisions (2026-10-03):
 
 - Location: `docs/strong-k3/`.
 - Describe the **final design** agreed in `.scratch/k3-followups` (PARITY instead of NXOR; Project and Collapse as methods on the result); dependent tickets stay blocked until those follow-ups land.
-- **Predicates are on hold** until they are implemented; no predicate documentation is written before then (ticket 13 is deferred).
+- **Predicates are documented** (ticket 13 is done): one page per factory method, and the hold list is empty.
 - Nothing is written before the taxonomy and template are approved (ticket 01 is the approval gate).
 
 Evidence: [spec audit](../k3-conformance/spec-audit.md), [research findings](../k3-conformance/research-findings.md).
