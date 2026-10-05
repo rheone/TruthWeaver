@@ -23,3 +23,4 @@ Source: owner request 2026-10-03 (keep the document in sync with additionally ad
 - Rule added to CLAUDE.md (Documentation, "Reference sync"), `docs/strong-k3/README.md`, `docs/agents/issue-tracker.md` (ticket workflow notes), `docs/doc-examples.md` (check table) and `.scratch/predicate-catalog/README.md` (acceptance criterion for predicate tickets).
 - Remainder, not done: full predicate coverage waits for ticket 13 and each predicate's own ticket. The "full validation set" item is left for the integration run.
 - 2026-10-04 bookkeeping: the full validation passed on the integrated branch, so the last box is ticked.
+- 2026-10-04: Full predicate coverage landed with ticket 13. Every public predicate factory has a document and `K3PredicateDocumentationHold.Stems` is empty. The check keeps the allow-list for a future predicate that cannot be documented in the same change. Nothing remains open.
