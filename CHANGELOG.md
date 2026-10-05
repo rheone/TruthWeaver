@@ -111,6 +111,11 @@ copyright line reads 2026.
 - `DataScopeResult` (in `TruthWeaver.Abstractions`) and the `DataQueryErrorKind` values `NoMatch` and `AmbiguousMatch`; see the
   breaking change to `IDataSource.ScopeAsync` below. `FakeDataSource.FailingScope(query, message, kind)` scripts a failed scope.
 
+### Fixed
+
+- `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
+  supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
+
 ### Changed
 
 - Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null

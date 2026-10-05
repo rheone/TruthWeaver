@@ -24,10 +24,6 @@ using TruthWeaver.Predicates;
 /// definite value for a null selection, so no selected value is Unknown. Their True probe is the null selection, which
 /// proves the definite answer is still the complement.
 /// </para>
-/// <para>
-/// Array arguments of a value type are written as <c>object[]</c>: <c>RuleBuilder.Predicate</c>
-/// reads an array argument as <c>IEnumerable&lt;object&gt;</c>, which a <c>long[]</c> is not.
-/// </para>
 /// </remarks>
 internal static class NotXTwinTable
 {
@@ -42,6 +38,12 @@ internal static class NotXTwinTable
     private static readonly TimeProvider Clock = new FixedTimeProvider(T0);
 
     private static readonly TwinProbeContext Missing = new();
+
+    private static readonly long[] LongValues = [1L, 2L];
+
+    private static readonly decimal[] DecimalValues = [1.5m, 2.5m];
+
+    private static readonly bool[] BoolValues = [true];
 
     private static readonly string[] AandB = ["a", "b"];
 
@@ -451,7 +453,7 @@ internal static class NotXTwinTable
             "NumericPredicates.NotIn(Int64)",
             n => NumericPredicates.In<TwinProbeContext>(n, c => c.Int64, nullBehavior: unknown),
             n => NumericPredicates.NotIn<TwinProbeContext>(n, c => c.Int64, nullBehavior: unknown),
-            [("values", new object[] { 1L, 2L })],
+            [("values", LongValues)],
             Int64(1),
             Int64(3),
             Missing
@@ -527,7 +529,7 @@ internal static class NotXTwinTable
             "NumericPredicates.NotIn(Decimal)",
             n => NumericPredicates.In<TwinProbeContext>(n, c => c.Decimal, nullBehavior: unknown),
             n => NumericPredicates.NotIn<TwinProbeContext>(n, c => c.Decimal, nullBehavior: unknown),
-            [("values", new object[] { 1.5m, 2.5m })],
+            [("values", DecimalValues)],
             Decimal(1.5m),
             Decimal(3.5m),
             Missing
@@ -573,7 +575,7 @@ internal static class NotXTwinTable
             "ScalarPredicates.NotIn(Boolean)",
             n => ScalarPredicates.In<TwinProbeContext>(n, c => c.Boolean, nullBehavior: unknown),
             n => ScalarPredicates.NotIn<TwinProbeContext>(n, c => c.Boolean, nullBehavior: unknown),
-            [("values", new object[] { true })],
+            [("values", BoolValues)],
             Boolean(true),
             Boolean(false),
             Missing
@@ -619,7 +621,7 @@ internal static class NotXTwinTable
             "ScalarPredicates.NotIn(Guid)",
             n => ScalarPredicates.In<TwinProbeContext>(n, c => c.Guid, nullBehavior: unknown),
             n => ScalarPredicates.NotIn<TwinProbeContext>(n, c => c.Guid, nullBehavior: unknown),
-            [("values", new object[] { A })],
+            [("values", new Guid[] { A })],
             Id(A),
             Id(B),
             Missing
@@ -665,7 +667,7 @@ internal static class NotXTwinTable
             "ScalarPredicates.NotIn(DateTimeOffset)",
             n => ScalarPredicates.In<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
             n => ScalarPredicates.NotIn<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
-            [("values", new object[] { T0 })],
+            [("values", new DateTimeOffset[] { T0 })],
             Instant(T0),
             Instant(T0.AddDays(1)),
             Missing
