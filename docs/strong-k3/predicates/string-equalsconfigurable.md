@@ -1,0 +1,76 @@
+# String EqualsConfigurable
+
+`EqualsConfigurable` is `True` when the selected string equals the argument. The rule chooses whether the comparison ignores case and whether it trims whitespace. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
+
+## Name
+
+- Factory: `StringPredicates.EqualsConfigurable`
+- Default label: `Equals (Configurable)`
+- Default argument name: `value`. The host can change it when it registers the predicate.
+- Optional rule arguments: `ignoreCase` and `trim`. The host cannot rename them.
+- Rule text: `statusEqualsConfigurable(value: "Active")`. The host chooses the name `statusEqualsConfigurable` when it registers the predicate.
+
+## Classification
+
+- Category: Predicates
+- Category index: [Predicates](README.md)
+- Family: `StringPredicates`
+- Twin: [NotEqualsConfigurable](string-notequalsconfigurable.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+
+## Selector and kinds
+
+The selector has one overload. See [Argument kinds](README.md#argument-kinds).
+
+| Selector type | Argument kind |
+| --- | --- |
+| `Func<TContext, string?>` | `String` |
+
+## Arguments
+
+| Name | Kind | Meaning |
+| --- | --- | --- |
+| `value` | `String` | The comparison target. |
+| `ignoreCase` | `Boolean` | Optional. Default `true`. When `true`, the comparison ignores case. |
+| `trim` | `Boolean` | Optional. Default `false`. When `true`, both sides lose leading and trailing whitespace before the comparison. |
+
+## Definition
+
+`True` when the selected string equals `value` under the rule options `ignoreCase` and `trim`. `False` otherwise. When `trim` is `true`, both sides lose leading and trailing whitespace before the comparison. The comparison is ordinal. It ignores case unless `ignoreCase` is `false`.
+
+## Answers
+
+The table shows the rule `statusEqualsConfigurable(value: "Active")`.
+
+| Selected value | Answer | Answer with `NullBehavior.False` |
+| --- | --- | --- |
+| `"Active"` | `True` | `True` |
+| `"active"` | `True` | `True` |
+| `" Active "` | `False` | `False` |
+| `"Inactive"` | `False` | `False` |
+| `null` | `Unknown` | `False` |
+
+## Null selected value
+
+A null selected value answers `Unknown` by default. It records no fault. A host can register the predicate with `NullBehavior.False`. A null selected value then answers `False`. See [Null selected values](README.md#null-selected-values).
+
+## Examples
+
+| Rule | Selected values | Result | Why |
+| --- | --- | --- | --- |
+| `statusEqualsConfigurable(value: "Active", ignoreCase: false)` | `status = "active"` | `False` | `ignoreCase: false` makes the comparison case-sensitive. |
+| `statusEqualsConfigurable(value: "Active", trim: true)` | `status = "  active "` | `True` | Both sides are trimmed, and the default `ignoreCase: true` ignores the case difference. |
+| `statusEqualsConfigurable(value: "Active", ignoreCase: false, trim: true)` | `status = " Active "` | `True` | Trimming leaves `Active` on both sides, and the case matches. |
+| `statusEqualsConfigurable(value: "Active", ignoreCase: false, trim: true)` | `status = " active "` | `False` | Trimming removes the spaces, but the case still differs. |
+| `NOT statusEqualsConfigurable(value: "Active")` | `status = null` | `Unknown` | A null selected value is `Unknown`, and `NOT` keeps `Unknown`. |
+
+## Edge cases
+
+- `ignoreCase` is `true` when the rule omits it. This differs from [Equals](string-equals.md), which is always case-sensitive.
+- `trim` is `false` when the rule omits it.
+- The comparison is ordinal. The culture of the host process has no effect.
+
+## Related predicates
+
+- [NotEqualsConfigurable](string-notequalsconfigurable.md) is the exact complement of this predicate.
+- [Equals](string-equals.md) is always case-sensitive.
+- [EqualsIgnoreCase](string-equalsignorecase.md) always ignores case and never trims.
