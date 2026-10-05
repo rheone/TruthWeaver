@@ -122,8 +122,8 @@ internal static class ScalarPredicateCore
                 T upper = kind.Get(args, upperName);
                 if (lower.CompareTo(upper) > 0)
                 {
-                    string lowerText = kind.Format?.Invoke(lower) ?? $"{lower}";
-                    string upperText = kind.Format?.Invoke(upper) ?? $"{upper}";
+                    string lowerText = kind.Format?.Invoke(lower) ?? string.Create(CultureInfo.InvariantCulture, $"{lower}");
+                    string upperText = kind.Format?.Invoke(upper) ?? string.Create(CultureInfo.InvariantCulture, $"{upper}");
                     throw new ArgumentException(
                         $"Predicate '{name}' has reversed bounds: '{lowerName}' ({lowerText}) is greater than '{upperName}' ({upperText}).",
                         nameof(args)

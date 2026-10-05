@@ -1,5 +1,6 @@
 namespace TruthWeaver.Predicates.Tests;
 
+using System.Globalization;
 using TruthWeaver.Abstractions;
 
 /// <summary>Behavior of the <see cref="NumericPredicates"/> family over <c>Int64</c> and <c>Decimal</c> selections.</summary>
@@ -179,6 +180,33 @@ public class NumericPredicatesTests
         return Assert.ThrowsAsync<ArgumentException>(async () =>
             await evaluate(new Numbers(null, 1.5m), args, CancellationToken.None)
         );
+    }
+
+    /// <summary>
+    /// The reversed-bounds message prints decimal bounds with the invariant culture, so the text does not depend on the
+    /// culture of the evaluating thread.
+    /// </summary>
+    [Fact]
+    public async Task Between_ReversedDecimalBoundsUnderNonInvariantCulture_PrintsInvariantBounds_Test()
+    {
+        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            NumericPredicates.Between<Numbers>("r", c => c.Price);
+        PredicateArguments args = RangeArgs(LiteralValue.OfDecimal(2.5m), LiteralValue.OfDecimal(1.5m));
+        CultureInfo original = CultureInfo.CurrentCulture;
+        ArgumentException error;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            error = await Assert.ThrowsAsync<ArgumentException>(async () =>
+                await evaluate(new Numbers(null, 1.5m), args, CancellationToken.None)
+            );
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+
+        Assert.Contains("'lower' (2.5) is greater than 'upper' (1.5)", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>In and NotIn are scalar membership, complements of each other, and Unknown for null.</summary>
