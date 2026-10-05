@@ -284,7 +284,7 @@ public static class TypePredicates
             label,
             "True when the selected value is a string, false when it is not, unknown when it is null.",
             selector,
-            StringTest,
+            static _ => true,
             false
         );
     }
@@ -326,7 +326,7 @@ public static class TypePredicates
             label,
             "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null.",
             selector,
-            StringTest,
+            static _ => true,
             true
         );
     }
@@ -484,11 +484,6 @@ public static class TypePredicates
             Uri { IsAbsoluteUri: true } uri => IsHttpOrHttps(uri),
             _ => false,
         };
-    }
-
-    private static bool StringTest(string value)
-    {
-        return true;
     }
 
     private static bool StringTest(object value)

@@ -113,6 +113,28 @@ public class DateTimePredicatesTests
         await Assert.ThrowsAsync<ArgumentException>(async () => await RunAsync(outside, new DateContext(Bound), reversed));
     }
 
+    /// <summary>
+    /// Reversed bounds throw even for a null selection, and the exception has the same message shape and parameter name
+    /// as the numeric range predicates: it names the predicate and both bounds, and the parameter is <c>args</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BetweenAndOutside_ReversedBoundsWithNullSelection_ThrowSharedMessageAndParamName_Test(bool useOutside)
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useOutside
+            ? DateTimePredicates.Outside<DateContext>("range", c => c.When)
+            : DateTimePredicates.Between<DateContext>("range", c => c.When);
+        PredicateArguments reversed = Range(Bound.AddDays(1), Bound);
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await RunAsync(evaluate, new DateContext((DateTimeOffset?)null), reversed)
+        );
+
+        Assert.Equal("args", error.ParamName);
+        Assert.Contains("Predicate 'range' has reversed bounds", error.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>A null selection is Unknown by default for every predicate, and the twins keep it Unknown.</summary>
     [Fact]
     public async Task Evaluate_NullSelectionByDefault_ReturnsUnknown_Test()

@@ -63,7 +63,7 @@ public static class DateTimePredicates
             nullBehavior,
             negate: false,
             argumentName,
-            static (selected, bound) => selected > bound
+            static comparison => comparison > 0
         );
     }
 
@@ -101,7 +101,7 @@ public static class DateTimePredicates
             nullBehavior,
             negate: true,
             argumentName,
-            static (selected, bound) => selected > bound
+            static comparison => comparison > 0
         );
     }
 
@@ -135,7 +135,7 @@ public static class DateTimePredicates
             nullBehavior,
             negate: false,
             argumentName,
-            static (selected, bound) => selected < bound
+            static comparison => comparison < 0
         );
     }
 
@@ -173,7 +173,7 @@ public static class DateTimePredicates
             nullBehavior,
             negate: true,
             argumentName,
-            static (selected, bound) => selected < bound
+            static comparison => comparison < 0
         );
     }
 
@@ -415,6 +415,7 @@ public static class DateTimePredicates
         );
     }
 
+    /// <summary>Builds a comparison predicate through the shared <see cref="ScalarPredicateCore.Compare{TContext, T}"/>.</summary>
     private static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -426,34 +427,24 @@ public static class DateTimePredicates
         NullBehavior nullBehavior,
         bool negate,
         string argumentName,
-        Func<DateTimeOffset, DateTimeOffset, bool> test
+        Func<int, bool> test
     )
     {
-        PredicateSchema schema = new(
+        return ScalarPredicateCore.Compare(
+            ScalarKinds.DateTimeOffset,
             name,
             label,
             description,
-            [
-                new PredicateArgumentSchema(
-                    argumentName,
-                    "The instant to compare the selected value against.",
-                    LiteralKind.DateTimeOffset
-                ),
-            ]
-        );
-
-        return (
-            schema,
-            (context, args, _) =>
-            {
-                DateTimeOffset? selected = selector(context);
-                return selected is { } value
-                    ? PredicateResult.FromBoolAsync(test(value, args.GetDateTimeOffset(argumentName)) != negate)
-                    : PredicateResult.ForNullAsync(nullBehavior, negate);
-            }
+            selector,
+            nullBehavior,
+            argumentName,
+            "The instant to compare the selected value against.",
+            test,
+            negate
         );
     }
 
+    /// <summary>Builds an inclusive range predicate through the shared <see cref="ScalarPredicateCore.Range{TContext, T}"/>; reversed bounds throw there.</summary>
     private static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -468,36 +459,16 @@ public static class DateTimePredicates
         string upperName
     )
     {
-        PredicateSchema schema = new(
+        return ScalarPredicateCore.Range(
+            ScalarKinds.DateTimeOffset,
             name,
             label,
             description,
-            [
-                new PredicateArgumentSchema(lowerName, "The inclusive lower bound.", LiteralKind.DateTimeOffset),
-                new PredicateArgumentSchema(upperName, "The inclusive upper bound.", LiteralKind.DateTimeOffset),
-            ]
-        );
-
-        return (
-            schema,
-            (context, args, _) =>
-            {
-                DateTimeOffset lower = args.GetDateTimeOffset(lowerName);
-                DateTimeOffset upper = args.GetDateTimeOffset(upperName);
-                if (lower > upper)
-                {
-                    // Reversed bounds hide an authoring mistake, so they fault instead of being swapped.
-                    throw new ArgumentException(
-                        $"The lower bound '{lower:O}' is later than the upper bound '{upper:O}' in predicate '{name}'.",
-                        lowerName
-                    );
-                }
-
-                DateTimeOffset? selected = selector(context);
-                return selected is { } value
-                    ? PredicateResult.FromBoolAsync((value >= lower && value <= upper) != negate)
-                    : PredicateResult.ForNullAsync(nullBehavior, negate);
-            }
+            selector,
+            nullBehavior,
+            lowerName,
+            upperName,
+            outside: negate
         );
     }
 }
