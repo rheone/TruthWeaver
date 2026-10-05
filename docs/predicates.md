@@ -29,7 +29,7 @@ Every method on `StringPredicates` except one is ordinal-only and has a fixed be
 A null selected value never faults. A member with an optional `nullBehavior` parameter answers it as the host sets at registration:
 
 - `NullBehavior.Unknown`: the member answers `Unknown`. `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust, and `Decision.IsSatisfied` stays fail-closed.
-- `NullBehavior.False`: a positive member answers `False`.
+- `NullBehavior.False`: a positive member answers `False`. The exception is `CollectionPredicates.SetEquals`. It reads a null collection as an empty collection, so it answers `True` when the argument array is empty. `NotSetEquals` answers the complement.
 
 A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Under `NullBehavior.False` a twin answers `True` for a null selected value. A twin has the same default as its positive member, so a pair registered with the defaults is an exact complement. Register both members of a pair with the same setting.
 
@@ -106,7 +106,7 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 
 `In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
 
-A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two predicates always return a definite answer and have no `nullBehavior` option. All other predicates in this table return `Unknown` for a null selected value. Pass `NullBehavior.False` at registration to make the positive predicate return `False` instead. The twin then returns `True`.
+A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two predicates always return a definite answer and have no `nullBehavior` option. The other predicates in this table answer a null selected value as [Null selected values](#null-selected-values) describes.
 
 ### Date and time predicates
 

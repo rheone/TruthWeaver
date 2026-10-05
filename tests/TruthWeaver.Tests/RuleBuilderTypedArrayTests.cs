@@ -73,7 +73,10 @@ public sealed class RuleBuilderTypedArrayTests
         Assert.Throws<ArgumentException>(() => builder.ToJson());
     }
 
-    /// <summary>Takes a real <c>T[]</c> (a collection expression binds the array type), the shape that failed before the fix.</summary>
+    /// <summary>
+    /// Takes a real <c>T[]</c> (a collection expression binds the array type), so the argument reaches
+    /// <c>RuleBuilder.Predicate</c> as a value-type array.
+    /// </summary>
     private static void AssertArray<T>(T[] typed)
         where T : notnull
     {

@@ -8,7 +8,7 @@
 
 - [x] The sync check fails when a registered built-in predicate or a known operator has no reference document, and when a document refers to something the engine lacks (demonstrated with a fixture or a temporary example)
 - [x] The predicate allow-list is explicit, committed and referenced from the check's failure message; ticket 13 removes it
-- [x] CLAUDE.md, the reference README and the ticket workflow notes state the rule that adding or changing a predicate or operation updates its reference document in the same change
+- [x] CLAUDE.md (Reference sync) and the ticket workflow notes state the rule that adding or changing a predicate or operation updates its reference document in the same change, and `docs/doc-examples.md` documents the sync check. The reference README no longer states it: that section was removed, so the rule lives in CLAUDE.md and `docs/doc-examples.md`
 - [x] Future predicate tickets are given an acceptance criterion pointing at this rule (add it to the predicate catalog track's ticket notes)
 - [x] The check is wired into the same gates as the rest of the validation set and documented
 - [x] Built test-first; the full validation set in CLAUDE.md passes

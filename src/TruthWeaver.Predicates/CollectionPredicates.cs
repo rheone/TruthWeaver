@@ -15,8 +15,8 @@ public static class CollectionPredicates
     /// term-identity rule — that rule governs *term identity* (whether two terms are the same
     /// variable for memoization/canonical-equality purposes), not this predicate's own *evaluation*
     /// semantics, so it is not a contradiction of that rule. Comparison is case-sensitive (ordinal),
-    /// consistent with CONTEXT.md's general "argument values are case-sensitive" stance; this ticket
-    /// does not provide a case-insensitive variant.
+    /// consistent with CONTEXT.md's general "argument values are case-sensitive" stance; there is no
+    /// case-insensitive variant.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -28,8 +28,9 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison set.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// How a <see langword="null"/> selected collection reads: <see cref="NullBehavior.False"/> (the default), which reads
+    /// it as an empty collection, or <see cref="NullBehavior.Unknown"/>, which makes the answer
+    /// <see cref="TruthValue.Unknown"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -179,7 +180,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the value.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -250,7 +251,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -322,7 +323,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -394,7 +395,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -465,7 +466,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected string answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -535,7 +536,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -605,7 +606,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -675,7 +676,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -745,7 +746,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
@@ -815,7 +816,7 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// What a <see langword="null"/> selected collection answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
     /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
