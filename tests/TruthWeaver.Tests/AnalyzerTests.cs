@@ -338,6 +338,39 @@ public sealed class AnalyzerTests
     }
 
     /// <summary>
+    /// A large rule, an <c>AND</c> of 50 four-term <c>OR</c> groups over 200 distinct terms with the analysis cap raised
+    /// to fit, is analysed across the whole tree: a tautological first group and a <c>FALSE</c> last operand are both
+    /// reported, in tree order, and nothing else is.
+    /// </summary>
+    [Fact]
+    public void Compile_LargeGroupedRuleWithRaisedCap_ReportsEveryVerdictInTreeOrder_Test()
+    {
+        const int TermCount = 200;
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        for (int i = 0; i < TermCount; i++)
+        {
+            _ = registry.AddConstant($"t{i}", true);
+        }
+
+        RuleCompiler<RuleTestContext> compiler = new(registry.Build(), new CompilerOptions(MaxAnalysisTerms: TermCount));
+        IEnumerable<string> groups = Enumerable
+            .Range(0, TermCount / 4)
+            .Select(g =>
+                $"(t{4 * g} OR t{(4 * g) + 1} OR t{(4 * g) + 2} OR t{(4 * g) + 3}{(g == 0 ? " OR TRUE" : string.Empty)})"
+            );
+        string rule = string.Join(" AND ", groups) + " AND FALSE";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(rule);
+
+        Assert.Collection(
+            result.Diagnostics,
+            d => Assert.Equal(DiagnosticCodes.StructuralTautology, d.Code),
+            d => Assert.Equal(DiagnosticCodes.StructuralContradiction, d.Code)
+        );
+        Assert.True(IsRootFlagged(result, DiagnosticCodes.StructuralContradiction));
+    }
+
+    /// <summary>
     /// Whether <paramref name="code"/> was reported for the whole compiled rule rather than only for one of its
     /// sub-expressions: diagnostics end with the canonical text of the node they describe.
     /// </summary>

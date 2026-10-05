@@ -177,9 +177,9 @@ public sealed class VariableReferenceTests
             return ValueTask.FromResult(DataQueryResult.Empty());
         }
 
-        public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
+        public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
         {
-            return ValueTask.FromResult<IDataSource>(this);
+            return ValueTask.FromResult(DataScopeResult.Success(this));
         }
     }
 }

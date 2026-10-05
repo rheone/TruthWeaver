@@ -3,7 +3,7 @@ namespace TruthWeaver.DataSources.Json;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using global::Json.Path;
+using Meziantou.Framework.Json;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -39,6 +39,38 @@ public sealed class JsonDataSource : IDataSource
         return new JsonDataSource(JsonNode.Parse(json));
     }
 
+    /// <summary>Creates a source over JSON text without throwing when the text is malformed, for host code that reads untrusted or user-edited documents.</summary>
+    /// <param name="json">The JSON document.</param>
+    /// <param name="source">The source when the text is well-formed JSON; otherwise <see langword="null"/>.</param>
+    /// <param name="error">When parsing fails, a description with the line and byte position where the parser stopped. It never repeats document content, because the document may hold sensitive data. Otherwise <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="json"/> is well-formed JSON; <see langword="false"/> otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>, which is a programming error and not a malformed document.</exception>
+    /// <seealso cref="Parse"/>
+    public static bool TryParse(
+        [StringSyntax(StringSyntaxAttribute.Json)] string json,
+        [NotNullWhen(true)] out JsonDataSource? source,
+        [NotNullWhen(false)] out string? error
+    )
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        try
+        {
+            source = new JsonDataSource(JsonNode.Parse(json));
+            error = null;
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            // The parser's own message can quote the offending character, so only the position is kept.
+            source = null;
+            error =
+                ex.LineNumber is { } line && ex.BytePositionInLine is { } position
+                    ? $"The JSON document is not well-formed (line {line + 1}, byte position {position + 1})."
+                    : "The JSON document is not well-formed.";
+            return false;
+        }
+    }
+
     /// <summary>Creates a source over an already-parsed document.</summary>
     /// <param name="root">The document's root node, or <see langword="null"/> for a document that is the JSON <c>null</c> literal. The source reads it and never changes it; do not mutate it while the source is in use.</param>
     /// <returns>A source whose queries are absolute within <paramref name="root"/>.</returns>
@@ -57,30 +89,36 @@ public sealed class JsonDataSource : IDataSource
     /// <summary>Returns a new source rooted at the single node <paramref name="query"/> matches.</summary>
     /// <param name="query">A JSONPath query that matches exactly one node, for example <c>$.orders[?@.id=='A7']</c>. The node may be of any kind, an object, an array or a scalar.</param>
     /// <param name="cancellationToken">A token to honour.</param>
-    /// <returns>A source over a copy of the matched node, so it stays valid and independent of the enclosing document; its queries are absolute within that node.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="query"/> is not valid JSONPath.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when <paramref name="query"/> matches no node or more than one. Scoping is host code run outside an evaluation, so a wrong query fails loudly instead of narrowing to a guess.</exception>
-    public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
+    /// <returns>A source over a copy of the matched node, so it stays valid and independent of the enclosing document; its queries are absolute within that node. When the query is not valid JSONPath the result is <see cref="DataQueryErrorKind.MalformedQuery"/>, and when it matches no node or more than one the result is <see cref="DataQueryErrorKind.NoMatch"/> or <see cref="DataQueryErrorKind.AmbiguousMatch"/>. None of these throws, and the message never contains document values.</returns>
+    public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!JsonPaths.TryParse(query, out JsonPath? path, out QueryProblem? problem))
         {
-            throw new ArgumentException(
-                $"The scope query is not valid JSONPath: {problem.Message} (at position {problem.Position})",
-                nameof(query)
+            return ValueTask.FromResult(
+                DataScopeResult.Failure(
+                    DataQueryErrorKind.MalformedQuery,
+                    $"The scope query is not valid JSONPath: {problem.Message} (at position {problem.Position})"
+                )
             );
         }
 
-        NodeList matches = path.Evaluate(this.root).Matches;
+        JsonPathResult matches = path.Evaluate(this.root);
         if (matches.Count != 1)
         {
-            throw new InvalidOperationException(
-                $"A scope query must match exactly one node, but '{query}' matched {matches.Count}."
+            // A scope query must pick one node; the message gives the count, never the data.
+            return ValueTask.FromResult(
+                matches.Count == 0
+                    ? DataScopeResult.Failure(DataQueryErrorKind.NoMatch, "The scope query matched no node.")
+                    : DataScopeResult.Failure(
+                        DataQueryErrorKind.AmbiguousMatch,
+                        $"A scope query must match exactly one node, but it matched {matches.Count}."
+                    )
             );
         }
 
         // A node belongs to its parent, so the scoped source holds an independent copy as its own root.
-        return ValueTask.FromResult<IDataSource>(new JsonDataSource(matches[0].Value?.DeepClone()));
+        return ValueTask.FromResult(DataScopeResult.Success(new JsonDataSource(matches[0].Value?.DeepClone())));
     }
 
     private static DataQueryResult Convert(IReadOnlyList<JsonNode?> nodes)
@@ -175,7 +213,7 @@ public sealed class JsonDataSource : IDataSource
             );
         }
 
-        NodeList matches = path.Evaluate(this.root).Matches;
+        JsonPathResult matches = path.Evaluate(this.root);
         return Convert([.. matches.Select(match => match.Value)]);
     }
 }

@@ -27,6 +27,28 @@ public static class DataSourceExtensions
         CancellationToken cancellationToken = default
     )
     {
+        DataReadResult<T> result = await source.TryGetAsync<T>(query, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? result.Value : throw new InvalidOperationException(result.ErrorMessage);
+    }
+
+    /// <summary>
+    /// The result form of <see cref="GetAsync{T}"/>: a missing, ambiguous, mismatched or failing answer is returned as a
+    /// failed <see cref="DataReadResult{T}"/> instead of an exception, for host code that feeds external input into the
+    /// query. Async members cannot use <see langword="out"/>, so the outcome is a result type.
+    /// </summary>
+    /// <typeparam name="T">One of <see cref="string"/>, <see cref="long"/>, <see cref="decimal"/>, <see cref="bool"/>, <see cref="DateTimeOffset"/> or <see cref="Guid"/>.</typeparam>
+    /// <param name="source">The source to query.</param>
+    /// <param name="query">The query, in the source's own dialect.</param>
+    /// <param name="cancellationToken">A token to cancel the query.</param>
+    /// <returns>The value, or the failure kind and a message that never contains data.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="query"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException"><typeparamref name="T"/> is not one of the supported types.</exception>
+    public static async ValueTask<DataReadResult<T>> TryGetAsync<T>(
+        this IDataSource source,
+        string query,
+        CancellationToken cancellationToken = default
+    )
+    {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(query);
 
@@ -34,7 +56,8 @@ public static class DataSourceExtensions
         DataQueryResult result = await source.QueryAsync(query, cancellationToken).ConfigureAwait(false);
         if (result.ErrorKind is { } errorKind)
         {
-            throw new InvalidOperationException(
+            return DataReadResult<T>.Failure(
+                VariableFailureKind.SourceError,
                 $"The data source could not answer the query ({errorKind}): {result.ErrorMessage}"
             );
         }
@@ -49,7 +72,7 @@ public static class DataSourceExtensions
             )
         )
         {
-            throw new InvalidOperationException($"The query did not give a {kind} ({failure}): {message}");
+            return DataReadResult<T>.Failure(failure, $"The query did not give a {kind} ({failure}): {message}");
         }
 
         object boxed = kind switch
@@ -61,7 +84,7 @@ public static class DataSourceExtensions
             LiteralKind.DateTimeOffset => value.AsDateTimeOffset(),
             _ => value.AsGuid(),
         };
-        return (T)boxed;
+        return DataReadResult<T>.Success((T)boxed);
     }
 
     private static LiteralKind KindOf(Type type)

@@ -487,20 +487,10 @@ internal static class Analyzer
                 rail = Not(bdd, Build(n.Operand, bdd, variableIndex, diagnostics));
                 break;
             case AndExpression a:
-                rail = TrueRail;
-                foreach (Expression operand in a.Operands)
-                {
-                    rail = And(bdd, rail, Build(operand, bdd, variableIndex, diagnostics));
-                }
-
+                rail = FoldRight(BuildOperands(a.Operands, bdd, variableIndex, diagnostics), TrueRail, bdd, And);
                 break;
             case OrExpression o:
-                rail = FalseRail;
-                foreach (Expression operand in o.Operands)
-                {
-                    rail = Or(bdd, rail, Build(operand, bdd, variableIndex, diagnostics));
-                }
-
+                rail = FoldRight(BuildOperands(o.Operands, bdd, variableIndex, diagnostics), FalseRail, bdd, Or);
                 break;
             case XorExpression x:
                 rail = Xor(
@@ -590,6 +580,31 @@ internal static class Analyzer
 
         Diagnose(rail, node, diagnostics);
         return rail;
+    }
+
+    /// <summary>
+    /// Combines already-built operand rails with an associative, commutative connective (<see cref="And"/> or
+    /// <see cref="Or"/>), from the last operand to the first. The result is the same canonical BDD as a left fold; only
+    /// the cost differs. Operands are built left to right, so an earlier operand's terms take lower variable indices
+    /// and sit above a later operand's in the ordering. Combining <c>op(earlier, accumulated)</c> lets <c>Ite</c> walk
+    /// only the earlier operand's nodes and reuse the accumulated BDD unchanged under it. A left fold puts the growing
+    /// accumulated BDD on top and rebuilds all of it for every operand, which is quadratic in the operand count
+    /// (k3-hardening ticket 19).
+    /// </summary>
+    private static DualRail FoldRight(
+        List<DualRail> operands,
+        DualRail identity,
+        BddManager bdd,
+        Func<BddManager, DualRail, DualRail, DualRail> combine
+    )
+    {
+        DualRail result = identity;
+        for (int i = operands.Count - 1; i >= 0; i--)
+        {
+            result = combine(bdd, operands[i], result);
+        }
+
+        return result;
     }
 
     private static List<DualRail> BuildOperands(

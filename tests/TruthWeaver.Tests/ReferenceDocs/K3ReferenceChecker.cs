@@ -711,6 +711,7 @@ internal static partial class K3ReferenceChecker
         if (sections.TryGetValue("Classification", out (int Start, int End) classRange))
         {
             CheckCategory(lines, classRange, CategoryLabels[directory], fail);
+            CheckCategoryIndex(lines, classRange, directory, fail);
         }
 
         if (
@@ -744,6 +745,43 @@ internal static partial class K3ReferenceChecker
             fail(categories[0].Line, $"Category is '{declared}' but documents in this directory are '{expected}'");
         }
     }
+
+    /// <summary>
+    /// The second line of the two-line category convention: Classification holds one <c>Category index:</c> line whose link
+    /// resolves to the <c>README.md</c> of the document's own category directory.
+    /// </summary>
+    private static void CheckCategoryIndex(
+        string[] lines,
+        (int Start, int End) range,
+        string directory,
+        Action<int, string> fail
+    )
+    {
+        List<(int Line, string Text)> indexes =
+        [
+            .. SectionLines(lines, range)
+                .Where(l => l.Text.TrimStart('-', '*', ' ').StartsWith("Category index:", StringComparison.OrdinalIgnoreCase)),
+        ];
+        if (indexes.Count != 1)
+        {
+            fail(range.Start + 1, $"Classification must contain exactly one 'Category index:' line (found {indexes.Count})");
+            return;
+        }
+
+        Match link = MarkdownLinkPattern().Match(indexes[0].Text);
+        string target = link.Success ? link.Groups[1].Value.Trim() : string.Empty;
+
+        // The document is <root>/<directory>/<name>.md, so its own index is the sibling README.md. Accept the sibling spelling
+        // ("README.md", "./README.md") and the explicit one ("../<directory>/README.md"); any other target is another page.
+        string normalised = target.StartsWith("./", StringComparison.Ordinal) ? target[2..] : target;
+        if (normalised != "README.md" && normalised != $"../{directory}/README.md")
+        {
+            fail(indexes[0].Line, $"Category index must link to '{directory}/README.md', not '{target}'");
+        }
+    }
+
+    [GeneratedRegex(@"\[[^\]]*\]\(([^)\s#]*)")]
+    private static partial Regex MarkdownLinkPattern();
 
     private static void RequireMarker(
         string[] lines,

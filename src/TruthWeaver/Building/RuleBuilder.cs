@@ -635,12 +635,17 @@ public abstract class RuleBuilder
             DateTimeOffset dto => JsonValue.Create(dto.ToString("O", CultureInfo.InvariantCulture)),
             Guid g => JsonValue.Create(g.ToString()),
             VariableReference reference => new JsonObject { ["from"] = reference.Source, ["query"] = reference.Query },
-            IEnumerable<object> items => ArrayToNode(items),
+            System.Collections.IEnumerable items => ArrayToNode(items),
             _ => throw new ArgumentException($"Unsupported argument value type '{value.GetType()}'.", nameof(value)),
         };
     }
 
-    private static JsonArray ArrayToNode(IEnumerable<object> items)
+    /// <summary>
+    /// Converts any sequence, including value-type arrays such as <c>long[]</c>, which do not bind
+    /// <c>IEnumerable&lt;object&gt;</c> because array covariance excludes value types. Each element goes through
+    /// <see cref="ValueToNode"/>, so an unsupported element type throws <see cref="ArgumentException"/>.
+    /// </summary>
+    private static JsonArray ArrayToNode(System.Collections.IEnumerable items)
     {
         JsonArray array = [];
         foreach (object item in items)

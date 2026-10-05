@@ -14,6 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="JsonPath.Net" />
+    <PackageReference Include="Meziantou.Framework.JsonPath" />
   </ItemGroup>
 </Project>

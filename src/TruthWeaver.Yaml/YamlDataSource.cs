@@ -1,5 +1,6 @@
 namespace TruthWeaver.Yaml;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using TruthWeaver.Abstractions;
@@ -44,6 +45,35 @@ public sealed partial class YamlDataSource : IDataSource
             : Create(stream.Documents[0].RootNode);
     }
 
+    /// <summary>Creates a source over YAML text without throwing when the text is malformed, for host code that reads untrusted or user-edited documents.</summary>
+    /// <param name="yaml">The YAML document. An empty stream is a document with no data.</param>
+    /// <param name="source">The source when the text is well-formed; otherwise <see langword="null"/>.</param>
+    /// <param name="error">When parsing fails (malformed YAML, a duplicate mapping key or an alias that refers to its own ancestor), a description with the line and column where the problem starts. It never repeats document content, because the document may hold sensitive data. Otherwise <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="yaml"/> is a valid document; <see langword="false"/> otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="yaml"/> is <see langword="null"/>, which is a programming error and not a malformed document.</exception>
+    /// <seealso cref="Parse"/>
+    public static bool TryParse(
+        string yaml,
+        [NotNullWhen(true)] out YamlDataSource? source,
+        [NotNullWhen(false)] out string? error
+    )
+    {
+        ArgumentNullException.ThrowIfNull(yaml);
+        try
+        {
+            source = Parse(yaml);
+            error = null;
+            return true;
+        }
+        catch (YamlException ex)
+        {
+            // The parser's message can quote a key or token, so only the position is kept.
+            source = null;
+            error = $"The YAML document is not valid (line {ex.Start.Line}, column {ex.Start.Column}).";
+            return false;
+        }
+    }
+
     /// <summary>Creates a source over an already-parsed YAML node, for example one entry of a larger configuration document.</summary>
     /// <param name="root">The node to treat as the document root.</param>
     /// <returns>A source whose queries are absolute within <paramref name="root"/>.</returns>
@@ -65,10 +95,8 @@ public sealed partial class YamlDataSource : IDataSource
     /// <summary>Returns a new source rooted at the single node <paramref name="query"/> matches.</summary>
     /// <param name="query">A JSONPath query that matches exactly one node.</param>
     /// <param name="cancellationToken">A token to honour.</param>
-    /// <returns>The narrowed source, whose queries are absolute within the matched node.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="query"/> is not valid JSONPath.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when <paramref name="query"/> matches no node or more than one.</exception>
-    public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken)
+    /// <returns>The narrowed source, whose queries are absolute within the matched node, or a failure result (<see cref="DataQueryErrorKind.MalformedQuery"/>, <see cref="DataQueryErrorKind.NoMatch"/> or <see cref="DataQueryErrorKind.AmbiguousMatch"/>) exactly as <see cref="JsonDataSource.ScopeAsync"/> reports it.</returns>
+    public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
     {
         return this.inner.ScopeAsync(query, cancellationToken);
     }

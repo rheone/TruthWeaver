@@ -4,12 +4,17 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A failing test for a missing or wrong `Category index:` line is written first and then passes
-- [ ] All 27 existing operation documents pass the new check
-- [ ] The doc-examples guide documents the two-line convention
-- [ ] The proposal page is retitled, links to it resolve, and the checker messages that cite it are accurate
-- [ ] The full validation from CLAUDE.md passes
+- [x] A failing test for a missing or wrong `Category index:` line is written first and then passes
+- [x] All 27 existing operation documents pass the new check
+- [x] The doc-examples guide documents the two-line convention
+- [x] The proposal page is retitled, links to it resolve, and the checker messages that cite it are accurate
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
+
+## Comments
+
+- 2026-10-04: `K3ReferenceChecker.CheckCategoryIndex` requires one `Category index:` line in Classification whose link is the own directory `README.md` (`README.md`, `./README.md` or `../<dir>/README.md`). Two tests written first (missing line, other category index) failed and now pass, and all 27 pages pass. `docs/doc-examples.md` has a Category convention section. The retitle item has nothing to retitle: `PROPOSAL.md` was deleted by docs-reference-cleanup 02, no file links to it and no checker message cites it, so no Design decisions page was created. The full CLAUDE.md validation was left for the integration run.
+- 2026-10-04 bookkeeping: the full validation has since been run on the integrated branch and passes, so the last box is ticked and the earlier note no longer applies.

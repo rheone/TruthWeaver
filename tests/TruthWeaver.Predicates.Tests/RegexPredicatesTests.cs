@@ -36,15 +36,16 @@ public class RegexPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>Matches</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task Matches_NullSelectedValue_ReturnsFalse()
+    public async Task Matches_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             RegexPredicates.Matches<TestContext>("matchesEmail", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("pattern", @"^\S+@\S+\.\S+$"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]

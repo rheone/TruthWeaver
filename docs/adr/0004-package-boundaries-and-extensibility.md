@@ -29,7 +29,7 @@ observability is deferred, not v1).
 > A fifth package, `TruthWeaver.Testing` (`Decision` assertions and fake predicates, depending on
 > `TruthWeaver.Abstractions` alone), was added later; the boundaries below are unchanged.
 >
-> A sixth package, `TruthWeaver.DataSources.Json` (`JsonDataSource`, `JsonQueryValidator` and the JsonPath.Net dependency;
+> A sixth package, `TruthWeaver.DataSources.Json` (`JsonDataSource`, `JsonQueryValidator` and the JSONPath dependency, now Meziantou.Framework.JsonPath;
 > depends on `TruthWeaver.Abstractions` alone), was added by [ADR-0006](0006-data-sources-for-expression-variables.md).
 > `TruthWeaver.Yaml` now also references it for `YamlDataSource`, and `TruthWeaver.Testing` gained `FakeDataSource`; the core
 > `TruthWeaver` package still takes no JSON or YAML query dependency.

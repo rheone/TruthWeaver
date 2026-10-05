@@ -16,6 +16,6 @@ public interface IDataSource
     /// <summary>Returns a new source rooted at the single node <paramref name="query"/> matches.</summary>
     /// <param name="query">A query that matches exactly one node.</param>
     /// <param name="cancellationToken">A token to honour.</param>
-    /// <returns>The narrowed source, whose queries are absolute within the matched node.</returns>
-    public ValueTask<IDataSource> ScopeAsync(string query, CancellationToken cancellationToken);
+    /// <returns>The narrowed source, whose queries are absolute within the matched node, or an error described as data: <see cref="DataQueryErrorKind.MalformedQuery"/>, <see cref="DataQueryErrorKind.NoMatch"/> (zero matches), <see cref="DataQueryErrorKind.AmbiguousMatch"/> (several), <see cref="DataQueryErrorKind.SourceFailure"/> or <see cref="DataQueryErrorKind.UnsupportedType"/>. An implementation does not throw for these.</returns>
+    public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken);
 }

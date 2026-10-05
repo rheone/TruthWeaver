@@ -4,11 +4,15 @@
 
 **Blocked by:** 02, 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test fails first for each of the three drift cases
-- [ ] The check passes on the repository as it stands
-- [ ] The failure message names the skill and the fix
-- [ ] The full validation from CLAUDE.md passes
+- [x] A test fails first for each of the three drift cases
+- [x] The check passes on the repository as it stands
+- [x] The failure message names the skill and the fix
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner request, 2026-10-04.
+
+## Comments
+
+2026-10-04: Added `SkillProvenanceChecker` and `SkillProvenanceTests` under `tests/TruthWeaver.Tests/ReferenceDocs`, in the same shape as `K3ReferenceSyncChecker` (a `Check` on in-memory data proven by fixtures, a `CheckTree` on the real repository). It fails when a skill directory has no table row, a row or lock entry names a missing skill, a vendored skill has no lock entry, or a locked skill's hash differs; each message names the skill and the fix. It computes the folder hash itself, so the guard also verifies the documented hash method. The tool sorts paths with `localeCompare`, so the sort is culture-aware (ordinal gives a different hash); the README now says so. Authored skills are not locked and are covered by the row check only.

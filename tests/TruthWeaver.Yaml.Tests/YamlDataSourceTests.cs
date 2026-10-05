@@ -183,16 +183,79 @@ public sealed class YamlDataSourceTests
         Assert.ThrowsAny<YamlException>(() => YamlDataSource.Parse(yaml));
     }
 
+    /// <summary>Malformed YAML, a duplicate key and a self-referencing alias each make <c>TryParse</c> return false with an error, and never throw.</summary>
+    [Theory]
+    [InlineData("a: [1, 2")]
+    [InlineData("a: &x [*x]")]
+    [InlineData("a: 1\na: 2")]
+    public void TryParse_MalformedOrCyclicYaml_ReturnsFalseWithError_Test(string yaml)
+    {
+        bool parsed = YamlDataSource.TryParse(yaml, out YamlDataSource? source, out string? error);
+
+        Assert.False(parsed);
+        Assert.Null(source);
+        Assert.False(string.IsNullOrWhiteSpace(error));
+    }
+
+    /// <summary>The error names where the document is wrong but never repeats document content, which may be sensitive.</summary>
+    [Fact]
+    public void TryParse_DuplicateKey_ErrorDoesNotEchoDocumentContent_Test()
+    {
+        Assert.False(YamlDataSource.TryParse("hunter2: 1\nhunter2: 2", out _, out string? error));
+
+        Assert.NotNull(error);
+        Assert.DoesNotContain("hunter2", error);
+    }
+
+    /// <summary>A well-formed document gives a source that answers queries exactly as <c>Parse</c> does.</summary>
+    [Fact]
+    public async Task TryParse_WellFormedYaml_ReturnsAWorkingSource_Test()
+    {
+        bool parsed = YamlDataSource.TryParse("a: 1\n", out YamlDataSource? source, out string? error);
+
+        Assert.True(parsed);
+        Assert.Null(error);
+        DataQueryResult result = await source!.QueryAsync("$.a", TestContext.Current.CancellationToken);
+        Assert.Equal(LiteralValue.OfInt64(1), Assert.Single(result.Matches));
+    }
+
+    /// <summary>A null document is a programming error and still throws, as it does for <c>Parse</c>.</summary>
+    [Fact]
+    public void TryParse_NullText_ThrowsArgumentNullException_Test()
+    {
+        Assert.Throws<ArgumentNullException>(() => YamlDataSource.TryParse(null!, out _, out _));
+    }
+
     /// <summary>A source scoped to one order answers absolute queries within that order, as the JSON source does.</summary>
     [Fact]
     public async Task ScopeAsync_OneOrder_RootsQueriesAtThatOrder_Test()
     {
         YamlDataSource yaml = YamlDataSource.Parse(OrdersYaml);
 
-        IDataSource order = await yaml.ScopeAsync("$.orders[?@.id=='B2']", TestContext.Current.CancellationToken);
+        DataScopeResult scope = await yaml.ScopeAsync("$.orders[?@.id=='B2']", TestContext.Current.CancellationToken);
+        Assert.True(scope.Succeeded, scope.ErrorMessage);
+        IDataSource order = scope.Source;
         DataQueryResult total = await order.QueryAsync("$.total", TestContext.Current.CancellationToken);
 
         Assert.Equal(LiteralValue.OfInt64(80), Assert.Single(total.Matches));
+    }
+
+    /// <summary>A scope query that matches none, several or is malformed gives a failure result, as the JSON source does.</summary>
+    [Theory]
+    [InlineData("$.orders[?@.id=='nope']", DataQueryErrorKind.NoMatch)]
+    [InlineData("$.orders[*]", DataQueryErrorKind.AmbiguousMatch)]
+    [InlineData("$.orders[", DataQueryErrorKind.MalformedQuery)]
+    public async Task ScopeAsync_QueryNotMatchingExactlyOneNode_ReturnsFailureResult_Test(
+        string query,
+        DataQueryErrorKind expected
+    )
+    {
+        YamlDataSource yaml = YamlDataSource.Parse(OrdersYaml);
+
+        DataScopeResult result = await yaml.ScopeAsync(query, TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(expected, result.ErrorKind);
     }
 
     /// <summary>A YAML rule declared with the JSON validator reports a malformed JSONPath at its query string.</summary>

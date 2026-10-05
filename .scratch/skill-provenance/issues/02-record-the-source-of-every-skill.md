@@ -4,12 +4,16 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `csharp-builder-pattern` and `csharp-system-attributes` match the bootstrapping repository (the whole skill directory, not only SKILL.md), and every other skill is compared the same way and any difference is reported
-- [ ] Every directory under the project skills folder has exactly one row, and no row names a missing skill
-- [ ] Each row has a source, a class, a license and a version
-- [ ] Skills that lack a license field in their metadata have one added, or the table says why not
-- [ ] The documentation lint still passes
+- [x] `csharp-builder-pattern` and `csharp-system-attributes` match the bootstrapping repository (the whole skill directory, not only SKILL.md), and every other skill is compared the same way and any difference is reported
+- [x] Every directory under the project skills folder has exactly one row, and no row names a missing skill
+- [x] Each row has a source, a class, a license and a version
+- [x] Skills that lack a license field in their metadata have one added, or the table says why not
+- [x] The documentation lint still passes
 
 Source: owner request, 2026-10-04.
+
+## Comments
+
+- 2026-10-04: The table is `.claude/skills/README.md` (23 rows). Ticket 01 did not name a location; this one sits beside the skills and is outside the documentation lint scope (`.claude/`). `csharp-builder-pattern` and `csharp-system-attributes` were replaced with the upstream directories (new files added, LF endings). Every other skill matched its source, including `github-markdown` against `miscellaneous-agentic-tooling`. `csharp-library-repo-structure` lacks a license field upstream; it was left unedited to avoid drift from the canonical copy and the table says so. Ticket 03 must lock `humanizer`; its hash was computed from the whole directory, which differs from upstream by the omitted repository files.

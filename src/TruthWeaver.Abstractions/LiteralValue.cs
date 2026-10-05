@@ -1,5 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
+
 /// <summary>
 /// A single argument value drawn from the closed literal type set (ADR-0003). Scalar comparison is
 /// exact and case-sensitive for strings (CONTEXT.md's term-identity rule: argument values are
@@ -231,6 +233,69 @@ public readonly struct LiteralValue : IEquatable<LiteralValue>
         return this.IsArray
             ? this.arrayValue
             : throw new InvalidOperationException($"Value of kind '{this.Kind}' is not an array.");
+    }
+
+    /// <summary>Gets the wrapped <see cref="string"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.String"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.String"/>. Unlike <see cref="AsString"/>, never throws.</returns>
+    public bool TryAsString([NotNullWhen(true)] out string? value)
+    {
+        value = this.Kind == LiteralKind.String ? this.stringValue : default;
+        return this.Kind == LiteralKind.String;
+    }
+
+    /// <summary>Gets the wrapped <see cref="long"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.Int64"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.Int64"/>. Unlike <see cref="AsInt64"/>, never throws.</returns>
+    public bool TryAsInt64(out long value)
+    {
+        value = this.Kind == LiteralKind.Int64 ? this.int64Value : default;
+        return this.Kind == LiteralKind.Int64;
+    }
+
+    /// <summary>Gets the wrapped <see cref="decimal"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.Decimal"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.Decimal"/>. Unlike <see cref="AsDecimal"/>, never throws.</returns>
+    public bool TryAsDecimal(out decimal value)
+    {
+        value = this.Kind == LiteralKind.Decimal ? this.decimalValue : default;
+        return this.Kind == LiteralKind.Decimal;
+    }
+
+    /// <summary>Gets the wrapped <see cref="bool"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.Boolean"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.Boolean"/>. Unlike <see cref="AsBoolean"/>, never throws.</returns>
+    public bool TryAsBoolean(out bool value)
+    {
+        value = this.Kind == LiteralKind.Boolean && this.booleanValue;
+        return this.Kind == LiteralKind.Boolean;
+    }
+
+    /// <summary>Gets the wrapped <see cref="DateTimeOffset"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.DateTimeOffset"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.DateTimeOffset"/>. Unlike <see cref="AsDateTimeOffset"/>, never throws.</returns>
+    public bool TryAsDateTimeOffset(out DateTimeOffset value)
+    {
+        value = this.Kind == LiteralKind.DateTimeOffset ? this.dateTimeOffsetValue : default;
+        return this.Kind == LiteralKind.DateTimeOffset;
+    }
+
+    /// <summary>Gets the wrapped <see cref="Guid"/> value when this literal has that kind.</summary>
+    /// <param name="value">The value when <see cref="Kind"/> is <see cref="LiteralKind.Guid"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is <see cref="LiteralKind.Guid"/>. Unlike <see cref="AsGuid"/>, never throws.</returns>
+    public bool TryAsGuid(out Guid value)
+    {
+        value = this.Kind == LiteralKind.Guid ? this.guidValue : Guid.Empty;
+        return this.Kind == LiteralKind.Guid;
+    }
+
+    /// <summary>Gets the wrapped array's elements when this literal is an array kind.</summary>
+    /// <param name="value">The elements when <see cref="IsArray"/>; otherwise the default.</param>
+    /// <returns><see langword="true"/> when <see cref="Kind"/> is an array kind. Unlike <see cref="AsArray"/>, never throws.</returns>
+    public bool TryAsArray(out EquatableArray<LiteralValue> value)
+    {
+        value = this.IsArray ? this.arrayValue : default;
+        return this.IsArray;
     }
 
     /// <inheritdoc />

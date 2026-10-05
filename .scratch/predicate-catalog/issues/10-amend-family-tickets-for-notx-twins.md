@@ -4,11 +4,15 @@
 
 **Blocked by:** 09
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tickets 03, 04, 05, 06, 07 and 08 each state the twin requirement or why it does not apply
-- [ ] Ticket 05 lists the three collection predicates and the `In` compile error
-- [ ] Tickets 04 and 06 state inclusive bounds and the reversed-bounds error
-- [ ] No ticket still says it is blocked on ticket 02
+- [x] Tickets 03, 04, 05, 06, 07 and 08 each state the twin requirement or why it does not apply
+- [x] Ticket 05 lists the three collection predicates and the `In` compile error
+- [x] Tickets 04 and 06 state inclusive bounds and the reversed-bounds error
+- [x] No ticket still says it is blocked on ticket 02
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
+
+## Comments
+
+- 2026-10-04: Tickets 03-08 carry the twin rule (07 and its `NotAfterNow`/`NotBeforeNow` twins included, since the two are not complements at the boundary instant). Ticket 05 lists `ContainsAny`, `ContainsAll`, `IsSubsetOf` and the `In` compile error. Tickets 04 and 06 state inclusive bounds and the reversed-bounds error. Ticket 08 notes the selector shape (`string?` versus `object?`) is still undecided by the recorded rules.

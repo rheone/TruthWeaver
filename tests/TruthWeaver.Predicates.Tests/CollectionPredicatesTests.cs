@@ -68,22 +68,45 @@ public class CollectionPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>
+    /// Registered with no <c>NullBehavior</c>, <c>SetEquals</c> answers Unknown for a null selected collection, even
+    /// against an empty literal.
+    /// </summary>
     [Fact]
-    public async Task SetEquals_NullSelectedCollectionTreatedAsEmpty_MatchesEmptyLiteral()
+    public async Task SetEquals_NullSelectedCollection_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
 
         TruthValue result = await evaluate(new TestContext(null, null), Args("values"), CancellationToken.None);
 
+        Assert.Equal(TruthValue.Unknown, result);
+    }
+
+    /// <summary>
+    /// Under <c>NullBehavior.False</c>, <c>SetEquals</c> reads a null selected collection as the empty set, so it
+    /// matches an empty literal.
+    /// </summary>
+    [Fact]
+    public async Task SetEquals_NullSelectedCollectionWithFalseBehavior_MatchesEmptyLiteral_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values, nullBehavior: NullBehavior.False);
+
+        TruthValue result = await evaluate(new TestContext(null, null), Args("values"), CancellationToken.None);
+
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>
+    /// Under <c>NullBehavior.False</c>, <c>SetEquals</c> reads a null selected collection as the empty set, so it does
+    /// not match a non-empty literal.
+    /// </summary>
     [Fact]
-    public async Task SetEquals_NullSelectedCollection_DoesNotMatchNonEmptyLiteral()
+    public async Task SetEquals_NullSelectedCollectionWithFalseBehavior_DoesNotMatchNonEmptyLiteral_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
+            CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new TestContext(null, null), Args("values", "a"), CancellationToken.None);
 
