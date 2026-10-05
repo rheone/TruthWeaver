@@ -69,7 +69,9 @@ StringPredicates.Equals<PizzaOrder>(
 | `IsDefault` | `IsNotDefault` | yes | yes |
 
 - Ordering and ranges have no meaning for `Boolean` and `Guid`, so they are not defined. For `DateTimeOffset`, ordering and ranges belong to the date-time predicates.
-- `Between` is inclusive on both bounds and `Outside` is its exact complement. Reversed bounds (`lower` greater than `upper`) are an authoring error. The predicate throws an `ArgumentException` at evaluation time, even for a null selection. The evaluator records a `Fault` and answers `Unknown`. The bounds are never swapped.
+- `Between` is inclusive on both bounds and `Outside` is its exact complement. Equal bounds are a single-point range. Reversed bounds (`lower` greater than `upper`) are an authoring error, and the bounds are never swapped:
+  - When both bounds are literals, `Compile` reports a `TRE0026` error at the predicate call and returns no rule. The suggestion is to swap the bounds.
+  - When a bound is not a literal, for example a value [read from a data source](#arguments-read-from-a-data-source), the compiler does not check it. A reversed value makes the predicate throw an `ArgumentException` at evaluation time, even for a null selection. The evaluator records a `Fault` and answers `Unknown`.
 - `In` and `NotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
 - No value is promoted between kinds. A `long?` selector takes `Int64` literals. A `decimal?` selector takes `Decimal` literals, and a whole number such as `5` is a valid `Decimal` literal. To compare an integer value with a decimal literal, widen it in the selector: `c => (decimal?)c.Count`. Decimal values compare by value, so `1.0` equals `1.00`.
 - `DateTimeOffset` values compare by instant, so the same instant in two offsets is equal.
@@ -127,7 +129,7 @@ DateTimePredicates.AfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, 
 
 The predicate reads the clock each time the engine evaluates it, never at registration. The engine evaluates one term once per `Evaluate` call, so a repeated term sees one instant. Two different terms each read the clock and can see different instants if the clock advances between them. To give every term one instant, register a `TimeProvider` that returns a fixed instant for each evaluation.
 
-Reversed bounds (`lower` later than `upper`) are an authoring error. The predicate throws `ArgumentException`, the evaluation records a fault and the result is `Unknown`. The bounds are never swapped.
+Reversed bounds (`lower` later than `upper`) follow the reversed-bounds rule of the numeric range predicates in [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 
 A null selected value answers as [Null selected values](#null-selected-values) describes.
 
@@ -216,6 +218,27 @@ services.AddScoped<LovesPineapple>();
 services.AddTruthWeaver<PizzaOrder>(builder => builder
     .Add<LovesPineapple>()
     .Add<HasEarnedEnoughLoyaltyStamps>());
+```
+
+### Checking argument values at compile time
+
+The argument declarations check that each argument is present and of its kind. A rule between argument values, for example "`min` is not greater than `max`", goes in the optional `PredicateSchema.ArgumentValidator`. The compiler calls it once for each call of the predicate, after the argument check passes. It receives the literal arguments only. An argument read from a data source is absent, so the validator skips any check that needs it, and the predicate checks that value at evaluation. Each `PredicateArgumentProblem` that the validator returns becomes a `TRE0026` error at the call, and `Compile` returns no rule. The validator must be pure, thread-safe and must not throw.
+
+```csharp
+PredicateSchema schema = new(
+    "toppingCountBetween",
+    "Topping Count Between",
+    "Does the order have between min and max toppings?",
+    [
+        new PredicateArgumentSchema("min", "The fewest toppings.", LiteralKind.Int64),
+        new PredicateArgumentSchema("max", "The most toppings.", LiteralKind.Int64),
+    ])
+{
+    ArgumentValidator = args =>
+        args.TryGetInt64("min", out long min) && args.TryGetInt64("max", out long max) && min > max
+            ? [new PredicateArgumentProblem($"'min' ({min}) is greater than 'max' ({max}).", "'min' less than or equal to 'max'", $"'min' is {min} and 'max' is {max}", "Swap the values of 'min' and 'max'.")]
+            : [],
+};
 ```
 
 Lambda and class-based predicates register through the same `PredicateRegistryBuilder<TContext>.Add(...)` overloads. The difference is the dependency lifetime and the number of rule-authored arguments that the schema declares. The rule text, and the way the compiler validates a term, are the same for both.

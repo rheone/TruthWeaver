@@ -27,9 +27,11 @@ using TruthWeaver.Abstractions;
 /// <c>IsNull</c>/<c>IsNotNull</c> and <c>IsDefault</c>/<c>IsNotDefault</c>.
 /// </para>
 /// <para>
-/// <c>Between</c> and <c>Outside</c> are inclusive on both bounds. Reversed bounds throw
-/// <see cref="ArgumentException"/> at evaluation time, which the evaluator records as a <c>Fault</c> and
-/// <see cref="TruthValue.Unknown"/>. The bounds are never swapped silently.
+/// <c>Between</c> and <c>Outside</c> are inclusive on both bounds. Reversed bounds (<c>lower</c> greater than
+/// <c>upper</c>) are an authoring error. When both bounds are literals, the compiler reports a <c>TRE0026</c> error and
+/// the rule does not compile. A reversed bound that is not a literal throws <see cref="ArgumentException"/> at
+/// evaluation time, which the evaluator records as a <c>Fault</c> and <see cref="TruthValue.Unknown"/>. The bounds are
+/// never swapped silently.
 /// </para>
 /// </summary>
 public static class NumericPredicates
@@ -490,7 +492,7 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates a <c>Between</c> predicate: <c>lower &lt;= value &lt;= upper</c>, inclusive on both ends. Reversed bounds throw <see cref="ArgumentException"/> at evaluation time, which the evaluator records as a <c>Fault</c>.</summary>
+    /// <summary>Creates a <c>Between</c> predicate: <c>lower &lt;= value &lt;= upper</c>, inclusive on both ends. Reversed literal bounds are a <c>TRE0026</c> compile error; a reversed bound that is not a literal throws <see cref="ArgumentException"/> at evaluation time, which the evaluator records as a <c>Fault</c>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the integer value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -515,7 +517,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value lies between the bounds, inclusive on both ends. Reversed bounds (lower greater than upper) are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected integer value lies between the bounds, inclusive on both ends. Reversed bounds (lower greater than upper) are an authoring error, never swapped: a compile error for literal bounds, otherwise an argument error at evaluation. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Int64,
             name,
@@ -529,7 +531,7 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates a <c>Between</c> predicate: <c>lower &lt;= value &lt;= upper</c>, inclusive on both ends. Reversed bounds throw <see cref="ArgumentException"/> at evaluation time, which the evaluator records as a <c>Fault</c>.</summary>
+    /// <summary>Creates a <c>Between</c> predicate: <c>lower &lt;= value &lt;= upper</c>, inclusive on both ends. Reversed literal bounds are a <c>TRE0026</c> compile error; a reversed bound that is not a literal throws <see cref="ArgumentException"/> at evaluation time, which the evaluator records as a <c>Fault</c>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the decimal value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -554,7 +556,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value lies between the bounds, inclusive on both ends. Reversed bounds (lower greater than upper) are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
+            "True when the selected decimal value lies between the bounds, inclusive on both ends. Reversed bounds (lower greater than upper) are an authoring error, never swapped: a compile error for literal bounds, otherwise an argument error at evaluation. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Decimal,
             name,
@@ -568,7 +570,7 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Between</c>: <c>value &lt; lower</c> or <c>value &gt; upper</c>. Reversed bounds throw <see cref="ArgumentException"/> at evaluation time.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Between</c>: <c>value &lt; lower</c> or <c>value &gt; upper</c>. Reversed literal bounds are a <c>TRE0026</c> compile error; a reversed bound that is not a literal throws <see cref="ArgumentException"/> at evaluation time.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the integer value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -594,7 +596,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected integer value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected integer value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise an argument error at evaluation. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Int64,
             name,
@@ -608,7 +610,7 @@ public static class NumericPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Between</c>: <c>value &lt; lower</c> or <c>value &gt; upper</c>. Reversed bounds throw <see cref="ArgumentException"/> at evaluation time.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>Between</c>: <c>value &lt; lower</c> or <c>value &gt; upper</c>. Reversed literal bounds are a <c>TRE0026</c> compile error; a reversed bound that is not a literal throws <see cref="ArgumentException"/> at evaluation time.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the decimal value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -634,7 +636,7 @@ public static class NumericPredicates
     )
     {
         const string description =
-            "True when the selected decimal value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error and throw an argument error, never swapped. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected decimal value lies outside the bounds. The exact K3 complement of Between, so the bounds are inclusive. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise an argument error at evaluation. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Range(
             ScalarKinds.Decimal,
             name,

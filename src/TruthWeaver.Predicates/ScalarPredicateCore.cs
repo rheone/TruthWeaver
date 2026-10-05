@@ -1,5 +1,6 @@
 namespace TruthWeaver.Predicates;
 
+using System.Globalization;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -63,8 +64,10 @@ internal static class ScalarPredicateCore
 
     /// <summary>
     /// Builds a range predicate with inclusive bounds. <paramref name="outside"/> selects the exact complement.
-    /// Reversed bounds throw <see cref="ArgumentException"/> before the selection is read, so the authoring error shows
-    /// for a null selection too and is never swapped silently.
+    /// Reversed literal bounds are a compile-time diagnostic through the schema's
+    /// <see cref="PredicateSchema.ArgumentValidator"/>. A reversed bound that is not a literal throws
+    /// <see cref="ArgumentException"/> at evaluation, before the selection is read, so the authoring error shows for a
+    /// null selection too. The bounds are never swapped silently.
     /// </summary>
     /// <param name="kind">The scalar kind of the selector and both bounds.</param>
     /// <param name="name">The predicate's registered name.</param>
@@ -106,7 +109,10 @@ internal static class ScalarPredicateCore
                     kind.Kind
                 ),
             ]
-        );
+        )
+        {
+            ArgumentValidator = args => ReversedBounds(kind, args, lowerName, upperName),
+        };
 
         return (
             schema,
@@ -243,5 +249,44 @@ internal static class ScalarPredicateCore
                     : PredicateResult.FromBoolAsync(selected.Value.Equals(default) != negate);
             }
         );
+    }
+
+    /// <summary>
+    /// The compile-time check behind <see cref="Range{TContext, T}"/>: reports reversed bounds when both bounds are
+    /// literals. A bound that is absent (its value comes from a data source) skips the check, and the evaluation-time
+    /// check covers it. The problem suggests swapping the bounds but the compiler never does it.
+    /// </summary>
+    private static IReadOnlyList<PredicateArgumentProblem> ReversedBounds<T>(
+        ScalarKind<T> kind,
+        PredicateArguments args,
+        string lowerName,
+        string upperName
+    )
+        where T : struct, IComparable<T>, IEquatable<T>
+    {
+        if (!args.TryGetRaw(lowerName, out _) || !args.TryGetRaw(upperName, out _))
+        {
+            return [];
+        }
+
+        T lower = kind.Get(args, lowerName);
+        T upper = kind.Get(args, upperName);
+        if (lower.CompareTo(upper) <= 0)
+        {
+            return [];
+        }
+
+        // Invariant text, so the diagnostic reads the same whatever the compiling thread's culture is.
+        string lowerText = kind.Format?.Invoke(lower) ?? string.Create(CultureInfo.InvariantCulture, $"{lower}");
+        string upperText = kind.Format?.Invoke(upper) ?? string.Create(CultureInfo.InvariantCulture, $"{upper}");
+        return
+        [
+            new PredicateArgumentProblem(
+                $"reversed bounds: '{lowerName}' ({lowerText}) is greater than '{upperName}' ({upperText}).",
+                $"'{lowerName}' less than or equal to '{upperName}'",
+                $"'{lowerName}' is {lowerText} and '{upperName}' is {upperText}",
+                $"Swap the values of '{lowerName}' and '{upperName}'."
+            ),
+        ];
     }
 }

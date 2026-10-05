@@ -104,7 +104,7 @@ Inventory: `Between(value, n, k)`, `Outside(value, n, k)`, `In(value, candidate1
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `Between` | present | `NumericPredicates.Between` (`Int64`, `Decimal`) | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error. The predicate throws an `ArgumentException` at evaluation time. The compile-time diagnostic for literal bounds is not implemented. |
+| `Between` | present | `NumericPredicates.Between` (`Int64`, `Decimal`) | Arguments `n`, `k` as `Int64` or `Decimal`. Bounds are inclusive on both ends. Reversed bounds (`n > k`) are an authoring error. Literal bounds are a `TRE0026` compile error (through `PredicateSchema.ArgumentValidator`). A bound that is not a literal makes the predicate throw an `ArgumentException` at evaluation time. |
 | `Outside` | present | `NumericPredicates.Outside` (`Int64`, `Decimal`) | Exact complement of `Between` and its registered twin: the K3 complement (`Unknown` stays `Unknown`), not a boolean negation. |
 | `In` | present | `NumericPredicates.In`, `ScalarPredicates.In` | Scalar membership only. Candidates map to `Int64Array` / `DecimalArray`; the inventory's variadic form is one array argument in the predicate schema. |
 | `NotIn` | present | `NumericPredicates.NotIn`, `ScalarPredicates.NotIn` | As `In`; the registered twin of `In`. K3 caveat: SQL-style `NOT IN` with a null candidate is `Unknown`; candidates here are literals and cannot be null, so there is no such case. |
@@ -166,7 +166,7 @@ arguments), `Between` (each with `DateTimeOffset` and `DateTime` arguments).
 | `After(value, DateTime)` | not added (decided: host converts) | none | **Needs a new `LiteralKind`** (`DateTime`) or a documented conversion. `DateTime` has no offset and a `Kind` of `Utc`/`Local`/`Unspecified`, so conversion to `DateTimeOffset` is host-timezone-dependent for `Local`/`Unspecified`. Adding a `LiteralKind` is a closed-set extension (ADR-0003, CONTEXT.md) and a breaking change for exhaustive switches. Recommend not adding it: accept the `DateTimeOffset` literal and let the host convert. |
 | `Before(value, DateTimeOffset)` | present | `DateTimePredicates` | As `After`. |
 | `Before(value, DateTime)` | not added (decided: host converts) | none | As `After(value, DateTime)`. |
-| `Between(value, DateTimeOffset, DateTimeOffset)` | present | `DateTimePredicates` | Inclusive on both ends; reversed bounds are an authoring error (question 7). |
+| `Between(value, DateTimeOffset, DateTimeOffset)` | present | `DateTimePredicates` | Inclusive on both ends; reversed bounds are an authoring error (question 7): a `TRE0026` compile error for literal bounds, an `ArgumentException` at evaluation otherwise. |
 | `Between(value, DateTime, DateTime)` | not added (decided: host converts) | none | As `After(value, DateTime)`. |
 
 Overload by argument type is not expressible in a single predicate schema (one name, one schema), so the

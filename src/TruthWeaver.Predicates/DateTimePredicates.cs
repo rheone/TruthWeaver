@@ -179,8 +179,10 @@ public static class DateTimePredicates
 
     /// <summary>
     /// Creates an inclusive range predicate: true when <c>lower &lt;= selected &lt;= upper</c>. Reversed bounds
-    /// (<c>lower &gt; upper</c>) are an authoring error: evaluation throws <see cref="ArgumentException"/>, which the
-    /// engine records as an <see cref="TruthValue.Unknown"/> result with a fault. The bounds are never swapped silently.
+    /// (<c>lower &gt; upper</c>) are an authoring error. When both bounds are literals, the compiler reports a
+    /// <c>TRE0026</c> error and the rule does not compile. A reversed bound that is not a literal makes evaluation throw
+    /// <see cref="ArgumentException"/>, which the engine records as an <see cref="TruthValue.Unknown"/> result with a
+    /// fault. The bounds are never swapped silently.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -203,7 +205,7 @@ public static class DateTimePredicates
     )
     {
         const string description =
-            "True when the selected instant is between the two bounds, inclusive on both ends (lower <= value <= upper). Reversed bounds (lower later than upper) are an authoring error and fault the evaluation; they are never swapped."
+            "True when the selected instant is between the two bounds, inclusive on both ends (lower <= value <= upper). Reversed bounds (lower later than upper) are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
         return Range(name, label, description, selector, nullBehavior, negate: false, lowerName, upperName);
     }
@@ -211,7 +213,8 @@ public static class DateTimePredicates
     /// <summary>
     /// Creates the <c>Outside</c> twin of <see cref="Between{TContext}"/>: its exact Strong Kleene complement
     /// (true when the instant is earlier than the lower bound or later than the upper bound). Reversed bounds are
-    /// an authoring error and throw <see cref="ArgumentException"/>.
+    /// an authoring error: a <c>TRE0026</c> compile error for literal bounds, otherwise <see cref="ArgumentException"/>
+    /// at evaluation.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -238,7 +241,7 @@ public static class DateTimePredicates
     )
     {
         const string description =
-            "The Strong Kleene complement of Between: True when the selected instant is earlier than the lower bound or later than the upper bound, False when it is within the inclusive range, Unknown when Between is Unknown. Reversed bounds are an authoring error and fault the evaluation."
+            "The Strong Kleene complement of Between: True when the selected instant is earlier than the lower bound or later than the upper bound, False when it is within the inclusive range, Unknown when Between is Unknown. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
         return Range(name, label, description, selector, nullBehavior, negate: true, lowerName, upperName);
     }
@@ -444,7 +447,7 @@ public static class DateTimePredicates
         );
     }
 
-    /// <summary>Builds an inclusive range predicate through the shared <see cref="ScalarPredicateCore.Range{TContext, T}"/>; reversed bounds throw there.</summary>
+    /// <summary>Builds an inclusive range predicate through the shared <see cref="ScalarPredicateCore.Range{TContext, T}"/>, which checks reversed bounds at compile time and at evaluation.</summary>
     private static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate

@@ -34,6 +34,15 @@ copyright line reads 2026.
 
 ### Added
 
+- Reversed literal bounds on `Between` and `Outside` (`NumericPredicates` for `Int64` and `Decimal`, and
+  `DateTimePredicates`) are now a compile-time error, the new `DiagnosticCodes.InvalidArgumentValue` (`TRE0026`), at the
+  predicate call in rule text, JSON, YAML and `RuleBuilder` rules, with a suggestion to swap the bounds. `Compile` returns
+  no rule. Equal bounds still compile. A bound that is not a literal, such as a value read from a data source, still
+  throws `ArgumentException` at evaluation (`Unknown` plus a `Fault`). The bounds are never swapped.
+- `PredicateSchema.ArgumentValidator` and `PredicateArgumentProblem`: an optional check over the literal argument values
+  of a predicate call. Each problem it returns is a `TRE0026` error. It is `null` by default, so existing schemas are
+  unchanged.
+
 - `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals`
   in `CollectionPredicates`: the Strong Kleene complements of their positive members.
 

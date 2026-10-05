@@ -54,6 +54,7 @@ These codes do not belong to one Operation.
 | `TRE0016` | `RewriteTooLarge` | An expanding rewrite would produce more nodes than the compiler option `MaxRewriteNodeCount` allows, so the compiler does not perform it. |
 | `TRE0024` | `UndeclaredDataSource` | A variable reference names a data source that is not declared in the compiler options. |
 | `TRE0025` | `MalformedDataQuery` | The query of a variable reference is not valid for the dialect of its data source. |
+| `TRE0026` | `InvalidArgumentValue` | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `Between` or `Outside`. |
 
 ## Related
 

@@ -10,7 +10,7 @@
 - [x] Every listed predicate is registerable for each kind where it is defined, and the kinds where it is not defined are documented
 - [x] Null selections behave per the catalog rules, and the null tests are definite
 - [x] `Between` is inclusive on both ends and `Outside` is its exact complement, with tests at each boundary
-- [ ] Reversed bounds are a compile-time diagnostic for literal bounds and an argument error otherwise, and are never swapped
+- [x] Reversed bounds are a compile-time diagnostic for literal bounds and an argument error otherwise, and are never swapped
 - [ ] Every positive predicate has a registered `NotX` twin that agrees with its K3 complement, including for `Unknown`
 - [x] `Decimal` versus `Int64` comparison is documented and tested
 - [x] README and the gap list show the predicates as present
@@ -24,3 +24,4 @@ Source: [gap list, Primitive types and Numeric sections](../k3-gap-list.md). Rul
 - 2026-10-04: Not done: the compile-time diagnostic for reversed literal bounds. No schema-level argument validation hook exists in `PredicateSchema` or the compiler, so adding it is an engine design decision. Reversed bounds currently throw `ArgumentException` at evaluation time (Unknown plus a `Fault`), which is the "argument error otherwise" half of the rule.
 - 2026-10-04 bookkeeping: the boxes were ticked from what this comment records. No comment shows a red run before the implementation, so that box stays open. The full validation passed on the integrated branch (restore --locked-mode, build, test, csharpier, format, roslynator).
 - 2026-10-04 bookkeeping: the reversed-bounds box stays open because the compile-time diagnostic is not implemented (see the comment above and ticket 12). The twin box stays open: `NotLessThan`, `NotGreaterThan`, `NotLessThanOrEqual` and `NotGreaterThanOrEqual` are not registered. The opposite ordering member (`GreaterThanOrEqual` for `LessThan`, and so on) serves as the twin. It is a strict complement for a null selection under both settings: under the default `NullBehavior.Unknown` both members answer `Unknown`, and under `NullBehavior.False` the positive member answers `False` and the opposite ordering member answers `True` (since the strict-complement fix). Both members of a pair have the same default `NullBehavior`.
+- 2026-10-04: Reversed-bounds box ticked. [Ticket 12](12-reversed-literal-bounds-diagnostic.md) adds the compile-time `TRE0026` diagnostic for reversed literal bounds; a bound that is not a literal still throws `ArgumentException` at evaluation.

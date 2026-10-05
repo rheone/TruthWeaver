@@ -557,6 +557,7 @@ internal sealed class RuleNodeCompiler<TContext>
         }
 
         PredicateSchema schema = descriptor.Schema;
+        int diagnosticsBefore = this.diagnostics.Count;
         Dictionary<string, LiteralValue> resolvedArgs = [];
         Dictionary<string, VariableReference> resolvedVariables = [];
         HashSet<string> suppliedNames = new(StringComparer.Ordinal);
@@ -654,12 +655,50 @@ internal sealed class RuleNodeCompiler<TContext>
             }
         }
 
+        // The schema's own check over argument values runs only once every argument is present and of its kind, so it
+        // never reports on top of (or because of) an argument error already raised for this call.
+        if (schema.ArgumentValidator is { } validator && this.diagnostics.Count == diagnosticsBefore)
+        {
+            this.CheckArgumentValues(node, schema, validator, resolvedArgs);
+        }
+
         TermIdentity identity = new(
             schema.Name,
             [.. resolvedArgs.Select(kv => new KeyValuePair<string, LiteralValue>(kv.Key, kv.Value))],
             [.. resolvedVariables.Select(kv => new KeyValuePair<string, VariableReference>(kv.Key, kv.Value))]
         );
         return new TermExpression(identity);
+    }
+
+    /// <summary>
+    /// Reports <c>TRE0026</c>, one error per problem, at the predicate call when the schema's
+    /// <see cref="PredicateSchema.ArgumentValidator"/> rejects the call's literal arguments. Variable arguments are not in
+    /// <paramref name="literalArgs"/>, so the validator sees only values known at compile time.
+    /// </summary>
+    private void CheckArgumentValues(
+        TermNode node,
+        PredicateSchema schema,
+        Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>> validator,
+        Dictionary<string, LiteralValue> literalArgs
+    )
+    {
+        foreach (PredicateArgumentProblem problem in validator(new PredicateArguments(literalArgs)))
+        {
+            DiagnosticSuggestion? suggestion = problem.Suggestion is null
+                ? null
+                : new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, problem.Suggestion);
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.InvalidArgumentValue,
+                    $"Predicate '{schema.Name}' has invalid argument values: {problem.Message}",
+                    node.Span,
+                    expected: problem.Expected,
+                    found: problem.Found,
+                    suggestion: suggestion,
+                    path: node.Path
+                )
+            );
+        }
     }
 
     /// <summary>
