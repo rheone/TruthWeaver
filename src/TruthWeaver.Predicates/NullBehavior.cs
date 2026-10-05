@@ -4,13 +4,14 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Chooses what a built-in predicate answers when its selector returns <see langword="null"/>. The host
-/// picks this once, when it registers the predicate; rule authors cannot change it.
+/// picks this once, when it registers the predicate; rule authors cannot change it. Every built-in predicate that takes
+/// a <see cref="NullBehavior"/> uses <see cref="Unknown"/> by default.
 /// </summary>
 /// <remarks>
-/// <see cref="False"/> makes a missing value a definite, fault-free answer, so <c>NOT predicate</c> and the predicate's
-/// <c>NotX</c> twin agree for a null value; <see cref="False"/> states the answer. <see cref="Unknown"/> is the Strong Kleene reading of a missing value: the predicate answers
-/// <see cref="TruthValue.Unknown"/> (still without a fault), <c>NOT</c> of it stays
-/// <see cref="TruthValue.Unknown"/>, and <c>Decision.IsSatisfied</c> remains fail-closed.
+/// <see cref="Unknown"/> is the Strong Kleene reading of a missing value: the predicate cannot evaluate it, so it answers
+/// <see cref="TruthValue.Unknown"/> (without a fault), <c>NOT</c> of it stays <see cref="TruthValue.Unknown"/>, and
+/// <c>Decision.IsSatisfied</c> remains fail-closed. <see cref="False"/> makes a missing value a definite, fault-free
+/// answer. In both cases <c>NOT predicate</c> and the predicate's <c>NotX</c> twin agree for a null value.
 /// </remarks>
 public enum NullBehavior
 {

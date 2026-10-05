@@ -121,13 +121,15 @@ copyright line reads 2026.
   `Outside` and `IsNotDefault`, and `GreaterThanOrEqual` and `LessThanOrEqual` (the twins of `LessThan` and
   `GreaterThan`). Under `NullBehavior.Unknown` both members still answer `Unknown`. Positive predicates and the definite
   null tests are unchanged.
-- Every `NotX` twin in `TruthWeaver.Predicates` has the same default `NullBehavior` as its positive predicate, so a pair
-  registered with the defaults is an exact complement for a null selected value. `NotEqual`, `NotContains`,
-  `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates`,
-  `RegexPredicates.NotMatches` and `CollectionPredicates.NotSetEquals` now default to `NullBehavior.False` (they defaulted
-  to `NullBehavior.Unknown`). Registered with no option, the string and regex twins answer `True` for a null selected
-  value (they answered `Unknown`), and `NotSetEquals` reads a null collection as empty, as `SetEquals` does. Pass
-  `NullBehavior.Unknown` at registration to keep the earlier answer. Positive predicates are unchanged.
+- Breaking: every built-in predicate in `TruthWeaver.Predicates` answers `Unknown` for a null selected value by default
+  (`NullBehavior.Unknown`), because it cannot evaluate a missing value. `Equals`, `EqualsIgnoreCase`, `StartsWith`,
+  `EndsWith`, `Contains` and `EqualsConfigurable` in `StringPredicates`, `RegexPredicates.Matches` and
+  `CollectionPredicates.SetEquals` defaulted to `NullBehavior.False` and answered `False` (`SetEquals` read a null
+  collection as empty, so it answered `True` for an empty argument array). Their twins `NotEqual`, `NotEqualsIgnoreCase`,
+  `NotStartsWith`, `NotEndsWith`, `NotContains`, `NotEqualsConfigurable`, `NotMatches` and `NotSetEquals` default to
+  `NullBehavior.Unknown` too, so both members of a pair registered with the defaults answer `Unknown`. Migration: pass
+  `nullBehavior: NullBehavior.False` at registration to keep the earlier answer; the twin then answers `True`, and
+  `SetEquals` keeps the empty-set reading. The definite null tests are unchanged.
 - `DateTimePredicates.Between` and `Outside` throw the same reversed-bounds `ArgumentException` as the numeric range
   predicates: `ParamName` is `args` (it was `lower`) and the message is
   `Predicate '<name>' has reversed bounds: 'lower' (<lower>) is greater than 'upper' (<upper>).`, with both bounds in the

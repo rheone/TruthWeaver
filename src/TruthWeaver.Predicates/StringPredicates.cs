@@ -19,8 +19,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -31,12 +31,12 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Equals",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string equals the argument exactly (ordinal, case-sensitive "
-            + "comparison). A null selected value is treated as not-equal (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "comparison). A null selected value is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return Create(
             name,
             label,
@@ -56,8 +56,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -68,13 +68,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Equals (Ignore Case)",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string equals the argument, ignoring case. Comparison is ordinal "
             + "case-insensitive, never culture-sensitive, so behavior never depends on the host's "
-            + "current culture. A null selected value is treated as not-equal (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "current culture. A null selected value is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return Create(
             name,
             label,
@@ -94,8 +94,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the prefix.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -106,12 +106,12 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Starts With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string starts with the argument (ordinal comparison, never "
-            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "culture-sensitive). A null selected value is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return Create(
             name,
             label,
@@ -131,8 +131,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the suffix.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -143,12 +143,12 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Ends With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string ends with the argument (ordinal comparison, never "
-            + "culture-sensitive). A null selected value is treated as not-matching (false), never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "culture-sensitive). A null selected value is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return Create(
             name,
             label,
@@ -168,8 +168,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the substring.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -180,13 +180,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string contains the argument as a substring (ordinal comparison, "
-            + "never culture-sensitive). A null selected value is treated as not-matching (false), "
-            + "never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "never culture-sensitive). A null selected value is Unknown, "
+            + "never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return Create(
             name,
             label,
@@ -364,8 +364,8 @@ public static class StringPredicates
 
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="Equals{TContext}"/>: an ordinal, case-sensitive inequality test. It is
-    /// the Strong Kleene complement of <c>Equals</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// the Strong Kleene complement of <c>Equals</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -373,9 +373,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -386,13 +386,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Equal",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected string differs from the argument (ordinal, case-sensitive, never culture-sensitive). The K3 complement of Equals: a null selected value answers True (never a fault), "
-            + "the complement of Equals's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            "True when the selected string differs from the argument (ordinal, case-sensitive, never culture-sensitive). The K3 complement of Equals: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes Equals False "
+            + "and this predicate True.";
         return Create(
             name,
             label,
@@ -409,8 +409,8 @@ public static class StringPredicates
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="Contains{TContext}"/>: an ordinal test that the selected string does
     /// not contain the substring. It is the Strong Kleene complement of <c>Contains</c>, so a
-    /// <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -418,9 +418,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the substring.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -431,13 +431,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected string does not contain the argument as a substring (ordinal, never culture-sensitive). The K3 complement of Contains: a null selected value answers True (never a fault), "
-            + "the complement of Contains's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            "True when the selected string does not contain the argument as a substring (ordinal, never culture-sensitive). The K3 complement of Contains: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes Contains False "
+            + "and this predicate True.";
         return Create(
             name,
             label,
@@ -468,8 +468,8 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.False"/> (the default) or
-    /// <see cref="NullBehavior.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -480,14 +480,14 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Equals (Configurable)",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
             + "ordinal and case-insensitive by default (ignoreCase), with optional "
-            + "leading/trailing-whitespace trimming. A null selected value is treated as not-equal "
-            + "(false), never a fault, unless the host registers it with NullBehavior.Unknown.";
+            + "leading/trailing-whitespace trimming. A null selected value is Unknown, "
+            + "never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return CreateConfigurable(
             name,
             label,
@@ -503,8 +503,8 @@ public static class StringPredicates
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="EqualsConfigurable{TContext}"/>: true when the selected string differs
     /// from the argument under the same rule-text <c>ignoreCase</c> and <c>trim</c> arguments. It is the Strong Kleene
-    /// complement of <c>EqualsConfigurable</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// complement of <c>EqualsConfigurable</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -512,9 +512,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -525,15 +525,15 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Equals (Configurable)",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string differs from the argument, under configurable comparison rules: "
             + "ordinal and case-insensitive by default (ignoreCase), with optional leading/trailing-whitespace "
-            + "trimming. The K3 complement of EqualsConfigurable: a null selected value answers True (never a fault), "
-            + "the complement of EqualsConfigurable's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            + "trimming. The K3 complement of EqualsConfigurable: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes EqualsConfigurable False "
+            + "and this predicate True.";
         return CreateConfigurable(
             name,
             label,
@@ -548,8 +548,8 @@ public static class StringPredicates
 
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="EqualsIgnoreCase{TContext}"/>: an ordinal, case-insensitive inequality test. It is the Strong Kleene complement
-    /// of <c>EqualsIgnoreCase</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// of <c>EqualsIgnoreCase</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -557,9 +557,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison target.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -570,13 +570,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Equals (Ignore Case)",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected string differs from the argument, ignoring case (ordinal, never culture-sensitive). The K3 complement of EqualsIgnoreCase: a null selected value answers True (never a fault), "
-            + "the complement of EqualsIgnoreCase's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            "True when the selected string differs from the argument, ignoring case (ordinal, never culture-sensitive). The K3 complement of EqualsIgnoreCase: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes EqualsIgnoreCase False "
+            + "and this predicate True.";
         return Create(
             name,
             label,
@@ -592,8 +592,8 @@ public static class StringPredicates
 
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="StartsWith{TContext}"/>: an ordinal test that the selected string does not start with the prefix. It is the Strong Kleene complement
-    /// of <c>StartsWith</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// of <c>StartsWith</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -601,9 +601,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the prefix.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -614,13 +614,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Starts With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected string does not start with the argument (ordinal, never culture-sensitive). The K3 complement of StartsWith: a null selected value answers True (never a fault), "
-            + "the complement of StartsWith's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            "True when the selected string does not start with the argument (ordinal, never culture-sensitive). The K3 complement of StartsWith: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes StartsWith False "
+            + "and this predicate True.";
         return Create(
             name,
             label,
@@ -636,8 +636,8 @@ public static class StringPredicates
 
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="EndsWith{TContext}"/>: an ordinal test that the selected string does not end with the suffix. It is the Strong Kleene complement
-    /// of <c>EndsWith</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
-    /// <see cref="NullBehavior.Unknown"/>.
+    /// of <c>EndsWith</c>, so a <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
+    /// <see cref="NullBehavior.False"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -645,9 +645,9 @@ public static class StringPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the suffix.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
-    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
+    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -658,13 +658,13 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Ends With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected string does not end with the argument (ordinal, never culture-sensitive). The K3 complement of EndsWith: a null selected value answers True (never a fault), "
-            + "the complement of EndsWith's False, unless the host registers both with NullBehavior.Unknown, "
-            + "which makes both Unknown.";
+            "True when the selected string does not end with the argument (ordinal, never culture-sensitive). The K3 complement of EndsWith: a null selected value answers Unknown (never a fault), "
+            + "unless the host registers both with NullBehavior.False, which makes EndsWith False "
+            + "and this predicate True.";
         return Create(
             name,
             label,

@@ -139,9 +139,53 @@ public sealed class NotXTwinInvariantTests
         Assert.Contains("Fake.HasThing(String): the pair takes a nullBehavior option", failure, StringComparison.Ordinal);
     }
 
-    /// <summary>A twin whose null answer is the complement of its positive's, by default and under False, passes.</summary>
+    /// <summary>
+    /// A pair that answers Unknown for a null selected value by default, and False and True under False, passes.
+    /// </summary>
     [Fact]
     public async Task CheckPairAsync_TwinDefaultMatchesPositive_ReportsNoFailures_Test()
+    {
+        IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
+            FakePair(KleeneTwin) with
+            {
+                Nulls = FakeNulls(TruthValue.Unknown, TruthValue.Unknown),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    /// <summary>
+    /// A twin whose default differs from its positive's (the positive answers Unknown for a null selected value by
+    /// default, the twin True) is reported for the default registration.
+    /// </summary>
+    [Fact]
+    public async Task CheckPairAsync_TwinDefaultDiffersFromPositive_ReportsTheTwin_Test()
+    {
+        IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
+            FakePair(KleeneTwin) with
+            {
+                Nulls = FakeNulls(TruthValue.Unknown, TruthValue.True),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        string failure = Assert.Single(failures);
+        Assert.Contains(
+            "Fake.NotHasThing(String): for a null selected value registered with no NullBehavior it answers True, "
+                + "but NOT Fake.HasThing(String) answers Unknown",
+            failure,
+            StringComparison.Ordinal
+        );
+    }
+
+    /// <summary>
+    /// A positive factory that answers a definite value for a null selected value by default is reported, even when its
+    /// twin is the complement, because a missing value answers Unknown by default.
+    /// </summary>
+    [Fact]
+    public async Task CheckPairAsync_PositiveDefaultIsDefinite_ReportsThePositive_Test()
     {
         IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
             FakePair(KleeneTwin) with
@@ -151,28 +195,10 @@ public sealed class NotXTwinInvariantTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
-    }
-
-    /// <summary>
-    /// A twin whose default differs from its positive's (the positive answers False for a null selected value by default,
-    /// the twin Unknown) is reported for the default registration.
-    /// </summary>
-    [Fact]
-    public async Task CheckPairAsync_TwinDefaultDiffersFromPositive_ReportsTheTwin_Test()
-    {
-        IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
-            FakePair(KleeneTwin) with
-            {
-                Nulls = FakeNulls(TruthValue.False, TruthValue.Unknown),
-            },
-            TestContext.Current.CancellationToken
-        );
-
         string failure = Assert.Single(failures);
         Assert.Contains(
-            "Fake.NotHasThing(String): for a null selected value registered with no NullBehavior it answers Unknown, "
-                + "but NOT Fake.HasThing(String) answers True",
+            "Fake.HasThing(String): for a null selected value registered with no NullBehavior it answers False, "
+                + "but it must answer Unknown",
             failure,
             StringComparison.Ordinal
         );

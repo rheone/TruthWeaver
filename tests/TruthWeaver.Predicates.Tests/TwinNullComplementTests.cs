@@ -446,6 +446,23 @@ public sealed class TwinNullComplementTests
     }
 
     /// <summary>
+    /// Registered with no <see cref="NullBehavior"/>, a pair answers a null selection with Unknown for both members,
+    /// because a missing value cannot be evaluated.
+    /// </summary>
+    /// <param name="pair">The name of the pair.</param>
+    [Theory]
+    [MemberData(nameof(PairNames))]
+    public async Task Twin_NullSelectionWithDefaultBehavior_IsUnknownForBothMembers_Test(string pair)
+    {
+        Pair row = Pairs[pair];
+
+        TruthValue positive = await row.DefaultPositive().Evaluate(Missing, row.Arguments, CancellationToken.None);
+        TruthValue twin = await row.DefaultTwin().Evaluate(Missing, row.Arguments, CancellationToken.None);
+
+        Assert.Equal((TruthValue.Unknown, TruthValue.Unknown), (positive, twin));
+    }
+
+    /// <summary>
     /// Registered with no <see cref="NullBehavior"/>, a twin answers a null selection with the Strong Kleene complement of
     /// what its positive predicate answers, because both members of a pair have the same default.
     /// </summary>

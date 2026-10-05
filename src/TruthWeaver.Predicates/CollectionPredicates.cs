@@ -21,16 +21,15 @@ public static class CollectionPredicates
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">
-    /// Reads the collection to compare from the context. A <see langword="null"/> result is treated as
-    /// an empty collection, never a fault, unless <paramref name="nullBehavior"/> is
-    /// <see cref="NullBehavior.Unknown"/>, which makes it <see cref="TruthValue.Unknown"/> instead.
+    /// Reads the collection to compare from the context. A <see langword="null"/> result answers per
+    /// <paramref name="nullBehavior"/>, never a fault.
     /// </param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison set.</param>
     /// <param name="nullBehavior">
-    /// How a <see langword="null"/> selected collection reads: <see cref="NullBehavior.False"/> (the default), which reads
-    /// it as an empty collection, or <see cref="NullBehavior.Unknown"/>, which makes the answer
-    /// <see cref="TruthValue.Unknown"/>. Neither is a fault.
+    /// How a <see langword="null"/> selected collection reads: <see cref="NullBehavior.Unknown"/> (the default), which
+    /// makes the answer <see cref="TruthValue.Unknown"/>, or <see cref="NullBehavior.False"/>, which reads it as an empty
+    /// collection. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -41,7 +40,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Set Equals",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
@@ -50,17 +49,17 @@ public static class CollectionPredicates
             + "divergence from CONTEXT.md's array-argument order-sensitive term-identity rule, which "
             + "governs term identity, not this predicate's evaluation semantics). Comparison is "
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "
-            + "collection is treated as empty, never a fault, unless the host registers it with "
-            + "NullBehavior.Unknown, which makes it Unknown.";
+            + "collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, "
+            + "which reads it as an empty collection.";
         return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: false);
     }
 
     /// <summary>
     /// Creates the <c>NotSetEquals</c> twin of <see cref="SetEquals{TContext}"/>: true when the selected collection and the
     /// literal array argument do not contain the same distinct elements. It is the Strong Kleene complement of
-    /// <c>SetEquals</c>. By default a <see langword="null"/> collection is an empty collection, as for <c>SetEquals</c>,
-    /// and the answer is the complement; under <see cref="NullBehavior.Unknown"/> it answers
-    /// <see cref="TruthValue.Unknown"/>.
+    /// <c>SetEquals</c>. By default a <see langword="null"/> collection answers <see cref="TruthValue.Unknown"/>; under
+    /// <see cref="NullBehavior.False"/> it is an empty collection, as for <c>SetEquals</c>, and the answer is the
+    /// complement.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -68,8 +67,8 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the comparison set.</param>
     /// <param name="nullBehavior">
-    /// How <c>SetEquals</c> reads a <see langword="null"/> selected collection: <see cref="NullBehavior.False"/> (the
-    /// default, the same as <c>SetEquals</c>), which reads it as an empty collection, or <see cref="NullBehavior.Unknown"/>.
+    /// How <c>SetEquals</c> reads a <see langword="null"/> selected collection: <see cref="NullBehavior.Unknown"/> (the
+    /// default, the same as <c>SetEquals</c>) or <see cref="NullBehavior.False"/>, which reads it as an empty collection.
     /// This twin answers the complement. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
@@ -81,21 +80,20 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Set Equals",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.False
+        NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "The Strong Kleene complement of SetEquals: True when the selected collection and the argument array do not "
             + "contain the same elements, ignoring order and duplicates. Comparison is case-sensitive (ordinal). A null "
-            + "selected collection is treated as empty, never a fault, unless the host registers it with "
-            + "NullBehavior.Unknown, which makes it Unknown.";
+            + "selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, "
+            + "which reads it as an empty collection.";
         return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: true);
     }
 
     /// <summary>
     /// Creates a predicate that is true when the selected collection has no elements. A
-    /// <see langword="null"/> collection counts as empty, the way <see cref="SetEquals{TContext}"/> treats it,
-    /// so the answer is always definite and there is no <see cref="NullBehavior"/> option.
+    /// <see langword="null"/> collection counts as empty, so the answer is always definite and there is no <see cref="NullBehavior"/> option.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>

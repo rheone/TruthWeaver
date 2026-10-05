@@ -30,15 +30,16 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>Equals</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task Equals_NullSelectedValue_ReturnsFalse()
+    public async Task Equals_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]
@@ -63,15 +64,16 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>EqualsIgnoreCase</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task EqualsIgnoreCase_NullSelectedValue_ReturnsFalse()
+    public async Task EqualsIgnoreCase_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EqualsIgnoreCase<TestContext>("equalsIgnoreCase", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]
@@ -96,15 +98,16 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>StartsWith</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task StartsWith_NullSelectedValue_ReturnsFalse()
+    public async Task StartsWith_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.StartsWith<TestContext>("startsWith", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]
@@ -129,15 +132,16 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>EndsWith</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task EndsWith_NullSelectedValue_ReturnsFalse()
+    public async Task EndsWith_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EndsWith<TestContext>("endsWith", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Smith"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]
@@ -162,15 +166,16 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>Contains</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task Contains_NullSelectedValue_ReturnsFalse()
+    public async Task Contains_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.Contains<TestContext>("contains", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     [Fact]
@@ -309,8 +314,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, untrimmedResult);
     }
 
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>EqualsConfigurable</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task EqualsConfigurable_NullSelectedValue_ReturnsFalse()
+    public async Task EqualsConfigurable_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
@@ -321,7 +327,7 @@ public class StringPredicatesTests
             CancellationToken.None
         );
 
-        Assert.Equal(TruthValue.False, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     private static PredicateArguments Args(string name, string value)

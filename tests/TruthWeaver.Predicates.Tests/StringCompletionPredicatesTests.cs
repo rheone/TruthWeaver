@@ -111,18 +111,18 @@ public class StringCompletionPredicatesTests
     }
 
     /// <summary>
-    /// Registered with no <c>NullBehavior</c>, a null selection answers True: the twin has the same default as
-    /// <c>Contains</c>, which answers False, and the twin answers the complement.
+    /// Registered with no <c>NullBehavior</c>, a null selection answers Unknown: the twin has the same default as
+    /// <c>Contains</c>, which answers Unknown, and the twin answers the complement.
     /// </summary>
     [Fact]
-    public async Task NotContains_NullSelection_DefaultsToTrue_Test()
+    public async Task NotContains_NullSelection_DefaultsToUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.NotContains<TestContext>("nc", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.True, result);
+        Assert.Equal(TruthValue.Unknown, result);
     }
 
     /// <summary>

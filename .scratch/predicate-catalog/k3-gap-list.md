@@ -48,9 +48,10 @@ The host supplies `Func<TContext, T?> selector` at registration; rule text suppl
   `Unknown`. In practice **no catalog member ever does**: all of them go through the internal
   `PredicateResult.FromBoolAsync(bool)`, so the catalog is effectively two-valued. `Unknown` appears only
   when a predicate faults (invalid regex) per ADR-0001.
-- **Null selected value.** Every string and regex member returns `False` for a `null` selection;
-  `SetEquals` treats a `null` collection as empty; `IsNullOrEmpty` returns `True` for `null` (its
-  definition). Nothing returns `Unknown` for null. See [Open questions](#open-questions-for-the-repo-owner).
+- **Null selected value.** Every member with a `nullBehavior` option returns `Unknown` for a `null`
+  selection by default (owner decision 2026-10-04); `NullBehavior.False` is the host option, under which
+  `SetEquals` treats a `null` collection as empty. `IsNullOrEmpty` returns `True` for `null` (its
+  definition). See [Open questions](#open-questions-for-the-repo-owner).
 - **Comparison.** Ordinal and case-sensitive by default. `EqualsIgnoreCase` is ordinal-ignore-case. `EqualsConfigurable` is
   also ordinal (k3-followups 12); its `culture` argument was removed (k3-followups 20).
 - **Naming.** Members are named like BCL methods (`Equals`, `StartsWith`); the inventory uses `Equal`,
@@ -124,7 +125,7 @@ Inventory: each predicate "with Trim, Culture, ignoreCase".
 | `IsNotNullOrEmpty` | present | `StringPredicates.IsNotNullOrEmpty` | Negation of `IsNullOrEmpty`; returns `False` for `null`. |
 | `IsNullOrWhiteSpace` | present | `StringPredicates.IsNullOrWhiteSpace` | `Trim` is implied. Listed in issue 01 as a candidate. |
 | `IsNotNullOrWhiteSpace` | present | `StringPredicates.IsNotNullOrWhiteSpace` | Negation of `IsNullOrWhiteSpace`. |
-| `NotContains` | present | `StringPredicates.NotContains` | K3 complement of `Contains` for every input, null included: `Unknown` under `NullBehavior.Unknown`, `True` under `NullBehavior.False` (owner decision 2026-10-04). |
+| `NotContains` | present | `StringPredicates.NotContains` | K3 complement of `Contains` for every input, null included: `Unknown` by default (`NullBehavior.Unknown`), `True` under `NullBehavior.False` (owner decision 2026-10-04). |
 | `NotEqual` | present | `StringPredicates.NotEqual` | As `NotContains`, against `Equal`. |
 | `NotMatches` | present | `RegexPredicates.NotMatches` | As `NotContains`, against `Matches`. An invalid pattern still faults to `Unknown`. |
 
@@ -138,7 +139,7 @@ therefore `string` only; `Int64`/`Decimal`/`Guid` collections need generic or pe
 
 | Predicate | Status | Existing member | Notes |
 | --- | --- | --- | --- |
-| `IsEmpty` | present | `CollectionPredicates` | A `null` collection is treated as empty by `SetEquals`; `IsEmpty(null)` would be `True` by that convention. |
+| `IsEmpty` | present | `CollectionPredicates` | A `null` collection counts as empty, so `IsEmpty(null)` is `True`. |
 | `IsNotEmpty` | present | `CollectionPredicates` | As `IsEmpty`, so `IsNotEmpty(null)` is `False`. |
 | `Contains` | present | `CollectionPredicates` | Collection contains the literal value: arguments `value` (`String`, or per-kind). Distinct from `StringPredicates.Contains`. |
 | `ContainsAny` | present | `CollectionPredicates` | Added by decision 4: at least one element is in the candidate array. Twin `NotContainsAny`. |
@@ -198,8 +199,9 @@ takes an `object?` selector today. They belong to the per-kind static class `Typ
 Resolution status: the rules are recorded in
 [CONTEXT.md](../../CONTEXT.md#predicate-catalog-rules).
 
-- Question 1 (null input): **resolved**. Existing members keep `False`; new comparison, range and count
-  families return `Unknown` for null; null tests stay definite.
+- Question 1 (null input): **resolved**. Owner decision 2026-10-04: every member with a `nullBehavior`
+  option returns `Unknown` for null by default, the string, regex and `SetEquals` members included
+  (`NullBehavior.False` is the host option); null tests stay definite.
 - Question 3 (culture): **resolved**. Ordinal only; `EqualsConfigurable` no longer has a `culture` argument (k3-followups 20).
 - Question 5 (`DateTime` arguments): **resolved**. `DateTimeOffset` only.
 - Question 6 (clock predicates): **resolved**. `TimeProvider` supplied at registration.

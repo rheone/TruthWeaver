@@ -273,13 +273,11 @@ evaluation model this contract supports.
 Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. Each is a rule for
 catalog members, not for the engine.
 
-- **Null selected value.** The existing built-in members (`StringPredicates`, `RegexPredicates`,
-  `CollectionPredicates`) return a definite `False` for a null selected value by default; a host can
-  pass `NullBehavior.Unknown` at registration to get `Unknown` (still no fault) instead. New comparison families
-  (equality, ordering, range, count) return `Unknown` for a null input, and the null tests themselves
-  (`IsNull`, `IsNullOrEmpty`, ...) return a definite `True` or `False`. Rationale: `Unknown` is the K3
-  reading of a missing value and stays fail-closed under `Decision.IsSatisfied`, while changing the
-  existing members would be a breaking behaviour change.
+- **Null selected value.** Every built-in member with a `nullBehavior` option returns `Unknown` (no
+  fault) for a null selected value by default; a host can pass `NullBehavior.False` at registration to
+  get a definite `False` instead. The null tests themselves (`IsNull`, `IsNullOrEmpty`, ...) return a
+  definite `True` or `False`. Rationale: a member cannot evaluate a missing value, `Unknown` is the K3
+  reading of it, and it stays fail-closed under `Decision.IsSatisfied`.
 - **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
   `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
   depend on the host's locale, which is unsafe for authorization rules. `EqualsConfigurable` follows the
@@ -296,8 +294,8 @@ catalog members, not for the engine.
   for each positive predicate `X`. `NotX` is the Strong Kleene complement of `X`: `True` becomes
   `False`, `False` becomes `True` and `Unknown` stays `Unknown`. The complement holds for a null
   selected value too: under `NullBehavior.False`, `X` answers `False` and `NotX` answers `True`.
-  A twin has the same default `NullBehavior` as `X`, so a pair registered with the defaults is an exact
-  complement. Rationale: under `NullBehavior.Unknown` a twin keeps a null input `Unknown` instead of an
+  A twin has the same default `NullBehavior` as `X`, so both members of a pair registered with the
+  defaults answer `Unknown` for a null selected value. Rationale: under `NullBehavior.Unknown` a twin keeps a null input `Unknown` instead of an
   accidental `True`, one rule covers every pair, and rule text can name the negation directly.
 - **`In` and `NotIn` test scalar membership.** The selector returns one scalar value, and the
   predicate is `True` when that value is in the literal candidate array. A collection selector is a

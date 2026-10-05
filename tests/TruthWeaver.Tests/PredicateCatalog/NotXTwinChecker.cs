@@ -114,9 +114,10 @@ internal static class NotXTwinChecker
 
     /// <summary>
     /// Checks one pair: each probe makes the positive factory give the answer the table claims, and the twin then answers
-    /// what the engine's K3 <c>NOT</c> of the positive factory answers. When the pair states its null cases, the twin also
-    /// answers <c>NOT positive</c> for a null selected value with both registered by default and with both registered
-    /// with <see cref="NullBehavior.False"/>, so a twin whose default differs from its positive's is reported.
+    /// what the engine's K3 <c>NOT</c> of the positive factory answers. When the pair states its null cases, a null
+    /// selected value makes the positive factory answer Unknown when registered by default and False when registered with
+    /// <see cref="NullBehavior.False"/>, and the twin answers <c>NOT positive</c> in both cases, so a twin whose default
+    /// differs from its positive's is reported.
     /// </summary>
     /// <param name="pair">The pair to check.</param>
     /// <param name="cancellationToken">Cancels the evaluations.</param>
@@ -187,6 +188,7 @@ internal static class NotXTwinChecker
             await CheckNullCaseAsync(
                 pair,
                 "registered with no NullBehavior",
+                TruthValue.Unknown,
                 nulls.DefaultPositive,
                 nulls.DefaultTwin,
                 failures,
@@ -195,6 +197,7 @@ internal static class NotXTwinChecker
             await CheckNullCaseAsync(
                 pair,
                 "registered with NullBehavior.False",
+                TruthValue.False,
                 nulls.FalsePositive,
                 nulls.FalseTwin,
                 failures,
@@ -206,12 +209,14 @@ internal static class NotXTwinChecker
     }
 
     /// <summary>
-    /// Checks that the twin answers what the engine's K3 <c>NOT</c> of the positive factory answers for a null selected
-    /// value, with both factories registered the same way.
+    /// Checks that the positive factory answers <paramref name="expectedPositive"/> for a null selected value and that the
+    /// twin answers what the engine's K3 <c>NOT</c> of the positive factory answers, with both factories registered the
+    /// same way.
     /// </summary>
     private static async Task CheckNullCaseAsync(
         TwinPair pair,
         string registration,
+        TruthValue expectedPositive,
         ProbeFactory positiveFactory,
         ProbeFactory twinFactory,
         List<string> failures,
@@ -223,6 +228,12 @@ internal static class NotXTwinChecker
         Register(registry, twinFactory, TwinName);
         RuleCompiler<TwinProbeContext> compiler = new(registry.Build());
         RuleBuilder positiveTerm = RuleBuilder.Predicate(PositiveName, pair.Arguments);
+        CompiledRule<TwinProbeContext>? positiveRule = Compile(
+            compiler,
+            positiveTerm,
+            $"{pair.Positive} {registration}",
+            failures
+        );
         CompiledRule<TwinProbeContext>? negatedRule = Compile(
             compiler,
             RuleBuilder.Not(positiveTerm),
@@ -235,7 +246,7 @@ internal static class NotXTwinChecker
             $"{pair.Twin} {registration}",
             failures
         );
-        if (negatedRule is null || twinRule is null)
+        if (positiveRule is null || negatedRule is null || twinRule is null)
         {
             return;
         }
@@ -243,6 +254,12 @@ internal static class NotXTwinChecker
         // Every property of an empty context is null, so each factory selects a null value.
         TwinProbeContext missing = new();
         string probe = $"null selected value {registration}";
+        TruthValue? answer = await EvaluateAsync(positiveRule, missing, pair.Positive, probe, failures, cancellationToken);
+        if (answer is not null && answer != expectedPositive)
+        {
+            failures.Add($"{pair.Positive}: for a {probe} it answers {answer}, but it must answer {expectedPositive}.");
+        }
+
         TruthValue? negated = await EvaluateAsync(negatedRule, missing, pair.Positive, probe, failures, cancellationToken);
         TruthValue? twinAnswer = await EvaluateAsync(twinRule, missing, pair.Twin, probe, failures, cancellationToken);
         if (negated is not null && twinAnswer is not null && twinAnswer != negated)
