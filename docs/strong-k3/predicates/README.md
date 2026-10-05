@@ -50,6 +50,15 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `IsNullOrEmpty` | `IsNotNullOrEmpty` |
 | `IsNullOrWhiteSpace` | `IsNotNullOrWhiteSpace` |
 | `Matches` | `NotMatches` |
+| `ContainsAny` | `NotContainsAny` |
+| `ContainsAll` | `NotContainsAll` |
+| `IsSubsetOf` | `IsNotSubsetOf` |
+| `SetEquals` | `NotSetEquals` |
+| `CountEqual` | `NotCountEqual` |
+| `CountLessThan` | `NotCountLessThan` |
+| `CountGreaterThan` | `NotCountGreaterThan` |
+| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` |
+| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` |
 
 Each predicate and each twin has its own page.
 
@@ -144,6 +153,42 @@ The `RegexPredicates` factories select a `string?` value and take a regular expr
 | --- | --- | --- |
 | [Matches](regex-matches.md) | [NotMatches](regex-notmatches.md) | `Matches` is `True` when the selected string matches the regular expression. |
 | [NotMatches](regex-notmatches.md) | [Matches](regex-matches.md) | `NotMatches` is `True` when the selected string does not match the regular expression. |
+
+## Collection predicates
+
+The `CollectionPredicates` factories select a collection of strings (`IReadOnlyCollection<string>?`). The element type is `string`. Every comparison is ordinal and case-sensitive. An array argument has the kind `StringArray`. A count argument has the kind `Int64`.
+
+- `IsEmpty` and `IsNotEmpty` read a null collection as an empty one. They never answer `Unknown` and have no `nullBehavior` option.
+- Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
+- `In` and `NotIn` select one string, not a collection. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` to test a collection.
+- A repeated element and a `null` element count as elements in the `Count` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
+
+| Predicate | Twin | Summary |
+| --- | --- | --- |
+| [IsEmpty](collection-isempty.md) | [IsNotEmpty](collection-isnotempty.md) | `IsEmpty` is `True` when the selected collection has no elements. |
+| [IsNotEmpty](collection-isnotempty.md) | [IsEmpty](collection-isempty.md) | `IsNotEmpty` is `True` when the selected collection has at least one element. |
+| [Contains](collection-contains.md) | [NotContains](collection-notcontains.md) | `Contains` is `True` when one element equals the argument. |
+| [NotContains](collection-notcontains.md) | [Contains](collection-contains.md) | `NotContains` is `True` when no element equals the argument. |
+| [ContainsAny](collection-containsany.md) | [NotContainsAny](collection-notcontainsany.md) | `ContainsAny` is `True` when at least one element is in the argument array. |
+| [NotContainsAny](collection-notcontainsany.md) | [ContainsAny](collection-containsany.md) | `NotContainsAny` is `True` when no element is in the argument array. |
+| [ContainsAll](collection-containsall.md) | [NotContainsAll](collection-notcontainsall.md) | `ContainsAll` is `True` when every argument string is an element. |
+| [NotContainsAll](collection-notcontainsall.md) | [ContainsAll](collection-containsall.md) | `NotContainsAll` is `True` when an argument string is not an element. |
+| [IsSubsetOf](collection-issubsetof.md) | [IsNotSubsetOf](collection-isnotsubsetof.md) | `IsSubsetOf` is `True` when every element is in the argument array. |
+| [IsNotSubsetOf](collection-isnotsubsetof.md) | [IsSubsetOf](collection-issubsetof.md) | `IsNotSubsetOf` is `True` when an element is not in the argument array. |
+| [SetEquals](collection-setequals.md) | [NotSetEquals](collection-notsetequals.md) | `SetEquals` is `True` when the collection and the argument array have the same distinct elements. |
+| [NotSetEquals](collection-notsetequals.md) | [SetEquals](collection-setequals.md) | `NotSetEquals` is `True` when the collection and the argument array have different distinct elements. |
+| [In](collection-in.md) | [NotIn](collection-notin.md) | `In` is `True` when the selected string is one of the candidates. |
+| [NotIn](collection-notin.md) | [In](collection-in.md) | `NotIn` is `True` when the selected string is none of the candidates. |
+| [CountEqual](collection-countequal.md) | [NotCountEqual](collection-notcountequal.md) | `CountEqual` is `True` when the number of elements equals the argument. |
+| [NotCountEqual](collection-notcountequal.md) | [CountEqual](collection-countequal.md) | `NotCountEqual` is `True` when the number of elements differs from the argument. |
+| [CountLessThan](collection-countlessthan.md) | [NotCountLessThan](collection-notcountlessthan.md) | `CountLessThan` is `True` when the number of elements is less than the argument. |
+| [NotCountLessThan](collection-notcountlessthan.md) | [CountLessThan](collection-countlessthan.md) | `NotCountLessThan` is `True` when the number of elements is not less than the argument. |
+| [CountGreaterThan](collection-countgreaterthan.md) | [NotCountGreaterThan](collection-notcountgreaterthan.md) | `CountGreaterThan` is `True` when the number of elements is greater than the argument. |
+| [NotCountGreaterThan](collection-notcountgreaterthan.md) | [CountGreaterThan](collection-countgreaterthan.md) | `NotCountGreaterThan` is `True` when the number of elements is not greater than the argument. |
+| [CountLessThanOrEqual](collection-countlessthanorequal.md) | [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | `CountLessThanOrEqual` is `True` when the number of elements is at most the argument. |
+| [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | [CountLessThanOrEqual](collection-countlessthanorequal.md) | `NotCountLessThanOrEqual` is `True` when the number of elements is more than the argument. |
+| [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | `CountGreaterThanOrEqual` is `True` when the number of elements is at least the argument. |
+| [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | `NotCountGreaterThanOrEqual` is `True` when the number of elements is less than the argument. |
 
 ## How a predicate page is organized
 

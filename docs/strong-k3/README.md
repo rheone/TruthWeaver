@@ -14,7 +14,7 @@ The value set is `{True, False, Unknown}`. Tables write the values as T, F and U
 | Cardinality Functions | The operations over the count of true operands | [cardinality/](cardinality/README.md) |
 | Functions | `COALESCE`, `If` and the four inspections | [functions/](functions/README.md) |
 | Result Transformations | `Project` and `Collapse`, the methods on an evaluated decision | [result-transformations/](result-transformations/README.md) |
-| Predicates | The numeric and scalar predicates, with the shared rules for null values, twins and argument kinds | [predicates/](predicates/README.md) |
+| Predicates | The numeric, scalar, string, regex and collection predicates, with the shared rules for null values, twins and argument kinds | [predicates/](predicates/README.md) |
 
 Start with [values](specification/values.md) and [semantics](specification/semantics.md). [evaluation](specification/evaluation.md) explains how an expression becomes a decision. [operations](specification/operations.md) lists all 27 Operations.
 
