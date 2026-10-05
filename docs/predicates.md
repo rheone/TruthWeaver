@@ -31,11 +31,11 @@ A null selected value never faults. A member with an optional `nullBehavior` par
 - `NullBehavior.Unknown`: the member answers `Unknown`. `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust, and `Decision.IsSatisfied` stays fail-closed.
 - `NullBehavior.False`: a positive member answers `False`.
 
-A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Under `NullBehavior.False` a twin answers `True` for a null selected value. Register both members of a pair with the same setting.
+A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. Under `NullBehavior.False` a twin answers `True` for a null selected value. A twin has the same default as its positive member, so a pair registered with the defaults is an exact complement. Register both members of a pair with the same setting.
 
 | Default | Members |
 | --- | --- |
-| `NullBehavior.False` | The `StringPredicates` comparisons `Equals`, `EqualsIgnoreCase`, `StartsWith`, `EndsWith`, `Contains` and `EqualsConfigurable`, `RegexPredicates.Matches` and `CollectionPredicates.SetEquals` |
+| `NullBehavior.False` | The `StringPredicates` comparisons `Equals`, `EqualsIgnoreCase`, `StartsWith`, `EndsWith`, `Contains` and `EqualsConfigurable`, `RegexPredicates.Matches` and `CollectionPredicates.SetEquals`, and the twin of each |
 | `NullBehavior.Unknown` | Every other member with a `nullBehavior` parameter |
 
 The `StringPredicates` and `RegexPredicates` twins are:

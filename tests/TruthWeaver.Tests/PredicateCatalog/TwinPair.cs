@@ -13,6 +13,10 @@ namespace TruthWeaver.Tests.PredicateCatalog;
 /// <param name="WhenFalse">A context the positive factory answers False for, or null when no such value exists.</param>
 /// <param name="WhenUnknown">A context the positive factory answers Unknown for, or null when no such value exists.</param>
 /// <param name="Unreachable">Why a probe is null. Required when any probe is null.</param>
+/// <param name="Nulls">
+/// The null-selection registrations, or null when the factories take no <c>nullBehavior</c> option. Required when they
+/// take one.
+/// </param>
 internal sealed record TwinPair(
     string Positive,
     string Twin,
@@ -22,7 +26,8 @@ internal sealed record TwinPair(
     TwinProbeContext? WhenTrue,
     TwinProbeContext? WhenFalse,
     TwinProbeContext? WhenUnknown,
-    string? Unreachable = null
+    string? Unreachable = null,
+    NullCases? Nulls = null
 ) : TwinTableEntry
 {
     /// <inheritdoc />

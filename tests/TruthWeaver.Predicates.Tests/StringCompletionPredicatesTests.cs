@@ -110,15 +110,19 @@ public class StringCompletionPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
-    /// <summary>A null selection answers Unknown by default, so a negation never turns a missing value into True.</summary>
+    /// <summary>
+    /// Registered with no <c>NullBehavior</c>, a null selection answers True: the twin has the same default as
+    /// <c>Contains</c>, which answers False, and the twin answers the complement.
+    /// </summary>
     [Fact]
-    public async Task NotContains_NullSelection_DefaultsToUnknown_Test()
+    public async Task NotContains_NullSelection_DefaultsToTrue_Test()
     {
-        Evaluate evaluate = Comparison("NotContains");
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            StringPredicates.NotContains<TestContext>("nc", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
-        Assert.Equal(TruthValue.Unknown, result);
+        Assert.Equal(TruthValue.True, result);
     }
 
     /// <summary>
@@ -201,13 +205,19 @@ public class StringCompletionPredicatesTests
         Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
             "Equals" => StringPredicates.Equals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotEqual" => StringPredicates.NotEqual<TestContext>("p", c => c.Value).Evaluate,
+            "NotEqual" => StringPredicates
+                .NotEqual<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+                .Evaluate,
             "Contains" => StringPredicates
                 .Contains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
-            "NotContains" => StringPredicates.NotContains<TestContext>("p", c => c.Value).Evaluate,
+            "NotContains" => StringPredicates
+                .NotContains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+                .Evaluate,
             "Matches" => RegexPredicates.Matches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotMatches" => RegexPredicates.NotMatches<TestContext>("p", c => c.Value).Evaluate,
+            "NotMatches" => RegexPredicates
+                .NotMatches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+                .Evaluate,
             _ => throw new ArgumentException(member),
         };
         return new Evaluate(f);

@@ -34,7 +34,8 @@ copyright line reads 2026.
 
 ### Added
 
-- `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals` in `CollectionPredicates`: the Strong Kleene complements of their positive members.
+- `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals`
+  in `CollectionPredicates`: the Strong Kleene complements of their positive members.
 
 - `Arg.TryFrom` (returns the validator's `QueryProblem` list instead of throwing `ArgumentException`) and
   `IDataSource.TryGetAsync<T>` in `TruthWeaver.Building`, which returns a `DataReadResult<T>` (`Succeeded`, `Value`,
@@ -111,11 +112,6 @@ copyright line reads 2026.
 - `DataScopeResult` (in `TruthWeaver.Abstractions`) and the `DataQueryErrorKind` values `NoMatch` and `AmbiguousMatch`; see the
   breaking change to `IDataSource.ScopeAsync` below. `FakeDataSource.FailingScope(query, message, kind)` scripts a failed scope.
 
-### Fixed
-
-- `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
-  supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
-
 ### Changed
 
 - Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null
@@ -123,8 +119,22 @@ copyright line reads 2026.
   (the `StringPredicates`, `RegexPredicates`, `NumericPredicates` and `ScalarPredicates` twins answered `False` before).
   This covers `NotEqual`, `NotContains`, `IsNotEmpty`, `NotMatches`, the numeric and scalar `NotEqual`, `NotIn`,
   `Outside` and `IsNotDefault`, and `GreaterThanOrEqual` and `LessThanOrEqual` (the twins of `LessThan` and
-  `GreaterThan`). Under the default `NullBehavior.Unknown` both members still answer `Unknown`. Positive predicates and
-  the definite null tests are unchanged.
+  `GreaterThan`). Under `NullBehavior.Unknown` both members still answer `Unknown`. Positive predicates and the definite
+  null tests are unchanged.
+- Every `NotX` twin in `TruthWeaver.Predicates` has the same default `NullBehavior` as its positive predicate, so a pair
+  registered with the defaults is an exact complement for a null selected value. `NotEqual`, `NotContains`,
+  `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates`,
+  `RegexPredicates.NotMatches` and `CollectionPredicates.NotSetEquals` now default to `NullBehavior.False` (they defaulted
+  to `NullBehavior.Unknown`). Registered with no option, the string and regex twins answer `True` for a null selected
+  value (they answered `Unknown`), and `NotSetEquals` reads a null collection as empty, as `SetEquals` does. Pass
+  `NullBehavior.Unknown` at registration to keep the earlier answer. Positive predicates are unchanged.
+- `DateTimePredicates.Between` and `Outside` throw the same reversed-bounds `ArgumentException` as the numeric range
+  predicates: `ParamName` is `args` (it was `lower`) and the message is
+  `Predicate '<name>' has reversed bounds: 'lower' (<lower>) is greater than 'upper' (<upper>).`, with both bounds in the
+  round-trip `O` format of the invariant culture. The `lower` and `upper` argument descriptions are now
+  `The inclusive lower bound (date-time).` and `The inclusive upper bound (date-time). It must not be less than the lower
+  bound.`
+
 - Breaking: `IDataSource.ScopeAsync` returns `ValueTask<DataScopeResult>` instead of `ValueTask<IDataSource>`. A scope query that is
   malformed, matches no node, matches several nodes or reaches an unsupported node is a failure result, no longer an
   `ArgumentException` or `InvalidOperationException`. Migration: read `result.Source` when `result.Succeeded`, otherwise
@@ -137,6 +147,11 @@ copyright line reads 2026.
   (a class-based predicate yields `Unknown` plus a `Fault`). Parameter order: `services` stays second and `dataSources`
   third, so existing `(context, services, dataSources, ...)` calls and all `cancellationToken:` calls compile unchanged.
   A call that passed `options` as the third positional argument must name it: `EvaluateAsync(context, services, options: options)`.
+
+### Fixed
+
+- `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
+  supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
 
 ### Breaking changes: naming cleanup (ADR-0007)
 

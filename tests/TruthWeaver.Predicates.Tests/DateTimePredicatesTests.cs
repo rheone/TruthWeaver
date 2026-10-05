@@ -1,5 +1,6 @@
 namespace TruthWeaver.Predicates.Tests;
 
+using System.Globalization;
 using TruthWeaver.Abstractions;
 
 /// <summary>
@@ -133,6 +134,38 @@ public class DateTimePredicatesTests
 
         Assert.Equal("args", error.ParamName);
         Assert.Contains("Predicate 'range' has reversed bounds", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The reversed-bounds message prints both bounds in the round-trip <c>O</c> format with the invariant culture, so the
+    /// text does not depend on the culture of the evaluating thread.
+    /// </summary>
+    [Fact]
+    public async Task Between_ReversedBoundsUnderNonInvariantCulture_PrintsInvariantRoundTripBounds_Test()
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between) =
+            DateTimePredicates.Between<DateContext>("range", c => c.When);
+        DateTimeOffset lower = Bound.AddDays(1);
+        CultureInfo original = CultureInfo.CurrentCulture;
+        ArgumentException error;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            error = await Assert.ThrowsAsync<ArgumentException>(async () =>
+                await RunAsync(between, new DateContext(Bound), Range(lower, Bound))
+            );
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+
+        Assert.Contains(
+            $"'lower' ({lower.ToString("O", CultureInfo.InvariantCulture)}) is greater than "
+                + $"'upper' ({Bound.ToString("O", CultureInfo.InvariantCulture)})",
+            error.Message,
+            StringComparison.Ordinal
+        );
     }
 
     /// <summary>A null selection is Unknown by default for every predicate, and the twins keep it Unknown.</summary>

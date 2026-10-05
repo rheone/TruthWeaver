@@ -24,7 +24,25 @@ public sealed class NotXTwinInvariantTests
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
-    /// <summary>Each real twin answers NOT of its positive form for True, False and Unknown selected values.</summary>
+    /// <summary>
+    /// Every real pair whose factories take a <c>nullBehavior</c> option states its null cases, so a new pair cannot skip
+    /// the default and <c>NullBehavior.False</c> checks.
+    /// </summary>
+    [Fact]
+    public void CheckNullCaseCoverage_RealCatalog_ReportsNoFailures_Test()
+    {
+        IReadOnlyList<string> failures = NotXTwinChecker.CheckNullCaseCoverage(
+            NotXTwinChecker.NullBehaviorFactories(),
+            NotXTwinTable.Pairs
+        );
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    /// <summary>
+    /// Each real twin answers NOT of its positive form for True, False and Unknown selected values, and for a null selected
+    /// value with both registered by default and with both registered with <c>NullBehavior.False</c>.
+    /// </summary>
     /// <param name="positive">The positive factory key of the pair.</param>
     [Theory]
     [MemberData(nameof(RealPairs))]
@@ -108,6 +126,58 @@ public sealed class NotXTwinInvariantTests
         Assert.Contains(failures, failure => failure.Contains("for the True probe it answers True", StringComparison.Ordinal));
     }
 
+    /// <summary>A pair that takes a <c>nullBehavior</c> option but states no null cases is reported by name.</summary>
+    [Fact]
+    public void CheckNullCaseCoverage_PairWithoutNullCases_ReportsThePair_Test()
+    {
+        IReadOnlyList<string> failures = NotXTwinChecker.CheckNullCaseCoverage(
+            ["Fake.HasThing(String)", "Fake.NotHasThing(String)"],
+            [FakePair(KleeneTwin)]
+        );
+
+        string failure = Assert.Single(failures);
+        Assert.Contains("Fake.HasThing(String): the pair takes a nullBehavior option", failure, StringComparison.Ordinal);
+    }
+
+    /// <summary>A twin whose null answer is the complement of its positive's, by default and under False, passes.</summary>
+    [Fact]
+    public async Task CheckPairAsync_TwinDefaultMatchesPositive_ReportsNoFailures_Test()
+    {
+        IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
+            FakePair(KleeneTwin) with
+            {
+                Nulls = FakeNulls(TruthValue.False, TruthValue.True),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    /// <summary>
+    /// A twin whose default differs from its positive's (the positive answers False for a null selected value by default,
+    /// the twin Unknown) is reported for the default registration.
+    /// </summary>
+    [Fact]
+    public async Task CheckPairAsync_TwinDefaultDiffersFromPositive_ReportsTheTwin_Test()
+    {
+        IReadOnlyList<string> failures = await NotXTwinChecker.CheckPairAsync(
+            FakePair(KleeneTwin) with
+            {
+                Nulls = FakeNulls(TruthValue.False, TruthValue.Unknown),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        string failure = Assert.Single(failures);
+        Assert.Contains(
+            "Fake.NotHasThing(String): for a null selected value registered with no NullBehavior it answers Unknown, "
+                + "but NOT Fake.HasThing(String) answers True",
+            failure,
+            StringComparison.Ordinal
+        );
+    }
+
     /// <summary>A missing probe with no reason is reported, so a row cannot skip the Unknown case silently.</summary>
     [Fact]
     public async Task CheckPairAsync_ProbeMissingWithoutReason_ReportsTheGap_Test()
@@ -136,6 +206,21 @@ public sealed class NotXTwinInvariantTests
             new TwinProbeContext(Text: "yes"),
             new TwinProbeContext(Text: "no"),
             new TwinProbeContext()
+        );
+    }
+
+    /// <summary>
+    /// Null cases over <see cref="TwinProbeContext.Text"/>: by default a null selected value makes the positive answer
+    /// <paramref name="positiveDefault"/> and the twin <paramref name="twinDefault"/>; under False they answer False and
+    /// True.
+    /// </summary>
+    private static NullCases FakeNulls(TruthValue positiveDefault, TruthValue twinDefault)
+    {
+        return new NullCases(
+            name => Fake(name, text => text is null ? positiveDefault : Positive(text)),
+            name => Fake(name, text => text is null ? twinDefault : KleeneTwin(text)),
+            name => Fake(name, text => text is null ? TruthValue.False : Positive(text)),
+            name => Fake(name, text => text is null ? TruthValue.True : KleeneTwin(text))
         );
     }
 

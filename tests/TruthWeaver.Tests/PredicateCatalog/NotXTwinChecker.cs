@@ -31,22 +31,14 @@ internal static class NotXTwinChecker
     /// <returns>The factory keys, in ordinal order, without duplicates.</returns>
     internal static IReadOnlyList<string> CatalogFactories()
     {
-        return
-        [
-            .. typeof(StringPredicates)
-                .Assembly.GetExportedTypes()
-                .Where(type =>
-                    type is { IsAbstract: true, IsSealed: true, Namespace: "TruthWeaver.Predicates" }
-                    && type.Name.EndsWith("Predicates", StringComparison.Ordinal)
-                )
-                .SelectMany(type =>
-                    type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                        .Where(method => method.IsGenericMethodDefinition && method.ReturnType.IsValueType)
-                        .Select(method => $"{type.Name}.{method.Name}{Signature(method)}")
-                )
-                .Distinct()
-                .Order(StringComparer.Ordinal),
-        ];
+        return [.. Keys(_ => true)];
+    }
+
+    /// <summary>Lists the key of every public predicate factory that takes a <c>nullBehavior</c> option.</summary>
+    /// <returns>The factory keys, in ordinal order, without duplicates.</returns>
+    internal static IReadOnlyList<string> NullBehaviorFactories()
+    {
+        return [.. Keys(method => method.GetParameters().Any(parameter => parameter.Name == "nullBehavior"))];
     }
 
     /// <summary>Checks that the table accounts for every factory exactly once and names no other factory.</summary>
@@ -92,8 +84,39 @@ internal static class NotXTwinChecker
     }
 
     /// <summary>
+    /// Checks that every pair whose factories take a <c>nullBehavior</c> option states its null cases, so the default and
+    /// the <see cref="NullBehavior.False"/> registrations are checked for each such pair.
+    /// </summary>
+    /// <param name="nullBehaviorFactories">The keys of the factories that take a <c>nullBehavior</c> option.</param>
+    /// <param name="pairs">The pairs of the reviewed twin table.</param>
+    /// <returns>One message per pair with no null cases; empty when every such pair states them.</returns>
+    internal static IReadOnlyList<string> CheckNullCaseCoverage(
+        IReadOnlyCollection<string> nullBehaviorFactories,
+        IEnumerable<TwinPair> pairs
+    )
+    {
+        return
+        [
+            .. pairs
+                .Where(pair =>
+                    pair.Nulls is null
+                    && (
+                        nullBehaviorFactories.Contains(pair.Positive, StringComparer.Ordinal)
+                        || nullBehaviorFactories.Contains(pair.Twin, StringComparer.Ordinal)
+                    )
+                )
+                .Select(pair =>
+                    $"{pair.Positive}: the pair takes a nullBehavior option, but its twin table row states no null cases. "
+                    + "Add Nulls with the default and the NullBehavior.False registrations."
+                ),
+        ];
+    }
+
+    /// <summary>
     /// Checks one pair: each probe makes the positive factory give the answer the table claims, and the twin then answers
-    /// what the engine's K3 <c>NOT</c> of the positive factory answers.
+    /// what the engine's K3 <c>NOT</c> of the positive factory answers. When the pair states its null cases, the twin also
+    /// answers <c>NOT positive</c> for a null selected value with both registered by default and with both registered
+    /// with <see cref="NullBehavior.False"/>, so a twin whose default differs from its positive's is reported.
     /// </summary>
     /// <param name="pair">The pair to check.</param>
     /// <param name="cancellationToken">Cancels the evaluations.</param>
@@ -137,23 +160,10 @@ internal static class NotXTwinChecker
                 continue;
             }
 
-            TruthValue? answer = await EvaluateAsync(
-                positiveRule,
-                context,
-                pair.Positive,
-                expected,
-                failures,
-                cancellationToken
-            );
-            TruthValue? negated = await EvaluateAsync(
-                negatedRule,
-                context,
-                pair.Positive,
-                expected,
-                failures,
-                cancellationToken
-            );
-            TruthValue? twinAnswer = await EvaluateAsync(twinRule, context, pair.Twin, expected, failures, cancellationToken);
+            string probe = expected.ToString();
+            TruthValue? answer = await EvaluateAsync(positiveRule, context, pair.Positive, probe, failures, cancellationToken);
+            TruthValue? negated = await EvaluateAsync(negatedRule, context, pair.Positive, probe, failures, cancellationToken);
+            TruthValue? twinAnswer = await EvaluateAsync(twinRule, context, pair.Twin, probe, failures, cancellationToken);
             if (answer is null || negated is null || twinAnswer is null)
             {
                 continue;
@@ -172,7 +182,76 @@ internal static class NotXTwinChecker
             }
         }
 
+        if (pair.Nulls is { } nulls)
+        {
+            await CheckNullCaseAsync(
+                pair,
+                "registered with no NullBehavior",
+                nulls.DefaultPositive,
+                nulls.DefaultTwin,
+                failures,
+                cancellationToken
+            );
+            await CheckNullCaseAsync(
+                pair,
+                "registered with NullBehavior.False",
+                nulls.FalsePositive,
+                nulls.FalseTwin,
+                failures,
+                cancellationToken
+            );
+        }
+
         return failures;
+    }
+
+    /// <summary>
+    /// Checks that the twin answers what the engine's K3 <c>NOT</c> of the positive factory answers for a null selected
+    /// value, with both factories registered the same way.
+    /// </summary>
+    private static async Task CheckNullCaseAsync(
+        TwinPair pair,
+        string registration,
+        ProbeFactory positiveFactory,
+        ProbeFactory twinFactory,
+        List<string> failures,
+        CancellationToken cancellationToken
+    )
+    {
+        PredicateRegistryBuilder<TwinProbeContext> registry = PredicateRegistry<TwinProbeContext>.CreateBuilder();
+        Register(registry, positiveFactory, PositiveName);
+        Register(registry, twinFactory, TwinName);
+        RuleCompiler<TwinProbeContext> compiler = new(registry.Build());
+        RuleBuilder positiveTerm = RuleBuilder.Predicate(PositiveName, pair.Arguments);
+        CompiledRule<TwinProbeContext>? negatedRule = Compile(
+            compiler,
+            RuleBuilder.Not(positiveTerm),
+            $"NOT {pair.Positive} {registration}",
+            failures
+        );
+        CompiledRule<TwinProbeContext>? twinRule = Compile(
+            compiler,
+            RuleBuilder.Predicate(TwinName, pair.Arguments),
+            $"{pair.Twin} {registration}",
+            failures
+        );
+        if (negatedRule is null || twinRule is null)
+        {
+            return;
+        }
+
+        // Every property of an empty context is null, so each factory selects a null value.
+        TwinProbeContext missing = new();
+        string probe = $"null selected value {registration}";
+        TruthValue? negated = await EvaluateAsync(negatedRule, missing, pair.Positive, probe, failures, cancellationToken);
+        TruthValue? twinAnswer = await EvaluateAsync(twinRule, missing, pair.Twin, probe, failures, cancellationToken);
+        if (negated is not null && twinAnswer is not null && twinAnswer != negated)
+        {
+            failures.Add(
+                $"{pair.Twin}: for a {probe} it answers {twinAnswer}, but NOT {pair.Positive} answers {negated}. "
+                    + "A twin has the same default NullBehavior as its positive."
+            );
+        }
     }
 
     private static void Register(PredicateRegistryBuilder<TwinProbeContext> registry, ProbeFactory factory, string name)
@@ -204,7 +283,7 @@ internal static class NotXTwinChecker
         CompiledRule<TwinProbeContext> rule,
         TwinProbeContext context,
         string factory,
-        TruthValue expected,
+        string probe,
         List<string> failures,
         CancellationToken cancellationToken
     )
@@ -219,8 +298,25 @@ internal static class NotXTwinChecker
             return decision.Result;
         }
 
-        failures.Add($"{factory}: the {expected} probe faulted: {decision.Faults[0].Exception.Message}");
+        failures.Add($"{factory}: the {probe} probe faulted: {decision.Faults[0].Exception.Message}");
         return null;
+    }
+
+    private static IEnumerable<string> Keys(Func<MethodInfo, bool> include)
+    {
+        return typeof(StringPredicates)
+            .Assembly.GetExportedTypes()
+            .Where(type =>
+                type is { IsAbstract: true, IsSealed: true, Namespace: "TruthWeaver.Predicates" }
+                && type.Name.EndsWith("Predicates", StringComparison.Ordinal)
+            )
+            .SelectMany(type =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                    .Where(method => method.IsGenericMethodDefinition && method.ReturnType.IsValueType && include(method))
+                    .Select(method => $"{type.Name}.{method.Name}{Signature(method)}")
+            )
+            .Distinct()
+            .Order(StringComparer.Ordinal);
     }
 
     private static string Signature(MethodInfo method)

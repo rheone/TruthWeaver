@@ -70,8 +70,8 @@ public static class RegexPredicates
     /// <summary>
     /// Creates the <c>NotX</c> twin of <see cref="Matches{TContext}"/>: true when the selected string does not match
     /// the pattern. It is the Strong Kleene complement of <c>Matches</c>, so a <see langword="null"/> selection
-    /// answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
-    /// <see cref="NullBehavior.False"/>. An invalid pattern throws at evaluation time exactly as <c>Matches</c> does, which
+    /// answers <see cref="TruthValue.True"/> by default and <see cref="TruthValue.Unknown"/> under
+    /// <see cref="NullBehavior.Unknown"/>. An invalid pattern throws at evaluation time exactly as <c>Matches</c> does, which
     /// the evaluator records as a <c>Fault</c> and <see cref="TruthValue.Unknown"/> (ADR-0001).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -80,9 +80,9 @@ public static class RegexPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="argumentName">The rule-text argument name for the regular-expression pattern.</param>
     /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
-    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
-    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.False"/>
+    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.Unknown"/>. This twin answers the
+    /// complement: <see cref="TruthValue.True"/> or <see cref="TruthValue.Unknown"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -93,14 +93,14 @@ public static class RegexPredicates
         Func<TContext, string?> selector,
         string label = "Not Matches",
         string argumentName = "pattern",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.False
     )
     {
         const string description =
             "True when the selected string does not match the given regular-expression pattern "
-            + "(System.Text.RegularExpressions). The K3 complement of Matches: a null selected value answers "
-            + "Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes Matches False "
-            + "and this twin True. "
+            + "(System.Text.RegularExpressions). The K3 complement of Matches: a null selected value answers True "
+            + "(never a fault), the complement of Matches' False, unless the host registers both with "
+            + "NullBehavior.Unknown, which makes both Unknown. "
             + "An invalid pattern surfaces as an evaluation-time fault (Unknown).";
         return Create(
             name,

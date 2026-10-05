@@ -1,5 +1,6 @@
 namespace TruthWeaver.Predicates;
 
+using System.Globalization;
 using TruthWeaver.Abstractions;
 
 /// <summary>The scalar kinds the catalog supports, one per existing <see cref="LiteralKind"/> pair.</summary>
@@ -37,11 +38,13 @@ internal static class ScalarKinds
         static (args, name) => args.GetGuidArray(name)
     );
 
+    // A bound prints in the round-trip form, which keeps the offset and does not depend on the thread's culture.
     public static readonly ScalarKind<DateTimeOffset> DateTimeOffset = new(
         LiteralKind.DateTimeOffset,
         LiteralKind.DateTimeOffsetArray,
         "date-time",
         static (args, name) => args.GetDateTimeOffset(name),
-        static (args, name) => args.GetDateTimeOffsetArray(name)
+        static (args, name) => args.GetDateTimeOffsetArray(name),
+        static value => value.ToString("O", CultureInfo.InvariantCulture)
     );
 }
