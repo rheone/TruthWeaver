@@ -662,12 +662,42 @@ internal sealed class RuleNodeCompiler<TContext>
             this.CheckArgumentValues(node, schema, validator, resolvedArgs);
         }
 
+        // Reported after the argument checks so the warning never trips the "no new diagnostics" gate above.
+        if (schema.Deprecation is { } deprecation)
+        {
+            this.ReportDeprecated(node, schema, deprecation);
+        }
+
         TermIdentity identity = new(
             schema.Name,
             [.. resolvedArgs.Select(kv => new KeyValuePair<string, LiteralValue>(kv.Key, kv.Value))],
             [.. resolvedVariables.Select(kv => new KeyValuePair<string, VariableReference>(kv.Key, kv.Value))]
         );
         return new TermExpression(identity);
+    }
+
+    /// <summary>
+    /// Reports <c>TRE0027</c>, a warning at the predicate call, because the schema is marked deprecated. The replacement,
+    /// when the marker names one, is both in the message and the suggestion. The rule still compiles.
+    /// </summary>
+    private void ReportDeprecated(TermNode node, PredicateSchema schema, PredicateDeprecation deprecation)
+    {
+        string message = $"Predicate '{schema.Name}' is deprecated.";
+        DiagnosticSuggestion? suggestion = null;
+        if (deprecation.ReplacedBy is { Length: > 0 } replacement)
+        {
+            message += $" Use '{replacement}' instead.";
+            suggestion = new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Use '{replacement}'.");
+        }
+
+        if (deprecation.Message is { Length: > 0 } extra)
+        {
+            message += $" {extra}";
+        }
+
+        this.diagnostics.Add(
+            Diagnostic.Warning(DiagnosticCodes.DeprecatedPredicate, message, node.Span, suggestion: suggestion, path: node.Path)
+        );
     }
 
     /// <summary>

@@ -132,4 +132,10 @@ public static class DiagnosticCodes
     /// <c>upper</c>) on a <c>Between</c> or <c>Outside</c> range predicate. The span or path is the predicate call.
     /// </summary>
     public const string InvalidArgumentValue = "TRE0026";
+
+    /// <summary>
+    /// A rule uses a predicate whose <c>PredicateSchema.Deprecation</c> is set. This is a warning, one per use: the rule
+    /// still compiles. The span or path is the predicate call, and the replacement, when given, is the suggestion.
+    /// </summary>
+    public const string DeprecatedPredicate = "TRE0027";
 }

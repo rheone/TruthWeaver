@@ -55,6 +55,7 @@ These codes do not belong to one Operation.
 | `TRE0024` | `UndeclaredDataSource` | A variable reference names a data source that is not declared in the compiler options. |
 | `TRE0025` | `MalformedDataQuery` | The query of a variable reference is not valid for the dialect of its data source. |
 | `TRE0026` | `InvalidArgumentValue` | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `Between` or `Outside`. |
+| `TRE0027` | `DeprecatedPredicate` | A rule uses a predicate whose schema is marked deprecated. This is a warning, one per use, and the rule still compiles. |
 
 ## Related
 
