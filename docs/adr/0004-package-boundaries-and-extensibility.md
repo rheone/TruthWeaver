@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place). The `TruthWeaver.Testing` dependency described below was reversed on 2026-10-09 (changed in place; see the amendment under "Four packages").
 
 ## Context
 
@@ -33,6 +33,16 @@ observability is deferred, not v1).
 > depends on `TruthWeaver.Abstractions` alone), was added by [ADR-0006](0006-data-sources-for-expression-variables.md).
 > `TruthWeaver.Yaml` now also references it for `YamlDataSource`, and `TruthWeaver.Testing` gained `FakeDataSource`; the core
 > `TruthWeaver` package still takes no JSON or YAML query dependency.
+>
+> **Amendment (2026-10-09):** `TruthWeaver.Testing` now takes a project reference to `TruthWeaver`
+> (the compiler/analyzer package), reversing the "`Abstractions` alone" rule stated above. The
+> testing-tools roadmap (equivalence assertions over `RuleEquivalence`, a predicate harness, and a
+> public rule fuzzer built on the compiler, evaluator and analyzer) needs those types, and gating them
+> behind a hand-rolled duplicate of the compiler was a worse outcome than letting a test-support
+> package depend on the package it tests. `TruthWeaver` still does not, and must not, depend on
+> `TruthWeaver.Testing` — the dependency is one-directional, so no cycle is introduced. `Testing`
+> still never depends on `TruthWeaver.Yaml`, `TruthWeaver.Predicates`, or
+> `TruthWeaver.DataSources.Json`, which remain optional and orthogonal to testing support.
 
 - **`TruthWeaver.Abstractions`** — `IPredicate<TContext>`,
   `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`.

@@ -73,15 +73,22 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>
+    /// ADR-0004 (amended 2026-10-09): <c>TruthWeaver.Testing</c> now takes a project reference to
+    /// <c>TruthWeaver</c> (the compiler/analyzer package) so rule-level testing tools (an equivalence
+    /// assertion, a predicate harness, a public rule fuzzer) can live beside <c>DecisionAssertions</c>.
+    /// It still never depends on the YAML package, the ready-made predicates, or the JSON data source
+    /// package, each of which is optional and orthogonal to testing support.
+    /// </summary>
     [Fact]
-    public void Testing_depends_on_abstractions_alone_never_the_parser_compiler_or_analyzer()
+    public void Testing_depends_on_truthweaver_and_abstractions_alone_never_yaml_predicates_or_json_data_sources()
     {
         TestResult result = Types
             .InAssembly(Testing)
             .That()
             .ResideInNamespace("TruthWeaver.Testing")
             .ShouldNot()
-            .HaveDependencyOnAny("TruthWeaver.Ast", "TruthWeaver.Compilation", "TruthWeaver.Evaluation", "TruthWeaver.Analysis")
+            .HaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.DataSources")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));

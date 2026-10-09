@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `TruthWeaver.Testing` has a project reference to `TruthWeaver`
-- [ ] The package-boundary architecture test no longer requires `Abstractions` alone and still forbids the dependencies the new rule does not allow
-- [ ] ADR-0004 is amended in place with the reason and the date
-- [ ] `docs/packages.md` states the new dependency
+- [x] `TruthWeaver.Testing` has a project reference to `TruthWeaver`
+- [x] The package-boundary architecture test no longer requires `Abstractions` alone and still forbids the dependencies the new rule does not allow
+- [x] ADR-0004 is amended in place with the reason and the date
+- [x] `docs/packages.md` states the new dependency
 - [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
 
 See also [spec](../spec.md).
