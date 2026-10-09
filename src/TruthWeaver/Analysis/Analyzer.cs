@@ -119,6 +119,25 @@ internal static class Analyzer
         );
     }
 
+    /// <summary>
+    /// Measures the cost of a tree's Strong K3 analysis: the number of decision nodes in the shared dual-rail BDD
+    /// manager after the tree is built. Sub-graphs shared between the two rails or between sub-expressions count once.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <param name="maxTerms">The distinct-term cap; a tree with more is not analysed.</param>
+    /// <returns>The node count, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms.</returns>
+    public static int? BddNodeCount(Expression root, int maxTerms)
+    {
+        if (DistinctTerms(root).Count > maxTerms)
+        {
+            return null;
+        }
+
+        BddManager bdd = new();
+        _ = Build(root, bdd, [], []);
+        return bdd.NodeCount;
+    }
+
     /// <summary>Collects the distinct terms of a tree.</summary>
     /// <param name="root">The tree.</param>
     /// <returns>The distinct term identities.</returns>

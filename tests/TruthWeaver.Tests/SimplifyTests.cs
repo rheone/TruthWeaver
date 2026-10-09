@@ -33,8 +33,8 @@ public sealed class SimplifyTests
 
             K3Rule simplified = original.Rewrite(rule => rule.Simplify());
             checkedRules++;
-            int before = RuleMetrics.NodeCount(original.Compiled);
-            int after = RuleMetrics.NodeCount(simplified.Compiled);
+            int before = PrintedTreeSize.NodeCount(original.Compiled);
+            int after = PrintedTreeSize.NodeCount(simplified.Compiled);
             shrunk += after < before ? 1 : 0;
             if (after > before)
             {
@@ -88,7 +88,7 @@ public sealed class SimplifyTests
             K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
             K3Rule simplified = expanded.Rewrite(rule => rule.Simplify());
             checkedRules++;
-            if (RuleMetrics.NodeCount(simplified.Compiled) > RuleMetrics.NodeCount(expanded.Compiled))
+            if (PrintedTreeSize.NodeCount(simplified.Compiled) > PrintedTreeSize.NodeCount(expanded.Compiled))
             {
                 failures.Add($"{generated.Text}: simplified expansion is larger");
             }

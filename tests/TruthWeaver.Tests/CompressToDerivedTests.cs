@@ -33,7 +33,7 @@ public sealed class CompressToDerivedTests
             K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
             K3Rule compressed = expanded.Rewrite(rule => rule.CompressToDerived());
             checkedRules++;
-            if (RuleMetrics.NodeCount(compressed.Compiled) > RuleMetrics.NodeCount(expanded.Compiled))
+            if (PrintedTreeSize.NodeCount(compressed.Compiled) > PrintedTreeSize.NodeCount(expanded.Compiled))
             {
                 failures.Add($"{generated.Text}: compressed is larger ({compressed.Compiled.CanonicalText})");
             }

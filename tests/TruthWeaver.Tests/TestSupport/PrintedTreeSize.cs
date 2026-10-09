@@ -7,7 +7,7 @@ using TruthWeaver.Evaluation;
 /// plain-text tree (one line per node, shared sub-expressions counted every time they appear), so the rewrite code under
 /// test cannot also hide a miscount in its own measure.
 /// </summary>
-public static class RuleMetrics
+public static class PrintedTreeSize
 {
     /// <summary>Counts the nodes of <paramref name="rule"/>'s printed tree.</summary>
     /// <param name="rule">The rule to measure.</param>

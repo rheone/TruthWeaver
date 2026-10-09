@@ -24,14 +24,23 @@ public sealed class CompiledRule<TContext>
     private readonly ILogger logger;
     private readonly Lazy<string> canonicalText;
     private readonly Lazy<IReadOnlySet<string>> predicateNames;
+    private readonly Lazy<RuleMetrics> metrics;
+    private readonly CompilerOptions options;
 
-    internal CompiledRule(Expression root, PredicateRegistry<TContext> registry, ILogger? logger = null)
+    internal CompiledRule(
+        Expression root,
+        PredicateRegistry<TContext> registry,
+        ILogger? logger = null,
+        CompilerOptions? options = null
+    )
     {
+        this.options = options ?? CompilerOptions.Default;
         this.Root = root;
         this.registry = registry;
         this.logger = logger ?? NullLogger.Instance;
         this.canonicalText = new Lazy<string>(() => CanonicalPrinter.Print(this.Root));
         this.predicateNames = new Lazy<IReadOnlySet<string>>(() => CollectPredicateNames(this.Root));
+        this.metrics = new Lazy<RuleMetrics>(() => RuleMetrics.Measure(this.Root, this.options.MaxAnalysisTerms));
     }
 
     /// <summary>Gets this rule's canonical printed DSL text — the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
@@ -43,6 +52,13 @@ public sealed class CompiledRule<TContext>
     /// The set is empty for a rule with no terms.
     /// </summary>
     public IReadOnlySet<string> PredicateNames => this.predicateNames.Value;
+
+    /// <summary>
+    /// Gets the size and analysis cost of this rule. The measures are computed on first read and cached, so a host that
+    /// never reads them pays nothing. <see cref="RuleMetrics.BddNodeCount"/> runs the K3 analysis on demand, bounded by
+    /// the <see cref="CompilerOptions.MaxAnalysisTerms"/> this rule was compiled with.
+    /// </summary>
+    public RuleMetrics Metrics => this.metrics.Value;
 
     /// <summary>
     /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
@@ -163,7 +179,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>A new rule over the same predicates, with derived operators where patterns matched.</returns>
     public CompiledRule<TContext> CompressToDerived()
     {
-        return new CompiledRule<TContext>(Compressor.Compress(this.Root), this.registry, this.logger);
+        return new CompiledRule<TContext>(Compressor.Compress(this.Root), this.registry, this.logger, this.options);
     }
 
     /// <summary>
@@ -195,7 +211,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>A new rule over the same predicates in canonical form.</returns>
     public CompiledRule<TContext> Canonicalize()
     {
-        return new CompiledRule<TContext>(Canonicalizer.Canonicalize(this.Root), this.registry, this.logger);
+        return new CompiledRule<TContext>(Canonicalizer.Canonicalize(this.Root), this.registry, this.logger, this.options);
     }
 
     /// <summary>
@@ -226,7 +242,7 @@ public sealed class CompiledRule<TContext>
     /// <returns>A new rule over the same predicates, simplified.</returns>
     public CompiledRule<TContext> Simplify()
     {
-        return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger);
+        return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger, this.options);
     }
 
     /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
@@ -426,7 +442,10 @@ public sealed class CompiledRule<TContext>
     {
         if (tree is not null && ExpressionTools.Size(tree) <= cap)
         {
-            return new CompilationResult<TContext>(new CompiledRule<TContext>(tree, this.registry, this.logger), []);
+            return new CompilationResult<TContext>(
+                new CompiledRule<TContext>(tree, this.registry, this.logger, this.options),
+                []
+            );
         }
 
         Diagnostic diagnostic = Diagnostic.Error(

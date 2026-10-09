@@ -97,6 +97,37 @@ internal static class ExpressionTools
         return Size(root, new Dictionary<Expression, long>(ReferenceEqualityComparer.Instance));
     }
 
+    /// <summary>
+    /// The depth of <paramref name="root"/>: the number of nodes on its longest root-to-leaf path, so a lone term or
+    /// constant has depth 1. This is the measure <c>CompilerOptions.MaxDepth</c> limits.
+    /// </summary>
+    /// <param name="root">The tree to measure.</param>
+    /// <returns>The depth.</returns>
+    public static int Depth(Expression root)
+    {
+        return Depth(root, new Dictionary<Expression, int>(ReferenceEqualityComparer.Instance));
+    }
+
+    private static int Depth(Expression node, Dictionary<Expression, int> memo)
+    {
+        if (memo.TryGetValue(node, out int known))
+        {
+            return known;
+        }
+
+        int deepestChild = 0;
+        MapChildren(
+            node,
+            child =>
+            {
+                deepestChild = Math.Max(deepestChild, Depth(child, memo));
+                return child;
+            }
+        );
+        memo[node] = deepestChild + 1;
+        return deepestChild + 1;
+    }
+
     private static long Size(Expression node, Dictionary<Expression, long> memo)
     {
         if (memo.TryGetValue(node, out long known))
