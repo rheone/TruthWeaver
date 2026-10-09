@@ -23,7 +23,10 @@ repository analyzers. In a CI build, a warning fails the build.
 | --- | --- |
 | [Consumer](Consumer/) | A context type, a class-based predicate, a selector-based predicate, a rule, dependency-injection wiring and a test that uses `TruthWeaver.Testing`. |
 | [PredicateLibrary](PredicateLibrary/) | A project for a predicate-only team. It references `TruthWeaver.Abstractions` alone. It defines a class-based predicate and a schema-and-delegate predicate with an argument. |
+| [DataSource](DataSource/) | A JSON data source and a rule with a data-source argument. The rule reads its minimum age from a policy document. The compiler checks the source name and the JSONPath query. |
 
 The [Consumer test project](Consumer.Tests/) runs the rule from a container and asserts the decision.
 
 The [PredicateLibrary test project](PredicateLibrary.Tests/) evaluates the predicates through their schemas and delegates.
+
+The [DataSource test project](DataSource.Tests/) evaluates the rule against a sample policy document.

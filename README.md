@@ -110,6 +110,7 @@ or RC included. The file does not pin that exact patch.
 The lifecycle is: implement, register, compile once, evaluate many times.
 The [Consumer sample](samples/Consumer/) shows these steps with dependency injection and a test.
 The [PredicateLibrary sample](samples/PredicateLibrary/) shows a project that defines predicates and references `TruthWeaver.Abstractions` alone.
+The [DataSource sample](samples/DataSource/) shows a JSON data source and a rule that reads a value from it.
 [Examples](docs/examples.md) builds from here to named arguments, the full
 operator set and a worked example in rule text, JSON and YAML.
 
