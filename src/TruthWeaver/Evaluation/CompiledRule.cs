@@ -23,6 +23,7 @@ public sealed class CompiledRule<TContext>
     private readonly PredicateRegistry<TContext> registry;
     private readonly ILogger logger;
     private readonly Lazy<string> canonicalText;
+    private readonly Lazy<IReadOnlySet<string>> predicateNames;
 
     internal CompiledRule(Expression root, PredicateRegistry<TContext> registry, ILogger? logger = null)
     {
@@ -30,10 +31,18 @@ public sealed class CompiledRule<TContext>
         this.registry = registry;
         this.logger = logger ?? NullLogger.Instance;
         this.canonicalText = new Lazy<string>(() => CanonicalPrinter.Print(this.Root));
+        this.predicateNames = new Lazy<IReadOnlySet<string>>(() => CollectPredicateNames(this.Root));
     }
 
     /// <summary>Gets this rule's canonical printed DSL text — the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
     public string CanonicalText => this.canonicalText.Value;
+
+    /// <summary>
+    /// Gets the name of each predicate this rule references, once each, in the casing term identity uses (the registered
+    /// casing for a registered predicate). A predicate used by several terms, or written in different casings, appears once.
+    /// The set is empty for a rule with no terms.
+    /// </summary>
+    public IReadOnlySet<string> PredicateNames => this.predicateNames.Value;
 
     /// <summary>
     /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
@@ -343,6 +352,28 @@ public sealed class CompiledRule<TContext>
     public override string ToString()
     {
         return this.CanonicalText;
+    }
+
+    private static HashSet<string> CollectPredicateNames(Expression root)
+    {
+        HashSet<string> names = new(StringComparer.Ordinal);
+        Stack<Expression> pending = new([root]);
+        while (pending.TryPop(out Expression? node))
+        {
+            if (node is TermExpression term)
+            {
+                names.Add(term.Identity.PredicateName);
+            }
+            else if (node is not ConstantExpression)
+            {
+                foreach (Expression operand in ExpressionShape.Of(node).Operands)
+                {
+                    pending.Push(operand);
+                }
+            }
+        }
+
+        return names;
     }
 
     private static OutlineNode OutlineOf(Expression node, PredicateRegistry<TContext> registry)

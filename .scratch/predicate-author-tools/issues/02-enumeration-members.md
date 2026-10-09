@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `PredicateRegistry<TContext>.Schemas` is public and lists every registered schema
-- [ ] `CompiledRule<TContext>.PredicateNames` is public and lists each predicate the rule references once, in the casing term identity uses
-- [ ] Both are documented and tested, including a rule that repeats a predicate
+- [x] `PredicateRegistry<TContext>.Schemas` is public and lists every registered schema
+- [x] `CompiledRule<TContext>.PredicateNames` is public and lists each predicate the rule references once, in the casing term identity uses
+- [x] Both are documented and tested, including a rule that repeats a predicate
 - [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
 
 See also [spec](../spec.md).
