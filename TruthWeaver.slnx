@@ -36,6 +36,8 @@
     <File Path="samples\Directory.Build.props" />
     <Project Path="samples\Consumer.Tests\Consumer.Tests.csproj" />
     <Project Path="samples\Consumer\Consumer.csproj" />
+    <Project Path="samples\PredicateLibrary.Tests\PredicateLibrary.Tests.csproj" />
+    <Project Path="samples\PredicateLibrary\PredicateLibrary.csproj" />
     <File Path="samples\README.md" />
   </Folder>
   <Folder Name="/src/">
