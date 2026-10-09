@@ -16,3 +16,11 @@ The packages target `net11.0`. A consuming project must target `net11.0` or late
 
 `Directory.Build.props` in this folder applies to every sample project. It sets `IsPackable` to `false` and keeps the
 repository analyzers. In a CI build, a warning fails the build.
+
+## Samples
+
+| Sample | Shows |
+| --- | --- |
+| [Consumer](Consumer/) | A context type, a class-based predicate, a selector-based predicate, a rule, dependency-injection wiring and a test that uses `TruthWeaver.Testing`. |
+
+The [Consumer test project](Consumer.Tests/) runs the rule from a container and asserts the decision.

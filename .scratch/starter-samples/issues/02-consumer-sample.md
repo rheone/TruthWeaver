@@ -4,12 +4,12 @@
 
 **Blocked by:** 01 (Samples scaffolding)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `samples/Consumer` has a context type, both predicate shapes, a sample rule and DI wiring
-- [ ] One `TruthWeaver.Testing` test runs the main path
-- [ ] Getting started in the README links to it
-- [ ] The documentation lint rules pass for any prose
+- [x] `samples/Consumer` has a context type, both predicate shapes, a sample rule and DI wiring
+- [x] One `TruthWeaver.Testing` test runs the main path
+- [x] Getting started in the README links to it
+- [x] The documentation lint rules pass for any prose
 - [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
 
 See also [spec](../spec.md).
