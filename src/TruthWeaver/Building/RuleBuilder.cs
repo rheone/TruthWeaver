@@ -4,6 +4,8 @@ using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
+using TruthWeaver.Evaluation;
+using TruthWeaver.Json;
 
 /// <summary>
 /// A fluent, programmatic way to assemble a rule without hand-writing DSL/JSON/YAML text —
@@ -33,6 +35,35 @@ public abstract class RuleBuilder
     public static RuleBuilder Constant(TruthValue value)
     {
         return new ConstantBuilder(value);
+    }
+
+    /// <summary>
+    /// Creates a builder that holds the tree of an already compiled rule, so a host can join rules with any builder
+    /// operator without a JSON round trip.
+    /// </summary>
+    /// <remarks>
+    /// The source rule may come from another registry, so the join is not trusted. Compiling the joined builder
+    /// validates every term again against the destination registry. A predicate missing there, or with a different
+    /// schema, gives the normal compile diagnostics. Data-source declarations (<c>TRE0024</c>) and the destination
+    /// <c>CompilerOptions</c> limits apply to the joined tree. A term that appears in both source rules is one term in
+    /// the joined rule, so its predicate runs once per evaluation.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// CompilationResult&lt;User&gt; joined = RuleBuilder
+    ///     .And(RuleBuilder.FromCompiled(baseRule), RuleBuilder.FromCompiled(tenantRule))
+    ///     .Compile(compiler);
+    /// </code>
+    /// </example>
+    /// <typeparam name="TContext">The application context type of the rule. Joined rules share it.</typeparam>
+    /// <param name="rule">The compiled rule whose tree the builder holds.</param>
+    /// <returns>A builder for the rule's tree.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder FromCompiled<TContext>(CompiledRule<TContext> rule)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+
+        return new CompiledBuilder(rule.Root);
     }
 
     /// <summary>Creates a builder for a zero-argument predicate reference.</summary>
@@ -665,6 +696,17 @@ public abstract class RuleBuilder
         }
 
         return array;
+    }
+
+    private sealed class CompiledBuilder(Expression root) : RuleBuilder
+    {
+        private readonly Expression root = root;
+
+        private protected override JsonNode ToNode()
+        {
+            // Same printer as CompiledRule.PrintJson, so the tree re-enters the pipeline in the JSON shape.
+            return JsonTreePrinter.ToNode(this.root);
+        }
     }
 
     private sealed class ConstantBuilder(TruthValue value) : RuleBuilder

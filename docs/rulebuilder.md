@@ -62,6 +62,18 @@ RuleBuilder.And(new List<RuleBuilder> { x }); // IEnumerable: folds to x
 
 `RuleBuilder.Compile(compiler)` is a thin wrapper around `compiler.CompileJson(builder.ToJson())`. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once.
 
+### Joining compiled rules
+
+`RuleBuilder.FromCompiled(rule)` returns a builder that holds the tree of a rule that is already compiled. Use it with any builder operator to join rules without a JSON round trip. Both rules must have the same context type.
+
+```csharp
+CompilationResult<Customer> joined = RuleBuilder
+    .And(RuleBuilder.FromCompiled(baseRule), RuleBuilder.FromCompiled(tenantRule))
+    .Compile(compiler);
+```
+
+The joined rule compiles against the registry of `compiler`. The compiler validates every term again, because the two source rules may come from other registries. A predicate that is missing from that registry, or that has a different schema there, gives the normal compile diagnostics. Data-source declarations and the compiler options (depth and node limits) apply to the whole joined tree. A term that appears in both rules is one term in the joined rule, so its predicate runs once for each evaluation.
+
 ## Outlining a compiled rule
 
 Every predicate has a required `Label` and `Description` on its `PredicateSchema`. Every operator has the same, which `OperatorInfo.Describe` in `TruthWeaver.Ast` exposes. `CompiledRule<TContext>.Outline()` combines both into one recursive outline of a whole compiled rule. A rule-authoring UI or a generated "what does this rule mean" report can walk the outline without access to the closed-set AST types:

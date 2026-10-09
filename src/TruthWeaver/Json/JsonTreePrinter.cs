@@ -18,7 +18,7 @@ internal static class JsonTreePrinter
         return ToNode(root).ToJsonString();
     }
 
-    private static JsonNode ToNode(Expression node)
+    internal static JsonNode ToNode(Expression node)
     {
         if (node is ConstantExpression c)
         {
