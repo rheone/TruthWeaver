@@ -122,6 +122,19 @@ string annotatedText = PlainTextTreePrinter.Print(description, decision.TraceTre
 
 The result of `MermaidTreePrinter` is plain Mermaid text. Paste it into any Mermaid renderer, or give it to a UI that already embeds one. The diagram shows the structure of the rule and, when you pass a trace, why one evaluation gave its result. The output always has a synthetic `Start` node that points at the root, so the diagram shows where evaluation begins.
 
+Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to change the output. The default options give the output shown above.
+
+| Option | Values | Default |
+| --- | --- | --- |
+| `Direction` | `TopDown`, `LeftRight`, `BottomTop`, `RightLeft` | `TopDown` |
+| `NodeShapes` | `true` gives an operator a hexagon, a term a rounded box and a constant a circle. `false` gives every node a rectangle. | `false` |
+| `OperatorStyle` | `Word`, `Symbolic`, `CStyle` | `Word` |
+| `ShowArgumentValues` | `true`, `false` | `true` |
+
+```csharp
+string diagram = rule.PrintMermaid(new MermaidOptions { Direction = MermaidDirection.LeftRight, NodeShapes = true });
+```
+
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 
 Both printers include the rule-text argument values of each term in its label by default, for example `Has Crust (crust: "thin")`. Pass `showArgumentValues: false` to either `Print` overload, or to `PrintMermaid` and `PrintPlainText` on `CompiledRule<TContext>`, for labels that show only the structure. `CompiledRule<TContext>` also exposes both printers as `PrintMermaid()`, `PrintMermaid(decision)`, `PrintPlainText()` and `PrintPlainText(decision)`, so no separate `Outline()` call is needed.

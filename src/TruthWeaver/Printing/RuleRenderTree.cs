@@ -73,7 +73,8 @@ internal static class RuleRenderTree
             renderedChildren.Add(Build(description.Operands[i], childEvaluated, skipped, style, showArgumentValues));
         }
 
-        return new RenderNode(StyledLabel(description, style, showArgumentValues), state, renderedChildren);
+        OutlineNodeKind kind = description.Operands.Count > 0 ? OutlineNodeKind.Operator : description.Kind;
+        return new RenderNode(StyledLabel(description, style, showArgumentValues), state, renderedChildren, kind);
     }
 
     /// <summary>

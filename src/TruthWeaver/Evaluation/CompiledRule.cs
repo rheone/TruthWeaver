@@ -272,6 +272,14 @@ public sealed class CompiledRule<TContext>
         return MermaidTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
     }
 
+    /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, using <paramref name="options"/>.</summary>
+    /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    public string PrintMermaid(MermaidOptions options)
+    {
+        return MermaidTreePrinter.Print(this.Outline(), options);
+    }
+
     /// <summary>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
     /// result and short-circuit path.
@@ -283,6 +291,18 @@ public sealed class CompiledRule<TContext>
     public string PrintMermaid(Decision decision, bool showArgumentValues = true)
     {
         return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
+    }
+
+    /// <summary>
+    /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation, using <paramref name="options"/>.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    public string PrintMermaid(Decision decision, MermaidOptions options)
+    {
+        return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), options);
     }
 
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
@@ -399,7 +419,7 @@ public sealed class CompiledRule<TContext>
             (string label, string description) = registry.TryGetSchema(term.Identity.PredicateName, out PredicateSchema? schema)
                 ? (schema.Label, schema.Description)
                 : (term.Identity.PredicateName, "An unregistered predicate (CompilationMode.Lenient).");
-            return new OutlineNode(label, description, [], ArgumentText(term.Identity));
+            return new OutlineNode(label, description, [], ArgumentText(term.Identity), OutlineNodeKind.Term);
         }
 
         OperatorDescriptor descriptor = OperatorInfo.Describe(node);
@@ -408,7 +428,8 @@ public sealed class CompiledRule<TContext>
         return new OutlineNode(
             descriptor.Label,
             descriptor.Description,
-            [.. operands.Select(operand => OutlineOf(operand, registry))]
+            [.. operands.Select(operand => OutlineOf(operand, registry))],
+            Kind: node is ConstantExpression ? OutlineNodeKind.Constant : OutlineNodeKind.Operator
         );
     }
 

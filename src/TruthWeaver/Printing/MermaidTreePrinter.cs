@@ -19,7 +19,17 @@ public static class MermaidTreePrinter
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     public static string Print(OutlineNode root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
     {
-        return Print(RuleRenderTree.Build(root, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, style, showArgumentValues), new MermaidOptions());
+    }
+
+    /// <summary>Prints a rule's structure only, with no evaluation coloring, using <paramref name="options"/>.</summary>
+    /// <param name="root">The rule's outline.</param>
+    /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    public static string Print(OutlineNode root, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return Print(RuleRenderTree.Build(root, options.OperatorStyle, options.ShowArgumentValues), options);
     }
 
     /// <summary>Prints a rule's structure, colored by one evaluation's result and short-circuit path.</summary>
@@ -35,17 +45,28 @@ public static class MermaidTreePrinter
         bool showArgumentValues = true
     )
     {
-        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues), new MermaidOptions());
     }
 
-    private static string Print(RenderNode root)
+    /// <summary>Prints a rule's structure, colored by one evaluation, using <paramref name="options"/>.</summary>
+    /// <param name="root">The rule's outline.</param>
+    /// <param name="traceTree">The matching <see cref="Decision.TraceTree"/> from that evaluation.</param>
+    /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
+    /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    public static string Print(OutlineNode root, TraceNode traceTree, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return Print(RuleRenderTree.Build(root, traceTree, options.OperatorStyle, options.ShowArgumentValues), options);
+    }
+
+    private static string Print(RenderNode root, MermaidOptions options)
     {
         StringBuilder text = new();
-        text.Append("flowchart TD\n");
+        text.Append("flowchart ").Append(DirectionCode(options.Direction)).Append('\n');
         text.Append("    Start([\"Start\"]) --> n0\n");
         List<string> classAssignments = [];
         int nextId = 0;
-        bool anyColored = WriteNode(root, text, classAssignments, ref nextId) != RenderState.NoData;
+        bool anyColored = WriteNode(root, options, text, classAssignments, ref nextId) != RenderState.NoData;
 
         foreach (string assignment in classAssignments)
         {
@@ -60,10 +81,24 @@ public static class MermaidTreePrinter
         return text.ToString();
     }
 
-    private static RenderState WriteNode(RenderNode node, StringBuilder text, List<string> classAssignments, ref int nextId)
+    private static RenderState WriteNode(
+        RenderNode node,
+        MermaidOptions options,
+        StringBuilder text,
+        List<string> classAssignments,
+        ref int nextId
+    )
     {
         string id = $"n{nextId++}";
-        text.Append("    ").Append(id).Append("[\"").Append(Escape(node.Label)).Append("\"]\n");
+        (string open, string close) = options.NodeShapes ? ShapeFor(node.Kind) : ("[", "]");
+        text.Append("    ")
+            .Append(id)
+            .Append(open)
+            .Append('"')
+            .Append(Escape(node.Label))
+            .Append('"')
+            .Append(close)
+            .Append('\n');
 
         string? className = ClassFor(node.State);
         if (className is not null)
@@ -74,11 +109,38 @@ public static class MermaidTreePrinter
         foreach (RenderNode child in node.Children)
         {
             int childId = nextId;
-            WriteNode(child, text, classAssignments, ref nextId);
+            WriteNode(child, options, text, classAssignments, ref nextId);
             text.Append("    ").Append(id).Append(" --> n").Append(childId).Append('\n');
         }
 
         return node.State;
+    }
+
+    private static string DirectionCode(MermaidDirection direction)
+    {
+        return direction switch
+        {
+            MermaidDirection.TopDown => "TD",
+            MermaidDirection.LeftRight => "LR",
+            MermaidDirection.BottomTop => "BT",
+            MermaidDirection.RightLeft => "RL",
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, "Unhandled Mermaid direction."),
+        };
+    }
+
+    /// <summary>
+    /// The Mermaid open and close delimiters per node role: hexagon, rounded box and circle. They are
+    /// part of the classic flowchart syntax, so GitHub's sanitizing renderer accepts them.
+    /// </summary>
+    private static (string Open, string Close) ShapeFor(OutlineNodeKind kind)
+    {
+        return kind switch
+        {
+            OutlineNodeKind.Operator => ("{{", "}}"),
+            OutlineNodeKind.Constant => ("((", "))"),
+            OutlineNodeKind.Term => ("(", ")"),
+            _ => ("[", "]"),
+        };
     }
 
     private static string? ClassFor(RenderState state)
