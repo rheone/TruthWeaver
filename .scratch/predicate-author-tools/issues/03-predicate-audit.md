@@ -1,0 +1,15 @@
+# 03: PredicateAudit.FindUnused
+
+**What to build:** A host finds the registered predicates that none of its stored rules use.
+
+**Blocked by:** 02 (Public registry schemas and rule predicate names)
+
+**Status:** ready-for-agent
+
+- [ ] `PredicateAudit.FindUnused(registry, rules)` returns the registered schemas no rule references
+- [ ] Name matching uses the normalized casing of term identity
+- [ ] An empty rule set returns every schema; an empty registry returns none
+- [ ] It lives in the `TruthWeaver` package and compiles no rule text
+- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+
+See also [spec](../spec.md).
