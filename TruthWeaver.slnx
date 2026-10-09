@@ -32,6 +32,10 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks\TruthWeaver.Benchmarks\TruthWeaver.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <File Path="samples\Directory.Build.props" />
+    <File Path="samples\README.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src\TruthWeaver.Abstractions\TruthWeaver.Abstractions.csproj" />
     <Project Path="src\TruthWeaver.DataSources.Json\TruthWeaver.DataSources.Json.csproj" />
