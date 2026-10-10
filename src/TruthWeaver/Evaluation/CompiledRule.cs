@@ -90,13 +90,13 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <remarks>
     /// The result evaluates to the same <see cref="TruthValue"/> as this rule for every assignment of its terms, and
-    /// records the same faults for predicates that throw. This rule is immutable and is not changed. The expanded rule prints canonical text that compiles back to the same tree, but it is usually larger:
+    /// records the same faults for predicates that throw. This rule is immutable and is not changed. The expanded rule prints canonical text that compiles back to the same tree when that text fits <see cref="CompilerOptions.MaxNodeCount"/> (512 by default; raise it otherwise). The expanded rule is usually larger:
     /// an operator whose definition mentions an operand twice (<c>XOR</c>, <c>EQUIVALENT</c>, <c>If</c>, the inspections)
     /// repeats that operand's text, so deeply nested rules grow quickly (exponentially in the nesting depth).
     /// <para>
     /// The result is capped at <paramref name="maxNodeCount"/> nodes (the rule's own <see cref="CompilerOptions.MaxRewriteNodeCount"/> by default), counted as a printed tree. A larger
     /// result is not built: the call returns a failed <see cref="CompilationResult{TContext}"/> carrying a
-    /// <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error, and never throws for size.
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error, and never throws for size. A result over <see cref="CompilerOptions.MaxNodeCount"/> (512 by default) is a valid rule here, but its printed text compiles back only when you raise <c>MaxNodeCount</c>; that cap is independent of <see cref="CompilerOptions.MaxRewriteNodeCount"/>.
     /// </para>
     /// </remarks>
     /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
@@ -126,7 +126,7 @@ public sealed class CompiledRule<TContext>
     /// The result is capped at <paramref name="maxNodeCount"/> nodes (the rule's own <see cref="CompilerOptions.MaxRewriteNodeCount"/> by default), counted as a printed tree; the cost
     /// is estimated first, so an over-cap rewrite is refused without being built. The call then returns a failed
     /// <see cref="CompilationResult{TContext}"/> carrying a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error
-    /// and never throws for size.
+    /// and never throws for size. A result over <see cref="CompilerOptions.MaxNodeCount"/> (512 by default) is a valid rule here, but its printed text compiles back only when you raise <c>MaxNodeCount</c>; that cap is independent of <see cref="CompilerOptions.MaxRewriteNodeCount"/>.
     /// </para>
     /// </remarks>
     /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
@@ -143,7 +143,7 @@ public sealed class CompiledRule<TContext>
     /// becomes <c>(a NOR a) NOR (b NOR b)</c>; every other operator is first expanded to the primitive kernel.
     /// </summary>
     /// <remarks>
-    /// Same guarantees, cost, size cap and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
+    /// Same guarantees, cost, size cap, recompile caveat (a result over <see cref="CompilerOptions.MaxNodeCount"/> compiles back only when you raise it) and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
     /// </remarks>
     /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The new rule over the same predicates whose logic is <c>NOR</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
@@ -288,7 +288,7 @@ public sealed class CompiledRule<TContext>
     /// The result has the same value for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment, and rewriting it again
     /// changes nothing. It can be larger than this rule. The result is capped at
     /// <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree; a larger result is not built
-    /// and the call returns a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error. Evaluation order is not preserved.
+    /// and the call returns a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error. A result over <see cref="CompilerOptions.MaxNodeCount"/> (512 by default) is a valid rule here, but its printed text compiles back only when you raise <c>MaxNodeCount</c>; that cap is independent of <c>MaxRewriteNodeCount</c>. Evaluation order is not preserved.
     /// </para>
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
@@ -307,7 +307,7 @@ public sealed class CompiledRule<TContext>
     /// <c>AND</c>. Distribution holds in Strong Kleene logic because <c>AND</c> and <c>OR</c> form a distributive lattice;
     /// no classical complement law is used, so <c>a OR NOT a</c> stays. A repeated literal in a clause and a repeated clause
     /// are dropped (idempotence). Distribution can grow a rule exponentially, so the result is capped as for
-    /// <see cref="ToNnf"/>. Atoms, thresholds, the options, the warning and the value guarantee are the same as for
+    /// <see cref="ToNnf"/>. Atoms, thresholds, the options, the warning, the recompile caveat for a result over <see cref="CompilerOptions.MaxNodeCount"/> and the value guarantee are the same as for
     /// <see cref="ToNnf"/>, and rewriting the result again changes nothing.
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
@@ -323,7 +323,7 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <remarks>
     /// The mirror of <see cref="ToCnf"/>: the rule goes to negation normal form first, then <c>AND</c> is distributed over
-    /// <c>OR</c>. Size cap, atoms, thresholds, options, warning and value guarantee are the same as for
+    /// <c>OR</c>. Size cap, recompile caveat, atoms, thresholds, options, warning and value guarantee are the same as for
     /// <see cref="ToCnf"/>.
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>

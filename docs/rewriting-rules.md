@@ -54,7 +54,7 @@ Every row is checked against an independent truth-table oracle for all `True`/`F
 
 For `ExpandToPrimitives()`, note two points:
 
-- **Size.** An operator whose definition mentions an operand twice (`XOR`, `EQUIVALENT`, `If`, the inspections) repeats the text of that operand, so a deeply nested rule can grow a lot. The printed text of the expanded rule compiles back to the same rule, but it can exceed the default `CompilerOptions.MaxNodeCount`. `CompilerOptions.MaxRewriteNodeCount` caps the result itself (see [Size cap](#size-cap)).
+- **Size.** An operator whose definition mentions an operand twice (`XOR`, `EQUIVALENT`, `If`, the inspections) repeats the text of that operand, so a deeply nested rule can grow a lot. The printed text of the expanded rule compiles back to the same rule only when it fits `CompilerOptions.MaxNodeCount` (512 by default). See [A large result may not recompile](#a-large-result-may-not-recompile). `CompilerOptions.MaxRewriteNodeCount` caps the result itself (see [Size cap](#size-cap)).
 - **Faults.** A predicate that throws is `Unknown` plus a `Fault` in the expanded rule, exactly as in the original. Terms are still memoized by identity.
 
 ### Size cap
@@ -77,6 +77,12 @@ The code is in [Diagnostics](strong-k3/specification/diagnostics.md). This table
 | `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the NAND or NOR rewrite, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a NAND or NOR conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
 
 `CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and have no cap.
+
+### A large result may not recompile
+
+`MaxRewriteNodeCount` and `MaxNodeCount` are two separate caps. `MaxRewriteNodeCount` (100,000 by default) limits what a rewrite builds. `MaxNodeCount` (512 by default) limits what the compiler accepts from text, JSON, YAML or `RuleBuilder`. A rewrite result can be under the first cap and over the second. That result is a valid `CompiledRule`: it evaluates, and `CanonicalText` prints it. But its text compiles back to the same rule only when the compiler has a `MaxNodeCount` at least as large as the result. Otherwise `Compile` returns a `TRE0010` error and no rule.
+
+The expanding rewrites and the normal forms (`ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()` and `ToDnf()`) can reach that case. `CompressToDerived()`, `Canonicalize()` and `Simplify()` never return a larger rule, so a rule that compiled still compiles after them. Neither cap changes the other. To store a large result as text and read it back, raise `MaxNodeCount` on the compiler that reads it.
 
 ### NAND-only and NOR-only
 

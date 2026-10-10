@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Each public rewrite XML doc carries the caveat
 - [ ] The page that describes the behavior is updated to the current truth, with no "changed from" text

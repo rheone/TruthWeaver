@@ -44,7 +44,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [06](issues/06-fault-budget-reaches-semantics-and-timeout-docs.md) | FaultBudget aborts when faults reach the budget; Timeout is documented | None | resolved |
 | [07](issues/07-null-is-unknown-collection-isempty.md) | A null collection is Unknown for IsEmpty and IsNotEmpty | None | resolved |
 | [08](issues/08-nullbehavior-unknown-is-zero.md) | NullBehavior.Unknown is the zero value | 07 | resolved |
-| [09](issues/09-document-rewrite-round-trip-caveat.md) | Document that a large rewrite result may not recompile | None | ready-for-agent |
+| [09](issues/09-document-rewrite-round-trip-caveat.md) | Document that a large rewrite result may not recompile | None | resolved |
 | [10](issues/10-assertsound-compilationresult-overload-and-limits-table.md) | AssertSound accepts the capped rewrites; one limits table | 05 | ready-for-agent |
 | [11](issues/11-one-diagnostic-code-per-mistake.md) | One diagnostic code per mistake, and one code table | 01, 03 | ready-for-agent |
 | [12](issues/12-argument-names-are-case-insensitive.md) | Argument names are case-insensitive | None | ready-for-agent |

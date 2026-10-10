@@ -163,6 +163,32 @@ public sealed class RewriteResourceLimitsTests
         Assert.True(result.Succeeded);
     }
 
+    /// <summary>
+    /// The two caps are independent: a rewrite result under <c>MaxRewriteNodeCount</c> can still be over
+    /// <c>MaxNodeCount</c>, so its canonical text fails to compile until <c>MaxNodeCount</c> is raised.
+    /// </summary>
+    [Fact]
+    public void ExpandToPrimitives_ResultOverMaxNodeCount_RecompilesOnlyWithARaisedMaxNodeCount_Test()
+    {
+        // Arrange: "a XOR b" is 3 nodes; its expansion is 9, which is under the rewrite cap but over a node cap of 8.
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        registry.AddConstant("a", true);
+        registry.AddConstant("b", true);
+        PredicateRegistry<RuleTestContext> built = registry.Build();
+        RuleCompiler<RuleTestContext> narrow = new(built, options: new CompilerOptions(MaxNodeCount: 8));
+        RuleCompiler<RuleTestContext> raised = new(built, options: new CompilerOptions(MaxNodeCount: 9));
+        string expandedText = narrow.Compile("a XOR b").CompiledRule!.ExpandToPrimitives().CompiledRule!.CanonicalText;
+
+        // Act
+        CompilationResult<RuleTestContext> overTheCap = narrow.Compile(expandedText);
+        CompilationResult<RuleTestContext> withRaisedCap = raised.Compile(expandedText);
+
+        // Assert
+        Assert.False(overTheCap.Succeeded);
+        Assert.Contains(overTheCap.Diagnostics, diagnostic => diagnostic.Code == DiagnosticCodes.MaxNodeCountExceeded);
+        Assert.True(withRaisedCap.Succeeded);
+    }
+
     private static CompiledRule<RuleTestContext> Compile(string ruleText, int arity)
     {
         return K3Rule.TryCreate(ruleText, arity)!.Compiled;

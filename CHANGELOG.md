@@ -126,6 +126,9 @@ copyright line reads 2026.
 
 ### Changed
 
+- The XML documentation of the expanding rewrites and the normal forms, and `docs/rewriting-rules.md`, state that a
+  rewrite result over `CompilerOptions.MaxNodeCount` (512 by default) compiles back from its text only when
+  `MaxNodeCount` is raised. The two caps stay independent. No behavior changed.
 - Breaking: `NullBehavior.Unknown` is the zero value (`0`) and `NullBehavior.False` is `1`. They were `1` and `0`, so
   `default(NullBehavior)` was `False` while the documented default is `Unknown`. A forgotten or defaulted value now means
   `Unknown`. Migration: nothing changes when you name the members. Replace any stored or cast numeric value (a
