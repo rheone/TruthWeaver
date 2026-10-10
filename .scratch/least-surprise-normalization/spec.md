@@ -57,12 +57,12 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [19](issues/19-options-records-have-defaults.md) | Each options record has a Default | None | ready-for-agent |
 | [20](issues/20-fake-predicate-label-and-harness-double-call.md) | FakePredicates derive their label; the harness documents its double call | None | ready-for-agent |
 | [21](issues/21-precommit-hook-behavior-documented.md) | Document what the pre-commit hook and format-all do | None | ready-for-agent |
-| [22](issues/22-assertion-exception-base-type.md) | One exception family for the Testing assertions | None | needs-owner-decision |
-| [23](issues/23-project-takes-a-policy-not-a-bool.md) | Decision.Project parameter | None | needs-owner-decision |
-| [24](issues/24-compile-entry-point-names.md) | Compile entry point names | None | needs-owner-decision |
-| [25](issues/25-predicate-twin-naming-and-placement.md) | Predicate twin naming and string In placement | None | needs-owner-decision |
-| [26](issues/26-regex-options-timeout-and-cache.md) | Regex predicate options, timeout and cache | None | needs-owner-decision |
-| [27](issues/27-time-window-not-given-sentinel.md) | Time windows use an absent argument, not an empty string | None | needs-owner-decision |
-| [28](issues/28-result-record-list-equality.md) | Equality of Decision, CompilationResult and Trace records | None | needs-owner-decision |
-| [29](issues/29-measure-versus-limit-names-and-convergence.md) | Measure and limit names; rewrite pass limits | None | needs-owner-decision |
-| [30](issues/30-operator-word-casing-in-printed-text.md) | Casing of operator words in canonical text | None | needs-owner-decision |
+| [22](issues/22-assertion-exception-base-type.md) | One exception family for the Testing assertions | None | ready-for-agent |
+| [23](issues/23-project-takes-a-policy-not-a-bool.md) | Decision.Project parameter | None | ready-for-agent |
+| [24](issues/24-compile-entry-point-names.md) | Compile entry point names | None | ready-for-agent |
+| [25](issues/25-predicate-twin-naming-and-placement.md) | Predicate twin naming and string In placement | None | ready-for-agent |
+| [26](issues/26-regex-options-timeout-and-cache.md) | Regex predicate options, timeout and cache | None | ready-for-agent |
+| [27](issues/27-time-window-not-given-sentinel.md) | Time windows use an absent argument, not an empty string | None | ready-for-agent |
+| [28](issues/28-result-record-list-equality.md) | Equality of Decision, CompilationResult and Trace records | None | ready-for-agent |
+| [29](issues/29-measure-versus-limit-names-and-convergence.md) | Measure and limit names; rewrite pass limits | None | ready-for-agent |
+| [30](issues/30-operator-word-casing-in-printed-text.md) | Casing of operator words in canonical text | None | ready-for-agent |

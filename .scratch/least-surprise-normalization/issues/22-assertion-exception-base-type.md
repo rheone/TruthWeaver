@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
 
-- [ ] The owner picks the base type and the naming
+**Decision (owner, 2026-10-10):** A `TruthWeaverAssertionException` base type; the existing exception types derive from it, so current catches keep working; `HaveFaultForTerm` is renamed to match its predicate-name argument.
+
+- [x] The owner picked the base type and the naming
 - [ ] Existing exception types keep working or the break is recorded in `CHANGELOG.md`
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

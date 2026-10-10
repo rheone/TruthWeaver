@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
 
-- [ ] The owner picks the scope
+**Decision (owner, 2026-10-10):** Bounded pattern cache; a compile-time diagnostic for an invalid literal pattern; a `MatchesIgnoreCase` twin.
+
+- [x] The owner picked the scope
 - [ ] The cache is bounded and tested if the owner agrees
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

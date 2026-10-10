@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
 
-- [ ] The owner picks the approach
+**Decision (owner, 2026-10-10):** Use `EquatableArray` for the list members of `Decision`, `CompilationResult` and `Trace`; tests pin the equality.
+
+- [x] The owner picked the approach
 - [ ] Tests pin the chosen equality
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
 
-- [ ] The owner picks the signature
+**Decision (owner, 2026-10-10):** `Decision.Project(TruthValue unknownAs)`; only `True` or `False` are valid, with one documented invalid-input rule shared with `Collapse`. Record the break in `CHANGELOG.md`.
+
+- [x] The owner picked the signature
 - [ ] Callers, docs and tests are updated, and the break is recorded in `CHANGELOG.md`
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

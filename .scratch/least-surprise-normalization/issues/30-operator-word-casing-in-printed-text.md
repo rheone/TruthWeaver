@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
 
-- [ ] The owner picks document-only or a change
+**Decision (owner, 2026-10-10):** Document only: connectives upper case, call forms upper camel, in `docs/rule-text.md` and the glossary. Printed output does not change.
+
+- [x] The owner picked document-only or a change
 - [ ] A change, if any, updates every canonical-text fixture and is recorded in `CHANGELOG.md`
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
