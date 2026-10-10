@@ -195,6 +195,25 @@ A flat `AND` or `OR` with many terms draws one edge for each operand. Set `Compa
 string diagram = rule.PrintMermaid(new MermaidOptions { CompactChainThreshold = 4 });
 ```
 
+### Call styles
+
+Three call styles give the same output for the same settings. Each one builds a `MermaidOptions`.
+
+```csharp
+// Optional parameters
+string a = rule.PrintMermaid(direction: MermaidDirection.LeftRight, nodeShapes: true);
+
+// Options record
+string b = rule.PrintMermaid(new MermaidOptions { Direction = MermaidDirection.LeftRight, NodeShapes = true });
+
+// Fluent builder
+string c = rule.PrintMermaid(
+    new MermaidOptionsBuilder().WithDirection(MermaidDirection.LeftRight).WithNodeShapes().Build()
+);
+```
+
+The optional parameters are `direction`, `nodeShapes`, `twoLineTermLabels`, `palette`, `nodeStyle` and `compactChainThreshold`. They follow `showArgumentValues` on `PrintMermaid` and `MermaidTreePrinter.Print`. `MermaidTreePrinter.Print` also takes `style` for the operator style.
+
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 
 Both printers include the rule-text argument values of each term in its label by default, for example `Has Crust (crust: "thin")`. Pass `showArgumentValues: false` to either `Print` overload, or to `PrintMermaid` and `PrintPlainText` on `CompiledRule<TContext>`, for labels that show only the structure. `CompiledRule<TContext>` also exposes both printers as `PrintMermaid()`, `PrintMermaid(decision)`, `PrintPlainText()` and `PrintPlainText(decision)`, so no separate `Outline()` call is needed.

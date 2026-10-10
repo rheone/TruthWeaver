@@ -266,10 +266,35 @@ public sealed class CompiledRule<TContext>
 
     /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI.</summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors. <see langword="null"/> (the default) means <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> (the default) for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
-    public string PrintMermaid(bool showArgumentValues = true)
+    public string PrintMermaid(
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
     {
-        return MermaidTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
+        return this.PrintMermaid(
+            MermaidOptions.From(
+                OperatorStyle.Word,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
     }
 
     /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, using <paramref name="options"/>.</summary>
@@ -286,11 +311,38 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors. <see langword="null"/> (the default) means <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> (the default) for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
-    public string PrintMermaid(Decision decision, bool showArgumentValues = true)
+    public string PrintMermaid(
+        Decision decision,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
     {
-        return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
+        return this.PrintMermaid(
+            decision,
+            MermaidOptions.From(
+                OperatorStyle.Word,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
     }
 
     /// <summary>

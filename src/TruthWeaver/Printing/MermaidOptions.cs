@@ -54,4 +54,32 @@ public sealed record MermaidOptions
     /// No operand is hidden.
     /// </summary>
     public int? CompactChainThreshold { get; init; }
+
+    /// <summary>
+    /// Builds the options for the optional-parameter overloads of <see cref="MermaidTreePrinter"/> and
+    /// <c>CompiledRule.PrintMermaid</c>. It only maps parameters to properties.
+    /// </summary>
+    internal static MermaidOptions From(
+        OperatorStyle operatorStyle,
+        bool showArgumentValues,
+        MermaidDirection direction,
+        bool nodeShapes,
+        bool twoLineTermLabels,
+        MermaidPalette? palette,
+        Func<OutlineNode, NodeStyle?>? nodeStyle,
+        int? compactChainThreshold
+    )
+    {
+        return new MermaidOptions
+        {
+            OperatorStyle = operatorStyle,
+            ShowArgumentValues = showArgumentValues,
+            Direction = direction,
+            NodeShapes = nodeShapes,
+            TwoLineTermLabels = twoLineTermLabels,
+            Palette = palette ?? MermaidPalette.Light,
+            NodeStyle = nodeStyle,
+            CompactChainThreshold = compactChainThreshold,
+        };
+    }
 }

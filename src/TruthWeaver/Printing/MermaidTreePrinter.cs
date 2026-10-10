@@ -16,10 +16,38 @@ public static class MermaidTreePrinter
     /// <param name="root">The rule's outline.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors. <see langword="null"/> (the default) means <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> (the default) for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
-    public static string Print(OutlineNode root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
+    public static string Print(
+        OutlineNode root,
+        OperatorStyle style = OperatorStyle.Word,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
     {
-        return Print(RuleRenderTree.Build(root, style, showArgumentValues), new MermaidOptions());
+        return Print(
+            root,
+            MermaidOptions.From(
+                style,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
     }
 
     /// <summary>Prints a rule's structure only, with no evaluation coloring, using <paramref name="options"/>.</summary>
@@ -37,15 +65,40 @@ public static class MermaidTreePrinter
     /// <param name="traceTree">The matching <see cref="Decision.TraceTree"/> from that evaluation.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors. <see langword="null"/> (the default) means <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> (the default) for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     public static string Print(
         OutlineNode root,
         TraceNode traceTree,
         OperatorStyle style = OperatorStyle.Word,
-        bool showArgumentValues = true
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
     )
     {
-        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues), new MermaidOptions());
+        return Print(
+            root,
+            traceTree,
+            MermaidOptions.From(
+                style,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
     }
 
     /// <summary>Prints a rule's structure, colored by one evaluation, using <paramref name="options"/>.</summary>
