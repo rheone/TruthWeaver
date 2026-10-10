@@ -1,6 +1,6 @@
 # Packages
 
-TruthWeaver ships as six packages. Each package has one purpose, so a consumer takes only the dependencies that it needs. For the layout of the source, see [Architecture](architecture.md).
+TruthWeaver ships as seven packages. Each package has one purpose, so a consumer takes only the dependencies that it needs. For the layout of the source, see [Architecture](architecture.md).
 
 | Package | Depends on | Ships |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ TruthWeaver ships as six packages. Each package has one purpose, so a consumer t
 | `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, Meziantou.Framework.JsonPath | `JsonDataSource` (a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath, RFC 9535) and `JsonQueryValidator` (compile-time syntax check of those queries). Isolated so the core package takes no JSONPath dependency. |
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories for string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client. A consumer uses them for common checks without writing a class and without the parser, compiler or analyzer. |
 | `TruthWeaver.Testing` | `TruthWeaver.Abstractions`, `TruthWeaver` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. Also builds rule-level testing tools (an equivalence assertion, a predicate harness, a public rule fuzzer) on the compiler and analyzer. |
+| `TruthWeaver.Generators` | *(no TruthWeaver assembly; analyzer only)* | A Roslyn source generator and its `[Predicate]` attribute. It writes a `Register` method for each type with `[Predicate]` methods, at compile time. The generated code uses `TruthWeaver.Abstractions` and `TruthWeaver` in the consuming project. See [Predicate source generator](predicate-source-generator.md). |
 
 <!-- doctest:skip class diagram, structure only -->
 ```mermaid
@@ -41,6 +42,10 @@ flowchart LR
         Assertions["Decision assertions + fake predicates"]
     end
 
+    subgraph GeneratorsPkg["TruthWeaver.Generators<br/>(analyzer, compile time)"]
+        Generator["[Predicate] registration generator"]
+    end
+
     Core --> Abstractions
     YamlPkg --> Core
     PredicatesPkg --> Abstractions
@@ -52,6 +57,7 @@ flowchart LR
     Host -.->|"optional"| YamlPkg
     Host -.->|"optional"| PredicatesPkg
     Host -.->|"optional, test projects only"| TestingPkg
+    Host -.->|"optional, build time only"| GeneratorsPkg
 ```
 
 A service that only implements domain predicates references `TruthWeaver.Abstractions` alone. It needs no parser, no BDD analyzer and no YAML library.

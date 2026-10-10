@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>71d9435f-9909-4c6e-8703-6760a73f684b</ProjectGuid>
+    <RootNamespace>TruthWeaver.Generators</RootNamespace>
+    <Description>
+      A Roslyn source generator for TruthWeaver. Mark a static predicate method with [Predicate] and the
+      generator emits a Register method that adds the method to a PredicateRegistryBuilder, with a
+      PredicateSchema built from the method signature. No reflection runs at run time.
+    </Description>
+    <!-- The compiler loads a generator into its own process, so the generator must target netstandard2.0
+         whatever the consuming project targets. This replaces net11.0 from the root Directory.Build.props. A single
+         TargetFramework, not TargetFrameworks, puts the TFM in OutputPath, which the analyzer pack item below needs. -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- netstandard2.0 defaults to C# 7.3. The generator uses the current released language version. -->
+    <LangVersion>latest</LangVersion>
+    <!-- IsAotCompatible (src/Directory.Build.props) applies to net8.0 and later only and warns on netstandard2.0.
+         The generator never runs in the consumer's process, so the AOT and trim analyzers do not apply to it.
+         The AOT and trim gate applies to the code the generator emits (see the generator test project). -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <!-- The package holds only an analyzer: no lib/ assembly, and no run-time dependency for the consumer. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeSymbols>false</IncludeSymbols>
+    <!-- NU5128: the package has no lib/ folder, which is correct for an analyzer-only package. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Release tracking for the generator diagnostics (RS2008). -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+</Project>

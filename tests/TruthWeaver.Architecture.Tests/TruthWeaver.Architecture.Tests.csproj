@@ -18,6 +18,7 @@
     <ProjectReference Include="../../src/TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Generators/TruthWeaver.Generators.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -124,6 +124,7 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
 | `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests. |
+| `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
 
@@ -158,6 +159,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX or AsciiMath.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
+- [Predicate source generator](docs/predicate-source-generator.md): register `[Predicate]` methods with generated code, and compare it with hand-written registration.
 - [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.

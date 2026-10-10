@@ -47,6 +47,13 @@
   <ItemGroup>
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
+       4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
+       invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+  </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
     <PackageVersion Include="xunit.v3" Version="4.0.1" />

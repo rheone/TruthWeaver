@@ -169,6 +169,29 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>
+    /// <c>TruthWeaver.Generators</c> runs inside the compiler, so it references no TruthWeaver assembly. The code it
+    /// generates names the abstractions and the registry builder in the consuming project instead. No other package
+    /// references the generator.
+    /// </summary>
+    [Fact]
+    public void Generators_references_no_truthweaver_assembly_and_no_package_references_it()
+    {
+        // Loaded by name: the generator types derive from Roslyn types, which this test process does not load.
+        Assembly generators = Assembly.Load("TruthWeaver.Generators");
+
+        string[] referenced = [.. generators.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.DoesNotContain(referenced, name => name.StartsWith("TruthWeaver", StringComparison.Ordinal));
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing })
+        {
+            Assert.DoesNotContain(
+                "TruthWeaver.Generators",
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
+    }
+
     private static string Describe(TestResult result)
     {
         return result.IsSuccessful
