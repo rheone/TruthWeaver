@@ -1,6 +1,6 @@
 # Predicate source generator
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [library-roadmap](../library-roadmap/spec.md) "Source-generator predicate registration", grilled 2026-10-09.
 

@@ -66,7 +66,7 @@ dotnet build
 dotnet test
 dotnet csharpier check .
 dotnet format --verify-no-changes --severity info
-dotnet roslynator analyze
+dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 ```
 
 The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.

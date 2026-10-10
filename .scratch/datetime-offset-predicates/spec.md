@@ -1,6 +1,6 @@
 # Date and time predicates with a fixed offset
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [library-roadmap](../library-roadmap/spec.md) "Date/time: day-of-week/month/time-window", grilled 2026-10-09.
 

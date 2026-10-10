@@ -32,5 +32,5 @@ if (-not $CheckOnly) {
 # These three commands are the CI gates in .github/workflows/ci.yml. Keep them identical to it.
 Invoke-Checked 'csharpier check' { dotnet csharpier check . }
 Invoke-Checked 'dotnet format check' { dotnet format TruthWeaver.slnx --no-restore --verify-no-changes --severity info }
-Invoke-Checked 'roslynator' { dotnet roslynator analyze TruthWeaver.slnx }
+Invoke-Checked 'roslynator' { dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics }
 Write-Host 'format-all: all gates pass.'
