@@ -179,12 +179,7 @@ internal static class Canonicalizer
         /// </summary>
         private Expression NormaliseThreshold(ThresholdExpression t)
         {
-            (ThresholdComparison comparison, int k) = t.Comparison switch
-            {
-                ThresholdComparison.GreaterThan => (ThresholdComparison.AtLeast, t.K + 1),
-                ThresholdComparison.LessThan => (ThresholdComparison.AtMost, t.K - 1),
-                _ => (t.Comparison, t.K),
-            };
+            (ThresholdComparison comparison, int k) = ThresholdSemantics.Normalise(t.Comparison, t.K);
 
             ThresholdExpression aliased = Threshold(comparison, k, t.Operands);
             int n = t.Operands.Count;

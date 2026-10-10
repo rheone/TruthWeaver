@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] The core is tested directly at its own interface, including both boundaries (`k <= 0`, `k > n`) for every comparison
 - [ ] `Canonicalizer` and `Analyzer` hold no copy of the `k+1` / `k-1` normalisation

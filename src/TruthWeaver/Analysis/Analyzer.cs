@@ -447,7 +447,24 @@ internal static class Analyzer
     /// <summary>"Exactly <paramref name="k"/> operands are true": <c>AtLeast(k) AND NOT AtLeast(k + 1)</c>.</summary>
     private static DualRail Exactly(BddManager bdd, IReadOnlyList<DualRail> operands, int k)
     {
-        return And(bdd, AtLeast(bdd, operands, k), Not(bdd, AtLeast(bdd, operands, k + 1)));
+        return Threshold(bdd, operands, ThresholdSemantics.Terms(ThresholdComparison.Exactly, k));
+    }
+
+    /// <summary>
+    /// Builds a count condition from its "at least" terms: the lower test and the negated upper test, joined with
+    /// <c>AND</c> when both are present. <see cref="ThresholdSemantics"/> owns the <c>k + 1</c> rules.
+    /// </summary>
+    private static DualRail Threshold(BddManager bdd, IReadOnlyList<DualRail> operands, ThresholdTerms terms)
+    {
+        DualRail? lower = terms.AtLeast is int low ? AtLeast(bdd, operands, low) : null;
+        DualRail? upper = terms.NotAtLeast is int high ? Not(bdd, AtLeast(bdd, operands, high)) : null;
+        return (lower, upper) switch
+        {
+            ({ } l, { } u) => And(bdd, l, u),
+            ({ } l, null) => l,
+            (null, { } u) => u,
+            _ => throw new InvalidOperationException("A threshold has at least one test."),
+        };
     }
 
     private static string Message(string alwaysValue, Expression node)
@@ -563,9 +580,11 @@ internal static class Analyzer
                 rail = Exactly(bdd, BuildOperands(e.Operands, bdd, variableIndex, diagnostics), 1);
                 break;
             case BetweenExpression bt:
-                // AND(AtLeast(min, ...), AtMost(max, ...)): AtMost(max) is the negation of AtLeast(max + 1).
-                List<DualRail> betweenOperands = BuildOperands(bt.Operands, bdd, variableIndex, diagnostics);
-                rail = And(bdd, AtLeast(bdd, betweenOperands, bt.Min), Not(bdd, AtLeast(bdd, betweenOperands, bt.Max + 1)));
+                rail = Threshold(
+                    bdd,
+                    BuildOperands(bt.Operands, bdd, variableIndex, diagnostics),
+                    ThresholdSemantics.Between(bt.Min, bt.Max)
+                );
                 break;
             case CoalesceExpression co:
                 rail = Coalesce(bdd, BuildOperands(co.Operands, bdd, variableIndex, diagnostics));
@@ -583,15 +602,7 @@ internal static class Analyzer
                 break;
             case ThresholdExpression th:
                 List<DualRail> operands = BuildOperands(th.Operands, bdd, variableIndex, diagnostics);
-                rail = th.Comparison switch
-                {
-                    ThresholdComparison.AtLeast => AtLeast(bdd, operands, th.K),
-                    ThresholdComparison.AtMost => Not(bdd, AtLeast(bdd, operands, th.K + 1)),
-                    ThresholdComparison.GreaterThan => AtLeast(bdd, operands, th.K + 1),
-                    ThresholdComparison.LessThan => Not(bdd, AtLeast(bdd, operands, th.K)),
-                    ThresholdComparison.Exactly => Exactly(bdd, operands, th.K),
-                    _ => throw new InvalidOperationException($"Unhandled threshold comparison '{th.Comparison}'."),
-                };
+                rail = Threshold(bdd, operands, ThresholdSemantics.Terms(th.Comparison, th.K));
                 break;
             default:
                 throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'.");
