@@ -118,13 +118,8 @@ internal static class PrimitiveExpander
     /// </summary>
     private static Expression ExpandThreshold(ThresholdExpression t)
     {
-        EquatableArray<Expression> operands = t.Operands;
-        return t.Comparison switch
-        {
-            ThresholdComparison.GreaterThan => Threshold(ThresholdComparison.AtLeast, t.K + 1, operands),
-            ThresholdComparison.LessThan => Threshold(ThresholdComparison.AtMost, t.K - 1, operands),
-            _ => Threshold(t.Comparison, t.K, operands),
-        };
+        (ThresholdComparison comparison, int k) = ThresholdSemantics.Normalise(t.Comparison, t.K);
+        return Threshold(comparison, k, t.Operands);
     }
 
     /// <summary>
