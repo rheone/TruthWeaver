@@ -21,6 +21,7 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 5. Don't trust assumptions when verifiable information exists. Assess confidence before acting:
 6. Do not apologize, just fix it and tell me what changed.
 7. This file is for the LLM, mutate it as necessary while following all of the prescribed rules.
+8. Grilling (`/grill-me`, `/grilling`, `/grill-with-docs` and any equivalent interview or decision-gathering step) asks one question at a time, as a selectable multiple-choice question with a recommended option first. Incorporate each answer before the next question. Do not batch questions or ask them as free text.
 
 ## Architecture
 
