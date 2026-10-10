@@ -12,7 +12,7 @@ For the meaning, cause and fix of each code, see the [diagnostic code catalog](s
 | `Severity`           | `Error` blocks compilation. `Warning` and `Info` do not.                                                      |
 | `Message`            | A plain-language explanation of the problem.                                                                  |
 | `Span`               | Where the problem is in the rule text (0-based offset and length). `Span.GetLocation(source)` gives line and column. |
-| `Path`               | Where the problem is in a JSON or YAML rule, for example `$.operands[1].op`. It is `null` for rule text.      |
+| `Path`               | Where the problem is in a JSON or YAML rule, or in a `RuleBuilder` tree, for example `$.operands[1].op`. It is `null` for rule text. A `RuleBuilder` diagnostic carries a path but `Span.None`: see [Compiling a builder](rulebuilder.md#compiling-a-builder). |
 | `Expected` / `Found` | What the compiler needed and what it saw (`')'` and `']'`, `2 operands` and `3 operands`), when that applies. |
 | `Suggestion`         | A `DiagnosticSuggestion`: a `Replacement` ("did you mean `AND`?") or a `Hint` (advice such as adding parentheses). |
 
@@ -149,7 +149,7 @@ The two caps on rewrites are independent: `MaxRewriteNodeCount` limits what a re
 
 A malformed JSON or YAML rule is located by `Path` instead of by line and column. The path is the route from the document root to the offending key. It is written the same way for both formats: `$` is the root, `.name` is a key and `[n]` is a 0-based sequence item.
 
-A YAML diagnostic also carries the `Span` of the offending node, so `FormatDiagnostics(yaml)` adds the line, the column and the source line. A JSON diagnostic carries the span of the offending node in the same way. The compiler finds it by reading the text again, because `System.Text.Json` keeps no positions. Invalid JSON syntax carries the position that the parser reports.
+A YAML diagnostic also carries the `Span` of the offending node, so `FormatDiagnostics(yaml)` adds the line, the column and the source line. `CompileJson(string)` carries the span of the offending node in the same way; the compiler finds it by reading the text again, because `System.Text.Json` keeps no positions. `CompileJson(JsonElement)` carries no span, because its caller already holds the parsed element and the text it came from, if there ever was text, may be gone. `RuleBuilder.Compile` compiles through this element overload, so a builder diagnostic carries only its `Path` into the tree you built. Invalid JSON syntax carries the position that the parser reports.
 
 ```csharp
 const string json = """{"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}""";

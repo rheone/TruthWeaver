@@ -129,6 +129,28 @@ public sealed class RuleBuilderTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InvalidThresholdValue);
     }
 
+    /// <summary>
+    /// A diagnostic raised while compiling a builder tree (ticket 24) is located by a path into that tree, the
+    /// same <c>$.operands[n]...</c> shape a hand-written JSON rule gets, and never by a <see cref="SourceSpan"/>
+    /// into JSON the builder generated and the caller never sees.
+    /// </summary>
+    [Fact]
+    public void Compile_UnknownPredicateNestedInAnAndBuilder_LocatesTheDiagnosticByABuilderPathWithNoSpan_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> result = RuleBuilder
+            .And(RuleBuilder.Predicate("a"), RuleBuilder.Predicate("neverRegistered"))
+            .Compile(compiler);
+
+        Assert.False(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
+        Assert.Equal("$.operands[1].predicate", diagnostic.Path);
+        Assert.Equal(SourceSpan.None, diagnostic.Span);
+    }
+
     [Fact]
     public void Constant_builder_round_trips_through_the_same_pipeline_as_dsl_text()
     {

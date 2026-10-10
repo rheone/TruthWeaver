@@ -46,6 +46,18 @@ public sealed class RuleCompiler<TContext>(
         return this.CompileNode(root, parseDiagnostics);
     }
 
+    /// <summary>
+    /// Compiles canonical DSL rule text. The same method as <see cref="Compile(string)"/>, named to match
+    /// <see cref="CompileJson(string)"/> and <c>CompileYaml</c> (<c>TruthWeaver.Yaml</c>): each entry point names
+    /// the format it reads, rather than leaving the DSL as the unnamed default.
+    /// </summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <returns>The compilation result.</returns>
+    public CompilationResult<TContext> CompileText(string dslText)
+    {
+        return this.Compile(dslText);
+    }
+
     /// <summary>Compiles the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
     /// <param name="json">The JSON tree text.</param>
     /// <returns>The compilation result.</returns>

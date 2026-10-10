@@ -11,7 +11,7 @@ Rule text (the DSL), JSON and YAML compile to the same tree through the same Par
 | **Canonical and persisted form?** | Yes. A `CompiledRule<TContext>` prints back to it. | No. It is an interchange format. | No. It is an interchange format. |
 | **Best for** | A person who types or reads a rule directly: a database column, a code review, a log line. | A UI rule builder that generates or reads a tree without a parser. | The same as JSON, when the host tooling already prefers YAML (configuration files, GitOps). |
 | **Package** | `TruthWeaver` | `TruthWeaver` | `TruthWeaver.Yaml` |
-| **Compile with** | `compiler.Compile(text)` | `compiler.CompileJson(json)` | `compiler.CompileYaml(yaml)` |
+| **Compile with** | `compiler.Compile(text)` (same method as `compiler.CompileText(text)`) | `compiler.CompileJson(json)` | `compiler.CompileYaml(yaml)` |
 | **Print with** | `rule.CanonicalText` | `rule.PrintJson()` | `rule.PrintYaml()` |
 | **Round-trips losslessly?** | Yes, by definition. | Yes. `parse(print(x))` is structurally equal to `x`. | Yes. The same guarantee holds. |
 | **Nesting for `AND`/`OR`/`XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR`/`??`** | Infix with precedence (see [Precedence and grouping](strong-k3/specification/syntax.md#precedence-and-grouping)). `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` and `??` need parentheses next to `AND`, `OR` or each other (see [The mixing rule](strong-k3/specification/syntax.md#the-mixing-rule)). | Explicit `{"op": "...", "operands": [...]}` nodes. There is no precedence to get wrong. | The same explicit `op` and `operands` shape as JSON. |

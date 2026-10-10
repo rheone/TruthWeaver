@@ -1,5 +1,6 @@
 namespace TruthWeaver.Building;
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
@@ -14,10 +15,11 @@ using TruthWeaver.Parsing;
 /// useful when a rule's shape comes from application logic (e.g. a dynamically built list of
 /// conditions) rather than from an author typing it directly. A builder tree renders to the exact
 /// flat, key-discriminated JSON tree shape ADR-0003 defines and compiles through
-/// <see cref="RuleCompiler{TContext}.CompileJson(string)"/>, so a builder-assembled rule receives
-/// every diagnostic a hand-written one would (unknown predicate, bad argument, invalid threshold,
+/// <see cref="RuleCompiler{TContext}.CompileJson(System.Text.Json.JsonElement)"/>, so a builder-assembled rule
+/// receives every diagnostic a hand-written one would (unknown predicate, bad argument, invalid threshold,
 /// XOR/EQUIVALENT arity, resource limits, structural tautology/contradiction) — nothing here bypasses the
-/// Validate/Analyze stages of the compilation pipeline.
+/// Validate/Analyze stages of the compilation pipeline. A diagnostic located in the tree carries a path into
+/// this builder's tree, never a span into the generated JSON (see <see cref="Compile{TContext}(RuleCompiler{TContext})"/>).
 /// </summary>
 public abstract class RuleBuilder
 {
@@ -615,6 +617,15 @@ public abstract class RuleBuilder
     /// Compiles this builder's tree through the exact same Validate → Analyze → Build pipeline any
     /// other rule source (DSL/JSON/YAML text) uses.
     /// </summary>
+    /// <remarks>
+    /// A diagnostic located in this tree (an unknown predicate, a bad argument, an arity violation, and the
+    /// rest) carries a path into this builder's tree — the same <c>$.operands[1].op</c> shape a hand-written
+    /// JSON or YAML rule gets — but never a <see cref="Diagnostic.Span"/> into generated text: this method
+    /// compiles through <see cref="RuleCompiler{TContext}.CompileJson(JsonElement)"/>, which, unlike
+    /// <see cref="RuleCompiler{TContext}.CompileJson(string)"/>, never re-reads rendered JSON to locate a path
+    /// as a span (ADR-0005 decision 11), because the caller never sees that JSON and a span into it would not
+    /// mean anything in the builder tree the caller wrote.
+    /// </remarks>
     /// <typeparam name="TContext">The application context type the compiler's registry evaluates against.</typeparam>
     /// <param name="compiler">The compiler to validate and build this tree with.</param>
     /// <returns>The compilation result.</returns>
@@ -623,7 +634,15 @@ public abstract class RuleBuilder
         // A mistake that the JSON shape cannot carry (a repeated argument name) is reported here, before rendering.
         List<Diagnostic> problems = [];
         this.CollectProblems(TreePath.Root, problems);
-        return problems.Count > 0 ? new CompilationResult<TContext>(null, problems) : compiler.CompileJson(this.ToJson());
+        if (problems.Count > 0)
+        {
+            return new CompilationResult<TContext>(null, problems);
+        }
+
+        // CompileJson(JsonElement), not CompileJson(string): the element overload never re-reads generated text
+        // for a diagnostic's span, so every diagnostic here carries only its builder path and Diagnostic.Span.None.
+        using JsonDocument document = JsonDocument.Parse(this.ToJson());
+        return compiler.CompileJson(document.RootElement);
     }
 
     private protected abstract JsonNode ToNode();

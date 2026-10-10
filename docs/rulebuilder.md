@@ -6,6 +6,8 @@ How to assemble a rule in code, describe a compiled rule as a tree of labels, an
 
 `RuleBuilder` assembles a rule from C# calls instead of text. Every `RuleBuilder` method renders to the same flat JSON tree that `CompileJson` reads, and `Compile` passes that JSON to `CompileJson`. A rule from a builder therefore gets every diagnostic that a hand-written rule gets: an unknown predicate, a bad argument, an out-of-range threshold, a wrong operand count, a resource limit and a structural tautology or contradiction. No builder call skips the Validate and Analyze stages of the [compilation pipeline](architecture.md#compilation-pipeline). To convert a rule between the text formats, see [Rule formats](rule-formats.md#converting-between-dsl-json-and-yaml).
 
+Each diagnostic is located by `Diagnostic.Path`, a path into the builder tree you wrote (such as `$.operands[1].predicate`), the same shape a hand-written JSON rule gets. It never carries a `Diagnostic.Span` into generated JSON text, because the builder never shows that text to you.
+
 [Example 6](examples.md#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) shows `RuleBuilder` from start to finish.
 
 ## RuleBuilder reference
@@ -66,7 +68,7 @@ A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, 
 
 ### Compiling a builder
 
-`RuleBuilder.Compile(compiler)` is a thin wrapper around `compiler.CompileJson(builder.ToJson())`. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once.
+`RuleBuilder.Compile(compiler)` renders the tree and compiles it through `compiler.CompileJson(JsonElement)` (not the `string` overload), so a diagnostic carries only its builder path and no span into the rendered JSON. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once; it still produces the same JSON text `CompileJson(string)` would read.
 
 ### Joining compiled rules
 

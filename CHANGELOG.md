@@ -48,6 +48,8 @@ copyright line reads 2026.
 - `PredicateSchema.ArgumentValidator` and `PredicateArgumentProblem`: an optional check over the literal argument values
   of a predicate call. Each problem it returns is a `TRE0026` error. It is `null` by default, so existing schemas are
   unchanged.
+- `RuleCompiler<TContext>.CompileText(string)`: the same method as `Compile(string)`, which stays. It names the DSL
+  the way `CompileJson` and `CompileYaml` name their own formats (least-surprise-normalization 24).
 
 - `NotEqualsIgnoreCase`, `NotStartsWith`, `NotEndsWith` and `NotEqualsConfigurable` in `StringPredicates` and `NotSetEquals`
   in `CollectionPredicates`: the Strong Kleene complements of their positive members.
@@ -132,6 +134,12 @@ copyright line reads 2026.
 
 ### Changed
 
+- `RuleBuilder.Compile` now compiles its rendered tree through `RuleCompiler.CompileJson(JsonElement)` instead of
+  `CompileJson(string)` (least-surprise-normalization 24). A diagnostic located in the tree still carries the same
+  `Path` as before (for example `$.operands[1].predicate`), but its `Span` is now always `SourceSpan.None` instead
+  of a span into the JSON text `RuleBuilder` generated internally and never showed to the caller; that span never
+  located anything in the caller's own builder tree. Migration: read the diagnostic's `Path`, not its `Span`, for a
+  `RuleBuilder` diagnostic. A caller that only checked `Succeeded` or `Diagnostics` is unaffected.
 - `TruthWeaverAssertionException` is a new abstract base in `TruthWeaver.Testing`. `DecisionAssertionException`,
   `PredicateHarnessException` and `RuleFuzzException` derive from it, so existing catches keep working.
   **Breaking:** `DecisionAssertions.HaveFaultForTerm(predicateName)` is renamed `HaveFaultForPredicate(predicateName)`, to

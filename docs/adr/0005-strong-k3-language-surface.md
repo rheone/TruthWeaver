@@ -265,6 +265,12 @@ the aliases are cheap once the canonical form stays single.
     *Amended 2026-10-03 (k3-hardening 12); the sentence originally said JSON diagnostics have
     no span because `JsonElement` keeps no positions.*
 
+    `RuleBuilder.Compile` renders its tree and compiles it through `RuleCompiler.CompileJson(JsonElement)`,
+    not the `string` overload, so a diagnostic there carries a path into the builder tree you wrote and
+    `SourceSpan.None`, never a span into the JSON the builder generated: the caller never sees that text, so a
+    span into it would not locate anything the caller wrote. *Amended 2026-10-10
+    (least-surprise-normalization 24).*
+
 12. **Project is a method on the result, not part of the rule.**
     *Amended 2026-10-03 (k3-followups 05); this replaces the original decision,
     which made `Project(expr, unknown)` an in-tree node (`ProjectExpression`) that

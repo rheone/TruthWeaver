@@ -125,4 +125,40 @@ public sealed class CompilationTests
         Assert.Equal("flaky", fault.Term.PredicateName);
         Assert.IsType<InvalidOperationException>(fault.Exception);
     }
+
+    /// <summary>
+    /// <c>CompileText</c> names the DSL the way <c>CompileJson</c> and <c>CompileYaml</c> name their own formats
+    /// (ticket 24); it is the same method as <c>Compile</c>, which stays, so the two give identical results for
+    /// a rule that compiles successfully.
+    /// </summary>
+    [Fact]
+    public void CompileText_SameDslTextAsCompile_ProducesEquivalentResult_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> viaCompile = compiler.Compile("isManager AND NOT isManager");
+        CompilationResult<RuleTestContext> viaCompileText = compiler.CompileText("isManager AND NOT isManager");
+
+        Assert.True(viaCompile.Succeeded);
+        Assert.True(viaCompileText.Succeeded);
+        Assert.Equal(viaCompile.CompiledRule!.CanonicalText, viaCompileText.CompiledRule!.CanonicalText);
+    }
+
+    /// <summary>
+    /// <c>CompileText</c> reports the same diagnostics as <c>Compile</c> for rule text that fails to compile, since
+    /// it forwards to the same method.
+    /// </summary>
+    [Fact]
+    public void CompileText_DslTextWithAnError_ProducesTheSameDiagnosticsAsCompile_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
+
+        CompilationResult<RuleTestContext> viaCompile = compiler.Compile("noSuchPredicate");
+        CompilationResult<RuleTestContext> viaCompileText = compiler.CompileText("noSuchPredicate");
+
+        Assert.False(viaCompileText.Succeeded);
+        Assert.Equal(viaCompile.Diagnostics, viaCompileText.Diagnostics);
+    }
 }
