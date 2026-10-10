@@ -155,6 +155,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule text](docs/rule-text.md): the grammar, grouping delimiters, whitespace and case.
 - [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
+- [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode or LaTeX.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
 - [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.

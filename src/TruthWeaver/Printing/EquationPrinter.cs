@@ -31,7 +31,7 @@ internal static class EquationPrinter
     /// <returns>The equation text.</returns>
     public static string Print(Expression root, EquationOptions options)
     {
-        EquationTokens tokens = EquationTokens.For(options.Dialect);
+        EquationTokens tokens = EquationTokens.For(options);
         return tokens.Wrap(PrintNode(root, PrintContext.Top, tokens, options.ShowArgumentValues));
     }
 

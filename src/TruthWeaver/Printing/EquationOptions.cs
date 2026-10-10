@@ -15,4 +15,10 @@ public sealed record EquationOptions
     /// <see langword="true"/>.
     /// </summary>
     public bool ShowArgumentValues { get; init; } = true;
+
+    /// <summary>
+    /// Gets the envelope for the <see cref="EquationDialect.LaTeX"/> dialect. Other dialects ignore it. The default is
+    /// <see cref="LatexWrapMode.None"/>.
+    /// </summary>
+    public LatexWrapMode LatexWrap { get; init; } = LatexWrapMode.None;
 }

@@ -8,4 +8,11 @@ public enum EquationDialect
     /// output has no delimiters and no escaping.
     /// </summary>
     Unicode,
+
+    /// <summary>
+    /// LaTeX math with the commands <c>\land</c>, <c>\lor</c>, <c>\lnot</c>, <c>\oplus</c> and <c>\leftrightarrow</c>.
+    /// A term is a <c>\text</c> group with its special characters escaped. The envelope is set by
+    /// <see cref="EquationOptions.LatexWrap"/>.
+    /// </summary>
+    LaTeX,
 }

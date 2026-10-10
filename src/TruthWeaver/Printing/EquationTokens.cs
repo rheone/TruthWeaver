@@ -76,15 +76,48 @@ internal sealed record EquationTokens
     /// </summary>
     public required Func<string, string> Wrap { get; init; }
 
-    /// <summary>Gets the table for a dialect.</summary>
-    /// <param name="dialect">The dialect.</param>
-    /// <returns>The dialect's token table.</returns>
-    public static EquationTokens For(EquationDialect dialect)
+    /// <summary>
+    /// Gets the table for the LaTeX dialect. A term and a function name are <c>\text</c> groups. The wrap mode sets the
+    /// escaping and the envelope.
+    /// </summary>
+    /// <param name="wrap">The wrap mode.</param>
+    /// <returns>The LaTeX token table.</returns>
+    public static EquationTokens Latex(LatexWrapMode wrap)
     {
-        return dialect switch
+        bool mathJaxSafe = wrap == LatexWrapMode.MathJaxSafe;
+        return new()
+        {
+            And = @"\land",
+            Or = @"\lor",
+            Not = @"\lnot ",
+            Xor = @"\oplus",
+            Equivalent = @"\leftrightarrow",
+            Implies = @"\rightarrow",
+            Nand = @"\uparrow",
+            Nor = @"\downarrow",
+            FormatTerm = (identity, showArgumentValues) =>
+                LatexText.Text(showArgumentValues ? identity.ToString() : identity.PredicateName, mathJaxSafe),
+            FormatConstant = value => LatexText.Text(TruthValueText.Canonical(value), mathJaxSafe),
+            FormatFunctionName = name => LatexText.Text(name, mathJaxSafe),
+            Wrap = wrap switch
+            {
+                LatexWrapMode.DoubleDollar => equation => $"$${equation}$$",
+                LatexWrapMode.MathJaxSafe => equation => $"$`{equation}`$",
+                _ => equation => equation,
+            },
+        };
+    }
+
+    /// <summary>Gets the table for the dialect and wrap mode in the options.</summary>
+    /// <param name="options">The equation options.</param>
+    /// <returns>The dialect's token table.</returns>
+    public static EquationTokens For(EquationOptions options)
+    {
+        return options.Dialect switch
         {
             EquationDialect.Unicode => Unicode,
-            _ => throw new ArgumentOutOfRangeException(nameof(dialect), dialect, "Unhandled equation dialect."),
+            EquationDialect.LaTeX => Latex(options.LatexWrap),
+            _ => throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unhandled equation dialect."),
         };
     }
 }
