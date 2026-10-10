@@ -13,16 +13,16 @@ string latex = rule.PrintEquation(new EquationOptions { Dialect = EquationDialec
 
 The connectives print as infix symbols. Every other operator prints in function-call form. The call uses the DSL spelling and the DSL argument order, with the count arguments first, for example `AtLeast(2, a, b, c)`.
 
-| Operator | Unicode | LaTeX |
-| --- | --- | --- |
-| `AND` | `∧` | `\land` |
-| `OR` | `∨` | `\lor` |
-| `NOT` | `¬` | `\lnot` |
-| `XOR` | `⊕` | `\oplus` |
-| `EQUIVALENT` | `↔` | `\leftrightarrow` |
-| `IMPLIES` | `→` | `\rightarrow` |
-| `NAND` | `↑` | `\uparrow` |
-| `NOR` | `↓` | `\downarrow` |
+| Operator | Unicode | LaTeX | AsciiMath |
+| --- | --- | --- | --- |
+| `AND` | `∧` | `\land` | `^^` |
+| `OR` | `∨` | `\lor` | `vv` |
+| `NOT` | `¬` | `\lnot` | `not` |
+| `XOR` | `⊕` | `\oplus` | `oplus` |
+| `EQUIVALENT` | `↔` | `\leftrightarrow` | `<=>` |
+| `IMPLIES` | `→` | `\rightarrow` | `=>` |
+| `NAND` | `↑` | `\uparrow` | `uarr` |
+| `NOR` | `↓` | `\downarrow` | `darr` |
 
 `ExactlyOne`, the threshold family (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`), `BETWEEN`, `PARITY`, `ANY`, `ALL`, `NONE`, `If`, `COALESCE` and the four inspections have no standard infix symbol. They print in function-call form in every dialect.
 
@@ -40,6 +40,7 @@ Set `EquationOptions.Dialect` to choose the notation.
 | --- | --- |
 | `Unicode` (default) | Plain text with the symbols in the table above. No delimiters and no escaping. |
 | `LaTeX` | LaTeX math. A term, a constant and a function name are `\text` groups. |
+| `AsciiMath` | AsciiMath between backticks. A term, a constant and a function name are quoted runs. |
 
 ## LaTeX wrap modes
 
@@ -71,3 +72,17 @@ A predicate name or an argument value can hold a character that LaTeX reads as a
 MathJax does not support text-mode commands such as `\textbackslash`, so `MathJaxSafe` uses only math commands from the MathJax subset that GitHub renders. The `` $`...`$ `` envelope makes Markdown treat the equation as code, so an underscore does not start emphasis or a subscript. A backtick in a name would end that code span, and so `MathJaxSafe` replaces it.
 
 For the label `has_crust`, `MathJaxSafe` writes `` $`\text{has}\_\text{crust}`$ ``.
+
+## AsciiMath
+
+The `AsciiMath` dialect always writes the equation between backticks, the AsciiMath delimiter. It has no wrap modes. A term, a constant and a function name are text between double quotes. A call keeps the function-call form of the other dialects.
+
+```text
+`"a" ^^ ("b" vv "c")`
+`"AtLeast"(2, "a", "b", "c")`
+```
+
+AsciiMath reads every character between double quotes as literal text, so the characters `_ % & # { } \ ^ ~ $` need no escape. Two characters need work:
+
+- AsciiMath has no escape for a double quote. The printer replaces each straight quote in a term with the right double quotation mark (U+201D). The term `hasCrust(crust: "thin")` prints as `"hasCrust(crust: ”thin”)"`.
+- A backtick would end the envelope. The printer replaces each backtick in a term with the reversed prime (U+2035).

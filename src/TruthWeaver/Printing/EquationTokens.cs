@@ -28,6 +28,25 @@ internal sealed record EquationTokens
             Wrap = equation => equation,
         };
 
+    /// <summary>Gets the table for the AsciiMath dialect: quoted terms between backticks.</summary>
+    public static EquationTokens AsciiMath { get; } =
+        new()
+        {
+            And = "^^",
+            Or = "vv",
+            Not = "not ",
+            Xor = "oplus",
+            Equivalent = "<=>",
+            Implies = "=>",
+            Nand = "uarr",
+            Nor = "darr",
+            FormatTerm = (identity, showArgumentValues) =>
+                AsciiMathText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
+            FormatConstant = value => AsciiMathText.Quote(TruthValueText.Canonical(value)),
+            FormatFunctionName = AsciiMathText.Quote,
+            Wrap = equation => $"`{equation}`",
+        };
+
     /// <summary>Gets the infix token for <c>AND</c>.</summary>
     public required string And { get; init; }
 
@@ -117,6 +136,7 @@ internal sealed record EquationTokens
         {
             EquationDialect.Unicode => Unicode,
             EquationDialect.LaTeX => Latex(options.LatexWrap),
+            EquationDialect.AsciiMath => AsciiMath,
             _ => throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unhandled equation dialect."),
         };
     }

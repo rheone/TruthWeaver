@@ -15,4 +15,10 @@ public enum EquationDialect
     /// <see cref="EquationOptions.LatexWrap"/>.
     /// </summary>
     LaTeX,
+
+    /// <summary>
+    /// AsciiMath between backticks, for example <c>`"a" ^^ ("b" vv "c")`</c>. A term is a quoted run. AsciiMath has
+    /// no escape for a quote, so the printer replaces each straight quote and each backtick in a term.
+    /// </summary>
+    AsciiMath,
 }
