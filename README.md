@@ -157,6 +157,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
+- [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
 - [Examples](docs/examples.md): seven worked examples, from one predicate to a full rule.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
