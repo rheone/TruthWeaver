@@ -85,7 +85,7 @@ The selector type fixes the kind of every argument. A rule literal of another ki
 | `String` | A quoted string | `"Active"` |
 | `Boolean` | `true` or `false` | `true` |
 | `Guid` | A quoted string in GUID format | `"3f2504e0-4f89-11d3-9a0c-0305e82c3301"` |
-| `DateTimeOffset` | A quoted ISO 8601 string with an offset | `"2026-01-01T00:00:00Z"` |
+| `DateTimeOffset` | A quoted ISO 8601 string that ends in `Z` or carries an offset such as `+02:00`. Text without an offset is a compile error. | `"2026-01-01T00:00:00Z"` |
 | An array kind | A list of literals of one kind | `[1, 2, 3]` |
 
 - No value is promoted between kinds. A host that compares an integer value with a `Decimal` literal widens the value in the selector. The widening is exact.

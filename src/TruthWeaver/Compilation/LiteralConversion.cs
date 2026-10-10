@@ -1,6 +1,7 @@
 namespace TruthWeaver.Compilation;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Ast;
 using TruthWeaver.Parsing;
 
 /// <summary>
@@ -47,12 +48,7 @@ internal static class LiteralConversion
             case LiteralKind.DateTimeOffset
                 when raw.Form == RawLiteralForm.QuotedString
                     && raw.Text is not null
-                    && DateTimeOffset.TryParse(
-                        raw.Text,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.RoundtripKind,
-                        out DateTimeOffset dateTimeOffsetValue
-                    ):
+                    && DateTimeText.TryParse(raw.Text, out DateTimeOffset dateTimeOffsetValue):
                 value = LiteralValue.OfDateTimeOffset(dateTimeOffsetValue);
                 return true;
             case LiteralKind.Guid
@@ -96,6 +92,24 @@ internal static class LiteralConversion
             default:
                 return GuessArray(raw.Elements ?? []);
         }
+    }
+
+    /// <summary>
+    /// Tests whether a literal expected to be a date-time (or an array of them) holds text that reads as a date-time except
+    /// for a missing <c>Z</c> or offset, so the caller can name that fix in its diagnostic.
+    /// </summary>
+    /// <param name="raw">The raw literal.</param>
+    /// <param name="expectedKind">The kind the owning predicate's schema declares.</param>
+    /// <returns><see langword="true"/> when the offset is the only problem.</returns>
+    public static bool IsMissingOffset(RawLiteral raw, LiteralKind expectedKind)
+    {
+        return expectedKind switch
+        {
+            LiteralKind.DateTimeOffset => raw is { Form: RawLiteralForm.QuotedString, Text: { } text }
+                && DateTimeText.IsMissingOffset(text),
+            LiteralKind.DateTimeOffsetArray => raw.Elements?.Any(e => IsMissingOffset(e, LiteralKind.DateTimeOffset)) == true,
+            _ => false,
+        };
     }
 
     private static bool IsArrayKind(LiteralKind kind)

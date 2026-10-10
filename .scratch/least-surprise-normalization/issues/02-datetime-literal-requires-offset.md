@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Offset-less text is rejected in rule literals (DSL, JSON, YAML, builder) and in resolved variable values, with an error that names the fix
-- [ ] No parse depends on the host time zone: a test runs under two different `TimeZoneInfo.Local` values
-- [ ] The breaking change is recorded in `CHANGELOG.md` with a migration step
-- [ ] The page that describes the behavior is updated to the current truth, with no "changed from" text
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Offset-less text is rejected in rule literals (DSL, JSON, YAML, builder) and in resolved variable values, with an error that names the fix
+- [x] No parse depends on the host time zone: a test runs under two different `TimeZoneInfo.Local` values
+- [x] The breaking change is recorded in `CHANGELOG.md` with a migration step
+- [x] The page that describes the behavior is updated to the current truth, with no "changed from" text
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

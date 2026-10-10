@@ -106,7 +106,7 @@ A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two pred
 
 ### Date and time predicates
 
-`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. Values compare by instant, so the same moment with a different offset is equal. `After` and `Before` are strict, and `InTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
+`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. A date-time literal must end in `Z` or carry an offset such as `+02:00`. Text such as `"2026-01-01"` or `"2026-01-01T09:00"` is a compile error, so a stored rule means the same instant on every host. Values compare by instant, so the same moment with a different offset is equal. `After` and `Before` are strict, and `InTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
 
 | Predicate | Twin | Arguments | `True` when |
 | --- | --- | --- | --- |

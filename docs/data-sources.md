@@ -210,7 +210,7 @@ The predicate's argument declares a `LiteralKind`, and that decides what a query
 
 Conversions are deliberately the same as for literals written in a rule:
 
-- a string becomes a `DateTimeOffset` (ISO 8601) or a `Guid` when the argument asks for one;
+- a string becomes a `DateTimeOffset` or a `Guid` when the argument asks for one. A date-time string must end in `Z` or carry an offset such as `+02:00`; text without an offset is a type-mismatch failure, because the host time zone must not decide the instant;
 - a JSON integer widens to `Decimal`, and a whole-number `Decimal` narrows to `Int64` only if it is exactly representable;
 - a string is never turned into a number or boolean, and a number is never turned into a string.
 

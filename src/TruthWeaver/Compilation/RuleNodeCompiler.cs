@@ -651,10 +651,14 @@ internal sealed class RuleNodeCompiler<TContext>
 
             if (!LiteralConversion.TryConvert(arg.Value, argSchema.Type, out LiteralValue value))
             {
+                // Offset-less date-time text gets the one-line fix appended; any other mismatch keeps the plain message.
+                string offsetFix = LiteralConversion.IsMissingOffset(arg.Value, argSchema.Type)
+                    ? $" {DateTimeText.OffsetFix}"
+                    : string.Empty;
                 this.diagnostics.Add(
                     Diagnostic.Error(
                         DiagnosticCodes.ArgumentTypeMismatch,
-                        $"Argument '{arg.Name}' of predicate '{schema.Name}' must be of kind '{argSchema.Type}'.",
+                        $"Argument '{arg.Name}' of predicate '{schema.Name}' must be of kind '{argSchema.Type}'.{offsetFix}",
                         arg.Value.Span,
                         expected: $"a value of kind '{argSchema.Type}'",
                         found: DescribeLiteral(arg.Value),

@@ -126,6 +126,12 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: a date-time literal must end in `Z` or carry an offset such as `+02:00`. Text with no offset, such as
+  `"2026-01-01"` or `"2026-01-01T09:00"`, is an `ArgumentTypeMismatch` compile error that names the fix, in the DSL,
+  JSON, YAML and `RuleBuilder`. The same rule applies to a string a data source resolves for a date-time argument
+  (the variable faults to `Unknown`). It was read in the host time zone, so one stored rule could mean different
+  instants on different hosts. Migration: append `Z` (UTC) or the offset you meant to each date-time literal and each
+  stored date-time value.
 - Breaking: in the rule text, a threshold `k` that is not a whole number in the `int` range, such as `AtLeast(1.5, a, b)`
   or `AtLeast(99999999999, a, b)`, is a `SyntaxError` (`TRE0001`), the same as a bad `BETWEEN` bound. It used to compile
   as `k = 0`. `k`, `min` and `max` share one integer parser that uses the invariant culture. Migration: write `k` as an
