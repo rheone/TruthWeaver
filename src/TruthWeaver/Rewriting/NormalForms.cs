@@ -49,8 +49,8 @@ internal static class NormalForms
             return new Result(negated, nnf.Kept);
         }
 
-        List<List<Expression>>? clauses = Distribute(negated, form == Form.Dnf, cap);
-        return new Result(clauses is null ? null : Assemble(clauses, form == Form.Dnf), nnf.Kept);
+        List<List<Expression>>? clauses = Distribute(negated, form, cap);
+        return new Result(clauses is null ? null : Assemble(clauses, form), nnf.Kept);
     }
 
     /// <summary>
@@ -58,8 +58,9 @@ internal static class NormalForms
     /// joined by <c>OR</c>; for conjunctive form they are the <c>OR</c> groups joined by <c>AND</c>. Returns
     /// <see langword="null"/> as soon as the clause set can no longer fit in <paramref name="cap"/> nodes.
     /// </summary>
-    private static List<List<Expression>>? Distribute(Expression node, bool disjunctive, long cap)
+    private static List<List<Expression>>? Distribute(Expression node, Form form, long cap)
     {
+        bool disjunctive = form == Form.Dnf;
         bool isOuter = disjunctive ? node is OrExpression : node is AndExpression;
         bool isInner = disjunctive ? node is AndExpression : node is OrExpression;
         if (!isOuter && !isInner)
@@ -79,7 +80,7 @@ internal static class NormalForms
             : [];
         foreach (Expression operand in operands)
         {
-            List<List<Expression>>? child = Distribute(operand, disjunctive, cap);
+            List<List<Expression>>? child = Distribute(operand, form, cap);
             if (child is null)
             {
                 return null;
@@ -148,34 +149,32 @@ internal static class NormalForms
         return total;
     }
 
-    private static Expression Assemble(List<List<Expression>> clauses, bool disjunctive)
+    /// <summary>
+    /// Turns the clause set back into a tree: each clause is a group of the inner connective (a lone literal stays as it
+    /// is), and the groups are joined by the outer connective. DNF clauses are <c>AND</c> groups under an <c>OR</c>; CNF
+    /// clauses are <c>OR</c> groups under an <c>AND</c>.
+    /// </summary>
+    private static Expression Assemble(List<List<Expression>> clauses, Form form)
     {
-        Expression[] groups = [.. clauses.Select(clause => clause.Count == 1 ? clause[0] : Join(clause, andJoin: disjunctive))];
-        return groups.Length == 1 ? groups[0] : Join(groups, andJoin: !disjunctive);
+        bool disjunctive = form == Form.Dnf;
+        Expression[] groups =
+        [
+            .. clauses.Select(clause => clause.Count == 1 ? clause[0] : ExpressionTools.Junction(clause, isAnd: disjunctive)),
+        ];
+        return groups.Length == 1 ? groups[0] : ExpressionTools.Junction(groups, isAnd: !disjunctive);
     }
 
-    private static Expression Join(IEnumerable<Expression> parts, bool andJoin)
+    /// <summary>
+    /// The stateless helpers of <see cref="NnfBuilder"/>: threshold cost estimates, constant-aware joining and negation.
+    /// They hold no builder state, so they live apart from the memoized visitor.
+    /// </summary>
+    private static class NnfSupport
     {
-        EquatableArray<Expression> operands = ExpressionTools.Array(parts);
-        return andJoin ? new AndExpression(operands) : new OrExpression(operands);
-    }
-
-    /// <summary>Builds negation normal form, memoizing each (node, polarity) so a shared sub-tree is visited once.</summary>
-    private sealed class NnfBuilder(bool expandThresholds, long cap)
-    {
-        private readonly Dictionary<Expression, Expression> positive = [with(ReferenceEqualityComparer.Instance)];
-        private readonly Dictionary<Expression, Expression> negative = [with(ReferenceEqualityComparer.Instance)];
-        private readonly List<KeptThreshold> kept = [];
-
-        public bool Exceeded { get; private set; }
-
-        public IReadOnlyList<KeptThreshold> Kept => this.kept;
-
         /// <summary>
         /// A threshold is cheap to expand when every <c>AtLeast</c> level it needs is a single group or a single subset:
         /// <c>AtLeast(1)</c> is an <c>OR</c> and <c>AtLeast(n)</c> an <c>AND</c>. Such a threshold expands without the option.
         /// </summary>
-        public static bool IsCheap(ThresholdExpression t, int n)
+        internal static bool IsCheap(ThresholdExpression t, int n)
         {
             return t.Comparison switch
             {
@@ -185,13 +184,14 @@ internal static class NormalForms
             };
         }
 
-        public static bool CheapLevel(int k, int n)
+        /// <summary>Whether <c>AtLeast(k)</c> over <paramref name="n"/> operands is a single group (<c>k</c> of 1 or at least <c>n</c>).</summary>
+        internal static bool CheapLevel(int k, int n)
         {
             return k <= 1 || k >= n;
         }
 
         /// <summary>The approximate node count of the expansion of a threshold.</summary>
-        public static double EstimateExpansion(ThresholdExpression t)
+        internal static double EstimateExpansion(ThresholdExpression t)
         {
             int n = t.Operands.Count;
             return t.Comparison switch
@@ -202,13 +202,14 @@ internal static class NormalForms
             };
         }
 
-        public static double LevelSize(int k, int n)
+        /// <summary>The approximate node count of <c>AtLeast(k)</c> over <paramref name="n"/> operands: one group of <c>k</c> literals per subset, plus the join.</summary>
+        internal static double LevelSize(int k, int n)
         {
             return k <= 0 || k > n ? 1 : (Binomial(n, k) * (k + 1)) + 1;
         }
 
         /// <summary>The binomial coefficient <c>C(n, k)</c> as a double, which loses precision instead of overflowing.</summary>
-        public static double Binomial(int n, int k)
+        internal static double Binomial(int n, int k)
         {
             k = Math.Min(k, n - k);
             double result = 1;
@@ -224,7 +225,7 @@ internal static class NormalForms
         /// Joins <paramref name="parts"/> with <c>AND</c> or <c>OR</c>, dropping the identity constant, collapsing on the
         /// annihilator and returning a lone part as itself. Only the threshold boundary cases produce constants here.
         /// </summary>
-        public static Expression SmartJoin(IReadOnlyList<Expression> parts, bool andJoin)
+        internal static Expression SmartJoin(IReadOnlyList<Expression> parts, bool andJoin)
         {
             TruthValue identity = andJoin ? TruthValue.True : TruthValue.False;
             TruthValue annihilator = andJoin ? TruthValue.False : TruthValue.True;
@@ -246,11 +247,12 @@ internal static class NormalForms
             {
                 0 => new ConstantExpression(identity),
                 1 => kept[0],
-                _ => Join(kept, andJoin),
+                _ => ExpressionTools.Junction(kept, andJoin),
             };
         }
 
-        public static TruthValue Negate(TruthValue value)
+        /// <summary>Strong Kleene negation of a value: it swaps <c>True</c> and <c>False</c> and leaves <c>Unknown</c> alone.</summary>
+        internal static TruthValue Negate(TruthValue value)
         {
             return value switch
             {
@@ -259,6 +261,24 @@ internal static class NormalForms
                 _ => TruthValue.Unknown,
             };
         }
+
+        /// <summary>An atom as a literal: the atom itself, or its negation when the polarity is negative.</summary>
+        internal static Expression Literal(Expression atom, bool negate)
+        {
+            return negate ? new NotExpression(atom) : atom;
+        }
+    }
+
+    /// <summary>Builds negation normal form, memoizing each (node, polarity) so a shared sub-tree is visited once.</summary>
+    private sealed class NnfBuilder(bool expandThresholds, long cap)
+    {
+        private readonly Dictionary<Expression, Expression> positive = [with(ReferenceEqualityComparer.Instance)];
+        private readonly Dictionary<Expression, Expression> negative = [with(ReferenceEqualityComparer.Instance)];
+        private readonly List<KeptThreshold> kept = [];
+
+        public bool Exceeded { get; private set; }
+
+        public IReadOnlyList<KeptThreshold> Kept => this.kept;
 
         public Expression Visit(Expression node, bool negate)
         {
@@ -273,16 +293,11 @@ internal static class NormalForms
             return result;
         }
 
-        private static Expression Literal(Expression atom, bool negate)
-        {
-            return negate ? new NotExpression(atom) : atom;
-        }
-
         private Expression VisitCore(Expression node, bool negate)
         {
             return node switch
             {
-                ConstantExpression c => negate ? new ConstantExpression(Negate(c.Value)) : c,
+                ConstantExpression c => negate ? new ConstantExpression(NnfSupport.Negate(c.Value)) : c,
                 TermExpression => negate ? new NotExpression(node) : node,
                 NotExpression n => this.Visit(n.Operand, !negate),
 
@@ -291,7 +306,7 @@ internal static class NormalForms
                 OrExpression o => this.JoinOperands(o.Operands, negate, andJoin: negate),
 
                 // Not information-monotone: no NOT is pushed in, but the operands below are normalized.
-                CoalesceExpression or InspectionExpression or IfExpression => Literal(
+                CoalesceExpression or InspectionExpression or IfExpression => NnfSupport.Literal(
                     ExpressionTools.MapChildren(node, child => this.Visit(child, false)),
                     negate
                 ),
@@ -303,18 +318,19 @@ internal static class NormalForms
             };
         }
 
+        /// <summary>Normalizes each operand at the given polarity and joins them; De Morgan picks the connective via <paramref name="andJoin"/>.</summary>
         private Expression JoinOperands(EquatableArray<Expression> operands, bool negate, bool andJoin)
         {
-            return Join([.. operands.Select(operand => this.Visit(operand, negate))], andJoin);
+            return ExpressionTools.Junction([.. operands.Select(operand => this.Visit(operand, negate))], andJoin);
         }
 
         private Expression VisitThreshold(ThresholdExpression t, bool negate)
         {
             int n = t.Operands.Count;
-            if (!expandThresholds && !IsCheap(t, n))
+            if (!expandThresholds && !NnfSupport.IsCheap(t, n))
             {
                 this.Keep(t);
-                return Literal(ExpressionTools.MapChildren(t, child => this.Visit(child, false)), negate);
+                return NnfSupport.Literal(ExpressionTools.MapChildren(t, child => this.Visit(child, false)), negate);
             }
 
             return t.Comparison switch
@@ -323,8 +339,14 @@ internal static class NormalForms
                 ThresholdComparison.AtLeast => this.AtLeast(t.K, t.Operands, negate),
                 ThresholdComparison.AtMost => this.AtLeast(t.K + 1, t.Operands, !negate),
                 _ => negate
-                    ? SmartJoin([this.AtLeast(t.K, t.Operands, true), this.AtLeast(t.K + 1, t.Operands, false)], andJoin: false)
-                    : SmartJoin([this.AtLeast(t.K, t.Operands, false), this.AtLeast(t.K + 1, t.Operands, true)], andJoin: true),
+                    ? NnfSupport.SmartJoin(
+                        [this.AtLeast(t.K, t.Operands, true), this.AtLeast(t.K + 1, t.Operands, false)],
+                        andJoin: false
+                    )
+                    : NnfSupport.SmartJoin(
+                        [this.AtLeast(t.K, t.Operands, false), this.AtLeast(t.K + 1, t.Operands, true)],
+                        andJoin: true
+                    ),
             };
         }
 
@@ -342,7 +364,7 @@ internal static class NormalForms
                 return new ConstantExpression(value ? TruthValue.True : TruthValue.False);
             }
 
-            if (Binomial(n, k) * k > cap)
+            if (NnfSupport.Binomial(n, k) * k > cap)
             {
                 this.Exceeded = true;
                 return new ConstantExpression(TruthValue.Unknown);
@@ -353,7 +375,7 @@ internal static class NormalForms
             int[] pick = [.. Enumerable.Range(0, k)];
             while (true)
             {
-                groups.Add(SmartJoin([.. pick.Select(i => literals[i])], andJoin: !negate));
+                groups.Add(NnfSupport.SmartJoin([.. pick.Select(i => literals[i])], andJoin: !negate));
                 int position = k - 1;
                 while (position >= 0 && pick[position] == n - k + position)
                 {
@@ -372,7 +394,7 @@ internal static class NormalForms
                 }
             }
 
-            return SmartJoin(groups, andJoin: negate);
+            return NnfSupport.SmartJoin(groups, andJoin: negate);
         }
 
         private void Keep(ThresholdExpression t)
@@ -382,7 +404,7 @@ internal static class NormalForms
                 return;
             }
 
-            this.kept.Add(new KeptThreshold(t, EstimateExpansion(t)));
+            this.kept.Add(new KeptThreshold(t, NnfSupport.EstimateExpansion(t)));
         }
     }
 

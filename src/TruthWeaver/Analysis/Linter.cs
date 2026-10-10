@@ -151,7 +151,7 @@ internal static class Linter
     /// <summary>Reports an <c>AND</c> or <c>OR</c> chain with more operands than <see cref="CompilerOptions.WideChainOperandLimit"/>.</summary>
     private static void LintWideChain(Expression node, CompilerOptions options, List<Diagnostic> diagnostics)
     {
-        int count = node is AndExpression and ? and.Operands.Count : ((OrExpression)node).Operands.Count;
+        int count = node is AndExpression conjunction ? conjunction.Operands.Count : ((OrExpression)node).Operands.Count;
         if (count <= options.WideChainOperandLimit)
         {
             return;

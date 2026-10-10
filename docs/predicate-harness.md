@@ -127,5 +127,3 @@ The `Cancellation` outcome always has the status `Observed`. The outcome detail 
 ## Related pages
 
 [Testing assertions](testing-assertions.md) describes the rule and decision assertions. [Rule fuzzer](rule-fuzzer.md) checks the engine with random rules.
-
-See also [rule assertions](rule-assertions.md) for `AssertEquivalent` and `AssertSound`.

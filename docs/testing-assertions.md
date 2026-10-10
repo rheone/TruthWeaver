@@ -1,6 +1,6 @@
 # Testing assertions
 
-The `TruthWeaver.Testing` package has two groups of assertions. `RuleAssertions` checks compiled rules. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework.
+The `TruthWeaver.Testing` package has three groups of assertions. `RuleAssertions` checks that compiled rules keep their meaning. `RewriteAssertions` checks that a rewrite of a rule keeps its meaning. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework.
 
 For tools that check a predicate or the engine, see [Predicate harness](predicate-harness.md) and [Rule fuzzer](rule-fuzzer.md).
 
@@ -42,6 +42,27 @@ The check is undecided when the two rules have more distinct terms between them 
 ```csharp
 RuleAssertions.AssertEquivalent(before, after, new CompilerOptions(MaxAnalysisTerms: 24));
 ```
+
+## Assert that a rewrite is sound
+
+`RewriteAssertions.AssertSound(rule, rewrite, expectations)` applies `rewrite` to `rule` and checks the result. The rewrite is a `Func<CompiledRule<TContext>, CompiledRule<TContext>>`, so the assertion works for the built-in rewrites and for your own.
+
+```csharp
+RewriteAssertions.AssertSound(rule, r => r.Simplify(), RewriteExpectations.All);
+```
+
+The assertion always checks K3 equivalence of the original and the rewritten rule. When the check is undecided, it throws as inconclusive, as `AssertEquivalent` does. The `expectations` flags add checks:
+
+| Flag | The assertion fails when |
+| --- | --- |
+| `RewriteExpectations.NeverLarger` | The rewritten rule has more nodes than the original (`Metrics.NodeCount`). |
+| `RewriteExpectations.Idempotent` | Rewriting the rewritten rule again gives a different canonical text. |
+| `RewriteExpectations.All` | Either check above fails. |
+| `RewriteExpectations.None` (default) | Only equivalence is checked. |
+
+The failure message names the failed check. For equivalence it shows the counter-example. For `NeverLarger` it shows the two node counts. For `Idempotent` it shows both canonical texts.
+
+`Simplify()` and `Canonicalize()` promise both extra checks. Do not expect `NeverLarger` of a rewrite that expands, such as `ExpandToPrimitives()`.
 
 ## Assert on a decision
 

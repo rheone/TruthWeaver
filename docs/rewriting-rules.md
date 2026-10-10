@@ -193,13 +193,13 @@ Each `RewriteStep` has three members:
 | `Before` | The canonical text of the changed subtree before the step. |
 | `After` | The canonical text of the changed subtree after the step. |
 
-- **Order.** The steps are in the order the rewrite applied them. The first steps are the canonical-form laws (aliases, double negation, flattening, ordering, repeated operands). The simplification laws follow, and the canonical-form laws run again between the passes.
+- **Order.** The steps are in the order the rewrite applied them. The canonical-form laws come first: aliases, double negation, flattening, ordering and repeated operands. The simplification laws follow. The canonical-form laws run again between passes.
 - **Subtree text.** A step shows the subtree as it stood when the rewrite reached it. An earlier step can already have changed its operands, so `Before` is not always a substring of the original rule text.
 - **Reorder.** Sorting the operands of a commutative operator is a step. The value does not change, but the text does.
 - **One step for an expansion.** A derived operator with a constant operand (`a XOR True`) is one `DerivedWithConstant` step. The expansion inside it is not listed.
 - **Already simple.** A rule that `Simplify()` leaves as written returns an empty list.
 
-**Relation to `RuleDiff`.** `RuleDiff.Compare(before, after)` compares two finished rules by structure and says what differs, and whether the meaning is preserved. It does not say why the rules differ. The step list says why: it names the law for each change. A tool that shows a rewrite can print the steps, and can use `RuleDiff.Compare(rule, result.Rule)` for the net difference. The diff and the step list always agree about whether the rule changed.
+**Relation to `RuleDiff`.** `RuleDiff.Compare(before, after)` compares two finished rules. It reports what differs and whether the meaning is preserved. It does not report why the rules differ. The step list reports why: each step names a law. To show a rewrite, print the steps. For the net difference, call `RuleDiff.Compare(rule, result.Rule)`. The diff and the step list always agree on whether the rule changed.
 
 ### Normal forms
 

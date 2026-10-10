@@ -283,6 +283,24 @@ public sealed class LintTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
     }
 
+    /// <summary>A rule whose node count equals <c>MaxRewriteNodeCount</c> is still canonicalized: only a larger rule is skipped.</summary>
+    [Fact]
+    public void Compile_RuleExactlyAtRewriteCap_ReportsNotCanonical_Test()
+    {
+        // "b AND a" is three nodes: the AND and its two terms.
+        CompilationResult<RuleTestContext> atCap = Compile(
+            "b AND a",
+            new CompilerOptions(MaxRewriteNodeCount: 3, Lints: LintRules.NotCanonical)
+        );
+        CompilationResult<RuleTestContext> overCap = Compile(
+            "b AND a",
+            new CompilerOptions(MaxRewriteNodeCount: 2, Lints: LintRules.NotCanonical)
+        );
+
+        Assert.Contains(atCap.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+        Assert.DoesNotContain(overCap.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
     private static bool IsLint(Diagnostic diagnostic)
     {
         return string.CompareOrdinal(diagnostic.Code, "TRE0017") >= 0

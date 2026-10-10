@@ -13,21 +13,11 @@ public sealed partial class TestNamingTests
 {
     private const string ExpectedShape = "{MemberUnderTest}_{Scenario}_{Expectation}_Test";
 
-    /// <summary>The assembly names of the test projects under <c>tests/</c> and <c>samples/</c>.</summary>
-    private static readonly string[] TestAssemblyNames =
-    [
-        "TruthWeaver.Tests",
-        "TruthWeaver.Abstractions.Tests",
-        "TruthWeaver.DataSources.Json.Tests",
-        "TruthWeaver.Generators.Tests",
-        "TruthWeaver.Predicates.Tests",
-        "TruthWeaver.Testing.Tests",
-        "TruthWeaver.Yaml.Tests",
-        "TruthWeaver.Architecture.Tests",
-        "Consumer.Tests",
-        "DataSource.Tests",
-        "PredicateLibrary.Tests",
-    ];
+    /// <summary>
+    /// The assembly names of the test projects under <c>tests/</c> and <c>samples/*.Tests</c>, read from the project files on
+    /// disk so a new test project is covered without editing this list. A project's assembly name is its file name.
+    /// </summary>
+    private static readonly string[] TestAssemblyNames = FindTestAssemblyNames();
 
     /// <summary>Every test method follows the naming convention unless the baseline lists it.</summary>
     [Fact]
@@ -58,6 +48,27 @@ public sealed partial class TestNamingTests
     /// <summary>A conforming name has at least member, scenario and expectation segments, then the <c>_Test</c> suffix.</summary>
     [GeneratedRegex(@"^[^_]+(_[^_]+){2,}_Test$", RegexOptions.CultureInvariant)]
     private static partial Regex ConventionalName();
+
+    /// <summary>Finds every test project file below the repository root, which is the nearest ancestor holding the solution.</summary>
+    private static string[] FindTestAssemblyNames()
+    {
+        DirectoryInfo? root = new(AppContext.BaseDirectory);
+        while (root?.EnumerateFiles("*.slnx").Any() == false)
+        {
+            root = root.Parent;
+        }
+
+        Assert.NotNull(root);
+        return
+        [
+            .. root.EnumerateDirectories("tests")
+                .Concat(root.EnumerateDirectories("samples"))
+                .SelectMany(folder => folder.EnumerateFiles("*.csproj", SearchOption.AllDirectories))
+                .Where(project => project.Name.EndsWith(".Tests.csproj", StringComparison.Ordinal))
+                .Select(project => Path.GetFileNameWithoutExtension(project.Name))
+                .Order(StringComparer.Ordinal),
+        ];
+    }
 
     /// <summary>Lists <c>Namespace.Type.Method</c> for each test method whose name breaks the convention.</summary>
     private static IEnumerable<string> ViolatingTests()

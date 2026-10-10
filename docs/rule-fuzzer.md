@@ -114,5 +114,3 @@ The fuzzer uses two public types that are also available for other property test
 ## Related pages
 
 [Testing assertions](testing-assertions.md) describes the rule and decision assertions. [Predicate harness](predicate-harness.md) checks one predicate.
-
-See also [rule assertions](rule-assertions.md) for `AssertEquivalent` and `AssertSound`.

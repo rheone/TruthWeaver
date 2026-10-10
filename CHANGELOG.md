@@ -69,6 +69,9 @@ copyright line reads 2026.
 - `RuleEquivalence.Compare` (equivalent, not equivalent with a counter-example, or undecided) and
   `RuleDiffResult.PreservesMeaning`.
 - Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`, `TRE0028` to `TRE0030`), `Diagnostic.EnclosedBy`, and the `CompilerOptions` values `DeepNestingFraction` and `WideChainOperandLimit`.
+- Rewrite tooling: `CompiledRule.ToNnf`, `ToCnf` and `ToDnf` with `NormalFormOptions` (diagnostic `TRE0031` when a
+  threshold stays an atom), `CompiledRule.SimplifyWithSteps` (`RewriteStep`, `RewriteLaw`), and
+  `RewriteAssertions.AssertSound` with `RewriteExpectations` in `TruthWeaver.Testing`.
 - `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `TRE0016` for oversized expansions.
 - Predicate catalog additions: the string members `IsEmpty`, `IsNotEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`,
   `IsNotNullOrWhiteSpace`, `NotEqual`, `NotContains` and `RegexPredicates.NotMatches`; `NumericPredicates` (`Int64` and

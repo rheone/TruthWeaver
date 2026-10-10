@@ -18,6 +18,19 @@ internal static class ExpressionTools
     }
 
     /// <summary>
+    /// Builds an <c>AND</c> or <c>OR</c> node over <paramref name="operands"/> as given: no folding, flattening or
+    /// single-operand collapse, so the caller decides what the operand list means.
+    /// </summary>
+    /// <param name="operands">The operands, in order.</param>
+    /// <param name="isAnd"><see langword="true"/> for <c>AND</c>, <see langword="false"/> for <c>OR</c>.</param>
+    /// <returns>The junction node.</returns>
+    public static Expression Junction(IEnumerable<Expression> operands, bool isAnd)
+    {
+        EquatableArray<Expression> array = Array(operands);
+        return isAnd ? new AndExpression(array) : new OrExpression(array);
+    }
+
+    /// <summary>
     /// Returns <paramref name="node"/> with every direct child replaced by <paramref name="map"/> of that child. When no
     /// child changes (by reference) the original node is returned, which keeps shared sub-trees shared and lets callers
     /// detect "nothing happened" cheaply.

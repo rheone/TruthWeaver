@@ -25,21 +25,31 @@ internal sealed class RewriteTrace(List<RewriteStep> steps)
         }
     }
 
-    /// <summary>Pauses reporting while the caller tries a rewrite that it can still discard.</summary>
-    public void Pause()
+    /// <summary>
+    /// Pauses reporting while the caller tries a rewrite that it can still discard. Disposing the result resumes reporting,
+    /// so a <see langword="using"/> block keeps an exception from leaving the trace paused. Pauses nest.
+    /// </summary>
+    /// <returns>The scope to dispose when the trial ends.</returns>
+    public PauseScope Pause()
     {
         this.pausedDepth++;
-    }
-
-    /// <summary>Resumes reporting after <see cref="Pause"/>.</summary>
-    public void Resume()
-    {
-        this.pausedDepth--;
+        return new PauseScope(this);
     }
 
     /// <summary>Discards every recorded step, for a result that falls back to the original rule.</summary>
     public void Clear()
     {
         steps.Clear();
+    }
+
+    /// <summary>The scope of one <see cref="Pause"/>; disposing it resumes reporting.</summary>
+    /// <param name="owner">The trace that was paused.</param>
+    internal readonly struct PauseScope(RewriteTrace owner) : IDisposable
+    {
+        /// <summary>Ends the pause.</summary>
+        public void Dispose()
+        {
+            owner.pausedDepth--;
+        }
     }
 }

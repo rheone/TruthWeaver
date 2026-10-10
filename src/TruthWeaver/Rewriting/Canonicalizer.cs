@@ -78,12 +78,6 @@ internal static class Canonicalizer
             return new ThresholdExpression(comparison, k, operands);
         }
 
-        private static Expression Junction(IEnumerable<Expression> operands, bool isAnd)
-        {
-            EquatableArray<Expression> array = ExpressionTools.Array(operands);
-            return isAnd ? new AndExpression(array) : new OrExpression(array);
-        }
-
         /// <summary><c>COALESCE</c> is associative, so a nested <c>COALESCE</c> splices into its parent without reordering.</summary>
         private Expression FlattenCoalesce(CoalesceExpression c)
         {
@@ -123,17 +117,16 @@ internal static class Canonicalizer
                 ThresholdExpression t => this.NormaliseThreshold(t),
                 ExactlyOneExpression one => this.SortedOperands(
                     one,
-                    Threshold(ThresholdComparison.Exactly, 1, one.Operands),
                     one.Operands,
-                    sorted => Threshold(ThresholdComparison.Exactly, 1, sorted)
+                    sorted => Threshold(ThresholdComparison.Exactly, 1, sorted),
+                    alias: Threshold(ThresholdComparison.Exactly, 1, one.Operands)
                 ),
                 BetweenExpression b => this.SortedOperands(
-                    b,
                     b,
                     b.Operands,
                     sorted => new BetweenExpression(b.Min, b.Max, sorted)
                 ),
-                ParityExpression nx => this.SortedOperands(nx, nx, nx.Operands, sorted => new ParityExpression(sorted)),
+                ParityExpression nx => this.SortedOperands(nx, nx.Operands, sorted => new ParityExpression(sorted)),
                 XorExpression x => this.OrderPair(x.Left, x.Right, static (l, r) => new XorExpression(l, r), x),
                 EquivalentExpression e => this.OrderPair(e.Left, e.Right, static (l, r) => new EquivalentExpression(l, r), e),
                 NandExpression nd => this.OrderPair(nd.Left, nd.Right, static (l, r) => new NandExpression(l, r), nd),
@@ -150,19 +143,24 @@ internal static class Canonicalizer
         }
 
         /// <summary>
-        /// Sorts <paramref name="operands"/> and builds the result, reporting an alias step from <paramref name="original"/> first
-        /// when they differ, and then a reorder step when the sort changes the order.
+        /// Sorts <paramref name="operands"/> and builds the result. When <paramref name="alias"/> is given, an alias step from
+        /// <paramref name="original"/> to it is reported first; a reorder step follows when the sort changes the order.
         /// </summary>
+        /// <param name="original">The node being canonicalised.</param>
+        /// <param name="operands">The operands to sort.</param>
+        /// <param name="build">Builds the result from the sorted operands.</param>
+        /// <param name="alias">The exact-alias spelling of <paramref name="original"/>, or <see langword="null"/> when it has none.</param>
         private Expression SortedOperands(
             Expression original,
-            Expression aliased,
             EquatableArray<Expression> operands,
-            Func<EquatableArray<Expression>, Expression> build
+            Func<EquatableArray<Expression>, Expression> build,
+            Expression? alias = null
         )
         {
-            if (!ReferenceEquals(original, aliased))
+            Expression aliased = alias ?? original;
+            if (alias is not null)
             {
-                trace?.Report(RewriteLaw.AliasCollapse, original, aliased);
+                trace?.Report(RewriteLaw.AliasCollapse, original, alias);
             }
 
             Expression result = build(this.Sorted(operands));
@@ -203,7 +201,7 @@ internal static class Canonicalizer
                 }
             }
 
-            return this.SortedOperands(t, aliased, t.Operands, sorted => Threshold(comparison, k, sorted));
+            return this.SortedOperands(t, t.Operands, sorted => Threshold(comparison, k, sorted), alias: aliased);
         }
 
         /// <summary>Flattens nested same-operator operands, sorts, removes repeats; a single survivor replaces the operator.</summary>
@@ -214,7 +212,7 @@ internal static class Canonicalizer
             if (original is not (AndExpression or OrExpression))
             {
                 // ANY, ALL and the AtLeast thresholds that equal OR and AND are aliases of the junction.
-                current = Junction(operands, isAnd);
+                current = ExpressionTools.Junction(operands, isAnd);
                 trace?.Report(RewriteLaw.AliasCollapse, original, current);
             }
 
@@ -237,14 +235,14 @@ internal static class Canonicalizer
 
             if (flat.Count != operands.Count)
             {
-                current = this.Reported(RewriteLaw.Flatten, current, Junction(flat, isAnd));
+                current = this.Reported(RewriteLaw.Flatten, current, ExpressionTools.Junction(flat, isAnd));
             }
 
             // Sorting by text puts equal operands side by side, so removing neighbours that are equal removes every repeat.
             List<Expression> sorted = [.. flat.OrderBy(this.Key, StringComparer.Ordinal)];
             if (!sorted.SequenceEqual(flat))
             {
-                current = this.Reported(RewriteLaw.Reorder, current, Junction(sorted, isAnd));
+                current = this.Reported(RewriteLaw.Reorder, current, ExpressionTools.Junction(sorted, isAnd));
             }
 
             List<Expression> distinct = [];
@@ -261,7 +259,7 @@ internal static class Canonicalizer
                 current = this.Reported(
                     RewriteLaw.Idempotence,
                     current,
-                    distinct.Count == 1 ? distinct[0] : Junction(distinct, isAnd)
+                    distinct.Count == 1 ? distinct[0] : ExpressionTools.Junction(distinct, isAnd)
                 );
             }
 
