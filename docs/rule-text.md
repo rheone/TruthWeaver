@@ -59,7 +59,22 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 ## Case
 
-Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node. The printer writes one spelling: operator words in upper case (`AND`, `XOR`), threshold and function names in upper camel case (`AtLeast`, `ExactlyOne`, `If`, `IsTrue`) and the constants as `True`, `False` and `Unknown`. The printer writes the word form of an operator and never a symbol.
+Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node.
+
+The printer writes each operator word in one fixed spelling. The rule is:
+
+- Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case: `NOT`, `AND`, `OR`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN`.
+- The other call words are upper camel case: `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`, `If`, `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`.
+- The constants are `True`, `False` and `Unknown`.
+
+The printer writes the word form of an operator and never a symbol. The printed spelling is the one that the [grammar](#grammar) uses for each word.
+
+<!-- doctest:rule casing -->
+```text
+parity(isBanned, lovesPineapple, isDineIn) and isknown(isTakeout)
+```
+
+The compiled rule prints as `PARITY(isBanned, lovesPineapple, isDineIn) AND IsKnown(isTakeout)`.
 
 Predicate names and argument names are case-insensitive too. `hasCrust(Crust: "thin")` and `hasCrust(crust: "thin")` compile to the same term, and the printer writes the name as the predicate's schema spells it. Argument values are case-sensitive.
 

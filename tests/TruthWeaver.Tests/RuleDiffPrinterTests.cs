@@ -9,16 +9,18 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 02: human-readable rendering of a <see cref="RuleDiffResult"/>.</summary>
 public sealed class RuleDiffPrinterTests
 {
+    /// <summary>A null diff throws ArgumentNullException naming the diff parameter.</summary>
     [Fact]
-    public void A_null_diff_throws_argument_null_exception_naming_the_diff_parameter()
+    public void Print_NullDiff_ThrowsNamingDiffParameter_Test()
     {
         ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => RuleDiffPrinter.Print(null!));
 
         Assert.Equal("diff", exception.ParamName);
     }
 
+    /// <summary>An empty diff renders as no changes.</summary>
     [Fact]
-    public void An_empty_diff_renders_as_no_changes()
+    public void Print_EmptyDiff_RendersNoChanges_Test()
     {
         RuleDiffResult diff = new([]);
 
@@ -27,8 +29,9 @@ public sealed class RuleDiffPrinterTests
         Assert.Equal("No changes.", text);
     }
 
+    /// <summary>An added operand renders using its label and description, not the AST type name.</summary>
     [Fact]
-    public void An_added_operand_renders_using_its_label_and_description_not_the_ast_type_name()
+    public void Print_AddedOperand_RendersLabelNotAstTypeName_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND isDepartmentHead").CompiledRule!;
@@ -45,8 +48,9 @@ public sealed class RuleDiffPrinterTests
         Assert.DoesNotContain("AndExpression", text, StringComparison.Ordinal);
     }
 
+    /// <summary>A removed operand renders using its before label.</summary>
     [Fact]
-    public void A_removed_operand_renders_using_its_before_label()
+    public void Print_RemovedOperand_RendersBeforeLabel_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler
@@ -61,8 +65,9 @@ public sealed class RuleDiffPrinterTests
         Assert.Contains("hasRole", text, StringComparison.Ordinal);
     }
 
+    /// <summary>A changed operator renders both the before and after labels.</summary>
     [Fact]
-    public void A_changed_operator_renders_both_the_before_and_after_labels()
+    public void Print_ChangedOperator_RendersBeforeAndAfterLabels_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND isDepartmentHead").CompiledRule!;
@@ -75,8 +80,9 @@ public sealed class RuleDiffPrinterTests
         Assert.Contains("OR", text, StringComparison.Ordinal);
     }
 
+    /// <summary>Rendering produces one line per diff entry.</summary>
     [Fact]
-    public void Rendering_produces_one_line_per_diff_entry()
+    public void Print_Entries_OneLineEach_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;

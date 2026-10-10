@@ -12,8 +12,9 @@ using TruthWeaver.Printing;
 /// </summary>
 public sealed class RuleRenderTreeAlignmentTests
 {
+    /// <summary>Build throws when the evaluated child count does not match the description operand count.</summary>
     [Fact]
-    public void Build_throws_when_evaluated_children_count_does_not_match_description_operand_count()
+    public void Build_ChildCountMismatch_Throws_Test()
     {
         OutlineNode description = new(
             "AND",
@@ -30,8 +31,9 @@ public sealed class RuleRenderTreeAlignmentTests
         Assert.Throws<InvalidOperationException>(() => RuleRenderTree.Build(description, evaluated));
     }
 
+    /// <summary>Build does not throw when the evaluated child count matches the description operand count.</summary>
     [Fact]
-    public void Build_does_not_throw_when_evaluated_children_count_matches_description_operand_count()
+    public void Build_ChildCountMatchesOperandCount_DoesNotThrow_Test()
     {
         OutlineNode description = new(
             "AND",

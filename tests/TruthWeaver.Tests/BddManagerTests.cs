@@ -5,8 +5,9 @@ using TruthWeaver.Analysis;
 /// <summary>Ticket 02: direct unit tests for the hand-rolled ROBDD engine.</summary>
 public sealed class BddManagerTests
 {
+    /// <summary>A variable returns a stable node id on repeated calls.</summary>
     [Fact]
-    public void Variable_returns_a_stable_node_id_on_repeated_calls()
+    public void Variable_RepeatedCalls_ReturnStableNodeId_Test()
     {
         BddManager bdd = new();
 
@@ -16,8 +17,9 @@ public sealed class BddManagerTests
         Assert.Equal(first, second);
     }
 
+    /// <summary>The conjunction of a variable and its negation reduces to false.</summary>
     [Fact]
-    public void And_of_a_variable_and_its_negation_reduces_to_false()
+    public void And_VariableAndNegation_ReducesToFalse_Test()
     {
         BddManager bdd = new();
         int x = bdd.Variable(0);
@@ -27,8 +29,9 @@ public sealed class BddManagerTests
         Assert.Equal(BddManager.False, result);
     }
 
+    /// <summary>The disjunction of a variable and its negation reduces to true.</summary>
     [Fact]
-    public void Or_of_a_variable_and_its_negation_reduces_to_true()
+    public void Or_VariableAndNegation_ReducesToTrue_Test()
     {
         BddManager bdd = new();
         int x = bdd.Variable(0);
@@ -38,8 +41,9 @@ public sealed class BddManagerTests
         Assert.Equal(BddManager.True, result);
     }
 
+    /// <summary>The conjunction of a variable with itself reduces to the variable.</summary>
     [Fact]
-    public void And_of_a_variable_with_itself_reduces_to_itself()
+    public void And_VariableWithItself_ReducesToItself_Test()
     {
         BddManager bdd = new();
         int x = bdd.Variable(0);
@@ -49,8 +53,9 @@ public sealed class BddManagerTests
         Assert.Equal(x, result);
     }
 
+    /// <summary>The disjunction of a variable with itself reduces to the variable.</summary>
     [Fact]
-    public void Or_of_a_variable_with_itself_reduces_to_itself()
+    public void Or_VariableWithItself_ReducesToItself_Test()
     {
         BddManager bdd = new();
         int x = bdd.Variable(0);
@@ -60,8 +65,9 @@ public sealed class BddManagerTests
         Assert.Equal(x, result);
     }
 
+    /// <summary>Structurally equal BDDs built independently share a node id.</summary>
     [Fact]
-    public void Structurally_equal_bdds_built_independently_share_the_same_node_id()
+    public void NodeId_StructurallyEqualBdds_ShareNodeId_Test()
     {
         BddManager bdd = new();
 
@@ -71,12 +77,13 @@ public sealed class BddManagerTests
         Assert.Equal(first, second);
     }
 
+    /// <summary>Exclusive or matches its truth table.</summary>
     [Theory]
     [InlineData(true, true, false)]
     [InlineData(true, false, true)]
     [InlineData(false, true, true)]
     [InlineData(false, false, false)]
-    public void Xor_matches_its_truth_table(bool a, bool b, bool expected)
+    public void Xor_TruthTable_MatchesTruthTable_Test(bool a, bool b, bool expected)
     {
         BddManager bdd = new();
         int x = a ? BddManager.True : BddManager.False;
@@ -87,8 +94,9 @@ public sealed class BddManagerTests
         Assert.Equal(expected ? BddManager.True : BddManager.False, result);
     }
 
+    /// <summary>If-then-else over three independent variables matches its AND, OR and NOT expansion.</summary>
     [Fact]
-    public void Ite_over_three_independent_variables_matches_its_and_or_not_expansion()
+    public void Ite_ThreeIndependentVariables_MatchesAndOrNotExpansion_Test()
     {
         // BddManager.Ite(i, t, e) is defined semantically as "(i AND t) OR (NOT i AND e)". Because
         // ROBDD nodes are uniquified per (variable, low, high) under a fixed variable ordering, two
@@ -106,8 +114,9 @@ public sealed class BddManagerTests
         Assert.Equal(viaExpansion, viaIte);
     }
 
+    /// <summary>Repeated if-then-else calls with the same operands stay correct under heavy reuse.</summary>
     [Fact]
-    public void Repeated_ite_calls_with_the_same_operands_remain_correct_under_heavy_reuse()
+    public void Ite_RepeatedSameOperands_RemainsCorrectUnderReuse_Test()
     {
         BddManager bdd = new();
         int x = bdd.Variable(0);

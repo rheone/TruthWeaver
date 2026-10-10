@@ -158,7 +158,7 @@ public sealed class ProjectTests
     [InlineData(TruthValue.True, true)]
     [InlineData(TruthValue.False, false)]
     [InlineData(TruthValue.Unknown, false)]
-    public async Task IsSatisfied_IsTrueOnlyForTrueWhateverProjectionIsApplied_Test(TruthValue input, bool expected)
+    public async Task IsSatisfied_TrueOnly_WhateverProjectionIsApplied_Test(TruthValue input, bool expected)
     {
         K3Rule rule = K3Rule.TryCreate("a", 1)!;
 

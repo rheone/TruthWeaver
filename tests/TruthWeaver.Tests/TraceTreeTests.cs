@@ -14,8 +14,9 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class TraceTreeTests
 {
+    /// <summary>Every node in a fully evaluated tree has a result.</summary>
     [Fact]
-    public async Task Every_node_in_a_fully_evaluated_tree_has_a_result()
+    public async Task Tree_FullyEvaluated_EveryNodeHasResult_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -40,8 +41,9 @@ public sealed class TraceTreeTests
         Assert.All(root.Children, child => Assert.Equal(TruthValue.True, child.Result));
     }
 
+    /// <summary>An AND short circuit marks the skipped operand as not evaluated, with no children.</summary>
     [Fact]
-    public async Task And_short_circuit_marks_the_skipped_operand_not_evaluated_with_no_children()
+    public async Task ShortCircuit_And_MarksSkippedOperandNotEvaluated_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -66,8 +68,9 @@ public sealed class TraceTreeTests
         Assert.Empty(skippedOperand.Children);
     }
 
+    /// <summary>Skipping a whole subtree operand leaves it with no children, whatever its static shape.</summary>
     [Fact]
-    public async Task Skipping_a_whole_subtree_operand_leaves_it_with_no_children_despite_its_own_static_shape()
+    public async Task Skipped_WholeSubtreeOperand_HasNoChildren_Test()
     {
         // "a AND (b OR c)" with a = false: the (b OR c) OrExpression is itself the second AND operand,
         // so the whole subtree is skipped as one unit — nothing about b or c is recorded.
@@ -92,8 +95,9 @@ public sealed class TraceTreeTests
         Assert.Empty(skippedSubtree.Children);
     }
 
+    /// <summary>A skipped OR subtree is described as OR.</summary>
     [Fact]
-    public async Task Skipped_or_subtree_is_described_as_OR()
+    public async Task Skipped_OrSubtree_IsDescribedAsOr_Test()
     {
         // "a AND (b OR c)" with a = false short-circuits before the (b OR c) OrExpression is
         // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
@@ -118,8 +122,9 @@ public sealed class TraceTreeTests
         Assert.Equal("OR", skippedSubtree.Text);
     }
 
+    /// <summary>A skipped AND subtree is described as AND.</summary>
     [Fact]
-    public async Task Skipped_and_subtree_is_described_as_AND()
+    public async Task Skipped_AndSubtree_IsDescribedAsAnd_Test()
     {
         // "a OR (b AND c)" with a = true short-circuits before the (b AND c) AndExpression is
         // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
@@ -144,8 +149,9 @@ public sealed class TraceTreeTests
         Assert.Equal("AND", skippedSubtree.Text);
     }
 
+    /// <summary>A skipped NOT subtree is described as NOT.</summary>
     [Fact]
-    public async Task Skipped_not_subtree_is_described_as_NOT()
+    public async Task Skipped_NotSubtree_IsDescribedAsNot_Test()
     {
         // "a AND (NOT b)" with a = false short-circuits before the (NOT b) NotExpression is
         // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
@@ -169,8 +175,9 @@ public sealed class TraceTreeTests
         Assert.Equal("NOT", skippedSubtree.Text);
     }
 
+    /// <summary>A skipped XOR subtree is described as XOR.</summary>
     [Fact]
-    public async Task Skipped_xor_subtree_is_described_as_XOR()
+    public async Task Skipped_XorSubtree_IsDescribedAsXor_Test()
     {
         // "a AND (b XOR c)" with a = false short-circuits before the (b XOR c) XorExpression is
         // evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
@@ -227,8 +234,9 @@ public sealed class TraceTreeTests
         Assert.Equal("EQUIVALENT", skippedSubtree.Text);
     }
 
+    /// <summary>A skipped ExactlyOne subtree is described as ExactlyOne.</summary>
     [Fact]
-    public async Task Skipped_exactlyone_subtree_is_described_as_ExactlyOne()
+    public async Task Skipped_ExactlyOneSubtree_IsDescribedAsExactlyOne_Test()
     {
         // "a AND ExactlyOne(b, c, d)" with a = false short-circuits before the ExactlyOneExpression
         // is evaluated, so its skipped TraceNode is labelled from the node's static shape alone.
@@ -260,8 +268,9 @@ public sealed class TraceTreeTests
         Assert.Equal("ExactlyOne", skippedSubtree.Text);
     }
 
+    /// <summary>A skipped threshold subtree is described in the default OpName and K format.</summary>
     [Fact]
-    public async Task Skipped_threshold_subtree_is_described_using_the_default_OpName_K_format()
+    public async Task Skipped_ThresholdSubtree_UsesOpNameKFormat_Test()
     {
         // "a AND AtLeast(2, b, c, d)" with a = false short-circuits before the ThresholdExpression is
         // evaluated, so its skipped TraceNode falls through to the default arm's

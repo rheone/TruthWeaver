@@ -13,8 +13,9 @@ using TruthWeaver.Registry;
 /// </summary>
 public sealed class EndToEndUsageExampleTests
 {
+    /// <summary>A fixed fake predicate drives a satisfied decision.</summary>
     [Fact]
-    public async Task FixedFakePredicate_DrivesASatisfiedDecision()
+    public async Task FixedFakePredicate_Evaluation_DrivesSatisfiedDecision_Test()
     {
         (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Returning<object?>("hasRole", true);
@@ -52,8 +53,9 @@ public sealed class EndToEndUsageExampleTests
         decision.Should().NotBeSatisfied().HaveResult(TruthValue.Unknown).HaveNoFaults();
     }
 
+    /// <summary>A faulting fake predicate drives an unknown decision with a fault.</summary>
     [Fact]
-    public async Task FaultingFakePredicate_DrivesAnUnknownDecisionWithAFault()
+    public async Task FaultingFakePredicate_Evaluation_DrivesUnknownDecisionWithFault_Test()
     {
         (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Faulting<object?>("hasRole", new InvalidOperationException("simulated downstream failure"));

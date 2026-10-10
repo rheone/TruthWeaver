@@ -11,8 +11,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>The fluent <see cref="RuleBuilder"/> API for assembling a rule without hand-written DSL/JSON/YAML text.</summary>
 public sealed class RuleBuilderTests
 {
+    /// <summary>The predicate builder compiles and evaluates like the equivalent DSL text.</summary>
     [Fact]
-    public async Task Predicate_builder_compiles_and_evaluates_like_the_equivalent_dsl_text()
+    public async Task Predicate_Builder_CompilesLikeDslText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
@@ -29,8 +30,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The AND, OR and NOT builders produce the same compiled rule as equivalent DSL text.</summary>
     [Fact]
-    public void And_or_not_builders_produce_the_same_compiled_rule_as_equivalent_dsl_text()
+    public void Builders_AndOrNot_MatchDslCompiledRule_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -49,8 +51,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(viaDsl.CanonicalText, viaBuilder.CanonicalText);
     }
 
+    /// <summary>The predicate builder with a named string argument compiles successfully.</summary>
     [Fact]
-    public void Predicate_builder_with_named_string_argument_compiles_successfully()
+    public void Predicate_BuilderNamedStringArgument_CompilesSuccessfully_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
@@ -62,8 +65,9 @@ public sealed class RuleBuilderTests
         Assert.Equal("hasRole(role: \"Y\")", result.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>The threshold builder compiles to the same canonical text as DSL text.</summary>
     [Fact]
-    public void Threshold_builder_compiles_to_the_same_canonical_text_as_dsl_text()
+    public void Threshold_Builder_CompilesToDslCanonicalText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -83,8 +87,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(viaDsl.CanonicalText, viaBuilder.CanonicalText);
     }
 
+    /// <summary>The XOR and XNOR builders compile to the same canonical text as DSL text.</summary>
     [Fact]
-    public void Xor_and_xnor_builders_compile_to_the_same_canonical_text_as_dsl_text()
+    public void Xor_Builders_CompileToDslCanonicalText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -103,8 +108,9 @@ public sealed class RuleBuilderTests
         Assert.Equal("(a EQUIVALENT b)", viaXnorBuilder.CanonicalText);
     }
 
+    /// <summary>An unknown predicate from the builder is a compile error, not an exception.</summary>
     [Fact]
-    public void An_unknown_predicate_from_the_builder_is_a_compile_error_not_an_exception()
+    public void Predicate_Unknown_IsCompileErrorNotException_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 
@@ -114,8 +120,9 @@ public sealed class RuleBuilderTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
     }
 
+    /// <summary>An out of range threshold from the builder is a compile error, not an exception.</summary>
     [Fact]
-    public void An_out_of_range_threshold_from_the_builder_is_a_compile_error_not_an_exception()
+    public void Threshold_OutOfRange_IsCompileErrorNotException_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -151,8 +158,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(SourceSpan.None, diagnostic.Span);
     }
 
+    /// <summary>The constant builder round trips through the same pipeline as DSL text.</summary>
     [Fact]
-    public void Constant_builder_round_trips_through_the_same_pipeline_as_dsl_text()
+    public void Constant_Builder_RoundTripsThroughDslPipeline_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 
@@ -161,57 +169,64 @@ public sealed class RuleBuilderTests
         Assert.Equal("True", rule.CanonicalText);
     }
 
+    /// <summary>The OR builder evaluates true with at least one true operand.</summary>
     [Theory]
     [InlineData(true, false, TruthValue.True)]
     [InlineData(false, false, TruthValue.False)]
-    public Task Or_builder_evaluates_true_with_at_least_one_true_operand(bool a, bool b, TruthValue expected)
+    public Task Or_Builder_EvaluatesTrueWithOneTrueOperand_Test(bool a, bool b, TruthValue expected)
     {
         return EvaluateAsync([a, b], operands => RuleBuilder.Or(operands), expected);
     }
 
+    /// <summary>The ExactlyOne builder evaluates true if and only if exactly one operand is true.</summary>
     [Theory]
     [InlineData(false, false, false, TruthValue.False)]
     [InlineData(true, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
-    public Task ExactlyOne_builder_evaluates_true_iff_exactly_one_operand_is_true(bool a, bool b, bool c, TruthValue expected)
+    public Task ExactlyOne_Builder_EvaluatesTrueIffExactlyOneTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         return EvaluateAsync([a, b, c], operands => RuleBuilder.ExactlyOne(operands), expected);
     }
 
+    /// <summary>The AtMost builder evaluates correctly near the boundary.</summary>
     [Theory]
     [InlineData(true, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
-    public Task AtMost_builder_evaluates_correctly_near_the_boundary(bool a, bool b, bool c, TruthValue expected)
+    public Task AtMost_Builder_EvaluatesCorrectlyNearBoundary_Test(bool a, bool b, bool c, TruthValue expected)
     {
         return EvaluateAsync([a, b, c], operands => RuleBuilder.AtMost(1, operands), expected);
     }
 
+    /// <summary>The GreaterThan builder evaluates correctly near the boundary.</summary>
     [Theory]
     [InlineData(true, true, false, TruthValue.True)]
     [InlineData(true, false, false, TruthValue.False)]
-    public Task GreaterThan_builder_evaluates_correctly_near_the_boundary(bool a, bool b, bool c, TruthValue expected)
+    public Task GreaterThan_Builder_EvaluatesCorrectlyNearBoundary_Test(bool a, bool b, bool c, TruthValue expected)
     {
         return EvaluateAsync([a, b, c], operands => RuleBuilder.GreaterThan(1, operands), expected);
     }
 
+    /// <summary>The LessThan builder evaluates correctly near the boundary.</summary>
     [Theory]
     [InlineData(false, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
-    public Task LessThan_builder_evaluates_correctly_near_the_boundary(bool a, bool b, bool c, TruthValue expected)
+    public Task LessThan_Builder_EvaluatesCorrectlyNearBoundary_Test(bool a, bool b, bool c, TruthValue expected)
     {
         return EvaluateAsync([a, b, c], operands => RuleBuilder.LessThan(2, operands), expected);
     }
 
+    /// <summary>The Exactly builder evaluates correctly near the boundary.</summary>
     [Theory]
     [InlineData(true, true, false, TruthValue.True)]
     [InlineData(true, true, true, TruthValue.False)]
-    public Task Exactly_builder_evaluates_correctly_near_the_boundary(bool a, bool b, bool c, TruthValue expected)
+    public Task Exactly_Builder_EvaluatesCorrectlyNearBoundary_Test(bool a, bool b, bool c, TruthValue expected)
     {
         return EvaluateAsync([a, b, c], operands => RuleBuilder.Exactly(2, operands), expected);
     }
 
+    /// <summary>ToJson round trips to a rule that compiles and evaluates identically.</summary>
     [Fact]
-    public void ToJson_round_trips_to_a_rule_that_compiles_and_evaluates_identically()
+    public void ToJson_Builder_RoundTripsToIdenticalRule_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -233,8 +248,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(viaOriginal.CanonicalText, reparsed.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>The predicate builder with a bool argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_a_bool_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderBoolArgument_CompilesAndEvaluates_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddBooleanArgPredicate("hasFlag", "flag", true).Build()
@@ -251,8 +267,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with an int argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_an_int_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderIntArgument_CompilesAndEvaluates_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -280,8 +297,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with a long argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_a_long_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderLongArgument_CompilesAndEvaluates_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -309,8 +327,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with a double argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_a_double_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderDoubleArgument_CompilesAndEvaluates_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -332,8 +351,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with a decimal argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_a_decimal_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderDecimalArgument_CompilesAndEvaluates_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -355,8 +375,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with a DateTimeOffset argument value compiles and evaluates correctly.</summary>
     [Fact]
-    public async Task Predicate_builder_with_a_datetimeoffset_argument_value_compiles_and_evaluates_correctly()
+    public async Task Predicate_BuilderDateTimeOffsetArgument_CompilesAndEvaluates_Test()
     {
         DateTimeOffset when = new(2024, 6, 1, 12, 30, 0, TimeSpan.Zero);
         RuleCompiler<RuleTestContext> compiler = new(
@@ -374,8 +395,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The predicate builder with an array argument value compiles and evaluates correctly through ArrayToNode.</summary>
     [Fact]
-    public async Task Predicate_builder_with_an_array_argument_value_compiles_and_evaluates_correctly_via_ArrayToNode()
+    public async Task Predicate_BuilderArrayArgument_CompilesAndEvaluatesViaArrayToNode_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -406,8 +428,9 @@ public sealed class RuleBuilderTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>An unsupported argument value type throws ArgumentException naming the type.</summary>
     [Fact]
-    public void An_unsupported_argument_value_type_throws_ArgumentException_naming_the_type()
+    public void Predicate_UnsupportedArgumentType_ThrowsNamingType_Test()
     {
         object unsupported = new StringBuilder("not a supported literal type");
 

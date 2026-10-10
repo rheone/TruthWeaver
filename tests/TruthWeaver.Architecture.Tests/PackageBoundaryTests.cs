@@ -41,8 +41,9 @@ public sealed class PackageBoundaryTests
         "TruthWeaver.Registry",
     ];
 
+    /// <summary>Abstractions has no dependency on any other TruthWeaver assembly.</summary>
     [Fact]
-    public void Abstractions_has_no_dependency_on_any_other_truthweaver_assembly()
+    public void Abstractions_Dependencies_ExcludeOtherTruthWeaverAssemblies_Test()
     {
         TestResult result = Types
             .InAssembly(Abstractions)
@@ -59,8 +60,9 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>Predicates depends on Abstractions alone.</summary>
     [Fact]
-    public void Predicates_depends_on_abstractions_alone_never_the_parser_compiler_or_analyzer()
+    public void Predicates_Dependencies_AreAbstractionsOnly_Test()
     {
         TestResult result = Types
             .InAssembly(Predicates)
@@ -81,7 +83,7 @@ public sealed class PackageBoundaryTests
     /// package, each of which is optional and orthogonal to testing support.
     /// </summary>
     [Fact]
-    public void Testing_depends_on_truthweaver_and_abstractions_alone_never_yaml_predicates_or_json_data_sources()
+    public void Testing_Dependencies_ExcludeYamlPredicatesAndJsonDataSources_Test()
     {
         TestResult result = Types
             .InAssembly(Testing)
@@ -94,8 +96,9 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>Core has no dependency on the Yaml, Predicates or Testing packages.</summary>
     [Fact]
-    public void Core_has_no_dependency_on_yaml_predicates_or_testing()
+    public void Core_Dependencies_ExcludeYamlPredicatesAndTesting_Test()
     {
         TestResult result = Types
             .InAssembly(Core)
@@ -116,7 +119,7 @@ public sealed class PackageBoundaryTests
     /// <c>TruthWeaver.DataSources.Json</c> does.
     /// </summary>
     [Fact]
-    public void Core_and_abstractions_reference_no_jsonpath_assembly()
+    public void Core_Dependencies_ExcludeJsonPathAssembly_Test()
     {
         string[] jsonAssemblies = ["Meziantou.Framework.JsonPath", "JsonPath.Net", "Json.More"];
 
@@ -129,7 +132,7 @@ public sealed class PackageBoundaryTests
 
     /// <summary>The JSON data source package depends on the abstractions alone: never the core compiler, the YAML package or the predicates.</summary>
     [Fact]
-    public void JsonDataSources_depends_on_abstractions_alone()
+    public void JsonDataSources_Dependencies_AreAbstractionsOnly_Test()
     {
         TestResult result = Types
             .InAssembly(JsonDataSources)
@@ -147,7 +150,7 @@ public sealed class PackageBoundaryTests
     /// package and takes no JSONPath library of its own.
     /// </summary>
     [Fact]
-    public void Yaml_references_the_json_data_source_package_but_not_the_jsonpath_library_directly()
+    public void Yaml_References_JsonDataSourcePackageOnly_Test()
     {
         string[] referenced = [.. Yaml.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
 
@@ -157,8 +160,9 @@ public sealed class PackageBoundaryTests
         Assert.DoesNotContain("Json.More", referenced);
     }
 
+    /// <summary>Yaml has no dependency on the Predicates or Testing packages.</summary>
     [Fact]
-    public void Yaml_has_no_dependency_on_predicates_or_testing()
+    public void Yaml_Dependencies_ExcludePredicatesAndTesting_Test()
     {
         TestResult result = Types
             .InAssembly(Yaml)
@@ -175,7 +179,7 @@ public sealed class PackageBoundaryTests
     /// references the generator.
     /// </summary>
     [Fact]
-    public void Generators_references_no_truthweaver_assembly_and_no_package_references_it()
+    public void Generators_Dependencies_ExcludeTruthWeaverAssemblies_Test()
     {
         // Loaded by name: the generator types derive from Roslyn types, which this test process does not load.
         Assembly generators = Assembly.Load("TruthWeaver.Generators");

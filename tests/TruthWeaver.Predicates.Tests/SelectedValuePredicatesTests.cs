@@ -4,8 +4,9 @@ using TruthWeaver.Abstractions;
 
 public class SelectedValuePredicatesTests
 {
+    /// <summary>Create with select and test builds a schema that matches the supplied values.</summary>
     [Fact]
-    public async Task Create_WithSelectAndTest_SchemaMatchesSuppliedValues()
+    public async Task Create_WithSelectAndTest_SchemaMatchesSuppliedValues_Test()
     {
         (PredicateSchema schema, _) = SelectedValuePredicates.Create<TestContext, decimal>(
             "isWithinBudget",
@@ -23,8 +24,9 @@ public class SelectedValuePredicatesTests
         Assert.Equal("limit", Assert.Single(schema.Arguments).Name);
     }
 
+    /// <summary>Create with select and test evaluates by composing select then test.</summary>
     [Fact]
-    public async Task Create_WithSelectAndTest_EvaluatesByComposingSelectThenTest()
+    public async Task Create_WithSelectAndTest_EvaluatesByComposingSelectThenTest_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             SelectedValuePredicates.Create<TestContext, decimal>(
@@ -44,8 +46,9 @@ public class SelectedValuePredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>When test rejects the selected value, the predicate evaluates to false.</summary>
     [Fact]
-    public async Task Create_WithSelectAndTest_TestRejectsSelectedValue_EvaluatesFalse()
+    public async Task Create_WithSelectAndTest_TestRejectsSelectedValue_EvaluatesFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             SelectedValuePredicates.Create<TestContext, decimal>(
@@ -86,8 +89,9 @@ public class SelectedValuePredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>The single value overload of Create evaluates to exactly what select returns.</summary>
     [Fact]
-    public async Task Create_SingleValueOverload_EvaluatesToExactlyWhatSelectReturns()
+    public async Task Create_SingleValueOverload_EvaluatesToExactlyWhatSelectReturns_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             SelectedValuePredicates.Create<TestContext>(
@@ -115,8 +119,9 @@ public class SelectedValuePredicatesTests
         Assert.Equal("isFeatureEnabled", schema.Name);
     }
 
+    /// <summary>When select throws, the exception surfaces unwrapped.</summary>
     [Fact]
-    public async Task Create_WithSelectAndTest_SelectThrows_ExceptionSurfacesUnwrapped()
+    public async Task Create_WithSelectAndTest_SelectThrows_ExceptionSurfacesUnwrapped_Test()
     {
         InvalidOperationException expected = new("lookup failed");
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
@@ -135,8 +140,9 @@ public class SelectedValuePredicatesTests
         Assert.Same(expected, actual);
     }
 
+    /// <summary>Two predicates with the same schema and different select closures stay independent.</summary>
     [Fact]
-    public async Task Create_TwoPredicatesWithSameSchemaDifferentSelectClosures_RemainIndependent()
+    public async Task Create_TwoPredicatesWithSameSchemaDifferentSelectClosures_RemainIndependent_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> first) =
             SelectedValuePredicates.Create<TestContext, string>(

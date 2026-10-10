@@ -135,8 +135,9 @@ public sealed class DslRoundTripPropertyTests
         }
     );
 
+    /// <summary>Parsing the printed form of a generated tree reproduces a structurally equal tree.</summary>
     [Fact]
-    public void Parsing_the_printed_form_of_a_generated_tree_reproduces_a_structurally_equal_tree()
+    public void Parse_PrintedGeneratedTree_ReproducesEqualTree_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
 

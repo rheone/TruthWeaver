@@ -13,8 +13,9 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class RuleTreeRenderingTests
 {
+    /// <summary>Structural Mermaid output has no evaluation coloring.</summary>
     [Fact]
-    public void Structural_mermaid_output_has_no_evaluation_coloring()
+    public void Mermaid_Structural_HasNoEvaluationColoring_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -29,8 +30,9 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("classDef", mermaid);
     }
 
+    /// <summary>Mermaid output always includes a start marker pointing at the root.</summary>
     [Fact]
-    public void Mermaid_output_always_includes_a_start_marker_pointing_at_the_root()
+    public void Mermaid_Output_IncludesStartMarkerAtRoot_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -42,8 +44,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("Start([\"Start\"]) --> n0", mermaid);
     }
 
+    /// <summary>Mermaid output includes a term's argument values by default.</summary>
     [Fact]
-    public void Mermaid_output_includes_a_terms_argument_values_by_default()
+    public void Mermaid_Output_IncludesArgumentValuesByDefault_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "hasCrust(crust: \"thin\")",
@@ -55,8 +58,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("crust: #quot;thin#quot;", mermaid);
     }
 
+    /// <summary>Mermaid output omits argument values when disabled.</summary>
     [Fact]
-    public void Mermaid_output_omits_argument_values_when_disabled()
+    public void Mermaid_Output_OmitsArgumentValuesWhenDisabled_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "hasCrust(crust: \"thin\")",
@@ -68,8 +72,9 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("crust", mermaid);
     }
 
+    /// <summary>Plain text output includes a term's argument values by default.</summary>
     [Fact]
-    public void PlainText_output_includes_a_terms_argument_values_by_default()
+    public void PlainText_Output_IncludesArgumentValuesByDefault_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "hasCrust(crust: \"thin\")",
@@ -81,8 +86,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("crust: \"thin\"", text);
     }
 
+    /// <summary>Plain text output omits argument values when disabled.</summary>
     [Fact]
-    public void PlainText_output_omits_argument_values_when_disabled()
+    public void PlainText_Output_OmitsArgumentValuesWhenDisabled_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "hasCrust(crust: \"thin\")",
@@ -94,8 +100,9 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("crust: \"thin\"", text);
     }
 
+    /// <summary>Argument values are absent for zero argument terms.</summary>
     [Fact]
-    public void Argument_values_are_absent_for_zero_argument_terms()
+    public void Arguments_ZeroArgumentTerms_AreAbsent_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile("a", registry => registry.AddConstant("a", true));
 
@@ -106,8 +113,9 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("(", text);
     }
 
+    /// <summary>Evaluated Mermaid output colors true, false and skipped nodes.</summary>
     [Fact]
-    public async Task Evaluated_mermaid_output_colors_true_false_and_skipped_nodes()
+    public async Task Mermaid_Evaluated_ColorsTrueFalseAndSkippedNodes_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -129,8 +137,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("brSkipped", mermaid);
     }
 
+    /// <summary>PrintMermaid rejects a decision with no evaluated tree.</summary>
     [Fact]
-    public void PrintMermaid_rejects_a_decision_with_no_evaluated_tree()
+    public void PrintMermaid_DecisionWithoutEvaluatedTree_Throws_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile("a", registry => registry.AddConstant("a", true));
         Decision decisionWithoutTree = new(TruthValue.True, []);
@@ -138,8 +147,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Throws<ArgumentException>(() => rule.PrintMermaid(decisionWithoutTree));
     }
 
+    /// <summary>Structural plain text output has no evaluation suffixes.</summary>
     [Fact]
-    public void Structural_plain_text_output_has_no_evaluation_suffixes()
+    public void PlainText_Structural_HasNoEvaluationSuffixes_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -153,8 +163,9 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("[skipped]", text);
     }
 
+    /// <summary>Evaluated plain text output marks the short circuited operand as skipped.</summary>
     [Fact]
-    public async Task Evaluated_plain_text_output_marks_the_short_circuited_operand_as_skipped()
+    public async Task PlainText_Evaluated_MarksShortCircuitedOperandSkipped_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -174,11 +185,12 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("[true]", text);
     }
 
+    /// <summary>Plain text renders operators in the requested style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "EQUIVALENT")]
     [InlineData(OperatorStyle.Symbolic, "∧", "∨", "¬", "⊕", "↔")]
     [InlineData(OperatorStyle.CStyle, "&&", "||", "!", "^", "==")]
-    public void PlainText_renders_operators_in_the_requested_style(
+    public void PlainText_Style_RendersOperatorsInRequestedStyle_Test(
         OperatorStyle style,
         string and,
         string or,
@@ -194,11 +206,12 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(xnor, PlainTextTreePrinter.Print(BinaryNode("EQUIVALENT"), style));
     }
 
+    /// <summary>Mermaid renders operators in the requested style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word, "AND", "OR", "NOT", "XOR", "EQUIVALENT")]
     [InlineData(OperatorStyle.Symbolic, "∧", "∨", "¬", "⊕", "↔")]
     [InlineData(OperatorStyle.CStyle, "&&", "||", "!", "^", "==")]
-    public void Mermaid_renders_operators_in_the_requested_style(
+    public void Mermaid_Style_RendersOperatorsInRequestedStyle_Test(
         OperatorStyle style,
         string and,
         string or,
@@ -238,11 +251,12 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains(expected, MermaidTreePrinter.Print(BinaryNode("IMPLIES"), style));
     }
 
+    /// <summary>Plain text keeps ExactlyOne and threshold labels in word form in every style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word)]
     [InlineData(OperatorStyle.Symbolic)]
     [InlineData(OperatorStyle.CStyle)]
-    public void PlainText_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
+    public void PlainText_WordLabels_KeptInWordFormInEveryStyle_Test(OperatorStyle style)
     {
         OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
         OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
@@ -251,11 +265,12 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("AtLeast(3)", PlainTextTreePrinter.Print(atLeast, style));
     }
 
+    /// <summary>Mermaid keeps ExactlyOne and threshold labels in word form in every style.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word)]
     [InlineData(OperatorStyle.Symbolic)]
     [InlineData(OperatorStyle.CStyle)]
-    public void Mermaid_keeps_ExactlyOne_and_threshold_labels_in_word_form_in_every_style(OperatorStyle style)
+    public void Mermaid_WordLabels_KeptInWordFormInEveryStyle_Test(OperatorStyle style)
     {
         OutlineNode exactlyOne = new("ExactlyOne", "desc", [Leaf("a"), Leaf("b")]);
         OutlineNode atLeast = new("AtLeast(3)", "desc", [Leaf("a"), Leaf("b"), Leaf("c")]);
@@ -283,24 +298,27 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains($"[\"{expected}\"]", mermaid);
     }
 
+    /// <summary>The plain text default style is Word when no style argument is given.</summary>
     [Fact]
-    public void PlainText_default_style_is_Word_with_no_style_argument()
+    public void PlainText_DefaultStyle_IsWordWithoutStyleArgument_Test()
     {
         string text = PlainTextTreePrinter.Print(BinaryNode("AND"));
 
         Assert.Contains("AND", text);
     }
 
+    /// <summary>The Mermaid default style is Word when no style argument is given.</summary>
     [Fact]
-    public void Mermaid_default_style_is_Word_with_no_style_argument()
+    public void Mermaid_DefaultStyle_IsWordWithoutStyleArgument_Test()
     {
         string mermaid = MermaidTreePrinter.Print(BinaryNode("AND"));
 
         Assert.Contains("AND", mermaid);
     }
 
+    /// <summary>The evaluated plain text overload accepts an operator style.</summary>
     [Fact]
-    public async Task PlainText_evaluated_overload_accepts_an_operator_style()
+    public async Task PlainText_EvaluatedOverload_AcceptsOperatorStyle_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -317,8 +335,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("∧", text);
     }
 
+    /// <summary>The evaluated Mermaid overload accepts an operator style.</summary>
     [Fact]
-    public async Task Mermaid_evaluated_overload_accepts_an_operator_style()
+    public async Task Mermaid_EvaluatedOverload_AcceptsOperatorStyle_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(
             "a AND b",
@@ -335,8 +354,9 @@ public sealed class RuleTreeRenderingTests
         Assert.Contains("&&", mermaid);
     }
 
+    /// <summary>Mermaid output escapes double quotes in labels.</summary>
     [Fact]
-    public void Mermaid_output_escapes_double_quotes_in_labels()
+    public void Mermaid_Output_EscapesDoubleQuotesInLabels_Test()
     {
         OutlineNode node = Leaf("has \"quotes\" inside");
 
@@ -347,11 +367,12 @@ public sealed class RuleTreeRenderingTests
         Assert.DoesNotContain("[\"has \"quotes\" inside\"]", mermaid);
     }
 
+    /// <summary>Mermaid output sanitizes carriage returns and newlines in labels.</summary>
     [Theory]
     [InlineData("line one\r\nline two")]
     [InlineData("line one\rline two")]
     [InlineData("line one\nline two")]
-    public void Mermaid_output_sanitizes_carriage_returns_and_newlines_in_labels(string label)
+    public void Mermaid_Output_SanitizesNewlinesInLabels_Test(string label)
     {
         OutlineNode node = Leaf(label);
 

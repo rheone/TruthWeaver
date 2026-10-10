@@ -36,26 +36,29 @@ public sealed class KleeneOperatorTests
             { null, null, TruthValue.Unknown },
         };
 
+    /// <summary>AND matches the Kleene truth table.</summary>
     [Theory]
     [MemberData(nameof(AndTruthTable))]
-    public async Task And_matches_the_kleene_truth_table(bool? left, bool? right, TruthValue expected)
+    public async Task And_TruthTable_MatchesKleeneTable_Test(bool? left, bool? right, TruthValue expected)
     {
         Decision decision = await EvaluateBinaryAsync("a AND b", left, right);
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>OR matches the Kleene truth table.</summary>
     [Theory]
     [MemberData(nameof(OrTruthTable))]
-    public async Task Or_matches_the_kleene_truth_table(bool? left, bool? right, TruthValue expected)
+    public async Task Or_TruthTable_MatchesKleeneTable_Test(bool? left, bool? right, TruthValue expected)
     {
         Decision decision = await EvaluateBinaryAsync("a OR b", left, right);
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>NOT matches the Kleene truth table.</summary>
     [Theory]
     [InlineData(true, TruthValue.False)]
     [InlineData(false, TruthValue.True)]
-    public async Task Not_matches_the_kleene_truth_table(bool value, TruthValue expected)
+    public async Task Not_TruthTable_MatchesKleeneTable_Test(bool value, TruthValue expected)
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -74,8 +77,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>NOT of a faulting term is unknown, not true.</summary>
     [Fact]
-    public async Task Not_of_a_faulting_term_is_unknown_not_true()
+    public async Task Not_FaultingTerm_IsUnknownNotTrue_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -94,8 +98,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>NOT binds tighter than AND, which binds tighter than OR.</summary>
     [Fact]
-    public async Task Not_binds_tighter_than_and_which_binds_tighter_than_or()
+    public async Task Precedence_Operators_NotBindsTighterThanAndThanOr_Test()
     {
         // "NOT a AND b" must parse as "(NOT a) AND b": a=true -> NOT a=false -> AND anything=false.
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
@@ -116,8 +121,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>OR with a faulting operand and a true operand is true.</summary>
     [Fact]
-    public async Task Or_with_faulting_operand_and_true_operand_is_true()
+    public async Task Or_FaultingOperandAndTrue_IsTrue_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -137,8 +143,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>AND with a faulting operand and a false operand is false.</summary>
     [Fact]
-    public async Task And_with_faulting_operand_and_false_operand_is_false()
+    public async Task And_FaultingOperandAndFalse_IsFalse_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -158,8 +165,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>AND short circuits after the first false and records the skipped operands as not evaluated.</summary>
     [Fact]
-    public async Task And_short_circuits_after_first_false_and_records_not_evaluated_in_trace()
+    public async Task And_FirstFalse_ShortCircuitsAndRecordsNotEvaluated_Test()
     {
         List<string> invocationLog = [];
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
@@ -182,8 +190,9 @@ public sealed class KleeneOperatorTests
         Assert.Contains(decision.Trace.Entries, e => e.Text == "b" && e.NotEvaluated);
     }
 
+    /// <summary>OR short circuits after the first true.</summary>
     [Fact]
-    public async Task Or_short_circuits_after_first_true()
+    public async Task Or_FirstTrue_ShortCircuits_Test()
     {
         List<string> invocationLog = [];
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
@@ -205,8 +214,9 @@ public sealed class KleeneOperatorTests
         Assert.Equal(["a"], invocationLog);
     }
 
+    /// <summary>Sibling operands are evaluated in written order.</summary>
     [Fact]
-    public async Task Sibling_operands_are_evaluated_in_written_order()
+    public async Task Evaluation_SiblingOperands_RunInWrittenOrder_Test()
     {
         List<string> invocationLog = [];
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>

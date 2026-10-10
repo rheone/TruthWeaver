@@ -14,8 +14,9 @@ public sealed class LiteralConversionTryConvertArrayTests
 {
     private static readonly SourceSpan Span = new(0, 0);
 
+    /// <summary>TryConvert against an array kind with a non array literal fails without throwing.</summary>
     [Fact]
-    public void TryConvert_against_array_kind_with_non_array_raw_literal_fails_without_throwing()
+    public void TryConvert_ArrayKindNonArrayLiteral_FailsWithoutThrowing_Test()
     {
         RawLiteral raw = RawLiteral.OfNumber("1", Span);
 
@@ -25,8 +26,9 @@ public sealed class LiteralConversionTryConvertArrayTests
         Assert.Equal(default, value);
     }
 
+    /// <summary>TryConvert against an array kind with null elements fails without throwing.</summary>
     [Fact]
-    public void TryConvert_against_array_kind_with_null_elements_fails_without_throwing()
+    public void TryConvert_ArrayKindNullElements_FailsWithoutThrowing_Test()
     {
         RawLiteral raw = new(RawLiteralForm.Array, default, default, default, Span);
 
@@ -36,8 +38,9 @@ public sealed class LiteralConversionTryConvertArrayTests
         Assert.Equal(default, value);
     }
 
+    /// <summary>TryConvert against an array kind with a mismatched element fails and exposes no partial value.</summary>
     [Fact]
-    public void TryConvert_against_array_kind_with_a_mismatched_element_fails_and_exposes_no_partial_value()
+    public void TryConvert_ArrayKindMismatchedElement_FailsWithNoPartialValue_Test()
     {
         RawLiteral raw = RawLiteral.OfArray([RawLiteral.OfNumber("1", Span), RawLiteral.OfString("not-a-number", Span)], Span);
 

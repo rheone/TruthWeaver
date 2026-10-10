@@ -10,8 +10,9 @@ using YamlDotNet.RepresentationModel;
 
 public sealed class YamlLiteralRoundTripTests
 {
+    /// <summary>A Guid argument round trips through YAML as a quoted scalar.</summary>
     [Fact]
-    public void A_guid_argument_round_trips_through_yaml_as_a_quoted_scalar()
+    public void Literal_Guid_RoundTripsAsQuotedScalar_Test()
     {
         Guid id = Guid.NewGuid();
         RuleCompiler<YamlTestContext> compiler = new(
@@ -37,8 +38,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Contains($"\"{id}\"", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>A DateTimeOffset argument round trips through YAML as a quoted ISO 8601 scalar.</summary>
     [Fact]
-    public void A_datetimeoffset_argument_round_trips_through_yaml_as_a_quoted_iso8601_scalar()
+    public void Literal_DateTimeOffset_RoundTripsAsQuotedIso8601_Test()
     {
         DateTimeOffset cutoff = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         RuleCompiler<YamlTestContext> compiler = new(
@@ -64,8 +66,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A string array argument round trips through YAML, preserving order.</summary>
     [Fact]
-    public void A_string_array_argument_round_trips_through_yaml_preserving_order()
+    public void Literal_StringArray_RoundTripsPreservingOrder_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>
@@ -91,8 +94,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("hasAnyRole(roles: [\"A\", \"B\", \"C\"])", original.CanonicalText);
     }
 
+    /// <summary>A string argument with a quote round trips through YAML.</summary>
     [Fact]
-    public void A_string_argument_containing_a_quote_round_trips_through_yaml()
+    public void Literal_StringWithQuote_RoundTrips_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "V\"IP").Build()
@@ -106,8 +110,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("V\"IP", ReadRoleScalar(yaml));
     }
 
+    /// <summary>A string argument with a backslash round trips through YAML.</summary>
     [Fact]
-    public void A_string_argument_containing_a_backslash_round_trips_through_yaml()
+    public void Literal_StringWithBackslash_RoundTrips_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "C:\\Temp").Build()
@@ -121,8 +126,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("C:\\Temp", ReadRoleScalar(yaml));
     }
 
+    /// <summary>A string argument with a quote and a backslash round trips through YAML.</summary>
     [Fact]
-    public void A_string_argument_containing_both_a_quote_and_a_backslash_round_trips_through_yaml()
+    public void Literal_StringWithQuoteAndBackslash_RoundTrips_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "V\"\\IP").Build()
@@ -136,8 +142,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("V\"\\IP", ReadRoleScalar(yaml));
     }
 
+    /// <summary>A decimal argument round trips through YAML as a plain scalar.</summary>
     [Fact]
-    public void A_decimal_argument_round_trips_through_yaml_as_a_plain_scalar()
+    public void Literal_Decimal_RoundTripsAsPlainScalar_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>
@@ -163,8 +170,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("exceedsThreshold(threshold: 12.5)", original.CanonicalText);
     }
 
+    /// <summary>An Int64 array argument round trips through YAML, preserving order.</summary>
     [Fact]
-    public void An_int64_array_argument_round_trips_through_yaml_preserving_order()
+    public void Literal_Int64Array_RoundTripsPreservingOrder_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>
@@ -190,8 +198,9 @@ public sealed class YamlLiteralRoundTripTests
         Assert.Equal("hasAnyCode(codes: [1, 2, 3])", original.CanonicalText);
     }
 
+    /// <summary>A boolean array argument round trips through YAML, preserving order.</summary>
     [Fact]
-    public void A_boolean_array_argument_round_trips_through_yaml_preserving_order()
+    public void Literal_BooleanArray_RoundTripsPreservingOrder_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>

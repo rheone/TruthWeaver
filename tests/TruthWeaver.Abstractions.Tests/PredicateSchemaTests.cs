@@ -4,8 +4,9 @@ using TruthWeaver.Abstractions;
 
 public sealed class PredicateSchemaTests
 {
+    /// <summary>NoArguments creates a schema with an empty argument list.</summary>
     [Fact]
-    public void NoArguments_creates_a_schema_with_an_empty_argument_list()
+    public void NoArguments_Call_CreatesEmptyArgumentList_Test()
     {
         PredicateSchema schema = PredicateSchema.NoArguments("isManager", "Is Manager", "Is the current user a manager?");
 
@@ -15,8 +16,9 @@ public sealed class PredicateSchemaTests
         Assert.Empty(schema.Arguments);
     }
 
+    /// <summary>An argument schema defaults to required with no default value.</summary>
     [Fact]
-    public void An_argument_schema_defaults_to_required_with_no_default_value()
+    public void ArgumentSchema_Default_IsRequiredWithNoDefaultValue_Test()
     {
         PredicateArgumentSchema argument = new("role", "The role code to check for.", LiteralKind.String);
 
@@ -24,8 +26,9 @@ public sealed class PredicateSchemaTests
         Assert.Null(argument.Default);
     }
 
+    /// <summary>An optional argument schema carries its default value.</summary>
     [Fact]
-    public void An_optional_argument_schema_carries_its_default_value()
+    public void ArgumentSchema_Optional_CarriesDefaultValue_Test()
     {
         PredicateArgumentSchema argument = new(
             "count",

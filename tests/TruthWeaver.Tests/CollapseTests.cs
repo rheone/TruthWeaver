@@ -137,7 +137,7 @@ public sealed class CollapseTests
     [InlineData(TruthValue.True, true)]
     [InlineData(TruthValue.False, false)]
     [InlineData(TruthValue.Unknown, false)]
-    public async Task IsSatisfied_IsTrueOnlyForTrueWhateverPolicyIsApplied_Test(TruthValue input, bool expected)
+    public async Task IsSatisfied_TrueOnly_WhateverPolicyIsApplied_Test(TruthValue input, bool expected)
     {
         K3Rule rule = K3Rule.TryCreate("a", 1)!;
 

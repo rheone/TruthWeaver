@@ -42,6 +42,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Memoization** | Within one evaluation, a term identity runs at most once, however many places in the tree use it. It does not carry over to the next evaluation. |
 | **Operation** | Anything with its own document in the K3 reference: an operator, a cardinality function, a function or a result transformation. See [operations](strong-k3/specification/operations.md). |
 | **Operator** | One way to combine terms and sub-expressions, such as `AND` or `If`. The engine and its API say Operator. |
+| **Operator spelling** | The one printed spelling of an operator word in canonical text. Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case. The other call words, such as `ExactlyOne`, `AtLeast`, `If` and `IsTrue`, are upper camel case. See [case](rule-text.md#case). |
 | **Outline** | The view of a compiled rule as a tree of labels and descriptions, from `CompiledRule.Outline()`. |
 | **PARITY** | The n-ary operator that is `True` when an odd number of operands are `True`. It is not `ExactlyOne`. The two differ from three operands. See [PARITY](strong-k3/derived/parity.md). |
 | **Predicate** | A registered, reusable function that answers `True`, `False` or `Unknown`. A predicate is the function, not one call to it. See [terminology](strong-k3/specification/terminology.md#engine-terms). |

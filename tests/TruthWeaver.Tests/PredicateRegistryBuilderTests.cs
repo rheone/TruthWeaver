@@ -7,8 +7,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 09: duplicate predicate name registration is rejected, case-insensitively, for both registration overloads.</summary>
 public sealed class PredicateRegistryBuilderTests
 {
+    /// <summary>Registering two class based predicates under the same name throws.</summary>
     [Fact]
-    public void Registering_two_class_based_predicates_under_the_same_name_throws()
+    public void Register_TwoClassPredicatesSameName_Throws_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -19,8 +20,9 @@ public sealed class PredicateRegistryBuilderTests
         Assert.Contains("already registered", exception.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>Registering two lambda predicates under the same name throws.</summary>
     [Fact]
-    public void Registering_two_lambda_predicates_under_the_same_name_throws()
+    public void Register_TwoLambdaPredicatesSameName_Throws_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -31,8 +33,9 @@ public sealed class PredicateRegistryBuilderTests
         Assert.Contains("already registered", exception.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>Registering the same name with different casing is treated as a collision.</summary>
     [Fact]
-    public void Registering_the_same_name_with_different_casing_is_treated_as_a_collision()
+    public void Register_SameNameDifferentCasing_IsCollision_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
             .CreateBuilder()

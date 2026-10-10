@@ -37,8 +37,9 @@ public sealed class JsonTreeTests
     private const string WorkedExampleDsl =
         "hasRole(role: \"Y\") AND (hasTraining(training: \"Q\") OR hasTraining(training: \"Z\") OR (isManager XOR isDepartmentHead))";
 
+    /// <summary>The JSON worked example parses to a structure equal to the DSL form.</summary>
     [Fact]
-    public void Json_worked_example_parses_structurally_equal_to_the_dsl_form()
+    public void Parse_JsonWorkedExample_EqualsDslForm_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -48,13 +49,14 @@ public sealed class JsonTreeTests
         Assert.Equal(fromDsl.CanonicalText, fromJson.CanonicalText);
     }
 
+    /// <summary>The threshold family round trips through JSON.</summary>
     [Theory]
     [InlineData("AtLeast", "atLeast")]
     [InlineData("AtMost", "atMost")]
     [InlineData("GreaterThan", "greaterThan")]
     [InlineData("LessThan", "lessThan")]
     [InlineData("Exactly", "exactly")]
-    public void Threshold_family_round_trips_through_json(string dslKeyword, string jsonOpName)
+    public void RoundTrip_ThresholdFamily_ThroughJson_Test(string dslKeyword, string jsonOpName)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -75,8 +77,9 @@ public sealed class JsonTreeTests
         Assert.Contains($"\"op\":\"{jsonOpName}\"", compact, StringComparison.Ordinal);
     }
 
+    /// <summary>XNOR round trips through JSON.</summary>
     [Fact]
-    public void Xnor_round_trips_through_json()
+    public void RoundTrip_Xnor_ThroughJson_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -94,8 +97,9 @@ public sealed class JsonTreeTests
         );
     }
 
+    /// <summary>A compiled rule prints to JSON and reparses to a structurally equal tree.</summary>
     [Fact]
-    public void Compiled_rule_prints_to_json_and_reparses_to_a_structurally_equal_tree()
+    public void Print_CompiledRule_ReparsesToEqualTree_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> original = compiler.Compile(WorkedExampleDsl).CompiledRule!;
@@ -106,8 +110,9 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>DSL to tree to JSON to tree is structurally equal to DSL to tree.</summary>
     [Fact]
-    public void Dsl_to_ast_to_json_to_ast_is_structurally_equal_to_dsl_to_ast()
+    public void RoundTrip_DslJsonDsl_IsStructurallyEqual_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> fromDsl = compiler.Compile(WorkedExampleDsl).CompiledRule!;
@@ -117,12 +122,13 @@ public sealed class JsonTreeTests
         Assert.Equal(fromDsl.CanonicalText, roundTripped.CanonicalText);
     }
 
+    /// <summary>Malformed JSON produces a diagnostic, not an exception.</summary>
     [Theory]
     [InlineData("""{"op": "bogus", "operands": []}""")]
     [InlineData("""{"nothingRecognized": true}""")]
     [InlineData("""{"predicate": "isManager", "args": {"x": {"weird": 1}}}""")]
     [InlineData("not even json")]
-    public void Malformed_json_produces_a_diagnostic_not_an_exception(string json)
+    public void Parse_MalformedJson_ProducesDiagnosticNotException_Test(string json)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -132,6 +138,7 @@ public sealed class JsonTreeTests
         Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>Every distinct malformed tree branch raises its specific message.</summary>
     [Theory]
     [InlineData("not even json", "Malformed JSON:")]
     [InlineData("""{"nothingRecognized": true}""", "must have a 'const', 'predicate', or 'op' key")]
@@ -144,7 +151,7 @@ public sealed class JsonTreeTests
     [InlineData("""{"op": "bogus", "operands": []}""", "Unknown operator 'bogus'.")]
     [InlineData("""{"op": "atLeast", "operands": [{"const": true}]}""", "requires a numeric 'k'")]
     [InlineData("""{"op": "and", "operands": [1, 2]}""", "Expected a JSON object node but found")]
-    public void Every_distinct_malformed_tree_branch_raises_its_specific_message(string json, string expectedMessageSubstring)
+    public void Malformed_EveryBranch_RaisesSpecificMessage_Test(string json, string expectedMessageSubstring)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -158,8 +165,9 @@ public sealed class JsonTreeTests
         );
     }
 
+    /// <summary>A string argument with a quote round trips through JSON.</summary>
     [Fact]
-    public void A_string_argument_containing_a_quote_round_trips_through_json()
+    public void Print_StringWithQuote_RoundTripsThroughJson_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "V\"IP").Build()
@@ -174,8 +182,9 @@ public sealed class JsonTreeTests
         Assert.Equal("V\"IP", document.RootElement.GetProperty("args").GetProperty("role").GetString());
     }
 
+    /// <summary>A string argument with a backslash round trips through JSON.</summary>
     [Fact]
-    public void A_string_argument_containing_a_backslash_round_trips_through_json()
+    public void Print_StringWithBackslash_RoundTripsThroughJson_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "C:\\Temp").Build()
@@ -190,8 +199,9 @@ public sealed class JsonTreeTests
         Assert.Equal("C:\\Temp", document.RootElement.GetProperty("args").GetProperty("role").GetString());
     }
 
+    /// <summary>A string argument with a quote and a backslash round trips through JSON.</summary>
     [Fact]
-    public void A_string_argument_containing_both_a_quote_and_a_backslash_round_trips_through_json()
+    public void Print_StringWithQuoteAndBackslash_RoundTripsThroughJson_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "V\"\\IP").Build()
@@ -206,8 +216,9 @@ public sealed class JsonTreeTests
         Assert.Equal("V\"\\IP", document.RootElement.GetProperty("args").GetProperty("role").GetString());
     }
 
+    /// <summary>Compiling a JSON element subtree is structurally equal to compiling the same tree as standalone text.</summary>
     [Fact]
-    public void Compiling_a_json_element_subtree_is_structurally_equal_to_compiling_the_same_tree_as_standalone_text()
+    public void Compile_JsonSubtree_EqualsStandaloneText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         using JsonDocument document = JsonDocument.Parse(
@@ -227,8 +238,9 @@ public sealed class JsonTreeTests
         Assert.Equal(fromText.CanonicalText, fromElement.CanonicalText);
     }
 
+    /// <summary>Two sibling rule expressions in one document compile independently.</summary>
     [Fact]
-    public void Two_sibling_rule_expressions_in_one_document_compile_independently_with_no_cross_talk()
+    public void Compile_SiblingRulesInOneDocument_AreIndependent_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         using JsonDocument document = JsonDocument.Parse(
@@ -254,8 +266,9 @@ public sealed class JsonTreeTests
         );
     }
 
+    /// <summary>A malformed JSON element produces the same diagnostic as the equivalent standalone JSON text.</summary>
     [Fact]
-    public void A_malformed_json_element_produces_the_same_diagnostic_as_the_equivalent_standalone_json_text()
+    public void Parse_MalformedJsonElement_MatchesStandaloneDiagnostic_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         const string malformedJson = """{"nothingRecognized": true}""";
@@ -271,8 +284,9 @@ public sealed class JsonTreeTests
         );
     }
 
+    /// <summary>A decimal argument prints as a JSON number.</summary>
     [Fact]
-    public void A_decimal_argument_prints_as_a_json_number()
+    public void Print_DecimalArgument_IsJsonNumber_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -292,8 +306,9 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A boolean argument prints as a JSON boolean.</summary>
     [Fact]
-    public void A_boolean_argument_prints_as_a_json_boolean()
+    public void Print_BooleanArgument_IsJsonBoolean_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddBooleanArgPredicate("hasFlag", "flag", true).Build()
@@ -309,8 +324,9 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A Guid argument prints as a JSON string through ToString.</summary>
     [Fact]
-    public void A_guid_argument_prints_as_a_json_string_via_its_ToString()
+    public void Print_GuidArgument_IsJsonStringViaToString_Test()
     {
         Guid id = Guid.Parse("11111111-1111-1111-1111-111111111111");
         RuleCompiler<RuleTestContext> compiler = new(
@@ -328,8 +344,9 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A DateTimeOffset argument prints as a round trippable JSON string in the O format.</summary>
     [Fact]
-    public void A_datetimeoffset_argument_prints_as_a_round_trippable_o_format_json_string()
+    public void Print_DateTimeOffsetArgument_IsRoundTrippableJsonString_Test()
     {
         DateTimeOffset when = new(2024, 6, 1, 12, 30, 0, TimeSpan.Zero);
         RuleCompiler<RuleTestContext> compiler = new(
@@ -347,8 +364,9 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>An array argument prints as a JSON array through ArrayLiteralToNode.</summary>
     [Fact]
-    public void An_array_kind_argument_prints_as_a_json_array_via_ArrayLiteralToNode()
+    public void Print_ArrayArgument_IsJsonArrayViaArrayLiteralToNode_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>

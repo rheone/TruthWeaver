@@ -10,8 +10,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 09: compiler resource limits and <see cref="CompilationMode.Lenient"/>.</summary>
 public sealed class CompilerLimitsAndLenientModeTests
 {
+    /// <summary>The default options are the documented limits, in strict mode.</summary>
     [Fact]
-    public void Default_options_are_32_512_20_and_strict()
+    public void Defaults_Options_AreLimitsAndStrictMode_Test()
     {
         CompilerOptions defaults = CompilerOptions.Default;
 
@@ -21,8 +22,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(CompilationMode.Strict, defaults.Mode);
     }
 
+    /// <summary>A rule that exceeds the maximum depth is a compile error.</summary>
     [Fact]
-    public void Rule_exceeding_max_depth_is_a_compile_error()
+    public void Limits_ExceedingMaxDepth_IsCompileError_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -37,8 +39,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
 
+    /// <summary>A rule that exceeds the maximum node count is a compile error.</summary>
     [Fact]
-    public void Rule_exceeding_max_node_count_is_a_compile_error()
+    public void Limits_ExceedingMaxNodeCount_IsCompileError_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
         for (int i = 0; i < 60; i++)
@@ -55,8 +58,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
     }
 
+    /// <summary>A rule with more distinct terms than the analysis cap compiles and reports an information skip.</summary>
     [Fact]
-    public void Rule_with_more_distinct_terms_than_analysis_cap_compiles_and_reports_info_skip()
+    public void Limits_MoreTermsThanAnalysisCap_CompilesAndReportsInfo_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
         for (int i = 0; i < 5; i++)
@@ -75,8 +79,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(DiagnosticSeverity.Info, diagnostic.Severity);
     }
 
+    /// <summary>Lenient mode compiles an unregistered predicate to a permanently unknown term.</summary>
     [Fact]
-    public void Lenient_mode_compiles_an_unregistered_predicate_to_a_permanently_unknown_term()
+    public void Lenient_UnregisteredPredicate_CompilesToUnknownTerm_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
@@ -89,8 +94,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>An unknown term in lenient mode evaluates to unknown at runtime.</summary>
     [Fact]
-    public async Task Lenient_mode_unknown_term_evaluates_to_unknown_at_runtime()
+    public async Task Lenient_UnknownTerm_EvaluatesToUnknown_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
@@ -107,8 +113,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>Lenient mode compiles a heterogeneous array literal against an unregistered predicate without error.</summary>
     [Fact]
-    public void Lenient_mode_heterogeneous_array_literal_against_unregistered_predicate_compiles_without_error()
+    public void Lenient_HeterogeneousArray_CompilesWithoutError_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
@@ -121,8 +128,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>A heterogeneous array literal term in lenient mode evaluates to unknown at runtime.</summary>
     [Fact]
-    public async Task Lenient_mode_heterogeneous_array_literal_term_still_evaluates_to_unknown_at_runtime()
+    public async Task Lenient_HeterogeneousArray_EvaluatesToUnknown_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
@@ -154,8 +162,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(TruthValue.Unknown, constant.Value);
     }
 
+    /// <summary>Strict mode rejects the same rule text that lenient mode accepts.</summary>
     [Fact]
-    public void Strict_mode_rejects_the_identical_rule_text_lenient_mode_accepts()
+    public void Strict_IdenticalRuleText_IsRejectedWhereLenientAccepts_Test()
     {
         RuleCompiler<RuleTestContext> strictCompiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 

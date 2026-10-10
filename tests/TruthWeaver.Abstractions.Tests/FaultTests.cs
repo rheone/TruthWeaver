@@ -4,8 +4,9 @@ using TruthWeaver.Abstractions;
 
 public sealed class FaultTests
 {
+    /// <summary>A fault records the faulting term and its exception.</summary>
     [Fact]
-    public void Fault_records_the_faulting_term_and_its_exception()
+    public void Fault_Construction_RecordsTermAndException_Test()
     {
         TermIdentity term = new("hasRole", []);
         InvalidOperationException exception = new("boom");

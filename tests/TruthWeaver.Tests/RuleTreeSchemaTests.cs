@@ -119,9 +119,10 @@ public sealed class RuleTreeSchemaTests
         ];
     }
 
+    /// <summary>The valid fixture validates against the schema.</summary>
     [Theory]
     [MemberData(nameof(ValidFixtures))]
-    public void Valid_fixture_validates_against_the_schema(string json)
+    public void Schema_ValidFixture_ValidatesAgainstSchema_Test(string json)
     {
         using JsonDocument document = JsonDocument.Parse(json);
 
@@ -136,9 +137,10 @@ public sealed class RuleTreeSchemaTests
         );
     }
 
+    /// <summary>The invalid fixture fails schema validation.</summary>
     [Theory]
     [MemberData(nameof(InvalidFixtures))]
-    public void Invalid_fixture_fails_schema_validation(string json)
+    public void Schema_InvalidFixture_FailsValidation_Test(string json)
     {
         using JsonDocument document = JsonDocument.Parse(json);
 

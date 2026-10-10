@@ -10,8 +10,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 04: named arguments, term identity, and per-evaluation memoization.</summary>
 public sealed class ArgumentsAndMemoizationTests
 {
+    /// <summary>A term with a named argument evaluates correctly.</summary>
     [Fact]
-    public async Task Term_with_named_argument_evaluates_correctly()
+    public async Task Arguments_NamedArgument_EvaluatesCorrectly_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole();
 
@@ -26,8 +27,9 @@ public sealed class ArgumentsAndMemoizationTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A missing required argument is a compile error.</summary>
     [Fact]
-    public void Missing_required_argument_is_a_compile_error()
+    public void Arguments_MissingRequired_IsCompileError_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole();
 
@@ -40,8 +42,9 @@ public sealed class ArgumentsAndMemoizationTests
         );
     }
 
+    /// <summary>A type mismatched argument is a compile error.</summary>
     [Fact]
-    public void Type_mismatched_argument_is_a_compile_error()
+    public void Arguments_TypeMismatch_IsCompileError_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole();
 
@@ -54,8 +57,9 @@ public sealed class ArgumentsAndMemoizationTests
         );
     }
 
+    /// <summary>Argument order in the source text does not affect term identity.</summary>
     [Fact]
-    public void Argument_order_in_source_text_does_not_affect_identity()
+    public void Identity_ArgumentOrderInSource_DoesNotAffectIdentity_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -79,8 +83,9 @@ public sealed class ArgumentsAndMemoizationTests
         Assert.Equal(rule1.CanonicalText, rule2.CanonicalText);
     }
 
+    /// <summary>Argument values that differ only in case are distinct terms.</summary>
     [Fact]
-    public void Role_y_and_role_lowercase_y_are_distinct_terms()
+    public void Identity_ArgumentValuesDifferingInCase_AreDistinctTerms_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole();
 
@@ -90,8 +95,9 @@ public sealed class ArgumentsAndMemoizationTests
         Assert.NotEqual(upper.CanonicalText, lower.CanonicalText);
     }
 
+    /// <summary>An identical term referenced twice invokes its predicate once per evaluation.</summary>
     [Fact]
-    public async Task Identical_term_referenced_twice_invokes_predicate_exactly_once_per_evaluation()
+    public async Task Memoization_IdenticalTermTwice_InvokesPredicateOncePerEvaluation_Test()
     {
         List<string> invocationLog = [];
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole(invocationLog);
@@ -108,8 +114,9 @@ public sealed class ArgumentsAndMemoizationTests
         Assert.Single(invocationLog);
     }
 
+    /// <summary>Memoization does not persist across separate evaluations.</summary>
     [Fact]
-    public async Task Memoization_does_not_persist_across_separate_evaluations()
+    public async Task Memoization_SeparateEvaluations_DoesNotPersist_Test()
     {
         List<string> invocationLog = [];
         RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole(invocationLog);
@@ -129,8 +136,9 @@ public sealed class ArgumentsAndMemoizationTests
         Assert.Equal(2, invocationLog.Count);
     }
 
+    /// <summary>Array arguments with a different element order are distinct terms.</summary>
     [Fact]
-    public void Array_valued_arguments_with_different_element_order_are_distinct_terms()
+    public void Identity_ArrayElementOrder_ProducesDistinctTerms_Test()
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
             .CreateBuilder()

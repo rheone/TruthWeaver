@@ -5,8 +5,9 @@ using TruthWeaver.Abstractions;
 
 public class RegexPredicatesTests
 {
+    /// <summary>Matches returns true for a matching pattern.</summary>
     [Fact]
-    public async Task Matches_MatchingPattern_ReturnsTrue()
+    public async Task Matches_MatchingPattern_ReturnsTrue_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             RegexPredicates.Matches<TestContext>("matchesEmail", c => c.Value);
@@ -21,8 +22,9 @@ public class RegexPredicatesTests
         Assert.Equal("matchesEmail", schema.Name);
     }
 
+    /// <summary>Matches returns false for a non matching pattern.</summary>
     [Fact]
-    public async Task Matches_NonMatchingPattern_ReturnsFalse()
+    public async Task Matches_NonMatchingPattern_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             RegexPredicates.Matches<TestContext>("matchesEmail", c => c.Value);
@@ -48,8 +50,9 @@ public class RegexPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>Matches throws at evaluation time for an invalid pattern.</summary>
     [Fact]
-    public Task Matches_InvalidPattern_ThrowsAtEvaluationTime()
+    public Task Matches_InvalidPattern_ThrowsAtEvaluationTime_Test()
     {
         // ADR-0001's Kleene failure model: the predicate contract signals "cannot determine this" by
         // simply throwing, and the evaluator (not this package) is what turns that into Unknown. This
@@ -62,8 +65,9 @@ public class RegexPredicatesTests
         );
     }
 
+    /// <summary>Matches reuses a cached regex for a pattern used across calls.</summary>
     [Fact]
-    public async Task Matches_SamePatternReusedAcrossCalls_UsesCachedRegex()
+    public async Task Matches_SamePatternReusedAcrossCalls_UsesCachedRegex_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             RegexPredicates.Matches<TestContext>("matchesDigits", c => c.Value);

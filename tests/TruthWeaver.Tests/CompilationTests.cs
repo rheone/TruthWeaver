@@ -10,8 +10,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 02: the tracer bullet — compile and evaluate the smallest possible rule shapes.</summary>
 public sealed class CompilationTests
 {
+    /// <summary>A registered zero argument predicate evaluates to its registered value.</summary>
     [Fact]
-    public async Task Registered_zero_arg_predicate_evaluates_to_its_registered_value()
+    public async Task Compile_RegisteredZeroArgPredicate_EvaluatesToRegisteredValue_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -31,8 +32,9 @@ public sealed class CompilationTests
         Assert.True(decision.IsSatisfied);
     }
 
+    /// <summary>A registered zero argument predicate evaluates to false when registered as false.</summary>
     [Fact]
-    public async Task Registered_zero_arg_predicate_evaluates_to_false_when_registered_false()
+    public async Task Compile_RegisteredZeroArgPredicate_EvaluatesToRegisteredFalse_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -52,8 +54,9 @@ public sealed class CompilationTests
         Assert.False(decision.IsSatisfied);
     }
 
+    /// <summary>An unregistered predicate produces an error diagnostic with a span and a null compiled rule.</summary>
     [Fact]
-    public void Unregistered_predicate_produces_error_diagnostic_with_span_and_null_compiled_rule()
+    public void Compile_UnregisteredPredicate_ProducesErrorWithSpanAndNullRule_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder().Build();
         RuleCompiler<RuleTestContext> compiler = new(registry);
@@ -68,8 +71,9 @@ public sealed class CompilationTests
         Assert.Equal(new SourceSpan(0, "noSuchPredicate".Length), diagnostic.Span);
     }
 
+    /// <summary>An unrecognized escape sequence produces an error diagnostic and a null compiled rule.</summary>
     [Fact]
-    public void Unrecognized_escape_sequence_in_a_string_literal_produces_error_diagnostic_and_null_compiled_rule()
+    public void Compile_UnrecognizedEscape_ProducesErrorAndNullRule_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
@@ -85,10 +89,11 @@ public sealed class CompilationTests
         );
     }
 
+    /// <summary>A constant literal rule evaluates to the matching constant.</summary>
     [Theory]
     [InlineData("true", TruthValue.True)]
     [InlineData("false", TruthValue.False)]
-    public async Task Constant_literal_rule_evaluates_to_the_matching_constant(string dsl, TruthValue expected)
+    public async Task Compile_ConstantLiteral_EvaluatesToMatchingConstant_Test(string dsl, TruthValue expected)
     {
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 
@@ -103,8 +108,9 @@ public sealed class CompilationTests
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>A throwing predicate is absorbed as a fault and evaluation completes.</summary>
     [Fact]
-    public async Task Throwing_predicate_is_absorbed_as_a_fault_and_evaluation_completes()
+    public async Task Evaluate_ThrowingPredicate_IsAbsorbedAsFault_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()

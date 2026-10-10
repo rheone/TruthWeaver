@@ -9,8 +9,9 @@ using TruthWeaver.Yaml.Tests.TestSupport;
 
 public sealed class YamlRuleExtensionsTests
 {
+    /// <summary>CompileYaml compiles a single term.</summary>
     [Fact]
-    public void CompileYaml_compiles_a_single_term()
+    public void CompileYaml_SingleTerm_CompilesRule_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
@@ -22,8 +23,9 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal("isManager", result.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>PrintYaml and CompileYaml round trip a compiled rule.</summary>
     [Fact]
-    public void PrintYaml_and_CompileYaml_round_trip_a_compiled_rule()
+    public void PrintYaml_CompiledRule_RoundTripsThroughCompileYaml_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(
             PredicateRegistry<YamlTestContext>
@@ -40,8 +42,9 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>CompileYaml reports a diagnostic rather than throwing for an unknown predicate.</summary>
     [Fact]
-    public void CompileYaml_reports_a_diagnostic_rather_than_throwing_for_an_unknown_predicate()
+    public void CompileYaml_UnknownPredicate_ReportsDiagnostic_Test()
     {
         RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
 

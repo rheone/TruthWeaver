@@ -15,8 +15,9 @@ public sealed class LiteralConversionGuessTests
 {
     private static readonly SourceSpan Span = new(0, 0);
 
+    /// <summary>Guess on a boolean form returns the corresponding boolean value.</summary>
     [Fact]
-    public void Guess_on_boolean_form_returns_the_corresponding_boolean_value()
+    public void Guess_BooleanForm_ReturnsBooleanValue_Test()
     {
         RawLiteral raw = RawLiteral.OfBoolean(true, Span);
 
@@ -26,8 +27,9 @@ public sealed class LiteralConversionGuessTests
         Assert.True(value.AsBoolean());
     }
 
+    /// <summary>Guess on a number with a decimal point returns a decimal value.</summary>
     [Fact]
-    public void Guess_on_number_form_containing_a_decimal_point_returns_a_decimal_value()
+    public void Guess_NumberWithDecimalPoint_ReturnsDecimalValue_Test()
     {
         RawLiteral raw = RawLiteral.OfNumber("1.5", Span);
 
@@ -37,8 +39,9 @@ public sealed class LiteralConversionGuessTests
         Assert.Equal(1.5m, value.AsDecimal());
     }
 
+    /// <summary>Guess on an empty array form returns an empty string array.</summary>
     [Fact]
-    public void Guess_on_empty_array_form_returns_an_empty_string_array()
+    public void Guess_EmptyArrayForm_ReturnsEmptyStringArray_Test()
     {
         RawLiteral raw = RawLiteral.OfArray([], Span);
 

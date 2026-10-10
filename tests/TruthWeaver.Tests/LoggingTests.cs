@@ -11,8 +11,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 13: structured logging via <see cref="ILogger{TCategoryName}"/>.</summary>
 public sealed class LoggingTests
 {
+    /// <summary>A faulting predicate logs a structured warning with the term and the exception.</summary>
     [Fact]
-    public async Task Faulting_predicate_logs_a_structured_warning_with_term_and_exception()
+    public async Task Evaluate_FaultingPredicate_LogsStructuredWarning_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(
@@ -33,8 +34,9 @@ public sealed class LoggingTests
         Assert.IsType<InvalidOperationException>(call.Exception);
     }
 
+    /// <summary>Compiling a rule with a diagnostic logs one structured event per diagnostic.</summary>
     [Fact]
-    public void Compiling_a_rule_with_a_diagnostic_logs_one_structured_event_per_diagnostic()
+    public void Compile_DiagnosticRule_LogsOneEventPerDiagnostic_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(
@@ -50,8 +52,9 @@ public sealed class LoggingTests
         Assert.Equal(DiagnosticSeverity.Error, call.Field("Severity"));
     }
 
+    /// <summary>Compiling a rule with a warning diagnostic logs at warning level.</summary>
     [Fact]
-    public void Compiling_a_rule_with_a_warning_diagnostic_logs_at_warning_level()
+    public void Compile_WarningDiagnostic_LogsAtWarningLevel_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(
@@ -67,8 +70,9 @@ public sealed class LoggingTests
         Assert.Equal(DiagnosticSeverity.Warning, call.Field("Severity"));
     }
 
+    /// <summary>Compiling a rule with an information diagnostic logs at information level.</summary>
     [Fact]
-    public void Compiling_a_rule_with_an_info_diagnostic_logs_at_information_level()
+    public void Compile_InfoDiagnostic_LogsAtInformationLevel_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(
@@ -85,8 +89,9 @@ public sealed class LoggingTests
         Assert.Equal(DiagnosticSeverity.Info, call.Field("Severity"));
     }
 
+    /// <summary>A rule swap notification logs a distinct structured event.</summary>
     [Fact]
-    public void Rule_swap_notification_logs_a_distinct_structured_event()
+    public void RuleSwap_Notification_LogsDistinctStructuredEvent_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(
@@ -104,8 +109,9 @@ public sealed class LoggingTests
         Assert.NotEqual(0, call.EventId.Id);
     }
 
+    /// <summary>A rule swap notification without an identifier falls back to unnamed.</summary>
     [Fact]
-    public void Rule_swap_notification_without_an_identifier_falls_back_to_unnamed()
+    public void RuleSwap_NoIdentifier_FallsBackToUnnamed_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
         RuleCompiler<RuleTestContext> compiler = new(

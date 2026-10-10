@@ -4,8 +4,9 @@ using TruthWeaver.Abstractions;
 
 public sealed class TraceNodeTests
 {
+    /// <summary>An evaluated leaf carries its result and no children.</summary>
     [Fact]
-    public void An_evaluated_leaf_carries_its_result_and_no_children()
+    public void Construction_EvaluatedLeaf_CarriesResultAndNoChildren_Test()
     {
         TraceNode leaf = new("isManager", TruthValue.True, NotEvaluated: false, Children: []);
 
@@ -13,8 +14,9 @@ public sealed class TraceNodeTests
         Assert.Empty(leaf.Children);
     }
 
+    /// <summary>An interior node mirrors its operands results.</summary>
     [Fact]
-    public void An_interior_node_carries_its_operands_result_mirror()
+    public void Construction_InteriorNode_MirrorsOperandResults_Test()
     {
         TraceNode left = new("isManager", TruthValue.True, false, []);
         TraceNode right = new("isSuspended", TruthValue.False, false, []);
@@ -29,8 +31,9 @@ public sealed class TraceNodeTests
         Assert.Equal([left, right], and.Children);
     }
 
+    /// <summary>A short circuited node has no result and no children.</summary>
     [Fact]
-    public void A_short_circuited_node_has_no_result_and_no_children()
+    public void Construction_ShortCircuitedNode_HasNoResultOrChildren_Test()
     {
         TraceNode skipped = new("isSuspended", Result: null, NotEvaluated: true, Children: []);
 
