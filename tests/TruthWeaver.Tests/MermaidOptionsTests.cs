@@ -196,7 +196,12 @@ public sealed class MermaidOptionsTests
     public void Print_TwoLineTermLabelsWithShapesAndTrace_ComposesAllThree_Test()
     {
         OutlineNode root = WithArguments();
-        TraceNode trace = new("AND", TruthValue.True, false, [new("Has Crust", TruthValue.True, false, [])]);
+        TraceNode trace = new(
+            "AND",
+            TruthValue.True,
+            false,
+            new EquatableArray<TraceNode>([new("Has Crust", TruthValue.True, false, EquatableArray<TraceNode>.Empty)])
+        );
 
         string mermaid = MermaidTreePrinter.Print(
             root,

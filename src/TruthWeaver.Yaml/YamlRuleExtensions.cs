@@ -1,5 +1,6 @@
 namespace TruthWeaver.Yaml;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
@@ -57,6 +58,8 @@ public static class YamlRuleExtensions
         IReadOnlyList<Diagnostic> diagnostics
     )
     {
-        return root is null ? new CompilationResult<TContext>(null, diagnostics) : compiler.CompileFromNode(root, diagnostics);
+        return root is null
+            ? new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics))
+            : compiler.CompileFromNode(root, diagnostics);
     }
 }

@@ -54,7 +54,12 @@ internal sealed class Evaluator<TContext>(
     {
         EvalResult result = await this.EvalAsync(root).ConfigureAwait(false);
         TruthWeaverMetrics.EvaluationPerformed();
-        return new Decision(result.Value, this.faults, new Trace(this.trace), result.Node);
+        return new Decision(
+            result.Value,
+            new EquatableArray<Fault>(this.faults),
+            new Trace(new EquatableArray<TraceEntry>(this.trace)),
+            result.Node
+        );
     }
 
     private static string NodeText(Expression node)
@@ -149,7 +154,10 @@ internal sealed class Evaluator<TContext>(
         {
             string skippedDescription = NodeText(node);
             this.trace.Add(new TraceEntry(skippedDescription, null, true));
-            return new EvalResult(TruthValue.Unknown, new TraceNode(skippedDescription, null, true, []));
+            return new EvalResult(
+                TruthValue.Unknown,
+                new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
+            );
         }
 
         this.cancellationToken.ThrowIfCancellationRequested();
@@ -160,7 +168,10 @@ internal sealed class Evaluator<TContext>(
                 TruthValue constantValue = c.Value;
                 string constantDescription = NodeText(node);
                 this.trace.Add(new TraceEntry(constantDescription, constantValue, false));
-                return new EvalResult(constantValue, new TraceNode(constantDescription, constantValue, false, []));
+                return new EvalResult(
+                    constantValue,
+                    new TraceNode(constantDescription, constantValue, false, EquatableArray<TraceNode>.Empty)
+                );
             case TermExpression t:
                 return await this.EvalTermAsync(t).ConfigureAwait(false);
             case NotExpression:
@@ -168,7 +179,7 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 EvalResult operand = await this.EvalAsync(shape.Operands[0]).ConfigureAwait(false);
                 TruthValue value = K3Logic.Not(operand.Value);
-                return new EvalResult(value, new TraceNode("NOT", value, false, [operand.Node]));
+                return new EvalResult(value, new TraceNode("NOT", value, false, new EquatableArray<TraceNode>([operand.Node])));
             }
 
             case AndExpression:
@@ -216,7 +227,10 @@ internal sealed class Evaluator<TContext>(
             {
                 EvalResult operand = await this.EvalAsync(inspection.Operand).ConfigureAwait(false);
                 TruthValue value = K3Logic.Inspect(inspection.Kind, operand.Value);
-                return new EvalResult(value, new TraceNode(inspection.Kind.ToString(), value, false, [operand.Node]));
+                return new EvalResult(
+                    value,
+                    new TraceNode(inspection.Kind.ToString(), value, false, new EquatableArray<TraceNode>([operand.Node]))
+                );
             }
 
             case IfExpression ifNode:
@@ -227,7 +241,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Xor(results[0].Value, results[1].Value);
-                return new EvalResult(value, new TraceNode("XOR", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("XOR", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case EquivalentExpression:
@@ -235,7 +252,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Equivalent(results[0].Value, results[1].Value);
-                return new EvalResult(value, new TraceNode("EQUIVALENT", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("EQUIVALENT", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case ImpliesExpression:
@@ -243,7 +263,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Implies(results[0].Value, results[1].Value);
-                return new EvalResult(value, new TraceNode("IMPLIES", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("IMPLIES", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case NandExpression:
@@ -251,7 +274,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Nand(results[0].Value, results[1].Value);
-                return new EvalResult(value, new TraceNode("NAND", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("NAND", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case NorExpression:
@@ -259,7 +285,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Nor(results[0].Value, results[1].Value);
-                return new EvalResult(value, new TraceNode("NOR", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("NOR", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case ParityExpression:
@@ -267,7 +296,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Parity([.. results.Select(r => r.Value)]);
-                return new EvalResult(value, new TraceNode("PARITY", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("PARITY", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case AnyExpression:
@@ -276,7 +308,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = EvaluateThreshold(ThresholdComparison.AtLeast, 1, [.. results.Select(r => r.Value)]);
-                return new EvalResult(value, new TraceNode("ANY", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("ANY", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case AllExpression:
@@ -289,7 +324,10 @@ internal sealed class Evaluator<TContext>(
                     results.Count,
                     [.. results.Select(r => r.Value)]
                 );
-                return new EvalResult(value, new TraceNode("ALL", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("ALL", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case NoneExpression:
@@ -298,7 +336,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = EvaluateThreshold(ThresholdComparison.AtMost, 0, [.. results.Select(r => r.Value)]);
-                return new EvalResult(value, new TraceNode("NONE", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("NONE", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case ExactlyOneExpression:
@@ -308,7 +349,10 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = EvaluateThreshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
-                return new EvalResult(value, new TraceNode("ExactlyOne", value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode("ExactlyOne", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case BetweenExpression bt:
@@ -322,7 +366,10 @@ internal sealed class Evaluator<TContext>(
                     EvaluateThreshold(ThresholdComparison.AtMost, bt.Max, operandValues)
                 );
                 string description = NodeText(node);
-                return new EvalResult(value, new TraceNode(description, value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode(description, value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             case ThresholdExpression th:
@@ -333,7 +380,10 @@ internal sealed class Evaluator<TContext>(
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = EvaluateThreshold(th.Comparison, th.K, [.. results.Select(r => r.Value)]);
                 string description = $"{shape.OpName}({shape.K})";
-                return new EvalResult(value, new TraceNode(description, value, false, [.. results.Select(r => r.Node)]));
+                return new EvalResult(
+                    value,
+                    new TraceNode(description, value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                );
             }
 
             default:
@@ -369,7 +419,10 @@ internal sealed class Evaluator<TContext>(
             // No branch can be chosen: the answer is only certain when both branches agree on a definite value.
             _ => whenTrue.Value == whenFalse.Value ? whenTrue.Value : TruthValue.Unknown,
         };
-        return new EvalResult(value, new TraceNode("If", value, false, [condition.Node, whenTrue.Node, whenFalse.Node]));
+        return new EvalResult(
+            value,
+            new TraceNode("If", value, false, new EquatableArray<TraceNode>([condition.Node, whenTrue.Node, whenFalse.Node]))
+        );
     }
 
     /// <summary>Records <paramref name="node"/> as not evaluated in the trace and trace tree.</summary>
@@ -377,7 +430,10 @@ internal sealed class Evaluator<TContext>(
     {
         string skippedDescription = NodeText(node);
         this.trace.Add(new TraceEntry(skippedDescription, null, true));
-        return new EvalResult(TruthValue.Unknown, new TraceNode(skippedDescription, null, true, []));
+        return new EvalResult(
+            TruthValue.Unknown,
+            new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
+        );
     }
 
     /// <summary>
@@ -405,7 +461,7 @@ internal sealed class Evaluator<TContext>(
             {
                 string skippedDescription = NodeText(operand);
                 this.trace.Add(new TraceEntry(skippedDescription, null, true));
-                children.Add(new TraceNode(skippedDescription, null, true, []));
+                children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
                 continue;
             }
 
@@ -418,7 +474,10 @@ internal sealed class Evaluator<TContext>(
             }
         }
 
-        return new EvalResult(accumulator, new TraceNode(description, accumulator, false, children));
+        return new EvalResult(
+            accumulator,
+            new TraceNode(description, accumulator, false, new EquatableArray<TraceNode>(children))
+        );
     }
 
     private async ValueTask<IReadOnlyList<EvalResult>> EvalAllAsync(IReadOnlyList<Expression> operands)
@@ -438,7 +497,10 @@ internal sealed class Evaluator<TContext>(
         if (term.IsUnknownPredicate)
         {
             this.trace.Add(new TraceEntry(description, TruthValue.Unknown, false));
-            return new EvalResult(TruthValue.Unknown, new TraceNode(description, TruthValue.Unknown, false, []));
+            return new EvalResult(
+                TruthValue.Unknown,
+                new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
+            );
         }
 
         if (this.memo.TryGetValue(term.Identity, out TruthValue cached))
@@ -446,14 +508,14 @@ internal sealed class Evaluator<TContext>(
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
             description = this.Annotated(term.Identity, description);
             this.trace.Add(new TraceEntry(description, cached, false));
-            return new EvalResult(cached, new TraceNode(description, cached, false, []));
+            return new EvalResult(cached, new TraceNode(description, cached, false, EquatableArray<TraceNode>.Empty));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
         this.memo[term.Identity] = result;
         description = this.Annotated(term.Identity, description);
         this.trace.Add(new TraceEntry(description, result, false));
-        return new EvalResult(result, new TraceNode(description, result, false, []));
+        return new EvalResult(result, new TraceNode(description, result, false, EquatableArray<TraceNode>.Empty));
     }
 
     /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by a note for each array reference that matched no node.</summary>

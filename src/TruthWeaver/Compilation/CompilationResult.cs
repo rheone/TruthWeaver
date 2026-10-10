@@ -1,6 +1,7 @@
 namespace TruthWeaver.Compilation;
 
 using System.Diagnostics.CodeAnalysis;
+using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 
@@ -12,7 +13,7 @@ using TruthWeaver.Evaluation;
 /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
 /// <param name="CompiledRule">The compiled rule, or <see langword="null"/> if compilation failed.</param>
 /// <param name="Diagnostics">Every diagnostic raised while parsing, validating, and analyzing.</param>
-public sealed record CompilationResult<TContext>(CompiledRule<TContext>? CompiledRule, IReadOnlyList<Diagnostic> Diagnostics)
+public sealed record CompilationResult<TContext>(CompiledRule<TContext>? CompiledRule, EquatableArray<Diagnostic> Diagnostics)
 {
     /// <summary>
     /// Gets the compiled rule, or <see langword="null"/> if compilation failed. It is the same value as

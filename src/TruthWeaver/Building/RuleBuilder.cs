@@ -636,7 +636,7 @@ public abstract class RuleBuilder
         this.CollectProblems(TreePath.Root, problems);
         if (problems.Count > 0)
         {
-            return new CompilationResult<TContext>(null, problems);
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(problems));
         }
 
         // CompileJson(JsonElement), not CompileJson(string): the element overload never re-reads generated text

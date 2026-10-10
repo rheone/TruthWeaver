@@ -678,7 +678,7 @@ public sealed class CompiledRule<TContext>
 
         return result with
         {
-            Diagnostics = warnings,
+            Diagnostics = new EquatableArray<Diagnostic>(warnings),
         };
     }
 
@@ -692,7 +692,7 @@ public sealed class CompiledRule<TContext>
         {
             return new CompilationResult<TContext>(
                 new CompiledRule<TContext>(tree, this.registry, this.logger, this.options),
-                []
+                EquatableArray<Diagnostic>.Empty
             );
         }
 
@@ -707,6 +707,6 @@ public sealed class CompiledRule<TContext>
                 "Raise the maxNodeCount argument or CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
             )
         );
-        return new CompilationResult<TContext>(null, [diagnostic]);
+        return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>([diagnostic]));
     }
 }

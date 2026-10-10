@@ -24,7 +24,7 @@ public sealed class RuleRenderTreeAlignmentTests
             "AND",
             TruthValue.True,
             NotEvaluated: false,
-            [new TraceNode("a", TruthValue.True, false, [])]
+            new EquatableArray<TraceNode>([new TraceNode("a", TruthValue.True, false, EquatableArray<TraceNode>.Empty)])
         );
 
         Assert.Throws<InvalidOperationException>(() => RuleRenderTree.Build(description, evaluated));
@@ -42,7 +42,10 @@ public sealed class RuleRenderTreeAlignmentTests
             "AND",
             TruthValue.True,
             NotEvaluated: false,
-            [new TraceNode("a", TruthValue.True, false, []), new TraceNode("b", TruthValue.True, false, [])]
+            new EquatableArray<TraceNode>([
+                new TraceNode("a", TruthValue.True, false, EquatableArray<TraceNode>.Empty),
+                new TraceNode("b", TruthValue.True, false, EquatableArray<TraceNode>.Empty),
+            ])
         );
 
         RenderNode render = RuleRenderTree.Build(description, evaluated);

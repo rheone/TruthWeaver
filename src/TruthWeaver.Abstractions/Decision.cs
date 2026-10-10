@@ -23,7 +23,7 @@ using System.Diagnostics;
 /// that shows the whole rule, the path actually taken, and the parts left out.
 /// </param>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
+public sealed record Decision(TruthValue Result, EquatableArray<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
 {
     /// <summary>
     /// Gets a value indicating whether this decision is satisfied. <see langword="true"/> only when

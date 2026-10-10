@@ -140,7 +140,7 @@ public sealed class RuleCompiler<TContext>(
         {
             List<Diagnostic> located = LocateInJson(parseDiagnostics, jsonText);
             this.LogDiagnostics(located);
-            return new CompilationResult<TContext>(null, located);
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(located));
         }
 
         return this.CompileNode(root, parseDiagnostics, jsonText);
@@ -157,7 +157,7 @@ public sealed class RuleCompiler<TContext>(
         {
             diagnostics = LocateInJson(diagnostics, jsonText);
             this.LogDiagnostics(diagnostics);
-            return new CompilationResult<TContext>(null, diagnostics);
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
         (Expression? tree, IReadOnlyList<Diagnostic> validationDiagnostics) = RuleNodeCompiler<TContext>.Compile(
@@ -182,7 +182,7 @@ public sealed class RuleCompiler<TContext>(
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         CompiledRule<TContext>? compiled =
             !hasErrors && tree is not null ? new CompiledRule<TContext>(tree, this.registry, this.logger, this.options) : null;
-        return new CompilationResult<TContext>(compiled, diagnostics);
+        return new CompilationResult<TContext>(compiled, new EquatableArray<Diagnostic>(diagnostics));
     }
 
     private void LogDiagnostics(IReadOnlyList<Diagnostic> diagnostics)

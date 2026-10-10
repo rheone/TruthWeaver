@@ -76,7 +76,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveNoFaults_WithFaults_Throws()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault()]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault()]));
 
         Assert.Throws<DecisionAssertionException>(() => decision.Should().HaveNoFaults());
     }
@@ -84,7 +84,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveFault_WithFaults_DoesNotThrow()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault()]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault()]));
 
         decision.Should().HaveFault();
     }
@@ -100,7 +100,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveFaultCount_MatchingCount_DoesNotThrow()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault(), SampleFault()]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault(), SampleFault()]));
 
         decision.Should().HaveFaultCount(2);
     }
@@ -108,7 +108,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveFaultCount_MismatchedCount_Throws()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault()]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault()]));
 
         Assert.Throws<DecisionAssertionException>(() => decision.Should().HaveFaultCount(2));
     }
@@ -116,7 +116,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveFaultForPredicate_MatchingPredicateName_DoesNotThrow()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault("hasRole")]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault("hasRole")]));
 
         decision.Should().HaveFaultForPredicate("hasRole");
     }
@@ -124,7 +124,7 @@ public sealed class DecisionAssertionsTests
     [Fact]
     public void HaveFaultForPredicate_NoMatchingPredicateName_Throws()
     {
-        Decision decision = new(TruthValue.Unknown, [SampleFault("hasRole")]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([SampleFault("hasRole")]));
 
         Assert.Throws<DecisionAssertionException>(() => decision.Should().HaveFaultForPredicate("isManager"));
     }

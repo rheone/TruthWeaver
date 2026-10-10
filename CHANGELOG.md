@@ -134,6 +134,14 @@ copyright line reads 2026.
 
 ### Changed
 
+- **Breaking:** the list-valued members of `Decision` (`Faults`), `Trace` (`Entries`), `TraceNode` (`Children`) and
+  `CompilationResult<TContext>` (`Diagnostics`) are `EquatableArray<T>` instead of `IReadOnlyList<T>`
+  (least-surprise-normalization 28), so two decisions from identical evaluations, two identical compiles, and two
+  equal traces now compare equal and share a hash code, instead of the reference equality a plain list gave two
+  separately-allocated results. `EquatableArray<T>` still implements `IReadOnlyList<T>`, so reading a member (`.Count`,
+  indexing, `foreach`, LINQ) is unaffected. Migration: a caller that passes a list literal or an existing
+  `List<T>`/array positionally to one of these constructors, or in a `with` expression, wraps it in
+  `new EquatableArray<T>(...)`; an empty collection expression (`[]`) still compiles unchanged.
 - The `end` and `duration` arguments of `DateTimePredicates.InTimeWindow` and `NotInTimeWindow` are optional with no
   default, and an omitted one means "not given". They defaulted to empty text. **Breaking:** `end: ""` and
   `duration: ""` are now `TRE0026` compile errors (an empty text is not a time of day or a duration), and a schema or

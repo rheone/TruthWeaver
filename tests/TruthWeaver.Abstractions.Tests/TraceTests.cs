@@ -28,8 +28,23 @@ public sealed class TraceTests
         TraceEntry first = new("isManager", TruthValue.True, false);
         TraceEntry second = new("isSuspended", null, true);
 
-        Trace trace = new([first, second]);
+        Trace trace = new(new EquatableArray<TraceEntry>([first, second]));
 
         Assert.Equal([first, second], trace.Entries);
+    }
+
+    /// <summary>
+    /// <see cref="Trace.Entries"/> is an <see cref="EquatableArray{T}"/> (ticket 28), so two traces built from
+    /// separately-allocated but element-wise equal entry lists compare equal and share a hash code, instead of the
+    /// reference equality a plain <see cref="IReadOnlyList{T}"/> member would give two different lists.
+    /// </summary>
+    [Fact]
+    public void Trace_TwoInstancesWithEqualEntries_AreEqual_Test()
+    {
+        Trace first = new(new EquatableArray<TraceEntry>([new TraceEntry("isManager", TruthValue.True, false)]));
+        Trace second = new(new EquatableArray<TraceEntry>([new TraceEntry("isManager", TruthValue.True, false)]));
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
     }
 }
