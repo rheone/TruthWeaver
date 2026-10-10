@@ -111,6 +111,13 @@ public sealed class TwinNullComplementTests
                 () => RegexPredicates.NotMatches<Selections>("t", c => c.Text),
                 Args(("pattern", LiteralValue.OfString("^a")))
             ),
+            ["Regex.MatchesIgnoreCase/NotMatchesIgnoreCase"] = new(
+                nb => RegexPredicates.MatchesIgnoreCase<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => RegexPredicates.NotMatchesIgnoreCase<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => RegexPredicates.MatchesIgnoreCase<Selections>("p", c => c.Text),
+                () => RegexPredicates.NotMatchesIgnoreCase<Selections>("t", c => c.Text),
+                Args(("pattern", LiteralValue.OfString("^a")))
+            ),
             ["Collection.Contains/NotContains"] = new(
                 nb => CollectionPredicates.Contains<Selections>("p", c => c.Items, nullBehavior: nb),
                 nb => CollectionPredicates.NotContains<Selections>("t", c => c.Items, nullBehavior: nb),

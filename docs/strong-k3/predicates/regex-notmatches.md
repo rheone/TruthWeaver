@@ -56,21 +56,24 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 | `codeNotMatches(pattern: "[0-9]+")` | `code = "abc123"` | `False` | The pattern is not anchored, so it matches the digits inside the string. A match makes `NotMatches` `False`. |
 | `codeNotMatches(pattern: "^[0-9]+$")` | `code = "abc123"` | `True` | The anchors require the whole string to be digits, so there is no match. |
 | `codeNotMatches(pattern: "(?i)^ab")` | `code = "ABC"` | `False` | The inline option `(?i)` ignores case, so there is a match. |
-| `codeNotMatches(pattern: "(")` | `code = "anything"` | `Unknown` | The pattern is not valid. The predicate faults, and a fault answers `Unknown`. |
-| `codeNotMatches(pattern: "(")` | `code = null` | `Unknown` | A null selected value answers `Unknown` before the engine reads the pattern, so there is no fault. |
+| `codeNotMatches(pattern: "(")` | `code = "anything"` | Compile error | The pattern is a literal and is not valid, so the rule does not compile (`TRE0026`). |
+| `codeNotMatches(pattern: from("request", "$.pattern"))` | `code = "anything"`, `request.pattern = "("` | `Unknown` | The pattern comes from a data source and is not valid. The predicate faults, and a fault answers `Unknown`. |
+| `codeNotMatches(pattern: from("request", "$.pattern"))` | `code = null`, `request.pattern = "("` | `Unknown` | A null selected value answers `Unknown` before the engine reads the pattern, so there is no fault. |
 | `codeNotMatches(pattern: "^[A-Z]{2}[0-9]{4}$")` | `code = null` | `Unknown` | A null selected value is `Unknown` by default. |
 
 ## Edge cases
 
 - The match is a search, not a full match. Add `^` and `$` to require the whole string to match.
-- Case is significant. The inline option `(?i)` at the start of the pattern ignores case.
-- The compiler does not check the pattern. An invalid pattern faults when the rule evaluates: the answer is `Unknown` and the decision records one fault. `Matches` and `NotMatches` both answer `Unknown` in this case.
+- Case is significant. To ignore case, use [NotMatchesIgnoreCase](regex-notmatchesignorecase.md), or start the pattern with the inline option `(?i)`.
+- The compiler checks a pattern that is a literal. An invalid literal pattern is a `TRE0026` error and the rule does not compile.
+- A pattern from a data source is checked when the rule evaluates. An invalid pattern faults: the answer is `Unknown` and the decision records one fault. `Matches` and `NotMatches` both answer `Unknown` in this case.
 - A match attempt that takes longer than one second faults in the same way.
-- The engine compiles each distinct pattern once and reuses it for every later evaluation.
+- The engine compiles each distinct pattern once and reuses it for every later evaluation. The cache keeps at most 256 patterns. When it is full, the next new pattern clears it, and the patterns it held are compiled again when they are used.
 
 ## Related predicates
 
 - [Matches](regex-matches.md) is the exact complement of this predicate.
+- [NotMatchesIgnoreCase](regex-notmatchesignorecase.md) ignores case.
 - [NotStartsWith](string-notstartswith.md) tests a fixed prefix.
 - [NotEndsWith](string-notendswith.md) tests a fixed suffix.
 - [NotContains](string-notcontains.md) tests a fixed substring.

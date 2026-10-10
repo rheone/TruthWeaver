@@ -134,6 +134,22 @@ copyright line reads 2026.
 
 ### Changed
 
+- The `end` and `duration` arguments of `DateTimePredicates.InTimeWindow` and `NotInTimeWindow` are optional with no
+  default, and an omitted one means "not given". They defaulted to empty text. **Breaking:** `end: ""` and
+  `duration: ""` are now `TRE0026` compile errors (an empty text is not a time of day or a duration), and a schema or
+  `PredicateArguments` built by hand no longer carries the empty default. Migration: omit the argument instead of passing
+  `""`. `PredicateArguments` takes an optional `deferred` set and has `IsDeferred(name)`, and the compiler passes the names of
+  the data-source arguments to `PredicateSchema.ArgumentValidator`, so a validator can tell an omitted argument from one that
+  a data source supplies.
+- `RegexPredicates.MatchesIgnoreCase` and `NotMatchesIgnoreCase` are new: `Matches` and `NotMatches` with
+  `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`. The pattern cache of `RegexPredicates` is now bounded: each
+  cache (case-sensitive and case-insensitive) holds 256 patterns and clears itself when the next new pattern would
+  exceed that. Compiled patterns are no longer kept for the life of the process. **Breaking:** a literal `pattern`
+  argument of `Matches`, `NotMatches`, `MatchesIgnoreCase` or `NotMatchesIgnoreCase` that is not a valid regular
+  expression is now a `TRE0026` compile error at the call (rule text, JSON, YAML and `RuleBuilder`), and `Compile`
+  returns no rule. It was an evaluation-time fault (`Unknown` plus a `Fault`). A pattern that a data source supplies is
+  still checked at evaluation. Migration: fix the pattern, or move it to a data source if the fault is intended.
+  A pattern that began with `(?i)` can use `MatchesIgnoreCase` instead.
 - `RuleBuilder.Compile` now compiles its rendered tree through `RuleCompiler.CompileJson(JsonElement)` instead of
   `CompileJson(string)` (least-surprise-normalization 24). A diagnostic located in the tree still carries the same
   `Path` as before (for example `$.operands[1].predicate`), but its `Span` is now always `SourceSpan.None` instead

@@ -22,6 +22,9 @@ public sealed class FixedOffsetDiagnosticTests
     [InlineData("inWindow(start: \"09:00\", end: \"17:00\", duration: \"PT8H\", offset: \"Z\")")]
     [InlineData("inWindow(start: \"09:00\", offset: \"Z\")")]
     [InlineData("inWindow(start: \"09:00\", duration: \"PT24H\", offset: \"Z\")")]
+    [InlineData("inWindow(start: \"09:00\", end: \"\", offset: \"Z\")")]
+    [InlineData("inWindow(start: \"09:00\", duration: \"\", offset: \"Z\")")]
+    [InlineData("inWindow(start: \"09:00\", end: \"17:00\", duration: \"\", offset: \"Z\")")]
     public void Compile_InvalidLiteralArgument_ReportsInvalidArgumentValueAtTheCall_Test(string rule)
     {
         CompilationResult<Clock> result = CreateCompiler().Compile(rule);
@@ -59,13 +62,28 @@ public sealed class FixedOffsetDiagnosticTests
         Assert.Empty(result.Diagnostics);
     }
 
-    private static RuleCompiler<Clock> CreateCompiler()
+    /// <summary>
+    /// An end or duration that a data source supplies is not a missing argument: the call compiles, and the check that it
+    /// gives exactly one of them runs at evaluation. A call that omits both is still an error.
+    /// </summary>
+    [Theory]
+    [InlineData("inWindow(start: \"09:00\", end: from(\"cfg\", \"$.end\"), offset: \"Z\")", true)]
+    [InlineData("inWindow(start: \"09:00\", duration: from(\"cfg\", \"$.duration\"), offset: \"Z\")", true)]
+    [InlineData("inWindow(start: \"09:00\", offset: \"Z\")", false)]
+    public void Compile_EndOrDurationFromADataSource_IsNotReportedMissing_Test(string rule, bool compiles)
+    {
+        CompilationResult<Clock> result = CreateCompiler(new CompilerOptions(DataSources: ["cfg"])).Compile(rule);
+
+        Assert.Equal(compiles, result.Succeeded);
+    }
+
+    private static RuleCompiler<Clock> CreateCompiler(CompilerOptions? options = null)
     {
         PredicateRegistryBuilder<Clock> builder = PredicateRegistry<Clock>.CreateBuilder();
         Register(builder, DateTimePredicates.OnDayOfWeek<Clock>("onDay", c => c.At));
         Register(builder, DateTimePredicates.InMonth<Clock>("inMonth", c => c.At));
         Register(builder, DateTimePredicates.InTimeWindow<Clock>("inWindow", c => c.At));
-        return new RuleCompiler<Clock>(builder.Build());
+        return new RuleCompiler<Clock>(builder.Build(), options);
     }
 
     private static void Register(

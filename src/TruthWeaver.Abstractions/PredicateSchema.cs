@@ -38,7 +38,8 @@ public sealed record PredicateSchema(
     /// The compiler calls it once per call of this predicate, after every argument is present and of its declared kind,
     /// and only when that check found no error. Its input holds only the literal arguments, defaults included. An argument
     /// whose value comes from a data source is absent, because its value is known only at evaluation, so a check that
-    /// needs it must skip. Each returned <see cref="PredicateArgumentProblem"/> becomes one <c>TRE0026</c> error at the call,
+    /// needs it must skip. So is an optional argument without a default that the call omits; <see cref="PredicateArguments.IsDeferred"/>
+    /// tells the two apart. Each returned <see cref="PredicateArgumentProblem"/> becomes one <c>TRE0026</c> error at the call,
     /// and the rule does not compile. An empty list means the arguments are acceptable.
     /// </para>
     /// <para>

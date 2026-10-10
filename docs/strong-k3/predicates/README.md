@@ -51,6 +51,7 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `IsNullOrEmpty` | `IsNotNullOrEmpty` |
 | `IsNullOrWhiteSpace` | `IsNotNullOrWhiteSpace` |
 | `Matches` | `NotMatches` |
+| `MatchesIgnoreCase` | `NotMatchesIgnoreCase` |
 | `ContainsAny` | `NotContainsAny` |
 | `ContainsAll` | `NotContainsAll` |
 | `IsSubsetOf` | `IsNotSubsetOf` |
@@ -164,12 +165,14 @@ The comparison does not normalize Unicode. A precomposed character such as `é` 
 
 ## Regex predicates
 
-The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault. The match uses no regex options and a timeout of one second. A pattern that ignores case starts with `(?i)`.
+The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). A pattern that is a literal in the rule is checked when the rule compiles: an invalid one is a `TRE0026` error. An invalid pattern from a data source is a fault. `Matches` and `NotMatches` use no regex options. `MatchesIgnoreCase` and `NotMatchesIgnoreCase` ignore case with the invariant culture. All four use a timeout of one second. Each of the two options keeps at most 256 compiled patterns.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
 | [Matches](regex-matches.md) | [NotMatches](regex-notmatches.md) | `Matches` is `True` when the selected string matches the regular expression. |
 | [NotMatches](regex-notmatches.md) | [Matches](regex-matches.md) | `NotMatches` is `True` when the selected string does not match the regular expression. |
+| [MatchesIgnoreCase](regex-matchesignorecase.md) | [NotMatchesIgnoreCase](regex-notmatchesignorecase.md) | `MatchesIgnoreCase` is `True` when the selected string matches the regular expression, ignoring case. |
+| [NotMatchesIgnoreCase](regex-notmatchesignorecase.md) | [MatchesIgnoreCase](regex-matchesignorecase.md) | `NotMatchesIgnoreCase` is `True` when the selected string does not match the regular expression, ignoring case. |
 
 ## Collection predicates
 

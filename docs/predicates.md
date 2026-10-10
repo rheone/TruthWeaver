@@ -44,7 +44,9 @@ The `StringPredicates` and `RegexPredicates` twins are:
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
 | `In` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
 | `NotIn` | `StringPredicates` | Twin of `In` |
-| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern faults to `Unknown` with a `Fault`. |
+| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid literal pattern is a compile error (`TRE0026`). An invalid pattern from a data source faults to `Unknown` with a `Fault`. |
+| `MatchesIgnoreCase` | `RegexPredicates` | `Matches` that ignores case (`RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`). |
+| `NotMatchesIgnoreCase` | `RegexPredicates` | Twin of `MatchesIgnoreCase` |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
 
@@ -237,7 +239,7 @@ services.AddTruthWeaver<PizzaOrder>(builder => builder
 
 ### Checking argument values at compile time
 
-The argument declarations check that each argument is present and of its kind. A rule between argument values, for example "`min` is not greater than `max`", goes in the optional `PredicateSchema.ArgumentValidator`. The compiler calls it once for each call of the predicate, after the argument check passes. It receives the literal arguments only. An argument read from a data source is absent, so the validator skips any check that needs it, and the predicate checks that value at evaluation. Each `PredicateArgumentProblem` that the validator returns becomes a `TRE0026` error at the call, and `Compile` returns no rule. The validator must be pure, thread-safe and must not throw.
+The argument declarations check that each argument is present and of its kind. A rule between argument values, for example "`min` is not greater than `max`", goes in the optional `PredicateSchema.ArgumentValidator`. The compiler calls it once for each call of the predicate, after the argument check passes. It receives the literal arguments only. An argument read from a data source is absent, so the validator skips any check that needs it, and the predicate checks that value at evaluation. An optional argument with no default that the call omits is also absent. `PredicateArguments.IsDeferred(name)` is `true` for a data-source argument and `false` for an omitted one, so a validator can tell them apart. At evaluation `IsDeferred` is `false` for every name, because every data-source value is present. Each `PredicateArgumentProblem` that the validator returns becomes a `TRE0026` error at the call, and `Compile` returns no rule. The validator must be pure, thread-safe and must not throw.
 
 ```csharp
 PredicateSchema schema = new(

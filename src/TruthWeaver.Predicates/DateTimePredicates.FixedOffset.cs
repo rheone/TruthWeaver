@@ -157,7 +157,7 @@ public static partial class DateTimePredicates
     /// <para>
     /// <c>start</c> and <c>end</c> are times of day written <c>hh:mm</c> or <c>hh:mm:ss</c>. <c>duration</c> is an ISO 8601
     /// time duration (<c>PTnHnMnS</c>), longer than zero and shorter than 24 hours. A call gives exactly one of
-    /// <c>end</c> and <c>duration</c>. An omitted one defaults to empty text, which means "not given".
+    /// <c>end</c> and <c>duration</c>. An omitted argument means "not given"; an empty text is a value, and an invalid one.
     /// </para>
     /// <para>
     /// A start later than the end makes a window that crosses midnight, for example 22:00 to 06:00. A start equal to the
@@ -230,25 +230,22 @@ public static partial class DateTimePredicates
         bool negate
     )
     {
-        // end and duration default to empty text so the validator can tell "omitted" (empty) from "from a data source"
-        // (absent) and report a call that gives neither at compile time.
-        LiteralValue notGiven = LiteralValue.OfString(string.Empty);
+        // end and duration have no default: an omitted one is absent. The validator tells it from a data-source argument,
+        // which is also absent, by PredicateArguments.IsDeferred, and reports a call that gives neither at compile time.
         PredicateArgumentSchema[] arguments =
         [
             new(StartArgument, "The time of day the window starts: 'hh:mm' or 'hh:mm:ss'.", LiteralKind.String),
             new(
                 EndArgument,
-                "The time of day the window ends: 'hh:mm' or 'hh:mm:ss'. Give this or 'duration', not both. Empty means not given.",
+                "The time of day the window ends: 'hh:mm' or 'hh:mm:ss'. Give this or 'duration', not both.",
                 LiteralKind.String,
-                Required: false,
-                Default: notGiven
+                Required: false
             ),
             new(
                 DurationArgument,
-                "The length of the window as an ISO 8601 time duration, for example 'PT8H' or 'PT1H30M'. Longer than zero and shorter than 24 hours. Give this or 'end', not both. Empty means not given.",
+                "The length of the window as an ISO 8601 time duration, for example 'PT8H' or 'PT1H30M'. Longer than zero and shorter than 24 hours. Give this or 'end', not both.",
                 LiteralKind.String,
-                Required: false,
-                Default: notGiven
+                Required: false
             ),
             new(
                 IncludeStartArgument,
@@ -314,7 +311,9 @@ public static partial class DateTimePredicates
 
     /// <summary>
     /// Reads the end of the window from <c>end</c> or <c>start</c> plus <c>duration</c>. Returns <see langword="null"/> when
-    /// the end is not known: an argument from a data source at compile time, or a problem.
+    /// the end is not known: an argument from a data source at compile time, or a problem. An argument that is absent
+    /// and not deferred was omitted, which means "not given". At evaluation nothing is deferred, so an absent argument
+    /// is an omitted one.
     /// </summary>
     private static TimeSpan? ReadWindowEnd(
         PredicateArguments args,
@@ -323,12 +322,15 @@ public static partial class DateTimePredicates
         bool startRead
     )
     {
-        bool endKnown = args.TryGetString(EndArgument, out string? endText);
-        bool durationKnown = args.TryGetString(DurationArgument, out string? durationText);
-        bool endGiven = endKnown && endText!.Length > 0;
-        bool durationGiven = durationKnown && durationText!.Length > 0;
+        bool endGiven = args.TryGetString(EndArgument, out _);
+        bool durationGiven = args.TryGetString(DurationArgument, out string? durationText);
 
-        if (endKnown && durationKnown && endGiven == durationGiven)
+        // A data-source argument has no value yet, so the call may still give it. Only an argument that is neither given
+        // nor deferred is known to be omitted.
+        bool endOmitted = !endGiven && !args.IsDeferred(EndArgument);
+        bool durationOmitted = !durationGiven && !args.IsDeferred(DurationArgument);
+
+        if ((endGiven && durationGiven) || (endOmitted && durationOmitted))
         {
             problems.Add(
                 new PredicateArgumentProblem(

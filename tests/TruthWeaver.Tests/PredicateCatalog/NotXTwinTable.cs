@@ -274,6 +274,22 @@ internal static class NotXTwinTable
                 n => RegexPredicates.NotMatches<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
             )
         );
+        yield return new TwinPair(
+            "RegexPredicates.MatchesIgnoreCase(String)",
+            "RegexPredicates.NotMatchesIgnoreCase(String)",
+            n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            [("pattern", "^a")],
+            Text("ABC"),
+            Text("xbc"),
+            Missing,
+            Nulls: new(
+                n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text),
+                n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text),
+                n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
+        );
     }
 
     private static IEnumerable<TwinTableEntry> CollectionRows()

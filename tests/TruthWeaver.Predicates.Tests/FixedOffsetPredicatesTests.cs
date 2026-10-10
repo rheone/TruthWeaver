@@ -100,7 +100,6 @@ public class FixedOffsetPredicatesTests
         PredicateArguments args = Args(
             ("start", LiteralValue.OfString("09:00")),
             ("end", LiteralValue.OfString("17:00")),
-            ("duration", LiteralValue.OfString(string.Empty)),
             ("includeStart", LiteralValue.OfBoolean(includeStart)),
             ("includeEnd", LiteralValue.OfBoolean(includeEnd)),
             ("offset", LiteralValue.OfString("Z"))
@@ -209,19 +208,23 @@ public class FixedOffsetPredicatesTests
     }
 
     /// <summary>
-    /// The window rules are checked at compile time: equal start and end, both or neither of end and duration, a duration
-    /// out of range and a bad time of day are each a problem.
+    /// The window rules are checked at compile time: equal start and end, both or neither of end and duration, an empty
+    /// end or duration, a duration out of range and a bad time of day are each a problem. A <see langword="null"/> argument
+    /// is omitted.
     /// </summary>
     [Theory]
-    [InlineData("09:00", "09:00", "")]
+    [InlineData("09:00", "09:00", null)]
     [InlineData("09:00", "17:00", "PT8H")]
+    [InlineData("09:00", null, null)]
+    [InlineData("09:00", "", null)]
+    [InlineData("09:00", null, "")]
     [InlineData("09:00", "", "")]
-    [InlineData("09:00", "", "PT24H")]
-    [InlineData("09:00", "", "PT0S")]
-    [InlineData("09:00", "", "P1D")]
-    [InlineData("25:00", "17:00", "")]
-    [InlineData("09:00", "9:00", "")]
-    public void ArgumentValidator_InvalidWindow_ReportsAProblem_Test(string start, string end, string duration)
+    [InlineData("09:00", null, "PT24H")]
+    [InlineData("09:00", null, "PT0S")]
+    [InlineData("09:00", null, "P1D")]
+    [InlineData("25:00", "17:00", null)]
+    [InlineData("09:00", "9:00", null)]
+    public void ArgumentValidator_InvalidWindow_ReportsAProblem_Test(string start, string? end, string? duration)
     {
         PredicateSchema schema = DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When).Schema;
 
@@ -233,21 +236,56 @@ public class FixedOffsetPredicatesTests
     }
 
     /// <summary>
-    /// An end that comes from a data source is absent at compile time, so the validator does not report "neither end nor
-    /// duration"; a valid literal window has no problem.
+    /// An end that comes from a data source is absent at compile time, but the compiler names it as deferred, so the
+    /// validator does not report "neither end nor duration". An end or duration that the call omits is reported.
     /// </summary>
     [Fact]
     public void ArgumentValidator_EndFromADataSource_IsNotReportedMissing_Test()
     {
         PredicateSchema schema = DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When).Schema;
-        PredicateArguments fromSource = Args(
-            ("start", LiteralValue.OfString("09:00")),
-            ("duration", LiteralValue.OfString(string.Empty)),
-            ("offset", LiteralValue.OfString("Z"))
-        );
+        PredicateArguments fromSource = Window(["end"], ("start", "09:00"), ("offset", "Z"));
+        PredicateArguments durationFromSource = Window(["duration"], ("start", "09:00"), ("offset", "Z"));
+        PredicateArguments omitted = Window(("start", "09:00"), ("offset", "Z"));
 
         Assert.Empty(schema.ArgumentValidator!(fromSource));
+        Assert.Empty(schema.ArgumentValidator(durationFromSource));
         Assert.Empty(schema.ArgumentValidator(Window(("start", "09:00"), ("duration", "PT1H30M"), ("offset", "Z"))));
+        Assert.Single(schema.ArgumentValidator(omitted));
+    }
+
+    /// <summary>
+    /// At evaluation a data-source value is present, so an absent end or duration was omitted. A call that gives neither
+    /// throws, and so does an empty end or duration, because an empty text is a value and not "not given".
+    /// </summary>
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData(null, "")]
+    public async Task Evaluate_EmptyOrMissingEndAndDuration_ThrowsArgumentException_Test(string? end, string? duration)
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inWindow) =
+            DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When);
+        PredicateArguments args = Window(("start", "09:00"), ("end", end), ("duration", duration), ("offset", "Z"));
+
+        _ = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await RunAsync(inWindow, new DateContext(DateTimeOffset.UnixEpoch), args)
+        );
+    }
+
+    /// <summary>The schema leaves end and duration optional with no default, so an omitted one stays absent.</summary>
+    [Fact]
+    public void Schema_EndAndDuration_AreOptionalWithoutADefault_Test()
+    {
+        PredicateSchema schema = DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+
+        Assert.All(
+            schema.Arguments.Where(a => a.Name is "end" or "duration"),
+            a =>
+            {
+                Assert.False(a.Required);
+                Assert.Null(a.Default);
+            }
+        );
     }
 
     /// <summary>
@@ -317,22 +355,32 @@ public class FixedOffsetPredicatesTests
         Assert.Equal(Complement(expected), await RunAsync(notInWindow, context, args));
     }
 
-    /// <summary>Builds window arguments the way the compiler does: omitted end or duration is empty text, and the edge flags take their defaults.</summary>
-    private static PredicateArguments Window(params (string Name, string Value)[] values)
+    /// <summary>
+    /// Builds window arguments the way the compiler does: an omitted end or duration is absent (a <see langword="null"/>
+    /// value is omitted), and the edge flags take their defaults.
+    /// </summary>
+    private static PredicateArguments Window(params (string Name, string? Value)[] values)
+    {
+        return Window([], values);
+    }
+
+    /// <summary>Builds window arguments as above, naming the arguments that a data source supplies as deferred.</summary>
+    private static PredicateArguments Window(string[] deferred, params (string Name, string? Value)[] values)
     {
         Dictionary<string, LiteralValue> args = new(StringComparer.Ordinal)
         {
-            ["end"] = LiteralValue.OfString(string.Empty),
-            ["duration"] = LiteralValue.OfString(string.Empty),
             ["includeStart"] = LiteralValue.OfBoolean(true),
             ["includeEnd"] = LiteralValue.OfBoolean(false),
         };
-        foreach ((string name, string value) in values)
+        foreach ((string name, string? value) in values)
         {
-            args[name] = LiteralValue.OfString(value);
+            if (value is not null)
+            {
+                args[name] = LiteralValue.OfString(value);
+            }
         }
 
-        return new PredicateArguments(args);
+        return new PredicateArguments(args, new HashSet<string>(deferred, StringComparer.Ordinal));
     }
 
     private static DateTimeOffset At(string date, string localTime, string offset)

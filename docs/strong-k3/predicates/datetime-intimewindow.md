@@ -35,7 +35,7 @@ The selector has one overload. A `DateTime` is not accepted. See [Argument kinds
 | `includeEnd` | `Boolean` | No. The default is `false`. | `true` puts the end time inside the window. |
 | `offset` | `String` | Yes | The fixed offset to read the instant in: `"Z"`, `"+hh:mm"` or `"-hh:mm"`. See [Fixed offsets](README.md#fixed-offsets). |
 
-- A call gives exactly one of `end` and `duration`. An empty string (`""`) means that the argument is not given.
+- A call gives exactly one of `end` and `duration`. An omitted argument means that it is not given. An empty string (`""`) is a value, and it is an authoring error.
 - With the defaults, the window is half-open, $[start, end)$: the start is inside and the end is outside. `includeStart` and `includeEnd` move either end.
 
 ## Definition
@@ -82,12 +82,12 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 These arguments are authoring errors. A literal is a `TRE0026` compile error. A value from a data source makes the predicate throw an `ArgumentException` at evaluation. See [Fixed offsets](README.md#fixed-offsets).
 
 - `start` or `end` is not `"hh:mm"` or `"hh:mm:ss"` from `00:00` to `23:59:59`. One digit for the hour, as in `"9:00"`, is not accepted.
-- The call gives both `end` and `duration`, or neither of them.
+- The call gives both `end` and `duration`, or neither of them. An omitted argument is not given. `end: ""` and `duration: ""` are given, and they are not valid.
 - `duration` is not `PTnHnMnS`, is zero, or is 24 hours or more. Day and year forms such as `"P1D"` are not accepted.
 - `start` and `end` are equal. Such a window is either empty or the whole day.
 - `offset` is not `"Z"`, `"+hh:mm"` or `"-hh:mm"` from `-14:00` to `+14:00`, or it is a time zone name.
 
-When `end` or `duration` comes from a data source, the compiler cannot see it. The check that the call gives exactly one of them then runs at evaluation.
+When `end` or `duration` comes from a data source, the compiler cannot see its value, but it knows that the call gives the argument. The check that the call gives exactly one of them then runs at evaluation. A call that omits both is still a compile error.
 
 ## Edge cases
 
