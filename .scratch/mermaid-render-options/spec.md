@@ -1,6 +1,6 @@
 # Mermaid render options
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [diagram-rendering-options](../diagram-rendering-options/spec.md), Mermaid-text track, grilled 2026-10-09. The
 structured render tree for web UIs is a separate spec.

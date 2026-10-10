@@ -4,12 +4,12 @@
 
 **Blocked by:** 02 (Two-line term labels), 03 (Palettes), 04 (Per-node style callback), 05 (Chain compaction as a subgraph)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The optional-parameter overloads accept the new knobs and build a `MermaidOptions`
-- [ ] A fluent builder produces the same `MermaidOptions`
-- [ ] All three call styles produce identical output for the same settings, proven by a test
-- [ ] Neither front-end contains rendering logic
-- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+- [x] The optional-parameter overloads accept the new knobs and build a `MermaidOptions`
+- [x] A fluent builder produces the same `MermaidOptions`
+- [x] All three call styles produce identical output for the same settings, proven by a test
+- [x] Neither front-end contains rendering logic
+- [x] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
 
 See also [spec](../spec.md).
