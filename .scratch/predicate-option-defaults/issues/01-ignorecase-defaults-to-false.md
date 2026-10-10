@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] The schema default for `ignoreCase` is `false` on both predicates, and the argument description says so
 - [ ] The tests that relied on the old default state `ignoreCase` explicitly or assert the new behavior; one test pins the default for each predicate

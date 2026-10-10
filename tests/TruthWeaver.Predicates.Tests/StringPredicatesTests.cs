@@ -229,6 +229,31 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>The <c>ignoreCase</c> argument of <c>EqualsConfigurable</c> defaults to <c>false</c>, matching <c>Equals</c>.</summary>
+    [Fact]
+    public void EqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    {
+        (PredicateSchema schema, _) = StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+
+        PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
+        Assert.False(ignoreCase.Required);
+        Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
+    }
+
+    /// <summary>The <c>ignoreCase</c> argument of <c>NotEqualsConfigurable</c> defaults to <c>false</c>, matching its twin.</summary>
+    [Fact]
+    public void NotEqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    {
+        (PredicateSchema schema, _) = StringPredicates.NotEqualsConfigurable<TestContext>(
+            "notEqualsConfigurable",
+            c => c.Value
+        );
+
+        PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
+        Assert.False(ignoreCase.Required);
+        Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
+    }
+
     [Fact]
     public async Task EqualsConfigurable_DefaultShapedArguments_IsCaseInsensitiveUnderInvariantCulture()
     {

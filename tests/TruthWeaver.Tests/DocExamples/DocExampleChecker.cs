@@ -307,7 +307,7 @@ internal static partial class DocExampleChecker
                         "Compare ignoring case.",
                         LiteralKind.Boolean,
                         false,
-                        LiteralValue.OfBoolean(true)
+                        LiteralValue.OfBoolean(false)
                     ),
                     new PredicateArgumentSchema(
                         "trim",

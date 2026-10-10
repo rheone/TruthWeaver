@@ -287,7 +287,7 @@ catalog members, not for the engine.
 - **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
   `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
   depend on the host's locale, which is unsafe for authorization rules. `EqualsConfigurable` follows the
-  rule too and has no `culture` argument; a rule that still passes one is rejected at compile time
+  rule too: it is case-sensitive unless the rule sets `ignoreCase: true`, and it has no `culture` argument; a rule that still passes one is rejected at compile time
   with an `UnknownArgument` diagnostic that says to remove it.
 - **Date and time use `DateTimeOffset` only.** There is no `DateTime` literal kind; a host holding a
   `DateTime` converts it in its selector. Rationale: `DateTime` with an unspecified `Kind` is ambiguous,

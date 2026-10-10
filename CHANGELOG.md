@@ -126,6 +126,10 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
+  `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
+  case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
+  `NotEqualsConfigurable` call that relied on the old default.
 - Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null
   selected value too. Under `NullBehavior.False` the positive predicate answers `False` and its twin now answers `True`
   (the `StringPredicates`, `RegexPredicates`, `NumericPredicates` and `ScalarPredicates` twins answered `False` before).
@@ -295,7 +299,7 @@ form and the migration step.
 ### 7. `EqualsConfigurable` lost its `culture` argument
 
 - **Old:** `EqualsConfigurable(value, ignoreCase, culture, trim)` honoured a `culture` string.
-- **New:** comparison is ordinal; the arguments are `value`, `ignoreCase` (default `true`) and `trim` (default `false`).
+- **New:** comparison is ordinal; the arguments are `value`, `ignoreCase` (default `false`) and `trim` (default `false`).
   A rule that passes `culture` is rejected with an unknown-argument diagnostic that advises removing it. (Between the
   two it briefly required `culture` to be empty; that interim form never shipped.)
 - **Migrate:** delete `culture:` from the rule. If you relied on culture-sensitive matching (for example the Turkish

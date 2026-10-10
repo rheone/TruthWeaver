@@ -487,7 +487,7 @@ public static class StringPredicates
     {
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
-            + "ordinal and case-insensitive by default (ignoreCase), with optional "
+            + "ordinal and case-sensitive by default (set ignoreCase to ignore case), with optional "
             + "leading/trailing-whitespace trimming. A null selected value is Unknown, "
             + "never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return CreateConfigurable(
@@ -532,7 +532,7 @@ public static class StringPredicates
     {
         const string description =
             "True when the selected string differs from the argument, under configurable comparison rules: "
-            + "ordinal and case-insensitive by default (ignoreCase), with optional leading/trailing-whitespace "
+            + "ordinal and case-sensitive by default (set ignoreCase to ignore case), with optional leading/trailing-whitespace "
             + "trimming. The K3 complement of EqualsConfigurable: a null selected value answers Unknown (never a fault), "
             + "unless the host registers both with NullBehavior.False, which makes EqualsConfigurable False "
             + "and this predicate True.";
@@ -706,10 +706,10 @@ public static class StringPredicates
                 new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.String),
                 new PredicateArgumentSchema(
                     "ignoreCase",
-                    "Whether the comparison ignores case. Defaults to true.",
+                    "Whether the comparison ignores case. Defaults to false.",
                     LiteralKind.Boolean,
                     Required: false,
-                    Default: LiteralValue.OfBoolean(true)
+                    Default: LiteralValue.OfBoolean(false)
                 ),
                 new PredicateArgumentSchema(
                     "trim",

@@ -194,7 +194,7 @@ internal static class NotXTwinTable
             n => StringPredicates.EqualsConfigurable<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             n => StringPredicates.NotEqualsConfigurable<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             [("value", "a")],
-            Text("A"),
+            Text("a"),
             Text("b"),
             Missing,
             Nulls: new(
