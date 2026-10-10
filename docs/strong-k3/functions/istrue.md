@@ -85,7 +85,7 @@ COALESCE(a, False)
 
 ## Equivalent forms
 
-`IsTrue` is the fail-closed reading of a result: the same replacement of `Unknown` by `False` that `Decision.IsSatisfied` and `Decision.Project(false)` apply at the end of an evaluation. Inside a rule it is idempotent, and it is `IsFalse` of the negation:
+`IsTrue` is the fail-closed reading of a result: the same replacement of `Unknown` by `False` that `Decision.IsSatisfied` and `Decision.Project(TruthValue.False)` apply at the end of an evaluation. Inside a rule it is idempotent, and it is `IsFalse` of the negation:
 
 <!-- k3:canonical IsTrue vars=a -->
 ```text
@@ -111,7 +111,7 @@ IsFalse(NOT(a))
 
 - Never `Unknown`. `IsTrue(Unknown)` is `False`, not `Unknown`. A rule that must not grant access on an unresolved answer can wrap it: `IsTrue(canEdit)`.
 - A faulting operand. A predicate that throws, times out or is cancelled contributes `Unknown` and records a `Fault`; `IsTrue` still answers definitely, and the fault is kept. With `boom` a term that faults, `IsTrue(boom)` is `False` with 1 fault recorded.
-- Relation to the result transformations. As a value, `IsTrue(x)` equals `COALESCE(x, False)` and `Decision.Project(false)` of the result of `x`. They differ in where they apply: inside a rule or on the final decision.
+- Relation to the result transformations. As a value, `IsTrue(x)` equals `COALESCE(x, False)` and `Decision.Project(TruthValue.False)` of the result of `x`. They differ in where they apply: inside a rule or on the final decision.
 
 ## Evaluation behavior
 

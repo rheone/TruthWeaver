@@ -114,19 +114,19 @@ public sealed class DecisionAssertionsTests
     }
 
     [Fact]
-    public void HaveFaultForTerm_MatchingPredicateName_DoesNotThrow()
+    public void HaveFaultForPredicate_MatchingPredicateName_DoesNotThrow()
     {
         Decision decision = new(TruthValue.Unknown, [SampleFault("hasRole")]);
 
-        decision.Should().HaveFaultForTerm("hasRole");
+        decision.Should().HaveFaultForPredicate("hasRole");
     }
 
     [Fact]
-    public void HaveFaultForTerm_NoMatchingPredicateName_Throws()
+    public void HaveFaultForPredicate_NoMatchingPredicateName_Throws()
     {
         Decision decision = new(TruthValue.Unknown, [SampleFault("hasRole")]);
 
-        Assert.Throws<DecisionAssertionException>(() => decision.Should().HaveFaultForTerm("isManager"));
+        Assert.Throws<DecisionAssertionException>(() => decision.Should().HaveFaultForPredicate("isManager"));
     }
 
     [Fact]

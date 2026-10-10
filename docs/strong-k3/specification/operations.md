@@ -33,7 +33,7 @@ Each Operation has one document, one primary category and one Kind. A canonical 
 | [`IsFalse`](../functions/isfalse.md) | Functions | Derived | External | 1 | `COALESCE(NOT x, False)` | |
 | [`IsUnknown`](../functions/isunknown.md) | Functions | Derived | External | 1 | `AND(COALESCE(x, True), COALESCE(NOT x, True))` | |
 | [`IsKnown`](../functions/isknown.md) | Functions | Derived | External | 1 | `OR(COALESCE(x, False), COALESCE(NOT x, False))` | |
-| [`Project(unknownAs)`](../result-transformations/project.md) | Result Transformations | Derived | n/a | 1 result, one `bool` parameter | `COALESCE(rule, unknownAs)` | A method on `Decision`, not a rule node. |
+| [`Project(unknownAs)`](../result-transformations/project.md) | Result Transformations | Derived | n/a | 1 result, one `TruthValue` parameter (`True` or `False`) | `COALESCE(rule, unknownAs)` | A method on `Decision`, not a rule node. |
 | [`Collapse(policy)`](../result-transformations/collapse.md) | Result Transformations | Primitive | n/a | 1 result, one `CollapsePolicy` parameter | None | A method on `Decision`. It returns a `CollapseOutcome`, not a value. |
 
 Each canonical form agrees with its Operation for every assignment of `T`, `F` and `U`, for every operand count that the Operation accepts, and for every valid parameter. `Collapse` has no canonical form. It returns a `CollapseOutcome` and `UnknownIsError` is not a truth function.

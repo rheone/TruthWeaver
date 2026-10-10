@@ -106,7 +106,7 @@ public sealed class DecisionAssertions(Decision decision)
     /// <summary>Asserts that <see cref="Decision.Faults"/> contains a fault for the given predicate name.</summary>
     /// <param name="predicateName">The faulted term's predicate name, as registered.</param>
     /// <returns>This instance, for chaining.</returns>
-    public DecisionAssertions HaveFaultForTerm(string predicateName)
+    public DecisionAssertions HaveFaultForPredicate(string predicateName)
     {
         if (!this.Subject.Faults.Any(f => string.Equals(f.Term.PredicateName, predicateName, StringComparison.Ordinal)))
         {

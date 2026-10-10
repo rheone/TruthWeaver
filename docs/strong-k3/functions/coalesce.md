@@ -163,7 +163,7 @@ If(IsKnown(a), a, b)
 
 `COALESCE` is not commutative: `COALESCE(True, False)` is `True` but `COALESCE(False, True)` is `False`. It is also not `OR`: `COALESCE(False, True)` is `False` while `OR(False, True)` is `True`.
 
-The [inspections](istrue.md#canonical-form) are short uses of it, and inside a rule `COALESCE(x, True)` and `COALESCE(x, False)` give the same value as the call-site methods `Decision.Project(true)` and `Decision.Project(false)` ([result transformations](../result-transformations/README.md)).
+The [inspections](istrue.md#canonical-form) are short uses of it, and inside a rule `COALESCE(x, True)` and `COALESCE(x, False)` give the same value as the call-site methods `Decision.Project(TruthValue.True)` and `Decision.Project(TruthValue.False)` ([result transformations](../result-transformations/README.md)).
 
 ## Examples
 

@@ -68,7 +68,7 @@ public sealed class EndToEndUsageExampleTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        decision.Should().NotBeSatisfied().HaveResult(TruthValue.Unknown).HaveFaultForTerm("hasRole");
+        decision.Should().NotBeSatisfied().HaveResult(TruthValue.Unknown).HaveFaultForPredicate("hasRole");
     }
 
     /// <summary>An <see cref="IServiceProvider"/> that resolves nothing - this example's rule uses only a lambda-registered fake predicate.</summary>

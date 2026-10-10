@@ -1,6 +1,6 @@
 # Testing assertions
 
-The `TruthWeaver.Testing` package has three groups of assertions. `RuleAssertions` checks that compiled rules keep their meaning. `RewriteAssertions` checks that a rewrite of a rule keeps its meaning. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework.
+The `TruthWeaver.Testing` package has three groups of assertions. `RuleAssertions` checks that compiled rules keep their meaning. `RewriteAssertions` checks that a rewrite of a rule keeps its meaning. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework. `DecisionAssertionException`, `PredicateHarnessException` and `RuleFuzzException` all derive from the abstract `TruthWeaverAssertionException`. Catch that one type to handle every failure from the package.
 
 For tools that check a predicate or the engine, see [Predicate harness](predicate-harness.md) and [Rule fuzzer](rule-fuzzer.md).
 
@@ -88,14 +88,14 @@ decision.Should().BeSatisfied().HaveNoFaults();
 | `HaveNoFaults()` | `Decision.Faults` is empty. |
 | `HaveFault()` | `Decision.Faults` has at least one entry. |
 | `HaveFaultCount(expected)` | `Decision.Faults` has exactly `expected` entries. |
-| `HaveFaultForTerm(predicateName)` | A fault exists for a term with that predicate name. The comparison is ordinal. |
+| `HaveFaultForPredicate(predicateName)` | A fault exists for a term with that predicate name. The comparison is ordinal. |
 
-`IsSatisfied` is fail-closed: an `Unknown` result is not satisfied. Use `HaveResult(TruthValue.Unknown)` to assert an unknown result, and `HaveFaultForTerm` to assert which predicate caused it.
+`IsSatisfied` is fail-closed: an `Unknown` result is not satisfied. Use `HaveResult(TruthValue.Unknown)` to assert an unknown result, and `HaveFaultForPredicate` to assert which predicate caused it.
 
 ```csharp
 Decision decision = await rule.EvaluateAsync(order);
 
-decision.Should().HaveResult(TruthValue.Unknown).HaveFaultForTerm("isPaid");
+decision.Should().HaveResult(TruthValue.Unknown).HaveFaultForPredicate("isPaid");
 ```
 
 The `Subject` property of `DecisionAssertions` returns the decision under test, for checks that these assertions do not cover.

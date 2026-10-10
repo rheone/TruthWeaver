@@ -6,7 +6,7 @@ using TruthWeaver.Diagnostics;
 /// The single diagnostic every front end (DSL, JSON, YAML) raises when rule text still declares a <c>Project</c>.
 /// Project is not a rule-language feature: the rule always yields the raw three-valued result, and the application picks
 /// how <c>Unknown</c> becomes a definite value either inside the rule with <c>COALESCE(x, True)</c> / <c>COALESCE(x, False)</c> or
-/// on the result with <c>Decision.Project(bool)</c> (ADR-0005 decision 12). Sharing one message keeps the migration advice
+/// on the result with <c>Decision.Project(TruthValue)</c> (ADR-0005 decision 12). Sharing one message keeps the migration advice
 /// identical wherever a persisted rule is read.
 /// </summary>
 internal static class ProjectRejection

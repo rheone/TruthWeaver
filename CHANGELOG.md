@@ -132,6 +132,15 @@ copyright line reads 2026.
 
 ### Changed
 
+- `TruthWeaverAssertionException` is a new abstract base in `TruthWeaver.Testing`. `DecisionAssertionException`,
+  `PredicateHarnessException` and `RuleFuzzException` derive from it, so existing catches keep working.
+  **Breaking:** `DecisionAssertions.HaveFaultForTerm(predicateName)` is renamed `HaveFaultForPredicate(predicateName)`, to
+  match its argument. Migration: rename the call.
+- **Breaking:** `Decision.Project(bool unknownAs)` is now `Decision.Project(TruthValue unknownAs)`, so a call reads
+  `d.Project(TruthValue.True)` instead of `d.Project(true)`. Only `True` and `False` are valid. `Unknown` or an undefined
+  value throws `ArgumentOutOfRangeException` for every result, the same up-front rule `Decision.Collapse` applies to an
+  undefined policy. Migration: replace `Project(true)` with `Project(TruthValue.True)` and `Project(false)` with
+  `Project(TruthValue.False)`.
 - `RewriteAssertions.AssertSound` gains an overload for a rewrite that returns a `CompilationResult<TContext>`, so
   `r => r.ToCnf()` and the other capped rewrites need no `.CompiledRule!`. A result with no rule or an error
   diagnostic fails the assertion with a `'compiles'` check that shows the diagnostics. A call that passes a bare `null`
