@@ -5,9 +5,13 @@ namespace TruthWeaver.Printing;
 /// <param name="State">The node's rendering state.</param>
 /// <param name="Children">The node's rendered operands, in source order.</param>
 /// <param name="Kind">The node's role, from <see cref="Evaluation.OutlineNode.Kind"/>; an outline node with operands is always an operator.</param>
+/// <param name="Heading">The label without the argument text; a printer that lays out the argument text on its own line uses it.</param>
+/// <param name="Arguments">The argument text, or <see langword="null"/> when the node has none or the caller hides it.</param>
 internal sealed record RenderNode(
     string Label,
     RenderState State,
     IReadOnlyList<RenderNode> Children,
-    Evaluation.OutlineNodeKind Kind = Evaluation.OutlineNodeKind.Term
+    Evaluation.OutlineNodeKind Kind = Evaluation.OutlineNodeKind.Term,
+    string? Heading = null,
+    string? Arguments = null
 );

@@ -16,6 +16,21 @@ public sealed record MermaidOptions
     /// </summary>
     public bool NodeShapes { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether a term renders as two lines: its label in bold, then its argument
+    /// values in plain text. The labels use Mermaid markdown strings, which GitHub renders; the output
+    /// contains no raw HTML. Dimmed or smaller text is not available, because GitHub's sanitizer removes
+    /// the HTML and CSS that it needs. The argument line appears only when <see cref="ShowArgumentValues"/>
+    /// is <see langword="true"/>. Defaults to <see langword="false"/>.
+    /// </summary>
+    public bool TwoLineTermLabels { get; init; }
+
+    /// <summary>
+    /// Gets the colors of the evaluation states and of the highlight and mute classes. Defaults to
+    /// <see cref="MermaidPalette.Light"/>.
+    /// </summary>
+    public MermaidPalette Palette { get; init; } = MermaidPalette.Light;
+
     /// <summary>Gets how operator labels are rendered. Defaults to <see cref="Printing.OperatorStyle.Word"/>.</summary>
     public OperatorStyle OperatorStyle { get; init; } = OperatorStyle.Word;
 

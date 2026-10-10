@@ -74,7 +74,14 @@ internal static class RuleRenderTree
         }
 
         OutlineNodeKind kind = description.Operands.Count > 0 ? OutlineNodeKind.Operator : description.Kind;
-        return new RenderNode(StyledLabel(description, style, showArgumentValues), state, renderedChildren, kind);
+        return new RenderNode(
+            StyledLabel(description, style, showArgumentValues),
+            state,
+            renderedChildren,
+            kind,
+            BaseLabel(description, style),
+            showArgumentValues ? description.ArgumentText : null
+        );
     }
 
     /// <summary>

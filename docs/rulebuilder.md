@@ -130,10 +130,40 @@ Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to chang
 | `NodeShapes` | `true` gives an operator a hexagon, a term a rounded box and a constant a circle. `false` gives every node a rectangle. | `false` |
 | `OperatorStyle` | `Word`, `Symbolic`, `CStyle` | `Word` |
 | `ShowArgumentValues` | `true`, `false` | `true` |
+| `TwoLineTermLabels` | `true` shows a term as a bold label and a plain argument line. `false` shows one line. | `false` |
+| `Palette` | A `MermaidPalette`: `Light`, `ColorblindSafe`, `Monochrome`, `Dark` or your own. | `MermaidPalette.Light` |
 
 ```csharp
 string diagram = rule.PrintMermaid(new MermaidOptions { Direction = MermaidDirection.LeftRight, NodeShapes = true });
 ```
+
+### Two-line term labels
+
+`TwoLineTermLabels` writes each term as a Mermaid markdown string. The label is bold. The argument values follow on a second, plain line. The option works together with `ShowArgumentValues`. When `ShowArgumentValues` is `false`, a term shows only its bold label. Operators and constants keep their one-line labels.
+
+The output has no HTML. GitHub removes HTML and CSS from a diagram, so dimmed or smaller text is not available there. A renderer that you host yourself can apply it.
+
+### Palettes
+
+A `MermaidPalette` defines the `classDef` styles of the evaluation states (true, false, unknown, skipped) and of the highlight and mute classes. `PrintMermaid(decision, options)` uses the palette to color the nodes. Each property is a Mermaid style declaration, for example `fill:#d4edda,stroke:#28a745,color:#155724`. A style must not contain a line break or a semicolon. The printer removes them.
+
+| Preset | Use | True | False | Unknown | Skipped |
+| --- | --- | --- | --- | --- | --- |
+| `Light` | The default, on a light page | green `#d4edda` | red `#f8d7da` | yellow `#fff3cd` | dashed gray `#e9ecef` |
+| `ColorblindSafe` | Readers with a red-green color deficiency | blue `#cfe8f7`, stroke `#0072B2` | orange `#f9dcc6`, stroke `#D55E00` | yellow `#f7f2a8`, stroke `#8c8300` | dashed gray `#e9ecef` |
+| `Monochrome` | A grayscale print | white, 4 px solid stroke | white, dashed stroke | white, dotted stroke | gray `#eee`, thin dashed stroke |
+| `Dark` | A dark page | green `#14532d` | red `#7f1d1d` | brown `#713f12` | dashed slate `#1f2937` |
+
+`ColorblindSafe` uses the Okabe-Ito colors, which stay distinct for the common forms of color blindness. In `Monochrome`, a stroke style separates the states, so a print without colors keeps them apart. Text on a fill has a contrast ratio of at least 4.5:1 (WCAG AA) in every preset. The one exception is the skipped state of `Light`, which has 3.95:1 because it keeps the colors of the earlier default output.
+
+To make your own palette, copy a preset with `with`:
+
+```csharp
+MermaidPalette brand = MermaidPalette.Light with { True = "fill:#e0f2f1,stroke:#00796b,color:#004d40" };
+string diagram = rule.PrintMermaid(decision, new MermaidOptions { Palette = brand });
+```
+
+The palette also defines a `Highlight` style and a `Mute` style for nodes that a caller wants to emphasize or to push back.
 
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 

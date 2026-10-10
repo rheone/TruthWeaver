@@ -269,6 +269,36 @@ flowchart TD
     n0 --> n2
 ```
 
+Set `TwoLineTermLabels` to show each term as a bold label with its argument values on a second line (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)):
+
+```csharp
+string twoLine = result.CompiledRule!.PrintMermaid(new MermaidOptions { TwoLineTermLabels = true });
+```
+
+<!-- doctest:mermaid worked two-line -->
+```mermaid
+flowchart TD
+    Start(["Start"]) --> n0
+    n0["AND"]
+    n1["`**Has Topping**
+topping: #quot;greenOlives#quot;`"]
+    n0 --> n1
+    n2["OR"]
+    n3["`**Has Crust**
+crust: #quot;thin#quot;, ignoreCase: true, trim: false`"]
+    n2 --> n3
+    n4["`**Has Crust**
+crust: #quot;stuffed#quot;, ignoreCase: false, trim: false`"]
+    n2 --> n4
+    n5["XOR"]
+    n6["`**Is Dine In**`"]
+    n5 --> n6
+    n7["`**Is Takeout**`"]
+    n5 --> n7
+    n2 --> n5
+    n0 --> n2
+```
+
 This code renders the same rule as a text tree:
 
 ```csharp

@@ -75,7 +75,7 @@ public static class MermaidTreePrinter
 
         if (anyColored || classAssignments.Count > 0)
         {
-            WriteClassDefs(text);
+            WriteClassDefs(text, options.Palette);
         }
 
         return text.ToString();
@@ -94,9 +94,11 @@ public static class MermaidTreePrinter
         text.Append("    ")
             .Append(id)
             .Append(open)
-            .Append('"')
-            .Append(Escape(node.Label))
-            .Append('"')
+            .Append(
+                options.TwoLineTermLabels && node.Kind == OutlineNodeKind.Term
+                    ? TwoLineLabel(node)
+                    : $"\"{Escape(node.Label)}\""
+            )
             .Append(close)
             .Append('\n');
 
@@ -156,12 +158,45 @@ public static class MermaidTreePrinter
         };
     }
 
-    private static void WriteClassDefs(StringBuilder text)
+    private static void WriteClassDefs(StringBuilder text, MermaidPalette palette)
     {
-        text.Append("    classDef brTrue fill:#d4edda,stroke:#28a745,color:#155724;\n");
-        text.Append("    classDef brFalse fill:#f8d7da,stroke:#dc3545,color:#721c24;\n");
-        text.Append("    classDef brUnknown fill:#fff3cd,stroke:#ffc107,color:#856404;\n");
-        text.Append("    classDef brSkipped fill:#e9ecef,stroke:#adb5bd,color:#6c757d,stroke-dasharray: 4 3;\n");
+        WriteClassDef(text, "brTrue", palette.True);
+        WriteClassDef(text, "brFalse", palette.False);
+        WriteClassDef(text, "brUnknown", palette.Unknown);
+        WriteClassDef(text, "brSkipped", palette.Skipped);
+    }
+
+    /// <summary>
+    /// Writes one <c>classDef</c> statement. A caller-supplied style could carry a line break or a
+    /// semicolon, which would start a second Mermaid statement, so both are neutralized.
+    /// </summary>
+    private static void WriteClassDef(StringBuilder text, string className, string style)
+    {
+        string oneStatement = style.Replace("\r", " ").Replace("\n", " ").Replace(";", string.Empty);
+        text.Append("    classDef ").Append(className).Append(' ').Append(oneStatement).Append(";\n");
+    }
+
+    /// <summary>
+    /// Builds a Mermaid markdown-string label: the heading in bold, a line break, then the argument
+    /// text in plain type. Raw HTML would give dimmed text, but GitHub's sanitizer removes it.
+    /// </summary>
+    private static string TwoLineLabel(RenderNode node)
+    {
+        string heading = EscapeMarkdown(node.Heading ?? node.Label);
+        return node.Arguments is null ? $"\"`**{heading}**`\"" : $"\"`**{heading}**\n{EscapeMarkdown(node.Arguments)}`\"";
+    }
+
+    /// <summary>
+    /// Replaces the characters that end the string or start markdown emphasis with Mermaid entity codes.
+    /// </summary>
+    private static string EscapeMarkdown(string text)
+    {
+        return text.Replace("\"", "#quot;")
+            .Replace("`", "#96;")
+            .Replace("*", "#42;")
+            .Replace("_", "#95;")
+            .Replace("\r", " ")
+            .Replace("\n", " ");
     }
 
     private static string Escape(string label)

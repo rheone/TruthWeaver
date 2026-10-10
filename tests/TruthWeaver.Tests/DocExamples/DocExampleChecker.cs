@@ -6,6 +6,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.DataSources.Json;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Printing;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
@@ -150,13 +151,26 @@ internal static partial class DocExampleChecker
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
             case "tree" or "mermaid":
-                if (!rules.TryGetValue(argument, out CompiledRule<RuleTestContext>? rule))
+                // A mermaid marker may follow the rule id with option words: "shapes" and "two-line".
+                string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string ruleId = words.Length > 0 ? words[0] : string.Empty;
+                if (!rules.TryGetValue(ruleId, out CompiledRule<RuleTestContext>? rule))
                 {
-                    failures.Add($"{example}: no earlier doctest:rule {argument}.");
+                    failures.Add($"{example}: no earlier doctest:rule {ruleId}.");
                     break;
                 }
 
-                CompareOutput(kind == "tree" ? rule.PrintPlainText() : rule.PrintMermaid(), body, example, failures);
+                MermaidOptions mermaidOptions = new()
+                {
+                    NodeShapes = words.Contains("shapes"),
+                    TwoLineTermLabels = words.Contains("two-line"),
+                };
+                CompareOutput(
+                    kind == "tree" ? rule.PrintPlainText() : rule.PrintMermaid(mermaidOptions),
+                    body,
+                    example,
+                    failures
+                );
                 break;
             case "diagnostics-dsl" or "diagnostics-json" or "diagnostics-yaml":
                 CompilationResult<RuleTestContext> result = kind switch
