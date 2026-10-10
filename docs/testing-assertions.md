@@ -45,7 +45,7 @@ RuleAssertions.AssertEquivalent(before, after, 24);
 
 ## Assert that a rewrite is sound
 
-`RewriteAssertions.AssertSound(rule, rewrite, expectations)` applies `rewrite` to `rule` and checks the result. The rewrite is a `Func<CompiledRule<TContext>, CompiledRule<TContext>>`, so the assertion works for the built-in rewrites and for your own.
+`RewriteAssertions.AssertSound(rule, rewrite, expectations, maxAnalysisTerms)` applies `rewrite` to `rule` and checks the result. The rewrite is a `Func<CompiledRule<TContext>, CompiledRule<TContext>>`, so the assertion works for the built-in rewrites and for your own.
 
 ```csharp
 RewriteAssertions.AssertSound(rule, r => r.Simplify(), RewriteExpectations.All);
@@ -61,6 +61,12 @@ The assertion always checks K3 equivalence of the original and the rewritten rul
 | `RewriteExpectations.None` (default) | Only equivalence is checked. |
 
 The failure message names the failed check. For equivalence it shows the counter-example. For `NeverLarger` it shows the two node counts. For `Idempotent` it shows both canonical texts.
+
+A rewrite that returns a `CompilationResult<TContext>` (`ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()` and `ToDnf()`) goes into the same method with no unwrap. The assertion fails when the result has no rule or has an error diagnostic, such as a `TRE0016` refusal at the size cap. A warning does not fail it. The message starts with `Rewrite check 'compiles' failed` and shows the diagnostics. See [What a rewrite returns](rewriting-rules.md#what-a-rewrite-returns).
+
+```csharp
+RewriteAssertions.AssertSound(rule, r => r.ToCnf(), RewriteExpectations.Idempotent);
+```
 
 `Simplify()` and `Canonicalize()` promise both extra checks. Do not expect `NeverLarger` of a rewrite that expands, such as `ExpandToPrimitives()`.
 

@@ -1,7 +1,7 @@
 namespace TruthWeaver.Testing;
 
 /// <summary>
-/// The extra checks that <see cref="RewriteAssertions.AssertSound{TContext}"/> makes on a rewrite. K3 equivalence is
+/// The extra checks that <c>RewriteAssertions.AssertSound</c> makes on a rewrite. K3 equivalence is
 /// always checked and has no flag.
 /// </summary>
 [Flags]

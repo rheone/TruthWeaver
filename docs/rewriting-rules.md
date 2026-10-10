@@ -19,6 +19,18 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 | [`ToCnf()`](#normal-forms) / [`ToDnf()`](#normal-forms) | An `AND` of `OR`s (CNF), or an `OR` of `AND`s (DNF). |
 | [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | The same rule, and the list of laws applied. |
 
+### What a rewrite returns
+
+A rewrite returns one of three shapes. The rule for which shape is: a rewrite that can make the rule larger returns a `CompilationResult<TContext>`, because it can be refused at its size cap. A rewrite that never makes the rule larger returns a `CompiledRule<TContext>`. A rewrite that also reports its steps returns a `SimplifyResult<TContext>`.
+
+| Shape | Rewrites | How to read the result |
+| --- | --- | --- |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()` | Check `Succeeded`, then use `CompiledRule`. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. |
+| `CompiledRule<TContext>` | `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Use the rule. It is never larger than the original. |
+| `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule` and `Steps`. |
+
+To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It has an overload for each of the first two shapes.
+
 The Evaluation behavior section of each Operation page states how the rewrites treat that operator. For example, [NAND](strong-k3/derived/nand.md#evaluation-behavior) states what `CompressToDerived` and `ExpandToNand` do with it.
 
 ### Expand to primitives

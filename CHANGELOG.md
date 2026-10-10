@@ -126,6 +126,11 @@ copyright line reads 2026.
 
 ### Changed
 
+- `RewriteAssertions.AssertSound` gains an overload for a rewrite that returns a `CompilationResult<TContext>`, so
+  `r => r.ToCnf()` and the other capped rewrites need no `.CompiledRule!`. A result with no rule or an error
+  diagnostic fails the assertion with a `'compiles'` check that shows the diagnostics. A call that passes a bare `null`
+  as the rewrite is now ambiguous: cast it to the delegate type. `docs/diagnostics.md` holds one table of the compile
+  and evaluation limits, and `docs/rewriting-rules.md` states what each rewrite returns.
 - The XML documentation of the expanding rewrites and the normal forms, and `docs/rewriting-rules.md`, state that a
   rewrite result over `CompilerOptions.MaxNodeCount` (512 by default) compiles back from its text only when
   `MaxNodeCount` is raised. The two caps stay independent. No behavior changed.

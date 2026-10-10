@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (both change the `AssertSound` signature)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A test covers `AssertSound` over `ToNnf`, `ToCnf`, `ToDnf` and `ExpandToNand`, including the over-cap failure
 - [ ] The limits table lists `MaxDepth`, `MaxNodeCount`, `MaxAnalysisTerms`, `MaxRewriteNodeCount` and the evaluation limits with their outcome

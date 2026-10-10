@@ -4,6 +4,18 @@ namespace TruthWeaver.Compilation;
 /// Compile-time resource bounds and mode (ADR-0002/ticket 09), so a rule authored somewhere not
 /// code-reviewed (e.g. an admin UI backed by a database) cannot pathologically hang a request thread.
 /// </summary>
+/// <remarks>
+/// Each limit, with its default and what happens when a rule exceeds it:
+/// <list type="table">
+/// <listheader><term>Limit</term><description>Outcome when exceeded</description></listheader>
+/// <item><term><c>MaxDepth</c> (32)</term><description><c>Compile</c> returns a <c>TRE0009</c> error and no rule.</description></item>
+/// <item><term><c>MaxNodeCount</c> (512)</term><description><c>Compile</c> returns a <c>TRE0010</c> error and no rule.</description></item>
+/// <item><term><c>MaxAnalysisTerms</c> (20)</term><description>The analysis is skipped with a <c>TRE0011</c> info diagnostic and the rule compiles. Equivalence checks are undecided.</description></item>
+/// <item><term><c>MaxRewriteNodeCount</c> (100,000)</term><description>An expanding rewrite or normal form returns a <c>TRE0016</c> error and no rule. A result under this cap can still be over <c>MaxNodeCount</c>, so its text compiles back only when <c>MaxNodeCount</c> is raised.</description></item>
+/// <item><term><c>EvaluationOptions.FaultBudget</c></term><description>Evaluation stops when the faults reach the budget. The terms not yet run are <c>Unknown</c>.</description></item>
+/// <item><term><c>EvaluationOptions.Timeout</c></term><description><c>EvaluateAsync</c> throws <see cref="OperationCanceledException"/>. It records no fault.</description></item>
+/// </list>
+/// </remarks>
 /// <param name="MaxDepth">The maximum expression tree depth. Exceeding it is a compile <c>Error</c>.</param>
 /// <param name="MaxNodeCount">The maximum total node count. Exceeding it is a compile <c>Error</c>.</param>
 /// <param name="MaxAnalysisTerms">
@@ -13,9 +25,9 @@ namespace TruthWeaver.Compilation;
 /// </param>
 /// <param name="Mode">How an unregistered predicate name is treated.</param>
 /// <param name="MaxRewriteNodeCount">
-/// The maximum node count, counted as a printed tree, that <c>ExpandToPrimitives</c>, <c>ExpandToNand</c> and
-/// <c>ExpandToNor</c> may produce. A rewrite that would exceed it is refused with a <c>TRE0016</c> error diagnostic
-/// instead of being built. Pass a larger value to those methods to allow bigger results.
+/// The maximum node count, counted as a printed tree, that <c>ExpandToPrimitives</c>, <c>ExpandToNand</c>,
+/// <c>ExpandToNor</c>, <c>ToNnf</c>, <c>ToCnf</c> and <c>ToDnf</c> may produce. A rewrite that would exceed it is refused
+/// with a <c>TRE0016</c> error diagnostic instead of being built. Pass a larger value to those methods to allow bigger results.
 /// </param>
 /// <param name="Lints">
 /// The opt-in lint rules to run after analysis. Defaults to <see cref="LintRules.None"/>, so enabling none of them

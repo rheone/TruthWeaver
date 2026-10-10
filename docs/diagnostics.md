@@ -105,6 +105,21 @@ One redundant construct can produce several findings. For example, an `If` whose
 
 The semantic lints (`TRE0017` to `TRE0019` and `TRE0021`) use the analyzer's BDD. They are skipped for a sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms. The structural lints (`TRE0020`, `TRE0022` and `TRE0023`) always run. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.
 
+## Limits
+
+Each limit has one setting and one outcome. The compile limits are `CompilerOptions` values. The evaluation limits are `EvaluationOptions` values.
+
+| Limit | Default | When it is exceeded |
+| --- | --- | --- |
+| `CompilerOptions.MaxDepth` | 32 | `Compile` returns a `TRE0009` error and no rule. |
+| `CompilerOptions.MaxNodeCount` | 512 | `Compile` returns a `TRE0010` error and no rule. |
+| `CompilerOptions.MaxAnalysisTerms` | 20 | The analysis is skipped and `Compile` adds a `TRE0011` info diagnostic. The rule compiles. The semantic lints skip the sub-expression. `RuleEquivalence.Compare` and `RuleDiff.Compare` return an undecided result. `AssertEquivalent` and `AssertSound` fail as inconclusive. |
+| `CompilerOptions.MaxRewriteNodeCount` | 100,000 | An expanding rewrite or normal form returns a failed `CompilationResult` with a `TRE0016` error and no rule. A result under this cap can still be over `MaxNodeCount`, so its text compiles back only when `MaxNodeCount` is raised. See [A large result may not recompile](rewriting-rules.md#a-large-result-may-not-recompile). |
+| `EvaluationOptions.FaultBudget` | none | The evaluation stops when the faults reach the budget. The terms not yet run are `Unknown` in the trace, so the result is usually `Unknown`. |
+| `EvaluationOptions.Timeout` | none | `EvaluateAsync` throws `OperationCanceledException`. It records no fault and gives no `Unknown`. |
+
+The two caps on rewrites are independent: `MaxRewriteNodeCount` limits what a rewrite builds, and `MaxNodeCount` limits what the compiler reads. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.
+
 ## JSON and YAML rules
 
 A malformed JSON or YAML rule is located by `Path` instead of by line and column. The path is the route from the document root to the offending key. It is written the same way for both formats: `$` is the root, `.name` is a key and `[n]` is a 0-based sequence item.
