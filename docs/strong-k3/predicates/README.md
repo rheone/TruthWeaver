@@ -63,6 +63,9 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `Before` | `NotBefore` |
 | `AfterNow` | `NotAfterNow` |
 | `BeforeNow` | `NotBeforeNow` |
+| `OnDayOfWeek` | `NotOnDayOfWeek` |
+| `InMonth` | `NotInMonth` |
+| `InTimeWindow` | `NotInTimeWindow` |
 | `IsGuid` | `IsNotGuid` |
 | `IsNumeric` | `IsNotNumeric` |
 | `IsUrl` | `IsNotUrl` |
@@ -207,6 +210,7 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 
 - `After`, `Before` and their twins compare with one instant. `Between` and `Outside` use a range with inclusive bounds. Reversed literal bounds are a compile error.
 - `AfterNow`, `BeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.
+- `OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins read the selected instant in a fixed offset. See [Fixed offsets](#fixed-offsets).
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -220,6 +224,28 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 | [NotAfterNow](datetime-notafternow.md) | [AfterNow](datetime-afternow.md) | `NotAfterNow` is `True` when the selected instant is equal to now or earlier. |
 | [BeforeNow](datetime-beforenow.md) | [NotBeforeNow](datetime-notbeforenow.md) | `BeforeNow` is `True` when the selected instant is earlier than now. |
 | [NotBeforeNow](datetime-notbeforenow.md) | [BeforeNow](datetime-beforenow.md) | `NotBeforeNow` is `True` when the selected instant is equal to now or later. |
+| [OnDayOfWeek](datetime-ondayofweek.md) | [NotOnDayOfWeek](datetime-notondayofweek.md) | `OnDayOfWeek` is `True` when the selected instant falls on one of the listed days of the week. |
+| [NotOnDayOfWeek](datetime-notondayofweek.md) | [OnDayOfWeek](datetime-ondayofweek.md) | `NotOnDayOfWeek` is `True` when the selected instant falls on none of the listed days of the week. |
+| [InMonth](datetime-inmonth.md) | [NotInMonth](datetime-notinmonth.md) | `InMonth` is `True` when the selected instant falls in one of the listed months. |
+| [NotInMonth](datetime-notinmonth.md) | [InMonth](datetime-inmonth.md) | `NotInMonth` is `True` when the selected instant falls in none of the listed months. |
+| [InTimeWindow](datetime-intimewindow.md) | [NotInTimeWindow](datetime-notintimewindow.md) | `InTimeWindow` is `True` when the time of day of the selected instant is inside a daily window. |
+| [NotInTimeWindow](datetime-notintimewindow.md) | [InTimeWindow](datetime-intimewindow.md) | `NotInTimeWindow` is `True` when the time of day of the selected instant is outside a daily window. |
+
+### Fixed offsets
+
+`OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins convert the selected instant to a fixed offset from UTC before they read the day, the month or the time of day. The `offset` argument gives the offset.
+
+| Offset text | Meaning |
+| --- | --- |
+| `"Z"` | UTC |
+| `"+hh:mm"` | Later than UTC, for example `"+05:30"` |
+| `"-hh:mm"` | Earlier than UTC, for example `"-03:00"` |
+
+- The offset is from `-14:00` to `+14:00`. Two digits are necessary for the hours and for the minutes.
+- Time zone names, such as the IANA name `Europe/Paris`, are not accepted. The diagnostic says that time zone names are not supported.
+- There are no daylight-saving rules. A host that needs local time in a zone with daylight saving selects the instant in the correct offset, or registers one predicate for each offset.
+- The argument names of these predicates are fixed. The host cannot change them.
+- A literal argument that is not valid is a `TRE0026` compile error at the call (see [diagnostics](../specification/diagnostics.md)). A value from a data source is checked at evaluation. A value that is not valid makes the predicate throw an `ArgumentException`. The evaluator records a fault and the term is `Unknown`. The check runs before the selector, so a null selected value does not hide it.
 
 ## Type-test predicates
 
@@ -251,4 +277,4 @@ The `TypePredicates` factories test what a value is. Each has two overloads: a `
 
 ## How a predicate page is organized
 
-A predicate page has these sections, in this order: Name, Classification, Selector and kinds, Arguments, Definition, Answers, Null selected value and Examples. Reversed bounds, Edge cases and Related predicates appear where they apply. A page is named `<family>-<factory>.md` in lower case.
+A predicate page has these sections, in this order: Name, Classification, Selector and kinds, Arguments, Definition, Answers, Null selected value and Examples. Reversed bounds, Argument errors, Edge cases and Related predicates appear where they apply. A page is named `<family>-<factory>.md` in lower case.

@@ -51,12 +51,17 @@ internal static class NotXTwinTable
 
     private static readonly string[] AandZ = ["a", "z"];
 
+    private static readonly string[] FridayOnly = ["Friday"];
+
+    private static readonly long[] JanuaryOnly = [1L];
+
     /// <summary>Gets every row of the table.</summary>
     public static IReadOnlyList<TwinTableEntry> Entries { get; } =
     [
         .. StringRows(),
         .. CollectionRows(),
         .. DateTimeRows(),
+        .. CalendarRows(),
         .. Int64Rows(),
         .. DecimalRows(),
         .. BooleanRows(),
@@ -579,6 +584,63 @@ internal static class NotXTwinTable
                         Clock,
                         nullBehavior: NullBehavior.False
                     )
+            )
+        );
+    }
+
+    /// <summary>
+    /// The fixed-offset calendar pairs. <c>T0</c> is Thursday 2026-01-01 12:00 UTC, so the probes read it in an offset:
+    /// at <c>+14:00</c> it is Friday 02:00, which moves the day and keeps the month.
+    /// </summary>
+    private static IEnumerable<TwinTableEntry> CalendarRows()
+    {
+        const NullBehavior unknown = NullBehavior.Unknown;
+        yield return new TwinPair(
+            "DateTimePredicates.OnDayOfWeek(DateTimeOffset)",
+            "DateTimePredicates.NotOnDayOfWeek(DateTimeOffset)",
+            n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("days", FridayOnly), ("offset", "+14:00")],
+            Instant(T0),
+            Instant(T0.AddDays(1)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
+            )
+        );
+        yield return new TwinPair(
+            "DateTimePredicates.InMonth(DateTimeOffset)",
+            "DateTimePredicates.NotInMonth(DateTimeOffset)",
+            n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("months", JanuaryOnly), ("offset", "Z")],
+            Instant(T0),
+            Instant(T0.AddMonths(1)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
+            )
+        );
+        yield return new TwinPair(
+            "DateTimePredicates.InTimeWindow(DateTimeOffset)",
+            "DateTimePredicates.NotInTimeWindow(DateTimeOffset)",
+            n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("start", "09:00"), ("end", "17:00"), ("offset", "Z")],
+            Instant(T0),
+            Instant(T0.AddHours(8)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
             )
         );
     }

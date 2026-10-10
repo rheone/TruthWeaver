@@ -129,6 +129,20 @@ DateTimePredicates.AfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, 
 
 The predicate reads the clock each time the engine evaluates it, never at registration. The engine evaluates one term once per `Evaluate` call, so a repeated term sees one instant. Two different terms each read the clock and can see different instants if the clock advances between them. To give every term one instant, register a `TimeProvider` that returns a fixed instant for each evaluation.
 
+`OnDayOfWeek`, `InMonth` and `InTimeWindow` read the selected instant in the fixed offset that the `offset` argument gives: `"Z"` or `"+hh:mm"` / `"-hh:mm"`. Time zone names such as `Europe/Paris` are not accepted, and there are no daylight-saving rules. The argument names are fixed.
+
+| Predicate | Twin | Arguments | `True` when |
+| --- | --- | --- | --- |
+| `OnDayOfWeek` | `NotOnDayOfWeek` | `days` (English day names), `offset` | The day of the week in `offset` is in `days`. |
+| `InMonth` | `NotInMonth` | `months` (numbers 1 to 12), `offset` | The month in `offset` is in `months`. |
+| `InTimeWindow` | `NotInTimeWindow` | `start`, `end` or `duration`, `includeStart`, `includeEnd`, `offset` | The time of day in `offset` is inside the window. By default the window is $[start, end)$. A start later than the end crosses midnight. |
+
+```csharp
+DateTimePredicates.InTimeWindow<Order>("placedInHours", order => order.PlacedAt);
+```
+
+A rule then calls `placedInHours(start: "09:00", end: "17:00", offset: "+01:00")`, or gives `duration: "PT8H"` in place of `end`. A literal argument that is not valid, a time zone name included, is a `TRE0026` compile error. The [date-time predicates reference](strong-k3/predicates/README.md#fixed-offsets) gives every argument rule.
+
 Reversed bounds (`lower` later than `upper`) follow the reversed-bounds rule of the numeric range predicates in [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 
 A null selected value answers as [Null selected values](#null-selected-values) describes.
