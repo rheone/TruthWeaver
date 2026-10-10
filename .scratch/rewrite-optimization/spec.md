@@ -1,6 +1,6 @@
 # Rewrite tooling: soundness checks, normal forms, evaluation order and provenance
 
-**Status:** ready-for-grilling
+**Status:** grilled 2026-10-10, ready for implementation
 
 Source: [library-roadmap](../library-roadmap/spec.md) ("Not now" NNF print mode), the simplification discussion of 2026-10-10,
 and [deferred-features](../deferred-features/spec.md).
@@ -26,7 +26,7 @@ Four tickets.
 | --- | --- | --- |
 | [01](issues/01-rewrite-soundness-assertion.md) | `RewriteAssertions.AssertSound`: equivalence, never-larger and idempotence, on any rewrite. | ready |
 | [02](issues/02-normal-forms.md) | `ToNnf()`, `ToCnf()` and `ToDnf()` on `CompiledRule`. | ready |
-| [03](issues/03-evaluation-order-optimization.md) | A cost hint on `PredicateSchema` and an operand reorder for `AND` and `OR`. | needs measurement first |
+| [03](issues/03-evaluation-order-optimization.md) | A cost hint on `PredicateSchema` and an operand reorder for `AND` and `OR`. | benchmark first |
 | [04](issues/04-rewrite-provenance.md) | A report of the laws a rewrite applied. | ready |
 
 Ticket 01 goes first. Tickets 02 and 03 use it as their safety net.
@@ -44,14 +44,16 @@ Ticket 01 goes first. Tickets 02 and 03 use it as their safety net.
 - **Value, not order.** A rewrite that reorders may change which predicates run and which faults appear. The value never changes.
   This matches the existing documentation of `Simplify()`.
 
-## Open questions
+## Resolved questions (grilled 2026-10-10)
 
-1. **NNF over thresholds.** Does NNF expand `AtLeast`, `Exactly` and similar into `AND`/`OR`/`NOT`, or treat them as atoms?
-   Recommendation: treat them as atoms. Expansion grows the rule, and `NOT AtLeast(k, xs)` has a threshold complement that
-   can be checked first.
-2. **Cost source.** A static hint on `PredicateSchema`, a measured value from the metrics, or both?
-   Recommendation: static hint only. A measured cost makes the form of a rule depend on runtime history.
-3. **Does ticket 03 pay?** It needs a benchmark that shows a real gain on realistic rules before any API is added.
+1. **NNF over thresholds.** Thresholds (`AtLeast`, `AtMost`, `Exactly`, `BETWEEN` and the rest of the family) expand to
+   `AND`/`OR`/`NOT`. Expansion can grow a rule a lot, so it is opt-in. `ToNnf`, `ToCnf` and `ToDnf` take an options value with
+   `ExpandThresholds` (default off). When it is off and a threshold blocks a strict form, the result keeps the threshold as an
+   atom and carries a warning with the growth estimate. When it is on, the rule expands up to `MaxRewriteNodeCount`, and
+   `TRE0016` beyond that.
+2. **Cost source.** Both. `PredicateSchema.Cost` is a static hint and the default. An opt-in override takes measured values.
+   Same inputs and same registry give the same order unless the override is used.
+3. **Gate on ticket 03.** Benchmark first. If the gain on realistic mixed-cost rules is small, close the ticket.
 
 ## Out of scope
 

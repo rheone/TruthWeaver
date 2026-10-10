@@ -12,7 +12,10 @@
 - [ ] `COALESCE`, inspections and `If` are atoms: no `NOT` is pushed into them
 - [ ] A rule over the node cap returns `TRE0016` and no rule
 - [ ] Each form is checked with `AssertSound` and the fuzzer; idempotence holds for each
-- [ ] Open question 1 (thresholds) is answered before coding
+- [ ] An options value has `ExpandThresholds` (default off)
+- [ ] With `ExpandThresholds` off, a threshold stays an atom and the result carries a warning diagnostic with the growth estimate
+- [ ] With `ExpandThresholds` on, thresholds expand to `AND`/`OR`/`NOT`, within the node cap
+- [ ] A new warning code follows the last `DiagnosticCodes` entry and is documented in the diagnostics reference
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

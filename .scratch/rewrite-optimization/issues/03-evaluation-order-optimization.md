@@ -12,7 +12,8 @@
 - [ ] A term shared by two operands counts once
 - [ ] The result is K3-equivalent and the same size; verified with `AssertSound`
 - [ ] The documentation says which predicates may stop running and that faults can differ, as it does for `Simplify()`
-- [ ] Open question 2 (cost source) is answered before coding
+- [ ] An opt-in override takes measured per-predicate cost values; without it the order depends only on the static hints
+- [ ] The default path gives the same order for the same rule and registry on every run
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).
