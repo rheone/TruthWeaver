@@ -264,7 +264,7 @@ internal sealed class RuleNodeCompiler<TContext>
         };
     }
 
-    /// <summary>Builds <c>If(condition, whenTrue, whenFalse)</c>; anything but exactly three operands is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>
+    /// <summary>Builds <c>If(condition, whenTrue, whenFalse)</c>; anything but exactly three operands is a <see cref="DiagnosticCodes.InfixArityViolation"/>.</summary>
     private Expression BuildIf(IfNode node, int depth)
     {
         OperatorDefinition arity = ArityOf("If");
@@ -272,7 +272,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.InfixArityViolation,
                     $"If requires exactly {arity.MinOperands} operands (condition, whenTrue, whenFalse) but found {node.Operands.Count}.",
                     node.Span,
                     expected: ExpectedCountText(arity),
@@ -290,7 +290,7 @@ internal sealed class RuleNodeCompiler<TContext>
         );
     }
 
-    /// <summary>Builds an inspection (<c>IsTrue</c>/<c>IsFalse</c>/<c>IsUnknown</c>/<c>IsKnown</c>); anything but one operand is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>
+    /// <summary>Builds an inspection (<c>IsTrue</c>/<c>IsFalse</c>/<c>IsUnknown</c>/<c>IsKnown</c>); anything but one operand is a <see cref="DiagnosticCodes.InfixArityViolation"/>.</summary>
     private Expression BuildInspection(InspectionNode node, int depth)
     {
         OperatorDefinition arity = ArityOf(node.Kind.ToString());
@@ -298,7 +298,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.InfixArityViolation,
                     $"{node.Kind} requires exactly {CountText(arity.MinOperands)} but found {node.Operands.Count}.",
                     node.Span,
                     expected: ExpectedCountText(arity),
@@ -325,7 +325,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.InfixArityViolation,
                     $"This operator requires {ExpectedCountText(arity)} but found {operands.Count}.",
                     owner.Span,
                     expected: ExpectedCountText(arity),
@@ -478,7 +478,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.InfixArityViolation,
                     $"{node.Comparison} requires at least {(arity.MinOperands == 1 ? "one operand" : CountText(arity.MinOperands))}.",
                     node.Span,
                     expected: ExpectedCountText(arity),
@@ -526,7 +526,7 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.InfixArityViolation,
                     $"BETWEEN requires {ExpectedCountText(arity)} but found {operandCount}.",
                     node.Span,
                     expected: ExpectedCountText(arity),

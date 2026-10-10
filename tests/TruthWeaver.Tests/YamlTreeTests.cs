@@ -254,8 +254,7 @@ public sealed class YamlTreeTests
         Assert.Contains(
             result.Diagnostics,
             d =>
-                d.Code == DiagnosticCodes.MalformedTree
-                && d.Message.Contains(expectedMessageSubstring, StringComparison.Ordinal)
+                d.Severity == DiagnosticSeverity.Error && d.Message.Contains(expectedMessageSubstring, StringComparison.Ordinal)
         );
     }
 
@@ -305,7 +304,7 @@ public sealed class YamlTreeTests
         Assert.Contains(
             secondResult.Diagnostics,
             d =>
-                d.Code == DiagnosticCodes.MalformedTree
+                d.Code == DiagnosticCodes.UnknownPredicate
                 && d.Message.Contains("Unknown operator 'bogus'.", StringComparison.Ordinal)
         );
     }

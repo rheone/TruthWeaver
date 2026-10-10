@@ -308,12 +308,12 @@ public sealed class IfTests
     [InlineData("If(a, b)")]
     [InlineData("If(a, b, c, d)")]
     [InlineData("If()")]
-    public void Compile_WithWrongOperandCount_ReportsMalformedTree_Test(string text)
+    public void Compile_WithWrongOperandCount_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>JSON uses the 'if' op with [condition, whenTrue, whenFalse], round-trips, and reads the op name in any letter case.</summary>

@@ -10,7 +10,8 @@ using TruthWeaver.Diagnostics;
 /// <c>const</c>, <c>predicate</c> or <c>op</c>. The reader owns that dispatch, the op-name to node mapping, the <c>k</c>,
 /// <c>min</c>, <c>max</c> and operand-count checks and the <c>Collapse</c>, <c>NXOR</c> and <c>Project</c> rejections; a
 /// format contributes only an <see cref="ITreeNodeCursor"/> over its document model. Never throws for malformed input: it
-/// reports <see cref="DiagnosticCodes.MalformedTree"/> diagnostics located by their path from the root (<c>$.operands[1].op</c>).
+/// reports diagnostics located by their path from the root (<c>$.operands[1].op</c>). A structural problem is <see cref="DiagnosticCodes.MalformedTree"/>; a bad count, bound or
+/// operator name has the code the DSL gives it.
 /// </summary>
 internal sealed class TreeFormatReader
 {
@@ -47,7 +48,14 @@ internal sealed class TreeFormatReader
 
     private void Report(string message, SourceSpan span, string expected, string found, string path)
     {
-        this.diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, message, span, expected, found, path: path));
+        this.Report(DiagnosticCodes.MalformedTree, message, span, expected, found, path);
+    }
+
+    // The code is a parameter because the same mistake has one code on every surface: a bad count or bound keeps the
+    // code the DSL gives it, and only a tree shape problem is TRE0014.
+    private void Report(string code, string message, SourceSpan span, string expected, string found, string path)
+    {
+        this.diagnostics.Add(Diagnostic.Error(code, message, span, expected, found, path: path));
     }
 
     // Rejects every key of a node that its kind does not define (the published schema sets additionalProperties to false).
@@ -243,19 +251,19 @@ internal sealed class TreeFormatReader
         // tell the author where collapse went.
         if (string.Equals(op, "collapse", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, path));
+            this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, path));
             return null;
         }
 
         if (string.Equals(op, "nxor", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, "parity", path));
+            this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, "parity", path));
             return null;
         }
 
         if (string.Equals(op, "project", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, path));
+            this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, path));
             return null;
         }
 
@@ -264,7 +272,7 @@ internal sealed class TreeFormatReader
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.UnknownPredicate,
                     $"Unknown operator '{op}'.",
                     opNode.Span,
                     expected: "a known operator",
@@ -325,6 +333,7 @@ internal sealed class TreeFormatReader
                 if (operands.Count != 1)
                 {
                     this.Report(
+                        DiagnosticCodes.InfixArityViolation,
                         "'not' requires exactly one operand.",
                         operandsNode.Span,
                         "1 operand",
@@ -396,6 +405,7 @@ internal sealed class TreeFormatReader
         if (!present || !kNode!.TryGetInt32(out int k))
         {
             this.Report(
+                DiagnosticCodes.InvalidThresholdValue,
                 $"'{op}' requires a numeric 'k'.",
                 present ? kNode!.Span : node.Span,
                 "an integer",
@@ -429,6 +439,7 @@ internal sealed class TreeFormatReader
         }
 
         this.Report(
+            DiagnosticCodes.InvalidThresholdValue,
             $"'{op}' requires integer 'min' and 'max'.",
             present ? child!.Span : node.Span,
             "an integer",

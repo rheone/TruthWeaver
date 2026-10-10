@@ -141,15 +141,27 @@ public sealed class StrictTreeKeysTests
         Assert.Equal("$.args.role", diagnostic.Path);
     }
 
-    /// <summary>A predicate argument named twice in a YAML rule is an error.</summary>
+    /// <summary>A predicate argument named twice in a YAML rule is a duplicate-argument error at the repeated key.</summary>
     [Fact]
-    public void CompileYaml_DuplicateArgument_ReportsAnError_Test()
+    public void CompileYaml_DuplicateArgument_ReportsDuplicateArgument_Test()
     {
         CompilationResult<RuleTestContext> result = CreateCompiler()
             .CompileYaml("predicate: hasRole\nargs:\n  role: Y\n  role: Z\n");
 
-        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.DuplicateArgument, diagnostic.Code);
+        Assert.Equal("$.args.role", diagnostic.Path);
         Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A key repeated outside <c>args</c> in a YAML rule stays a malformed tree, not a duplicate argument.</summary>
+    [Fact]
+    public void CompileYaml_DuplicateKeyOutsideArgs_ReportsMalformedTree_Test()
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml("predicate: hasRole\npredicate: isManager\n");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
     }
 
     /// <summary>A predicate argument named twice in a builder is an error, not last-wins.</summary>

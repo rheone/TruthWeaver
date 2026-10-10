@@ -117,12 +117,12 @@ public sealed class ParityTests
     [Theory]
     [InlineData("PARITY(a)")]
     [InlineData("PARITY()")]
-    public void Compile_ParityWithFewerThanTwoOperands_ReportsMalformedTree_Test(string text)
+    public void Compile_ParityWithFewerThanTwoOperands_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>Binary XOR with three operands is still the arity error, pointing at PARITY.</summary>
@@ -258,7 +258,7 @@ public sealed class ParityTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.SyntaxError, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Equal(DiagnosticSuggestionKind.Replacement, error.Suggestion?.Kind);
         Assert.Equal("PARITY", error.Suggestion?.Text);
         Assert.Equal(call, text.Substring(error.Span.Start, error.Span.Length));
@@ -283,7 +283,7 @@ public sealed class ParityTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Equal(DiagnosticSuggestionKind.Replacement, error.Suggestion?.Kind);
         Assert.Equal("parity", error.Suggestion?.Text);
     }
@@ -298,7 +298,7 @@ public sealed class ParityTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Equal("parity", error.Suggestion?.Text);
         Assert.NotNull(error.Path);
     }

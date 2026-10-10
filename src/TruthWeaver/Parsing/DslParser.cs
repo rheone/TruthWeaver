@@ -858,7 +858,7 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.SyntaxError, span));
+                this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.UnknownPredicate, span));
                 return new ErrorNode(span);
             }
         );
@@ -874,7 +874,7 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.SyntaxError, span, "PARITY"));
+                this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.UnknownPredicate, span, "PARITY"));
                 return new ErrorNode(span);
             }
         );
@@ -890,7 +890,7 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.SyntaxError, span));
+                this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.UnknownPredicate, span));
                 return new ErrorNode(span);
             }
         );
@@ -899,7 +899,7 @@ internal sealed class DslParser
     /// <summary>
     /// Reads one integer literal for a threshold <c>k</c> or a BETWEEN bound. The text is parsed with the invariant
     /// culture, so the result does not depend on the host. A missing, fractional or out-of-range (for example
-    /// <c>1.5</c> or <c>99999999999</c>) value is a syntax error; the number token is still consumed so parsing can
+    /// <c>1.5</c> or <c>99999999999</c>) value is an <see cref="DiagnosticCodes.InvalidThresholdValue"/> error, as in the tree formats; the number token is still consumed so parsing can
     /// continue, and <c>0</c> is returned only as a placeholder next to that error.
     /// </summary>
     /// <param name="description">What is expected, as "name as OPERATOR's Nth argument", for the diagnostic.</param>
@@ -916,7 +916,7 @@ internal sealed class DslParser
 
         this.diagnostics.Add(
             Diagnostic.Error(
-                DiagnosticCodes.SyntaxError,
+                DiagnosticCodes.InvalidThresholdValue,
                 $"Expected an integer {description}.",
                 this.Current.Span,
                 expected: "an integer",

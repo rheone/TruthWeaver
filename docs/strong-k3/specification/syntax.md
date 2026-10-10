@@ -60,7 +60,7 @@ A threshold call writes its integer `k` first: `AtLeast(2, a, b, c)`. `BETWEEN` 
 | Two or more | `AND`, `OR`, `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `ExactlyOne` |
 | One or more, after the integer `k` | `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly` |
 
-`AND` and `OR` are flat chains. `a AND b AND c` is one three-operand node, not two nested nodes. A chain of a binary-only Operation, such as `a IMPLIES b IMPLIES c`, is the diagnostic `InfixArityViolation`. `a XOR b XOR c` is the same diagnostic, and its message names `PARITY` and `ExactlyOne`. A wrong operand count for any other Operation is `MalformedTree`. Both codes are in [diagnostics](diagnostics.md).
+`AND` and `OR` are flat chains. `a AND b AND c` is one three-operand node, not two nested nodes. A chain of a binary-only Operation, such as `a IMPLIES b IMPLIES c`, is the diagnostic `InfixArityViolation`. `a XOR b XOR c` is the same diagnostic, and its message names `PARITY` and `ExactlyOne`. A wrong operand count for any other Operation is the same diagnostic, `InfixArityViolation`, in every format. Both codes are in [diagnostics](diagnostics.md).
 
 ## Precedence and grouping
 
@@ -98,7 +98,7 @@ The condition and each branch of a ternary must be a single operand or a parenth
 
 ## Operations outside the rule language
 
-`Project` and `Collapse` are methods on a `Decision`. They are not rule operators. A rule that writes either one is a syntax error in rule text and `MalformedTree` in JSON and YAML. The message points to `Decision.Project` or `Decision.Collapse`. `NXOR` is not an Operation. The compiler rejects it and names `PARITY`.
+`Project` and `Collapse` are methods on a `Decision`. They are not rule operators. A rule that writes either one is the unknown-operator error `UnknownPredicate` in rule text, JSON and YAML. The message points to `Decision.Project` or `Decision.Collapse`. `NXOR` is not an Operation. The compiler rejects it and names `PARITY`.
 
 ## Related
 

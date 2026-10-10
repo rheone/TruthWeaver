@@ -2,7 +2,7 @@
 
 A rule that does not compile never throws. `Compile` returns a `CompilationResult<TContext>`, and its `Diagnostics` explain what is wrong. Each `Diagnostic` is structured data first and text second. An editor can lay it out itself, and a log can print it as it is. Back to the [README](../README.md).
 
-For the meaning, cause and fix of each code, see the [diagnostic code catalog](strong-k3/specification/diagnostics.md).
+For the meaning, cause and fix of each code, see the [diagnostic code catalog](strong-k3/specification/diagnostics.md). The catalog is one table. It lists every code with its severity, its phase and whether the compiler reports it by default or only on request. One mistake has one code in rule text, JSON, YAML and `RuleBuilder`.
 
 ## Diagnostic members
 
@@ -133,7 +133,7 @@ Console.WriteLine(compiler.CompileJson(json).FormatDiagnostics(json));
 
 <!-- doctest:diagnostics-json {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]} -->
 ```text
-TRE0014 error at $.operands[1].op (line 1, column 46): Unknown operator 'orr'.
+TRE0002 error at $.operands[1].op (line 1, column 46): Unknown operator 'orr'.
   {"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}
                                                ^^^^^
   Expected: a known operator
@@ -167,14 +167,14 @@ This table shows how each class of malformed rule text is reported.
 | Missing operand or literal                                 | `TRE0001`                                  | a term, constant or `(` (or a literal) / the token or end of rule                      | none                                                            |
 | Mismatched, unclosed or unmatched delimiter                | `TRE0001`                                  | the closer / the token or end of rule (an unclosed group is reported at its opener)    | none                                                            |
 | Unterminated string, bad escape                            | `TRE0001`, `TRE0015`                       | a closing `"`, or the supported escapes / end of rule or the escape                    | none                                                            |
-| Wrong operand count, `XOR` and the other binary operators  | `TRE0006`, `TRE0014`                       | `2 operands` / `3 operands`                                                            | `PARITY` or `ExactlyOne` for `XOR`, parentheses for the others  |
+| Wrong operand count, for every operator                    | `TRE0006`                                  | `2 operands` / `3 operands`                                                            | `PARITY` or `ExactlyOne` for `XOR`, parentheses for the others  |
 | Ambiguous mixing without parentheses                       | `TRE0007`                                  | parentheses around one of the groups / the operators that share a level                | hint that shows the parenthesised text                          |
-| Threshold or `BETWEEN` bounds, non-integer bound           | `TRE0008`, `TRE0001`                       | the valid range, or an integer / the value                                             | none                                                            |
-| Declared `Collapse`                                        | `TRE0001` (rule text), `TRE0014` (JSON or YAML) | a rule without `Collapse` / `Collapse`                                            | hint to call `Decision.Collapse(policy)` on the result          |
-| Declared `Project`                                         | `TRE0001` (rule text), `TRE0014` (JSON or YAML) | a rule without `Project` / `Project`                                              | hint to use `COALESCE(x, True)` or `COALESCE(x, False)`, or `Decision.Project(unknownAs)` |
+| Threshold or `BETWEEN` bounds, non-integer bound           | `TRE0008`                                  | the valid range, or an integer / the value                                             | none                                                            |
+| Declared `Collapse`                                        | `TRE0002`                                  | a rule without `Collapse` / `Collapse`                                            | hint to call `Decision.Collapse(policy)` on the result          |
+| Declared `Project`                                         | `TRE0002`                                  | a rule without `Project` / `Project`                                              | hint to use `COALESCE(x, True)` or `COALESCE(x, False)`, or `Decision.Project(unknownAs)` |
 | Missing, unknown or mistyped predicate argument            | `TRE0003`, `TRE0005`, `TRE0004`            | the argument or kind / what was written                                                | nearest declared argument name                                  |
 | Predicate argument named twice                             | `TRE0032`                                  | each argument once / the repeated name                                                 | hint to remove one                                              |
-| JSON or YAML key that the node does not define, or a `predicate` next to an `op` | `TRE0014`          | only the keys of that node kind / the key written                                      | nearest valid key, or a hint to split the node                  |
+| JSON or YAML key that the node does not define, a `predicate` next to an `op`, or a value of the wrong kind | `TRE0014` | only the keys of that node kind / the key written                                      | nearest valid key, or a hint to split the node                  |
 | Variable reference that names an undeclared data source    | `TRE0024`                                  | a declared data source name / the name written                                         | nearest declared source name, or a hint to declare it           |
 | Variable reference whose query fails the validator of its source | `TRE0025`                            | a query valid for the data source / the query written                                  | none                                                            |
 | Literal argument values that the predicate's argument validator rejects, such as reversed `Between` or `Outside` bounds | `TRE0026` | the rule the values break / the values written | the fix the validator gives, such as swapping the bounds |

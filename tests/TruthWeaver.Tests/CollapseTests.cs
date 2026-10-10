@@ -166,7 +166,7 @@ public sealed class CollapseTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.SyntaxError, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains("Decision.Collapse", error.Message, StringComparison.Ordinal);
         Assert.Equal(call, text.Substring(error.Span.Start, error.Span.Length));
     }
@@ -206,7 +206,7 @@ public sealed class CollapseTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains("Decision.Collapse", error.Message, StringComparison.Ordinal);
     }
 
@@ -220,7 +220,7 @@ public sealed class CollapseTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains("Decision.Collapse", error.Message, StringComparison.Ordinal);
         Assert.NotNull(error.Path);
     }

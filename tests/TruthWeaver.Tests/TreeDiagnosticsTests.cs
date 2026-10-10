@@ -29,7 +29,7 @@ public sealed class TreeDiagnosticsTests
     {
         Diagnostic diagnostic = SingleJson("""{"op":"annd","operands":[{"const":true},{"const":false}]}""");
 
-        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, diagnostic.Code);
         Assert.Equal("$.op", diagnostic.Path);
         Assert.Equal("a known operator", diagnostic.Expected);
         Assert.Equal("'annd'", diagnostic.Found);
@@ -301,7 +301,7 @@ public sealed class TreeDiagnosticsTests
 
         string expected = string.Join(
             "\n",
-            "TRE0014 error at $.op (line 1, column 7): Unknown operator 'annd'.",
+            "TRE0002 error at $.op (line 1, column 7): Unknown operator 'annd'.",
             "  " + json,
             "        ^^^^^^",
             "  Expected: a known operator",
@@ -332,7 +332,7 @@ public sealed class TreeDiagnosticsTests
 
         string text = result.FormatDiagnostics(yaml);
 
-        Assert.StartsWith("TRE0014 error at $.operands[1].op (line 4, column 9): Unknown operator 'orr'.", text);
+        Assert.StartsWith("TRE0002 error at $.operands[1].op (line 4, column 9): Unknown operator 'orr'.", text);
         Assert.Contains("\n    - op: orr\n          ^^^\n", text);
         Assert.Contains("Did you mean: or", text);
     }

@@ -47,7 +47,7 @@ An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same ru
 | `Or` / `Any` | `Constant(False)` | `x` |
 | `None` | `Constant(True)` | `Not(x)` |
 
-`Parity`, `ExactlyOne` and `Coalesce` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `MalformedTree`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
+`Parity`, `ExactlyOne` and `Coalesce` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `InfixArityViolation`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
 
 An empty list that silently becomes a constant can hide a mistake. For example, an empty list of role checks under `And` is `True`. Check the count first when that matters.
 
@@ -56,8 +56,8 @@ RuleBuilder x = RuleBuilder.Predicate("isActive");
 
 RuleBuilder.And(new[] { x });                 // folds to x
 RuleBuilder.And(new List<RuleBuilder> { x }); // folds to x
-RuleBuilder.Parity(new[] { x });              // MalformedTree at compile time
-RuleBuilder.Parity(new List<RuleBuilder> { x }); // the same MalformedTree
+RuleBuilder.Parity(new[] { x });              // InfixArityViolation at compile time
+RuleBuilder.Parity(new List<RuleBuilder> { x }); // the same InfixArityViolation
 ```
 
 Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumerable<RuleBuilder>` overload. A `null` sequence throws `ArgumentNullException`, and the builder enumerates the sequence once.

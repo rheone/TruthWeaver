@@ -356,8 +356,6 @@ internal static class TestNamingBaseline
         "TruthWeaver.Tests.RuleDiffTests.Changed_term_arguments_produce_a_changed_entry_at_the_term_position",
         "TruthWeaver.Tests.RuleDiffTests.Structurally_identical_rules_produce_an_empty_diff",
         "TruthWeaver.Tests.RuleNodeCompilerDiagnosticsTests.A_term_argument_name_the_predicate_schema_does_not_declare_produces_an_unknown_argument_diagnostic",
-        "TruthWeaver.Tests.RuleNodeCompilerDiagnosticsTests.A_threshold_operator_with_zero_operands_produces_a_malformed_tree_diagnostic_not_an_exception",
-        "TruthWeaver.Tests.RuleNodeCompilerDiagnosticsTests.A_variadic_operator_with_fewer_than_two_operands_produces_a_malformed_tree_diagnostic_not_an_exception",
         "TruthWeaver.Tests.RuleNodeCompilerDiagnosticsTests.An_omitted_optional_argument_with_a_declared_default_resolves_to_that_default_when_evaluated",
         "TruthWeaver.Tests.RuleNodeCompilerErrorNodeAndDefensiveThrowsTests.Builds_unhandled_rule_node_type_default_branch_throws_naming_the_offending_type",
         "TruthWeaver.Tests.RuleNodeCompilerErrorNodeAndDefensiveThrowsTests.ValidThresholdRanges_unhandled_comparison_default_branch_throws_naming_the_bogus_value",

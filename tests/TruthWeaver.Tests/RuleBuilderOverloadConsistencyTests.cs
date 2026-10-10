@@ -112,12 +112,12 @@ public sealed class RuleBuilderOverloadConsistencyTests
     [InlineData("ExactlyOne", 1)]
     [InlineData("Coalesce", 0)]
     [InlineData("Coalesce", 1)]
-    public void Compile_ShortListForAnOperatorWithNoIdentity_ReportsMalformedTree_Test(string op, int count)
+    public void Compile_ShortListForAnOperatorWithNoIdentity_ReportsInfixArityViolation_Test(string op, int count)
     {
         CompilationResult<RuleTestContext> result = Build(op, count, asList: true).Compile(CreateCompiler());
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary><c>GreaterThan</c> and <c>LessThan</c> accept a sequence, as the other threshold operators do.</summary>

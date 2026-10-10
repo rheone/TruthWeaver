@@ -21,7 +21,7 @@ Derived. `ANY(...)` is defined as `AtLeast(1, ...)` (see [Canonical form](#canon
 
 ## Arity
 
-Two or more operands, and no parameter. Fewer is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
+Two or more operands, and no parameter. Fewer is the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
 > Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `ANY` rejects fewer than two operands: a one-operand `ANY` would only be that operand. `OperatorDefinitions` and the compiler agree on this minimum.
@@ -180,8 +180,8 @@ GREATERTHAN(0, ...)
 
 | Input | Diagnostic |
 | --- | --- |
-| One operand, `ANY(a)` | `MalformedTree` (`TRE0014`) |
-| JSON or YAML node with fewer than two operands | The same `MalformedTree` (`TRE0014`) diagnostic. |
+| One operand, `ANY(a)` | `InfixArityViolation` (`TRE0006`) |
+| JSON or YAML node with fewer than two operands | The same `InfixArityViolation` (`TRE0006`) diagnostic. |
 
 - Two or more operands in the rule languages. A single operand is not "any of one" in the DSL, JSON or YAML; write the operand itself.
 - `Unknown` is not absorbed. Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.

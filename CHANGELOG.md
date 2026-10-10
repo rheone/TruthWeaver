@@ -180,9 +180,19 @@ copyright line reads 2026.
   instants on different hosts. Migration: append `Z` (UTC) or the offset you meant to each date-time literal and each
   stored date-time value.
 - Breaking: in the rule text, a threshold `k` that is not a whole number in the `int` range, such as `AtLeast(1.5, a, b)`
-  or `AtLeast(99999999999, a, b)`, is a `SyntaxError` (`TRE0001`), the same as a bad `BETWEEN` bound. It used to compile
-  as `k = 0`. `k`, `min` and `max` share one integer parser that uses the invariant culture. Migration: write `k` as an
+  or `AtLeast(99999999999, a, b)`, is an `InvalidThresholdValue` (`TRE0008`), the same as a bad `BETWEEN` bound. It used to
+  compile as `k = 0`. `k`, `min` and `max` share one integer parser that uses the invariant culture. Migration: write `k` as an
   integer literal.
+- Breaking: one authoring mistake has one diagnostic code in rule text, JSON, YAML and `RuleBuilder`. A wrong operand
+  count for any operator is `InfixArityViolation` (`TRE0006`); it was `MalformedTree` (`TRE0014`) for every operator
+  except the binary ones. A threshold `k` or `BETWEEN` bound that is missing or not a whole number is
+  `InvalidThresholdValue` (`TRE0008`); it was `SyntaxError` (`TRE0001`) in rule text and `MalformedTree` in JSON and
+  YAML. A JSON or YAML `op` that does not exist, and a declared `Collapse`, `Project` or `NXOR` in any format, is
+  `UnknownPredicate` (`TRE0002`); they were `TRE0001` in rule text and `TRE0014` in JSON and YAML. A repeated argument in
+  a YAML `args` mapping is `DuplicateArgument` (`TRE0032`) like the other formats; it was a `TRE0014` YAML syntax error.
+  `MalformedTree` (`TRE0014`) is now only for the shape of a JSON or YAML tree. No code was renumbered. Migration: match
+  on the new code where you matched on the old one. The code table in `docs/strong-k3/specification/diagnostics.md` lists
+  every code with its severity, phase and default, and a test fails when a code in `DiagnosticCodes` is missing from it.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or

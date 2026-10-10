@@ -171,12 +171,12 @@ public sealed class CoalesceTests
     [Theory]
     [InlineData("COALESCE(a)")]
     [InlineData("COALESCE()")]
-    public void Compile_WithFewerThanTwoOperands_ReportsMalformedTree_Test(string text)
+    public void Compile_WithFewerThanTwoOperands_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>A dangling infix operator is a syntax error.</summary>

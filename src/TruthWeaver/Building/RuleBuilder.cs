@@ -227,7 +227,7 @@ public abstract class RuleBuilder
     /// <param name="operands">The operands (at least two).</param>
     /// <remarks>
     /// <c>PARITY</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
-    /// the rule compiler rejects (<c>MalformedTree</c>), the same as the <see cref="Parity(IEnumerable{RuleBuilder})"/> overload.
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="Parity(IEnumerable{RuleBuilder})"/> overload.
     /// </remarks>
     /// <returns>A builder for the <c>PARITY</c> expression.</returns>
     public static RuleBuilder Parity(params RuleBuilder[] operands)
@@ -354,7 +354,7 @@ public abstract class RuleBuilder
     /// <param name="operands">The operands (at least two).</param>
     /// <remarks>
     /// <c>EXACTLYONE</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
-    /// the rule compiler rejects (<c>MalformedTree</c>), the same as the <see cref="ExactlyOne(IEnumerable{RuleBuilder})"/> overload.
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="ExactlyOne(IEnumerable{RuleBuilder})"/> overload.
     /// </remarks>
     /// <returns>A builder for the <c>ExactlyOne</c> expression.</returns>
     public static RuleBuilder ExactlyOne(params RuleBuilder[] operands)
@@ -382,7 +382,7 @@ public abstract class RuleBuilder
     /// <param name="operands">The operands in priority order (at least two).</param>
     /// <remarks>
     /// <c>COALESCE</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
-    /// the rule compiler rejects (<c>MalformedTree</c>), the same as the <see cref="Coalesce(IEnumerable{RuleBuilder})"/> overload.
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="Coalesce(IEnumerable{RuleBuilder})"/> overload.
     /// </remarks>
     /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)

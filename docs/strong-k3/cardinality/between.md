@@ -21,7 +21,7 @@ Derived. `BETWEEN(min, max, ...)` is defined as `AND(AtLeast(min, ...), AtMost(m
 
 ## Arity
 
-Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
+Two or more operands after the two integer bounds, with `0 <= min <= max <= n` for `n` operands, and not the whole range `0..n` (`min = 0` with `max = n`). The valid bounds depend on the operand count, so the same bounds can be valid for one rule and rejected for another. Fewer than two operands is the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
 > Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `BETWEEN` rejects fewer than two operands, like [ANY](any.md), [ALL](all.md) and [NONE](none.md). `OperatorDefinitions` and the compiler agree on this minimum.
@@ -187,9 +187,8 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 | --- | --- |
 | `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`TRE0008`) |
 | The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`TRE0008`) |
-| Fewer than two operands | `MalformedTree` (`TRE0014`). |
-| A bound missing, fractional or outside the `int` range in the DSL | `SyntaxError` (`TRE0001`). |
-| `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`TRE0014`) |
+| Fewer than two operands | `InfixArityViolation` (`TRE0006`). |
+| A bound missing, fractional or outside the `int` range | `InvalidThresholdValue` (`TRE0008`). |
 
 - The bound rules. `min` must satisfy `0 <= min <= max <= n`. The whole range `0..n` is rejected because every count lies in it, so the node would be the constant `True`, the same structural-constant reason as for the threshold family.
 - An empty range is rejected, not evaluated. `min > max` describes no count at all, so the right result would be `False` for every completion. The composition `AND(AtLeast(min), AtMost(max))` does not give that: with `min > max` and `Unknown` operands it can return `Unknown` where the correct answer is `False` (for `min = 2`, `max = 1` and two `Unknown` operands it gives `Unknown`). The bounds are therefore enforced, and the rewrites build a `BETWEEN` only when `min <= max`.

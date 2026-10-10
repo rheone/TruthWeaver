@@ -10,7 +10,11 @@ public static class DiagnosticCodes
     /// <summary>A syntax error while parsing rule text.</summary>
     public const string SyntaxError = "TRE0001";
 
-    /// <summary>A term references a predicate name with no matching registration.</summary>
+    /// <summary>
+    /// A term references a predicate name with no matching registration, or a tree <c>op</c> or an operator call names an
+    /// operator that does not exist. <c>Collapse</c>, <c>Project</c> and <c>NXOR</c> are not operators, so they get this code
+    /// too, with a hint that points to what to use instead.
+    /// </summary>
     public const string UnknownPredicate = "TRE0002";
 
     /// <summary>A term omits a required argument declared by the predicate's schema.</summary>
@@ -22,7 +26,12 @@ public static class DiagnosticCodes
     /// <summary>A term supplies an argument name the predicate's schema does not declare.</summary>
     public const string UnknownArgument = "TRE0005";
 
-    /// <summary><c>XOR</c>, <c>EQUIVALENT</c> (<c>XNOR</c>), <c>IMPLIES</c>, <c>NAND</c> or <c>NOR</c> was given other than exactly two operands.</summary>
+    /// <summary>
+    /// An operator was given an operand count it does not accept: other than two for <c>XOR</c>, <c>EQUIVALENT</c>
+    /// (<c>XNOR</c>), <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c>, other than one for <c>NOT</c> and the inspections, other than
+    /// three for <c>If</c>, and fewer than the minimum for the n-ary operators. The code is the same in rule text, JSON, YAML
+    /// and <c>RuleBuilder</c>. The name is historical: it began as the binary-operator code.
+    /// </summary>
     public const string InfixArityViolation = "TRE0006";
 
     /// <summary>
@@ -34,7 +43,8 @@ public static class DiagnosticCodes
 
     /// <summary>
     /// A count-threshold operator (<c>AtLeast</c>/<c>AtMost</c>/<c>GreaterThan</c>/<c>LessThan</c>/
-    /// <c>Exactly</c>) was given a <c>k</c> that makes it a structural constant for its operand count.
+    /// <c>Exactly</c>) was given a <c>k</c>, or <c>BETWEEN</c> was given bounds, that are not whole numbers or that make it a
+    /// structural constant for its operand count.
     /// </summary>
     public const string InvalidThresholdValue = "TRE0008";
 
@@ -63,7 +73,11 @@ public static class DiagnosticCodes
     /// </summary>
     public const string StructuralContradiction = "TRE0013";
 
-    /// <summary>The tree/JSON/YAML source is malformed independently of DSL syntax (e.g. unknown <c>op</c>, missing discriminator key).</summary>
+    /// <summary>
+    /// The shape of a tree/JSON/YAML source is wrong independently of the rule's meaning: a missing discriminator key, a key
+    /// the node does not define, a value of the wrong JSON or YAML kind, or text that is not well-formed JSON or YAML. A
+    /// mistake with its own code (an operand count, a bound, an unknown operator) never gets this one.
+    /// </summary>
     public const string MalformedTree = "TRE0014";
 
     /// <summary>A string literal in DSL rule text contains a <c>\</c> not followed by one of the supported escapes (<c>\"</c>, <c>\\</c>, <c>\n</c>, <c>\t</c>).</summary>

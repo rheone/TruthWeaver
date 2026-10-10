@@ -46,7 +46,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [08](issues/08-nullbehavior-unknown-is-zero.md) | NullBehavior.Unknown is the zero value | 07 | resolved |
 | [09](issues/09-document-rewrite-round-trip-caveat.md) | Document that a large rewrite result may not recompile | None | resolved |
 | [10](issues/10-assertsound-compilationresult-overload-and-limits-table.md) | AssertSound accepts the capped rewrites; one limits table | 05 | resolved |
-| [11](issues/11-one-diagnostic-code-per-mistake.md) | One diagnostic code per mistake, and one code table | 01, 03 | ready-for-agent |
+| [11](issues/11-one-diagnostic-code-per-mistake.md) | One diagnostic code per mistake, and one code table | 01, 03 | resolved |
 | [12](issues/12-argument-names-are-case-insensitive.md) | Argument names are case-insensitive | None | ready-for-agent |
 | [13](issues/13-lintrules-style-flag.md) | LintRules.Style holds NotCanonical | None | ready-for-agent |
 | [14](issues/14-yaml-null-argument-is-a-diagnostic.md) | A YAML null argument is rejected like JSON | 03 | ready-for-agent |

@@ -23,6 +23,7 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 7. This file is for the LLM, mutate it as necessary while following all of the prescribed rules.
 8. Grilling (`/grill-me`, `/grilling`, `/grill-with-docs` and any equivalent interview or decision-gathering step) asks one question at a time, as a selectable multiple-choice question with a recommended option first. Incorporate each answer before the next question. Do not batch questions or ask them as free text.
 9. Batch work with `/dispatch-tasks`: it is the standard way to run groups of tickets or tasks on sub-agents. Settle open decisions with grilling (rule 8) before the work starts, so a dispatched ticket has no open question.
+10. Use skill /i-have-adhd when for conversations unless otherwise specified
 
 ## Architecture
 
@@ -56,7 +57,6 @@ The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/
 - Do not suppress analyzers merely to make a build pass.
 - Do not weaken analyzer severity without documenting why.
 - Exception, documented in `src/Directory.Build.props`: S1135 (a `TODO` comment) is a warning in CI, not a failure. Every other warning still fails a `CI=true` build.
-- Do not add preview language features merely because the SDK is an RC.
 
 ## Required validation
 
@@ -94,7 +94,7 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 ## Testing
 
 - Tests follow Arrange / Act / Assert by shape (set up, one action, assertions), not by comment markers; `// Arrange` style comments are optional.
-- Tests should be named in the format "{MemberUnderTest}_{Scenario}_{Expectation}_Test"
+- Tests should be named in the format `{MemberUnderTest}_{Scenario}_{Expectation}_Test`
 - Tests should describe behavior rather than implementation details.
 - New and touched tests carry an XML `<summary>` describing the behavior. Untouched pre-existing tests are not backfilled.
 - Prefer one logical behavior per test.
