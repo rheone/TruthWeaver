@@ -80,7 +80,8 @@ internal static class RuleRenderTree
             renderedChildren,
             kind,
             BaseLabel(description, style),
-            showArgumentValues ? description.ArgumentText : null
+            showArgumentValues ? description.ArgumentText : null,
+            description
         );
     }
 

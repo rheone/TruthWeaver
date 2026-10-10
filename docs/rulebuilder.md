@@ -132,6 +132,8 @@ Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to chang
 | `ShowArgumentValues` | `true`, `false` | `true` |
 | `TwoLineTermLabels` | `true` shows a term as a bold label and a plain argument line. `false` shows one line. | `false` |
 | `Palette` | A `MermaidPalette`: `Light`, `ColorblindSafe`, `Monochrome`, `Dark` or your own. | `MermaidPalette.Light` |
+| `NodeStyle` | A `Func<OutlineNode, NodeStyle?>` that picks `NodeStyle.Highlight`, `NodeStyle.Mute` or `NodeStyle.Custom(name)` for a node. | none |
+| `CompactChainThreshold` | The operand count above which a flat `AND` or `OR` of only terms and constants is drawn in a group box. `null` turns the grouping off. | `null` |
 
 ```csharp
 string diagram = rule.PrintMermaid(new MermaidOptions { Direction = MermaidDirection.LeftRight, NodeShapes = true });
@@ -164,6 +166,34 @@ string diagram = rule.PrintMermaid(decision, new MermaidOptions { Palette = bran
 ```
 
 The palette also defines a `Highlight` style and a `Mute` style for nodes that a caller wants to emphasize or to push back.
+
+### Node styles
+
+The `NodeStyle` callback runs for every node. It can mark a node without an evaluation. The callback receives the `OutlineNode` of the node and returns one of these values.
+
+| Value | Result |
+| --- | --- |
+| `NodeStyle.Highlight` | The node gets the class `brHighlight`. The printer defines it from `Palette.Highlight`. |
+| `NodeStyle.Mute` | The node gets the class `brMute`. The printer defines it from `Palette.Mute`. |
+| `NodeStyle.Custom("name")` | The node gets the class `name`. The printer does not define it. Add a `classDef name ...` line to the output. A name holds letters, digits, underscores and hyphens. |
+| `null` | The node keeps its evaluation color, or no class. |
+
+The callback runs after the evaluation coloring. When it returns a style, that style replaces the evaluation color of the node. A node has one class. The printer writes the `classDef` line of the highlight or mute class only when a node uses it.
+
+```csharp
+string diagram = rule.PrintMermaid(
+    decision,
+    new MermaidOptions { NodeStyle = node => node.Label == "OR" ? NodeStyle.Highlight : null }
+);
+```
+
+### Chain grouping
+
+A flat `AND` or `OR` with many terms draws one edge for each operand. Set `CompactChainThreshold` to draw such a chain, with its operator node, inside a Mermaid `subgraph` box. The box title names the operator and the operand count. The grouping applies when the operator has more operands than the threshold, and every operand is a term or a constant. No operand is hidden, and the evaluation coloring still applies to each node. A chain with as many operands as the threshold or fewer, and a chain with an operator among its operands, keep the plain layout.
+
+```csharp
+string diagram = rule.PrintMermaid(new MermaidOptions { CompactChainThreshold = 4 });
+```
 
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 

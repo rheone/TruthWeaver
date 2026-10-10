@@ -1,5 +1,7 @@
 namespace TruthWeaver.Printing;
 
+using TruthWeaver.Evaluation;
+
 /// <summary>
 /// Options for <see cref="MermaidTreePrinter"/> and <c>CompiledRule.PrintMermaid</c>. The default
 /// instance produces the same output as the option-less overloads.
@@ -36,4 +38,20 @@ public sealed record MermaidOptions
 
     /// <summary>Gets a value indicating whether a term's rule-text argument values appear in its label. Defaults to <see langword="true"/>.</summary>
     public bool ShowArgumentValues { get; init; } = true;
+
+    /// <summary>
+    /// Gets a callback that picks a style for any node, or <see langword="null"/> (the default) for none. The
+    /// callback runs for every node after evaluation coloring, and a style that it returns replaces the
+    /// evaluation color of that node. A <see langword="null"/> result leaves the node as it is. The printer
+    /// defines the highlight and mute classes from <see cref="Palette"/>, and only when a node uses them.
+    /// </summary>
+    public Func<OutlineNode, NodeStyle?>? NodeStyle { get; init; }
+
+    /// <summary>
+    /// Gets the operand count above which a flat <c>AND</c> or <c>OR</c> of only terms and constants is drawn
+    /// inside a Mermaid <c>subgraph</c> box, or <see langword="null"/> (the default) to turn compaction off.
+    /// A chain with this many operands or fewer, and a chain that holds an operator, keep the plain layout.
+    /// No operand is hidden.
+    /// </summary>
+    public int? CompactChainThreshold { get; init; }
 }

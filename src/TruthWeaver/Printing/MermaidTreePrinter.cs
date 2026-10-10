@@ -65,20 +65,43 @@ public static class MermaidTreePrinter
         text.Append("flowchart ").Append(DirectionCode(options.Direction)).Append('\n');
         text.Append("    Start([\"Start\"]) --> n0\n");
         List<string> classAssignments = [];
+        ClassUse use = new();
         int nextId = 0;
-        bool anyColored = WriteNode(root, options, text, classAssignments, ref nextId) != RenderState.NoData;
+        int nextGroupId = 0;
+        bool anyColored =
+            WriteNode(root, options, text, classAssignments, use, ref nextId, ref nextGroupId) != RenderState.NoData;
 
         foreach (string assignment in classAssignments)
         {
             text.Append(assignment).Append('\n');
         }
 
-        if (anyColored || classAssignments.Count > 0)
+        if (anyColored || use.State)
         {
             WriteClassDefs(text, options.Palette);
         }
 
+        if (use.Highlight)
+        {
+            WriteClassDef(text, NodeStyle.Highlight.ClassName, options.Palette.Highlight);
+        }
+
+        if (use.Mute)
+        {
+            WriteClassDef(text, NodeStyle.Mute.ClassName, options.Palette.Mute);
+        }
+
         return text.ToString();
+    }
+
+    /// <summary>Records which class definitions the assigned classes need.</summary>
+    private sealed class ClassUse
+    {
+        public bool State { get; set; }
+
+        public bool Highlight { get; set; }
+
+        public bool Mute { get; set; }
     }
 
     private static RenderState WriteNode(
@@ -86,10 +109,25 @@ public static class MermaidTreePrinter
         MermaidOptions options,
         StringBuilder text,
         List<string> classAssignments,
-        ref int nextId
+        ClassUse use,
+        ref int nextId,
+        ref int nextGroupId
     )
     {
         string id = $"n{nextId++}";
+        bool grouped = IsCompactableChain(node, options);
+        if (grouped)
+        {
+            // The group id has its own prefix, so it cannot collide with a node id.
+            text.Append("    subgraph g")
+                .Append(nextGroupId++)
+                .Append(" [\"")
+                .Append(Escape(node.Label))
+                .Append(" (")
+                .Append(node.Children.Count)
+                .Append(" operands)\"]\n");
+        }
+
         (string open, string close) = options.NodeShapes ? ShapeFor(node.Kind) : ("[", "]");
         text.Append("    ")
             .Append(id)
@@ -102,20 +140,52 @@ public static class MermaidTreePrinter
             .Append(close)
             .Append('\n');
 
-        string? className = ClassFor(node.State);
+        // The callback runs after evaluation coloring and replaces it, so a node carries one class.
+        NodeStyle? chosen = node.Source is null ? null : options.NodeStyle?.Invoke(node.Source);
+        string? className = chosen?.ClassName ?? ClassFor(node.State);
         if (className is not null)
         {
             classAssignments.Add($"    class {id} {className}");
+            if (chosen is null)
+            {
+                use.State = true;
+            }
+            else if (ReferenceEquals(chosen, NodeStyle.Highlight))
+            {
+                use.Highlight = true;
+            }
+            else if (ReferenceEquals(chosen, NodeStyle.Mute))
+            {
+                use.Mute = true;
+            }
         }
 
         foreach (RenderNode child in node.Children)
         {
             int childId = nextId;
-            WriteNode(child, options, text, classAssignments, ref nextId);
+            WriteNode(child, options, text, classAssignments, use, ref nextId, ref nextGroupId);
             text.Append("    ").Append(id).Append(" --> n").Append(childId).Append('\n');
         }
 
+        if (grouped)
+        {
+            text.Append("    end\n");
+        }
+
         return node.State;
+    }
+
+    /// <summary>
+    /// Returns whether the node is a flat <c>AND</c> or <c>OR</c> whose operands are all leaves and whose
+    /// operand count exceeds the threshold. The test uses the outline label, because the rendered label
+    /// can be a symbol.
+    /// </summary>
+    private static bool IsCompactableChain(RenderNode node, MermaidOptions options)
+    {
+        return options.CompactChainThreshold is { } threshold
+            && node.Children.Count > threshold
+            && node.Source?.Label is "AND" or "OR"
+            && node.Children.All(child => child.Children.Count == 0);
     }
 
     private static string DirectionCode(MermaidDirection direction)
