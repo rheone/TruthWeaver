@@ -14,6 +14,8 @@ trim_trailing_whitespace = true
 [*.cs]
 indent_size = 4
 tab_width = 4
+# Same value as printWidth in .csharpierrc.json. CSharpier reads either; the IDEs read only this one.
+max_line_length = 128
 
 # Modern C#
 csharp_style_namespace_declarations = file_scoped:warning

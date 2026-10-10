@@ -85,6 +85,9 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 - CSharpier is the authoritative C# formatter.
 - Use: `dotnet csharpier format .`
 - Do not manually fight CSharpier's formatting.
+- Before you push, run `pwsh scripts/format-all.ps1`. It formats, then runs the three CI gates (`csharpier check`, `dotnet format --verify-no-changes --severity info`, Roslynator). `-CheckOnly` skips the apply step. Read the whole output: the info-level findings fail the CI step as well as the errors.
+- The pre-commit hook (`.husky/pre-commit`, installed by the first `dotnet restore`) runs the same two formatters on the staged C# files, formats once more with CSharpier, and then checks both. It fails the commit when CSharpier and `dotnet format` disagree about some code. Do not suppress the finding or edit `.editorconfig` for it. Change the shape of the code. Known case: a multi-line tuple return type on a property with a `{ get; } =` initializer. Use `=>` or a method instead.
+- `.editorconfig` encodes the code style that `dotnet format --severity info` enforces: explicit types instead of `var` (IDE0008), block bodies for methods (IDE0022), `this.` qualification (SA1101), file-scoped namespaces and `using` directives inside the namespace. Write new code that way.
 
 ## Testing
 
