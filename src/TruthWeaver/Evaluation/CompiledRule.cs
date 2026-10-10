@@ -379,6 +379,20 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Renders this rule as a flat, single-line infix equation, for example <c>a ∧ (b ∨ c)</c>. The connectives
+    /// <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c> print
+    /// as infix symbols. Every other operator prints in function-call form, for example <c>AtLeast(2, a, b, c)</c>.
+    /// Parentheses appear only around a connective that is an operand of another connective. This is a read view:
+    /// <see cref="CanonicalText"/> and the persisted DSL text do not change.
+    /// </summary>
+    /// <param name="options">The dialect and term options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <returns>The equation text.</returns>
+    public string PrintEquation(EquationOptions? options = null)
+    {
+        return EquationPrinter.Print(this.Root, options ?? EquationOptions.Default);
+    }
+
+    /// <summary>
     /// Evaluates this rule against a context. Every argument after <paramref name="context"/> is optional, so a
     /// caller supplies only what the rule needs. A variable reference (<c>from("source", "query")</c>) resolves from the
     /// matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
