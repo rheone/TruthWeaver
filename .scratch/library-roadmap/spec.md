@@ -26,7 +26,7 @@ These settle the open items in the tables below.
 | Source-generator predicate registration | Spec it: [predicate-source-generator](../predicate-source-generator/spec.md). |
 | Date/time day-of-week, month, time-window | Spec it with ISO 8601 and UTC or fixed offset only, no IANA names: [datetime-offset-predicates](../datetime-offset-predicates/spec.md). |
 | Unicode normalization | Document the limitation only: [predicate-catalog ticket 14](../predicate-catalog/issues/14-document-ordinal-string-comparison-and-unicode-normalization.md). |
-| `RuleDiff.Compare` with `CompilerOptions` | Ticket: [rule-diff ticket 03](../rule-diff/issues/03-compare-accepts-compiler-options.md). |
+| `RuleDiff.Compare` with `CompilerOptions` | Already built (commit 681581f, k3-followups 38) and tested. No ticket. |
 | Satisfying assignment, substitution, tracing | Stay deferred ([deferred-features](../deferred-features/spec.md)). |
 | NNF print mode, lint spans and paths | Stay "Not now". |
 | Equation rendering | Spec it: [equation-rendering](../equation-rendering/spec.md). |
