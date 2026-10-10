@@ -4,6 +4,30 @@ using TruthWeaver.Abstractions;
 
 public sealed class FakePredicatesTests
 {
+    /// <summary>Without a label argument, each factory labels the predicate with its name, so two fakes have distinct labels.</summary>
+    [Fact]
+    public void Returning_NoLabel_UsesTheNameAsTheLabel_Test()
+    {
+        (PredicateSchema isAdmin, _) = FakePredicates.Returning<object?>("isAdmin", true);
+        (PredicateSchema isActive, _) = FakePredicates.Returning<object?>("isActive", TruthValue.Unknown);
+        (PredicateSchema faulting, _) = FakePredicates.Faulting<object?>("isLocked", new InvalidOperationException());
+        (PredicateSchema scripted, _) = FakePredicates.Scripted<object?>("isNew", [TruthValue.True]);
+
+        Assert.Equal(
+            ["isAdmin", "isActive", "isLocked", "isNew"],
+            [isAdmin.Label, isActive.Label, faulting.Label, scripted.Label]
+        );
+    }
+
+    /// <summary>An explicit label still wins over the name.</summary>
+    [Fact]
+    public void Returning_ExplicitLabel_KeepsTheLabel_Test()
+    {
+        (PredicateSchema schema, _) = FakePredicates.Returning<object?>("isAdmin", true, label: "Is admin");
+
+        Assert.Equal("Is admin", schema.Label);
+    }
+
     [Fact]
     public async Task Returning_Bool_True_AlwaysReturnsTrue()
     {

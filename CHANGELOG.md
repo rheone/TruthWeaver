@@ -34,6 +34,9 @@ copyright line reads 2026.
 
 ### Added
 
+- `FakePredicates` factories label a predicate with its name when no `label` is given, instead of the constant `"Fake"`, so
+  rendered diagrams show a distinct label for each fake. `PredicateHarness` and `docs/predicate-harness.md` state that the
+  harness calls the predicate twice for each argument set and once for the cancellation check.
 - `MermaidOptions.Default` and `RuleFuzzerOptions.Default`, as `EquationOptions.Default` and `PredicateHarnessOptions.Default`
   already exist. The optional-parameter `CompiledRule.PrintMermaid` overloads document that they fix `OperatorStyle.Word`.
 - Reversed literal bounds on `Between` and `Outside` (`NumericPredicates` for `Int64` and `Decimal`, and

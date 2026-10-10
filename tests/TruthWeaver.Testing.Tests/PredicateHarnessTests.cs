@@ -50,6 +50,27 @@ public sealed class PredicateHarnessTests
         Assert.False(report.Passed);
     }
 
+    /// <summary>The harness calls the predicate twice per argument set and once for cancellation, as the documentation states.</summary>
+    [Fact]
+    public async Task RunAsync_PredicateWithSideEffect_SeesTwoCallsPerArgumentSetAndOneCancellationCall_Test()
+    {
+        int calls = 0;
+
+        PredicateHarnessReport report = await RunMinAgeAsync(
+            (_, args, _) =>
+            {
+                _ = args.GetInt64("min");
+                calls++;
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+
+        int argumentSets = report.Outcomes.Count(o =>
+            o.Check is PredicateHarnessCheck.Baseline or PredicateHarnessCheck.BoundaryValue
+        );
+        Assert.Equal((2 * argumentSets) + 1, calls);
+    }
+
     /// <summary>The harness generates the documented boundary values for each declared literal kind.</summary>
     [Fact]
     public async Task RunAsync_ArgumentOfEachKind_GeneratesBoundaryValues_Test()

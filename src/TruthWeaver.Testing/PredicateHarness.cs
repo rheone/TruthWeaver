@@ -18,6 +18,11 @@ using TruthWeaver.Abstractions;
 /// The harness reports cancellation and never enforces it. The evaluator checks its token before each predicate call,
 /// so a predicate that ignores the token still works; it only keeps running longer than it must.
 /// </para>
+/// <para>
+/// The harness calls the predicate twice for each argument set (the baseline and each boundary value), to check that
+/// the answer is deterministic, and once more for the cancellation check. A predicate with side effects, such as a
+/// counter or a write, sees every one of these calls.
+/// </para>
 /// </remarks>
 public static class PredicateHarness
 {

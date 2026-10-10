@@ -37,6 +37,9 @@ PredicateHarnessReport report = await PredicateHarness.RunAsync(IsActive.Schema,
 
 ## Checks
 
+The harness calls the predicate two times for each argument set, and one more time for the cancellation check. A
+predicate with side effects, such as a counter or a write, sees every call.
+
 | Check | What the harness does | The check fails when |
 | --- | --- | --- |
 | `Baseline` | Calls the predicate with the baseline arguments. | The predicate throws an exception that is not allow-listed. |
