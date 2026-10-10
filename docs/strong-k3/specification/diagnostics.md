@@ -12,7 +12,7 @@ A diagnostic with the severity Error blocks compilation. A Warning or an Info do
 | `TRE0006` | `InfixArityViolation` | `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND` or `NOR` has other than two operands, usually a chain such as `a XOR b XOR c`. | Use two operands, add parentheses, or use `PARITY` or `ExactlyOne` for more than two. |
 | `TRE0007` | `AmbiguousOperatorMixing` | An infix Operation other than `NOT`, `AND` and `OR`, or a `??` or ternary form, shares a level with `AND`, `OR` or another such form without parentheses. | Add parentheses around the expression that applies first. |
 | `TRE0008` | `InvalidThresholdValue` | A threshold `k`, or the bounds of `BETWEEN`, make the result a constant for the operand count. For example `AtLeast(3, a, b)`, `AtMost(1, a)` and `BETWEEN(0, 2, a, b)`. | Use a `k` in the valid range for the operand count. The range is on the page of each Operation. |
-| `TRE0014` | `MalformedTree` | The operand count is wrong for an Operation other than the binary-only ones, a JSON or YAML rule has an unknown `op` or a missing key, or `Project` or `Collapse` appears in a JSON or YAML rule. | Give the Operation its operand count and its required keys. |
+| `TRE0014` | `MalformedTree` | The operand count is wrong for an Operation other than the binary-only ones, a JSON or YAML rule has an unknown `op`, a missing key or a key that the node does not define (such as a `k` on `AND`, or a `predicate` next to an `op`), or `Project` or `Collapse` appears in a JSON or YAML rule. | Give the Operation its operand count and its required keys, and remove any other key. |
 
 ## Analysis findings
 
@@ -51,6 +51,7 @@ These codes do not belong to one Operation.
 | `TRE0003` | `MissingArgument` | A term omits a required argument of its predicate. |
 | `TRE0004` | `ArgumentTypeMismatch` | An argument value has the wrong kind for the predicate. |
 | `TRE0005` | `UnknownArgument` | A term names an argument that the predicate does not declare. |
+| `TRE0032` | `DuplicateArgument` | A term names the same argument more than once. No occurrence wins. |
 | `TRE0009` | `MaxDepthExceeded` | The expression tree is deeper than the compiler option `MaxDepth` allows. |
 | `TRE0010` | `MaxNodeCountExceeded` | The expression tree has more nodes than the compiler option `MaxNodeCount` allows. |
 | `TRE0015` | `InvalidEscapeSequence` | A string literal contains a backslash that is not `\"`, `\\`, `\n` or `\t`. |

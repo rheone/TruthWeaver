@@ -605,7 +605,26 @@ internal sealed class RuleNodeCompiler<TContext>
         HashSet<string> suppliedNames = [with(StringComparer.Ordinal)];
         foreach (ArgumentNode arg in node.Arguments)
         {
-            suppliedNames.Add(arg.Name);
+            if (!suppliedNames.Add(arg.Name))
+            {
+                // A repeated name never wins silently: the author meant one value, and neither can be trusted.
+                this.diagnostics.Add(
+                    Diagnostic.Error(
+                        DiagnosticCodes.DuplicateArgument,
+                        $"Argument '{arg.Name}' of predicate '{schema.Name}' is given more than once.",
+                        arg.Span,
+                        expected: "each argument once",
+                        found: $"'{arg.Name}' repeated",
+                        suggestion: new DiagnosticSuggestion(
+                            DiagnosticSuggestionKind.Hint,
+                            $"Remove one '{arg.Name}' argument."
+                        ),
+                        path: arg.Path
+                    )
+                );
+                continue;
+            }
+
             PredicateArgumentSchema? argSchema = schema.Arguments.FirstOrDefault(a =>
                 string.Equals(a.Name, arg.Name, StringComparison.Ordinal)
             );

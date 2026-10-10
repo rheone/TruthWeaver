@@ -15,6 +15,8 @@ A rule is written as rule text (the DSL), as JSON, as YAML or with the `RuleBuil
 
 A constant is `True`, `False` or `Unknown` in rule text, and `{"const": true}`, `{"const": false}` or `{"const": "unknown"}` in JSON. YAML uses `const: unknown`. A predicate reference is `{"predicate": "name", "args": { ... }}`.
 
+A JSON or YAML node has only the keys of its kind: `const`; `predicate` and `args`; or `op`, `operands` and, for the threshold Operations, `k` (or `min` and `max` for `BETWEEN`). Any other key is the compile error `MalformedTree` (`TRE0014`). A predicate argument that is named twice is the compile error `DuplicateArgument` (`TRE0032`) in every format.
+
 ## Spellings
 
 Every Operation has one canonical word. The canonical printer writes the word and never a symbol. A symbol is an alias: it compiles to the same node as the word.

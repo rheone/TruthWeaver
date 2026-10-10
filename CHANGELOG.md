@@ -126,6 +126,14 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: a JSON or YAML rule node that has a key its kind does not define is a `MalformedTree` (`TRE0014`) compile
+  error at that key, as `rule-tree.schema.json` already states. This covers an unknown key, a misspelt `args`, a
+  `predicate` next to an `op`, and a stray `k`, `min` or `max` on an operator that takes none. The key was ignored
+  before. Migration: delete the key, or correct its spelling (the diagnostic suggests the nearest valid key).
+- Breaking: a predicate argument that is named twice is the new error `DuplicateArgument` (`TRE0032`), in rule text,
+  JSON, YAML and `RuleBuilder`. The last value won before. `RuleBuilder.ToJson()` throws `InvalidOperationException`
+  for a duplicate, because JSON cannot hold both; `Compile` returns the diagnostic. Migration: keep one occurrence of
+  each argument.
 - Breaking: a date-time literal must end in `Z` or carry an offset such as `+02:00`. Text with no offset, such as
   `"2026-01-01"` or `"2026-01-01T09:00"`, is an `ArgumentTypeMismatch` compile error that names the fix, in the DSL,
   JSON, YAML and `RuleBuilder`. The same rule applies to a string a data source resolves for a date-time argument

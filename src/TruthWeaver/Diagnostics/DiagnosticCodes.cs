@@ -163,4 +163,10 @@ public static class DiagnosticCodes
     /// <c>NormalFormOptions</c> with <c>ExpandThresholds</c> set to expand it.
     /// </summary>
     public const string ThresholdKeptAsAtom = "TRE0031";
+
+    /// <summary>
+    /// A predicate call names the same argument more than once, in rule text, JSON, YAML or <c>RuleBuilder</c>. The span or
+    /// path is the repeated argument. No occurrence wins: the call is an error.
+    /// </summary>
+    public const string DuplicateArgument = "TRE0032";
 }

@@ -40,9 +40,60 @@ internal sealed class TreeFormatReader
         return count == 1 ? "1 operand" : $"{count} operands";
     }
 
+    private static string FormatKeys(string[] keys)
+    {
+        return string.Join(", ", keys.Select(k => $"'{k}'"));
+    }
+
     private void Report(string message, SourceSpan span, string expected, string found, string path)
     {
         this.diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, message, span, expected, found, path: path));
+    }
+
+    // Rejects every key of a node that its kind does not define (the published schema sets additionalProperties to false).
+    // A key that belongs to another kind of node, such as "op" next to "predicate", is called a conflict, because the
+    // author wrote two nodes into one.
+    private bool CheckKeys(ITreeNodeCursor node, string path, string kind, string[] allowed)
+    {
+        bool valid = true;
+        foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in node.Members)
+        {
+            if (name is null)
+            {
+                this.Report(
+                    $"A key of {kind} node must be a {this.words.StringNoun}.",
+                    key!.Span,
+                    $"a {this.words.StringNoun}",
+                    key.Describe(),
+                    path
+                );
+                valid = false;
+            }
+            else if (!allowed.Contains(name, StringComparer.Ordinal))
+            {
+                bool conflict = name is "const" or "predicate" or "op";
+                string message = conflict
+                    ? $"The key '{name}' conflicts with the other keys: {kind} node takes only {FormatKeys(allowed)}."
+                    : $"Unknown key '{name}' in {kind} node, which takes only {FormatKeys(allowed)}.";
+                DiagnosticSuggestion? suggestion = conflict
+                    ? new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Remove '{name}', or split the node in two.")
+                    : NameSuggester.Suggest(name, allowed);
+                this.diagnostics.Add(
+                    Diagnostic.Error(
+                        DiagnosticCodes.MalformedTree,
+                        message,
+                        value.Span,
+                        expected: $"only {FormatKeys(allowed)}",
+                        found: $"'{name}'",
+                        suggestion: suggestion,
+                        path: TreePath.Property(path, name)
+                    )
+                );
+                valid = false;
+            }
+        }
+
+        return valid;
     }
 
     private RuleNode? ReadNode(ITreeNodeCursor node, string path)
@@ -67,6 +118,11 @@ internal sealed class TreeFormatReader
 
         if (node.TryGetChild("const", out ITreeNodeCursor? constNode))
         {
+            if (!this.CheckKeys(node, path, "a constant", ["const"]))
+            {
+                return null;
+            }
+
             if (constNode.TryGetTruthValue(out TruthValue constValue))
             {
                 return new ConstantNode(constValue, SourceSpan.None);
@@ -116,6 +172,11 @@ internal sealed class TreeFormatReader
 
     private RuleNode? ReadTerm(ITreeNodeCursor node, ITreeNodeCursor predicateNode, string path)
     {
+        if (!this.CheckKeys(node, path, "a predicate", ["predicate", "args"]))
+        {
+            return null;
+        }
+
         if (predicateNode.StringValue is not { } predicateName)
         {
             this.Report(
@@ -212,6 +273,17 @@ internal sealed class TreeFormatReader
                     path: TreePath.Property(path, "op")
                 )
             );
+            return null;
+        }
+
+        string[] operatorKeys = canonicalOpName switch
+        {
+            "AtLeast" or "AtMost" or "GreaterThan" or "LessThan" or "Exactly" => ["op", "operands", "k"],
+            "Between" => ["op", "operands", "min", "max"],
+            _ => ["op", "operands"],
+        };
+        if (!this.CheckKeys(node, path, $"a '{op}' operator", operatorKeys))
+        {
             return null;
         }
 

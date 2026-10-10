@@ -4,8 +4,10 @@ using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Json;
+using TruthWeaver.Parsing;
 
 /// <summary>
 /// A fluent, programmatic way to assemble a rule without hand-writing DSL/JSON/YAML text —
@@ -603,8 +605,19 @@ public abstract class RuleBuilder
 
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// A predicate in the tree is given the same argument name twice. JSON cannot hold both, and keeping one would hide the
+    /// mistake; <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.DuplicateArgument"/> instead.
+    /// </exception>
     public string ToJson()
     {
+        List<Diagnostic> problems = [];
+        this.CollectProblems(TreePath.Root, problems);
+        if (problems.Count > 0)
+        {
+            throw new InvalidOperationException(problems[0].Message);
+        }
+
         return this.ToNode().ToJsonString();
     }
 
@@ -617,10 +630,30 @@ public abstract class RuleBuilder
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> Compile<TContext>(RuleCompiler<TContext> compiler)
     {
-        return compiler.CompileJson(this.ToJson());
+        // A mistake that the JSON shape cannot carry (a repeated argument name) is reported here, before rendering.
+        List<Diagnostic> problems = [];
+        this.CollectProblems(TreePath.Root, problems);
+        return problems.Count > 0 ? new CompilationResult<TContext>(null, problems) : compiler.CompileJson(this.ToJson());
     }
 
     private protected abstract JsonNode ToNode();
+
+    /// <summary>
+    /// Collects the mistakes in this tree that the JSON rendering would hide, each as an error located by its path in the
+    /// rendered tree. The default tree has none.
+    /// </summary>
+    /// <param name="path">The path of this builder's node in the rendered tree.</param>
+    /// <param name="problems">Receives the diagnostics.</param>
+    private protected virtual void CollectProblems(string path, List<Diagnostic> problems) { }
+
+    private static void CollectOperandProblems(string path, IReadOnlyList<RuleBuilder> operands, List<Diagnostic> problems)
+    {
+        string operandsPath = TreePath.Property(path, "operands");
+        for (int i = 0; i < operands.Count; i++)
+        {
+            operands[i].CollectProblems(TreePath.Index(operandsPath, i), problems);
+        }
+    }
 
     /// <summary>Rejects a null sequence and materialises it once, without folding, for the counted operators.</summary>
     private static RuleBuilder[] Materialize(IEnumerable<RuleBuilder> operands)
@@ -730,6 +763,31 @@ public abstract class RuleBuilder
         private readonly string name = name;
         private readonly (string Name, object Value)[] arguments = arguments;
 
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            HashSet<string> seen = [with(StringComparer.Ordinal)];
+            foreach ((string argName, _) in this.arguments)
+            {
+                if (!seen.Add(argName))
+                {
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.DuplicateArgument,
+                            $"Argument '{argName}' of predicate '{this.name}' is given more than once.",
+                            SourceSpan.None,
+                            expected: "each argument once",
+                            found: $"'{argName}' repeated",
+                            suggestion: new DiagnosticSuggestion(
+                                DiagnosticSuggestionKind.Hint,
+                                $"Remove one '{argName}' argument."
+                            ),
+                            path: TreePath.Property(TreePath.Property(path, "args"), argName)
+                        )
+                    );
+                }
+            }
+        }
+
         private protected override JsonNode ToNode()
         {
             JsonObject node = new() { ["predicate"] = this.name };
@@ -753,6 +811,11 @@ public abstract class RuleBuilder
         private readonly string op = op;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
 
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
+
         private protected override JsonNode ToNode()
         {
             return new JsonObject
@@ -768,6 +831,11 @@ public abstract class RuleBuilder
         private readonly int min = min;
         private readonly int max = max;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
 
         private protected override JsonNode ToNode()
         {
@@ -786,6 +854,11 @@ public abstract class RuleBuilder
         private readonly string op = op;
         private readonly int k = k;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
 
         private protected override JsonNode ToNode()
         {
