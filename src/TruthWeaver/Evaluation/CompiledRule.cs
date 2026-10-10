@@ -393,6 +393,19 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Renders this rule as an equation with a letter for each term, and returns the legend that maps each letter back to
+    /// its term. The call always uses simple-variable mode, so <see cref="EquationOptions.SimpleVariables"/> has no
+    /// effect here. The legend shows each term as its full call, whatever <see cref="EquationOptions.ShowArgumentValues"/>
+    /// says. The lettering is stable: the same rule always gets the same letters.
+    /// </summary>
+    /// <param name="options">The dialect options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <returns>The equation and its legend, as data and as text.</returns>
+    public EquationWithLegend PrintEquationWithLegend(EquationOptions? options = null)
+    {
+        return EquationPrinter.PrintWithLegend(this.Root, options ?? EquationOptions.Default);
+    }
+
+    /// <summary>
     /// Evaluates this rule against a context. Every argument after <paramref name="context"/> is optional, so a
     /// caller supplies only what the rule needs. A variable reference (<c>from("source", "query")</c>) resolves from the
     /// matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,

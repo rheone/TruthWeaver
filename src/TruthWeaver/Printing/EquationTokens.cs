@@ -1,5 +1,6 @@
 namespace TruthWeaver.Printing;
 
+using System.Globalization;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
@@ -25,6 +26,7 @@ internal sealed record EquationTokens
             FormatTerm = (identity, showArgumentValues) => showArgumentValues ? identity.ToString() : identity.PredicateName,
             FormatConstant = TruthValueText.Canonical,
             FormatFunctionName = name => name,
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : letter + ToSubscriptDigits(subscript),
             Wrap = equation => equation,
         };
 
@@ -44,6 +46,7 @@ internal sealed record EquationTokens
                 AsciiMathText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
             FormatConstant = value => AsciiMathText.Quote(TruthValueText.Canonical(value)),
             FormatFunctionName = AsciiMathText.Quote,
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{subscript}",
             Wrap = equation => $"`{equation}`",
         };
 
@@ -90,6 +93,12 @@ internal sealed record EquationTokens
     public required Func<string, string> FormatFunctionName { get; init; }
 
     /// <summary>
+    /// Gets the variable formatter for simple-variable mode. It takes the letter and its numeric subscript (zero for
+    /// none) and returns the dialect's text, for example <c>p₁</c>, <c>p_{1}</c> or <c>p_1</c>.
+    /// </summary>
+    public required Func<char, int, string> FormatVariable { get; init; }
+
+    /// <summary>
     /// Gets the envelope function. It takes the finished equation and returns it inside the dialect's delimiters, for
     /// example <c>$$...$$</c>. A dialect with no envelope returns the equation unchanged.
     /// </summary>
@@ -118,6 +127,7 @@ internal sealed record EquationTokens
                 LatexText.Text(showArgumentValues ? identity.ToString() : identity.PredicateName, mathJaxSafe),
             FormatConstant = value => LatexText.Text(TruthValueText.Canonical(value), mathJaxSafe),
             FormatFunctionName = name => LatexText.Text(name, mathJaxSafe),
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{{{subscript}}}",
             Wrap = wrap switch
             {
                 LatexWrapMode.DoubleDollar => equation => $"$${equation}$$",
@@ -139,5 +149,11 @@ internal sealed record EquationTokens
             EquationDialect.AsciiMath => AsciiMath,
             _ => throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unhandled equation dialect."),
         };
+    }
+
+    /// <summary>Writes a non-negative number with the Unicode subscript digits <c>₀</c> to <c>₉</c>.</summary>
+    private static string ToSubscriptDigits(int number)
+    {
+        return string.Concat(number.ToString(CultureInfo.InvariantCulture).Select(digit => (char)('₀' + (digit - '0'))));
     }
 }

@@ -21,4 +21,14 @@ public sealed record EquationOptions
     /// <see cref="LatexWrapMode.None"/>.
     /// </summary>
     public LatexWrapMode LatexWrap { get; init; } = LatexWrapMode.None;
+
+    /// <summary>
+    /// Gets a value indicating whether each term prints as a letter (<c>p</c>, <c>q</c>, <c>r</c>) instead of its call.
+    /// Letters follow the first occurrence of a term, depth first and left to right, and identical terms share a
+    /// letter. After the eleventh distinct term (<c>z</c>), the letters repeat with a numeric subscript:
+    /// <c>p₁</c>, <c>q₁</c> and so on. <see cref="Evaluation.CompiledRule{TContext}.PrintEquation"/> then returns
+    /// only the equation. Use <see cref="Evaluation.CompiledRule{TContext}.PrintEquationWithLegend"/> to get the legend
+    /// too. The default is <see langword="false"/>.
+    /// </summary>
+    public bool SimpleVariables { get; init; }
 }

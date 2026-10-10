@@ -86,3 +86,37 @@ AsciiMath reads every character between double quotes as literal text, so the ch
 
 - AsciiMath has no escape for a double quote. The printer replaces each straight quote in a term with the right double quotation mark (U+201D). The term `hasCrust(crust: "thin")` prints as `"hasCrust(crust: ”thin”)"`.
 - A backtick would end the envelope. The printer replaces each backtick in a term with the reversed prime (U+2035).
+
+## Simple variables and the legend
+
+Set `EquationOptions.SimpleVariables` to `true` to print each term as a letter. A rule with many predicate calls then reads like a textbook formula, for example `p ∧ (q ∨ r)`. All dialects support the mode.
+
+`PrintEquationWithLegend` returns the equation and a legend that maps each letter to its term. It always uses simple-variable mode.
+
+```csharp
+EquationWithLegend result = rule.PrintEquationWithLegend();
+
+string equation = result.Equation;     // p ∧ (q ∨ p)
+string legend = result.LegendText;     // p = a  /  q = hasCrust(crust: "thin")
+foreach (EquationLegendEntry entry in result.Legend)
+{
+    Console.WriteLine($"{entry.Variable}: {entry.TermText}");
+}
+```
+
+| Member | Content |
+| --- | --- |
+| `Equation` | The equation with letters, wrapped for the dialect. |
+| `Legend` | One `EquationLegendEntry` for each distinct term, in letter order. |
+| `LegendText` | One `letter = term` line for each entry, joined with a line feed. Each line has the envelope of the dialect, so a `$$` equation gets a `$$` legend line. The text is empty for a rule with no term. |
+
+An `EquationLegendEntry` has the `Variable` text, the `Term` identity (predicate name and arguments) and the `TermText`. `TermText` is the full term call in the notation of the dialect. It shows the argument values even when `ShowArgumentValues` is `false`.
+
+### Lettering
+
+- Letters follow the first occurrence of a term, in a depth-first walk from left to right. The same rule always gets the same letters.
+- Identical terms share one letter. Terms of one predicate with different argument values are different terms.
+- Constants and function names get no letter.
+- The letters are `p q r s t u v w x y z`. After the eleventh distinct term, the letters repeat with a numeric subscript: `p₁ q₁ ... z₁`, then `p₂`. The subscript is written `p₁` in Unicode, `p_{1}` in LaTeX and `p_1` in AsciiMath.
+
+`PrintEquation` with `SimpleVariables` set returns the equation only. Use `PrintEquationWithLegend` when the reader needs the legend.
