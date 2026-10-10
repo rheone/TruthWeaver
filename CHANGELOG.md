@@ -205,6 +205,10 @@ copyright line reads 2026.
   `LintRules.All | LintRules.Style` where you relied on `All` to report `NotCanonical`, and rename any use of
   `LintRules.NotCanonical` to `LintRules.Style`. The diagnostic code and the `DiagnosticCodes.NotCanonical` constant are
   unchanged.
+- Breaking: an unquoted `null`, `Null`, `NULL`, `~` or empty value as a predicate argument in YAML is rejected like JSON `null`: the compile
+  diagnostic says the argument is not a string, number, boolean or array, at the argument's path. It was read as the string
+  "null" (or an empty string). Migration: quote the value (`role: "null"`) where you meant the text, and remove the
+  argument where you meant none. A quoted value is unchanged.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or

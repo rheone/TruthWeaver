@@ -19,6 +19,8 @@ Rule text (the DSL), JSON and YAML compile to the same tree through the same Par
 
 The grammar of the DSL is in [Rule text](rule-text.md). The JSON shape is defined by the schema in [rule-tree.schema.json](../src/TruthWeaver/Json/rule-tree.schema.json). The shape of each operator in each format is in [Formats](strong-k3/specification/syntax.md#formats).
 
+A predicate argument cannot be null. In JSON, `null` is an error. In YAML, an unquoted `null`, `~` or empty value is the same error, with the same diagnostic code and expectation. To pass the text "null", quote it: `role: "null"`.
+
 You can also build a rule without writing text in any of these formats. See [RuleBuilder](rulebuilder.md).
 
 `CanonicalText` is more than minimal. It puts parentheses around an operand when that operand is a different operator from the one it sits under, for example `a AND b OR c` prints as `(a AND b) OR c`. It does this even where precedence alone already makes the parse clear. The goal is a rule that a reader understands at a glance, without working out the precedence, and that also parses back to the same tree.
