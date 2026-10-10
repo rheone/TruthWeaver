@@ -73,9 +73,9 @@ public sealed class CompiledRule<TContext>
     /// for readability. Every style re-parses to a tree equal to this rule's, because the DSL treats <c>()</c>, <c>[]</c>
     /// and <c>{}</c> as the same grouping.
     /// </summary>
-    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <param name="grouping">The grouping delimiters to print with. Defaults to <see cref="GroupingStyle.Parentheses"/>.</param>
     /// <returns>The DSL text.</returns>
-    public string PrintRuleText(GroupingStyle grouping)
+    public string PrintRuleText(GroupingStyle grouping = GroupingStyle.Parentheses)
     {
         return grouping == GroupingStyle.Parentheses ? this.CanonicalText : CanonicalPrinter.Print(this.Root, grouping);
     }
@@ -408,6 +408,7 @@ public sealed class CompiledRule<TContext>
     /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
     public string PrintMermaid(
         Decision decision,
         bool showArgumentValues = true,
@@ -441,6 +442,7 @@ public sealed class CompiledRule<TContext>
     /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
     public string PrintMermaid(Decision decision, MermaidOptions options)
     {
         return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), options);
@@ -462,6 +464,7 @@ public sealed class CompiledRule<TContext>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>The indented tree text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
     public string PrintPlainText(Decision decision, bool showArgumentValues = true)
     {
         return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);

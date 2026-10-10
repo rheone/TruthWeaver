@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `PrintRuleText()` compiles and equals `PrintRuleText(GroupingStyle.Parentheses)`
-- [ ] The exception is documented
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `PrintRuleText()` compiles and equals `PrintRuleText(GroupingStyle.Parentheses)`
+- [x] The exception is documented
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

@@ -126,6 +126,9 @@ string coloredMermaid = MermaidTreePrinter.Print(description, decision.TraceTree
 string annotatedText = PlainTextTreePrinter.Print(description, decision.TraceTree);
 ```
 
+`rule.PrintMermaid(decision)` and `rule.PrintPlainText(decision)` take the decision of the same rule. A decision with no `TraceTree` throws
+`ArgumentException`. A decision whose tree does not match the rule, as with a decision from a different rule, throws `InvalidOperationException`.
+
 The result of `MermaidTreePrinter` is plain Mermaid text. Paste it into any Mermaid renderer, or give it to a UI that already embeds one. The diagram shows the structure of the rule and, when you pass a trace, why one evaluation gave its result. The output always has a synthetic `Start` node that points at the root, so the diagram shows where evaluation begins.
 
 Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to change the output. The default options give the output shown above.
