@@ -14,7 +14,7 @@ Read it in layers. Stop when you have what you need.
 
 ## Summary
 
-1. Documentation describes the project as it is now.
+1. Documentation describes the project as it is now. Specifications, decision records and work items follow their usual conventions.
 2. History, decisions, plans and developer-only detail stay out of reference documents.
 3. Documentation and code change in the same commit.
 4. Write in the present tense, in short sentences, with one term for each concept.
@@ -31,19 +31,31 @@ Read it in layers. Stop when you have what you need.
 
 Reference documents describe what the project does and how to use it. They are not a record of how the project got there.
 
-A repository has several kinds of document. Each kind has one purpose.
+A repository has two groups of writing. The group sets how strict this standard is.
+
+**Documentation** explains the project to people who use it or change it. The full standard applies to it.
 
 | Kind | Purpose | Tense |
 | --- | --- | --- |
 | Reference | Define behavior, formats, options and terms. | Present |
 | Guide | Teach a task from start to end. | Present, as commands |
 | README | Say what the project is and where to start. Link to the reference. | Present |
-| Decision record | Keep the reason for a past decision. | Past |
-| Change log | List what changed in each release. | Past |
-| Work item | Describe work to do. | Future |
-| Agent file | Give instructions to a coding agent. | Present, as commands |
+| Developer documentation | Explain how to build, test, extend and release the project. | Present, as commands |
+| Code documentation and comments | Say what a member does, and why the code is the way it is. | Present |
 
-Only reference documents, guides and READMEs follow every rule in this standard. Decision records, change logs, work items and agent files describe the past or the plan by design. Reference documents never link to them to explain behavior.
+**Records** capture planning, decisions and work. They follow the usual conventions for their type. The language rules of this standard (ASD-STE100, present tense, one term for each concept) do not apply to them, and they may tell the history on purpose.
+
+| Kind | Usual form |
+| --- | --- |
+| Specification or product requirements | Problem, goals, scope, decisions, out of scope. |
+| Decision record | Context, decision, consequences. Past tense is normal. |
+| Work item | Problem, acceptance criteria, blockers, status. |
+| Change log | What changed in each release. |
+| Agent file | Short instructions to a coding agent. |
+
+Keep a record accurate and easy to scan. A record can state a plan or a past choice. Documentation never links to a record to explain behavior. The documentation states the behavior.
+
+Rule 9 and the code-with-docs workflow apply to records too. A work item that changes behavior or a public API lists the page it updates.
 
 ### Content
 
