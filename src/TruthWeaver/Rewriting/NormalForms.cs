@@ -217,17 +217,6 @@ internal static class NormalForms
             };
         }
 
-        /// <summary>Strong Kleene negation of a value: it swaps <c>True</c> and <c>False</c> and leaves <c>Unknown</c> alone.</summary>
-        internal static TruthValue Negate(TruthValue value)
-        {
-            return value switch
-            {
-                TruthValue.True => TruthValue.False,
-                TruthValue.False => TruthValue.True,
-                _ => TruthValue.Unknown,
-            };
-        }
-
         /// <summary>An atom as a literal: the atom itself, or its negation when the polarity is negative.</summary>
         internal static Expression Literal(Expression atom, bool negate)
         {
@@ -263,7 +252,7 @@ internal static class NormalForms
         {
             return node switch
             {
-                ConstantExpression c => negate ? new ConstantExpression(NnfSupport.Negate(c.Value)) : c,
+                ConstantExpression c => negate ? new ConstantExpression(K3Logic.Not(c.Value)) : c,
                 TermExpression => negate ? new NotExpression(node) : node,
                 NotExpression n => this.Visit(n.Operand, !negate),
 

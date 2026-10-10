@@ -114,19 +114,6 @@ internal static class Simplifier
             return new InspectionExpression(kind, operand);
         }
 
-        /// <summary>The value of an inspection of a known constant.</summary>
-        private static TruthValue Inspected(InspectionKind kind, TruthValue value)
-        {
-            bool result = kind switch
-            {
-                InspectionKind.IsTrue => value == TruthValue.True,
-                InspectionKind.IsFalse => value == TruthValue.False,
-                InspectionKind.IsUnknown => value == TruthValue.Unknown,
-                _ => value != TruthValue.Unknown,
-            };
-            return result ? TruthValue.True : TruthValue.False;
-        }
-
         /// <summary>De Morgan's result, kept only when it is smaller than the <c>NOT</c> it replaces.</summary>
         private static Rewritten? DeMorganIfSmaller(Expression original, Expression candidate)
         {
@@ -412,7 +399,7 @@ internal static class Simplifier
         {
             if (s.Operand is ConstantExpression constant)
             {
-                return Inspection(Constant(Inspected(s.Kind, constant.Value)));
+                return Inspection(Constant(K3Logic.Inspect(s.Kind, constant.Value)));
             }
 
             if (this.IsDefinite(s.Operand))

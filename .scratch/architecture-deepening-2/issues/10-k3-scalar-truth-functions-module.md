@@ -4,10 +4,10 @@
 
 **Blocked by:** 04 (both edit `NormalForms` and `Simplifier`)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The truth functions are tested directly over all 9 input pairs and 3 single values
-- [ ] No truth table remains in `Evaluator`, `Simplifier` or `NormalForms`
-- [ ] `K3Oracle` is untouched, and the closed-and-parked note records the decision
-- [ ] No observable behavior changes: every existing test passes unchanged
-- [ ] Carries XML docs and value-adding comments on the new internal types, new tests are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] The truth functions are tested directly over all 9 input pairs and 3 single values
+- [x] No truth table remains in `Evaluator`, `Simplifier` or `NormalForms`
+- [x] `K3Oracle` is untouched, and the closed-and-parked note records the decision
+- [x] No observable behavior changes: every existing test passes unchanged
+- [x] Carries XML docs and value-adding comments on the new internal types, new tests are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
