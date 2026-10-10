@@ -8,6 +8,12 @@ using TruthWeaver.Evaluation;
 /// </summary>
 public sealed record MermaidOptions
 {
+    /// <summary>
+    /// Gets the default options: top-down layout, plain rectangles, one-line term labels, the light palette, word operators,
+    /// argument values shown, no node-style callback and no chain compaction. They give the output of the option-less overloads.
+    /// </summary>
+    public static MermaidOptions Default { get; } = new();
+
     /// <summary>Gets the layout direction of the flowchart. Defaults to <see cref="MermaidDirection.TopDown"/>.</summary>
     public MermaidDirection Direction { get; init; } = MermaidDirection.TopDown;
 

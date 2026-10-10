@@ -353,7 +353,10 @@ public sealed class CompiledRule<TContext>
         return OutlineOf(this.Root, this.registry);
     }
 
-    /// <summary>Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI.</summary>
+    /// <summary>
+    /// Renders this rule's structure as Mermaid <c>flowchart</c> text, for a diagram UI. This overload always renders
+    /// operator labels in <see cref="OperatorStyle.Word"/>. To choose another style, pass a <see cref="MermaidOptions"/>.
+    /// </summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
     /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
@@ -407,6 +410,7 @@ public sealed class CompiledRule<TContext>
     /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> (the default) for none.</param>
     /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> (the default) for no compaction.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
+    /// <remarks>This overload always renders operator labels in <see cref="OperatorStyle.Word"/>. To choose another style, pass a <see cref="MermaidOptions"/>.</remarks>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
     public string PrintMermaid(

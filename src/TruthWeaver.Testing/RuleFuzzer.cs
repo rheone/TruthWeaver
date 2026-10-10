@@ -50,7 +50,7 @@ public static class RuleFuzzer
         return RunAsync(
             registry.Schemas,
             seed,
-            options ?? new RuleFuzzerOptions(),
+            options ?? RuleFuzzerOptions.Default,
             static (rule, _) => rule.Simplify(),
             cancellationToken
         );

@@ -22,6 +22,14 @@ public sealed class MermaidOptionsTests
         Assert.Equal(MermaidTreePrinter.Print(root), MermaidTreePrinter.Print(root, new MermaidOptions()));
     }
 
+    /// <summary><see cref="MermaidOptions.Default"/> equals a new instance, so it produces the output of the option-less overload.</summary>
+    [Fact]
+    public void Default_ComparedWithANewInstance_IsEqual_Test()
+    {
+        Assert.Equal(new MermaidOptions(), MermaidOptions.Default);
+        Assert.Equal(MermaidTreePrinter.Print(Sample()), MermaidTreePrinter.Print(Sample(), MermaidOptions.Default));
+    }
+
     /// <summary>Default options start with the top-down direction and draw plain rectangles.</summary>
     [Fact]
     public void Print_DefaultOptions_UsesTopDownAndPlainRectangles_Test()

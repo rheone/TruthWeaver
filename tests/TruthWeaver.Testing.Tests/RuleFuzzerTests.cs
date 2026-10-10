@@ -7,6 +7,16 @@ using TruthWeaver.Registry;
 
 public sealed class RuleFuzzerTests
 {
+    /// <summary><see cref="RuleFuzzerOptions.Default"/> equals a new instance and holds the documented sizes.</summary>
+    [Fact]
+    public void Default_ComparedWithANewInstance_IsEqualAndHoldsTheDocumentedSizes_Test()
+    {
+        Assert.Equal(new RuleFuzzerOptions(), RuleFuzzerOptions.Default);
+        Assert.Equal(200, RuleFuzzerOptions.Default.RuleCount);
+        Assert.Equal(3, RuleFuzzerOptions.Default.MaxDepth);
+        Assert.Equal(3, RuleFuzzerOptions.Default.MaxTerms);
+    }
+
     /// <summary>A run over a registry of correct predicates checks many rules and finds no failure.</summary>
     [Fact]
     public async Task RunAsync_RegistryOfZeroArgumentPredicates_PassesEveryCheck_Test()

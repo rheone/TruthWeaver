@@ -3,6 +3,9 @@ namespace TruthWeaver.Testing;
 /// <summary>The size of a <see cref="RuleFuzzer"/> run.</summary>
 public sealed record RuleFuzzerOptions
 {
+    /// <summary>Gets the default options: 200 rules, a maximum depth of 3 and at most 3 terms in a rule.</summary>
+    public static RuleFuzzerOptions Default { get; } = new();
+
     /// <summary>Gets the number of rules to generate. The default is 200. The value must be one or more.</summary>
     public int RuleCount { get; init; } = 200;
 

@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `Default` members exist with XML docs and tests
-- [ ] The `PrintMermaid` overload doc names the fixed operator style
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `Default` members exist with XML docs and tests
+- [x] The `PrintMermaid` overload doc names the fixed operator style
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

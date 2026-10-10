@@ -68,7 +68,7 @@ has the seed, so a failure from a changing seed is also reproducible.
 
 ## Options
 
-`RuleFuzzerOptions` sets the size of a run.
+`RuleFuzzerOptions` sets the size of a run. `RuleFuzzerOptions.Default` holds the defaults in the table.
 
 | Option | Default | Meaning |
 | --- | --- | --- |

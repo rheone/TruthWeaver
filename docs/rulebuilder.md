@@ -131,7 +131,7 @@ string annotatedText = PlainTextTreePrinter.Print(description, decision.TraceTre
 
 The result of `MermaidTreePrinter` is plain Mermaid text. Paste it into any Mermaid renderer, or give it to a UI that already embeds one. The diagram shows the structure of the rule and, when you pass a trace, why one evaluation gave its result. The output always has a synthetic `Start` node that points at the root, so the diagram shows where evaluation begins.
 
-Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to change the output. The default options give the output shown above.
+Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to change the output. The default options (`MermaidOptions.Default`) give the output shown above.
 
 | Option | Values | Default |
 | --- | --- | --- |
@@ -221,7 +221,7 @@ string c = rule.PrintMermaid(
 );
 ```
 
-The optional parameters are `direction`, `nodeShapes`, `twoLineTermLabels`, `palette`, `nodeStyle` and `compactChainThreshold`. They follow `showArgumentValues` on `PrintMermaid` and `MermaidTreePrinter.Print`. `MermaidTreePrinter.Print` also takes `style` for the operator style.
+The optional parameters are `direction`, `nodeShapes`, `twoLineTermLabels`, `palette`, `nodeStyle` and `compactChainThreshold`. They follow `showArgumentValues` on `PrintMermaid` and `MermaidTreePrinter.Print`. `MermaidTreePrinter.Print` also takes `style` for the operator style. `PrintMermaid` with optional parameters always uses `OperatorStyle.Word`. To choose another operator style, pass a `MermaidOptions` with `OperatorStyle` set.
 
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 
