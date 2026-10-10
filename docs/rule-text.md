@@ -61,6 +61,8 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node. The printer writes one spelling: operator words in upper case (`AND`, `XOR`), threshold and function names in upper camel case (`AtLeast`, `ExactlyOne`, `If`, `IsTrue`) and the constants as `True`, `False` and `Unknown`. The printer writes the word form of an operator and never a symbol.
 
+Predicate names and argument names are case-insensitive too. `hasCrust(Crust: "thin")` and `hasCrust(crust: "thin")` compile to the same term, and the printer writes the name as the predicate's schema spells it. Argument values are case-sensitive.
+
 The [Spellings](strong-k3/specification/syntax.md#spellings) table lists the accepted words and symbols.
 
 ## Grouping delimiters

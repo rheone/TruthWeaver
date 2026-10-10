@@ -33,7 +33,7 @@ Every operator has a static factory method on `TruthWeaver.Building.RuleBuilder`
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
 | `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
 
-A term takes each argument name once. `RuleBuilder.Predicate("hasRole", ("role", "A"), ("role", "B"))` compiles to the error `DuplicateArgument` (`TRE0032`) with the path `$.args.role`. `ToJson()` throws `InvalidOperationException` for the same builder, because JSON cannot hold both values.
+A term takes each argument name once, and argument names match ignoring case. `RuleBuilder.Predicate("hasRole", ("role", "A"), ("role", "B"))` and the same call with `("Role", "B")` as the second pair both compile to the error `DuplicateArgument` (`TRE0032`) at the second argument, for example with the path `$.args.role`. `ToJson()` throws `InvalidOperationException` for the same builder, because JSON cannot hold both values.
 
 ### Operand lists of unknown length
 

@@ -16,7 +16,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <summary>Registers a class-based predicate, resolved from the per-evaluation <see cref="IServiceProvider"/>.</summary>
     /// <typeparam name="TPredicate">The predicate implementation type.</typeparam>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add<TPredicate>()
         where TPredicate : IPredicate<TContext>
     {
@@ -29,7 +29,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <param name="schema">The predicate's schema.</param>
     /// <param name="evaluate">The stateless evaluation function.</param>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add(
         PredicateSchema schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
@@ -46,8 +46,28 @@ public sealed class PredicateRegistryBuilder<TContext>
         return new(this.descriptorsByName);
     }
 
+    /// <summary>
+    /// Rejects a schema with two arguments whose names differ only in case. Rule text matches argument names ignoring case, so
+    /// such a pair could not be told apart and a call that names either one would be ambiguous.
+    /// </summary>
+    private static void RejectCaseVariantArguments(string predicateName, PredicateSchema schema)
+    {
+        IGrouping<string, string>? clash = schema
+            .Arguments.Select(a => a.Name)
+            .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (clash is not null)
+        {
+            throw new ArgumentException(
+                $"Predicate '{predicateName}' declares the arguments '{clash.First()}' and '{clash.Skip(1).First()}', which are the same name when case is ignored. Argument names are case-insensitive, so give them different names.",
+                nameof(schema)
+            );
+        }
+    }
+
     private void AddDescriptor(string name, PredicateDescriptor<TContext> descriptor)
     {
+        RejectCaseVariantArguments(name, descriptor.Schema);
         string key = name.ToUpperInvariant();
         if (!this.descriptorsByName.TryAdd(key, descriptor))
         {

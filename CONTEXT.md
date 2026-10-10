@@ -197,13 +197,14 @@ contradiction analysis sound. Two terms are "the same variable" if and only
 if:
 
 - predicate name, normalized case-insensitively to the registered casing, **and**
-- arguments, sorted by name, each compared by exact type-normalized value. A **variable reference**
+- arguments, sorted by name (each name normalized case-insensitively to the schema's spelling), each compared by exact type-normalized value. A **variable reference**
   compares by its source name and query text, never by the value it resolves to, so two references are the
   same variable only when both match exactly.
 
 Argument **values** are case-**sensitive** (`role: "Y"` and `role: "y"` are
 different terms: role codes are frequently case-significant, and folding
 them silently would be a security bug in an authorization consumer).
+Argument **names** are case-**insensitive** (`Role:` and `role:` are the same argument), like predicate names.
 Argument **order** in the source text does not affect identity. Array-valued
 arguments **are** order-sensitive.
 

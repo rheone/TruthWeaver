@@ -602,7 +602,9 @@ internal sealed class RuleNodeCompiler<TContext>
         int diagnosticsBefore = this.diagnostics.Count;
         Dictionary<string, LiteralValue> resolvedArgs = [];
         Dictionary<string, VariableReference> resolvedVariables = [];
-        HashSet<string> suppliedNames = [with(StringComparer.Ordinal)];
+
+        // Argument names match ignoring case, like predicate and operator names; the schema's spelling is the canonical one.
+        HashSet<string> suppliedNames = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (ArgumentNode arg in node.Arguments)
         {
             if (!suppliedNames.Add(arg.Name))
@@ -626,7 +628,7 @@ internal sealed class RuleNodeCompiler<TContext>
             }
 
             PredicateArgumentSchema? argSchema = schema.Arguments.FirstOrDefault(a =>
-                string.Equals(a.Name, arg.Name, StringComparison.Ordinal)
+                string.Equals(a.Name, arg.Name, StringComparison.OrdinalIgnoreCase)
             );
             if (argSchema is null)
             {
@@ -659,7 +661,7 @@ internal sealed class RuleNodeCompiler<TContext>
                 // (ADR-0006 decision 2); compilation checks just that the source name was declared.
                 if (this.CheckSourceDeclared(arg) && this.CheckQuery(arg))
                 {
-                    resolvedVariables[arg.Name] = new VariableReference(
+                    resolvedVariables[argSchema.Name] = new VariableReference(
                         arg.Value.Text ?? string.Empty,
                         arg.Value.Query ?? string.Empty
                     );
@@ -687,7 +689,7 @@ internal sealed class RuleNodeCompiler<TContext>
                 continue;
             }
 
-            resolvedArgs[arg.Name] = value;
+            resolvedArgs[argSchema.Name] = value;
         }
 
         foreach (PredicateArgumentSchema argSchema in schema.Arguments)

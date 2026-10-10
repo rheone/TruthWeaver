@@ -2,7 +2,7 @@
 
 # Documentation standard
 
-This standard sets the rules for all Markdown documentation in a repository. It does not depend on one project. Copy the file to another repository and complete the project settings at the end.
+This standard sets the rules for all Markdown documentation in a repository.
 
 Read it in layers. Stop when you have what you need.
 
@@ -104,7 +104,7 @@ Use ASD-STE100 Simplified Technical English (US) as the base for prose:
 - Repeat the noun when "it" or "this" could point to two things.
 - Choose the plain verb: "use", not "utilize".
 
-Use the established terms of the project, of the field and of mathematics. Do not replace an exact term with a simpler word. Define a term once, where a new reader first meets it, or link to the glossary.
+Use the established terms of the project, and domain. Do not replace an exact term with a simpler word. Define a term once, where a new reader first meets it, or link to the glossary.
 
 ### Kinds of statement
 

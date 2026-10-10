@@ -732,7 +732,8 @@ public abstract class RuleBuilder
 
         private protected override void CollectProblems(string path, List<Diagnostic> problems)
         {
-            HashSet<string> seen = [with(StringComparer.Ordinal)];
+            // The compiler matches argument names ignoring case, so two spellings of one name are one argument given twice.
+            HashSet<string> seen = [with(StringComparer.OrdinalIgnoreCase)];
             foreach ((string argName, object? argValue) in this.arguments)
             {
                 string argumentPath = TreePath.Property(TreePath.Property(path, "args"), argName);

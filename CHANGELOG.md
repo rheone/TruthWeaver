@@ -193,6 +193,13 @@ copyright line reads 2026.
   `MalformedTree` (`TRE0014`) is now only for the shape of a JSON or YAML tree. No code was renumbered. Migration: match
   on the new code where you matched on the old one. The code table in `docs/strong-k3/specification/diagnostics.md` lists
   every code with its severity, phase and default, and a test fails when a code in `DiagnosticCodes` is missing from it.
+- Breaking: a predicate argument name matches its schema argument ignoring case, as predicate and operator names
+  already do. `hasCrust(Crust: "thin")` now compiles to the term `hasCrust(crust: "thin")`, in rule text, JSON, YAML and
+  `RuleBuilder`; the canonical text keeps the schema's spelling. It was an `UnknownArgument` (`TRE0005`) error before.
+  The same argument written twice in two cases is `DuplicateArgument` (`TRE0032`). A schema that declares two
+  argument names that differ only in case now fails at registration with an `ArgumentException`. Migration: rename one of
+  the two arguments in such a schema, and remove any rule text that relied on `Crust:` being a different name from
+  `crust:`. Argument values stay case-sensitive.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
