@@ -126,6 +126,13 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `ToNnf`, `ToCnf` and `ToDnf` cap their result at the
+  rule's own `CompilerOptions.MaxRewriteNodeCount`, so a rule compiled with a raised cap expands past 100,000 nodes with
+  no argument. Their `CompilerOptions? options` parameter is now `int? maxNodeCount`, the cap for that one call.
+  `RuleEquivalence.Compare`, `RuleDiff.Compare`, `RuleAssertions.AssertEquivalent` and `RewriteAssertions.AssertSound`
+  take `int? maxAnalysisTerms` instead of `CompilerOptions? options`; they read nothing else. Migration: replace
+  `rule.ExpandToNand(new CompilerOptions(MaxRewriteNodeCount: n))` with `rule.ExpandToNand(n)` or compile the rule with
+  that option, and replace `new CompilerOptions(MaxAnalysisTerms: n)` with `n`.
 - Breaking: the `RuleBuilder` array (`params`) and sequence (`IEnumerable<RuleBuilder>`) overloads of an operator give
   the same rule. `And`, `Or`, `Any`, `All` and `None` fold in both: an empty list is the identity constant (`None` of
   one operand is its negation, the others are the operand itself). `Parity`, `ExactlyOne` and `Coalesce` no longer fold

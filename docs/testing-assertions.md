@@ -37,10 +37,10 @@ The counter-example is one witness, not a list of all differences. A term that t
 
 ### Undecided comparisons
 
-The check is undecided when the two rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms`. The default is 20. The message then starts with `The equivalence check is inconclusive:` and gives the reason. To compare larger rules, pass a `CompilerOptions` value as the third argument. The method reads only `MaxAnalysisTerms`.
+The check is undecided when the two rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms`. The default is 20. The message then starts with `The equivalence check is inconclusive:` and gives the reason. To compare larger rules, pass the larger term cap as the third argument, `maxAnalysisTerms`. It is an integer. Omit it for the default.
 
 ```csharp
-RuleAssertions.AssertEquivalent(before, after, new CompilerOptions(MaxAnalysisTerms: 24));
+RuleAssertions.AssertEquivalent(before, after, 24);
 ```
 
 ## Assert that a rewrite is sound

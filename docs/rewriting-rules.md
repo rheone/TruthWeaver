@@ -59,10 +59,10 @@ For `ExpandToPrimitives()`, note two points:
 
 ### Size cap
 
-The three expanding rewrites (`ExpandToPrimitives()`, `ExpandToNand()` and `ExpandToNor()`) can produce a tree far larger than the rule they start from. Each returns a `CompilationResult<TContext>` and refuses to build a result larger than `CompilerOptions.MaxRewriteNodeCount`. The default is **100,000** nodes, counted as a printed tree, so a sub-expression that is shared in memory but written twice counts twice. An over-cap rewrite never throws and is not built: `Succeeded` is `false`, `CompiledRule` is `null`, and one `TRE0016` error says which rewrite hit which cap. To allow a bigger result, pass options with a larger cap:
+The three expanding rewrites (`ExpandToPrimitives()`, `ExpandToNand()` and `ExpandToNor()`) can produce a tree far larger than the rule they start from. Each returns a `CompilationResult<TContext>` and refuses to build a result larger than the rule's own `CompilerOptions.MaxRewriteNodeCount`. The default is **100,000** nodes, counted as a printed tree, so a sub-expression that is shared in memory but written twice counts twice. An over-cap rewrite never throws and is not built: `Succeeded` is `false`, `CompiledRule` is `null`, and one `TRE0016` error says which rewrite hit which cap. To allow a bigger result, raise `MaxRewriteNodeCount` when you compile the rule, or pass the cap for one call as the `maxNodeCount` argument. The normal-form rewrites (`ToNnf`, `ToCnf` and `ToDnf`) take the same argument after `NormalFormOptions`:
 
 ```csharp
-CompilationResult<MyContext> expanded = rule.ExpandToNand(new CompilerOptions(MaxRewriteNodeCount: 1_000_000));
+CompilationResult<MyContext> expanded = rule.ExpandToNand(1_000_000);
 if (!expanded.Succeeded)
 {
     Console.WriteLine(expanded.FormatDiagnostics());   // TRE0016: ExpandToNand would produce more than ...
@@ -272,9 +272,9 @@ RuleEquivalenceResult excluded = RuleEquivalence.Compare(
 Limits to know:
 
 - **Terms are opaque and independent.** Two terms are the same variable only when their predicate name and arguments match. The check cannot know that two different predicates are related, so `isManager` and `isDepartmentHead` are treated as unrelated.
-- **The cap is on distinct terms across both rules**, not on size. A rule pair at exactly the cap is decided. Pass `new CompilerOptions(MaxAnalysisTerms: n)` to change it. Only that option is read.
+- **The cap is on distinct terms across both rules**, not on size. A rule pair at exactly the cap is decided. Pass the `maxAnalysisTerms` argument to change it.
 - **Value only.** The check does not compare evaluation order, short-circuiting or faults.
 - **A counter-example is one witness**, not all of them. Terms that the difference does not depend on are reported as `False`.
 - **Strong K3 is not two-valued logic.** `a OR NOT a` is not equivalent to `TRUE`, because it is `Unknown` when `a` is.
 
-`RuleDiff.Compare` uses this check. `RuleDiffResult.PreservesMeaning` is `true` when the rules are equivalent (including when they are structurally identical), `false` when they are not, and `null` when the term cap makes the question undecidable (default 20). To use a larger cap, call `RuleEquivalence.Compare` directly, or pass `new CompilerOptions(MaxAnalysisTerms: n)` as the optional third argument of `RuleDiff.Compare(before, after, options)`. Only that option is read, and omitting it behaves as before.
+`RuleDiff.Compare` uses this check. `RuleDiffResult.PreservesMeaning` is `true` when the rules are equivalent (including when they are structurally identical), `false` when they are not, and `null` when the term cap makes the question undecidable (default 20). To use a larger cap, call `RuleEquivalence.Compare` directly, or pass the term cap as the optional third argument of `RuleDiff.Compare(before, after, maxAnalysisTerms)`.

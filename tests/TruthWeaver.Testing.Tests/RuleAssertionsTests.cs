@@ -33,11 +33,11 @@ public sealed class RuleAssertionsTests
     public void AssertEquivalent_TermCapExceeded_ThrowsInconclusiveNamingCap_Test()
     {
         DecisionAssertionException exception = Assert.Throws<DecisionAssertionException>(() =>
-            RuleAssertions.AssertEquivalent(Compile("a AND b"), Compile("b AND a"), new CompilerOptions(MaxAnalysisTerms: 1))
+            RuleAssertions.AssertEquivalent(Compile("a AND b"), Compile("b AND a"), 1)
         );
 
         Assert.Contains("inconclusive", exception.Message);
-        Assert.Contains("MaxAnalysisTerms", exception.Message);
+        Assert.Contains("maxAnalysisTerms", exception.Message);
         Assert.Contains("Raise", exception.Message);
     }
 
@@ -45,7 +45,7 @@ public sealed class RuleAssertionsTests
     [Fact]
     public void AssertEquivalent_RaisedTermCap_DecidesTheComparison_Test()
     {
-        RuleAssertions.AssertEquivalent(Compile("a AND b"), Compile("b AND a"), new CompilerOptions(MaxAnalysisTerms: 2));
+        RuleAssertions.AssertEquivalent(Compile("a AND b"), Compile("b AND a"), 2);
     }
 
     /// <summary>A null rule is a programming error and throws ArgumentNullException.</summary>

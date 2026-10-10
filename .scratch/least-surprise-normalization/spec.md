@@ -40,7 +40,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [02](issues/02-datetime-literal-requires-offset.md) | A date-time literal must carry Z or an offset | None | ready-for-agent |
 | [03](issues/03-strict-tree-keys-and-duplicate-arguments.md) | Reject unknown tree keys and duplicate arguments | None | ready-for-agent |
 | [04](issues/04-builder-overloads-fold-consistently.md) | RuleBuilder overloads follow one rule | None | ready-for-agent |
-| [05](issues/05-rewrites-use-rule-options-and-narrow-parameters.md) | Rewrites and comparisons use the rule options and take a narrow parameter | None | ready-for-agent |
+| [05](issues/05-rewrites-use-rule-options-and-narrow-parameters.md) | Rewrites and comparisons use the rule options and take a narrow parameter | None | resolved |
 | [06](issues/06-fault-budget-reaches-semantics-and-timeout-docs.md) | FaultBudget aborts when faults reach the budget; Timeout is documented | None | ready-for-agent |
 | [07](issues/07-null-is-unknown-collection-isempty.md) | A null collection is Unknown for IsEmpty and IsNotEmpty | None | ready-for-agent |
 | [08](issues/08-nullbehavior-unknown-is-zero.md) | NullBehavior.Unknown is the zero value | 07 | ready-for-agent |

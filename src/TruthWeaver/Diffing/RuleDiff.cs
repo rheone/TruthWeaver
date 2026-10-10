@@ -18,10 +18,10 @@ public static class RuleDiff
     /// <typeparam name="TContext">The application context type both rules were compiled for.</typeparam>
     /// <param name="before">The rule to diff from.</param>
     /// <param name="after">The rule to diff to.</param>
-    /// <param name="options">
-    /// The bounds for the equivalence check behind <see cref="RuleDiffResult.PreservesMeaning"/>; only
-    /// <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Raise it so a large pair is decided instead of
-    /// <see langword="null"/>. Defaults to <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// <param name="maxAnalysisTerms">
+    /// The most distinct terms, counted across both rules, the equivalence check behind
+    /// <see cref="RuleDiffResult.PreservesMeaning"/> decides. It controls only that cap. Raise it so a large pair is decided
+    /// instead of <see langword="null"/>. <see langword="null"/> uses the <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
     /// </param>
     /// <returns>
     /// The structural diff, in tree order. Empty (<see cref="RuleDiffResult.HasChanges"/> is
@@ -31,7 +31,7 @@ public static class RuleDiff
     public static RuleDiffResult Compare<TContext>(
         CompiledRule<TContext> before,
         CompiledRule<TContext> after,
-        CompilerOptions? options = null
+        int? maxAnalysisTerms = null
     )
     {
         ArgumentNullException.ThrowIfNull(before);
@@ -44,7 +44,7 @@ public static class RuleDiff
         bool? preservesMeaning =
             entries.Count == 0
                 ? true
-                : RuleEquivalence.Compare(before, after, options).Outcome switch
+                : RuleEquivalence.Compare(before, after, maxAnalysisTerms).Outcome switch
                 {
                     RuleEquivalenceOutcome.Equivalent => true,
                     RuleEquivalenceOutcome.NotEquivalent => false,

@@ -17,23 +17,23 @@ public static class RuleAssertions
     /// <typeparam name="TContext">The application context type both rules were compiled for.</typeparam>
     /// <param name="first">The first rule.</param>
     /// <param name="second">The second rule.</param>
-    /// <param name="options">
-    /// The bounds to apply; only <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Raise it to compare rules
-    /// with more distinct terms. Defaults to <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// <param name="maxAnalysisTerms">
+    /// The most distinct terms, counted across both rules, the equivalence check decides. It controls only that cap. Raise
+    /// it to compare rules with more terms. <see langword="null"/> uses the <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
     /// </param>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     /// <exception cref="DecisionAssertionException">
     /// The rules are not equivalent (the message shows a counter-example), or the comparison is inconclusive because
-    /// the rules have more distinct terms than <see cref="CompilerOptions.MaxAnalysisTerms"/>. An unproven claim
+    /// the rules have more distinct terms than <paramref name="maxAnalysisTerms"/>. An unproven claim
     /// never passes.
     /// </exception>
     public static void AssertEquivalent<TContext>(
         CompiledRule<TContext> first,
         CompiledRule<TContext> second,
-        CompilerOptions? options = null
+        int? maxAnalysisTerms = null
     )
     {
-        RuleEquivalenceResult result = RuleEquivalence.Compare(first, second, options);
+        RuleEquivalenceResult result = RuleEquivalence.Compare(first, second, maxAnalysisTerms);
         switch (result.Outcome)
         {
             case RuleEquivalenceOutcome.Equivalent:
@@ -44,7 +44,7 @@ public static class RuleAssertions
                 );
             default:
                 throw new DecisionAssertionException(
-                    $"The equivalence check is inconclusive: {result.Reason} Raise CompilerOptions.MaxAnalysisTerms or shrink the rules."
+                    $"The equivalence check is inconclusive: {result.Reason} Raise the maxAnalysisTerms argument or shrink the rules."
                 );
         }
     }

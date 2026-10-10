@@ -21,28 +21,28 @@ public static class RewriteAssertions
     /// <param name="expectations">
     /// The extra checks: <see cref="RewriteExpectations.NeverLarger"/> and <see cref="RewriteExpectations.Idempotent"/>.
     /// </param>
-    /// <param name="options">
-    /// The bounds for the equivalence check; only <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Defaults to
-    /// <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// <param name="maxAnalysisTerms">
+    /// The most distinct terms, counted across both rules, the equivalence check decides. It controls only that cap. Raise
+    /// it to compare rules with more terms. <see langword="null"/> uses the <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
     /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="rewrite"/> is <see langword="null"/>.</exception>
     /// <exception cref="DecisionAssertionException">
     /// A check failed. The message names the check and shows the counter-example or the two sizes. The equivalence check
-    /// can also be inconclusive when the rules have more distinct terms than <see cref="CompilerOptions.MaxAnalysisTerms"/>.
+    /// can also be inconclusive when the rules have more distinct terms than <paramref name="maxAnalysisTerms"/>.
     /// An unproven claim never passes.
     /// </exception>
     public static void AssertSound<TContext>(
         CompiledRule<TContext> rule,
         Func<CompiledRule<TContext>, CompiledRule<TContext>> rewrite,
         RewriteExpectations expectations = RewriteExpectations.None,
-        CompilerOptions? options = null
+        int? maxAnalysisTerms = null
     )
     {
         ArgumentNullException.ThrowIfNull(rule);
         ArgumentNullException.ThrowIfNull(rewrite);
 
         CompiledRule<TContext> rewritten = rewrite(rule);
-        RuleEquivalenceResult result = RuleEquivalence.Compare(rule, rewritten, options);
+        RuleEquivalenceResult result = RuleEquivalence.Compare(rule, rewritten, maxAnalysisTerms);
         switch (result.Outcome)
         {
             case RuleEquivalenceOutcome.Equivalent:
@@ -53,7 +53,7 @@ public static class RewriteAssertions
                 );
             default:
                 throw new DecisionAssertionException(
-                    $"Rewrite check 'equivalence' is inconclusive: {result.Reason} Raise CompilerOptions.MaxAnalysisTerms or shrink the rule."
+                    $"Rewrite check 'equivalence' is inconclusive: {result.Reason} Raise the maxAnalysisTerms argument or shrink the rule."
                 );
         }
 

@@ -94,16 +94,16 @@ public sealed class CompiledRule<TContext>
     /// an operator whose definition mentions an operand twice (<c>XOR</c>, <c>EQUIVALENT</c>, <c>If</c>, the inspections)
     /// repeats that operand's text, so deeply nested rules grow quickly (exponentially in the nesting depth).
     /// <para>
-    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree. A larger
+    /// The result is capped at <paramref name="maxNodeCount"/> nodes (the rule's own <see cref="CompilerOptions.MaxRewriteNodeCount"/> by default), counted as a printed tree. A larger
     /// result is not built: the call returns a failed <see cref="CompilationResult{TContext}"/> carrying a
     /// <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error, and never throws for size.
     /// </para>
     /// </remarks>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The new rule over the same predicates whose tree contains only primitive operators, constants and terms, or a failure when the result would exceed the cap.</returns>
-    public CompilationResult<TContext> ExpandToPrimitives(CompilerOptions? options = null)
+    public CompilationResult<TContext> ExpandToPrimitives(int? maxNodeCount = null)
     {
-        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        int cap = maxNodeCount ?? this.options.MaxRewriteNodeCount;
         Expression expanded = PrimitiveExpander.Expand(this.Root);
         return this.RewriteResult(expanded, "ExpandToPrimitives", cap);
     }
@@ -123,17 +123,17 @@ public sealed class CompiledRule<TContext>
     /// so a rule without them is <c>NAND</c>-only. Thresholds become a disjunction over operand subsets, so wide
     /// thresholds grow combinatorially (<c>C(n, k)</c> subsets for <c>AtLeast(k)</c> over <c>n</c> operands).
     /// <para>
-    /// The result is capped at <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree; the cost
+    /// The result is capped at <paramref name="maxNodeCount"/> nodes (the rule's own <see cref="CompilerOptions.MaxRewriteNodeCount"/> by default), counted as a printed tree; the cost
     /// is estimated first, so an over-cap rewrite is refused without being built. The call then returns a failed
     /// <see cref="CompilationResult{TContext}"/> carrying a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error
     /// and never throws for size.
     /// </para>
     /// </remarks>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The new rule over the same predicates whose logic is <c>NAND</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
-    public CompilationResult<TContext> ExpandToNand(CompilerOptions? options = null)
+    public CompilationResult<TContext> ExpandToNand(int? maxNodeCount = null)
     {
-        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        int cap = maxNodeCount ?? this.options.MaxRewriteNodeCount;
         return this.RewriteResult(NandNorExpander.ToNand(this.Root, cap), "ExpandToNand", cap);
     }
 
@@ -145,11 +145,11 @@ public sealed class CompiledRule<TContext>
     /// <remarks>
     /// Same guarantees, cost, size cap and <c>COALESCE</c> boundary as <see cref="ExpandToNand"/>.
     /// </remarks>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>. Pass a larger value to allow bigger results.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The new rule over the same predicates whose logic is <c>NOR</c> (plus any <c>COALESCE</c> boundary), or a failure when the result would exceed the cap.</returns>
-    public CompilationResult<TContext> ExpandToNor(CompilerOptions? options = null)
+    public CompilationResult<TContext> ExpandToNor(int? maxNodeCount = null)
     {
-        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        int cap = maxNodeCount ?? this.options.MaxRewriteNodeCount;
         return this.RewriteResult(NandNorExpander.ToNor(this.Root, cap), "ExpandToNor", cap);
     }
 
@@ -292,11 +292,11 @@ public sealed class CompiledRule<TContext>
     /// </para>
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
-    public CompilationResult<TContext> ToNnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    public CompilationResult<TContext> ToNnf(NormalFormOptions? normalForm = null, int? maxNodeCount = null)
     {
-        return this.NormalFormResult(NormalForms.Form.Nnf, nameof(this.ToNnf), normalForm, options);
+        return this.NormalFormResult(NormalForms.Form.Nnf, nameof(this.ToNnf), normalForm, maxNodeCount);
     }
 
     /// <summary>
@@ -311,11 +311,11 @@ public sealed class CompiledRule<TContext>
     /// <see cref="ToNnf"/>, and rewriting the result again changes nothing.
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
-    public CompilationResult<TContext> ToCnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    public CompilationResult<TContext> ToCnf(NormalFormOptions? normalForm = null, int? maxNodeCount = null)
     {
-        return this.NormalFormResult(NormalForms.Form.Cnf, nameof(this.ToCnf), normalForm, options);
+        return this.NormalFormResult(NormalForms.Form.Cnf, nameof(this.ToCnf), normalForm, maxNodeCount);
     }
 
     /// <summary>
@@ -327,11 +327,11 @@ public sealed class CompiledRule<TContext>
     /// <see cref="ToCnf"/>.
     /// </remarks>
     /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
-    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The most nodes, counted as a printed tree, the rewritten rule may have. It controls only that cap. <see langword="null"/> uses the <see cref="CompilerOptions.MaxRewriteNodeCount"/> this rule was compiled with; pass a larger value to allow bigger results.</param>
     /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
-    public CompilationResult<TContext> ToDnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    public CompilationResult<TContext> ToDnf(NormalFormOptions? normalForm = null, int? maxNodeCount = null)
     {
-        return this.NormalFormResult(NormalForms.Form.Dnf, nameof(this.ToDnf), normalForm, options);
+        return this.NormalFormResult(NormalForms.Form.Dnf, nameof(this.ToDnf), normalForm, maxNodeCount);
     }
 
     /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
@@ -628,10 +628,10 @@ public sealed class CompiledRule<TContext>
         NormalForms.Form form,
         string rewrite,
         NormalFormOptions? normalForm,
-        CompilerOptions? options
+        int? maxNodeCount
     )
     {
-        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        int cap = maxNodeCount ?? this.options.MaxRewriteNodeCount;
         NormalForms.Result built = NormalForms.Build(
             this.Root,
             form,
@@ -692,7 +692,7 @@ public sealed class CompiledRule<TContext>
             found: "more nodes than that",
             suggestion: new DiagnosticSuggestion(
                 DiagnosticSuggestionKind.Hint,
-                "Raise CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
+                "Raise the maxNodeCount argument or CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
             )
         );
         return new CompilationResult<TContext>(null, [diagnostic]);

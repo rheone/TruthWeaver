@@ -38,12 +38,7 @@ public sealed class RewriteAssertionsTests
     public void AssertSound_TermCapExceeded_ThrowsInconclusive_Test()
     {
         DecisionAssertionException exception = Assert.Throws<DecisionAssertionException>(() =>
-            RewriteAssertions.AssertSound(
-                Compile("a AND b"),
-                r => r.Canonicalize(),
-                RewriteExpectations.None,
-                new CompilerOptions(MaxAnalysisTerms: 1)
-            )
+            RewriteAssertions.AssertSound(Compile("a AND b"), r => r.Canonicalize(), RewriteExpectations.None, 1)
         );
 
         Assert.Contains("inconclusive", exception.Message);

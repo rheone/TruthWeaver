@@ -82,11 +82,7 @@ public sealed class RuleEquivalenceTests
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
-        RuleEquivalenceResult result = RuleEquivalence.Compare(
-            Compile(compiler, "a AND b"),
-            Compile(compiler, "b AND a"),
-            new CompilerOptions(MaxAnalysisTerms: 1)
-        );
+        RuleEquivalenceResult result = RuleEquivalence.Compare(Compile(compiler, "a AND b"), Compile(compiler, "b AND a"), 1);
 
         Assert.Equal(RuleEquivalenceOutcome.Undecided, result.Outcome);
         Assert.Null(result.CounterExample);
@@ -99,11 +95,7 @@ public sealed class RuleEquivalenceTests
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
-        RuleEquivalenceResult result = RuleEquivalence.Compare(
-            Compile(compiler, "a AND b"),
-            Compile(compiler, "b AND a"),
-            new CompilerOptions(MaxAnalysisTerms: 2)
-        );
+        RuleEquivalenceResult result = RuleEquivalence.Compare(Compile(compiler, "a AND b"), Compile(compiler, "b AND a"), 2);
 
         Assert.Equal(RuleEquivalenceOutcome.Equivalent, result.Outcome);
     }

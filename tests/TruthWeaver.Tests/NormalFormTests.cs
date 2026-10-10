@@ -209,13 +209,13 @@ public sealed class NormalFormTests
     public void NormalForm_ResultOverTheCap_ReturnsRewriteTooLargeAndNoRule_Test(string form)
     {
         CompiledRule<RuleTestContext> rule = Rule("(a OR b) AND (c OR d) AND (e OR f)", 6).Compiled;
-        CompilerOptions tight = new(MaxRewriteNodeCount: 5);
+        const int tight = 5;
 
         CompilationResult<RuleTestContext> result = form switch
         {
-            "nnf" => rule.ToNnf(options: tight),
-            "cnf" => rule.ToCnf(options: tight),
-            _ => rule.ToDnf(options: tight),
+            "nnf" => rule.ToNnf(maxNodeCount: tight),
+            "cnf" => rule.ToCnf(maxNodeCount: tight),
+            _ => rule.ToDnf(maxNodeCount: tight),
         };
 
         Assert.Null(result.CompiledRule);
