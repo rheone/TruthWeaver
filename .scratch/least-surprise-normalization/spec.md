@@ -48,7 +48,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [10](issues/10-assertsound-compilationresult-overload-and-limits-table.md) | AssertSound accepts the capped rewrites; one limits table | 05 | resolved |
 | [11](issues/11-one-diagnostic-code-per-mistake.md) | One diagnostic code per mistake, and one code table | 01, 03 | resolved |
 | [12](issues/12-argument-names-are-case-insensitive.md) | Argument names are case-insensitive | None | resolved |
-| [13](issues/13-lintrules-style-flag.md) | LintRules.Style holds NotCanonical | None | ready-for-agent |
+| [13](issues/13-lintrules-style-flag.md) | LintRules.Style holds NotCanonical | None | resolved |
 | [14](issues/14-yaml-null-argument-is-a-diagnostic.md) | A YAML null argument is rejected like JSON | 03 | ready-for-agent |
 | [15](issues/15-reject-reserved-predicate-names.md) | Reject predicate names that the DSL treats as keywords | None | ready-for-agent |
 | [16](issues/16-zero-match-array-query-trace-note.md) | The trace notes a zero-match array query | None | ready-for-agent |

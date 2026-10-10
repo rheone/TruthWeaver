@@ -32,7 +32,7 @@ internal static class Linter
             LintDepth(root, options, diagnostics);
         }
 
-        if (options.Lints.HasFlag(LintRules.NotCanonical))
+        if (options.Lints.HasFlag(LintRules.Style))
         {
             LintCanonical(root, options, diagnostics);
         }

@@ -67,6 +67,8 @@ CompilationResult<MyContext> result = compiler.Compile("NOT NOT isAdmin");
 // TRE0023 info: a negation of a negation cancels out ... Did you mean: isAdmin
 ```
 
+`LintRules.All` is a quiet first run: a rule that is valid and not redundant, such as `b AND a`, gets no finding. Add the `Style` flag (`LintRules.All | LintRules.Style`) to also hear about a rule that `Canonicalize()` would change.
+
 Each finding is an `Info` diagnostic, so it never blocks compilation. It has a `Replacement` suggestion that holds the simpler rule text. The message gives the Strong K3 reason why the replacement means the same.
 
 A finding has no source span, because the compiled tree does not keep the place where a node was written. The message and `Found` show the construct instead.
@@ -84,11 +86,11 @@ Every suggestion is the same rule as the original for every `True`, `False` and 
 | `DoubleNegation`      | `TRE0023` | `NOT NOT x`                                                                                                                   | `x`                                              |
 | `DeepNesting`         | `TRE0028` | a rule whose depth reaches `DeepNestingFraction` of `MaxDepth`                                                                | none                                             |
 | `WideChain`           | `TRE0029` | an `AND` or `OR` chain with more than `WideChainOperandLimit` operands                                                        | none                                             |
-| `NotCanonical`        | `TRE0030` | a rule that `Canonicalize()` would change                                                                                     | the canonical rule text                          |
+| `Style`               | `TRE0030` | a rule that `Canonicalize()` would change (`NotCanonical`)                                                                  | the canonical rule text                          |
 
-`LintRules` is a flags enum. Combine the flags you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`) or use `LintRules.All`.
+`LintRules` is a flags enum. Combine the flags you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`). `LintRules.All` switches on every flag except `Style`, so a first run reports likely mistakes and stays quiet about a rule that is valid but written in its own order. `LintRules.All | LintRules.Style` switches on every lint.
 
-`DeepNesting`, `WideChain` and `NotCanonical` do not propose an equivalent shorter rule by logic. `DeepNesting` and `WideChain` give no suggestion. `NotCanonical` suggests the output of [`Canonicalize()`](rewriting-rules.md#canonical-form). It does not run on a rule larger than `CompilerOptions.MaxRewriteNodeCount`. `Canonicalize()` itself has no size limit, so no finding for a large rule does not show that the rule is canonical.
+`DeepNesting`, `WideChain` and `Style` do not propose an equivalent shorter rule by logic. `DeepNesting` and `WideChain` give no suggestion. `Style` suggests the output of [`Canonicalize()`](rewriting-rules.md#canonical-form). It does not run on a rule larger than `CompilerOptions.MaxRewriteNodeCount`. `Canonicalize()` itself has no size limit, so no finding for a large rule does not show that the rule is canonical.
 
 Two `CompilerOptions` values set the thresholds:
 
@@ -101,7 +103,7 @@ A rule under both thresholds produces no `DeepNesting` or `WideChain` finding.
 
 ### Related findings
 
-One redundant construct can produce several findings. For example, an `If` whose condition holds a redundant inspection gets a finding for the `If` and a finding for the inspection. Every finding is reported. `Diagnostic.EnclosedBy` links a finding to the nearest finding whose construct contains it, so a UI can group the inner findings under the outermost one. It is `null` for a finding that stands alone, such as a finding in a separate branch of the rule. The findings keep the order "outermost construct first". `DeepNesting` and `NotCanonical` describe the whole rule, so they are never linked.
+One redundant construct can produce several findings. For example, an `If` whose condition holds a redundant inspection gets a finding for the `If` and a finding for the inspection. Every finding is reported. `Diagnostic.EnclosedBy` links a finding to the nearest finding whose construct contains it, so a UI can group the inner findings under the outermost one. It is `null` for a finding that stands alone, such as a finding in a separate branch of the rule. The findings keep the order "outermost construct first". `DeepNesting` and `Style` describe the whole rule, so they are never linked.
 
 The semantic lints (`TRE0017` to `TRE0019` and `TRE0021`) use the analyzer's BDD. They are skipped for a sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms. The structural lints (`TRE0020`, `TRE0022` and `TRE0023`) always run. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.
 

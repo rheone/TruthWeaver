@@ -51,7 +51,7 @@ public class CompileStageBenchmarks
 
         this.registry = RuleFixtures.BuildRegistry(termCount);
         this.options = new CompilerOptions(MaxAnalysisTerms: Math.Max(20, termCount));
-        this.lintOptions = this.options with { Lints = LintRules.All };
+        this.lintOptions = this.options with { Lints = LintRules.All | LintRules.Style };
 
         RuleBuilder rule = RuleFixtures.BuildGroupedRule(termCount, groupSize);
         this.ruleJson = rule.ToJson();

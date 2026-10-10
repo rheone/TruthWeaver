@@ -60,10 +60,17 @@ public enum LintRules
     /// </summary>
     WideChain = 256,
 
-    /// <summary>A rule that <c>Canonicalize()</c> would change, with the canonical text as the suggestion (<c>TRE0030</c>).</summary>
-    NotCanonical = 512,
+    /// <summary>
+    /// The style lints, which say how a rule could be written rather than where it is probably wrong: a rule that
+    /// <c>Canonicalize()</c> would change, with the canonical text as the suggestion (<c>TRE0030</c>). A valid rule written
+    /// in its own operand order gets this finding, so <see cref="All"/> leaves it out. Use <c>All | Style</c> for every lint.
+    /// </summary>
+    Style = 512,
 
-    /// <summary>Every lint rule.</summary>
+    /// <summary>
+    /// The logic and structure lints: every flag except <see cref="Style"/>. Its findings point at likely mistakes, so a
+    /// first run over a reasonable rule is quiet.
+    /// </summary>
     All =
         RedundantInspection
         | RedundantCoalesce
@@ -73,6 +80,5 @@ public enum LintRules
         | DuplicateOperands
         | DoubleNegation
         | DeepNesting
-        | WideChain
-        | NotCanonical,
+        | WideChain,
 }

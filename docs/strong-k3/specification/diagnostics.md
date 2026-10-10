@@ -41,7 +41,7 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0027` | `DeprecatedPredicate` | Warning | Validate | On | A rule uses a predicate whose schema is marked deprecated. This is a warning, one per use, and the rule still compiles. |
 | `TRE0028` | `DeepNesting` | Info | Lint | Opt-in (`LintRules.DeepNesting`) | The rule is at least `DeepNestingFraction` of `MaxDepth` levels deep. This finding has no suggestion. |
 | `TRE0029` | `WideChain` | Info | Lint | Opt-in (`LintRules.WideChain`) | An `AND` or `OR` has more operands than `WideChainOperandLimit`. This finding has no suggestion. |
-| `TRE0030` | `NotCanonical` | Info | Lint | Opt-in (`LintRules.NotCanonical`) | `Canonicalize()` would change the rule. The suggestion is the canonical rule text. |
+| `TRE0030` | `NotCanonical` | Info | Lint | Opt-in (`LintRules.Style`) | `Canonicalize()` would change the rule. The suggestion is the canonical rule text. |
 | `TRE0031` | `ThresholdKeptAsAtom` | Warning | Rewrite | On | `ToNnf()`, `ToCnf()` or `ToDnf()` kept a threshold as an atom, because expanding it can grow the rule a lot. The message gives the growth estimate. Pass `NormalFormOptions` with `ExpandThresholds` set to `true` to expand it. |
 | `TRE0032` | `DuplicateArgument` | Error | Validate | On | A term names the same argument more than once, in rule text, JSON, YAML or `RuleBuilder`. No occurrence wins. |
 

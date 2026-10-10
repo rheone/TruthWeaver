@@ -171,8 +171,7 @@ public sealed class LintTests
     [InlineData("If(a, b, c)")]
     public void Compile_RuleRedundantOnlyInTwoValuedLogic_ReportsNoLintFindings_Test(string rule)
     {
-        // NotCanonical is excluded: these rules can be valid yet not in canonical operand order.
-        CompilationResult<RuleTestContext> result = Compile(rule, LintRules.All & ~LintRules.NotCanonical);
+        CompilationResult<RuleTestContext> result = Compile(rule, LintRules.All);
 
         Assert.DoesNotContain(result.Diagnostics, d => IsLint(d));
     }
@@ -249,13 +248,27 @@ public sealed class LintTests
     }
 
     /// <summary>
+    /// <c>LintRules.All</c> holds the logic and structure lints only: a valid rule that is not in canonical operand order
+    /// gets no finding, and <c>All | Style</c> reports it.
+    /// </summary>
+    [Fact]
+    public void Compile_RuleOutOfCanonicalOrder_AllIsQuietAndAllWithStyleReportsNotCanonical_Test()
+    {
+        CompilationResult<RuleTestContext> quiet = Compile("b AND a", LintRules.All);
+        CompilationResult<RuleTestContext> full = Compile("b AND a", LintRules.All | LintRules.Style);
+
+        Assert.DoesNotContain(quiet.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+        Assert.Contains(full.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
+    /// <summary>
     /// A rule that <c>Canonicalize()</c> would reorder is reported by the not-canonical lint, with the canonical rule text as
     /// the replacement suggestion.
     /// </summary>
     [Fact]
     public void Compile_RuleWithOperandsOutOfCanonicalOrder_ReportsNotCanonicalWithCanonicalText_Test()
     {
-        CompilationResult<RuleTestContext> result = Compile("b AND a", LintRules.NotCanonical);
+        CompilationResult<RuleTestContext> result = Compile("b AND a", LintRules.Style);
 
         Diagnostic finding = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
         Assert.Equal(DiagnosticSuggestionKind.Replacement, finding.Suggestion?.Kind);
@@ -266,7 +279,7 @@ public sealed class LintTests
     [Fact]
     public void Compile_CanonicalRule_ReportsNoNotCanonical_Test()
     {
-        CompilationResult<RuleTestContext> result = Compile("a AND b", LintRules.NotCanonical);
+        CompilationResult<RuleTestContext> result = Compile("a AND b", LintRules.Style);
 
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
     }
@@ -277,7 +290,7 @@ public sealed class LintTests
     {
         CompilationResult<RuleTestContext> result = Compile(
             "b AND a",
-            new CompilerOptions(MaxRewriteNodeCount: 1, Lints: LintRules.NotCanonical)
+            new CompilerOptions(MaxRewriteNodeCount: 1, Lints: LintRules.Style)
         );
 
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
@@ -290,11 +303,11 @@ public sealed class LintTests
         // "b AND a" is three nodes: the AND and its two terms.
         CompilationResult<RuleTestContext> atCap = Compile(
             "b AND a",
-            new CompilerOptions(MaxRewriteNodeCount: 3, Lints: LintRules.NotCanonical)
+            new CompilerOptions(MaxRewriteNodeCount: 3, Lints: LintRules.Style)
         );
         CompilationResult<RuleTestContext> overCap = Compile(
             "b AND a",
-            new CompilerOptions(MaxRewriteNodeCount: 2, Lints: LintRules.NotCanonical)
+            new CompilerOptions(MaxRewriteNodeCount: 2, Lints: LintRules.Style)
         );
 
         Assert.Contains(atCap.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);

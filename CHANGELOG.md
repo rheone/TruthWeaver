@@ -200,6 +200,11 @@ copyright line reads 2026.
   argument names that differ only in case now fails at registration with an `ArgumentException`. Migration: rename one of
   the two arguments in such a schema, and remove any rule text that relied on `Crust:` being a different name from
   `crust:`. Argument values stay case-sensitive.
+- Breaking: `LintRules.All` no longer includes the not-canonical lint (`TRE0030`), so a first run reports likely mistakes
+  only. The lint moved to a new `LintRules.Style` flag, which replaces `LintRules.NotCanonical`. Migration: write
+  `LintRules.All | LintRules.Style` where you relied on `All` to report `NotCanonical`, and rename any use of
+  `LintRules.NotCanonical` to `LintRules.Style`. The diagnostic code and the `DiagnosticCodes.NotCanonical` constant are
+  unchanged.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
