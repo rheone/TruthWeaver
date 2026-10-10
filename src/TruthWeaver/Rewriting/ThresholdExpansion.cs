@@ -127,6 +127,51 @@ internal static class ThresholdExpansion
         return Math.Min(combinations * Math.Max(k, 1), limit);
     }
 
+    /// <summary>
+    /// The approximate node count of a full expansion, as a <see langword="double"/> so a very wide threshold gives a
+    /// large estimate instead of a saturated or overflowed one. It is a message figure, not a budget check.
+    /// </summary>
+    /// <param name="comparison">The comparison.</param>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operandCount">The number of operands.</param>
+    /// <returns>The estimated node count.</returns>
+    public static double EstimateNodes(ThresholdComparison comparison, int k, int operandCount)
+    {
+        ThresholdTerms terms = ThresholdSemantics.Terms(comparison, k);
+        double total = 0;
+        if (terms.AtLeast is { } lower)
+        {
+            total += LevelSize(lower, operandCount);
+        }
+
+        if (terms.NotAtLeast is { } upper)
+        {
+            total += LevelSize(upper, operandCount);
+        }
+
+        // Two tests are joined by one more connective.
+        return terms is { AtLeast: not null, NotAtLeast: not null } ? total + 1 : total;
+    }
+
+    /// <summary>One group of <c>k</c> operands per subset, plus the join; a level the count decides is a single constant.</summary>
+    private static double LevelSize(int k, int n)
+    {
+        if (k <= 0 || k > n)
+        {
+            return 1;
+        }
+
+        // C(n, k) as a double: it loses precision instead of overflowing. Walking the smaller side keeps it short.
+        int small = Math.Min(k, n - k);
+        double combinations = 1;
+        for (int i = 1; i <= small; i++)
+        {
+            combinations = combinations * (n - small + i) / i;
+        }
+
+        return (combinations * (k + 1)) + 1;
+    }
+
     /// <summary>The disjunction of the conjunction of every k-subset, balanced so the depth is logarithmic.</summary>
     private static Expression AtLeast(int k, IReadOnlyList<Expression> operands, ThresholdConnectives connectives)
     {

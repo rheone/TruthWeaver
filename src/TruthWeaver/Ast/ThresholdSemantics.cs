@@ -46,6 +46,26 @@ internal static class ThresholdSemantics
         };
     }
 
+    /// <summary>
+    /// Returns the single threshold comparison that is the negation of <c>AtLeast</c> or <c>AtMost</c>. The count is an
+    /// integer, so <c>NOT AtLeast(k)</c> is <c>AtMost(k - 1)</c> and <c>NOT AtMost(k)</c> is <c>AtLeast(k + 1)</c>.
+    /// </summary>
+    /// <param name="comparison">The comparison to negate.</param>
+    /// <param name="k">The threshold.</param>
+    /// <returns>
+    /// The negated comparison and threshold, or <see langword="null"/> when the negation is not one threshold (<c>Exactly</c>).
+    /// </returns>
+    public static (ThresholdComparison Comparison, int K)? Negate(ThresholdComparison comparison, int k)
+    {
+        // The bound is held at the int limits instead of wrapping, so a limit keeps its "never reached" meaning.
+        return comparison switch
+        {
+            ThresholdComparison.AtLeast => (ThresholdComparison.AtMost, k == int.MinValue ? k : k - 1),
+            ThresholdComparison.AtMost => (ThresholdComparison.AtLeast, Next(k)),
+            _ => null,
+        };
+    }
+
     /// <summary>Splits <c>Between(min, max)</c> into <c>AtLeast(min) AND NOT AtLeast(max + 1)</c>.</summary>
     /// <param name="min">The smallest accepted count.</param>
     /// <param name="max">The largest accepted count.</param>

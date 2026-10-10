@@ -152,11 +152,9 @@ internal static class Simplifier
                 InspectionExpression { Kind: InspectionKind.IsUnknown } unknown => Derived(
                     Inspect(InspectionKind.IsKnown, unknown.Operand)
                 ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtLeast } atLeast => Derived(
-                    new ThresholdExpression(ThresholdComparison.AtMost, atLeast.K - 1, atLeast.Operands)
-                ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtMost } atMost => Derived(
-                    new ThresholdExpression(ThresholdComparison.AtLeast, atMost.K + 1, atMost.Operands)
+                ThresholdExpression threshold
+                    when ThresholdSemantics.Negate(threshold.Comparison, threshold.K) is { } flipped => Derived(
+                    new ThresholdExpression(flipped.Comparison, flipped.K, threshold.Operands)
                 ),
                 AndExpression and => DeMorganIfSmaller(n, new OrExpression(ExpressionTools.Array(and.Operands.Select(Negate)))),
                 OrExpression or => DeMorganIfSmaller(n, new AndExpression(ExpressionTools.Array(or.Operands.Select(Negate)))),

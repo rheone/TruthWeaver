@@ -176,49 +176,15 @@ internal static class NormalForms
         /// </summary>
         internal static bool IsCheap(ThresholdExpression t, int n)
         {
-            return t.Comparison switch
-            {
-                ThresholdComparison.AtLeast => CheapLevel(t.K, n),
-                ThresholdComparison.AtMost => CheapLevel(t.K + 1, n),
-                _ => CheapLevel(t.K, n) && CheapLevel(t.K + 1, n),
-            };
+            ThresholdTerms terms = ThresholdSemantics.Terms(t.Comparison, t.K);
+            return (terms.AtLeast is not { } lower || CheapLevel(lower, n))
+                && (terms.NotAtLeast is not { } upper || CheapLevel(upper, n));
         }
 
         /// <summary>Whether <c>AtLeast(k)</c> over <paramref name="n"/> operands is a single group (<c>k</c> of 1 or at least <c>n</c>).</summary>
         internal static bool CheapLevel(int k, int n)
         {
             return k <= 1 || k >= n;
-        }
-
-        /// <summary>The approximate node count of the expansion of a threshold.</summary>
-        internal static double EstimateExpansion(ThresholdExpression t)
-        {
-            int n = t.Operands.Count;
-            return t.Comparison switch
-            {
-                ThresholdComparison.AtLeast => LevelSize(t.K, n),
-                ThresholdComparison.AtMost => LevelSize(t.K + 1, n),
-                _ => LevelSize(t.K, n) + LevelSize(t.K + 1, n) + 1,
-            };
-        }
-
-        /// <summary>The approximate node count of <c>AtLeast(k)</c> over <paramref name="n"/> operands: one group of <c>k</c> literals per subset, plus the join.</summary>
-        internal static double LevelSize(int k, int n)
-        {
-            return k <= 0 || k > n ? 1 : (Binomial(n, k) * (k + 1)) + 1;
-        }
-
-        /// <summary>The binomial coefficient <c>C(n, k)</c> as a double, which loses precision instead of overflowing.</summary>
-        internal static double Binomial(int n, int k)
-        {
-            k = Math.Min(k, n - k);
-            double result = 1;
-            for (int i = 1; i <= k; i++)
-            {
-                result = result * (n - k + i) / i;
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -333,21 +299,21 @@ internal static class NormalForms
                 return NnfSupport.Literal(ExpressionTools.MapChildren(t, child => this.Visit(child, false)), negate);
             }
 
-            return t.Comparison switch
+            // The comparison is a lower AtLeast test and/or a negated upper one (AtMost(k) is NOT AtLeast(k + 1)). Both
+            // are exact in K3. Negation swaps each test's polarity and the join, which is De Morgan over the whole.
+            ThresholdTerms terms = ThresholdSemantics.Terms(t.Comparison, t.K);
+            List<Expression> parts = [];
+            if (terms.AtLeast is { } lower)
             {
-                // AtMost(k) is NOT AtLeast(k + 1); Exactly(k) is AtLeast(k) AND NOT AtLeast(k + 1). Both are exact in K3.
-                ThresholdComparison.AtLeast => this.AtLeast(t.K, t.Operands, negate),
-                ThresholdComparison.AtMost => this.AtLeast(t.K + 1, t.Operands, !negate),
-                _ => negate
-                    ? NnfSupport.SmartJoin(
-                        [this.AtLeast(t.K, t.Operands, true), this.AtLeast(t.K + 1, t.Operands, false)],
-                        andJoin: false
-                    )
-                    : NnfSupport.SmartJoin(
-                        [this.AtLeast(t.K, t.Operands, false), this.AtLeast(t.K + 1, t.Operands, true)],
-                        andJoin: true
-                    ),
-            };
+                parts.Add(this.AtLeast(lower, t.Operands, negate));
+            }
+
+            if (terms.NotAtLeast is { } upper)
+            {
+                parts.Add(this.AtLeast(upper, t.Operands, !negate));
+            }
+
+            return NnfSupport.SmartJoin(parts, andJoin: !negate);
         }
 
         /// <summary>
@@ -364,7 +330,8 @@ internal static class NormalForms
                 return new ConstantExpression(value ? TruthValue.True : TruthValue.False);
             }
 
-            if (NnfSupport.Binomial(n, k) * k > cap)
+            // A saturating slot count: it reaches cap + 1 exactly when the expansion cannot fit.
+            if (ThresholdExpansion.SubsetSlots(n, k, cap == long.MaxValue ? cap : cap + 1) > cap)
             {
                 this.Exceeded = true;
                 return new ConstantExpression(TruthValue.Unknown);
@@ -372,26 +339,9 @@ internal static class NormalForms
 
             Expression[] literals = [.. operands.Select(operand => this.Visit(operand, negate))];
             List<Expression> groups = [];
-            int[] pick = [.. Enumerable.Range(0, k)];
-            while (true)
+            foreach (int[] pick in ThresholdExpansion.Subsets(n, k))
             {
                 groups.Add(NnfSupport.SmartJoin([.. pick.Select(i => literals[i])], andJoin: !negate));
-                int position = k - 1;
-                while (position >= 0 && pick[position] == n - k + position)
-                {
-                    position--;
-                }
-
-                if (position < 0)
-                {
-                    break;
-                }
-
-                pick[position]++;
-                for (int i = position + 1; i < k; i++)
-                {
-                    pick[i] = pick[i - 1] + 1;
-                }
             }
 
             return NnfSupport.SmartJoin(groups, andJoin: negate);
@@ -404,7 +354,7 @@ internal static class NormalForms
                 return;
             }
 
-            this.kept.Add(new KeptThreshold(t, NnfSupport.EstimateExpansion(t)));
+            this.kept.Add(new KeptThreshold(t, ThresholdExpansion.EstimateNodes(t.Comparison, t.K, t.Operands.Count)));
         }
     }
 

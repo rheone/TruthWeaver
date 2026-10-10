@@ -44,6 +44,31 @@ public sealed class ThresholdSemanticsTests
         Assert.Equal(new ThresholdTerms(expectedAtLeast, expectedNotAtLeast), terms);
     }
 
+    /// <summary>The negation of AtLeast(k) is AtMost(k - 1) and of AtMost(k) is AtLeast(k + 1); Exactly has no single negation.</summary>
+    [Theory]
+    [InlineData(ThresholdComparison.AtLeast, 2, ThresholdComparison.AtMost, 1)]
+    [InlineData(ThresholdComparison.AtMost, 2, ThresholdComparison.AtLeast, 3)]
+    [InlineData(ThresholdComparison.AtMost, int.MaxValue, ThresholdComparison.AtLeast, int.MaxValue)]
+    [InlineData(ThresholdComparison.AtLeast, int.MinValue, ThresholdComparison.AtMost, int.MinValue)]
+    public void Negate_AtLeastOrAtMost_ReturnsTheOppositeComparison_Test(
+        ThresholdComparison comparison,
+        int k,
+        ThresholdComparison expectedComparison,
+        int expectedK
+    )
+    {
+        (ThresholdComparison, int)? negated = ThresholdSemantics.Negate(comparison, k);
+
+        Assert.Equal((expectedComparison, expectedK), negated);
+    }
+
+    /// <summary>Exactly is not the negation of any single threshold, so Negate reports none.</summary>
+    [Fact]
+    public void Negate_Exactly_ReturnsNull_Test()
+    {
+        Assert.Null(ThresholdSemantics.Negate(ThresholdComparison.Exactly, 2));
+    }
+
     /// <summary>Between(min, max) splits into AtLeast(min) and NOT AtLeast(max + 1).</summary>
     [Fact]
     public void Between_MinAndMax_SplitsIntoLowerAndNegatedUpperTests_Test()

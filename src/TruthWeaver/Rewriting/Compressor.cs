@@ -367,15 +367,11 @@ internal static class Compressor
                     this.Visit(or.Operands[0]),
                     this.Visit(or.Operands[1])
                 ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtLeast } atLeast => new ThresholdExpression(
-                    ThresholdComparison.AtMost,
-                    atLeast.K - 1,
-                    ExpressionTools.Array(atLeast.Operands.Select(this.Visit))
-                ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtMost } atMost => new ThresholdExpression(
-                    ThresholdComparison.AtLeast,
-                    atMost.K + 1,
-                    ExpressionTools.Array(atMost.Operands.Select(this.Visit))
+                ThresholdExpression threshold
+                    when ThresholdSemantics.Negate(threshold.Comparison, threshold.K) is { } flipped => new ThresholdExpression(
+                    flipped.Comparison,
+                    flipped.K,
+                    ExpressionTools.Array(threshold.Operands.Select(this.Visit))
                 ),
                 _ => null,
             };

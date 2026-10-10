@@ -128,6 +128,23 @@ public sealed class ThresholdExpansionTests
         );
     }
 
+    /// <summary>The estimate counts one group per subset plus a join for each test, and one more to join two tests.</summary>
+    [Theory]
+    [InlineData(ThresholdComparison.AtLeast, 2, 4, 19)]
+    [InlineData(ThresholdComparison.AtMost, 1, 4, 19)]
+    [InlineData(ThresholdComparison.Exactly, 1, 4, 9 + 19 + 1)]
+    public void EstimateNodes_Comparison_CountsSubsetGroupsPerTest_Test(
+        ThresholdComparison comparison,
+        int k,
+        int operandCount,
+        double expected
+    )
+    {
+        double estimate = ThresholdExpansion.EstimateNodes(comparison, k, operandCount);
+
+        Assert.Equal(expected, estimate);
+    }
+
     private static List<Expression> Terms(int count)
     {
         return [.. Enumerable.Range(0, count).Select(i => (Expression)new TermExpression(new TermIdentity($"p{i}", [])))];

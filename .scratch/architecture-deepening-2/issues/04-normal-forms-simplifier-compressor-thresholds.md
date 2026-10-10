@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `NormalForms` has no subset loop and no binomial/cost helpers that the expansion module provides
 - [ ] `Simplifier` and `Compressor` hold no copy of the threshold negation or normalisation
