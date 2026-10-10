@@ -26,7 +26,7 @@ The selector has one overload. A `DateTime` is not accepted. See [Argument kinds
 
 ## Arguments
 
-The arguments, their defaults and their rules are the same as for [InTimeWindow](datetime-intimewindow.md#arguments). The window is the window of `InTimeWindow`, so `includeStart` and `includeEnd` say which edges are inside the window, not inside its complement.
+The arguments, their defaults and their rules are the same as for [InTimeWindow](datetime-intimewindow.md#arguments). The default window is half-open, `[start, end)`, and `includeStart` and `includeEnd` move either end. The window is the window of `InTimeWindow`, so `includeStart` and `includeEnd` say which edges are inside the window, not inside its complement.
 
 | Name | Kind | Required | Meaning |
 | --- | --- | --- | --- |

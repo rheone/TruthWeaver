@@ -1,6 +1,6 @@
 # Predicate types
 
-How to write and register the predicates that a rule calls. The meaning of each operator is in the [Strong Kleene (K3) reference](strong-k3/README.md). Back to the [README](../README.md).
+How to write and register the predicates that a rule calls. The meaning of each operator is in the [Strong Kleene (K3) reference](strong-k3/README.md). Back to the [README](../README.md). The defaults that all built-in predicates share are in [Predicate conventions](predicate-conventions.md).
 
 ## Registration shapes
 
@@ -17,7 +17,7 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:
 
-- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching.
+- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates` has no case option: a pattern that ignores case starts with `(?i)`.
 - `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 - `TypePredicates` covers the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset`. Each has an `IsNot...` twin that is its Strong Kleene complement. See [Type tests](#type-tests).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
@@ -83,7 +83,7 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 
 ### Collection predicates
 
-`CollectionPredicates` selects an `IReadOnlyCollection<string>?`. Comparison is ordinal and case-sensitive. Every predicate has a `NotX` twin that is its Strong Kleene complement: `True` becomes `False`, `False` becomes `True`, and `Unknown` stays `Unknown`.
+`CollectionPredicates` selects an `IReadOnlyCollection<string>?`. Comparison is ordinal and case-sensitive (see [Predicate conventions](predicate-conventions.md)). Every predicate has a `NotX` twin that is its Strong Kleene complement: `True` becomes `False`, `False` becomes `True`, and `Unknown` stays `Unknown`.
 
 | Predicate | Twin | Argument | `True` when |
 | --- | --- | --- | --- |
@@ -106,7 +106,7 @@ A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two pred
 
 ### Date and time predicates
 
-`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. Values compare by instant, so the same moment with a different offset is equal.
+`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. Values compare by instant, so the same moment with a different offset is equal. `After` and `Before` are strict, and `InTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
 
 | Predicate | Twin | Arguments | `True` when |
 | --- | --- | --- | --- |

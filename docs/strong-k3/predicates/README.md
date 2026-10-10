@@ -95,7 +95,7 @@ The selector type fixes the kind of every argument. A rule literal of another ki
 
 ## Numeric predicates
 
-The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value.
+The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value. `Between` and `Outside` include both bounds. The order comparisons are strict.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ The `ScalarPredicates` factories select a `Boolean` (`bool?`), a `Guid` (`Guid?`
 
 ## String predicates
 
-The `StringPredicates` factories select a `string?` value. Every comparison is ordinal, so the culture of the host process has no effect. A string argument is a quoted string.
+The `StringPredicates` factories select a `string?` value. Every comparison is ordinal and case-sensitive, and nothing is trimmed unless a predicate has a `trim` argument. The culture of the host process has no effect. A string argument is a quoted string.
 
 The comparison does not normalize Unicode. A precomposed character such as `é` (U+00E9) and the same character written as `e` plus a combining accent (U+0065 U+0301) are different strings, so they compare unequal. The host must normalize the selected value and the rule argument to the same form, NFC or NFKC, before the predicate sees them.
 
@@ -161,7 +161,7 @@ The comparison does not normalize Unicode. A precomposed character such as `é` 
 
 ## Regex predicates
 
-The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault.
+The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault. The match uses no regex options and a timeout of one second. A pattern that ignores case starts with `(?i)`.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -206,7 +206,7 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 
 ## Date-time predicates
 
-The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
+The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. `After` and `Before` are strict. `Between` and `Outside` include both bounds. `InTimeWindow` is half-open by default. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
 
 - `After`, `Before` and their twins compare with one instant. `Between` and `Outside` use a range with inclusive bounds. Reversed literal bounds are a compile error.
 - `AfterNow`, `BeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.

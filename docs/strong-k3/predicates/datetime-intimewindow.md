@@ -36,7 +36,7 @@ The selector has one overload. A `DateTime` is not accepted. See [Argument kinds
 | `offset` | `String` | Yes | The fixed offset to read the instant in: `"Z"`, `"+hh:mm"` or `"-hh:mm"`. See [Fixed offsets](README.md#fixed-offsets). |
 
 - A call gives exactly one of `end` and `duration`. An empty string (`""`) means that the argument is not given.
-- With the defaults, the window is $[start, end)$: the start is inside and the end is outside.
+- With the defaults, the window is half-open, $[start, end)$: the start is inside and the end is outside. `includeStart` and `includeEnd` move either end.
 
 ## Definition
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `docs/predicate-conventions.md` exists, follows `docs/agents/documentation-standard.md`, and is linked from the root `README.md` and `docs/predicates.md`
 - [ ] The page states the contrast between closed value ranges, strict comparisons and half-open time windows
