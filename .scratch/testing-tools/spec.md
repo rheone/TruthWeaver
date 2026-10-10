@@ -1,6 +1,6 @@
 # Testing tools: predicate harness, equivalence assertion and public rule fuzzer
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [library-roadmap](../library-roadmap/spec.md) re-score (2026-10-03), grilled 2026-10-09.
 

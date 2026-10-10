@@ -4,13 +4,13 @@
 
 **Blocked by:** 01 (Testing references TruthWeaver)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `RuleFuzzer` takes a `PredicateRegistry` and a seed and generates valid rules over its predicates
-- [ ] It checks that the evaluator matches brute-force Strong Kleene, that `Simplify` and `Canonicalize` preserve meaning, and that the DSL and JSON forms round-trip
-- [ ] A failure reports the seed and the rule text, and the same seed reproduces it
-- [ ] The generator and oracle move out of the test-support folder, decoupled from the test predicates, and the repository tests use the public types
-- [ ] The fuzzer needs only the schemas of the supplied registry
-- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+- [x] `RuleFuzzer` takes a `PredicateRegistry` and a seed and generates valid rules over its predicates
+- [x] It checks that the evaluator matches brute-force Strong Kleene, that `Simplify` and `Canonicalize` preserve meaning, and that the DSL and JSON forms round-trip
+- [x] A failure reports the seed and the rule text, and the same seed reproduces it
+- [x] The generator and oracle move out of the test-support folder, decoupled from the test predicates, and the repository tests use the public types
+- [x] The fuzzer needs only the schemas of the supplied registry
+- [x] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
 
 See also [spec](../spec.md).
