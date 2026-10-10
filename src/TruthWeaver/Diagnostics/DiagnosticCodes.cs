@@ -138,4 +138,29 @@ public static class DiagnosticCodes
     /// still compiles. The span or path is the predicate call, and the replacement, when given, is the suggestion.
     /// </summary>
     public const string DeprecatedPredicate = "TRE0027";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): the rule's depth reaches <c>CompilerOptions.DeepNestingFraction</c>
+    /// of <c>CompilerOptions.MaxDepth</c>, so it is close to the compile limit.
+    /// </summary>
+    public const string DeepNesting = "TRE0028";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): an <c>AND</c> or <c>OR</c> chain with more operands than
+    /// <c>CompilerOptions.WideChainOperandLimit</c>.
+    /// </summary>
+    public const string WideChain = "TRE0029";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>): <c>Canonicalize()</c> would change the rule. The suggestion is the
+    /// canonical rule text.
+    /// </summary>
+    public const string NotCanonical = "TRE0030";
+
+    /// <summary>
+    /// Warning: <c>ToNnf</c>, <c>ToCnf</c> or <c>ToDnf</c> kept a threshold (<c>AtLeast</c>, <c>AtMost</c>, <c>Exactly</c> and
+    /// the like) as an atom, because expanding it can grow the rule a lot. The message gives the growth estimate. Pass
+    /// <c>NormalFormOptions</c> with <c>ExpandThresholds</c> set to expand it.
+    /// </summary>
+    public const string ThresholdKeptAsAtom = "TRE0031";
 }

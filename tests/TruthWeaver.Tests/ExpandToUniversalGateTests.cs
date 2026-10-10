@@ -187,7 +187,7 @@ public sealed class ExpandToUniversalGateTests
         CompiledRule<RuleTestContext> gateRule = Expand(original.Compiled, gate);
         K3Rule rewritten = original.Rewrite(rule => Expand(rule, gate));
 
-        Assert.Equal(new HashSet<string> { gate, "coalesce" }, OperatorsOf(gateRule));
+        Assert.Equal([gate, "coalesce"], OperatorsOf(gateRule));
         foreach (TruthValue[] assignment in K3Oracle.Assignments(3))
         {
             Decision before = await original.EvaluateAsync(assignment, TestContext.Current.CancellationToken);

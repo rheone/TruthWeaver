@@ -6,11 +6,11 @@
 
 **Status:** done
 
-- [ ] Taxonomy, template and directory tree are presented in one document at docs/strong-k3/PROPOSAL.md (or the agreed equivalent), clearly marked as awaiting approval
-- [ ] Every operation in the inventory has exactly one primary category and an explicit Primitive or Derived kind; ambiguities are listed as open questions, none silently resolved
-- [ ] Derived operations list a canonical form only where it is established (and verified under Strong K3 by brute force); otherwise the proposal says no canonical reduction is established
+- [ ] Taxonomy, template and directory tree are presented in one document at docs/strong-k3/PROPOSAL.md (or the agreed equivalent), clearly marked as awaiting approval Note 2026-10-10: docs/strong-k3/PROPOSAL.md no longer exists after approval and the final tree; history only, not re-verifiable.
+- [ ] Every operation in the inventory has exactly one primary category and an explicit Primitive or Derived kind; ambiguities are listed as open questions, none silently resolved Note 2026-10-10: docs/strong-k3/PROPOSAL.md no longer exists after approval and the final tree; history only, not re-verifiable.
+- [ ] Derived operations list a canonical form only where it is established (and verified under Strong K3 by brute force); otherwise the proposal says no canonical reduction is established Note 2026-10-10: docs/strong-k3/PROPOSAL.md no longer exists after approval and the final tree; history only, not re-verifiable.
 - [x] The owner has approved or amended the proposal (record the decision in the ticket Comments) before any other ticket starts
-- [ ] No operation documents are written in this ticket
+- [ ] No operation documents are written in this ticket Note 2026-10-10: docs/strong-k3/PROPOSAL.md no longer exists after approval and the final tree; history only, not re-verifiable.
 
 Source: [spec audit](../../k3-conformance/spec-audit.md) and [research findings](../../k3-conformance/research-findings.md). See also [spec](../spec.md).
 

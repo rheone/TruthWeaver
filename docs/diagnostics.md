@@ -82,8 +82,26 @@ Every suggestion is the same rule as the original for every `True`, `False` and 
 | `VacuousCardinality`  | `TRE0021` | a threshold or `BETWEEN` whose constant operands already fix the result (`AtLeast(1, a, TRUE)`)                               | the constant                                     |
 | `DuplicateOperands`   | `TRE0022` | a structurally identical operand repeated inside `AND`, `OR`, `ANY`, `ALL` or `COALESCE`                                      | the operator with each operand once              |
 | `DoubleNegation`      | `TRE0023` | `NOT NOT x`                                                                                                                   | `x`                                              |
+| `DeepNesting`         | `TRE0028` | a rule whose depth reaches `DeepNestingFraction` of `MaxDepth`                                                                | none                                             |
+| `WideChain`           | `TRE0029` | an `AND` or `OR` chain with more than `WideChainOperandLimit` operands                                                        | none                                             |
+| `NotCanonical`        | `TRE0030` | a rule that `Canonicalize()` would change                                                                                     | the canonical rule text                          |
 
 `LintRules` is a flags enum. Combine the flags you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`) or use `LintRules.All`.
+
+`DeepNesting`, `WideChain` and `NotCanonical` do not propose an equivalent shorter rule by logic. `DeepNesting` and `WideChain` give no suggestion. `NotCanonical` suggests the output of [`Canonicalize()`](rewriting-rules.md#canonical-form). It does not run on a rule larger than `CompilerOptions.MaxRewriteNodeCount`.
+
+Two `CompilerOptions` values set the thresholds:
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `DeepNestingFraction` | `0.75` | `DeepNesting` reports a rule whose depth is at least this share of `MaxDepth`. With the default `MaxDepth` of 32, that is 24 levels. |
+| `WideChainOperandLimit` | `16` | `WideChain` reports an `AND` or `OR` with more operands than this. A chain of 17 operands is reported. |
+
+A rule under both thresholds produces no `DeepNesting` or `WideChain` finding.
+
+### Related findings
+
+One redundant construct can produce several findings. For example, an `If` whose condition holds a redundant inspection gets a finding for the `If` and a finding for the inspection. Every finding is reported. `Diagnostic.EnclosedBy` links a finding to the nearest finding whose construct contains it, so a UI can group the inner findings under the outermost one. It is `null` for a finding that stands alone, such as a finding in a separate branch of the rule. The findings keep the order "outermost construct first". `DeepNesting` and `NotCanonical` describe the whole rule, so they are never linked.
 
 The semantic lints (`TRE0017` to `TRE0019` and `TRE0021`) use the analyzer's BDD. They are skipped for a sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms. The structural lints (`TRE0020`, `TRE0022` and `TRE0023`) always run. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.
 
@@ -144,3 +162,4 @@ This table shows how each class of malformed rule text is reported.
 | Variable reference whose query fails the validator of its source | `TRE0025`                            | a query valid for the data source / the query written                                  | none                                                            |
 | Literal argument values that the predicate's argument validator rejects, such as reversed `Between` or `Outside` bounds | `TRE0026` | the rule the values break / the values written | the fix the validator gives, such as swapping the bounds |
 | Use of a predicate whose schema is marked deprecated (a warning, one per use; the rule still compiles) | `TRE0027` | none / the predicate name | the replacement predicate, when the schema names one |
+| A normal-form rewrite kept a threshold as an atom (a warning on the result of `ToNnf()`, `ToCnf()` or `ToDnf()`) | `TRE0031` | none / the threshold and the estimated node count of its expansion | hint to pass `NormalFormOptions` with `ExpandThresholds` set to `true` |

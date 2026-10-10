@@ -25,6 +25,14 @@ namespace TruthWeaver.Compilation;
 /// The data source names a rule may use in <c>from("name", "query")</c> (ADR-0006). <see langword="null"/> (the default)
 /// declares none, so any variable reference is a <c>TRE0024</c> error.
 /// </param>
+/// <param name="DeepNestingFraction">
+/// The share of <paramref name="MaxDepth"/> at which the <see cref="LintRules.DeepNesting"/> lint reports a rule. The
+/// default is 0.75, so with the default <paramref name="MaxDepth"/> of 32 a rule 24 levels deep or more is reported.
+/// </param>
+/// <param name="WideChainOperandLimit">
+/// The operand count above which the <see cref="LintRules.WideChain"/> lint reports an <c>AND</c> or <c>OR</c> chain. The
+/// default is 16, so a chain of 17 operands is reported.
+/// </param>
 public sealed record CompilerOptions(
     int MaxDepth = 32,
     int MaxNodeCount = 512,
@@ -32,7 +40,9 @@ public sealed record CompilerOptions(
     CompilationMode Mode = CompilationMode.Strict,
     int MaxRewriteNodeCount = 100_000,
     LintRules Lints = LintRules.None,
-    DataSourceDeclarations? DataSources = null
+    DataSourceDeclarations? DataSources = null,
+    double DeepNestingFraction = 0.75,
+    int WideChainOperandLimit = 16
 )
 {
     /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/> / 100000.</summary>

@@ -116,6 +116,17 @@ public sealed class RuleFuzzerTests
         Assert.Contains("Strong Kleene gives", failure.Detail);
     }
 
+    /// <summary>A rewrite that grows the rule fails the SimplifyNeverLarger check and the detail shows both sizes.</summary>
+    [Fact]
+    public async Task RunAsync_RewriteGrowsTheRule_ReportsSimplifyNeverLarger_Test()
+    {
+        RuleFuzzReport report = await RunWithNegatingSimplifyAsync(seed: 99);
+
+        RuleFuzzFailure failure = report.Failures.First(f => f.Check == RuleFuzzCheck.SimplifyNeverLarger);
+        Assert.Contains("nodes", failure.Detail);
+        Assert.DoesNotContain(report.Failures, f => f.Check == RuleFuzzCheck.CanonicalizeNeverLarger);
+    }
+
     /// <summary>The same seed gives the same rules, so a second run reproduces each failure exactly.</summary>
     [Fact]
     public async Task RunAsync_SameSeed_ReproducesTheFailures_Test()

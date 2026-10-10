@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] Ticket 23's scope is compared against rows 15, 18, 19 and 27 and any overlap is noted
-- [ ] The ADR and the issues log give the same status for every row
-- [ ] Any row decided here is recorded with its rationale in the ADR
+- [x] Ticket 23's scope is compared against rows 15, 18, 19 and 27 and any overlap is noted
+- [x] The ADR and the issues log give the same status for every row
+- [x] Any row decided here is recorded with its rationale in the ADR
 
 Source: review of PR #4, Spec axis, missing or partial item on ADR-0005.
 

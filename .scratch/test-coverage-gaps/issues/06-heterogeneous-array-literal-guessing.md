@@ -6,6 +6,6 @@
 
 **Status:** done
 
-- [ ] Compiling, under `CompilationMode.Lenient`, a rule whose array literal has heterogeneous element kinds against an unregistered predicate produces the expected guessed literal (or diagnostic) instead of throwing unexpectedly.
-- [ ] The `catch (ArgumentException)` fallback path in `Guess` is exercised by at least one test case.
-- [ ] Existing lenient-mode compilation tests continue to pass unchanged.
+- [x] Compiling, under `CompilationMode.Lenient`, a rule whose array literal has heterogeneous element kinds against an unregistered predicate produces the expected guessed literal (or diagnostic) instead of throwing unexpectedly.
+- [ ] The `catch (ArgumentException)` fallback path in `Guess` is exercised by at least one test case. Note 2026-10-10: the ArgumentException fallback path was not confirmed to be hit by the test.
+- [x] Existing lenient-mode compilation tests continue to pass unchanged.

@@ -15,6 +15,9 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 | [`CompressToDerived()`](#compress-to-derived-operators) | Primitive shapes written as derived operators. |
 | [`Canonicalize()`](#canonical-form) | One deterministic representation. |
 | [`Simplify()`](#simplify) | An equivalent, cheaper rule. |
+| [`ToNnf()`](#normal-forms) | Negation normal form: `NOT` only above a term or an atom. |
+| [`ToCnf()`](#normal-forms) / [`ToDnf()`](#normal-forms) | An `AND` of `OR`s (CNF), or an `OR` of `AND`s (DNF). |
+| [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | The same rule, and the list of laws applied. |
 
 The Evaluation behavior section of each Operation page states how the rewrites treat that operator. For example, [NAND](strong-k3/derived/nand.md#evaluation-behavior) states what `CompressToDerived` and `ExpandToNand` do with it.
 
@@ -116,7 +119,7 @@ Every row is an identity of Strong Kleene logic, checked against the truth-table
 
 ### Canonical form
 
-`Canonicalize()` gives rules that are equivalent under a fixed set of Strong Kleene-sound rewrites one deterministic representation. You can then compare, cache and de-duplicate rules by their `CanonicalText`. It is deterministic and idempotent (`Canonicalize()` of a canonical rule is the same rule). It evaluates like the original for every `True`/`False`/`Unknown` assignment, and it is never larger than the original.
+`Canonicalize()` gives rules that are equivalent under a fixed set of Strong Kleene-sound rewrites one deterministic representation. You can then compare, cache and de-duplicate rules by their `CanonicalText`. It is deterministic and idempotent (`Canonicalize()` of a canonical rule is the same rule). It evaluates like the original for every `True`/`False`/`Unknown` assignment, and it is never larger than the original. To find rules that are not yet canonical, switch on the `NotCanonical` lint (`TRE0030`, see [lint rules](diagnostics.md#lint-rules-opt-in)).
 
 The rewrites, in the order they are applied (bottom-up, repeated until stable):
 
@@ -165,6 +168,84 @@ The rewrites, in the order they are applied (bottom-up, repeated until stable):
 > Like `Canonicalize()`, simplification keeps the *value* but not the evaluation order or side effects. Operands can be reordered, merged or dropped. An annihilated `AND` never evaluates its other operands, so a predicate that the original would have invoked (and any fault it would have reported) may not run.
 
 The rewrite does not use the dual-rail findings of the analyzer. The analyzer reports those as diagnostics (`StructuralTautology`, `StructuralContradiction`) for authors. Every simplification here is a local, structural rule that is easy to check.
+
+### See which laws Simplify applied
+
+`SimplifyWithSteps()` does the same work as `Simplify()` and also lists each change. It returns a `SimplifyResult<TContext>` with the simplified `Rule` and a list of `Steps`.
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("(a AND True) AND (a OR b)").CompiledRule!;
+SimplifyResult<MyContext> result = rule.SimplifyWithSteps();
+
+foreach (RewriteStep step in result.Steps)
+{
+    Console.WriteLine($"{step.Law}: {step.Before} => {step.After}");
+}
+
+// result.Rule has the same canonical text as rule.Simplify().
+```
+
+Each `RewriteStep` has three members:
+
+| Member | Meaning |
+| --- | --- |
+| `Law` | A `RewriteLaw`: `AliasCollapse`, `DoubleNegation`, `Flatten`, `Reorder`, `Idempotence`, `ConstantFold`, `Identity`, `Annihilator`, `Absorption`, `DeMorgan`, `NegationThroughDerived`, `Coalesce`, `Inspection`, `If`, `DerivedWithConstant` or `Threshold`. |
+| `Before` | The canonical text of the changed subtree before the step. |
+| `After` | The canonical text of the changed subtree after the step. |
+
+- **Order.** The steps are in the order the rewrite applied them. The first steps are the canonical-form laws (aliases, double negation, flattening, ordering, repeated operands). The simplification laws follow, and the canonical-form laws run again between the passes.
+- **Subtree text.** A step shows the subtree as it stood when the rewrite reached it. An earlier step can already have changed its operands, so `Before` is not always a substring of the original rule text.
+- **Reorder.** Sorting the operands of a commutative operator is a step. The value does not change, but the text does.
+- **One step for an expansion.** A derived operator with a constant operand (`a XOR True`) is one `DerivedWithConstant` step. The expansion inside it is not listed.
+- **Already simple.** A rule that `Simplify()` leaves as written returns an empty list.
+
+**Relation to `RuleDiff`.** `RuleDiff.Compare(before, after)` compares two finished rules by structure and says what differs, and whether the meaning is preserved. It does not say why the rules differ. The step list says why: it names the law for each change. A tool that shows a rewrite can print the steps, and can use `RuleDiff.Compare(rule, result.Rule)` for the net difference. The diff and the step list always agree about whether the rule changed.
+
+### Normal forms
+
+`ToNnf()`, `ToCnf()` and `ToDnf()` rewrite a rule into negation, conjunctive or disjunctive normal form. Each returns a `CompilationResult<TContext>` like the other size-capped rewrites, and each result has the same value as the original for every `True`/`False`/`Unknown` assignment.
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("NOT (a AND (b OR c))").CompiledRule!;
+
+Console.WriteLine(rule.ToNnf().CompiledRule!.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+Console.WriteLine(rule.ToDnf().CompiledRule!.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+Console.WriteLine(rule.ToCnf().CompiledRule!.CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+```
+
+| Form | Shape | How |
+| --- | --- | --- |
+| NNF | `NOT` only directly above a term or an atom | Strong Kleene De Morgan laws and double negation. Derived operators expand first. |
+| CNF | An `AND` of `OR`s of literals and atoms | NNF, then `OR` is distributed over `AND`. |
+| DNF | An `OR` of `AND`s of literals and atoms | NNF, then `AND` is distributed over `OR`. |
+
+A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a distributive lattice with De Morgan negation, so distribution is an identity. No classical complement law is used: `a AND NOT a` and `a OR NOT a` stay as written. A repeated literal in a clause and a repeated clause are dropped, because idempotence holds. Each form is idempotent: rewriting a rewritten rule changes nothing.
+
+- **Atoms.** `COALESCE`, the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and `If` are not information-monotone. Each is an atom: no `NOT` is pushed into it. The operands inside it are normalized.
+- **Size.** A normal form can be larger than the rule. CNF and DNF can grow exponentially. Each form is capped by `CompilerOptions.MaxRewriteNodeCount` (see [Size cap](#size-cap)). A larger result is not built: `CompiledRule` is `null` and one `TRE0016` error is returned.
+- **Value, not order.** Distribution and de-duplication can change which predicates run and which faults appear. The value never changes.
+
+#### Thresholds and `ExpandThresholds`
+
+A threshold (`AtLeast`, `AtMost`, `Exactly` and the strict comparisons, and the operators that expand to them: `PARITY`, `BETWEEN`, `ExactlyOne`) has one group for every subset of its operands. The expansion has `C(n, k)` groups, so it is opt-in. Pass a `NormalFormOptions` value:
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("a AND AtLeast(2, b, c, d, e)").CompiledRule!;
+
+// Default: the threshold stays an atom and the result carries a TRE0031 warning.
+CompilationResult<MyContext> kept = rule.ToDnf();
+Console.WriteLine(kept.Diagnostics[0].Message);   // ToDnf kept AtLeast(2, b, c, d, e) as an atom. Expanding it would add about 19 nodes.
+
+// Opt in: the threshold expands to AND/OR, within the node cap.
+CompilationResult<MyContext> expanded = rule.ToDnf(new NormalFormOptions(ExpandThresholds: true));
+```
+
+| `ExpandThresholds` | Result |
+| --- | --- |
+| `false` (default) | A threshold stays an atom. Its operands are normalized. One `TRE0031` warning per distinct threshold gives the growth estimate in nodes. A `NOT` above it stays above it. |
+| `true` | A threshold expands to `AND`, `OR` and `NOT` over its operands. A result over `MaxRewriteNodeCount` returns `TRE0016` and no rule. |
+
+A threshold that is only an `OR` or an `AND` (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)`, `AtMost(n - 1, ...)`, and so `ANY`, `ALL` and `NONE`) always expands, with no warning. The warning code is in [Diagnostics](strong-k3/specification/diagnostics.md).
 
 ## Rule equivalence
 

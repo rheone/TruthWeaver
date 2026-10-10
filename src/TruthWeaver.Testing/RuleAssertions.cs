@@ -39,17 +39,24 @@ public static class RuleAssertions
             case RuleEquivalenceOutcome.Equivalent:
                 return;
             case RuleEquivalenceOutcome.NotEquivalent:
-                string assignment = string.Join(
-                    ", ",
-                    result.CounterExample!.Select(p => string.Create(CultureInfo.InvariantCulture, $"{p.Key} = {p.Value}"))
-                );
                 throw new DecisionAssertionException(
-                    $"Expected the rules to be equivalent, but they are not equivalent. With {assignment}, they differ."
+                    $"Expected the rules to be equivalent, but they are not equivalent. With {FormatCounterExample(result)}, they differ."
                 );
             default:
                 throw new DecisionAssertionException(
                     $"The equivalence check is inconclusive: {result.Reason} Raise CompilerOptions.MaxAnalysisTerms or shrink the rules."
                 );
         }
+    }
+
+    /// <summary>Formats the counter-example of a not-equivalent result as <c>term = value</c> pairs.</summary>
+    /// <param name="result">A result whose outcome is <see cref="RuleEquivalenceOutcome.NotEquivalent"/>.</param>
+    /// <returns>The assignment text.</returns>
+    internal static string FormatCounterExample(RuleEquivalenceResult result)
+    {
+        return string.Join(
+            ", ",
+            result.CounterExample!.Select(p => string.Create(CultureInfo.InvariantCulture, $"{p.Key} = {p.Value}"))
+        );
     }
 }

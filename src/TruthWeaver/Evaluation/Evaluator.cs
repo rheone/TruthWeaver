@@ -484,7 +484,7 @@ internal sealed class Evaluator<TContext>(
     )
     {
         TruthValue accumulator = identity;
-        List<TraceNode> children = new(operands.Count);
+        List<TraceNode> children = [with(operands.Count)];
         bool exhaustive = this.options.Mode == EvaluationMode.Exhaustive;
         bool stop = false;
         foreach (Expression operand in operands)
@@ -511,7 +511,7 @@ internal sealed class Evaluator<TContext>(
 
     private async ValueTask<IReadOnlyList<EvalResult>> EvalAllAsync(IReadOnlyList<Expression> operands)
     {
-        List<EvalResult> values = new(operands.Count);
+        List<EvalResult> values = [with(operands.Count)];
         foreach (Expression operand in operands)
         {
             values.Add(await this.EvalAsync(operand).ConfigureAwait(false));

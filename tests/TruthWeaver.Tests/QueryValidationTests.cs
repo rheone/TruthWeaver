@@ -155,8 +155,7 @@ public sealed class QueryValidationTests
     {
         IQueryValidator validator = Substitute.For<IQueryValidator>();
 
-        DataSourceDeclarations declarations = new() { "bare" };
-        declarations.Add("checked", validator);
+        DataSourceDeclarations declarations = new() { "bare", { "checked", validator } };
         declarations["indexed"] = validator;
 
         Assert.Equal(["bare", "checked", "indexed"], declarations.Names.Order(StringComparer.Ordinal));

@@ -58,7 +58,7 @@ internal static partial class DocumentationLint
         [
             .. all.Where(entry => HasMarker(File.ReadAllText(entry.Value), "off")).Select(entry => entry.Key),
         ];
-        SortedSet<string> inScope = new(StringComparer.Ordinal);
+        SortedSet<string> inScope = [with(StringComparer.Ordinal)];
         Queue<string> pending = [];
 
         void Add(string path)

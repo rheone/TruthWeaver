@@ -20,7 +20,7 @@ internal static class YamlTreePrinter
     public static string Print(Expression root)
     {
         YamlDocument document = new(ToNode(root));
-        YamlStream stream = new(document);
+        YamlStream stream = [with(document)];
         using StringWriter writer = new();
         stream.Save(writer, assignAnchors: false);
         return writer.ToString();

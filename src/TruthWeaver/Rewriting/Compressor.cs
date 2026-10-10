@@ -46,7 +46,7 @@ internal static class Compressor
     /// <summary>One top-down sweep. The memo keeps shared sub-trees shared and stops a repeated operand being rewritten twice.</summary>
     private sealed class Pass
     {
-        private readonly Dictionary<Expression, Expression> memo = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Expression, Expression> memo = [with(ReferenceEqualityComparer.Instance)];
 
         public Expression Visit(Expression node)
         {

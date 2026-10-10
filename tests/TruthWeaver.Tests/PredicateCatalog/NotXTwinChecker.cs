@@ -51,7 +51,7 @@ internal static class NotXTwinChecker
     )
     {
         List<string> failures = [];
-        Dictionary<string, int> listed = new(StringComparer.Ordinal);
+        Dictionary<string, int> listed = [with(StringComparer.Ordinal)];
         foreach (string key in table.SelectMany(entry => entry.Factories))
         {
             listed[key] = listed.GetValueOrDefault(key) + 1;

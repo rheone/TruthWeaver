@@ -132,7 +132,7 @@ internal static partial class SkillProvenanceChecker
     // Maps skill name to the rest of its table row (the Class column is in it). A skill listed twice keeps its first row.
     private static Dictionary<string, string> ParseRows(string readme)
     {
-        Dictionary<string, string> rows = new(StringComparer.Ordinal);
+        Dictionary<string, string> rows = [with(StringComparer.Ordinal)];
         foreach (Match match in RowPattern().Matches(readme))
         {
             rows.TryAdd(match.Groups["name"].Value, match.Groups["rest"].Value);

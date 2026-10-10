@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] A test fails first: a pair of rules over the default term cap has `PreservesMeaning` null by default and decided when the cap is raised through the new parameter
-- [ ] Omitting the parameter behaves exactly as before
-- [ ] The method's XML docs and the README rule-equivalence section describe the parameter
-- [ ] The full validation from CLAUDE.md passes
+- [ ] A test fails first: a pair of rules over the default term cap has `PreservesMeaning` null by default and decided when the cap is raised through the new parameter Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] Omitting the parameter behaves exactly as before
+- [x] The method's XML docs and the README rule-equivalence section describe the parameter
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

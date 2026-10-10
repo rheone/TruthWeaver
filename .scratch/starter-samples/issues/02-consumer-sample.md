@@ -10,6 +10,6 @@
 - [x] One `TruthWeaver.Testing` test runs the main path
 - [x] Getting started in the README links to it
 - [x] The documentation lint rules pass for any prose
-- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes. Note 2026-10-10: the feature commit exists and CI is green on the branch head, but a pre-commit hook pass cannot be confirmed from history.
 
 See also [spec](../spec.md).

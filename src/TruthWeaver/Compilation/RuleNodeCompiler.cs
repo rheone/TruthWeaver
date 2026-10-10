@@ -304,7 +304,7 @@ internal sealed class RuleNodeCompiler<TContext>
             return FailedNode.Placeholder;
         }
 
-        List<Expression> built = new(operands.Count);
+        List<Expression> built = [with(operands.Count)];
         foreach (RuleNode operand in operands)
         {
             built.Add(this.Build(operand, depth + 1));
@@ -463,7 +463,7 @@ internal sealed class RuleNodeCompiler<TContext>
             return FailedNode.Placeholder;
         }
 
-        List<Expression> built = new(node.Operands.Count);
+        List<Expression> built = [with(node.Operands.Count)];
         foreach (RuleNode operand in node.Operands)
         {
             built.Add(this.Build(operand, depth + 1));
@@ -514,7 +514,7 @@ internal sealed class RuleNodeCompiler<TContext>
             return FailedNode.Placeholder;
         }
 
-        List<Expression> built = new(operandCount);
+        List<Expression> built = [with(operandCount)];
         foreach (RuleNode operand in node.Operands)
         {
             built.Add(this.Build(operand, depth + 1));
@@ -560,7 +560,7 @@ internal sealed class RuleNodeCompiler<TContext>
         int diagnosticsBefore = this.diagnostics.Count;
         Dictionary<string, LiteralValue> resolvedArgs = [];
         Dictionary<string, VariableReference> resolvedVariables = [];
-        HashSet<string> suppliedNames = new(StringComparer.Ordinal);
+        HashSet<string> suppliedNames = [with(StringComparer.Ordinal)];
         foreach (ArgumentNode arg in node.Arguments)
         {
             suppliedNames.Add(arg.Name);

@@ -245,6 +245,95 @@ public sealed class CompiledRule<TContext>
         return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger, this.options);
     }
 
+    /// <summary>
+    /// Simplifies this rule as <see cref="Simplify"/> does and also reports each change, in the order the rewrite applied it.
+    /// </summary>
+    /// <remarks>
+    /// Each <see cref="RewriteStep"/> names the <see cref="RewriteLaw"/> and holds the canonical text of the changed
+    /// subtree before and after the step. Canonicalization steps (aliases, double negation, flattening, ordering and
+    /// repeated operands) come first and again between the simplification passes. The list is empty when the rule is
+    /// already simple. A step shows a subtree as it stood when the rewrite reached it, so an earlier step may already have
+    /// changed its operands. <see cref="Diffing.RuleDiff"/> compares two finished rules and does not say which law fired; the step
+    /// list does.
+    /// </remarks>
+    /// <returns>The same rule as <see cref="Simplify"/> and the list of steps.</returns>
+    public SimplifyResult<TContext> SimplifyWithSteps()
+    {
+        List<RewriteStep> steps = [];
+        Expression simplified = Simplifier.Simplify(this.Root, new RewriteTrace(steps));
+        return new SimplifyResult<TContext>(
+            new CompiledRule<TContext>(simplified, this.registry, this.logger, this.options),
+            steps
+        );
+    }
+
+    /// <summary>
+    /// Rewrites this rule into negation normal form (NNF): <c>NOT</c> appears only directly above a term or an atom.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>NOT</c> is pushed to the terms by the Strong Kleene De Morgan laws, and a double negation is removed. Derived
+    /// operators (<c>IMPLIES</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>NAND</c>, <c>NOR</c>, <c>PARITY</c>, <c>ANY</c>,
+    /// <c>ALL</c>, <c>NONE</c>, <c>ExactlyOne</c> and <c>BETWEEN</c>) expand first. <c>COALESCE</c>, the inspections
+    /// and <c>If</c> are not information-monotone, so each is an atom: no <c>NOT</c> is pushed into it, although its
+    /// operands are normalized. No classical law is used: <c>a AND NOT a</c> stays as written.
+    /// </para>
+    /// <para>
+    /// A threshold (<c>AtLeast</c>, <c>AtMost</c>, <c>Exactly</c>, <c>GreaterThan</c>, <c>LessThan</c>) other than the cheap
+    /// <c>OR</c>-like and <c>AND</c>-like cases stays an atom unless <see cref="NormalFormOptions.ExpandThresholds"/> is set,
+    /// because its expansion has <c>C(n, k)</c> subsets. A kept threshold adds a
+    /// <see cref="Diagnostics.DiagnosticCodes.ThresholdKeptAsAtom"/> warning with the growth estimate to the result.
+    /// </para>
+    /// <para>
+    /// The result has the same value for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment, and rewriting it again
+    /// changes nothing. It can be larger than this rule. The result is capped at
+    /// <see cref="CompilerOptions.MaxRewriteNodeCount"/> nodes, counted as a printed tree; a larger result is not built
+    /// and the call returns a <see cref="Diagnostics.DiagnosticCodes.RewriteTooLarge"/> error. Evaluation order is not preserved.
+    /// </para>
+    /// </remarks>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
+    public CompilationResult<TContext> ToNnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    {
+        return this.NormalFormResult(NormalForms.Form.Nnf, nameof(this.ToNnf), normalForm, options);
+    }
+
+    /// <summary>
+    /// Rewrites this rule into conjunctive normal form (CNF): an <c>AND</c> of <c>OR</c>s of literals and atoms.
+    /// </summary>
+    /// <remarks>
+    /// The rule goes to negation normal form first (see <see cref="ToNnf"/>), then <c>OR</c> is distributed over
+    /// <c>AND</c>. Distribution holds in Strong Kleene logic because <c>AND</c> and <c>OR</c> form a distributive lattice;
+    /// no classical complement law is used, so <c>a OR NOT a</c> stays. A repeated literal in a clause and a repeated clause
+    /// are dropped (idempotence). Distribution can grow a rule exponentially, so the result is capped as for
+    /// <see cref="ToNnf"/>. Atoms, thresholds, the options, the warning and the value guarantee are the same as for
+    /// <see cref="ToNnf"/>, and rewriting the result again changes nothing.
+    /// </remarks>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
+    public CompilationResult<TContext> ToCnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    {
+        return this.NormalFormResult(NormalForms.Form.Cnf, nameof(this.ToCnf), normalForm, options);
+    }
+
+    /// <summary>
+    /// Rewrites this rule into disjunctive normal form (DNF): an <c>OR</c> of <c>AND</c>s of literals and atoms.
+    /// </summary>
+    /// <remarks>
+    /// The mirror of <see cref="ToCnf"/>: the rule goes to negation normal form first, then <c>AND</c> is distributed over
+    /// <c>OR</c>. Size cap, atoms, thresholds, options, warning and value guarantee are the same as for
+    /// <see cref="ToCnf"/>.
+    /// </remarks>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="options">The options whose <see cref="CompilerOptions.MaxRewriteNodeCount"/> caps the result; <see langword="null"/> for <see cref="CompilerOptions.Default"/>.</param>
+    /// <returns>The rewritten rule with any warnings, or no rule and a <c>TRE0016</c> error when the cap is exceeded.</returns>
+    public CompilationResult<TContext> ToDnf(NormalFormOptions? normalForm = null, CompilerOptions? options = null)
+    {
+        return this.NormalFormResult(NormalForms.Form.Dnf, nameof(this.ToDnf), normalForm, options);
+    }
+
     /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     public string PrintJson()
@@ -471,7 +560,7 @@ public sealed class CompiledRule<TContext>
 
     private static HashSet<string> CollectPredicateNames(Expression root)
     {
-        HashSet<string> names = new(StringComparer.Ordinal);
+        HashSet<string> names = [with(StringComparer.Ordinal)];
         Stack<Expression> pending = new([root]);
         while (pending.TryPop(out Expression? node))
         {
@@ -532,6 +621,53 @@ public sealed class CompiledRule<TContext>
                 "This decision has no TraceTree to render — it must come from EvaluateAsync on this same rule.",
                 nameof(decision)
             );
+    }
+
+    /// <summary>Runs a normal-form rewrite and wraps its tree and its kept-threshold warnings as a result.</summary>
+    private CompilationResult<TContext> NormalFormResult(
+        NormalForms.Form form,
+        string rewrite,
+        NormalFormOptions? normalForm,
+        CompilerOptions? options
+    )
+    {
+        int cap = (options ?? CompilerOptions.Default).MaxRewriteNodeCount;
+        NormalForms.Result built = NormalForms.Build(
+            this.Root,
+            form,
+            (normalForm ?? NormalFormOptions.Default).ExpandThresholds,
+            cap
+        );
+        CompilationResult<TContext> result = this.RewriteResult(built.Tree, rewrite, cap);
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        List<Diagnostic> warnings = [];
+        foreach (NormalForms.KeptThreshold kept in built.Kept)
+        {
+            string text = CanonicalPrinter.Print(kept.Threshold);
+            warnings.Add(
+                Diagnostic.Warning(
+                    DiagnosticCodes.ThresholdKeptAsAtom,
+                    string.Create(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        $"{rewrite} kept {text} as an atom. Expanding it would add about {kept.EstimatedNodes:N0} nodes."
+                    ),
+                    SourceSpan.None,
+                    suggestion: new DiagnosticSuggestion(
+                        DiagnosticSuggestionKind.Hint,
+                        "Pass NormalFormOptions with ExpandThresholds set to true to expand it."
+                    )
+                )
+            );
+        }
+
+        return result with
+        {
+            Diagnostics = warnings,
+        };
     }
 
     /// <summary>

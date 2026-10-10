@@ -132,10 +132,29 @@ public static class RuleFuzzer
             rulesChecked++;
             FuzzCase fuzzCase = new(seed, index, generated, picked);
             await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Evaluation, rule, cancellationToken).ConfigureAwait(false);
-            await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Simplify, simplify(rule, compiler), cancellationToken)
+            CompiledRule<FuzzAssignment> simplified = simplify(rule, compiler);
+            CompiledRule<FuzzAssignment> canonical = rule.Canonicalize();
+            await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Simplify, simplified, cancellationToken)
                 .ConfigureAwait(false);
-            await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Canonicalize, rule.Canonicalize(), cancellationToken)
+            await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Canonicalize, canonical, cancellationToken)
                 .ConfigureAwait(false);
+            AddSizeFailure(failures, fuzzCase, RuleFuzzCheck.SimplifyNeverLarger, rule, simplified);
+            AddIdempotenceFailure(
+                failures,
+                fuzzCase,
+                RuleFuzzCheck.SimplifyIdempotent,
+                simplified,
+                simplify(simplified, compiler)
+            );
+            AddSizeFailure(failures, fuzzCase, RuleFuzzCheck.CanonicalizeNeverLarger, rule, canonical);
+            AddIdempotenceFailure(
+                failures,
+                fuzzCase,
+                RuleFuzzCheck.CanonicalizeIdempotent,
+                canonical,
+                canonical.Canonicalize()
+            );
+            await AddNormalFormFailuresAsync(failures, fuzzCase, rule, cancellationToken).ConfigureAwait(false);
             AddRoundTripFailure(failures, fuzzCase, RuleFuzzCheck.DslRoundTrip, rule, compiler.Compile(rule.CanonicalText));
             AddRoundTripFailure(failures, fuzzCase, RuleFuzzCheck.JsonRoundTrip, rule, compiler.CompileJson(rule.PrintJson()));
         }
@@ -208,7 +227,7 @@ public static class RuleFuzzer
     {
         foreach (TruthValue[] values in K3Oracle.Assignments(fuzzCase.Terms.Count))
         {
-            Dictionary<string, TruthValue> byName = new(StringComparer.Ordinal);
+            Dictionary<string, TruthValue> byName = [with(StringComparer.Ordinal)];
             for (int i = 0; i < values.Length; i++)
             {
                 byName[fuzzCase.Terms[i].PredicateName] = values[i];
@@ -230,6 +249,86 @@ public static class RuleFuzzer
                 fuzzCase.Failure(check, $"With {assignment}, {subject} {decision.Result}, but Strong Kleene gives {expected}.")
             );
             return;
+        }
+    }
+
+    /// <summary>Adds a failure when the rewritten rule has more nodes than the original.</summary>
+    private static void AddSizeFailure(
+        List<RuleFuzzFailure> failures,
+        FuzzCase fuzzCase,
+        RuleFuzzCheck check,
+        CompiledRule<FuzzAssignment> original,
+        CompiledRule<FuzzAssignment> rewritten
+    )
+    {
+        if (rewritten.Metrics.NodeCount > original.Metrics.NodeCount)
+        {
+            failures.Add(
+                fuzzCase.Failure(
+                    check,
+                    string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"The rule has {original.Metrics.NodeCount} nodes and '{rewritten.CanonicalText}' has {rewritten.Metrics.NodeCount} nodes."
+                    )
+                )
+            );
+        }
+    }
+
+    /// <summary>
+    /// Checks <c>ToNnf</c>, <c>ToCnf</c> and <c>ToDnf</c>: the value for every assignment, and idempotence. A rule whose form
+    /// is over the rewrite size cap has no result and is not checked, because the cap is a documented refusal.
+    /// </summary>
+    private static async Task AddNormalFormFailuresAsync(
+        List<RuleFuzzFailure> failures,
+        FuzzCase fuzzCase,
+        CompiledRule<FuzzAssignment> rule,
+        CancellationToken cancellationToken
+    )
+    {
+        (
+            RuleFuzzCheck Value,
+            RuleFuzzCheck Idempotent,
+            Func<CompiledRule<FuzzAssignment>, CompilationResult<FuzzAssignment>> Rewrite
+        )[] forms =
+        [
+            (RuleFuzzCheck.ToNnf, RuleFuzzCheck.NnfIdempotent, static r => r.ToNnf()),
+            (RuleFuzzCheck.ToCnf, RuleFuzzCheck.CnfIdempotent, static r => r.ToCnf()),
+            (RuleFuzzCheck.ToDnf, RuleFuzzCheck.DnfIdempotent, static r => r.ToDnf()),
+        ];
+        foreach (
+            (
+                RuleFuzzCheck value,
+                RuleFuzzCheck idempotent,
+                Func<CompiledRule<FuzzAssignment>, CompilationResult<FuzzAssignment>> rewrite
+            ) in forms
+        )
+        {
+            if (rewrite(rule).CompiledRule is not { } once)
+            {
+                continue;
+            }
+
+            await AddFailureAsync(failures, fuzzCase, value, once, cancellationToken).ConfigureAwait(false);
+            if (rewrite(once).CompiledRule is { } twice)
+            {
+                AddIdempotenceFailure(failures, fuzzCase, idempotent, once, twice);
+            }
+        }
+    }
+
+    /// <summary>Adds a failure when a second rewrite changes the canonical text of the first result.</summary>
+    private static void AddIdempotenceFailure(
+        List<RuleFuzzFailure> failures,
+        FuzzCase fuzzCase,
+        RuleFuzzCheck check,
+        CompiledRule<FuzzAssignment> once,
+        CompiledRule<FuzzAssignment> twice
+    )
+    {
+        if (twice.CanonicalText != once.CanonicalText)
+        {
+            failures.Add(fuzzCase.Failure(check, $"Rewriting '{once.CanonicalText}' again gives '{twice.CanonicalText}'."));
         }
     }
 

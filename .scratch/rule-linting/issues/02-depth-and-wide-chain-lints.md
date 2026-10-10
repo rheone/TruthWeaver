@@ -4,15 +4,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready
+**Status:** done
 
-- [ ] `LintRules` gains `DeepNesting` and `WideChain` flags, and `All` includes both
-- [ ] `DeepNesting` reports a rule whose depth reaches a fraction of `CompilerOptions.MaxDepth` (default 0.75)
-- [ ] `WideChain` reports an `AND`/`OR` chain with more operands than the `CompilerOptions` width (default 16)
-- [ ] Each rule has its own `DiagnosticCodes` entry (after `TRE0027`) and a diagnostics reference entry
-- [ ] Both thresholds are `CompilerOptions` values with documented defaults
-- [ ] A rule under both thresholds produces no finding
-- [ ] Documentation updated in the same change: `docs/diagnostics.md` lists the two new codes and flags, and the `CompilerOptions` thresholds with their defaults
-- [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
+- [x] `LintRules` gains `DeepNesting` and `WideChain` flags, and `All` includes both
+- [x] `DeepNesting` reports a rule whose depth reaches a fraction of `CompilerOptions.MaxDepth` (default 0.75)
+- [x] `WideChain` reports an `AND`/`OR` chain with more operands than the `CompilerOptions` width (default 16)
+- [x] Each rule has its own `DiagnosticCodes` entry (after `TRE0027`) and a diagnostics reference entry
+- [x] Both thresholds are `CompilerOptions` values with documented defaults
+- [x] A rule under both thresholds produces no finding
+- [x] Documentation updated in the same change: `docs/diagnostics.md` lists the two new codes and flags, and the `CompilerOptions` thresholds with their defaults
+- [x] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

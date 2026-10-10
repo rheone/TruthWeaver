@@ -14,8 +14,9 @@ using TruthWeaver.Diagnostics;
 /// </summary>
 internal sealed class DslParser
 {
-    private static readonly HashSet<string> ReservedWords = new(StringComparer.OrdinalIgnoreCase)
-    {
+    private static readonly HashSet<string> ReservedWords =
+    [
+        with(StringComparer.OrdinalIgnoreCase),
         "AND",
         "OR",
         "NOT",
@@ -49,7 +50,7 @@ internal sealed class DslParser
         "GREATERTHAN",
         "LESSTHAN",
         "EXACTLY",
-    };
+    ];
 
     // Infix operators that sit outside the NOT > AND > OR precedence chain: they may not be mixed with
     // each other or with AND/OR at one nesting level without parentheses (ADR-0005 decision 8).

@@ -306,7 +306,7 @@ internal static class PredicateMethodReader
         CancellationToken cancellationToken
     )
     {
-        Dictionary<string, string> descriptions = new(StringComparer.Ordinal);
+        Dictionary<string, string> descriptions = [with(StringComparer.Ordinal)];
         string? xml = method.GetDocumentationCommentXml(cancellationToken: cancellationToken);
         if (string.IsNullOrWhiteSpace(xml))
         {

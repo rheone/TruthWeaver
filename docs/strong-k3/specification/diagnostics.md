@@ -37,6 +37,9 @@ The compiler reports these as information when the matching lint rule is enabled
 | `TRE0021` | `VacuousCardinality` | The constant operands of a threshold or `BETWEEN` fix its value whatever the other operands are. |
 | `TRE0022` | `DuplicateOperands` | An operand repeats inside `AND`, `OR`, `ANY`, `ALL` or `COALESCE`, and the repeat adds nothing. |
 | `TRE0023` | `DoubleNegation` | `NOT (NOT x)`, which is `x`. |
+| `TRE0028` | `DeepNesting` | The rule is at least `DeepNestingFraction` of `MaxDepth` levels deep. This finding has no suggestion. |
+| `TRE0029` | `WideChain` | An `AND` or `OR` has more operands than `WideChainOperandLimit`. This finding has no suggestion. |
+| `TRE0030` | `NotCanonical` | `Canonicalize()` would change the rule. The suggestion is the canonical rule text. |
 
 ## Codes outside the Operations
 
@@ -56,6 +59,7 @@ These codes do not belong to one Operation.
 | `TRE0025` | `MalformedDataQuery` | The query of a variable reference is not valid for the dialect of its data source. |
 | `TRE0026` | `InvalidArgumentValue` | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `Between` or `Outside`. |
 | `TRE0027` | `DeprecatedPredicate` | A rule uses a predicate whose schema is marked deprecated. This is a warning, one per use, and the rule still compiles. |
+| `TRE0031` | `ThresholdKeptAsAtom` | `ToNnf()`, `ToCnf()` or `ToDnf()` kept a threshold as an atom, because expanding it can grow the rule a lot. This is a warning. The message gives the growth estimate. Pass `NormalFormOptions` with `ExpandThresholds` set to `true` to expand it. |
 
 ## Related
 

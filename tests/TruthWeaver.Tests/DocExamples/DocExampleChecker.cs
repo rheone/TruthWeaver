@@ -67,7 +67,7 @@ internal static partial class DocExampleChecker
     internal static IReadOnlyList<string> Check(string markdown, string fileName)
     {
         List<string> failures = [];
-        Dictionary<string, CompiledRule<RuleTestContext>> rules = new(StringComparer.Ordinal);
+        Dictionary<string, CompiledRule<RuleTestContext>> rules = [with(StringComparer.Ordinal)];
         string[] lines = [.. markdown.Split('\n').Select(line => line.TrimEnd('\r'))];
 
         string? marker = null;

@@ -48,7 +48,7 @@ public static class PredicateHarness
 
         // One set collects the argument names read by every call except the cancellation call, so the conformance
         // check sees the union of reads over the baseline and every boundary value.
-        HashSet<string> reads = new(StringComparer.Ordinal);
+        HashSet<string> reads = [with(StringComparer.Ordinal)];
         Dictionary<string, LiteralValue> baseline = BaselineArguments(schema, options);
         List<HarnessCase> cases = [new("baseline arguments", null, baseline), .. BoundaryCases(schema, baseline)];
 
@@ -89,7 +89,7 @@ public static class PredicateHarness
 
     private static Dictionary<string, LiteralValue> BaselineArguments(PredicateSchema schema, PredicateHarnessOptions options)
     {
-        Dictionary<string, LiteralValue> baseline = new(StringComparer.Ordinal);
+        Dictionary<string, LiteralValue> baseline = [with(StringComparer.Ordinal)];
         foreach (PredicateArgumentSchema argument in schema.Arguments)
         {
             baseline[argument.Name] = argument.Default ?? HarnessValues.Typical(argument.Type);

@@ -118,7 +118,7 @@ internal static class LiteralConversion
         }
 
         LiteralKind elementKind = LiteralValue.ToElementKind(expectedKind);
-        List<LiteralValue> items = new(raw.Elements.Count);
+        List<LiteralValue> items = [with(raw.Elements.Count)];
         foreach (RawLiteral element in raw.Elements)
         {
             if (!TryConvert(element, elementKind, out LiteralValue itemValue))

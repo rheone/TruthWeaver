@@ -11,6 +11,6 @@
 - [x] The message names the replacement and the replacement is also a `DiagnosticSuggestion`
 - [x] `TRE0027` is documented in `DiagnosticCodes` and the diagnostics reference
 - [x] A registered predicate without `Deprecation` produces no new diagnostic
-- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes. Note 2026-10-10: the feature commit exists and CI is green on the branch head, but a pre-commit hook pass cannot be confirmed from history.
 
 See also [spec](../spec.md).

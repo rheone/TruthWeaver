@@ -123,3 +123,9 @@ The `Cancellation` outcome always has the status `Observed`. The outcome detail 
 | `Passed` | `true` when no outcome failed. An expected fault and an observed outcome do not fail the run. |
 | `ShouldPass()` | Throws `PredicateHarnessException` when a check failed. The message lists each failure on its own line. |
 | `ToString()` | Each outcome, one on each line. |
+
+## Related pages
+
+[Testing assertions](testing-assertions.md) describes the rule and decision assertions. [Rule fuzzer](rule-fuzzer.md) checks the engine with random rules.
+
+See also [rule assertions](rule-assertions.md) for `AssertEquivalent` and `AssertSound`.

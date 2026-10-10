@@ -162,6 +162,8 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Predicate source generator](docs/predicate-source-generator.md): register `[Predicate]` methods with generated code, and compare it with hand-written registration.
 - [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
+- [Rule assertions](docs/rule-assertions.md): assert that two rules, or a rewrite of a rule, keep the same Strong Kleene value.
+- [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent and check a `Decision` in a test.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
 - [Examples](docs/examples.md): seven worked examples, from one predicate to a full rule.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.

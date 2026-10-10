@@ -67,7 +67,7 @@ public sealed class PredicateRegistrationGenerator : IIncrementalGenerator
     /// </summary>
     private static IEnumerable<PredicateMethod> Distinct(SourceProductionContext output, IEnumerable<PredicateMethod> methods)
     {
-        Dictionary<string, PredicateMethod> byName = new(StringComparer.Ordinal);
+        Dictionary<string, PredicateMethod> byName = [with(StringComparer.Ordinal)];
         foreach (PredicateMethod method in methods)
         {
             string key = method.PredicateName.ToUpperInvariant();

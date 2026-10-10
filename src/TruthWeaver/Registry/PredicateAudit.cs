@@ -26,7 +26,7 @@ public static class PredicateAudit
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(rules);
 
-        HashSet<string> used = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> used = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (CompiledRule<TContext> rule in rules)
         {
             used.UnionWith(rule.PredicateNames);

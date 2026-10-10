@@ -45,6 +45,12 @@ example because of an out-of-range threshold, is not checked. The fuzzer runs th
 | `Evaluation` | For an assignment of the terms, the evaluator returns a value that differs from the oracle value. |
 | `Simplify` | For an assignment, the rule from `Simplify()` returns a value that differs from the oracle value. |
 | `Canonicalize` | For an assignment, the rule from `Canonicalize()` returns a value that differs from the oracle value. |
+| `SimplifyNeverLarger` | The rule from `Simplify()` has more nodes than the original. |
+| `SimplifyIdempotent` | `Simplify()` of the simplified rule gives a different canonical text. |
+| `CanonicalizeNeverLarger` | The rule from `Canonicalize()` has more nodes than the original. |
+| `CanonicalizeIdempotent` | `Canonicalize()` of the canonical rule gives a different canonical text. |
+| `ToNnf` / `ToCnf` / `ToDnf` | For an assignment, the rule from `ToNnf()`, `ToCnf()` or `ToDnf()` returns a value that differs from the oracle value. A rule whose form is over the rewrite size cap is not checked. |
+| `NnfIdempotent` / `CnfIdempotent` / `DnfIdempotent` | The same rewrite of its own result gives a different canonical text. |
 | `DslRoundTrip` | The canonical rule text does not compile, or it compiles to a different canonical text. |
 | `JsonRoundTrip` | The JSON from `PrintJson()` does not compile, or it compiles to a different canonical text. |
 
@@ -104,3 +110,9 @@ The fuzzer uses two public types that are also available for other property test
 - `K3Oracle` computes the value of each operator from the primitive definitions of `NOT`, `AND`, `OR` and cardinality.
   It shares no code with the evaluator, so a defect in the engine cannot also hide in the expected value.
   `K3Oracle.Assignments(n)` gives all $3^n$ assignments of `n` terms.
+
+## Related pages
+
+[Testing assertions](testing-assertions.md) describes the rule and decision assertions. [Predicate harness](predicate-harness.md) checks one predicate.
+
+See also [rule assertions](rule-assertions.md) for `AssertEquivalent` and `AssertSound`.

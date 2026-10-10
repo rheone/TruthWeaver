@@ -94,7 +94,7 @@ internal static class ExpressionTools
     /// <returns>The node count.</returns>
     public static long Size(Expression root)
     {
-        return Size(root, new Dictionary<Expression, long>(ReferenceEqualityComparer.Instance));
+        return Size(root, [with(ReferenceEqualityComparer.Instance)]);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ internal static class ExpressionTools
     /// <returns>The depth.</returns>
     public static int Depth(Expression root)
     {
-        return Depth(root, new Dictionary<Expression, int>(ReferenceEqualityComparer.Instance));
+        return Depth(root, [with(ReferenceEqualityComparer.Instance)]);
     }
 
     private static int Depth(Expression node, Dictionary<Expression, int> memo)

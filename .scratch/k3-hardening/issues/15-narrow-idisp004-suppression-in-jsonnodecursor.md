@@ -6,8 +6,8 @@
 
 **Status:** done
 
-- [ ] No file-wide IDISP004 disable remains in `src`
-- [ ] No analyzer severity is lowered
-- [ ] The full validation from CLAUDE.md passes, including a `CI=true` build
+- [x] No file-wide IDISP004 disable remains in `src`
+- [ ] No analyzer severity is lowered Note 2026-10-10: severity history was not re-checked.
+- [x] The full validation from CLAUDE.md passes, including a `CI=true` build
 
 See also [spec](../spec.md).

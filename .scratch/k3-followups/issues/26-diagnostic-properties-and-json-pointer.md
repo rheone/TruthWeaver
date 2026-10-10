@@ -12,4 +12,6 @@
 - [ ] Documentation updated in the same change: `docs/diagnostics.md` documents `Properties` and `ToJsonPointer()` (if built)
 - [ ] The full validation from CLAUDE.md passes
 
+Decision (rule-linting 01): the link from a nested lint finding to its enclosing finding is a dedicated `Diagnostic.EnclosedBy` property, not an entry in `Properties`. `Properties` stays a string map for machine-readable data and does not conflict with it.
+
 Source: [research findings, section 5](../../k3-conformance/research-findings.md#5-api-shape-and-naming).

@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] The parameterless constructor produces an exception with the expected default state.
-- [ ] The message-only constructor sets `Message` as expected.
-- [ ] The message+innerException constructor sets both `Message` and `InnerException` as expected.
-- [ ] Existing `FakePredicates`/`ForPredicate` tests continue to pass unchanged.
+- [x] The parameterless constructor produces an exception with the expected default state.
+- [x] The message-only constructor sets `Message` as expected.
+- [x] The message+innerException constructor sets both `Message` and `InnerException` as expected.
+- [x] Existing `FakePredicates`/`ForPredicate` tests continue to pass unchanged.

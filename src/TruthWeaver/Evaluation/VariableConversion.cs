@@ -35,7 +35,7 @@ internal static class VariableConversion
             // An array argument collects every match; zero matches, including a path to a missing property, is an
             // empty array because a query result cannot tell the two apart.
             LiteralKind elementKind = LiteralValue.ToElementKind(kind);
-            List<LiteralValue> elements = new(matches.Count);
+            List<LiteralValue> elements = [with(matches.Count)];
             foreach (LiteralValue match in matches)
             {
                 if (!TryConvertScalar(match, elementKind, out LiteralValue element))

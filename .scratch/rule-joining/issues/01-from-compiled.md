@@ -11,6 +11,6 @@
 - [x] Data-source declarations (`TRE0024`) and `CompilerOptions` limits apply to the joined tree
 - [x] A term present in both source rules keeps one identity and is evaluated once
 - [x] The README or builder guide documents the join with a tested example
-- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes.
+- [ ] Carries XML docs on all public API, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes. Note 2026-10-10: the feature commit exists and CI is green on the branch head, but a pre-commit hook pass cannot be confirmed from history.
 
 See also [spec](../spec.md).

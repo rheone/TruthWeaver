@@ -8,13 +8,13 @@ This is a named, already-deferred item: `CONTEXT.md`'s [Deferred](../../../CONTE
 
 **Status:** done
 
-- [ ] Document how a path-expression grammar would be scoped (e.g. dotted-path only vs. indexers, what `TContext` shapes it can bind against, how a mistyped path is reported — compile-time vs. evaluation-time fault).
-- [ ] Document the canonical-equality impact directly: does two terms with the same predicate name and same path-expression argument text count as the same term (structural equality on the path text, not on its resolved value), and does this actually preserve `CONTEXT.md#term-identity`'s guarantees or only partially?
-- [ ] Document the interaction with existing closed-set `LiteralKind` arguments — is a context-bound argument a new `PredicateArgumentSchema` shape alongside literal args, or a distinct argument kind entirely?
-- [ ] Document the interaction with the DSL/JSON/YAML tri-format guarantee (ADR-0003's `parse(print(x))` round-trip) — a path expression must round-trip identically across all three surfaces.
-- [ ] Recommend one of: proceed with a scoped design, proceed with a narrower alternative (e.g. a small enumerated set of "well-known" context paths rather than a general grammar), or remain deferred — with the reasoning for whichever is chosen.
-- [ ] Read `predicate-catalog` ticket 01's output before recommending — if it already proposes named predicates covering the common context-value cases this ticket's examples target (`IsManagerOf`, `IsOwnerOf`, `IsDelegateOf`), that's evidence toward "remain deferred" rather than duplicating effort with a new grammar.
-- [ ] No production code is changed by this ticket — output is the written investigation, to become an ADR amendment or a new ADR only after review.
+- [x] Document how a path-expression grammar would be scoped (e.g. dotted-path only vs. indexers, what `TContext` shapes it can bind against, how a mistyped path is reported — compile-time vs. evaluation-time fault).
+- [x] Document the canonical-equality impact directly: does two terms with the same predicate name and same path-expression argument text count as the same term (structural equality on the path text, not on its resolved value), and does this actually preserve `CONTEXT.md#term-identity`'s guarantees or only partially?
+- [x] Document the interaction with existing closed-set `LiteralKind` arguments — is a context-bound argument a new `PredicateArgumentSchema` shape alongside literal args, or a distinct argument kind entirely?
+- [x] Document the interaction with the DSL/JSON/YAML tri-format guarantee (ADR-0003's `parse(print(x))` round-trip) — a path expression must round-trip identically across all three surfaces.
+- [x] Recommend one of: proceed with a scoped design, proceed with a narrower alternative (e.g. a small enumerated set of "well-known" context paths rather than a general grammar), or remain deferred — with the reasoning for whichever is chosen.
+- [x] Read `predicate-catalog` ticket 01's output before recommending — if it already proposes named predicates covering the common context-value cases this ticket's examples target (`IsManagerOf`, `IsOwnerOf`, `IsDelegateOf`), that's evidence toward "remain deferred" rather than duplicating effort with a new grammar.
+- [x] No production code is changed by this ticket — output is the written investigation, to become an ADR amendment or a new ADR only after review.
 
 ## Comments
 

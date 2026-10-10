@@ -70,7 +70,7 @@ internal static class NandNorExpander
         }
 
         // Each threshold subset contributes at least one node per operand, so that is a lower bound on the result.
-        if (SubsetCost(primitive, maxNodes, new Dictionary<Expression, long>(ReferenceEqualityComparer.Instance)) > maxNodes)
+        if (SubsetCost(primitive, maxNodes, [with(ReferenceEqualityComparer.Instance)]) > maxNodes)
         {
             return null;
         }

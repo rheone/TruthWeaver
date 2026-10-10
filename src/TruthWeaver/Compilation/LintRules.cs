@@ -48,6 +48,21 @@ public enum LintRules
     /// <summary><c>NOT (NOT x)</c>, which is <c>x</c> in Strong K3 (<c>TRE0023</c>).</summary>
     DoubleNegation = 64,
 
+    /// <summary>
+    /// A rule whose depth reaches <see cref="CompilerOptions.DeepNestingFraction"/> of <see cref="CompilerOptions.MaxDepth"/>,
+    /// so it is close to the compile limit (<c>TRE0028</c>).
+    /// </summary>
+    DeepNesting = 128,
+
+    /// <summary>
+    /// An <c>AND</c> or <c>OR</c> chain with more operands than <see cref="CompilerOptions.WideChainOperandLimit"/>
+    /// (<c>TRE0029</c>).
+    /// </summary>
+    WideChain = 256,
+
+    /// <summary>A rule that <c>Canonicalize()</c> would change, with the canonical text as the suggestion (<c>TRE0030</c>).</summary>
+    NotCanonical = 512,
+
     /// <summary>Every lint rule.</summary>
     All =
         RedundantInspection
@@ -56,5 +71,8 @@ public enum LintRules
         | IdenticalIfBranches
         | VacuousCardinality
         | DuplicateOperands
-        | DoubleNegation,
+        | DoubleNegation
+        | DeepNesting
+        | WideChain
+        | NotCanonical,
 }

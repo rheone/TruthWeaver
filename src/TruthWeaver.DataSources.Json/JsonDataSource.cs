@@ -123,7 +123,7 @@ public sealed class JsonDataSource : IDataSource
 
     private static DataQueryResult Convert(IReadOnlyList<JsonNode?> nodes)
     {
-        List<LiteralValue> literals = new(nodes.Count);
+        List<LiteralValue> literals = [with(nodes.Count)];
         foreach (JsonNode? node in nodes)
         {
             if (!TryConvert(node, out LiteralValue literal, out string? kind))
