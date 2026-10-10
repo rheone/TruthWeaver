@@ -88,7 +88,7 @@ Every suggestion is the same rule as the original for every `True`, `False` and 
 
 `LintRules` is a flags enum. Combine the flags you want (`LintRules.DuplicateOperands | LintRules.DoubleNegation`) or use `LintRules.All`.
 
-`DeepNesting`, `WideChain` and `NotCanonical` do not propose an equivalent shorter rule by logic. `DeepNesting` and `WideChain` give no suggestion. `NotCanonical` suggests the output of [`Canonicalize()`](rewriting-rules.md#canonical-form). It does not run on a rule larger than `CompilerOptions.MaxRewriteNodeCount`.
+`DeepNesting`, `WideChain` and `NotCanonical` do not propose an equivalent shorter rule by logic. `DeepNesting` and `WideChain` give no suggestion. `NotCanonical` suggests the output of [`Canonicalize()`](rewriting-rules.md#canonical-form). It does not run on a rule larger than `CompilerOptions.MaxRewriteNodeCount`. `Canonicalize()` itself has no size limit, so no finding for a large rule does not show that the rule is canonical.
 
 Two `CompilerOptions` values set the thresholds:
 
