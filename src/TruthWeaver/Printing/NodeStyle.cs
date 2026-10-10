@@ -8,8 +8,8 @@ public sealed record NodeStyle
 {
     private NodeStyle(string className, bool isBuiltIn)
     {
-        ClassName = className;
-        IsBuiltIn = isBuiltIn;
+        this.ClassName = className;
+        this.IsBuiltIn = isBuiltIn;
     }
 
     /// <summary>Gets the style that draws attention to a node. The printer defines it from <see cref="MermaidPalette.Highlight"/>.</summary>
@@ -37,15 +37,9 @@ public sealed record NodeStyle
         ArgumentException.ThrowIfNullOrEmpty(className);
 
         // A space, semicolon or line break would end the Mermaid class statement and start another one.
-        foreach (char c in className)
+        if (className.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not ('_' or '-')))
         {
-            if (!char.IsAsciiLetterOrDigit(c) && c is not ('_' or '-'))
-            {
-                throw new ArgumentException(
-                    "A class name holds letters, digits, underscores and hyphens only.",
-                    nameof(className)
-                );
-            }
+            throw new ArgumentException("A class name holds letters, digits, underscores and hyphens only.", nameof(className));
         }
 
         return new NodeStyle(className, isBuiltIn: false);

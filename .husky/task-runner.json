@@ -22,7 +22,8 @@
         "build",
         "--no-restore",
         "--configuration",
-        "Release"
+        "Release",
+        "-p:CI=true"
       ],
       "include": [
         "**/*.cs",

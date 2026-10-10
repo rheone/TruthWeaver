@@ -94,16 +94,6 @@ public static class MermaidTreePrinter
         return text.ToString();
     }
 
-    /// <summary>Records which class definitions the assigned classes need.</summary>
-    private sealed class ClassUse
-    {
-        public bool State { get; set; }
-
-        public bool Highlight { get; set; }
-
-        public bool Mute { get; set; }
-    }
-
     private static RenderState WriteNode(
         RenderNode node,
         MermaidOptions options,
@@ -272,5 +262,15 @@ public static class MermaidTreePrinter
     private static string Escape(string label)
     {
         return label.Replace("\"", "#quot;").Replace("\r", " ").Replace("\n", " ");
+    }
+
+    /// <summary>Records which class definitions the assigned classes need.</summary>
+    private sealed class ClassUse
+    {
+        public bool State { get; set; }
+
+        public bool Highlight { get; set; }
+
+        public bool Mute { get; set; }
     }
 }
