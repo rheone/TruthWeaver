@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The structure decisions live only in the shared module
-- [ ] The JSON adapter writes byte-identical output for every existing JSON round-trip and schema test
-- [ ] The shared module is tested with a recording writer, without JSON
-- [ ] No observable behavior changes: every existing test passes unchanged
-- [ ] Carries XML docs and value-adding comments on the new internal types, new tests are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] The structure decisions live only in the shared module
+- [x] The JSON adapter writes byte-identical output for every existing JSON round-trip and schema test
+- [x] The shared module is tested with a recording writer, without JSON
+- [x] No observable behavior changes: every existing test passes unchanged
+- [x] Carries XML docs and value-adding comments on the new internal types, new tests are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
