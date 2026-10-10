@@ -3,6 +3,7 @@ namespace TruthWeaver.Tests;
 using System.Text;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -24,7 +25,7 @@ public sealed class CanonicalizeTests
 
         for (int i = 0; i < 600; i++)
         {
-            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3);
+            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
             K3Rule? original = K3Rule.TryCreate(generated.Text, 3);
             if (original is null)
             {

@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tests.ReferenceDocs;
 
 using System.Globalization;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.DocExamples;
 
 /// <summary>

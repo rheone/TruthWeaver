@@ -1,4 +1,4 @@
-namespace TruthWeaver.Tests.TestSupport;
+namespace TruthWeaver.Testing;
 
 using TruthWeaver.Abstractions;
 

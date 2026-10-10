@@ -1,12 +1,16 @@
-namespace TruthWeaver.Tests.TestSupport;
+namespace TruthWeaver.Testing;
 
 using TruthWeaver.Abstractions;
 
 /// <summary>
-/// Generates random rules over terms <c>a</c>, <c>b</c>, <c>c</c> and the three constants together with an
-/// expected evaluation built only from <see cref="K3Oracle"/>. Shared by the analyzer-versus-oracle and the
-/// rewrite (expansion) property tests so every operator is exercised by one generator.
+/// Generates random rule text over a list of terms and the three constants. Each rule carries an expected evaluation that
+/// <see cref="K3Oracle"/> builds, so the expectation shares no code with the engine. The generator covers every rule
+/// operator.
 /// </summary>
+/// <remarks>
+/// The output depends only on the state of the <see cref="Random"/> and the arguments, so the same seed gives the same
+/// rules. Some rules do not compile, for example a threshold that the compiler rejects as out of range. Skip such a rule.
+/// </remarks>
 public static class K3RuleGenerator
 {
     private static readonly (string Name, Func<int, int, bool> Satisfies)[] Thresholds =
@@ -42,23 +46,43 @@ public static class K3RuleGenerator
     }
 
     /// <summary>
-    /// Generates a random rule over terms <c>a</c>, <c>b</c>, <c>c</c> and the three constants, together with an
-    /// evaluation built only from <see cref="K3Oracle"/>. Compound nodes are always parenthesised so the
-    /// no-implicit-mixing rule cannot reject them.
+    /// Generates a random rule over <paramref name="terms"/> and the three constants, together with an evaluation built
+    /// only from <see cref="K3Oracle"/>. Compound nodes are always in parentheses, so the no-implicit-mixing rule cannot
+    /// reject them.
     /// </summary>
-    /// <param name="random">The (seeded) random source.</param>
-    /// <param name="depth">The maximum nesting depth.</param>
+    /// <param name="random">The seeded random source.</param>
+    /// <param name="depth">The maximum nesting depth. Zero gives a single term or constant.</param>
+    /// <param name="terms">
+    /// The rule text of each term, for example <c>a</c> or <c>hasRole(role: "admin")</c>. The term at index <c>i</c> reads
+    /// entry <c>i</c> of the assignment that <see cref="GeneratedRule.Eval"/> receives.
+    /// </param>
     /// <returns>The generated rule.</returns>
-    public static GeneratedRule GenerateRule(Random random, int depth)
+    /// <exception cref="ArgumentNullException"><paramref name="random"/> or <paramref name="terms"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="terms"/> is empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="depth"/> is negative.</exception>
+    public static GeneratedRule GenerateRule(Random random, int depth, IReadOnlyList<string> terms)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(terms);
+        ArgumentOutOfRangeException.ThrowIfNegative(depth);
+        if (terms.Count == 0)
+        {
+            throw new ArgumentException("At least one term is necessary.", nameof(terms));
+        }
+
+        return Generate(random, depth, terms);
+    }
+
+    private static GeneratedRule Generate(Random random, int depth, IReadOnlyList<string> terms)
     {
         if (depth == 0 || random.Next(5) == 0)
         {
-            return GenerateLeaf(random);
+            return GenerateLeaf(random, terms);
         }
 
         GeneratedRule Child()
         {
-            return GenerateRule(random, depth - 1);
+            return Generate(random, depth - 1, terms);
         }
 
         switch (random.Next(20))
@@ -198,7 +222,7 @@ public static class K3RuleGenerator
         }
     }
 
-    private static GeneratedRule GenerateLeaf(Random random)
+    private static GeneratedRule GenerateLeaf(Random random, IReadOnlyList<string> terms)
     {
         switch (random.Next(6))
         {
@@ -209,8 +233,8 @@ public static class K3RuleGenerator
             case 2:
                 return new GeneratedRule("UNKNOWN", _ => TruthValue.Unknown, []);
             default:
-                int index = random.Next(3);
-                return new GeneratedRule(((char)('a' + index)).ToString(), v => v[index], []);
+                int index = random.Next(terms.Count);
+                return new GeneratedRule(terms[index], v => v[index], []);
         }
     }
 }

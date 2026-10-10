@@ -5,6 +5,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -39,7 +40,7 @@ public sealed class ExpandToUniversalGateTests
 
         for (int i = 0; i < 2500; i++)
         {
-            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 2);
+            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 2, ["a", "b", "c"]);
             K3Rule? original = generated.Text.Length > MaxGeneratedTextLength ? null : K3Rule.TryCreate(generated.Text, 3);
             if (original is null)
             {
@@ -81,7 +82,7 @@ public sealed class ExpandToUniversalGateTests
 
         for (int i = 0; i < 2500; i++)
         {
-            string text = K3RuleGenerator.GenerateRule(random, depth: 2).Text;
+            string text = K3RuleGenerator.GenerateRule(random, depth: 2, ["a", "b", "c"]).Text;
             K3Rule? original = text.Length > MaxGeneratedTextLength ? null : K3Rule.TryCreate(text, 3);
             if (original is null)
             {

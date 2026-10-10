@@ -2,6 +2,7 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -23,7 +24,7 @@ public sealed class CompressToDerivedTests
 
         for (int i = 0; i < 600; i++)
         {
-            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3);
+            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
             K3Rule? original = K3Rule.TryCreate(generated.Text, 3);
             if (original is null)
             {
@@ -65,7 +66,7 @@ public sealed class CompressToDerivedTests
 
         for (int i = 0; i < 600; i++)
         {
-            K3Rule? original = K3Rule.TryCreate(K3RuleGenerator.GenerateRule(random, depth: 3).Text, 3);
+            K3Rule? original = K3Rule.TryCreate(K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]).Text, 3);
             if (original is null)
             {
                 continue;
