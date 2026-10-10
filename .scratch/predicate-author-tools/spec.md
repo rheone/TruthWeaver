@@ -1,6 +1,6 @@
 # Predicate author tools: deprecation marker and unused-predicate audit
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [library-roadmap](../library-roadmap/spec.md) re-score (2026-10-03), grilled 2026-10-09.
 

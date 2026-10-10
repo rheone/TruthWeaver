@@ -1,6 +1,6 @@
 # Starter samples
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: [library-roadmap](../library-roadmap/spec.md) "Starter templates" item, grilled 2026-10-09.
 

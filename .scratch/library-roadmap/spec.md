@@ -1,6 +1,6 @@
 # Library roadmap: feature candidates, impact/complexity, and verdicts
 
-**Status:** brainstorm, re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
+**Status:** closed 2026-10-09 (decisions below). Re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
 
 ## Purpose
 
@@ -15,6 +15,22 @@ reason), or **Don't do** (rejected, with a reason — not "maybe later").
 
 Impact/complexity are both Low/Medium/High. This is a prioritization
 write-up, not a commitment — nothing here is scheduled.
+
+## Decisions (grilled 2026-10-09)
+
+These settle the open items in the tables below.
+
+| Item | Decision |
+| --- | --- |
+| Compile-cost regression | Already resolved by k3-hardening 18 and 19 (quadratic fold in `Analyzer.Build`; budget met). No new work. |
+| Source-generator predicate registration | Spec it: [predicate-source-generator](../predicate-source-generator/spec.md). |
+| Date/time day-of-week, month, time-window | Spec it with ISO 8601 and UTC or fixed offset only, no IANA names: [datetime-offset-predicates](../datetime-offset-predicates/spec.md). |
+| Unicode normalization | Document the limitation only: [predicate-catalog ticket 14](../predicate-catalog/issues/14-document-ordinal-string-comparison-and-unicode-normalization.md). |
+| `RuleDiff.Compare` with `CompilerOptions` | Ticket: [rule-diff ticket 03](../rule-diff/issues/03-compare-accepts-compiler-options.md). |
+| Satisfying assignment, substitution, tracing | Stay deferred ([deferred-features](../deferred-features/spec.md)). |
+| NNF print mode, lint spans and paths | Stay "Not now". |
+| Equation rendering | Spec it: [equation-rendering](../equation-rendering/spec.md). |
+| Predicate catalog questions 2, 4, 7, 8 | Already resolved; the "gated by open questions" notes below are stale. |
 
 ## Re-score (2026-10-03, k3-hardening ticket 01)
 

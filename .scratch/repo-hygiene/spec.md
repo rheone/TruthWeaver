@@ -1,4 +1,5 @@
 # Repo hygiene: line endings, file-type config and commit hook
+n**Status:** done
 
 Decided in the 2026-10-03 owner grilling session (Q17, Q13-14).
 

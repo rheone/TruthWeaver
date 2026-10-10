@@ -1,6 +1,6 @@
 # Equation rendering: LaTeX / GitHub math / plain Unicode / AsciiMath
 
-**Status:** brainstorm
+**Status:** ready-for-agent
 
 ## Problem Statement
 
@@ -91,6 +91,20 @@ Two modes, both wanted (per discussion with the user):
 A third option — label-only (`Has Crust`, no arguments, no letters) — was
 considered and explicitly **not** chosen; it loses the argument-value
 distinctions for no compensating benefit over the two modes above.
+
+## Decisions (grilled 2026-10-09)
+
+- **Dialects.** Plain Unicode, LaTeX and AsciiMath. One LaTeX dialect with wrap modes: none (raw `.tex`), `$$...$$`,
+  and a MathJax-safe mode. The MathJax-safe mode replaces the separate "GitHub math" dialect. It escapes to the MathJax
+  subset that GitHub also renders.
+- **Term rendering.** The default is the full term call, for example `hasCrust(crust: "thin")`. An option hides the
+  arguments. A term shows the name of the predicate it uses, or the variable or data source it reads.
+- **Simple-variable mode.** Optional. Terms become letters (`p`, `q`, `r`) with a legend that maps each letter to its
+  full term. Letters follow first occurrence, depth first, left to right. Identical terms share a letter.
+- **Not in the first slice.** `Decision`-coloured equations, MathML, Typst and OMML. The `ExactlyOne` and threshold
+  family stay in function-call form in every dialect.
+
+Tickets: [issues/](issues/).
 
 ## Open notation questions (flagged, not resolved here)
 
