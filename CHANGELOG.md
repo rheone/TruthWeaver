@@ -126,6 +126,14 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: the `RuleBuilder` array (`params`) and sequence (`IEnumerable<RuleBuilder>`) overloads of an operator give
+  the same rule. `And`, `Or`, `Any`, `All` and `None` fold in both: an empty list is the identity constant (`None` of
+  one operand is its negation, the others are the operand itself). `Parity`, `ExactlyOne` and `Coalesce` no longer fold
+  a short sequence: they build the node and the compiler reports `MalformedTree`, as the array form does. `GreaterThan`
+  and `LessThan` gain the `IEnumerable<RuleBuilder>` overload. An argument value of an unsupported type, including
+  `null`, is an `ArgumentTypeMismatch` diagnostic from `Compile` and no longer an `ArgumentException`. Migration: check
+  the count before you build a `Parity`, `ExactlyOne` or `Coalesce` from a list that can have fewer than two items, and
+  expect a one-operand array under `And`, `Or`, `Any`, `All` or `None` to fold to the operand.
 - Breaking: a JSON or YAML rule node that has a key its kind does not define is a `MalformedTree` (`TRE0014`) compile
   error at that key, as `rule-tree.schema.json` already states. This covers an unknown key, a misspelt `args`, a
   `predicate` next to an `op`, and a stray `k`, `min` or `max` on an operator that takes none. The key was ignored

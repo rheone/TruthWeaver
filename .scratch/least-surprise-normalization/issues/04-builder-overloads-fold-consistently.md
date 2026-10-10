@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] One test per operator proves the array and list forms give the same compiled rule or the same diagnostic
-- [ ] The XML example that shows array and list differing is removed
-- [ ] An unsupported literal type reaches the caller as a diagnostic, not an `ArgumentException` from `Compile`
-- [ ] `docs/rulebuilder.md` states the rule
-- [ ] The breaking change is recorded in `CHANGELOG.md` with a migration step
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] One test per operator proves the array and list forms give the same compiled rule or the same diagnostic
+- [x] The XML example that shows array and list differing is removed
+- [x] An unsupported literal type reaches the caller as a diagnostic, not an `ArgumentException` from `Compile`
+- [x] `docs/rulebuilder.md` states the rule
+- [x] The breaking change is recorded in `CHANGELOG.md` with a migration step
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

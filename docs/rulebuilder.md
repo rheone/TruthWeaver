@@ -37,28 +37,32 @@ A term takes each argument name once. `RuleBuilder.Predicate("hasRole", ("role",
 
 ### Operand lists of unknown length
 
-When the number of operands is known only at run time, `And`, `Or`, `Parity`, `Any`, `All`, `None`, `ExactlyOne` and `Coalesce` also have an `IEnumerable<RuleBuilder>` overload. It folds a short list when you build the rule. This avoids a node that the compiler would reject with `MalformedTree`. Two or more items build the same node as the `params` overload:
+An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same rule for the same operands. The rule depends on whether the operator has an identity constant.
 
-| Operator | 0 items | 1 item `x` |
-| -------- | ------- | ---------- |
+`And`, `Or`, `Any`, `All` and `None` have an identity. In both forms, fewer than two operands fold when you build the rule. The compiler never sees a short node:
+
+| Operator | 0 operands | 1 operand `x` |
+| -------- | ---------- | ------------- |
 | `And` / `All` | `Constant(True)` | `x` |
 | `Or` / `Any` | `Constant(False)` | `x` |
-| `Parity` / `ExactlyOne` | `Constant(False)` | `x` |
 | `None` | `Constant(True)` | `Not(x)` |
-| `Coalesce` | `Constant(Unknown)` | `x` |
+
+`Parity`, `ExactlyOne` and `Coalesce` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `MalformedTree`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
 
 An empty list that silently becomes a constant can hide a mistake. For example, an empty list of role checks under `And` is `True`. Check the count first when that matters.
-
-The two forms give different results for the same operands. An array or an explicit argument list binds the `params` overload. A `List<RuleBuilder>` binds the `IEnumerable` overload. The fold is deliberate and does not change.
 
 ```csharp
 RuleBuilder x = RuleBuilder.Predicate("isActive");
 
-RuleBuilder.And(new[] { x });                 // params: one operand, MalformedTree at compile time
-RuleBuilder.And(new List<RuleBuilder> { x }); // IEnumerable: folds to x
+RuleBuilder.And(new[] { x });                 // folds to x
+RuleBuilder.And(new List<RuleBuilder> { x }); // folds to x
+RuleBuilder.Parity(new[] { x });              // MalformedTree at compile time
+RuleBuilder.Parity(new List<RuleBuilder> { x }); // the same MalformedTree
 ```
 
-`Between`, `AtLeast`, `AtMost` and `Exactly` also have an `IEnumerable<RuleBuilder>` overload, but it never folds. A counted operator has no identity constant, so the sequence builds the same node as the `params` overload and goes through the same count validation. An unmeetable count such as `AtLeast(2, [])` gives the same compile diagnostic as with `params`. An empty list that you pass to a counted operator is probably a bug, so use that diagnostic as a prompt to check how you built the list. A `null` sequence throws `ArgumentNullException`, and the builder enumerates the sequence once. `GreaterThan` and `LessThan` have no enumerable overload.
+Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumerable<RuleBuilder>` overload. A `null` sequence throws `ArgumentNullException`, and the builder enumerates the sequence once.
+
+A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it.
 
 ### Compiling a builder
 
