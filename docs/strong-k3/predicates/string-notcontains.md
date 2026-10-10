@@ -62,6 +62,7 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 - An empty argument matches every non-null string.
 - The comparison is ordinal. The culture of the host process has no effect.
+- The comparison does not normalize Unicode. Precomposed and decomposed forms of the same character compare unequal. The host normalizes the input to NFC or NFKC first. See [String predicates](README.md#string-predicates).
 
 ## Related predicates
 

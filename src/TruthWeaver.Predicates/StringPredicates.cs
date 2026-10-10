@@ -8,7 +8,10 @@ using TruthWeaver.Abstractions;
 /// <c>Func&lt;TContext, string?&gt;</c> value selector supplied at registration and a single
 /// <c>string</c> comparison-target argument supplied in rule text. Every predicate here uses
 /// ordinal comparison only — never culture-sensitive comparison — so rule behavior never depends on
-/// the host process's current culture.
+/// the host process's current culture. Ordinal comparison also does not normalize Unicode: a precomposed character
+/// (for example U+00E9) and its decomposed form (<c>e</c> plus U+0301) are different strings. Callers must
+/// normalize the selected value and the rule argument to the same form, such as NFC or NFKC, before comparison
+/// (see <see cref="string.Normalize()"/>).
 /// </summary>
 public static class StringPredicates
 {

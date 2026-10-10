@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The XML docs on the string predicate factories state the limit and the remedy
-- [ ] The matching pages under `docs/strong-k3/` state it, and the K3 reference sync test passes
-- [ ] One test pins the behaviour (precomposed and decomposed forms compare unequal)
-- [ ] The full validation set from CLAUDE.md passes
+- [x] The XML docs on the string predicate factories state the limit and the remedy
+- [x] The matching pages under `docs/strong-k3/` state it, and the K3 reference sync test passes
+- [x] One test pins the behaviour (precomposed and decomposed forms compare unequal)
+- [x] The full validation set from CLAUDE.md passes
 
 Source: library-roadmap, grilled 2026-10-09 (decision: document only).

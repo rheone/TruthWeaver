@@ -42,6 +42,23 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>
+    /// The comparison is ordinal and does not normalize Unicode, so a precomposed character and its decomposed form
+    /// are different strings.
+    /// </summary>
+    [Fact]
+    public async Task Equals_PrecomposedAndDecomposedForms_ReturnsFalse_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+        const string precomposed = "é";
+        const string decomposed = "é";
+
+        TruthValue result = await evaluate(new TestContext(precomposed), Args("value", decomposed), CancellationToken.None);
+
+        Assert.Equal(TruthValue.False, result);
+    }
+
     [Fact]
     public async Task EqualsIgnoreCase_MatchingDifferentCase_ReturnsTrue()
     {

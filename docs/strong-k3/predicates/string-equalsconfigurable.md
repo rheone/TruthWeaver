@@ -68,6 +68,7 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 - `ignoreCase` is `true` when the rule omits it. This differs from [Equals](string-equals.md), which is always case-sensitive.
 - `trim` is `false` when the rule omits it.
 - The comparison is ordinal. The culture of the host process has no effect.
+- The comparison does not normalize Unicode. Precomposed and decomposed forms of the same character compare unequal. The host normalizes the input to NFC or NFKC first. See [String predicates](README.md#string-predicates).
 
 ## Related predicates
 

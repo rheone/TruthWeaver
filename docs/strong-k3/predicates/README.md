@@ -130,6 +130,8 @@ The `ScalarPredicates` factories select a `Boolean` (`bool?`), a `Guid` (`Guid?`
 
 The `StringPredicates` factories select a `string?` value. Every comparison is ordinal, so the culture of the host process has no effect. A string argument is a quoted string.
 
+The comparison does not normalize Unicode. A precomposed character such as `é` (U+00E9) and the same character written as `e` plus a combining accent (U+0065 U+0301) are different strings, so they compare unequal. The host must normalize the selected value and the rule argument to the same form, NFC or NFKC, before the predicate sees them.
+
 - `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` are null tests. They never answer `Unknown` and have no `nullBehavior` option.
 - Every other string predicate answers per [Null selected values](#null-selected-values). This includes `IsEmpty` and `IsNotEmpty`, because a null string is a missing value and not an empty one.
 
