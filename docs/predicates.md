@@ -102,7 +102,7 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 
 `In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
 
-A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two predicates always return a definite answer and have no `nullBehavior` option. The other predicates in this table answer a null selected value as [Null selected values](#null-selected-values) describes.
+Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. A null collection is a missing value, not an empty one.
 
 ### Date and time predicates
 

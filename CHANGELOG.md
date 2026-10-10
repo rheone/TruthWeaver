@@ -126,6 +126,12 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: the collection `IsEmpty` and `IsNotEmpty` take a `NullBehavior` that defaults to `Unknown`, as the string
+  `IsEmpty` and the count predicates do. A null collection answered `True` for `IsEmpty` and `False` for `IsNotEmpty`
+  before; it is now `Unknown` for both, with no fault. A missing value is `Unknown` unless the predicate is a null test.
+  Migration: register the predicates with `nullBehavior: NullBehavior.False` to read a null collection as "not empty"
+  (`IsEmpty` `False`, `IsNotEmpty` `True`). To treat a null collection as empty, have the selector return an empty
+  collection (`c => c.Tags ?? []`).
 - Breaking: `EvaluationOptions.FaultBudget = N` aborts evaluation when the Nth fault is recorded, as ADR-0002 and the
   XML docs state. It aborted on the (N+1)th before, so `FaultBudget: 1` tolerated one fault. A budget below 1 now makes
   `CompiledRule.EvaluateAsync` throw `ArgumentOutOfRangeException`; `0` used to abort on the first fault. `null` is still

@@ -90,6 +90,13 @@ public sealed class TwinNullComplementTests
                 () => CollectionPredicates.NotSetEquals<Selections>("t", c => c.Items),
                 Args(("values", Strings("a")))
             ),
+            ["Collection.IsEmpty/IsNotEmpty"] = new(
+                nb => CollectionPredicates.IsEmpty<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.IsNotEmpty<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.IsEmpty<Selections>("p", c => c.Items),
+                () => CollectionPredicates.IsNotEmpty<Selections>("t", c => c.Items),
+                PredicateArguments.Empty
+            ),
             ["String.IsEmpty/IsNotEmpty"] = new(
                 nb => StringPredicates.IsEmpty<Selections>("p", c => c.Text, nullBehavior: nb),
                 nb => StringPredicates.IsNotEmpty<Selections>("t", c => c.Text, nullBehavior: nb),
@@ -393,10 +400,6 @@ public sealed class TwinNullComplementTests
             ["String.IsNullOrWhiteSpace/IsNotNullOrWhiteSpace"] = (
                 StringPredicates.IsNullOrWhiteSpace<Selections>("p", c => c.Text),
                 StringPredicates.IsNotNullOrWhiteSpace<Selections>("t", c => c.Text)
-            ),
-            ["Collection.IsEmpty/IsNotEmpty"] = (
-                CollectionPredicates.IsEmpty<Selections>("p", c => c.Items),
-                CollectionPredicates.IsNotEmpty<Selections>("t", c => c.Items)
             ),
             ["Int64.IsNull/IsNotNull"] = (
                 NumericPredicates.IsNull<Selections>("p", c => c.Int64),

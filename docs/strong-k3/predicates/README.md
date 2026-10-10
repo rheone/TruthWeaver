@@ -25,6 +25,7 @@ A null selected value is a missing value. It is not a fault.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.
 - A host registers both predicates of a pair with the same `NullBehavior`.
+- A missing value is `Unknown` unless the predicate is a null test. This includes the collection `IsEmpty` and `IsNotEmpty`: a null collection is missing, not empty.
 - A null value is not a default value. `IsDefault` answers per `NullBehavior` for a null selected value.
 
 ## NotX twins
@@ -172,8 +173,7 @@ The `RegexPredicates` factories select a `string?` value and take a regular expr
 
 The `CollectionPredicates` factories select a collection of strings (`IReadOnlyCollection<string>?`). The element type is `string`. Every comparison is ordinal and case-sensitive. An array argument has the kind `StringArray`. A count argument has the kind `Int64`.
 
-- `IsEmpty` and `IsNotEmpty` read a null collection as an empty one. They never answer `Unknown` and have no `nullBehavior` option.
-- Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
+- Every collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - `In` and `NotIn` select one string, not a collection. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` to test a collection.
 - A repeated element and a `null` element count as elements in the `Count` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
 

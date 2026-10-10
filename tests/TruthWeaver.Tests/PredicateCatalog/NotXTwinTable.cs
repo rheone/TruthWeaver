@@ -22,7 +22,7 @@ using TruthWeaver.Predicates;
 /// </para>
 /// <para>
 /// Definite pairs have no Unknown probe: <c>IsNull</c>/<c>IsNotNull</c>, the string null tests
-/// (<c>IsNullOrEmpty</c>, <c>IsNullOrWhiteSpace</c> and their complements) and the collection emptiness tests answer a
+/// (<c>IsNullOrEmpty</c>, <c>IsNullOrWhiteSpace</c> and their complements) answer a
 /// definite value for a null selection, so no selected value is Unknown. Their True probe is the null selection, which
 /// proves the definite answer is still the complement.
 /// </para>
@@ -282,13 +282,18 @@ internal static class NotXTwinTable
         yield return new TwinPair(
             "CollectionPredicates.IsEmpty(IReadOnlyCollection<String>)",
             "CollectionPredicates.IsNotEmpty(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items),
-            n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items),
+            n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
             [],
-            Missing,
+            Items(),
             Items("a"),
-            null,
-            "An emptiness test: a null collection counts as empty, so no input is Unknown."
+            Missing,
+            Nulls: new(
+                n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
+                n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "CollectionPredicates.Contains(IReadOnlyCollection<String>)",

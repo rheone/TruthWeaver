@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Failing tests first: `IsEmpty` and `IsNotEmpty` on a null collection answer `Unknown` by default and honour `NullBehavior.False`
 - [ ] The K3 reference pages and the NotX twin table are updated, and `dotnet test tests/TruthWeaver.Tests --filter-class "*K3Reference*"` passes

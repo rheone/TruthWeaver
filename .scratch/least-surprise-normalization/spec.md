@@ -42,7 +42,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [04](issues/04-builder-overloads-fold-consistently.md) | RuleBuilder overloads follow one rule | None | ready-for-agent |
 | [05](issues/05-rewrites-use-rule-options-and-narrow-parameters.md) | Rewrites and comparisons use the rule options and take a narrow parameter | None | resolved |
 | [06](issues/06-fault-budget-reaches-semantics-and-timeout-docs.md) | FaultBudget aborts when faults reach the budget; Timeout is documented | None | resolved |
-| [07](issues/07-null-is-unknown-collection-isempty.md) | A null collection is Unknown for IsEmpty and IsNotEmpty | None | ready-for-agent |
+| [07](issues/07-null-is-unknown-collection-isempty.md) | A null collection is Unknown for IsEmpty and IsNotEmpty | None | resolved |
 | [08](issues/08-nullbehavior-unknown-is-zero.md) | NullBehavior.Unknown is the zero value | 07 | ready-for-agent |
 | [09](issues/09-document-rewrite-round-trip-caveat.md) | Document that a large rewrite result may not recompile | None | ready-for-agent |
 | [10](issues/10-assertsound-compilationresult-overload-and-limits-table.md) | AssertSound accepts the capped rewrites; one limits table | 05 | ready-for-agent |
