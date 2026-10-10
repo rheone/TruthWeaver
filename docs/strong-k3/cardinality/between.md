@@ -188,7 +188,7 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 | `min` or `max` outside `0..n`, or `min > max` | `InvalidThresholdValue` (`TRE0008`) |
 | The whole range, `min = 0` and `max = n` | `InvalidThresholdValue` (`TRE0008`) |
 | Fewer than two operands | `MalformedTree` (`TRE0014`). |
-| A bound missing or not an integer in the DSL | `SyntaxError` (`TRE0001`). |
+| A bound missing, fractional or outside the `int` range in the DSL | `SyntaxError` (`TRE0001`). |
 | `min` or `max` missing or not an integer in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
 - The bound rules. `min` must satisfy `0 <= min <= max <= n`. The whole range `0..n` is rejected because every count lies in it, so the node would be the constant `True`, the same structural-constant reason as for the threshold family.

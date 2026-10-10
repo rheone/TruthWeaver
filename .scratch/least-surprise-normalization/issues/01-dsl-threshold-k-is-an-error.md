@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A failing test first: each bad `k` (fraction, overflow, negative text) is rejected with the same diagnostic `BETWEEN` gives
-- [ ] `k`, `min` and `max` use one parser; no `: 0` fallback remains
-- [ ] The page that describes the behavior is updated to the current truth, with no "changed from" text
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] A failing test first: each bad `k` (fraction, overflow, negative text) is rejected with the same diagnostic `BETWEEN` gives
+- [x] `k`, `min` and `max` use one parser; no `: 0` fallback remains
+- [x] The page that describes the behavior is updated to the current truth, with no "changed from" text
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

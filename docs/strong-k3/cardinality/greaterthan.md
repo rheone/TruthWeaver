@@ -190,7 +190,7 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 | --- | --- |
 | `k` below 0 or above n - 1 | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
 | No operands | `MalformedTree` (`TRE0014`) |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
+| `k` missing, fractional or outside the `int` range in the DSL | `SyntaxError` (`TRE0001`) |
 | `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
 
 - The valid `k` range. `k` must satisfy 0 <= k <= n - 1. A negative `k` would always be `True` and `k >= n` always `False`, so the compiler rejects both instead of folding them.

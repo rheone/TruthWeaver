@@ -126,6 +126,10 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: in the rule text, a threshold `k` that is not a whole number in the `int` range, such as `AtLeast(1.5, a, b)`
+  or `AtLeast(99999999999, a, b)`, is a `SyntaxError` (`TRE0001`), the same as a bad `BETWEEN` bound. It used to compile
+  as `k = 0`. `k`, `min` and `max` share one integer parser that uses the invariant culture. Migration: write `k` as an
+  integer literal.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
