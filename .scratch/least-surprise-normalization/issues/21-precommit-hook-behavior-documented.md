@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A contributor note (the repo has no CONTRIBUTING file; add a short one or extend `docs/agents/`) lists the hook steps and the `format-all.ps1` behavior
-- [ ] The note is linked from the README
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] A contributor note (the repo has no CONTRIBUTING file; add a short one or extend `docs/agents/`) lists the hook steps and the `format-all.ps1` behavior
+- [x] The note is linked from the README
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

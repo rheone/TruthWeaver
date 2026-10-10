@@ -34,6 +34,7 @@ copyright line reads 2026.
 
 ### Added
 
+- `docs/contributing.md`: what the pre-commit hook and `scripts/format-all.ps1` do, linked from the README.
 - `FakePredicates` factories label a predicate with its name when no `label` is given, instead of the constant `"Fake"`, so
   rendered diagrams show a distinct label for each fake. `PredicateHarness` and `docs/predicate-harness.md` state that the
   harness calls the predicate twice for each argument set and once for the cancellation check.

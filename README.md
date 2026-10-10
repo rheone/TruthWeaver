@@ -169,6 +169,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
 - [Benchmarks](docs/benchmarks.md): the benchmark commands and the committed baseline.
 - [Documentation examples](docs/doc-examples.md): how the examples in the documentation are tested.
+- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.ps1` do.
 - [CONTEXT.md](CONTEXT.md): the domain vocabulary and the predicate-author contract.
 
 ## License
