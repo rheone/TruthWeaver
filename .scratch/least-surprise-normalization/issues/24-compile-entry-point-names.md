@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Decision (owner, 2026-10-10):** Add `CompileText` (same method as `Compile`, which stays). Builder diagnostics carry a builder path instead of spans into generated JSON.
 
 - [x] The owner picked the names
-- [ ] Builder diagnostics point into the builder, not generated JSON, if the owner agrees
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Builder diagnostics point into the builder, not generated JSON, if the owner agrees
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

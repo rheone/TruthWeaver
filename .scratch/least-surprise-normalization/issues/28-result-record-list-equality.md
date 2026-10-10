@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Decision (owner, 2026-10-10):** Use `EquatableArray` for the list members of `Decision`, `CompilationResult` and `Trace`; tests pin the equality.
 
