@@ -227,7 +227,7 @@ A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a
 
 #### Thresholds and `ExpandThresholds`
 
-A threshold (`AtLeast`, `AtMost`, `Exactly` and the strict comparisons, and the operators that expand to them: `PARITY`, `BETWEEN`, `ExactlyOne`) has one group for every subset of its operands. The expansion has `C(n, k)` groups, so it is opt-in. Pass a `NormalFormOptions` value:
+A threshold (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan` and `LessThan`) has one group for every subset of its operands. The cardinality operators that expand to thresholds (`PARITY`, `BETWEEN` and `ExactlyOne`) follow the same rule. The expansion has `C(n, k)` groups, so it is opt-in. Pass a `NormalFormOptions` value:
 
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("a AND AtLeast(2, b, c, d, e)").CompiledRule!;
@@ -245,7 +245,7 @@ CompilationResult<MyContext> expanded = rule.ToDnf(new NormalFormOptions(ExpandT
 | `false` (default) | A threshold stays an atom. Its operands are normalized. One `TRE0031` warning per distinct threshold gives the growth estimate in nodes. A `NOT` above it stays above it. |
 | `true` | A threshold expands to `AND`, `OR` and `NOT` over its operands. A result over `MaxRewriteNodeCount` returns `TRE0016` and no rule. |
 
-A threshold that is only an `OR` or an `AND` (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)`, `AtMost(n - 1, ...)`, and so `ANY`, `ALL` and `NONE`) always expands, with no warning. The warning code is in [Diagnostics](strong-k3/specification/diagnostics.md).
+A threshold that is only an `OR` or an `AND` (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)` or `AtMost(n - 1, ...)`) always expands, with no warning. So do `ANY`, `ALL` and `NONE`. The warning code is in [Diagnostics](strong-k3/specification/diagnostics.md).
 
 ## Rule equivalence
 
