@@ -222,7 +222,6 @@ internal static class TestNamingBaseline
         "TruthWeaver.Tests.DslRoundTripPropertyTests.Parsing_the_printed_form_of_a_generated_tree_reproduces_a_structurally_equal_tree",
         "TruthWeaver.Tests.EvaluationOptionsTests.Exhaustive_mode_evaluates_remaining_and_operands_after_a_false_first_operand",
         "TruthWeaver.Tests.EvaluationOptionsTests.Fault_budget_abort_leaves_the_trace_with_unevaluated_entries",
-        "TruthWeaver.Tests.EvaluationOptionsTests.Fault_budget_of_one_tolerates_the_first_fault_and_aborts_on_the_second",
         "TruthWeaver.Tests.EvaluationOptionsTests.Genuine_cancellation_propagates_rather_than_being_recorded_as_a_fault",
         "TruthWeaver.Tests.EvaluationOptionsTests.No_timeout_configured_leaves_evaluation_unaffected",
         "TruthWeaver.Tests.EvaluationOptionsTests.Result_is_identical_between_default_and_exhaustive_modes",

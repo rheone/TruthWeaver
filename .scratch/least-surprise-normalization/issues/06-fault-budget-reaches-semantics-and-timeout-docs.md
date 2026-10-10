@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] The test that pinned the old `>` reading is replaced with one that pins `>=`; budgets of 1, 2 and a budget below 1 are covered
 - [ ] The `Evaluator` comment that favours a ticket over the ADR is removed

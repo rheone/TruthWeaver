@@ -126,6 +126,11 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: `EvaluationOptions.FaultBudget = N` aborts evaluation when the Nth fault is recorded, as ADR-0002 and the
+  XML docs state. It aborted on the (N+1)th before, so `FaultBudget: 1` tolerated one fault. A budget below 1 now makes
+  `CompiledRule.EvaluateAsync` throw `ArgumentOutOfRangeException`; `0` used to abort on the first fault. `null` is still
+  unlimited. The `Timeout` docs now say that an expired timeout throws `OperationCanceledException` and is not a fault.
+  Migration: add 1 to a budget you set to tolerate N faults (`FaultBudget: 1` becomes `2`), and replace `0` with `1`.
 - Breaking: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `ToNnf`, `ToCnf` and `ToDnf` cap their result at the
   rule's own `CompilerOptions.MaxRewriteNodeCount`, so a rule compiled with a raised cap expands past 100,000 nodes with
   no argument. Their `CompilerOptions? options` parameter is now `int? maxNodeCount`, the cap for that one call.

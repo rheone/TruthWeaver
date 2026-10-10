@@ -279,7 +279,7 @@ public sealed class VariableResolutionTests
 
     /// <summary>A source failure counts against the fault budget like a predicate fault does.</summary>
     [Fact]
-    public async Task EvaluateAsync_VariableFaultsBeyondTheBudget_AbortTheRemainingTerms_Test()
+    public async Task EvaluateAsync_VariableFaultsReachingTheBudget_AbortTheRemainingTerms_Test()
     {
         VariableHarness harness = new();
         CompiledRule<object?> rule = harness.Compile(
@@ -291,7 +291,7 @@ public sealed class VariableResolutionTests
         Decision decision = await VariableHarness.EvaluateAsync(
             rule,
             sources,
-            new EvaluationOptions(FaultBudget: 0),
+            new EvaluationOptions(FaultBudget: 1),
             TestContext.Current.CancellationToken
         );
 

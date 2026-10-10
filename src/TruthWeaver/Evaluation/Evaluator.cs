@@ -493,18 +493,15 @@ internal sealed class Evaluator<TContext>(
         }
     }
 
-    /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault budget is exceeded.</summary>
+    /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
         this.faults.Add(new Fault(identity, ex));
         EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
         TruthWeaverMetrics.FaultRecorded();
 
-        // Ticket 11's acceptance criteria (FaultBudget = 1 tolerates the first fault and aborts
-        // on the second) takes precedence over ADR-0002's own prose example (which reads as
-        // "budget = 1 aborts on the first fault") — the ticket is the more operationally precise
-        // of the two, so a fault count strictly greater than the budget is what triggers an abort.
-        if (this.options.FaultBudget is { } budget && this.faults.Count > budget)
+        // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.
+        if (this.options.FaultBudget is { } budget && this.faults.Count >= budget)
         {
             this.aborted = true;
         }

@@ -514,6 +514,8 @@ public sealed class CompiledRule<TContext>
     /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1.</exception>
+    /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/>, cancelled the evaluation. Neither is recorded as a fault.</exception>
     public async Task<Decision> EvaluateAsync(
         TContext context,
         IServiceProvider? services = null,
@@ -524,6 +526,9 @@ public sealed class CompiledRule<TContext>
     {
         services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
+
+        // A budget below 1 could never be met, so it is a caller error, not a value to interpret.
+        ArgumentOutOfRangeException.ThrowIfLessThan(effectiveOptions.FaultBudget ?? 1, 1);
         if (effectiveOptions.Timeout is { } timeout)
         {
             using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
