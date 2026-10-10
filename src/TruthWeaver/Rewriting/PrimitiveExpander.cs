@@ -46,8 +46,8 @@ internal static class PrimitiveExpander
 
             // Derived binary operators (ADR-0005 decision 3).
             ImpliesExpression i => Or(Not(i.Antecedent), i.Consequent),
-            XorExpression x => Xor(x.Left, x.Right),
-            EquivalentExpression e => Equivalent(e.Left, e.Right),
+            XorExpression x => XorForm.Build(x.Left, x.Right),
+            EquivalentExpression e => EquivalentForm.Build(e.Left, e.Right),
             NandExpression nd => Not(And(nd.Left, nd.Right)),
             NorExpression nr => Not(Or(nr.Left, nr.Right)),
 
@@ -62,7 +62,7 @@ internal static class PrimitiveExpander
             BetweenExpression b => ExpandBetween(b),
 
             // Conditional and boundary operators.
-            IfExpression f => ExpandIf(f.Condition, f.WhenTrue, f.WhenFalse),
+            IfExpression f => IfForm.Build(f.Condition, f.WhenTrue, f.WhenFalse),
             InspectionExpression s => ExpandInspection(s.Kind, s.Operand),
 
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
@@ -97,18 +97,6 @@ internal static class PrimitiveExpander
     private static CoalesceExpression Coalesce(Expression operand, TruthValue fallback)
     {
         return new CoalesceExpression(new EquatableArray<Expression>([operand, Constant(fallback)]));
-    }
-
-    /// <summary><c>(a AND NOT b) OR (NOT a AND b)</c>: Unknown whenever either operand is.</summary>
-    private static OrExpression Xor(Expression left, Expression right)
-    {
-        return Or(And(left, Not(right)), And(Not(left), right));
-    }
-
-    /// <summary><c>(a AND b) OR (NOT a AND NOT b)</c>: the negation of XOR, Unknown whenever either operand is.</summary>
-    private static OrExpression Equivalent(Expression left, Expression right)
-    {
-        return Or(And(left, right), And(Not(left), Not(right)));
     }
 
     /// <summary>
@@ -163,15 +151,6 @@ internal static class PrimitiveExpander
 
         // Two operands have a single odd count (1), and an OR needs at least two operands.
         return oddCounts.Count == 1 ? oddCounts[0] : new OrExpression(new EquatableArray<Expression>(oddCounts));
-    }
-
-    /// <summary>
-    /// The multiplexer <c>(c AND t) OR (NOT c AND f)</c> plus the consensus term <c>(t AND f)</c>, the same primitive
-    /// definition the oracle uses (ADR-0005 decision 13, k3-conformance 16): an Unknown condition does not guess a branch.
-    /// </summary>
-    private static OrExpression ExpandIf(Expression condition, Expression whenTrue, Expression whenFalse)
-    {
-        return Or(And(condition, whenTrue), And(Not(condition), whenFalse), And(whenTrue, whenFalse));
     }
 
     /// <summary>

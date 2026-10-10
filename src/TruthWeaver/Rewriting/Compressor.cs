@@ -60,90 +60,6 @@ internal static class Compressor
             return result;
         }
 
-        /// <summary><c>XOR(l, r) = (l AND NOT r) OR (NOT l AND r)</c>.</summary>
-        private static bool IsXor(
-            Expression first,
-            Expression second,
-            [NotNullWhen(true)] out Expression? left,
-            [NotNullWhen(true)] out Expression? right
-        )
-        {
-            left = null;
-            right = null;
-            if (
-                first is AndExpression { Operands: { Count: 2 } a }
-                && second is AndExpression { Operands: { Count: 2 } b }
-                && a[1] is NotExpression notRight
-                && b[0] is NotExpression notLeft
-                && notLeft.Operand.Equals(a[0])
-                && notRight.Operand.Equals(b[1])
-            )
-            {
-                left = a[0];
-                right = b[1];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary><c>EQUIVALENT(l, r) = (l AND r) OR (NOT l AND NOT r)</c>.</summary>
-        private static bool IsEquivalent(
-            Expression first,
-            Expression second,
-            [NotNullWhen(true)] out Expression? left,
-            [NotNullWhen(true)] out Expression? right
-        )
-        {
-            left = null;
-            right = null;
-            if (
-                first is AndExpression { Operands: { Count: 2 } a }
-                && second is AndExpression { Operands: { Count: 2 } b }
-                && b[0] is NotExpression notLeft
-                && b[1] is NotExpression notRight
-                && notLeft.Operand.Equals(a[0])
-                && notRight.Operand.Equals(a[1])
-            )
-            {
-                left = a[0];
-                right = a[1];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary><c>If(c, t, f) = (c AND t) OR (NOT c AND f) OR (t AND f)</c> (the multiplexer plus the consensus term).</summary>
-        private static bool IsIf(
-            EquatableArray<Expression> ops,
-            [NotNullWhen(true)] out Expression? condition,
-            [NotNullWhen(true)] out Expression? whenTrue,
-            [NotNullWhen(true)] out Expression? whenFalse
-        )
-        {
-            condition = null;
-            whenTrue = null;
-            whenFalse = null;
-            if (
-                ops[0] is AndExpression { Operands: { Count: 2 } first }
-                && ops[1] is AndExpression { Operands: { Count: 2 } second }
-                && ops[2] is AndExpression { Operands: { Count: 2 } consensus }
-                && second[0] is NotExpression negated
-                && negated.Operand.Equals(first[0])
-                && consensus[0].Equals(first[1])
-                && consensus[1].Equals(second[1])
-            )
-            {
-                condition = first[0];
-                whenTrue = first[1];
-                whenFalse = second[1];
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// <c>COALESCE(x, fallback)</c> beside <c>COALESCE(NOT x, fallback)</c>: the two halves of <c>IsKnown</c> (fallback
         /// <c>False</c>) and <c>IsUnknown</c> (fallback <c>True</c>).
@@ -229,15 +145,12 @@ internal static class Compressor
             if (ops.Count == 2)
             {
                 // XOR and EQUIVALENT expand to a two-term OR of two-term ANDs (see PrimitiveExpander); OR is commutative.
-                if (IsXor(ops[0], ops[1], out Expression? xl, out Expression? xr) || IsXor(ops[1], ops[0], out xl, out xr))
+                if (XorForm.TryMatch(ops, out Expression? xl, out Expression? xr))
                 {
                     return new XorExpression(this.Visit(xl), this.Visit(xr));
                 }
 
-                if (
-                    IsEquivalent(ops[0], ops[1], out Expression? el, out Expression? er)
-                    || IsEquivalent(ops[1], ops[0], out el, out er)
-                )
+                if (EquivalentForm.TryMatch(ops, out Expression? el, out Expression? er))
                 {
                     return new EquivalentExpression(this.Visit(el), this.Visit(er));
                 }
@@ -268,7 +181,7 @@ internal static class Compressor
                 }
             }
 
-            if (ops.Count == 3 && IsIf(ops, out Expression? c, out Expression? t, out Expression? f))
+            if (IfForm.TryMatch(ops, out Expression? c, out Expression? t, out Expression? f))
             {
                 return new IfExpression(this.Visit(c), this.Visit(t), this.Visit(f));
             }
