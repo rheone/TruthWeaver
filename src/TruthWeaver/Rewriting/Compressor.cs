@@ -60,72 +60,6 @@ internal static class Compressor
             return result;
         }
 
-        /// <summary>
-        /// <c>COALESCE(x, fallback)</c> beside <c>COALESCE(NOT x, fallback)</c>: the two halves of <c>IsKnown</c> (fallback
-        /// <c>False</c>) and <c>IsUnknown</c> (fallback <c>True</c>).
-        /// </summary>
-        private static bool IsInspectionPair(
-            Expression first,
-            Expression second,
-            bool falseFallback,
-            [NotNullWhen(true)] out Expression? operand
-        )
-        {
-            operand = null;
-            TruthValue fallback = falseFallback ? TruthValue.False : TruthValue.True;
-            if (
-                first is CoalesceExpression { Operands: { Count: 2 } a }
-                && second is CoalesceExpression { Operands: { Count: 2 } b }
-                && a[1] is ConstantExpression { Value: var fa }
-                && b[1] is ConstantExpression { Value: var fb }
-                && fa == fallback
-                && fb == fallback
-                && b[0] is NotExpression negated
-                && negated.Operand.Equals(a[0])
-            )
-            {
-                operand = a[0];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// <c>OR(Exactly(1, ops), Exactly(3, ops), ...)</c> over every odd count up to <c>n</c> is the expansion of
-        /// <c>PARITY(ops)</c> (see <see cref="PrimitiveExpander"/>). It needs at least three operands: two operands expand to a
-        /// single <c>Exactly(1)</c>, which is not an <c>OR</c>.
-        /// </summary>
-        private static bool IsParity(EquatableArray<Expression> ops, out EquatableArray<Expression> operands)
-        {
-            operands = default;
-            if (ops[0] is not ThresholdExpression { Comparison: ThresholdComparison.Exactly, K: 1 } first)
-            {
-                return false;
-            }
-
-            int n = first.Operands.Count;
-            if (n < 3 || ops.Count != (n + 1) / 2)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < ops.Count; i++)
-            {
-                if (
-                    ops[i] is not ThresholdExpression { Comparison: ThresholdComparison.Exactly } term
-                    || term.K != (2 * i) + 1
-                    || !term.Operands.Equals(first.Operands)
-                )
-                {
-                    return false;
-                }
-            }
-
-            operands = first.Operands;
-            return true;
-        }
-
         private Expression? Match(Expression node)
         {
             return node switch
@@ -156,10 +90,7 @@ internal static class Compressor
                 }
 
                 // IsKnown(x) = COALESCE(x, False) OR COALESCE(NOT x, False).
-                if (
-                    IsInspectionPair(ops[0], ops[1], falseFallback: true, out Expression? known)
-                    || IsInspectionPair(ops[1], ops[0], true, out known)
-                )
+                if (InspectionForm.TryMatchPair(ops, InspectionKind.IsKnown, out Expression? known))
                 {
                     return new InspectionExpression(InspectionKind.IsKnown, this.Visit(known));
                 }
@@ -186,7 +117,7 @@ internal static class Compressor
                 return new IfExpression(this.Visit(c), this.Visit(t), this.Visit(f));
             }
 
-            return IsParity(ops, out EquatableArray<Expression> parityOperands)
+            return ParityForm.TryMatch(ops, out EquatableArray<Expression> parityOperands)
                 ? new ParityExpression(ExpressionTools.Array(parityOperands.Select(this.Visit)))
                 : null;
         }
@@ -202,10 +133,7 @@ internal static class Compressor
                 }
 
                 // IsUnknown(x) = COALESCE(x, True) AND COALESCE(NOT x, True).
-                if (
-                    IsInspectionPair(ops[0], ops[1], falseFallback: false, out Expression? unknown)
-                    || IsInspectionPair(ops[1], ops[0], false, out unknown)
-                )
+                if (InspectionForm.TryMatchPair(ops, InspectionKind.IsUnknown, out Expression? unknown))
                 {
                     return new InspectionExpression(InspectionKind.IsUnknown, this.Visit(unknown));
                 }

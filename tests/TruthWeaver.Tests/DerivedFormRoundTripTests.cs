@@ -35,6 +35,18 @@ public sealed class DerivedFormRoundTripTests
         return Triples(TermPool().Length);
     }
 
+    /// <summary>Single indices over the rich pool.</summary>
+    public static TheoryData<int> RichSingles()
+    {
+        TheoryData<int> data = [];
+        for (int i = 0; i < RichPool().Length; i++)
+        {
+            data.Add(i);
+        }
+
+        return data;
+    }
+
     /// <summary>The XOR matcher recovers the operands of the form the builder produced.</summary>
     [Theory]
     [MemberData(nameof(RichPairs))]
@@ -136,6 +148,109 @@ public sealed class DerivedFormRoundTripTests
         Assert.Equal(conditional, Compressor.Compress(PrimitiveExpander.Expand(conditional)));
     }
 
+    /// <summary>The Parity matcher recovers the operands of the form the builder produced, for three or more operands.</summary>
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    public void ParityFormTryMatch_BuiltForm_RecoversOperands_Test(int count)
+    {
+        EquatableArray<Expression> operands = Operands(count);
+        OrExpression built = Assert.IsType<OrExpression>(ParityForm.Build(operands));
+
+        Assert.True(ParityForm.TryMatch(built.Operands, out EquatableArray<Expression> recovered));
+        Assert.Equal(operands, recovered);
+    }
+
+    /// <summary>Two operands build a single Exactly(1), which is not an OR, so there is no form to recognise.</summary>
+    [Fact]
+    public void ParityFormBuild_TwoOperands_IsASingleExactlyOne_Test()
+    {
+        Expression built = ParityForm.Build(Operands(2));
+
+        Assert.Equal(new ThresholdExpression(ThresholdComparison.Exactly, 1, Operands(2)), built);
+    }
+
+    /// <summary>The Parity matcher rejects an OR that skips an odd count.</summary>
+    [Fact]
+    public void ParityFormTryMatch_MissingOddCount_IsNotMatched_Test()
+    {
+        EquatableArray<Expression> operands = Operands(5);
+        EquatableArray<Expression> gapped = new([
+            new ThresholdExpression(ThresholdComparison.Exactly, 1, operands),
+            new ThresholdExpression(ThresholdComparison.Exactly, 5, operands),
+        ]);
+
+        Assert.False(ParityForm.TryMatch(gapped, out _));
+    }
+
+    /// <summary>Compressing an expanded PARITY of three or more operands gives the PARITY back.</summary>
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    public void Compress_ExpandedParity_RecoversParity_Test(int count)
+    {
+        Expression parity = new ParityExpression(Operands(count));
+
+        Assert.Equal(parity, Compressor.Compress(PrimitiveExpander.Expand(parity)));
+    }
+
+    /// <summary>The IsKnown matcher recovers the operand of the form the builder produced, in either member order.</summary>
+    [Theory]
+    [MemberData(nameof(RichSingles))]
+    public void InspectionFormTryMatchPair_IsKnownForm_RecoversOperand_Test(int operandIndex)
+    {
+        Expression operand = RichPool()[operandIndex];
+        OrExpression built = (OrExpression)InspectionForm.Build(InspectionKind.IsKnown, operand);
+        EquatableArray<Expression> swapped = new([built.Operands[1], built.Operands[0]]);
+
+        Assert.True(InspectionForm.TryMatchPair(built.Operands, InspectionKind.IsKnown, out Expression? recovered));
+        Assert.Equal(operand, recovered);
+        Assert.True(InspectionForm.TryMatchPair(swapped, InspectionKind.IsKnown, out recovered));
+        Assert.Equal(operand, recovered);
+    }
+
+    /// <summary>The IsUnknown matcher recovers the operand of the form the builder produced, in either member order.</summary>
+    [Theory]
+    [MemberData(nameof(RichSingles))]
+    public void InspectionFormTryMatchPair_IsUnknownForm_RecoversOperand_Test(int operandIndex)
+    {
+        Expression operand = RichPool()[operandIndex];
+        AndExpression built = (AndExpression)InspectionForm.Build(InspectionKind.IsUnknown, operand);
+        EquatableArray<Expression> swapped = new([built.Operands[1], built.Operands[0]]);
+
+        Assert.True(InspectionForm.TryMatchPair(built.Operands, InspectionKind.IsUnknown, out Expression? recovered));
+        Assert.Equal(operand, recovered);
+        Assert.True(InspectionForm.TryMatchPair(swapped, InspectionKind.IsUnknown, out recovered));
+        Assert.Equal(operand, recovered);
+    }
+
+    /// <summary>The IsKnown matcher does not accept the IsUnknown form, because the fallback constants differ.</summary>
+    [Fact]
+    public void InspectionFormTryMatchPair_WrongFallback_IsNotMatched_Test()
+    {
+        AndExpression unknown = (AndExpression)InspectionForm.Build(InspectionKind.IsUnknown, Term("a"));
+
+        Assert.False(InspectionForm.TryMatchPair(unknown.Operands, InspectionKind.IsKnown, out _));
+    }
+
+    /// <summary>Compressing an expanded IsKnown or IsUnknown gives the inspection back.</summary>
+    [Theory]
+    [InlineData(InspectionKind.IsKnown, 0)]
+    [InlineData(InspectionKind.IsKnown, 1)]
+    [InlineData(InspectionKind.IsUnknown, 0)]
+    [InlineData(InspectionKind.IsUnknown, 1)]
+    public void Compress_ExpandedPairedInspection_RecoversInspection_Test(InspectionKind kind, int operandIndex)
+    {
+        Expression inspection = new InspectionExpression(kind, TermPool()[operandIndex]);
+
+        Assert.Equal(inspection, Compressor.Compress(PrimitiveExpander.Expand(inspection)));
+    }
+
     /// <summary>Operand shapes for the matcher tests: leaves, a negation, a constant, an operator and a nested pair.</summary>
     private static Expression[] RichPool()
     {
@@ -160,6 +275,11 @@ public sealed class DerivedFormRoundTripTests
     private static Expression[] TermPool()
     {
         return [Term("a"), Term("b"), Term("c")];
+    }
+
+    private static EquatableArray<Expression> Operands(int count)
+    {
+        return new EquatableArray<Expression>([.. Enumerable.Range(0, count).Select(i => (Expression)Term($"p{i}"))]);
     }
 
     private static TheoryData<int, int> Pairs(int size)
