@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `NandNorExpander` holds no subset enumeration and no threshold identities
 - [ ] The NAND/NOR tests, including the node-cap refusal, pass unchanged
