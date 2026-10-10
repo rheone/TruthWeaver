@@ -9,8 +9,8 @@ For tools that check a predicate or the engine, see [Predicate harness](predicat
 `RuleAssertions.AssertEquivalent` checks that two compiled rules give the same result for every assignment of `True`, `False` and `Unknown` to their terms. Use it in a test that refactors, simplifies or rewrites a rule. The check is exact and uses `RuleEquivalence.Compare`. See [Rewriting rules and rule equivalence](rewriting-rules.md#rule-equivalence) for the semantics and limits.
 
 ```csharp
-CompiledRule<Order> before = compiler.Compile("NOT (isPaid AND isShipped)").CompiledRule!;
-CompiledRule<Order> after = compiler.Compile("NOT isPaid OR NOT isShipped").CompiledRule!;
+CompiledRule<Order> before = compiler.Compile("NOT (isPaid AND isShipped)").GetRuleOrThrow();
+CompiledRule<Order> after = compiler.Compile("NOT isPaid OR NOT isShipped").GetRuleOrThrow();
 
 RuleAssertions.AssertEquivalent(before, after);
 ```

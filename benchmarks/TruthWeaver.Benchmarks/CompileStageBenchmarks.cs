@@ -58,7 +58,7 @@ public class CompileStageBenchmarks
 
         RuleCompiler<BenchmarkContext> compiler = new(this.registry, this.options);
         CompilationResult<BenchmarkContext> compiled = compiler.CompileJson(this.ruleJson);
-        this.ruleYaml = compiled.CompiledRule!.PrintYaml();
+        this.ruleYaml = compiled.GetRuleOrThrow().PrintYaml();
 
         (RuleNode? parsed, IReadOnlyList<Diagnostic> _) = JsonTreeParser.Parse(this.ruleJson);
         this.parsedRoot = parsed!;

@@ -15,7 +15,7 @@ public static class RewriteAssertions
     /// Asserts that <paramref name="rewrite"/>, a rewrite that returns a <see cref="CompilationResult{TContext}"/>, is sound
     /// on <paramref name="rule"/>. This is the overload for the size-capped rewrites (<c>ExpandToPrimitives</c>,
     /// <c>ExpandToNand</c>, <c>ExpandToNor</c>, <c>ToNnf</c>, <c>ToCnf</c> and <c>ToDnf</c>), so <c>r =&gt; r.ToCnf()</c> needs
-    /// no <c>.CompiledRule!</c>. A result that has no rule or has an error diagnostic, such as a <c>TRE0016</c> refusal,
+    /// no <c>.GetRuleOrThrow()</c>. A result that has no rule or has an error diagnostic, such as a <c>TRE0016</c> refusal,
     /// fails the assertion before the equivalence check runs. Warnings, such as <c>TRE0031</c>, do not.
     /// </summary>
     /// <typeparam name="TContext">The application context type of the rule.</typeparam>

@@ -85,7 +85,7 @@ The joined rule compiles against the registry of `compiler`. The compiler valida
 Every predicate has a required `Label` and `Description` on its `PredicateSchema`. Every operator has the same, which `OperatorInfo.Describe` in `TruthWeaver.Ast` exposes. `CompiledRule<TContext>.Outline()` combines both into one recursive outline of a whole compiled rule. A rule-authoring UI or a generated "what does this rule mean" report can walk the outline without access to the closed-set AST types:
 
 ```csharp
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
+CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").GetRuleOrThrow();
 
 OutlineNode description = rule.Outline();
 // description.Label       == "AND"
@@ -112,7 +112,7 @@ void Print(OutlineNode node, int depth = 0)
 `OutlineNode` also feeds [`MermaidTreePrinter`](../src/TruthWeaver/Printing/MermaidTreePrinter.cs) and [`PlainTextTreePrinter`](../src/TruthWeaver/Printing/PlainTextTreePrinter.cs). They render it as a Mermaid `flowchart` and as an indented text tree. Each can show the structure only, or add the result and short-circuit path of one evaluation:
 
 ```csharp
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").CompiledRule!;
+CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").GetRuleOrThrow();
 OutlineNode description = rule.Outline();
 
 // Structure only:

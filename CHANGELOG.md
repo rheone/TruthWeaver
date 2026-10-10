@@ -216,6 +216,9 @@ copyright line reads 2026.
   the old name need the same rename.
 - An array argument given as `from(...)` that matches no node still resolves to an empty array and records no fault, and the
   term's trace text now ends with `[no match for from("source", "query")]`. A mistyped path is visible in the `Decision`.
+- `CompilationResult<TContext>` has a `Rule` property, which is the compiled rule (or `null`) and is known to be not `null` after a
+  `Succeeded` check, and a `GetRuleOrThrow()` method, which returns the rule or throws an `InvalidOperationException` that lists
+  each error diagnostic. The docs and samples use them in place of `CompiledRule!`. `CompiledRule` is unchanged.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or

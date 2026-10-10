@@ -25,7 +25,7 @@ A rewrite returns one of three shapes. The rule for which shape is: a rewrite th
 
 | Shape | Rewrites | How to read the result |
 | --- | --- | --- |
-| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()` | Check `Succeeded`, then use `CompiledRule`. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()` | Check `Succeeded`, then use `Rule` (or call `GetRuleOrThrow()`). A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. |
 | `CompiledRule<TContext>` | `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Use the rule. It is never larger than the original. |
 | `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule` and `Steps`. |
 
@@ -38,8 +38,8 @@ The Evaluation behavior section of each Operation page states how the rewrites t
 `ExpandToPrimitives()` replaces every derived operator with its definition in the primitive kernel: `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly` and `COALESCE`.
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("a IMPLIES ANY(b, c)").CompiledRule!;
-CompiledRule<MyContext> kernel = rule.ExpandToPrimitives().CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("a IMPLIES ANY(b, c)").GetRuleOrThrow();
+CompiledRule<MyContext> kernel = rule.ExpandToPrimitives().GetRuleOrThrow();
 
 Console.WriteLine(kernel.CanonicalText);   // only primitive operators
 Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
@@ -192,7 +192,7 @@ The rewrite does not use the dual-rail findings of the analyzer. The analyzer re
 `SimplifyWithSteps()` does the same work as `Simplify()` and also lists each change. It returns a `SimplifyResult<TContext>` with the simplified `Rule` and a list of `Steps`.
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("(a AND True) AND (a OR b)").CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("(a AND True) AND (a OR b)").GetRuleOrThrow();
 SimplifyResult<MyContext> result = rule.SimplifyWithSteps();
 
 foreach (RewriteStep step in result.Steps)
@@ -224,11 +224,11 @@ Each `RewriteStep` has three members:
 `ToNnf()`, `ToCnf()` and `ToDnf()` rewrite a rule into negation, conjunctive or disjunctive normal form. Each returns a `CompilationResult<TContext>` like the other size-capped rewrites, and each result has the same value as the original for every `True`/`False`/`Unknown` assignment.
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("NOT (a AND (b OR c))").CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("NOT (a AND (b OR c))").GetRuleOrThrow();
 
-Console.WriteLine(rule.ToNnf().CompiledRule!.CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToDnf().CompiledRule!.CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToCnf().CompiledRule!.CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+Console.WriteLine(rule.ToNnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
+Console.WriteLine(rule.ToDnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
+Console.WriteLine(rule.ToCnf().GetRuleOrThrow().CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
 ```
 
 | Form | Shape | How |
@@ -248,7 +248,7 @@ A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a
 A threshold (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan` and `LessThan`) has one group for every subset of its operands. The cardinality operators that expand to thresholds (`PARITY`, `BETWEEN` and `ExactlyOne`) follow the same rule. The expansion has `C(n, k)` groups, so it is opt-in. Pass a `NormalFormOptions` value:
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("a AND AtLeast(2, b, c, d, e)").CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("a AND AtLeast(2, b, c, d, e)").GetRuleOrThrow();
 
 // Default: the threshold stays an atom and the result carries a TRE0031 warning.
 CompilationResult<MyContext> kept = rule.ToDnf();
@@ -277,13 +277,13 @@ A threshold that is only an `OR` or an `AND` (`AtLeast(1, ...)`, `AtLeast(n, ...
 
 ```csharp
 RuleEquivalenceResult result = RuleEquivalence.Compare(
-    compiler.Compile("NOT (a AND b)").CompiledRule!,
-    compiler.Compile("NOT a OR NOT b").CompiledRule!);
+    compiler.Compile("NOT (a AND b)").GetRuleOrThrow(),
+    compiler.Compile("NOT a OR NOT b").GetRuleOrThrow());
 // result.Outcome == RuleEquivalenceOutcome.Equivalent
 
 RuleEquivalenceResult excluded = RuleEquivalence.Compare(
-    compiler.Compile("a OR NOT a").CompiledRule!,
-    compiler.Compile("TRUE").CompiledRule!);
+    compiler.Compile("a OR NOT a").GetRuleOrThrow(),
+    compiler.Compile("TRUE").GetRuleOrThrow());
 // excluded.Outcome == NotEquivalent, excluded.CounterExample["a"] == TruthValue.Unknown
 ```
 

@@ -22,11 +22,13 @@ public sealed class PizzaRulesTests
         CompilationResult<Customer> compiled = compiler.Compile(PizzaRules.PineappleOffer);
         Assert.True(compiled.Succeeded);
 
-        Decision decision = await compiled.CompiledRule!.EvaluateAsync(
-            new Customer(LovesPineapple: true, OrderCount: 5),
-            provider,
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+        Decision decision = await compiled
+            .GetRuleOrThrow()
+            .EvaluateAsync(
+                new Customer(LovesPineapple: true, OrderCount: 5),
+                provider,
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
         decision.Should().BeSatisfied().HaveNoFaults();
     }

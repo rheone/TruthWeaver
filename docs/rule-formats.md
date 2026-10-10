@@ -30,12 +30,12 @@ You can also build a rule without writing text in any of these formats. See [Rul
 A compiled rule converts without loss to any of the three formats. Print the rule in one format and compile the result in the other. Nothing in the compiled tree depends on the format:
 
 ```csharp
-CompiledRule<PizzaOrder> rule = compiler.Compile(dslText).CompiledRule!;
+CompiledRule<PizzaOrder> rule = compiler.Compile(dslText).GetRuleOrThrow();
 
 string json = rule.PrintJson();                       // DSL -> JSON
 string yaml = rule.PrintYaml();                        // DSL -> YAML (TruthWeaver.Yaml)
 
-CompiledRule<PizzaOrder> fromJson = compiler.CompileJson(json).CompiledRule!;
+CompiledRule<PizzaOrder> fromJson = compiler.CompileJson(json).GetRuleOrThrow();
 string backToDsl = fromJson.CanonicalText;              // JSON -> DSL
 
 // backToDsl == rule.CanonicalText always: parse(print(x)) is structurally

@@ -102,7 +102,7 @@ var sources = new DataSources
     ["user"] = userSource,
     ["request"] = requestSource,
 };
-Decision decision = await result.CompiledRule!.EvaluateAsync(context, services, sources, cancellationToken: cancellationToken);
+Decision decision = await result.GetRuleOrThrow().EvaluateAsync(context, services, sources, cancellationToken: cancellationToken);
 ```
 
 A rule that uses `from(...)` but is evaluated without the source it names returns `Unknown` and records a

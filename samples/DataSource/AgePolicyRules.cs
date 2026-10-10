@@ -66,6 +66,6 @@ public static class AgePolicyRules
         CompilationResult<Applicant> compiled = CreateCompiler().Compile(MeetsAgePolicy);
         DataSources sources = new() { [PolicySource] = JsonDataSource.Parse(policyJson) };
 
-        return compiled.CompiledRule!.EvaluateAsync(applicant, dataSources: sources, cancellationToken: cancellationToken);
+        return compiled.GetRuleOrThrow().EvaluateAsync(applicant, dataSources: sources, cancellationToken: cancellationToken);
     }
 }

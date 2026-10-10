@@ -99,7 +99,7 @@ or RC included. The file does not pin that exact patch.
 4. **Evaluate it against a context:**
 
    ```csharp
-   Decision decision = await result.CompiledRule!.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
+   Decision decision = await result.Rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 
    if (decision.IsSatisfied)
    {

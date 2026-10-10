@@ -86,7 +86,7 @@ A delimiter mistake is a `SyntaxError` diagnostic with the exact span:
 To print a rule with delimiters that change with the nesting depth, pass a `GroupingStyle` to `CompiledRule.PrintRuleText`:
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").GetRuleOrThrow();
 
 rule.CanonicalText;                                  // a AND (b OR (c AND (d OR (e AND (f OR g)))))  (parentheses only)
 rule.PrintRuleText(GroupingStyle.Parentheses);           // same as CanonicalText

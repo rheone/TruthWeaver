@@ -12,7 +12,7 @@ lovesPineapple
 ```csharp
 PredicateRegistry<Customer> registry = PredicateRegistry<Customer>.CreateBuilder().Add<LovesPineapple>().Build();
 RuleCompiler<Customer> compiler = new(registry);
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple").CompiledRule!;
+CompiledRule<Customer> rule = compiler.Compile("lovesPineapple").GetRuleOrThrow();
 
 Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 ```
@@ -206,7 +206,7 @@ if (!result.Succeeded)
     return;
 }
 
-CompiledRule<PizzaOrder> rule = result.CompiledRule!;
+CompiledRule<PizzaOrder> rule = result.Rule;
 Decision decision = await rule.EvaluateAsync(order, serviceProvider, cancellationToken: cancellationToken);
 
 if (decision.IsSatisfied)
@@ -245,7 +245,7 @@ CompilationResult<PizzaOrder> result = rule.Compile(compiler);
 This code renders the same rule as a Mermaid diagram:
 
 ```csharp
-string mermaid = result.CompiledRule!.PrintMermaid();
+string mermaid = result.GetRuleOrThrow().PrintMermaid();
 ```
 
 <!-- doctest:mermaid worked -->
@@ -272,7 +272,7 @@ flowchart TD
 Set `TwoLineTermLabels` to show each term as a bold label with its argument values on a second line (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)):
 
 ```csharp
-string twoLine = result.CompiledRule!.PrintMermaid(new MermaidOptions { TwoLineTermLabels = true });
+string twoLine = result.GetRuleOrThrow().PrintMermaid(new MermaidOptions { TwoLineTermLabels = true });
 ```
 
 <!-- doctest:mermaid worked two-line -->
@@ -302,7 +302,7 @@ crust: #quot;stuffed#quot;, ignoreCase: true, trim: false`"]
 This code renders the same rule as a text tree:
 
 ```csharp
-string tree = result.CompiledRule!.PrintPlainText();
+string tree = result.GetRuleOrThrow().PrintPlainText();
 ```
 
 <!-- doctest:tree worked -->

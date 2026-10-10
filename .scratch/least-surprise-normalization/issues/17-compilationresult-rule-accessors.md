@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The new members have XML docs and tests
-- [ ] Samples and docs use them in place of `CompiledRule!`
-- [ ] The exception message contains each error diagnostic
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] The new members have XML docs and tests
+- [x] Samples and docs use them in place of `CompiledRule!`
+- [x] The exception message contains each error diagnostic
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

@@ -43,6 +43,29 @@ TRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expressi
   Did you mean: AND
 ```
 
+## Getting the rule out of a result
+
+`CompilationResult<TContext>` holds the compiled rule only when compilation succeeded. After a `Succeeded` check, `Rule` is not
+`null` for the compiler, so no `!` is needed:
+
+```csharp
+CompilationResult<MyContext> result = compiler.Compile(source);
+if (!result.Succeeded)
+{
+    return;
+}
+
+CompiledRule<MyContext> rule = result.Rule;
+```
+
+Where a rule that does not compile is a bug, such as at startup or in a test, `GetRuleOrThrow()` returns the rule or throws an
+`InvalidOperationException`. The message lists each `Error` diagnostic with its code and text. It does not list warnings or
+info findings, and it does not quote the rule text.
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("isAdmin").GetRuleOrThrow();
+```
+
 `DiagnosticFormatter.Format(diagnostic, source)` renders a single diagnostic. Without the source text, the header shows `at offset 2` and the source line is left out.
 
 ## "Did you mean" suggestions
