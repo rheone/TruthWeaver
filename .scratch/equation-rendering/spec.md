@@ -1,6 +1,6 @@
 # Equation rendering: LaTeX / GitHub math / plain Unicode / AsciiMath
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

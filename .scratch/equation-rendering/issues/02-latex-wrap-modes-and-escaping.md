@@ -4,12 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Predicate names and string-literal arguments escape `_ % & # { } \ ^ ~` correctly in every wrap mode
-- [ ] The MathJax-safe mode uses only commands in the MathJax subset that GitHub renders, and handles the underscore-as-subscript quirk inside `$...$`
-- [ ] Each wrap mode has a test that renders a rule whose labels contain every special character
-- [ ] Tests cover function-call fallback for operators with no LaTeX symbol (`\text{AtLeast}_2(a, b, c)` or the chosen form, documented)
-- [ ] Public API has XML docs and the full validation set from CLAUDE.md passes
+- [x] Predicate names and string-literal arguments escape `_ % & # { } \ ^ ~` correctly in every wrap mode
+- [x] The MathJax-safe mode uses only commands in the MathJax subset that GitHub renders, and handles the underscore-as-subscript quirk inside `$...$`
+- [x] Each wrap mode has a test that renders a rule whose labels contain every special character
+- [x] Tests cover function-call fallback for operators with no LaTeX symbol (`\text{AtLeast}_2(a, b, c)` or the chosen form, documented)
+- [x] Public API has XML docs and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

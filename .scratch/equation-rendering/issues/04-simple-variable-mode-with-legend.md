@@ -4,13 +4,13 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The same rule always gets the same lettering across calls
-- [ ] Identical terms share one letter
-- [ ] The legend has one entry per distinct term, and the result exposes it as data as well as text
-- [ ] Behaviour past 26 terms is decided and documented (for example `p₁`, `p₂` or a clear error)
-- [ ] Works in every dialect from tickets 01 to 03
-- [ ] Public API has XML docs and the full validation set from CLAUDE.md passes
+- [x] The same rule always gets the same lettering across calls
+- [x] Identical terms share one letter
+- [x] The legend has one entry per distinct term, and the result exposes it as data as well as text
+- [x] Behaviour past 26 terms is decided and documented (for example `p₁`, `p₂` or a clear error)
+- [x] Works in every dialect from tickets 01 to 03
+- [x] Public API has XML docs and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).
