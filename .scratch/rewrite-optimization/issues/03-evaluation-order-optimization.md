@@ -14,6 +14,7 @@
 - [ ] The documentation says which predicates may stop running and that faults can differ, as it does for `Simplify()`
 - [ ] An opt-in override takes measured per-predicate cost values; without it the order depends only on the static hints
 - [ ] The default path gives the same order for the same rule and registry on every run
+- [ ] Documentation updated in the same change: `docs/rewriting-rules.md` documents `OptimizeOrder()`, and `docs/predicates.md` documents the `Cost` hint
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

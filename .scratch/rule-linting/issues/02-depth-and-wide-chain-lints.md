@@ -12,6 +12,7 @@
 - [ ] Each rule has its own `DiagnosticCodes` entry (after `TRE0027`) and a diagnostics reference entry
 - [ ] Both thresholds are `CompilerOptions` values with documented defaults
 - [ ] A rule under both thresholds produces no finding
+- [ ] Documentation updated in the same change: `docs/diagnostics.md` lists the two new codes and flags, and the `CompilerOptions` thresholds with their defaults
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

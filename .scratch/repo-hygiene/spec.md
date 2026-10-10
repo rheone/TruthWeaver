@@ -11,9 +11,9 @@ Tickets are in `issues/`.
 
 ## Follow-up: convention enforcement (2026-10-10)
 
-**Status:** ready for implementation (tickets 03 to 06). Tickets 01 and 02 stay done.
+**Status:** ready for implementation (tickets 03 to 07). Tickets 01 and 02 stay done.
 
-A scan on branch `roadmap-tickets` found four places where a written rule has no check, or a disabled check has no review date.
+A scan on branch `roadmap-tickets` found five places where a written rule has no check, or a disabled check has no review date.
 The scan used grep only. Each ticket starts by confirming its numbers.
 
 | Ticket | Concern |
@@ -22,6 +22,7 @@ The scan used grep only. Each ticket starts by confirming its numbers.
 | [04](issues/04-sweep-stale-ticket-checkboxes.md) | 49 tickets marked `done` still have unchecked items, mostly the "carries XML docs, tests and validation" item. |
 | [05](issues/05-recheck-disabled-analyzer-rules.md) | `.editorconfig` disables eight rules, each with a written reason and no review trigger. IDE0028 waits on an upstream fix. |
 | [06](issues/06-audit-inline-suppressions.md) | Eight `#pragma warning disable` lines in `src/`. Two have no visible reason. |
+| [07](issues/07-document-testing-assertions.md) | No page in `docs/` covers the `TruthWeaver.Testing` assertions. |
 
 Decisions:
 

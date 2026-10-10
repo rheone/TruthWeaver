@@ -11,6 +11,7 @@
 - [ ] An already-simple rule returns an empty list
 - [ ] Steps are in the order the rewrite applied them, and the rule in the result equals the rule from `Simplify()`
 - [ ] A diff renderer can use the step list; document how it relates to `RuleDiff`
+- [ ] Documentation updated in the same change: `docs/rewriting-rules.md` documents the step list and its relation to `RuleDiff`
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

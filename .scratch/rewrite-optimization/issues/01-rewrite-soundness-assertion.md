@@ -11,6 +11,7 @@
 - [ ] `RewriteExpectations` flags select the extra checks: never larger (node count), and idempotent (rewriting the result changes nothing)
 - [ ] A failure message names the failed check and shows the counter-example or the two sizes
 - [ ] `RuleFuzzCheck` gains an entry for each new check, so the fuzzer runs them on `Simplify` and `Canonicalize` too
+- [ ] Documentation updated in the same change: `AssertSound` and its expectations are documented on a page for the `TruthWeaver.Testing` assertions; if no such page exists, write a minimal one covering `AssertEquivalent` and `AssertSound` (the wider topic is repo-hygiene 07)
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

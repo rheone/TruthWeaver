@@ -13,6 +13,7 @@
 - [ ] Order stays "outermost construct first"
 - [ ] The link does not conflict with the deferred `Diagnostic.Properties` of [k3-followups 26](../../k3-followups/issues/26-diagnostic-properties-and-json-pointer.md); note the decision in that ticket
 - [ ] A test covers an `If` whose condition holds a redundant inspection
+- [ ] Documentation updated in the same change: `docs/diagnostics.md` describes the related-finding link in the current tense, with no "changed from" text
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

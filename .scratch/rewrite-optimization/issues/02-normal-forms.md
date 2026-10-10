@@ -16,6 +16,7 @@
 - [ ] With `ExpandThresholds` off, a threshold stays an atom and the result carries a warning diagnostic with the growth estimate
 - [ ] With `ExpandThresholds` on, thresholds expand to `AND`/`OR`/`NOT`, within the node cap
 - [ ] A new warning code follows the last `DiagnosticCodes` entry and is documented in the diagnostics reference
+- [ ] Documentation updated in the same change: `docs/rewriting-rules.md` documents the three forms, the `ExpandThresholds` option and the growth warning; a short Mermaid diagram is added only if it shows the pipeline more clearly than the table
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).
