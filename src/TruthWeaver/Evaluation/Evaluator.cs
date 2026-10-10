@@ -38,6 +38,11 @@ internal sealed class Evaluator<TContext>(
     // Trace text of terms whose variables resolved, with the values shown; filled only when IncludeResolvedValues is set.
     private readonly Dictionary<TermIdentity, string> valueDescriptions = [];
 
+    // Array references of a term that matched no node (ADR-0006 decision 7 keeps this a legal empty array, so it is not
+    // a fault); the trace shows them so a mistyped path does not pass unseen. Filled whatever IncludeResolvedValues says,
+    // because the note names the query and never a value.
+    private readonly Dictionary<TermIdentity, List<VariableReference>> zeroMatchReferences = [];
+
     // What each (source, query) pair answered, queried at most once per evaluation (ADR-0006 decision 11). A failure is
     // stored like a value, so a repeated reference neither re-queries the source nor re-runs a failing call.
     private readonly Dictionary<VariableReference, SourceAnswer> sourceAnswers = [];
@@ -439,16 +444,28 @@ internal sealed class Evaluator<TContext>(
         if (this.memo.TryGetValue(term.Identity, out TruthValue cached))
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
-            description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
+            description = this.Annotated(term.Identity, description);
             this.trace.Add(new TraceEntry(description, cached, false));
             return new EvalResult(cached, new TraceNode(description, cached, false, []));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
         this.memo[term.Identity] = result;
-        description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
+        description = this.Annotated(term.Identity, description);
         this.trace.Add(new TraceEntry(description, result, false));
         return new EvalResult(result, new TraceNode(description, result, false, []));
+    }
+
+    /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by a note for each array reference that matched no node.</summary>
+    private string Annotated(TermIdentity identity, string description)
+    {
+        string text = this.valueDescriptions.GetValueOrDefault(identity, description);
+        if (this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? references))
+        {
+            text += string.Concat(references.Select(r => $" [no match for {r}]"));
+        }
+
+        return text;
     }
 
     private async ValueTask<TruthValue> InvokeAsync(TermIdentity identity)
@@ -550,6 +567,17 @@ internal sealed class Evaluator<TContext>(
             )
             {
                 values[argumentName] = value;
+                if (answer.Matches.Count == 0 && VariableConversion.IsArrayKind(argument.Type))
+                {
+                    // An empty array is a valid argument, so only the trace says the query found nothing.
+                    if (!this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? noted))
+                    {
+                        noted = [];
+                        this.zeroMatchReferences[identity] = noted;
+                    }
+
+                    noted.Add(reference);
+                }
             }
             else
             {

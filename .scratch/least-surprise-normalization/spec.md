@@ -51,7 +51,7 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [13](issues/13-lintrules-style-flag.md) | LintRules.Style holds NotCanonical | None | resolved |
 | [14](issues/14-yaml-null-argument-is-a-diagnostic.md) | A YAML null argument is rejected like JSON | 03 | resolved |
 | [15](issues/15-reject-reserved-predicate-names.md) | Reject predicate names that the DSL treats as keywords | None | resolved |
-| [16](issues/16-zero-match-array-query-trace-note.md) | The trace notes a zero-match array query | None | ready-for-agent |
+| [16](issues/16-zero-match-array-query-trace-note.md) | The trace notes a zero-match array query | None | resolved |
 | [17](issues/17-compilationresult-rule-accessors.md) | CompilationResult has Rule and GetRuleOrThrow | None | ready-for-agent |
 | [18](issues/18-print-api-consistency.md) | Print methods follow one shape | None | ready-for-agent |
 | [19](issues/19-options-records-have-defaults.md) | Each options record has a Default | None | ready-for-agent |

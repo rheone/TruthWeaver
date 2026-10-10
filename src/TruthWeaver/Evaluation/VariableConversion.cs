@@ -80,15 +80,8 @@ internal static class VariableConversion
         return true;
     }
 
-    /// <summary>Gives the sentence that names the fix when the only problem is a date-time string with no offset; the text itself is never quoted.</summary>
-    private static string OffsetFixFor(LiteralValue match, LiteralKind kind)
-    {
-        return kind == LiteralKind.DateTimeOffset && match.TryAsString(out string? text) && DateTimeText.IsMissingOffset(text)
-            ? $" {DateTimeText.OffsetFix}"
-            : string.Empty;
-    }
-
-    private static bool IsArrayKind(LiteralKind kind)
+    /// <summary>Gets a value indicating whether <paramref name="kind"/> is one of the array kinds.</summary>
+    internal static bool IsArrayKind(LiteralKind kind)
     {
         return kind
             is LiteralKind.StringArray
@@ -97,6 +90,14 @@ internal static class VariableConversion
                 or LiteralKind.BooleanArray
                 or LiteralKind.DateTimeOffsetArray
                 or LiteralKind.GuidArray;
+    }
+
+    /// <summary>Gives the sentence that names the fix when the only problem is a date-time string with no offset; the text itself is never quoted.</summary>
+    private static string OffsetFixFor(LiteralValue match, LiteralKind kind)
+    {
+        return kind == LiteralKind.DateTimeOffset && match.TryAsString(out string? text) && DateTimeText.IsMissingOffset(text)
+            ? $" {DateTimeText.OffsetFix}"
+            : string.Empty;
     }
 
     private static bool TryConvertScalar(LiteralValue match, LiteralKind kind, out LiteralValue value)

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A test shows the note for a mistyped array path and no note for a matching path
-- [ ] `docs/data-sources.md` describes the note
-- [ ] ADR-0006 is not changed
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] A test shows the note for a mistyped array path and no note for a matching path
+- [x] `docs/data-sources.md` describes the note
+- [x] ADR-0006 is not changed
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

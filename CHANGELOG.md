@@ -214,6 +214,8 @@ copyright line reads 2026.
   and the source generator reports the new build error `TWG007` for a `[Predicate]` method with such a name. Rule text could
   never call these names, because the parser read the word as the keyword. Migration: rename the predicate. Rules that called
   the old name need the same rename.
+- An array argument given as `from(...)` that matches no node still resolves to an empty array and records no fault, and the
+  term's trace text now ends with `[no match for from("source", "query")]`. A mistyped path is visible in the `Decision`.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
