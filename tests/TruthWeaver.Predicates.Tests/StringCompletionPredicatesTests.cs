@@ -80,7 +80,7 @@ public class StringCompletionPredicatesTests
 
     /// <summary>Comparison twins agree with the K3 complement of the positive form for null, match and non-match.</summary>
     [Theory]
-    [InlineData("Equals", "NotEqual", "value", "abc")]
+    [InlineData("Equals", "NotEquals", "value", "abc")]
     [InlineData("Contains", "NotContains", "value", "b")]
     [InlineData("Matches", "NotMatches", "pattern", "^a")]
     public async Task ComparisonTwin_AnySelection_IsK3ComplementOfPositive_Test(
@@ -103,7 +103,7 @@ public class StringCompletionPredicatesTests
     [Fact]
     public async Task NotEqual_DifferentCase_ReturnsTrue_Test()
     {
-        Evaluate evaluate = Comparison("NotEqual");
+        Evaluate evaluate = Comparison("NotEquals");
 
         TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "alice"), CancellationToken.None);
 
@@ -133,7 +133,7 @@ public class StringCompletionPredicatesTests
     public async Task NotEqual_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.NotEqual<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
+            StringPredicates.NotEquals<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
@@ -166,7 +166,7 @@ public class StringCompletionPredicatesTests
         PredicateSchema[] oneArg =
         [
             StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema,
-            StringPredicates.NotEqual<TestContext>("a", c => c.Value).Schema,
+            StringPredicates.NotEquals<TestContext>("a", c => c.Value).Schema,
             RegexPredicates.NotMatches<TestContext>("a", c => c.Value).Schema,
         ];
 
@@ -205,8 +205,8 @@ public class StringCompletionPredicatesTests
         Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
             "Equals" => StringPredicates.Equals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotEqual" => StringPredicates
-                .NotEqual<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+            "NotEquals" => StringPredicates
+                .NotEquals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
             "Contains" => StringPredicates
                 .Contains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)

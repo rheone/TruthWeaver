@@ -11,7 +11,7 @@ using TruthWeaver.Yaml;
 
 /// <summary>
 /// Catalog rule 7: reversed literal bounds (<c>lower &gt; upper</c>) on the numeric and date-time <c>Between</c> and
-/// <c>Outside</c> predicates are a compile-time <c>TRE0026</c> error at the predicate call, in every front end. Bounds that
+/// <c>NotBetween</c> predicates are a compile-time <c>TRE0026</c> error at the predicate call, in every front end. Bounds that
 /// are not literals are not checked at compile time and still fault at evaluation. The bounds are never swapped.
 /// </summary>
 public sealed class ReversedBoundsDiagnosticTests
@@ -22,11 +22,11 @@ public sealed class ReversedBoundsDiagnosticTests
     /// <summary>Reversed literal bounds on each range predicate give one error at the whole call, and no rule.</summary>
     [Theory]
     [InlineData("countBetween(lower: 20, upper: 10)", "20", "10")]
-    [InlineData("countOutside(lower: 20, upper: 10)", "20", "10")]
+    [InlineData("countNotBetween(lower: 20, upper: 10)", "20", "10")]
     [InlineData("priceBetween(lower: 2.5, upper: 1.5)", "2.5", "1.5")]
-    [InlineData("priceOutside(lower: 2.5, upper: 1.5)", "2.5", "1.5")]
+    [InlineData("priceNotBetween(lower: 2.5, upper: 1.5)", "2.5", "1.5")]
     [InlineData("atBetween(lower: " + LateInstant + ", upper: " + EarlyInstant + ")", "2026-02-01", "2026-01-01")]
-    [InlineData("atOutside(lower: " + LateInstant + ", upper: " + EarlyInstant + ")", "2026-02-01", "2026-01-01")]
+    [InlineData("atNotBetween(lower: " + LateInstant + ", upper: " + EarlyInstant + ")", "2026-02-01", "2026-01-01")]
     public void Compile_ReversedLiteralBounds_ReportsInvalidArgumentValueAtTheCall_Test(
         string rule,
         string lowerText,
@@ -51,11 +51,11 @@ public sealed class ReversedBoundsDiagnosticTests
     /// <summary>Equal bounds are a single-point range and ordered bounds are a normal range; both compile.</summary>
     [Theory]
     [InlineData("countBetween(lower: 10, upper: 10)")]
-    [InlineData("countOutside(lower: 10, upper: 20)")]
+    [InlineData("countNotBetween(lower: 10, upper: 20)")]
     [InlineData("priceBetween(lower: 1.5, upper: 1.50)")]
-    [InlineData("priceOutside(lower: 1.5, upper: 2.5)")]
+    [InlineData("priceNotBetween(lower: 1.5, upper: 2.5)")]
     [InlineData("atBetween(lower: " + EarlyInstant + ", upper: " + EarlyInstant + ")")]
-    [InlineData("atOutside(lower: " + EarlyInstant + ", upper: " + LateInstant + ")")]
+    [InlineData("atNotBetween(lower: " + EarlyInstant + ", upper: " + LateInstant + ")")]
     public void Compile_EqualOrOrderedLiteralBounds_Compiles_Test(string rule)
     {
         CompilationResult<Ranges> result = CreateCompiler().Compile(rule);
@@ -101,7 +101,7 @@ public sealed class ReversedBoundsDiagnosticTests
     [Fact]
     public void RuleBuilderCompile_ReversedLiteralBounds_ReportsInvalidArgumentValue_Test()
     {
-        RuleBuilder rule = RuleBuilder.Predicate("priceOutside", ("lower", 2.5m), ("upper", 1.5m));
+        RuleBuilder rule = RuleBuilder.Predicate("priceNotBetween", ("lower", 2.5m), ("upper", 1.5m));
 
         CompilationResult<Ranges> result = rule.Compile(CreateCompiler());
 
@@ -117,7 +117,7 @@ public sealed class ReversedBoundsDiagnosticTests
     /// </summary>
     [Theory]
     [InlineData("countBetween")]
-    [InlineData("countOutside")]
+    [InlineData("countNotBetween")]
     public async Task EvaluateAsync_ReversedBoundFromADataSource_FaultsAsUnknown_Test(string predicate)
     {
         CompilationResult<Ranges> result = CreateCompiler()
@@ -189,11 +189,11 @@ public sealed class ReversedBoundsDiagnosticTests
     {
         PredicateRegistryBuilder<Ranges> builder = PredicateRegistry<Ranges>.CreateBuilder();
         Register(builder, NumericPredicates.Between<Ranges>("countBetween", c => c.Count));
-        Register(builder, NumericPredicates.Outside<Ranges>("countOutside", c => c.Count));
+        Register(builder, NumericPredicates.NotBetween<Ranges>("countNotBetween", c => c.Count));
         Register(builder, NumericPredicates.Between<Ranges>("priceBetween", c => c.Price));
-        Register(builder, NumericPredicates.Outside<Ranges>("priceOutside", c => c.Price));
+        Register(builder, NumericPredicates.NotBetween<Ranges>("priceNotBetween", c => c.Price));
         Register(builder, DateTimePredicates.Between<Ranges>("atBetween", c => c.At));
-        Register(builder, DateTimePredicates.Outside<Ranges>("atOutside", c => c.At));
+        Register(builder, DateTimePredicates.NotBetween<Ranges>("atNotBetween", c => c.At));
         return new RuleCompiler<Ranges>(builder.Build(), new CompilerOptions(DataSources: ["limits"]));
     }
 

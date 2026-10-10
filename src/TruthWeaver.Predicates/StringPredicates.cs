@@ -383,10 +383,10 @@ public static class StringPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotEqual<TContext>(
+    ) NotEquals<TContext>(
         string name,
         Func<TContext, string?> selector,
-        string label = "Not Equal",
+        string label = "Not Equals",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -677,6 +677,113 @@ public static class StringPredicates
             "The suffix the selected value must not end with.",
             static (selected, target) => selected.EndsWith(target, StringComparison.Ordinal),
             negate: true
+        );
+    }
+
+    /// <summary>Creates a predicate that is true when the selected string is one of the strings in the argument array (ordinal, case-sensitive). The selector returns one string; for a collection use the ContainsAny, ContainsAll or IsSubsetOf predicates of CollectionPredicates.</summary>
+    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="selector">Reads the string from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="argumentName">The rule-text argument name for the values.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected string answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) In<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "In",
+        string argumentName = "values",
+        NullBehavior nullBehavior = NullBehavior.Unknown
+    )
+    {
+        return CreateMembership(
+            name,
+            label,
+            "True when the selected string is one of the strings in the argument array (ordinal, case-sensitive). The selector returns one string; for a collection use the ContainsAny, ContainsAll or IsSubsetOf predicates of CollectionPredicates. A null selected string is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            selector,
+            nullBehavior,
+            false,
+            argumentName,
+            "The candidate strings the selected value may equal.",
+            static (selected, candidates) => candidates.Contains(selected, StringComparer.Ordinal)
+        );
+    }
+
+    /// <summary>Creates the <c>NotIn</c> twin of <see cref="In{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="selector">Reads the string from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="argumentName">The rule-text argument name for the values.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected string answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
+    /// (the default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) NotIn<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Not In",
+        string argumentName = "values",
+        NullBehavior nullBehavior = NullBehavior.Unknown
+    )
+    {
+        return CreateMembership(
+            name,
+            label,
+            "The Strong Kleene complement of In: True when In is False, False when In is True, and Unknown when In is Unknown. In is true when the selected string is one of the strings in the argument array (ordinal, case-sensitive). The selector returns one string; for a collection use the ContainsAny, ContainsAll or IsSubsetOf predicates of CollectionPredicates. A null selected string is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            selector,
+            nullBehavior,
+            true,
+            argumentName,
+            "The candidate strings the selected value may equal.",
+            static (selected, candidates) => candidates.Contains(selected, StringComparer.Ordinal)
+        );
+    }
+
+    /// <summary>
+    /// Builds the membership predicates: the selected string against a string-array argument (ordinal). A null selection
+    /// answers per <paramref name="nullBehavior"/>, and <paramref name="negate"/> applies the Strong Kleene complement to
+    /// every answer, the null one included.
+    /// </summary>
+    private static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) CreateMembership<TContext>(
+        string name,
+        string label,
+        string description,
+        Func<TContext, string?> selector,
+        NullBehavior nullBehavior,
+        bool negate,
+        string argumentName,
+        string argumentDescription,
+        Func<string, IReadOnlyList<string>, bool> test
+    )
+    {
+        PredicateSchema schema = new(
+            name,
+            label,
+            description,
+            [new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.StringArray)]
+        );
+
+        return (
+            schema,
+            (context, args, _) =>
+            {
+                string? selected = selector(context);
+                return selected is null
+                    ? PredicateResult.ForNullAsync(nullBehavior, negate)
+                    : PredicateResult.FromBoolAsync(test(selected, args.GetStringArray(argumentName)) != negate);
+            }
         );
     }
 

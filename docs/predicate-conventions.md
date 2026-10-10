@@ -11,7 +11,7 @@ The built-in predicates follow one set of conventions for case, argument names, 
 | Range bound names | `lower` and `upper` bound a value. `min` and `max` bound an operand count. `start` and `end` bound a time of day. |
 | Whitespace | A comparison does not trim. A predicate that trims has a `trim` argument, and `trim` defaults to `false`. |
 | Boolean options | `ignoreCase` and `trim` default to `false`. |
-| Value ranges | A range of values is closed. `Between` and `Outside` treat both bounds as inside the range. |
+| Value ranges | A range of values is closed. `Between` and `NotBetween` treat both bounds as inside the range. |
 | Ordering | An ordering comparison is strict. `After` and `Before` do not match an equal instant. |
 | Time windows | A window of time is half-open: `[start, end)`. The flags `includeStart` and `includeEnd` move either end. |
 | Null values | A null selected value answers `Unknown`. The host chooses `nullBehavior` at registration. |
@@ -35,7 +35,7 @@ A predicate that is not in the table has no setting. Its behavior is fixed.
 - Collection predicates compare their elements with ordinal, case-sensitive rules.
 - `Contains`, `StartsWith` and `EndsWith` have no case or trim setting. Use `EqualsConfigurable` to match a whole string with options.
 - `Matches` uses `RegexOptions.None` and a timeout of one second. To ignore case, start the pattern with `(?i)`.
-- `Between` and `Outside` include both bounds.
+- `Between` and `NotBetween` include both bounds.
 - `After` and `Before` exclude an equal instant.
 
 ## Ranges and windows

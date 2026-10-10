@@ -75,4 +75,4 @@ The argument errors are the same as for [InTimeWindow](datetime-intimewindow.md#
 
 - [InTimeWindow](datetime-intimewindow.md) is the exact complement of this predicate.
 - [NotOnDayOfWeek](datetime-notondayofweek.md) excludes days of the week in a fixed offset.
-- [Outside](datetime-outside.md) tests that an instant is outside a range of instants.
+- [NotBetween](datetime-notbetween.md) tests that an instant is outside a range of instants.

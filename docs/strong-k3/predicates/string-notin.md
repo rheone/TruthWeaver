@@ -1,10 +1,10 @@
-# Collection NotIn
+# String NotIn
 
 `NotIn` is `True` when the selected string is none of the strings in the argument array. The selector returns one string, not a collection. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
-- Factory: `CollectionPredicates.NotIn`
+- Factory: `StringPredicates.NotIn`
 - Default label: `Not In`
 - Default argument name: `values`. The host can change it when it registers the predicate.
 - Rule text: `roleNotIn(values: ["admin", "owner"])`. The host chooses the name `roleNotIn` when it registers the predicate.
@@ -13,8 +13,8 @@
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `CollectionPredicates`
-- Twin: [In](collection-in.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Family: `StringPredicates`
+- Twin: [In](string-in.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -67,7 +67,7 @@ A null selected string answers `Unknown` by default. It records no fault. A host
 
 ## Related predicates
 
-- [In](collection-in.md) is the exact complement of this predicate.
+- [In](string-in.md) is the exact complement of this predicate.
 - [NotContainsAny](collection-notcontainsany.md) tests a collection against several strings.
 - [IsNotSubsetOf](collection-isnotsubsetof.md) tests every element of a collection against several strings.
-- [NotEqual](string-notequal.md) tests one string against one string.
+- [NotEquals](string-notequals.md) tests one string against one string.

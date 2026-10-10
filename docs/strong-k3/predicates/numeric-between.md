@@ -14,7 +14,7 @@
 - Category: Predicates
 - Category index: [Predicates](README.md)
 - Family: `NumericPredicates`
-- Twin: [Outside](numeric-outside.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Twin: [NotBetween](numeric-notbetween.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -72,5 +72,5 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 ## Related predicates
 
-- [Outside](numeric-outside.md) is the exact complement of this predicate.
+- [NotBetween](numeric-notbetween.md) is the exact complement of this predicate.
 - The ordering predicates [LessThan](numeric-lessthan.md) and [GreaterThan](numeric-greaterthan.md) test one bound.

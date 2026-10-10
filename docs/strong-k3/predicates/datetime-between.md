@@ -14,7 +14,7 @@
 - Category: Predicates
 - Category index: [Predicates](README.md)
 - Family: `DateTimePredicates`
-- Twin: [Outside](datetime-outside.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Twin: [NotBetween](datetime-notbetween.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -77,6 +77,6 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 ## Related predicates
 
-- [Outside](datetime-outside.md) is the exact complement of this predicate.
+- [NotBetween](datetime-notbetween.md) is the exact complement of this predicate.
 - [After](datetime-after.md) tests one lower bound.
 - [Before](datetime-before.md) tests one upper bound.

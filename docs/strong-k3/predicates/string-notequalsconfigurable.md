@@ -73,5 +73,5 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 ## Related predicates
 
 - [EqualsConfigurable](string-equalsconfigurable.md) is the exact complement of this predicate.
-- [NotEqual](string-notequal.md) is always case-sensitive.
+- [NotEquals](string-notequals.md) is always case-sensitive.
 - [NotEqualsIgnoreCase](string-notequalsignorecase.md) always ignores case and never trims.

@@ -1,10 +1,10 @@
-# Collection In
+# String In
 
 `In` is `True` when the selected string is one of the strings in the argument array. The selector returns one string, not a collection. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
-- Factory: `CollectionPredicates.In`
+- Factory: `StringPredicates.In`
 - Default label: `In`
 - Default argument name: `values`. The host can change it when it registers the predicate.
 - Rule text: `roleIn(values: ["admin", "owner"])`. The host chooses the name `roleIn` when it registers the predicate.
@@ -13,8 +13,8 @@
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `CollectionPredicates`
-- Twin: [NotIn](collection-notin.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Family: `StringPredicates`
+- Twin: [NotIn](string-notin.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -67,7 +67,7 @@ A null selected string answers `Unknown` by default. It records no fault. A host
 
 ## Related predicates
 
-- [NotIn](collection-notin.md) is the exact complement of this predicate.
+- [NotIn](string-notin.md) is the exact complement of this predicate.
 - [ContainsAny](collection-containsany.md) tests a collection against several strings.
 - [IsSubsetOf](collection-issubsetof.md) tests every element of a collection against several strings.
 - [Equals](string-equals.md) tests one string against one string.

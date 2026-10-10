@@ -7,7 +7,7 @@ using TruthWeaver.Abstractions;
 /// selector supplied at registration. Every member has an overload for <c>long?</c> (arguments of kind
 /// <c>Int64</c>) and for <c>decimal?</c> (arguments of kind <c>Decimal</c>). The members are <c>Equal</c>,
 /// <c>NotEqual</c>, <c>LessThan</c>, <c>GreaterThan</c>, <c>LessThanOrEqual</c>, <c>GreaterThanOrEqual</c>,
-/// <c>Between</c>, <c>Outside</c>, <c>In</c>, <c>NotIn</c>, <c>IsNull</c>, <c>IsNotNull</c>, <c>IsDefault</c> and
+/// <c>Between</c>, <c>NotBetween</c>, <c>In</c>, <c>NotIn</c>, <c>IsNull</c>, <c>IsNotNull</c>, <c>IsDefault</c> and
 /// <c>IsNotDefault</c>.
 /// <para>
 /// No value is promoted between kinds inside one predicate. The selector's kind fixes the argument kind: a
@@ -23,11 +23,11 @@ using TruthWeaver.Abstractions;
 /// tests (<c>IsNull</c>, <c>IsNotNull</c>) are definite. Every positive member has a registered <c>NotX</c> twin that is
 /// the Strong Kleene complement for every selection, a null one included, so under <see cref="NullBehavior.False"/> a
 /// twin answers <see cref="TruthValue.True"/> for a null selection. The pairs are <c>Equal</c>/<c>NotEqual</c>,
-/// <c>LessThan</c>/<c>GreaterThanOrEqual</c>, <c>GreaterThan</c>/<c>LessThanOrEqual</c>, <c>Between</c>/<c>Outside</c>, <c>In</c>/<c>NotIn</c>,
+/// <c>LessThan</c>/<c>GreaterThanOrEqual</c>, <c>GreaterThan</c>/<c>LessThanOrEqual</c>, <c>Between</c>/<c>NotBetween</c>, <c>In</c>/<c>NotIn</c>,
 /// <c>IsNull</c>/<c>IsNotNull</c> and <c>IsDefault</c>/<c>IsNotDefault</c>.
 /// </para>
 /// <para>
-/// <c>Between</c> and <c>Outside</c> are inclusive on both bounds. Reversed bounds (<c>lower</c> greater than
+/// <c>Between</c> and <c>NotBetween</c> are inclusive on both bounds. Reversed bounds (<c>lower</c> greater than
 /// <c>upper</c>) are an authoring error. When both bounds are literals, the compiler reports a <c>TRE0026</c> error and
 /// the rule does not compile. A reversed bound that is not a literal throws <see cref="ArgumentException"/> at
 /// evaluation time, which the evaluator records as a <c>Fault</c> and <see cref="TruthValue.Unknown"/>. The bounds are
@@ -578,10 +578,10 @@ public static class NumericPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Outside<TContext>(
+    ) NotBetween<TContext>(
         string name,
         Func<TContext, long?> selector,
-        string label = "Outside",
+        string label = "Not Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Unknown
@@ -618,10 +618,10 @@ public static class NumericPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Outside<TContext>(
+    ) NotBetween<TContext>(
         string name,
         Func<TContext, decimal?> selector,
-        string label = "Outside",
+        string label = "Not Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Unknown

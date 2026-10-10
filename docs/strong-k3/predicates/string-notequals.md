@@ -1,13 +1,13 @@
-# String NotEqual
+# String NotEquals
 
-`NotEqual` is `True` when the selected string differs from the argument. The comparison is ordinal and case-sensitive. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
+`NotEquals` is `True` when the selected string differs from the argument. The comparison is ordinal and case-sensitive. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
-- Factory: `StringPredicates.NotEqual`
+- Factory: `StringPredicates.NotEquals`
 - Default label: `Not Equal`
 - Default argument name: `value`. The host can change it when it registers the predicate.
-- Rule text: `statusNotEqual(value: "Active")`. The host chooses the name `statusNotEqual` when it registers the predicate.
+- Rule text: `statusNotEquals(value: "Active")`. The host chooses the name `statusNotEquals` when it registers the predicate.
 
 ## Classification
 
@@ -36,7 +36,7 @@ The selector has one overload. See [Argument kinds](README.md#argument-kinds).
 
 ## Answers
 
-The table shows the rule `statusNotEqual(value: "Active")`.
+The table shows the rule `statusNotEquals(value: "Active")`.
 
 | Selected value | Answer | Answer with `NullBehavior.False` |
 | --- | --- | --- |
@@ -53,11 +53,11 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 | Rule | Selected values | Result | Why |
 | --- | --- | --- | --- |
-| `statusNotEqual(value: "Active")` | `status = "Active"` | `False` | The strings are identical, so they do not differ. |
-| `statusNotEqual(value: "Active")` | `status = "active"` | `True` | The case differs, so the strings differ. |
-| `statusNotEqual(value: "Active")` | `status = "Active "` | `True` | The trailing space makes the strings different. |
-| `statusNotEqual(value: "")` | `status = ""` | `False` | The empty string equals the empty string, so they do not differ. |
-| `statusNotEqual(value: "Active")` | `status = null` | `Unknown` | A null selected value is `Unknown` by default. |
+| `statusNotEquals(value: "Active")` | `status = "Active"` | `False` | The strings are identical, so they do not differ. |
+| `statusNotEquals(value: "Active")` | `status = "active"` | `True` | The case differs, so the strings differ. |
+| `statusNotEquals(value: "Active")` | `status = "Active "` | `True` | The trailing space makes the strings different. |
+| `statusNotEquals(value: "")` | `status = ""` | `False` | The empty string equals the empty string, so they do not differ. |
+| `statusNotEquals(value: "Active")` | `status = null` | `Unknown` | A null selected value is `Unknown` by default. |
 
 ## Edge cases
 

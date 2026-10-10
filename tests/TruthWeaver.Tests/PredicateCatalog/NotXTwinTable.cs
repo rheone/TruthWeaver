@@ -15,10 +15,10 @@ using TruthWeaver.Predicates;
 /// strict complement under <see cref="NullBehavior.False"/>.
 /// </para>
 /// <para>
-/// Pairs whose names do not follow <c>X</c>/<c>NotX</c>: the ordering family pairs each comparison with the opposite
-/// ordering (<c>LessThan</c> with <c>GreaterThanOrEqual</c>, <c>GreaterThan</c> with <c>LessThanOrEqual</c>), <c>Between</c>
-/// pairs with <c>Outside</c>, <c>Equal</c> (and the string <c>Equals</c>) pairs with <c>NotEqual</c>, and the
-/// <c>Is</c>-prefixed tests pair with <c>IsNotX</c>.
+/// Every twin is named <c>NotX</c> (the string <c>Equals</c> pairs with <c>NotEquals</c>, <c>Equal</c> with
+/// <c>NotEqual</c>, <c>Between</c> with <c>NotBetween</c>). Two families pair by another name: the ordering family pairs
+/// each comparison with the opposite ordering (<c>LessThan</c> with <c>GreaterThanOrEqual</c>, <c>GreaterThan</c> with
+/// <c>LessThanOrEqual</c>), and the <c>Is</c>-prefixed tests pair with <c>IsNotX</c>.
 /// </para>
 /// <para>
 /// Definite pairs have no Unknown probe: <c>IsNull</c>/<c>IsNotNull</c>, the string null tests
@@ -126,18 +126,18 @@ internal static class NotXTwinTable
         const NullBehavior unknown = NullBehavior.Unknown;
         yield return new TwinPair(
             "StringPredicates.Equals(String)",
-            "StringPredicates.NotEqual(String)",
+            "StringPredicates.NotEquals(String)",
             n => StringPredicates.Equals<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
-            n => StringPredicates.NotEqual<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            n => StringPredicates.NotEquals<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             [("value", "a")],
             Text("a"),
             Text("b"),
             Missing,
             Nulls: new(
                 n => StringPredicates.Equals<TwinProbeContext>(n, c => c.Text),
-                n => StringPredicates.NotEqual<TwinProbeContext>(n, c => c.Text),
+                n => StringPredicates.NotEquals<TwinProbeContext>(n, c => c.Text),
                 n => StringPredicates.Equals<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
-                n => StringPredicates.NotEqual<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+                n => StringPredicates.NotEquals<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
             )
         );
         yield return new TwinPair(
@@ -376,19 +376,19 @@ internal static class NotXTwinTable
             )
         );
         yield return new TwinPair(
-            "CollectionPredicates.In(String)",
-            "CollectionPredicates.NotIn(String)",
-            n => CollectionPredicates.In<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
-            n => CollectionPredicates.NotIn<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            "StringPredicates.In(String)",
+            "StringPredicates.NotIn(String)",
+            n => StringPredicates.In<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            n => StringPredicates.NotIn<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             [("values", AandB)],
             Text("a"),
             Text("c"),
             Missing,
             Nulls: new(
-                n => CollectionPredicates.In<TwinProbeContext>(n, c => c.Text),
-                n => CollectionPredicates.NotIn<TwinProbeContext>(n, c => c.Text),
-                n => CollectionPredicates.In<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
-                n => CollectionPredicates.NotIn<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+                n => StringPredicates.In<TwinProbeContext>(n, c => c.Text),
+                n => StringPredicates.NotIn<TwinProbeContext>(n, c => c.Text),
+                n => StringPredicates.In<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => StringPredicates.NotIn<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
             )
         );
         yield return new TwinPair(
@@ -535,18 +535,18 @@ internal static class NotXTwinTable
         );
         yield return new TwinPair(
             "DateTimePredicates.Between(DateTimeOffset)",
-            "DateTimePredicates.Outside(DateTimeOffset)",
+            "DateTimePredicates.NotBetween(DateTimeOffset)",
             n => DateTimePredicates.Between<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
-            n => DateTimePredicates.Outside<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotBetween<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
             [("lower", T0), ("upper", T0.AddDays(10))],
             Instant(T0.AddDays(1)),
             Instant(T0.AddDays(20)),
             Missing,
             Nulls: new(
                 n => DateTimePredicates.Between<TwinProbeContext>(n, c => c.Instant),
-                n => DateTimePredicates.Outside<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotBetween<TwinProbeContext>(n, c => c.Instant),
                 n => DateTimePredicates.Between<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
-                n => DateTimePredicates.Outside<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
+                n => DateTimePredicates.NotBetween<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
             )
         );
 
@@ -703,18 +703,18 @@ internal static class NotXTwinTable
         );
         yield return new TwinPair(
             "NumericPredicates.Between(Int64)",
-            "NumericPredicates.Outside(Int64)",
+            "NumericPredicates.NotBetween(Int64)",
             n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Int64, nullBehavior: unknown),
-            n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Int64, nullBehavior: unknown),
+            n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Int64, nullBehavior: unknown),
             [("lower", 1L), ("upper", 5L)],
             Int64(3),
             Int64(9),
             Missing,
             Nulls: new(
                 n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Int64),
-                n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Int64),
+                n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Int64),
                 n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Int64, nullBehavior: NullBehavior.False),
-                n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Int64, nullBehavior: NullBehavior.False)
+                n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Int64, nullBehavior: NullBehavior.False)
             )
         );
         yield return new TwinPair(
@@ -815,18 +815,18 @@ internal static class NotXTwinTable
         );
         yield return new TwinPair(
             "NumericPredicates.Between(Decimal)",
-            "NumericPredicates.Outside(Decimal)",
+            "NumericPredicates.NotBetween(Decimal)",
             n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Decimal, nullBehavior: unknown),
-            n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Decimal, nullBehavior: unknown),
+            n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Decimal, nullBehavior: unknown),
             [("lower", 1.5m), ("upper", 5.5m)],
             Decimal(3.5m),
             Decimal(9.5m),
             Missing,
             Nulls: new(
                 n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Decimal),
-                n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Decimal),
+                n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Decimal),
                 n => NumericPredicates.Between<TwinProbeContext>(n, c => c.Decimal, nullBehavior: NullBehavior.False),
-                n => NumericPredicates.Outside<TwinProbeContext>(n, c => c.Decimal, nullBehavior: NullBehavior.False)
+                n => NumericPredicates.NotBetween<TwinProbeContext>(n, c => c.Decimal, nullBehavior: NullBehavior.False)
             )
         );
         yield return new TwinPair(
@@ -1076,7 +1076,13 @@ internal static class NotXTwinTable
             [],
             Text(A.ToString()),
             Text("not-a-guid"),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsGuid<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNotGuid<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsGuid<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotGuid<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsGuid(Object)",
@@ -1086,7 +1092,13 @@ internal static class NotXTwinTable
             [],
             Object(A),
             Object(5),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsGuid<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNotGuid<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsGuid<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotGuid<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsNumeric(String)",
@@ -1096,7 +1108,13 @@ internal static class NotXTwinTable
             [],
             Text("42"),
             Text("abc"),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsNumeric<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNotNumeric<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNumeric<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotNumeric<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsNumeric(Object)",
@@ -1106,7 +1124,13 @@ internal static class NotXTwinTable
             [],
             Object(42),
             Object(A),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsNumeric<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNotNumeric<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNumeric<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotNumeric<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsUrl(String)",
@@ -1116,7 +1140,13 @@ internal static class NotXTwinTable
             [],
             Text("https://example.com/"),
             Text("ftp://example.com/"),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsUrl<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNotUrl<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsUrl<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotUrl<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsUrl(Object)",
@@ -1126,7 +1156,13 @@ internal static class NotXTwinTable
             [],
             Object(new Uri("https://example.com/")),
             Object(5),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsUrl<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNotUrl<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsUrl<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotUrl<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsString(String)",
@@ -1137,7 +1173,13 @@ internal static class NotXTwinTable
             Text(string.Empty),
             null,
             Missing,
-            "With a string selector every non-null value is a string, so no input makes IsString False."
+            "With a string selector every non-null value is a string, so no input makes IsString False.",
+            Nulls: new(
+                n => TypePredicates.IsString<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNotString<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsString<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotString<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsString(Object)",
@@ -1147,7 +1189,13 @@ internal static class NotXTwinTable
             [],
             Object("a"),
             Object(5),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsString<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNotString<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsString<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotString<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsDateTimeOffset(String)",
@@ -1157,7 +1205,13 @@ internal static class NotXTwinTable
             [],
             Text("2026-01-01T12:00:00Z"),
             Text("2026-01-01T12:00:00"),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsDateTimeOffset<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsNotDateTimeOffset<TwinProbeContext>(n, c => c.Text),
+                n => TypePredicates.IsDateTimeOffset<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotDateTimeOffset<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "TypePredicates.IsDateTimeOffset(Object)",
@@ -1167,7 +1221,13 @@ internal static class NotXTwinTable
             [],
             Object(T0),
             Object(5),
-            Missing
+            Missing,
+            Nulls: new(
+                n => TypePredicates.IsDateTimeOffset<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsNotDateTimeOffset<TwinProbeContext>(n, c => c.Object),
+                n => TypePredicates.IsDateTimeOffset<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False),
+                n => TypePredicates.IsNotDateTimeOffset<TwinProbeContext>(n, c => c.Object, nullBehavior: NullBehavior.False)
+            )
         );
     }
 

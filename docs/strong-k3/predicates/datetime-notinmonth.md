@@ -69,4 +69,4 @@ The argument errors are the same as for [InMonth](datetime-inmonth.md#argument-e
 
 - [InMonth](datetime-inmonth.md) is the exact complement of this predicate.
 - [NotOnDayOfWeek](datetime-notondayofweek.md) excludes days of the week in a fixed offset.
-- [Outside](datetime-outside.md) tests that an instant is outside a range.
+- [NotBetween](datetime-notbetween.md) tests that an instant is outside a range.

@@ -19,7 +19,7 @@ using TruthWeaver.Abstractions;
 /// <para>
 /// A null selected value is <see cref="TruthValue.Unknown"/> by default (the K3 reading of a missing value), or a
 /// definite <see cref="TruthValue.False"/> when the host passes <see cref="NullBehavior.False"/>. Every positive
-/// predicate has a <c>NotX</c> twin that is its Strong Kleene complement. <c>Outside</c> is the twin of
+/// predicate has a <c>NotX</c> twin that is its Strong Kleene complement. <c>NotBetween</c> is the twin of
 /// <c>Between</c>.
 /// </para>
 /// </remarks>
@@ -212,7 +212,7 @@ public static partial class DateTimePredicates
     }
 
     /// <summary>
-    /// Creates the <c>Outside</c> twin of <see cref="Between{TContext}"/>: its exact Strong Kleene complement
+    /// Creates the <c>NotBetween</c> twin of <see cref="Between{TContext}"/>: its exact Strong Kleene complement
     /// (true when the instant is earlier than the lower bound or later than the upper bound). Reversed bounds are
     /// an authoring error: a <c>TRE0026</c> compile error for literal bounds, otherwise <see cref="ArgumentException"/>
     /// at evaluation.
@@ -232,10 +232,10 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Outside<TContext>(
+    ) NotBetween<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Outside",
+        string label = "Not Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Unknown

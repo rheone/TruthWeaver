@@ -95,14 +95,14 @@ public class NumericPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>Between is inclusive at both bounds and Outside is its exact complement.</summary>
+    /// <summary>Between is inclusive at both bounds and NotBetween is its exact complement.</summary>
     [Theory]
     [InlineData(9, TruthValue.False, TruthValue.True)]
     [InlineData(10, TruthValue.True, TruthValue.False)]
     [InlineData(15, TruthValue.True, TruthValue.False)]
     [InlineData(20, TruthValue.True, TruthValue.False)]
     [InlineData(21, TruthValue.False, TruthValue.True)]
-    public async Task BetweenAndOutside_Int64AtEachBoundary_AreInclusiveComplements_Test(
+    public async Task BetweenAndNotBetween_Int64AtEachBoundary_AreInclusiveComplements_Test(
         long selected,
         TruthValue between,
         TruthValue outside
@@ -111,7 +111,7 @@ public class NumericPredicatesTests
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> betweenEval) =
             NumericPredicates.Between<Numbers>("b", c => c.Count);
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outsideEval) =
-            NumericPredicates.Outside<Numbers>("o", c => c.Count);
+            NumericPredicates.NotBetween<Numbers>("o", c => c.Count);
         PredicateArguments args = RangeArgs(LiteralValue.OfInt64(10), LiteralValue.OfInt64(20));
 
         TruthValue b = await betweenEval(new Numbers(selected, null), args, CancellationToken.None);
@@ -121,14 +121,14 @@ public class NumericPredicatesTests
         Assert.Equal(outside, o);
     }
 
-    /// <summary>Between and Outside work over decimals and answer Unknown for a null selection.</summary>
+    /// <summary>Between and NotBetween work over decimals and answer Unknown for a null selection.</summary>
     [Fact]
-    public async Task BetweenAndOutside_Decimal_AreInclusiveAndUnknownForNull_Test()
+    public async Task BetweenAndNotBetween_Decimal_AreInclusiveAndUnknownForNull_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> betweenEval) =
             NumericPredicates.Between<Numbers>("b", c => c.Price);
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outsideEval) =
-            NumericPredicates.Outside<Numbers>("o", c => c.Price);
+            NumericPredicates.NotBetween<Numbers>("o", c => c.Price);
         PredicateArguments args = RangeArgs(LiteralValue.OfDecimal(0.5m), LiteralValue.OfDecimal(1.5m));
 
         Assert.Equal(TruthValue.True, await betweenEval(new Numbers(null, 1.5m), args, CancellationToken.None));
@@ -154,10 +154,10 @@ public class NumericPredicatesTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task BetweenAndOutside_ReversedBounds_ThrowArgumentError_Test(bool useOutside)
+    public async Task BetweenAndNotBetween_ReversedBounds_ThrowArgumentError_Test(bool useNotBetween)
     {
-        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useOutside
-            ? NumericPredicates.Outside<Numbers>("r", c => c.Count)
+        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useNotBetween
+            ? NumericPredicates.NotBetween<Numbers>("r", c => c.Count)
             : NumericPredicates.Between<Numbers>("r", c => c.Count);
         PredicateArguments args = RangeArgs(LiteralValue.OfInt64(20), LiteralValue.OfInt64(10));
 

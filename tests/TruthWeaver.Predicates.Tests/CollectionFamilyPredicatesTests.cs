@@ -147,9 +147,9 @@ public class CollectionFamilyPredicatesTests
     public async Task In_ScalarSelector_ReturnsMembership_Test(string value, TruthValue expected)
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            CollectionPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.In<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            CollectionPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.NotIn<TestContext>("notIn", c => c.Value);
         TestContext context = new(value);
 
         Assert.Equal(expected, await RunAsync(isIn, context, Array("values", "a", "b")));
@@ -225,9 +225,9 @@ public class CollectionFamilyPredicatesTests
     public async Task In_NullScalarByDefault_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            CollectionPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.In<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            CollectionPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.NotIn<TestContext>("notIn", c => c.Value);
 
         Assert.Equal(TruthValue.Unknown, await RunAsync(isIn, new TestContext(null), Array("values", "a")));
         Assert.Equal(TruthValue.Unknown, await RunAsync(notIn, new TestContext(null), Array("values", "a")));
@@ -252,7 +252,7 @@ public class CollectionFamilyPredicatesTests
         (PredicateSchema count, _) = CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values);
         (PredicateSchema any, _) = CollectionPredicates.ContainsAny<TestContext>("any", c => c.Values);
         (PredicateSchema contains, _) = CollectionPredicates.Contains<TestContext>("contains", c => c.Values);
-        (PredicateSchema isIn, _) = CollectionPredicates.In<TestContext>("in", c => c.Value);
+        (PredicateSchema isIn, _) = StringPredicates.In<TestContext>("in", c => c.Value);
 
         Assert.Equal(LiteralKind.Int64, Assert.Single(count.Arguments).Type);
         Assert.Equal(LiteralKind.StringArray, Assert.Single(any.Arguments).Type);

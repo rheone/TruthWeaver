@@ -14,7 +14,7 @@
 - Category: Predicates
 - Category index: [Predicates](README.md)
 - Family: `StringPredicates`
-- Twin: [NotEqual](string-notequal.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Twin: [NotEquals](string-notequals.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -67,6 +67,6 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 ## Related predicates
 
-- [NotEqual](string-notequal.md) is the exact complement of this predicate.
+- [NotEquals](string-notequals.md) is the exact complement of this predicate.
 - [EqualsIgnoreCase](string-equalsignorecase.md) ignores case.
 - [EqualsConfigurable](string-equalsconfigurable.md) chooses case handling and trimming in the rule.

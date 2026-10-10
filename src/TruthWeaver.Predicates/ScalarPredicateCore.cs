@@ -77,7 +77,7 @@ internal static class ScalarPredicateCore
     /// <param name="nullBehavior">What a null selection answers.</param>
     /// <param name="lowerName">The lower-bound argument name.</param>
     /// <param name="upperName">The upper-bound argument name.</param>
-    /// <param name="outside"><see langword="true"/> for <c>Outside</c>, <see langword="false"/> for <c>Between</c>.</param>
+    /// <param name="outside"><see langword="true"/> for <c>NotBetween</c>, <see langword="false"/> for <c>Between</c>.</param>
     /// <typeparam name="TContext">The application context type.</typeparam>
     /// <typeparam name="T">The scalar value type.</typeparam>
     /// <returns>The schema and delegate.</returns>

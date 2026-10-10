@@ -1,13 +1,13 @@
-# Numeric Outside
+# Numeric NotBetween
 
-`Outside` is `True` when the selected number lies outside a range. Both bounds belong to the range. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
+`NotBetween` is `True` when the selected number lies outside a range. Both bounds belong to the range. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
-- Factory: `NumericPredicates.Outside`
-- Default label: `Outside`
+- Factory: `NumericPredicates.NotBetween`
+- Default label: `Not Between`
 - Default argument names: `lower`, `upper`. The host can change them when it registers the predicate.
-- Rule text: `quantityOutside(lower: 10, upper: 20)`. The host chooses the name `quantityOutside` when it registers the predicate.
+- Rule text: `quantityNotBetween(lower: 10, upper: 20)`. The host chooses the name `quantityNotBetween` when it registers the predicate.
 
 ## Classification
 
@@ -38,7 +38,7 @@ The selector type picks the overload. No value is promoted from one kind to the 
 
 ## Answers
 
-The table shows the rule `quantityOutside(lower: 10, upper: 20)`.
+The table shows the rule `quantityNotBetween(lower: 10, upper: 20)`.
 
 | Selected value | Answer | Answer with `NullBehavior.False` |
 | --- | --- | --- |
@@ -57,9 +57,9 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 | Rule | Selected values | Result | Why |
 | --- | --- | --- | --- |
-| `quantityOutside(lower: 10, upper: 20)` | `quantity = 21` | `True` | 21 is greater than the upper bound. |
-| `quantityOutside(lower: 10, upper: 20)` | `quantity = 10` | `False` | The lower bound is part of the range, so it is not outside. |
-| `quantityOutside(lower: 10, upper: 20)` | `quantity = null` | `Unknown` | A null selected value is `Unknown` by default. |
+| `quantityNotBetween(lower: 10, upper: 20)` | `quantity = 21` | `True` | 21 is greater than the upper bound. |
+| `quantityNotBetween(lower: 10, upper: 20)` | `quantity = 10` | `False` | The lower bound is part of the range, so it is not outside. |
+| `quantityNotBetween(lower: 10, upper: 20)` | `quantity = null` | `Unknown` | A null selected value is `Unknown` by default. |
 
 ## Reversed bounds
 

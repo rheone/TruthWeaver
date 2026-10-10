@@ -143,7 +143,7 @@ public static class DiagnosticCodes
     /// <summary>
     /// The literal argument values of a predicate call break a rule that the predicate's
     /// <c>PredicateSchema.ArgumentValidator</c> checks, for example reversed bounds (<c>lower</c> greater than
-    /// <c>upper</c>) on a <c>Between</c> or <c>Outside</c> range predicate. The span or path is the predicate call.
+    /// <c>upper</c>) on a <c>Between</c> or <c>NotBetween</c> range predicate. The span or path is the predicate call.
     /// </summary>
     public const string InvalidArgumentValue = "TRE0026";
 

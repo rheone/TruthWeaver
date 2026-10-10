@@ -67,6 +67,6 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 - [After](datetime-after.md) is the exact complement of this predicate.
 - [NotBefore](datetime-notbefore.md) tests for an earlier instant.
-- [Outside](datetime-outside.md) tests for a range.
+- [NotBetween](datetime-notbetween.md) tests for a range.
 - [NotAfterNow](datetime-notafternow.md) compares with the clock of the host instead of an argument.
 - [NotEqual](scalar-notequal.md) tests for an equal `DateTimeOffset`.

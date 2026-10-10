@@ -13,7 +13,7 @@
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `CollectionPredicates`
+- Family: `StringPredicates`
 - Twin: [NotContains](collection-notcontains.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds

@@ -40,7 +40,7 @@ copyright line reads 2026.
   harness calls the predicate twice for each argument set and once for the cancellation check.
 - `MermaidOptions.Default` and `RuleFuzzerOptions.Default`, as `EquationOptions.Default` and `PredicateHarnessOptions.Default`
   already exist. The optional-parameter `CompiledRule.PrintMermaid` overloads document that they fix `OperatorStyle.Word`.
-- Reversed literal bounds on `Between` and `Outside` (`NumericPredicates` for `Int64` and `Decimal`, and
+- Reversed literal bounds on `Between` and `NotBetween` (`NumericPredicates` for `Int64` and `Decimal`, and
   `DateTimePredicates`) are now a compile-time error, the new `DiagnosticCodes.InvalidArgumentValue` (`TRE0026`), at the
   predicate call in rule text, JSON, YAML and `RuleBuilder` rules, with a suggestion to swap the bounds. `Compile` returns
   no rule. Equal bounds still compile. A bound that is not a literal, such as a value read from a data source, still

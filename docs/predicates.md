@@ -36,12 +36,14 @@ The `StringPredicates` and `RegexPredicates` twins are:
 
 | Member | Class | Meaning |
 | --- | --- | --- |
-| `NotEqual` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
+| `NotEquals` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
 | `NotEqualsIgnoreCase` | `StringPredicates` | Twin of `EqualsIgnoreCase` |
 | `NotStartsWith` | `StringPredicates` | Twin of `StartsWith` |
 | `NotEndsWith` | `StringPredicates` | Twin of `EndsWith` |
 | `NotEqualsConfigurable` | `StringPredicates` | Twin of `EqualsConfigurable`. It takes the same `ignoreCase` and `trim` arguments. |
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
+| `In` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
+| `NotIn` | `StringPredicates` | Twin of `In` |
 | `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern faults to `Unknown` with a `Fault`. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
@@ -63,13 +65,13 @@ StringPredicates.Equals<PizzaOrder>(
 | `Equal` | `NotEqual` | yes | yes |
 | `LessThan` | `GreaterThanOrEqual` | yes | not defined |
 | `GreaterThan` | `LessThanOrEqual` | yes | not defined |
-| `Between` | `Outside` | yes | not defined |
+| `Between` | `NotBetween` | yes | not defined |
 | `In` | `NotIn` | yes | yes |
 | `IsNull` | `IsNotNull` | yes | yes |
 | `IsDefault` | `IsNotDefault` | yes | yes |
 
 - Ordering and ranges have no meaning for `Boolean` and `Guid`, so they are not defined. For `DateTimeOffset`, ordering and ranges belong to the date-time predicates.
-- `Between` is inclusive on both bounds and `Outside` is its exact complement. Equal bounds are a single-point range. Reversed bounds (`lower` greater than `upper`) are an authoring error, and the bounds are never swapped:
+- `Between` is inclusive on both bounds and `NotBetween` is its exact complement. Equal bounds are a single-point range. Reversed bounds (`lower` greater than `upper`) are an authoring error, and the bounds are never swapped:
   - When both bounds are literals, `Compile` reports a `TRE0026` error at the predicate call and returns no rule. The suggestion is to swap the bounds.
   - When a bound is not a literal, for example a value [read from a data source](#arguments-read-from-a-data-source), the compiler does not check it. A reversed value makes the predicate throw an `ArgumentException` at evaluation time, even for a null selection. The evaluator records a `Fault` and answers `Unknown`.
 - `In` and `NotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
@@ -93,14 +95,13 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 | `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
 | `ContainsAll` | `NotContainsAll` | `values` (`StringArray`) | Every string in the array is an element. |
 | `IsSubsetOf` | `IsNotSubsetOf` | `values` (`StringArray`) | Every element is in the array. |
-| `In` | `NotIn` | `values` (`StringArray`) | The selected scalar string is in the array. |
 | `CountEqual` | `NotCountEqual` | `count` (`Int64`) | The element count equals `count`. |
 | `CountLessThan` | `NotCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
 | `CountGreaterThan` | `NotCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
 | `CountLessThanOrEqual` | `NotCountLessThanOrEqual` | `count` (`Int64`) | The element count is at most `count`. |
 | `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` | `count` (`Int64`) | The element count is at least `count`. |
 
-`In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
+To test one string against several candidates, use `StringPredicates.In` and `StringPredicates.NotIn`.
 
 Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. A null collection is a missing value, not an empty one.
 
@@ -112,7 +113,7 @@ Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a nu
 | --- | --- | --- | --- |
 | `After` | `NotAfter` | `value` | The selected instant is later than `value`. An equal instant is `False`. |
 | `Before` | `NotBefore` | `value` | The selected instant is earlier than `value`. An equal instant is `False`. |
-| `Between` | `Outside` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `Outside` is the exact complement. |
+| `Between` | `NotBetween` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `NotBetween` is the exact complement. |
 
 `AfterNow` and `BeforeNow` compare the selected instant with the current time. They take a required `TimeProvider` at registration and no rule-text arguments. There is no ambient default clock.
 
@@ -155,7 +156,7 @@ DateTimePredicates.After<Order>("placedAfter", order => new DateTimeOffset(order
 
 ### Type tests
 
-Each `TypePredicates` test has two overloads under one name. The `string?` overload tests text. The `object?` overload tests the runtime type and also reads text. A null selected value answers `Unknown`. All parsing uses the invariant culture.
+Each `TypePredicates` test has two overloads under one name. The `string?` overload tests text. The `object?` overload tests the runtime type and also reads text. A null selected value answers `Unknown` by default; a host can pass `nullBehavior: NullBehavior.False` to make it `False` (and the `IsNotX` twin `True`). All parsing uses the invariant culture.
 
 | Test | True when |
 | --- | --- |

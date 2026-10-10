@@ -39,9 +39,9 @@ public sealed class TwinNullComplementTests
         {
             ["String.Equals/NotEqual"] = new(
                 nb => StringPredicates.Equals<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => StringPredicates.NotEqual<Selections>("t", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotEquals<Selections>("t", c => c.Text, nullBehavior: nb),
                 () => StringPredicates.Equals<Selections>("p", c => c.Text),
-                () => StringPredicates.NotEqual<Selections>("t", c => c.Text),
+                () => StringPredicates.NotEquals<Selections>("t", c => c.Text),
                 Args(("value", LiteralValue.OfString("a")))
             ),
             ["String.Contains/NotContains"] = new(
@@ -140,10 +140,10 @@ public sealed class TwinNullComplementTests
                 Args(("values", Strings("a")))
             ),
             ["Collection.In/NotIn"] = new(
-                nb => CollectionPredicates.In<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => CollectionPredicates.NotIn<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => CollectionPredicates.In<Selections>("p", c => c.Text),
-                () => CollectionPredicates.NotIn<Selections>("t", c => c.Text),
+                nb => StringPredicates.In<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.NotIn<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => StringPredicates.In<Selections>("p", c => c.Text),
+                () => StringPredicates.NotIn<Selections>("t", c => c.Text),
                 Args(("values", Strings("a")))
             ),
             ["Collection.CountEqual/NotCountEqual"] = new(
@@ -195,11 +195,11 @@ public sealed class TwinNullComplementTests
                 () => DateTimePredicates.NotBefore<Selections>("t", c => c.At),
                 Args(("value", LiteralValue.OfDateTimeOffset(T0)))
             ),
-            ["DateTime.Between/Outside"] = new(
+            ["DateTime.Between/NotBetween"] = new(
                 nb => DateTimePredicates.Between<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => DateTimePredicates.Outside<Selections>("t", c => c.At, nullBehavior: nb),
+                nb => DateTimePredicates.NotBetween<Selections>("t", c => c.At, nullBehavior: nb),
                 () => DateTimePredicates.Between<Selections>("p", c => c.At),
-                () => DateTimePredicates.Outside<Selections>("t", c => c.At),
+                () => DateTimePredicates.NotBetween<Selections>("t", c => c.At),
                 Args(("lower", LiteralValue.OfDateTimeOffset(T0)), ("upper", LiteralValue.OfDateTimeOffset(T0.AddDays(1))))
             ),
             ["DateTime.AfterNow/NotAfterNow"] = new(
@@ -237,11 +237,11 @@ public sealed class TwinNullComplementTests
                 () => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Int64),
                 Args(("value", LiteralValue.OfInt64(5)))
             ),
-            ["Int64.Between/Outside"] = new(
+            ["Int64.Between/NotBetween"] = new(
                 nb => NumericPredicates.Between<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.Outside<Selections>("t", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.NotBetween<Selections>("t", c => c.Int64, nullBehavior: nb),
                 () => NumericPredicates.Between<Selections>("p", c => c.Int64),
-                () => NumericPredicates.Outside<Selections>("t", c => c.Int64),
+                () => NumericPredicates.NotBetween<Selections>("t", c => c.Int64),
                 Args(("lower", LiteralValue.OfInt64(1)), ("upper", LiteralValue.OfInt64(5)))
             ),
             ["Int64.In/NotIn"] = new(
@@ -279,11 +279,11 @@ public sealed class TwinNullComplementTests
                 () => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Decimal),
                 Args(("value", LiteralValue.OfDecimal(5.5m)))
             ),
-            ["Decimal.Between/Outside"] = new(
+            ["Decimal.Between/NotBetween"] = new(
                 nb => NumericPredicates.Between<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.Outside<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.NotBetween<Selections>("t", c => c.Decimal, nullBehavior: nb),
                 () => NumericPredicates.Between<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.Outside<Selections>("t", c => c.Decimal),
+                () => NumericPredicates.NotBetween<Selections>("t", c => c.Decimal),
                 Args(("lower", LiteralValue.OfDecimal(1.5m)), ("upper", LiteralValue.OfDecimal(5.5m)))
             ),
             ["Decimal.In/NotIn"] = new(
