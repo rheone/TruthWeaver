@@ -51,7 +51,7 @@ public static class RuleFuzzer
             registry.Schemas,
             seed,
             options ?? RuleFuzzerOptions.Default,
-            static (rule, _) => rule.Simplify(),
+            static (rule, _) => rule.Simplify().GetRuleOrThrow(),
             cancellationToken
         );
     }
@@ -133,7 +133,7 @@ public static class RuleFuzzer
             FuzzCase fuzzCase = new(seed, index, generated, picked);
             await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Evaluation, rule, cancellationToken).ConfigureAwait(false);
             CompiledRule<FuzzAssignment> simplified = simplify(rule, compiler);
-            CompiledRule<FuzzAssignment> canonical = rule.Canonicalize();
+            CompiledRule<FuzzAssignment> canonical = rule.Canonicalize().GetRuleOrThrow();
             await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Simplify, simplified, cancellationToken)
                 .ConfigureAwait(false);
             await AddFailureAsync(failures, fuzzCase, RuleFuzzCheck.Canonicalize, canonical, cancellationToken)
@@ -152,7 +152,7 @@ public static class RuleFuzzer
                 fuzzCase,
                 RuleFuzzCheck.CanonicalizeIdempotent,
                 canonical,
-                canonical.Canonicalize()
+                canonical.Canonicalize().GetRuleOrThrow()
             );
             await AddNormalFormFailuresAsync(failures, fuzzCase, rule, cancellationToken).ConfigureAwait(false);
             AddRoundTripFailure(failures, fuzzCase, RuleFuzzCheck.DslRoundTrip, rule, compiler.Compile(rule.CanonicalText));

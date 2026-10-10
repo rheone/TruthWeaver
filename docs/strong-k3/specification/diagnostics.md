@@ -44,6 +44,7 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0030` | `NotCanonical` | Info | Lint | Opt-in (`LintRules.Style`) | `Canonicalize()` would change the rule. The suggestion is the canonical rule text. |
 | `TRE0031` | `ThresholdKeptAsAtom` | Warning | Rewrite | On | `ToNnf()`, `ToCnf()` or `ToDnf()` kept a threshold as an atom, because expanding it can grow the rule a lot. The message gives the growth estimate. Pass `NormalFormOptions` with `ExpandThresholds` set to `true` to expand it. |
 | `TRE0032` | `DuplicateArgument` | Error | Validate | On | A term names the same argument more than once, in rule text, JSON, YAML or `RuleBuilder`. No occurrence wins. |
+| `TRE0033` | `RewriteNotConverged` | Warning | Rewrite | On | `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit before the rule stopped changing. The rule is equivalent to the input, but rewriting it again can still change it. |
 
 A lint finding carries a suggested replacement.
 

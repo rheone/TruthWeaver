@@ -9,5 +9,5 @@
 **Decision (owner, 2026-10-10):** Rename `RuleMetrics` measures to `Depth` and `NodeCount` (limits keep `MaxDepth`/`MaxNodeCount`); a rewrite that hits its pass limit reports a non-convergence warning.
 
 - [x] The owner picked the names and the warning
-- [ ] A test shows the non-convergence warning
+- [x] A test shows the non-convergence warning
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

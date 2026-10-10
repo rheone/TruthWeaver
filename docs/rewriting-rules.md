@@ -21,15 +21,18 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 
 ### What a rewrite returns
 
-A rewrite returns one of three shapes. The rule for which shape is: a rewrite that can make the rule larger returns a `CompilationResult<TContext>`, because it can be refused at its size cap. A rewrite that never makes the rule larger returns a `CompiledRule<TContext>`. A rewrite that also reports its steps returns a `SimplifyResult<TContext>`.
+A rewrite returns one of two shapes. A rewrite that can be refused at its size cap, or that can report a warning, returns a `CompilationResult<TContext>`. A rewrite that also reports its steps returns a `SimplifyResult<TContext>`.
 
 | Shape | Rewrites | How to read the result |
 | --- | --- | --- |
-| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()` | Check `Succeeded`, then use `Rule` (or call `GetRuleOrThrow()`). A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. |
-| `CompiledRule<TContext>` | `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Use the rule. It is never larger than the original. |
-| `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule` and `Steps`. |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Check `Succeeded`, then use `Rule` (or call `GetRuleOrThrow()`). A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). |
+| `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule`, `Steps` and `Diagnostics`. `Diagnostics` holds the same `TRE0033` warning as `Simplify()`. |
 
-To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It has an overload for each of the first two shapes.
+To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It accepts a rewrite that returns a `CompilationResult<TContext>` or a `CompiledRule<TContext>`.
+
+### Pass limits
+
+`CompressToDerived()`, `Canonicalize()` and `Simplify()` repeat a pass until the rule stops changing, so rewriting the result again changes nothing. Each has a fixed pass limit: 16, 8 and 16. If a rewrite reaches its limit before the rule stops changing, it returns the equivalent rule it has and one `TRE0033` (`RewriteNotConverged`) warning. In that case, rewriting the result again can still change it. Call the rewrite on the result again until it no longer changes. The limit is not a setting. No known rule reaches it.
 
 The Evaluation behavior section of each Operation page states how the rewrites treat that operator. For example, [NAND](strong-k3/derived/nand.md#evaluation-behavior) states what `CompressToDerived` and `ExpandToNand` do with it.
 
@@ -88,7 +91,7 @@ The code is in [Diagnostics](strong-k3/specification/diagnostics.md). This table
 | `ExpandToPrimitives()` | Linear for most operators. `XOR`, `EQUIVALENT`, `If` and the inspections repeat an operand, so nesting them multiplies the printed size by about two per level (exponential in nesting depth). |
 | `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the NAND or NOR rewrite, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a NAND or NOR conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
 
-`CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and have no cap.
+`CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and have no size cap. Each has a [pass limit](#pass-limits) instead.
 
 ### A large result may not recompile
 
@@ -200,7 +203,7 @@ foreach (RewriteStep step in result.Steps)
     Console.WriteLine($"{step.Law}: {step.Before} => {step.After}");
 }
 
-// result.Rule has the same canonical text as rule.Simplify().
+// result.Rule has the same canonical text as rule.Simplify().GetRuleOrThrow().
 ```
 
 Each `RewriteStep` has three members:

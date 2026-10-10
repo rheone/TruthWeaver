@@ -176,10 +176,14 @@ public sealed class CompiledRule<TContext>
     /// <c>OR</c>/<c>AND</c> pattern may change, so the order predicates are invoked in may differ; results do not.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates, with derived operators where patterns matched.</returns>
-    public CompiledRule<TContext> CompressToDerived()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates, with derived operators where patterns matched. It carries
+    /// a <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit
+    /// before the rule stopped changing; the rule is then still equivalent, but compressing it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> CompressToDerived()
     {
-        return new CompiledRule<TContext>(Compressor.Compress(this.Root), this.registry, this.logger, this.options);
+        return this.CompressToDerivedWithPassLimit(Compressor.MaxPasses);
     }
 
     /// <summary>
@@ -208,10 +212,14 @@ public sealed class CompiledRule<TContext>
     /// text-based, a canonical rule is for comparison and storage keys, not for performance tuning.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates in canonical form.</returns>
-    public CompiledRule<TContext> Canonicalize()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates in canonical form. It carries a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit before
+    /// the rule stopped changing; the rule is then still equivalent, but canonicalising it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> Canonicalize()
     {
-        return new CompiledRule<TContext>(Canonicalizer.Canonicalize(this.Root), this.registry, this.logger, this.options);
+        return this.CanonicalizeWithPassLimit(Canonicalizer.MaxPasses);
     }
 
     /// <summary>
@@ -239,10 +247,14 @@ public sealed class CompiledRule<TContext>
     /// the value never changes.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates, simplified.</returns>
-    public CompiledRule<TContext> Simplify()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates, simplified. It carries a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit before
+    /// the rule stopped changing; the rule is then still equivalent, but simplifying it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> Simplify()
     {
-        return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger, this.options);
+        return this.SimplifyWithPassLimit(Simplifier.MaxPasses);
     }
 
     /// <summary>
@@ -256,15 +268,13 @@ public sealed class CompiledRule<TContext>
     /// changed its operands. <see cref="Diffing.RuleDiff"/> compares two finished rules and does not say which law fired; the step
     /// list does.
     /// </remarks>
-    /// <returns>The same rule as <see cref="Simplify"/> and the list of steps.</returns>
+    /// <returns>The same rule as <see cref="Simplify"/>, the list of steps, and the same non-convergence warning.</returns>
     public SimplifyResult<TContext> SimplifyWithSteps()
     {
         List<RewriteStep> steps = [];
-        Expression simplified = Simplifier.Simplify(this.Root, new RewriteTrace(steps));
-        return new SimplifyResult<TContext>(
-            new CompiledRule<TContext>(simplified, this.registry, this.logger, this.options),
-            steps
-        );
+        RewriteOutcome outcome = Simplifier.Simplify(this.Root, new RewriteTrace(steps));
+        CompilationResult<TContext> result = this.ConvergedResult(outcome, nameof(this.Simplify), Simplifier.MaxPasses);
+        return new SimplifyResult<TContext>(result.Rule!, steps, result.Diagnostics);
     }
 
     /// <summary>
@@ -570,6 +580,38 @@ public sealed class CompiledRule<TContext>
         return this.CanonicalText;
     }
 
+    /// <summary>Compresses with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes to run.</param>
+    /// <returns>The compression result.</returns>
+    internal CompilationResult<TContext> CompressToDerivedWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(
+            Compressor.CompressChecked(this.Root, maxPasses),
+            nameof(this.CompressToDerived),
+            maxPasses
+        );
+    }
+
+    /// <summary>Canonicalises with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes to run.</param>
+    /// <returns>The canonicalisation result.</returns>
+    internal CompilationResult<TContext> CanonicalizeWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(
+            Canonicalizer.CanonicalizeChecked(this.Root, maxPasses: maxPasses),
+            nameof(this.Canonicalize),
+            maxPasses
+        );
+    }
+
+    /// <summary>Simplifies with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes of the simplification loop.</param>
+    /// <returns>The simplification result.</returns>
+    internal CompilationResult<TContext> SimplifyWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(Simplifier.Simplify(this.Root, maxPasses: maxPasses), nameof(this.Simplify), maxPasses);
+    }
+
     private static HashSet<string> CollectPredicateNames(Expression root)
     {
         HashSet<string> names = [with(StringComparer.Ordinal)];
@@ -680,6 +722,33 @@ public sealed class CompiledRule<TContext>
         {
             Diagnostics = new EquatableArray<Diagnostic>(warnings),
         };
+    }
+
+    /// <summary>
+    /// Wraps the output of a repeat-until-stable rewrite as a new rule. A rewrite that stopped at its pass limit adds the
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning; the rule is still equivalent.
+    /// </summary>
+    private CompilationResult<TContext> ConvergedResult(RewriteOutcome outcome, string rewrite, int maxPasses)
+    {
+        CompiledRule<TContext> rule = new(outcome.Tree, this.registry, this.logger, this.options);
+        if (outcome.Converged)
+        {
+            return new CompilationResult<TContext>(rule, EquatableArray<Diagnostic>.Empty);
+        }
+
+        Diagnostic warning = Diagnostic.Warning(
+            DiagnosticCodes.RewriteNotConverged,
+            string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{rewrite} stopped after {maxPasses} passes before the rule stopped changing, so rewriting the result again can still change it."
+            ),
+            SourceSpan.None,
+            suggestion: new DiagnosticSuggestion(
+                DiagnosticSuggestionKind.Hint,
+                $"Call {rewrite} on the result again until it no longer changes."
+            )
+        );
+        return new CompilationResult<TContext>(rule, new EquatableArray<Diagnostic>([warning]));
     }
 
     /// <summary>

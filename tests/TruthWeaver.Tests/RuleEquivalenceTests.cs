@@ -139,7 +139,7 @@ public sealed class RuleEquivalenceTests
             (CompiledRule<RuleTestContext> Rule, Func<IReadOnlyList<TruthValue>, TruthValue> Eval)[] candidates =
             [
                 (leftRule, left.Eval),
-                (leftRule.Canonicalize(), left.Eval),
+                (leftRule.Canonicalize().GetRuleOrThrow(), left.Eval),
                 (otherRule, other.Eval),
             ];
 

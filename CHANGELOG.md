@@ -134,6 +134,17 @@ copyright line reads 2026.
 
 ### Changed
 
+- **Breaking:** `RuleMetrics.MaxDepth` is renamed `Depth`, so a measured value no longer shares a name with the
+  `CompilerOptions.MaxDepth` limit (least-surprise-normalization 29). `NodeCount` keeps its name; its limit stays
+  `CompilerOptions.MaxNodeCount`. Migration: read `rule.Metrics.Depth` instead of `rule.Metrics.MaxDepth`.
+- **Breaking:** `CompiledRule.CompressToDerived()`, `Canonicalize()` and `Simplify()` return a
+  `CompilationResult<TContext>` instead of a `CompiledRule<TContext>`, and `SimplifyResult<TContext>` has a third member,
+  `Diagnostics`. Each rewrite repeats until the rule stops changing, with a pass limit of 16, 8 and 16. A rewrite that
+  reaches the limit now returns the new warning `RewriteNotConverged` (`TRE0033`) with an equivalent rule, instead of
+  stopping silently; rewriting that rule again can still change it. No real input reaches a limit today. Migration:
+  call `.GetRuleOrThrow()` (or read `.Rule` after checking `Succeeded`) on the result; construct a `SimplifyResult`
+  with `EquatableArray<Diagnostic>.Empty` as the third argument. `RewriteAssertions.AssertSound(rule, r => r.Simplify())`
+  compiles unchanged and now uses the `CompilationResult` overload.
 - **Breaking:** the list-valued members of `Decision` (`Faults`), `Trace` (`Entries`), `TraceNode` (`Children`) and
   `CompilationResult<TContext>` (`Diagnostics`) are `EquatableArray<T>` instead of `IReadOnlyList<T>`
   (least-surprise-normalization 28), so two decisions from identical evaluations, two identical compiles, and two

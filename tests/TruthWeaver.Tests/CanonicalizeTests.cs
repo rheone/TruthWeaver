@@ -32,15 +32,15 @@ public sealed class CanonicalizeTests
                 continue;
             }
 
-            K3Rule canonical = original.Rewrite(rule => rule.Canonicalize());
+            K3Rule canonical = original.Rewrite(rule => rule.Canonicalize().GetRuleOrThrow());
             checkedRules++;
             string once = canonical.Compiled.CanonicalText;
-            if (once != canonical.Compiled.Canonicalize().CanonicalText)
+            if (once != canonical.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText)
             {
                 failures.Add($"{generated.Text}: not idempotent ({once})");
             }
 
-            if (once != original.Compiled.Canonicalize().CanonicalText)
+            if (once != original.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText)
             {
                 failures.Add($"{generated.Text}: not deterministic ({once})");
             }
@@ -93,8 +93,8 @@ public sealed class CanonicalizeTests
             }
 
             checkedRules++;
-            string firstCanonical = firstRule.Compiled.Canonicalize().CanonicalText;
-            string secondCanonical = secondRule.Compiled.Canonicalize().CanonicalText;
+            string firstCanonical = firstRule.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText;
+            string secondCanonical = secondRule.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText;
             if (firstCanonical != secondCanonical)
             {
                 failures.Add($"{first}  vs  {second}: {firstCanonical}  !=  {secondCanonical}");
@@ -104,7 +104,7 @@ public sealed class CanonicalizeTests
             {
                 TruthValue expected = shape.Eval(assignment);
                 Decision a = await firstRule
-                    .Rewrite(rule => rule.Canonicalize())
+                    .Rewrite(rule => rule.Canonicalize().GetRuleOrThrow())
                     .EvaluateAsync(assignment, TestContext.Current.CancellationToken);
                 Decision b = await secondRule.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
                 if (a.Result != expected || b.Result != expected)
@@ -144,7 +144,7 @@ public sealed class CanonicalizeTests
     public async Task Canonicalize_SmallRule_GivesTheStatedCanonicalText_Test(string ruleText, int arity, string expected)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize());
+        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize().GetRuleOrThrow());
 
         Assert.Equal(expected, canonical.Compiled.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
@@ -172,7 +172,7 @@ public sealed class CanonicalizeTests
     public async Task Canonicalize_OrderSensitiveOrClassicalOnlyShape_KeepsItsMeaning_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize());
+        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize().GetRuleOrThrow());
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
         {
@@ -199,7 +199,7 @@ public sealed class CanonicalizeTests
     )
     {
         K3Rule original = K3Rule.TryCreate(ruleText, 1)!;
-        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize());
+        K3Rule canonical = original.Rewrite(rule => rule.Canonicalize().GetRuleOrThrow());
 
         Decision decision = await canonical.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
 
@@ -213,7 +213,7 @@ public sealed class CanonicalizeTests
         K3Rule original = K3Rule.TryCreate("b AND a", 2)!;
         string textBefore = original.Compiled.CanonicalText;
 
-        CompiledRule<RuleTestContext> canonical = original.Compiled.Canonicalize();
+        CompiledRule<RuleTestContext> canonical = original.Compiled.Canonicalize().GetRuleOrThrow();
 
         Assert.NotSame(original.Compiled, canonical);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);

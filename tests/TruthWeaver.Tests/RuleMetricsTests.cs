@@ -25,7 +25,7 @@ public sealed class RuleMetricsTests
         RuleMetrics metrics = rule.Metrics;
 
         Assert.Equal(4, metrics.NodeCount);
-        Assert.Equal(3, metrics.MaxDepth);
+        Assert.Equal(3, metrics.Depth);
         Assert.Equal(2, metrics.DistinctTermCount);
         Assert.True(metrics.BddNodeCount > 0);
     }

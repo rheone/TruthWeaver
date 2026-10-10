@@ -183,4 +183,10 @@ public static class DiagnosticCodes
     /// path is the repeated argument. No occurrence wins: the call is an error.
     /// </summary>
     public const string DuplicateArgument = "TRE0032";
+
+    /// <summary>
+    /// Warning: <c>CompressToDerived</c>, <c>Canonicalize</c> or <c>Simplify</c> stopped at its pass limit before the rule
+    /// stopped changing. The rule is equivalent to the input, but rewriting it again can still change it.
+    /// </summary>
+    public const string RewriteNotConverged = "TRE0033";
 }

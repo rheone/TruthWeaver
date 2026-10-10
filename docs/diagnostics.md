@@ -140,6 +140,7 @@ Each limit has one setting and one outcome. The compile limits are `CompilerOpti
 | `CompilerOptions.MaxNodeCount` | 512 | `Compile` returns a `TRE0010` error and no rule. |
 | `CompilerOptions.MaxAnalysisTerms` | 20 | The analysis is skipped and `Compile` adds a `TRE0011` info diagnostic. The rule compiles. The semantic lints skip the sub-expression. `RuleEquivalence.Compare` and `RuleDiff.Compare` return an undecided result. `AssertEquivalent` and `AssertSound` fail as inconclusive. |
 | `CompilerOptions.MaxRewriteNodeCount` | 100,000 | An expanding rewrite or normal form returns a failed `CompilationResult` with a `TRE0016` error and no rule. A result under this cap can still be over `MaxNodeCount`, so its text compiles back only when `MaxNodeCount` is raised. See [A large result may not recompile](rewriting-rules.md#a-large-result-may-not-recompile). |
+| Rewrite pass limit (16 for `CompressToDerived()`, 8 for `Canonicalize()`, 16 for `Simplify()`) | fixed | The rewrite returns its equivalent rule and a `TRE0033` warning. See [Pass limits](rewriting-rules.md#pass-limits). |
 | `EvaluationOptions.FaultBudget` | none | The evaluation stops when the faults reach the budget. The terms not yet run are `Unknown` in the trace, so the result is usually `Unknown`. |
 | `EvaluationOptions.Timeout` | none | `EvaluateAsync` throws `OperationCanceledException`. It records no fault and gives no `Unknown`. |
 
@@ -204,4 +205,5 @@ This table shows how each class of malformed rule text is reported.
 | Variable reference whose query fails the validator of its source | `TRE0025`                            | a query valid for the data source / the query written                                  | none                                                            |
 | Literal argument values that the predicate's argument validator rejects, such as reversed `Between` or `NotBetween` bounds | `TRE0026` | the rule the values break / the values written | the fix the validator gives, such as swapping the bounds |
 | Use of a predicate whose schema is marked deprecated (a warning, one per use; the rule still compiles) | `TRE0027` | none / the predicate name | the replacement predicate, when the schema names one |
+| `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit (a warning on the result) | `TRE0033` | none / the rewrite and its pass limit | hint to call the rewrite on the result again |
 | A normal-form rewrite kept a threshold as an atom (a warning on the result of `ToNnf()`, `ToCnf()` or `ToDnf()`) | `TRE0031` | none / the threshold and the estimated node count of its expansion | hint to pass `NormalFormOptions` with `ExpandThresholds` set to `true` |

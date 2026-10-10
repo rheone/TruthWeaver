@@ -20,27 +20,37 @@ internal static class Compressor
     /// <summary>
     /// A safety bound on the repeat-until-stable loop. Every rewrite shrinks the tree or moves a node to a derived form no
     /// pattern consumes, so passes converge in a handful of rounds; the bound only guards against a future pattern cycling.
+    /// A rewrite that reaches the limit reports <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/>.
     /// </summary>
-    private const int MaxPasses = 16;
+    internal const int MaxPasses = 16;
 
     /// <summary>Compresses <paramref name="root"/> and everything below it.</summary>
     /// <param name="root">The tree to compress.</param>
     /// <returns>An equivalent tree, no larger than <paramref name="root"/>, using derived operators where patterns matched.</returns>
     public static Expression Compress(Expression root)
     {
+        return CompressChecked(root).Tree;
+    }
+
+    /// <summary>Compresses <paramref name="root"/> and says whether the repeat-until-stable loop reached a fixed point.</summary>
+    /// <param name="root">The tree to compress.</param>
+    /// <param name="maxPasses">The most passes to run. A test lowers it to force non-convergence.</param>
+    /// <returns>The compressed tree and whether the loop converged within <paramref name="maxPasses"/>.</returns>
+    public static RewriteOutcome CompressChecked(Expression root, int maxPasses = MaxPasses)
+    {
         Expression current = root;
-        for (int pass = 0; pass < MaxPasses; pass++)
+        for (int pass = 0; pass < maxPasses; pass++)
         {
             Expression next = new Pass().Visit(current);
             if (next.Equals(current))
             {
-                return current;
+                return new RewriteOutcome(current, Converged: true);
             }
 
             current = next;
         }
 
-        return current;
+        return new RewriteOutcome(current, Converged: false);
     }
 
     /// <summary>One top-down sweep. The memo keeps shared sub-trees shared and stops a repeated operand being rewritten twice.</summary>

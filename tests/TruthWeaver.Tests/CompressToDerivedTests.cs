@@ -32,7 +32,7 @@ public sealed class CompressToDerivedTests
             }
 
             K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
-            K3Rule compressed = expanded.Rewrite(rule => rule.CompressToDerived());
+            K3Rule compressed = expanded.Rewrite(rule => rule.CompressToDerived().GetRuleOrThrow());
             checkedRules++;
             if (PrintedTreeSize.NodeCount(compressed.Compiled) > PrintedTreeSize.NodeCount(expanded.Compiled))
             {
@@ -72,8 +72,11 @@ public sealed class CompressToDerivedTests
                 continue;
             }
 
-            CompiledRule<RuleTestContext> once = original.Compiled.ExpandToPrimitives().CompiledRule!.CompressToDerived();
-            CompiledRule<RuleTestContext> twice = once.CompressToDerived();
+            CompiledRule<RuleTestContext> once = original
+                .Compiled.ExpandToPrimitives()
+                .CompiledRule!.CompressToDerived()
+                .GetRuleOrThrow();
+            CompiledRule<RuleTestContext> twice = once.CompressToDerived().GetRuleOrThrow();
             checkedRules++;
 
             Assert.Equal(once.CanonicalText, twice.CanonicalText);
@@ -106,7 +109,9 @@ public sealed class CompressToDerivedTests
     public async Task CompressToDerived_ExpandedOperator_IsRecognisedAgain_Test(string ruleText, int arity, string expected)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule compressed = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!.CompressToDerived());
+        K3Rule compressed = original.Rewrite(rule =>
+            rule.ExpandToPrimitives().CompiledRule!.CompressToDerived().GetRuleOrThrow()
+        );
 
         Assert.Equal(expected, compressed.Compiled.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
@@ -139,7 +144,7 @@ public sealed class CompressToDerivedTests
     public async Task CompressToDerived_PrimitivePattern_BecomesTheDerivedForm_Test(string ruleText, int arity, string expected)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule compressed = original.Rewrite(rule => rule.CompressToDerived());
+        K3Rule compressed = original.Rewrite(rule => rule.CompressToDerived().GetRuleOrThrow());
 
         Assert.Equal(expected, compressed.Compiled.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
@@ -168,7 +173,7 @@ public sealed class CompressToDerivedTests
     public async Task CompressToDerived_NonMatchingShape_IsLeftEquivalent_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule compressed = original.Rewrite(rule => rule.CompressToDerived());
+        K3Rule compressed = original.Rewrite(rule => rule.CompressToDerived().GetRuleOrThrow());
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(arity))
         {
@@ -188,7 +193,7 @@ public sealed class CompressToDerivedTests
         K3Rule original = K3Rule.TryCreate("NOT a OR b", 2)!;
         string textBefore = original.Compiled.CanonicalText;
 
-        CompiledRule<RuleTestContext> compressed = original.Compiled.CompressToDerived();
+        CompiledRule<RuleTestContext> compressed = original.Compiled.CompressToDerived().GetRuleOrThrow();
 
         Assert.NotSame(original.Compiled, compressed);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);
