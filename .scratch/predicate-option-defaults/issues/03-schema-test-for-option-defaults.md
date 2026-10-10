@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A test walks every predicate schema in the built-in catalog and fails on an optional `ignoreCase` or `trim` argument whose default is not `false`
 - [ ] The test fails on an optional Boolean `include*` argument that has no default. The `nullBehavior` default is a factory parameter, not a schema field, so a reflection check of the factory methods is added only if it stays small
