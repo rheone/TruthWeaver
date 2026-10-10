@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] No literal operand count remains in `RuleNodeCompiler` for operators the table describes
 - [ ] Every arity diagnostic keeps its code and text, or the change is listed and `docs/diagnostics.md` is updated to match

@@ -61,6 +61,35 @@ internal sealed class RuleNodeCompiler<TContext>
         return count == 1 ? "1 operand" : $"{count} operands";
     }
 
+    /// <summary>
+    /// Looks up an operator's arity in the operator table, the one place that states how many operands it takes, so
+    /// the DSL, JSON, YAML and the builder agree. A missing entry is a programming error: the table completeness
+    /// test pins one definition per operator.
+    /// </summary>
+    private static OperatorDefinition ArityOf(string opName)
+    {
+        return OperatorDefinitions.TryGet(opName, out OperatorDefinition? definition)
+            ? definition
+            : throw new InvalidOperationException($"No operator definition for '{opName}'.");
+    }
+
+    /// <summary>Tells whether <paramref name="count"/> lies within the operator's <c>MinOperands</c> to <c>MaxOperands</c>.</summary>
+    private static bool AcceptsCount(OperatorDefinition definition, int count)
+    {
+        return count >= definition.MinOperands && (definition.MaxOperands is not { } max || count <= max);
+    }
+
+    /// <summary>
+    /// Phrases the operand count an operator accepts for a diagnostic's <c>Expected</c>: <c>2 operands</c> for a fixed
+    /// arity, <c>at least 2 operands</c> for an unbounded one.
+    /// </summary>
+    private static string ExpectedCountText(OperatorDefinition definition)
+    {
+        return definition.MaxOperands == definition.MinOperands
+            ? CountText(definition.MinOperands)
+            : $"at least {CountText(definition.MinOperands)}";
+    }
+
     private static DiagnosticSuggestion NestingHint(string name)
     {
         return new DiagnosticSuggestion(
@@ -170,54 +199,54 @@ internal sealed class RuleNodeCompiler<TContext>
                 a.Operands,
                 depth,
                 a,
-                2,
+                "And",
                 operands => new AndExpression(new EquatableArray<Expression>(operands))
             ),
             OrNode o => this.BuildVariadic(
                 o.Operands,
                 depth,
                 o,
-                2,
+                "Or",
                 operands => new OrExpression(new EquatableArray<Expression>(operands))
             ),
             XorNode x => this.BuildXor(x, depth),
             EquivalentNode eq => this.BuildEquivalent(eq, depth),
             ImpliesNode i => this.BuildImplies(i, depth),
-            NandNode nd => this.BuildNegatedBinary(nd.Operands, nd, "NAND", depth, (l, r) => new NandExpression(l, r)),
-            NorNode nr => this.BuildNegatedBinary(nr.Operands, nr, "NOR", depth, (l, r) => new NorExpression(l, r)),
+            NandNode nd => this.BuildNegatedBinary(nd.Operands, nd, "NAND", "Nand", depth, (l, r) => new NandExpression(l, r)),
+            NorNode nr => this.BuildNegatedBinary(nr.Operands, nr, "NOR", "Nor", depth, (l, r) => new NorExpression(l, r)),
             ParityNode nx => this.BuildVariadic(
                 nx.Operands,
                 depth,
                 nx,
-                2,
+                "Parity",
                 operands => new ParityExpression(new EquatableArray<Expression>(operands))
             ),
             AnyNode an => this.BuildVariadic(
                 an.Operands,
                 depth,
                 an,
-                2,
+                "Any",
                 operands => new AnyExpression(new EquatableArray<Expression>(operands))
             ),
             AllNode al => this.BuildVariadic(
                 al.Operands,
                 depth,
                 al,
-                2,
+                "All",
                 operands => new AllExpression(new EquatableArray<Expression>(operands))
             ),
             NoneNode no => this.BuildVariadic(
                 no.Operands,
                 depth,
                 no,
-                2,
+                "None",
                 operands => new NoneExpression(new EquatableArray<Expression>(operands))
             ),
             ExactlyOneNode e => this.BuildVariadic(
                 e.Operands,
                 depth,
                 e,
-                2,
+                "ExactlyOne",
                 operands => new ExactlyOneExpression(new EquatableArray<Expression>(operands))
             ),
             ThresholdNode th => this.BuildThreshold(th, depth),
@@ -226,7 +255,7 @@ internal sealed class RuleNodeCompiler<TContext>
                 co.Operands,
                 depth,
                 co,
-                2,
+                "Coalesce",
                 operands => new CoalesceExpression(new EquatableArray<Expression>(operands))
             ),
             IfNode ifNode => this.BuildIf(ifNode, depth),
@@ -238,14 +267,15 @@ internal sealed class RuleNodeCompiler<TContext>
     /// <summary>Builds <c>If(condition, whenTrue, whenFalse)</c>; anything but exactly three operands is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>
     private Expression BuildIf(IfNode node, int depth)
     {
-        if (node.Operands.Count != 3)
+        OperatorDefinition arity = ArityOf("If");
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.MalformedTree,
-                    $"If requires exactly 3 operands (condition, whenTrue, whenFalse) but found {node.Operands.Count}.",
+                    $"If requires exactly {arity.MinOperands} operands (condition, whenTrue, whenFalse) but found {node.Operands.Count}.",
                     node.Span,
-                    expected: "3 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(node.Operands.Count),
                     path: PathOf(node, "operands")
                 )
@@ -263,14 +293,15 @@ internal sealed class RuleNodeCompiler<TContext>
     /// <summary>Builds an inspection (<c>IsTrue</c>/<c>IsFalse</c>/<c>IsUnknown</c>/<c>IsKnown</c>); anything but one operand is a <see cref="DiagnosticCodes.MalformedTree"/>.</summary>
     private Expression BuildInspection(InspectionNode node, int depth)
     {
-        if (node.Operands.Count != 1)
+        OperatorDefinition arity = ArityOf(node.Kind.ToString());
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.MalformedTree,
-                    $"{node.Kind} requires exactly 1 operand but found {node.Operands.Count}.",
+                    $"{node.Kind} requires exactly {CountText(arity.MinOperands)} but found {node.Operands.Count}.",
                     node.Span,
-                    expected: "1 operand",
+                    expected: ExpectedCountText(arity),
                     found: CountText(node.Operands.Count),
                     path: PathOf(node, "operands")
                 )
@@ -285,18 +316,19 @@ internal sealed class RuleNodeCompiler<TContext>
         IReadOnlyList<RuleNode> operands,
         int depth,
         RuleNode owner,
-        int minOperands,
+        string opName,
         Func<IReadOnlyList<Expression>, Expression> construct
     )
     {
-        if (operands.Count < minOperands)
+        OperatorDefinition arity = ArityOf(opName);
+        if (!AcceptsCount(arity, operands.Count))
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.MalformedTree,
-                    $"This operator requires at least {minOperands} operands but found {operands.Count}.",
+                    $"This operator requires {ExpectedCountText(arity)} but found {operands.Count}.",
                     owner.Span,
-                    expected: $"at least {minOperands} operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(operands.Count),
                     path: PathOf(owner, "operands")
                 )
@@ -315,7 +347,8 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression BuildXor(XorNode node, int depth)
     {
-        if (node.Operands.Count != 2)
+        OperatorDefinition arity = ArityOf("Xor");
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             string message =
                 $"XOR is binary only; found {node.Operands.Count} operands. "
@@ -325,7 +358,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     DiagnosticCodes.InfixArityViolation,
                     message,
                     node.Span,
-                    expected: "2 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(node.Operands.Count),
                     suggestion: new DiagnosticSuggestion(
                         DiagnosticSuggestionKind.Hint,
@@ -344,7 +377,8 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression BuildEquivalent(EquivalentNode node, int depth)
     {
-        if (node.Operands.Count != 2)
+        OperatorDefinition arity = ArityOf("Equivalent");
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             string message =
                 $"EQUIVALENT is binary only; found {node.Operands.Count} operands. "
@@ -354,7 +388,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     DiagnosticCodes.InfixArityViolation,
                     message,
                     node.Span,
-                    expected: "2 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(node.Operands.Count),
                     suggestion: NestingHint("EQUIVALENT"),
                     path: PathOf(node, "operands")
@@ -376,11 +410,13 @@ internal sealed class RuleNodeCompiler<TContext>
         IReadOnlyList<RuleNode> operands,
         RuleNode owner,
         string name,
+        string opName,
         int depth,
         Func<Expression, Expression, Expression> construct
     )
     {
-        if (operands.Count != 2)
+        OperatorDefinition arity = ArityOf(opName);
+        if (!AcceptsCount(arity, operands.Count))
         {
             string message =
                 $"{name} is binary only; found {operands.Count} operands. "
@@ -390,7 +426,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     DiagnosticCodes.InfixArityViolation,
                     message,
                     owner.Span,
-                    expected: "2 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(operands.Count),
                     suggestion: NestingHint(name),
                     path: PathOf(owner, "operands")
@@ -406,7 +442,8 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression BuildImplies(ImpliesNode node, int depth)
     {
-        if (node.Operands.Count != 2)
+        OperatorDefinition arity = ArityOf("Implies");
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             string message =
                 $"IMPLIES is binary only; found {node.Operands.Count} operands. "
@@ -416,7 +453,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     DiagnosticCodes.InfixArityViolation,
                     message,
                     node.Span,
-                    expected: "2 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(node.Operands.Count),
                     suggestion: NestingHint("IMPLIES"),
                     path: PathOf(node, "operands")
@@ -432,14 +469,19 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression BuildThreshold(ThresholdNode node, int depth)
     {
-        if (node.Operands.Count < 1)
+        // The operand count comes from the operator table, but the table cannot state the threshold k range: it depends
+        // on the comparison and on the operand count together, so ValidThresholdRange keeps that rule. It runs first so
+        // an unknown comparison is rejected by it before any table lookup.
+        (int minK, int maxK) = ValidThresholdRange(node.Comparison, node.Operands.Count);
+        OperatorDefinition arity = ArityOf(node.Comparison.ToString());
+        if (!AcceptsCount(arity, node.Operands.Count))
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.MalformedTree,
-                    $"{node.Comparison} requires at least one operand.",
+                    $"{node.Comparison} requires at least {(arity.MinOperands == 1 ? "one operand" : CountText(arity.MinOperands))}.",
                     node.Span,
-                    expected: "at least 1 operand",
+                    expected: ExpectedCountText(arity),
                     found: CountText(0),
                     path: PathOf(node, "operands")
                 )
@@ -447,7 +489,6 @@ internal sealed class RuleNodeCompiler<TContext>
             return FailedNode.Placeholder;
         }
 
-        (int minK, int maxK) = ValidThresholdRange(node.Comparison, node.Operands.Count);
         if (node.K < minK || node.K > maxK)
         {
             this.diagnostics.Add(
@@ -480,14 +521,15 @@ internal sealed class RuleNodeCompiler<TContext>
     private Expression BuildBetween(BetweenNode node, int depth)
     {
         int operandCount = node.Operands.Count;
-        if (operandCount < 2)
+        OperatorDefinition arity = ArityOf("Between");
+        if (!AcceptsCount(arity, operandCount))
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.MalformedTree,
-                    $"BETWEEN requires at least 2 operands but found {operandCount}.",
+                    $"BETWEEN requires {ExpectedCountText(arity)} but found {operandCount}.",
                     node.Span,
-                    expected: "at least 2 operands",
+                    expected: ExpectedCountText(arity),
                     found: CountText(operandCount),
                     path: PathOf(node, "operands")
                 )
