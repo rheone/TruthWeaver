@@ -19,7 +19,7 @@ public static class OrderPredicates
     public static (
         PredicateSchema Schema,
         Func<Account, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) MinimumOrders { get; } =
+    ) MinimumOrders =>
         (
             new PredicateSchema(
                 "hasMinimumOrders",

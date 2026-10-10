@@ -11,7 +11,8 @@ public sealed class OrderPredicatesTests
     [Fact]
     public async Task MinimumOrders_AccountMeetingTheMinimum_IsTrue_Test()
     {
-        var (schema, evaluate) = OrderPredicates.MinimumOrders;
+        (PredicateSchema schema, Func<Account, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            OrderPredicates.MinimumOrders;
         PredicateArguments args = new(
             new Dictionary<string, LiteralValue> { [schema.Arguments[0].Name] = LiteralValue.OfInt64(3) }
         );

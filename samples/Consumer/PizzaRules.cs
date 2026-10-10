@@ -30,13 +30,14 @@ public static class PizzaRules
 
             // Shape 2: a selector and a test. No class is needed. Use this shape when the answer
             // comes from one value that is safe to read without container services.
-            (PredicateSchema schema, var evaluate) = SelectedValuePredicates.Create<Customer, int>(
-                "isRegular",
-                "Is regular",
-                "Did this customer place at least three orders?",
-                select: (customer, _, _) => ValueTask.FromResult(customer.OrderCount),
-                test: orderCount => orderCount >= 3 ? TruthValue.True : TruthValue.False
-            );
+            (PredicateSchema schema, Func<Customer, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+                SelectedValuePredicates.Create<Customer, int>(
+                    "isRegular",
+                    "Is regular",
+                    "Did this customer place at least three orders?",
+                    select: (customer, _, _) => ValueTask.FromResult(customer.OrderCount),
+                    test: orderCount => orderCount >= 3 ? TruthValue.True : TruthValue.False
+                );
             registry.Add(schema, evaluate);
         });
     }

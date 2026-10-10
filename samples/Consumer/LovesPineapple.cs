@@ -14,9 +14,8 @@ public sealed class LovesPineapple : IPredicate<Customer>
         PredicateSchema.NoArguments("lovesPineapple", "Loves pineapple", "Does this customer like pineapple on pizza?");
 
     /// <inheritdoc />
-    public ValueTask<TruthValue> EvaluateAsync(
-        Customer context,
-        PredicateArguments args,
-        CancellationToken cancellationToken
-    ) => ValueTask.FromResult(context.LovesPineapple ? TruthValue.True : TruthValue.False);
+    public ValueTask<TruthValue> EvaluateAsync(Customer context, PredicateArguments args, CancellationToken cancellationToken)
+    {
+        return ValueTask.FromResult(context.LovesPineapple ? TruthValue.True : TruthValue.False);
+    }
 }

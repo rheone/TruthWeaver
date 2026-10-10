@@ -13,8 +13,9 @@ public sealed class IsActive : IPredicate<Account>
 
     /// <remarks>A missing flag is not a failure. The answer is Unknown, and the rule decides what that means.</remarks>
     /// <inheritdoc />
-    public ValueTask<TruthValue> EvaluateAsync(Account context, PredicateArguments args, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(
+    public ValueTask<TruthValue> EvaluateAsync(Account context, PredicateArguments args, CancellationToken cancellationToken)
+    {
+        return ValueTask.FromResult(
             context.IsActive switch
             {
                 true => TruthValue.True,
@@ -22,4 +23,5 @@ public sealed class IsActive : IPredicate<Account>
                 null => TruthValue.Unknown,
             }
         );
+    }
 }

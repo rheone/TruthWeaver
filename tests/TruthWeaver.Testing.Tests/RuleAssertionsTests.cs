@@ -60,7 +60,8 @@ public sealed class RuleAssertionsTests
         PredicateRegistryBuilder<object?> builder = PredicateRegistry<object?>.CreateBuilder();
         foreach (string name in new[] { "a", "b", "c" })
         {
-            (PredicateSchema schema, var evaluate) = FakePredicates.Returning<object?>(name, true);
+            (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+                FakePredicates.Returning<object?>(name, true);
             builder.Add(schema, evaluate);
         }
 
