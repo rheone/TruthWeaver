@@ -11,7 +11,7 @@
 - [ ] The finding carries the canonical rule text as a replacement suggestion
 - [ ] The lint does not fire when canonicalization is refused for size (`MaxRewriteNodeCount`)
 - [ ] A new `DiagnosticCodes` entry and diagnostics reference entry
-- [ ] Whether `All` includes the flag follows the owner's answer to open question 1
+- [ ] `LintRules.All` includes `NotCanonical`
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
 See also [spec](../spec.md).

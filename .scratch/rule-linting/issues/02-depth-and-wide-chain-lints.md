@@ -7,11 +7,11 @@
 **Status:** ready
 
 - [ ] `LintRules` gains `DeepNesting` and `WideChain` flags, and `All` includes both
-- [ ] `DeepNesting` reports a rule whose depth reaches the agreed fraction of `CompilerOptions.MaxDepth`
-- [ ] `WideChain` reports an `AND`/`OR` chain with more operands than the agreed width
+- [ ] `DeepNesting` reports a rule whose depth reaches a fraction of `CompilerOptions.MaxDepth` (default 0.75)
+- [ ] `WideChain` reports an `AND`/`OR` chain with more operands than the `CompilerOptions` width (default 16)
 - [ ] Each rule has its own `DiagnosticCodes` entry (after `TRE0027`) and a diagnostics reference entry
-- [ ] The width and depth thresholds come from `CompilerOptions`, with documented defaults
+- [ ] Both thresholds are `CompilerOptions` values with documented defaults
 - [ ] A rule under both thresholds produces no finding
 - [ ] Carries XML docs, tests named per CLAUDE.md, and the full validation set from CLAUDE.md passes
 
-See also [spec](../spec.md), open questions 2 and 3.
+See also [spec](../spec.md).
