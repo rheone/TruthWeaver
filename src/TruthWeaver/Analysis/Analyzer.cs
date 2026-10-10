@@ -185,114 +185,27 @@ internal static class Analyzer
         return possible ? TruthValue.Unknown : TruthValue.False;
     }
 
+    /// <summary>
+    /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
+    /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
+    /// </summary>
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
-        switch (node)
+        // Terms and constants are leaves: ExpressionShape has no operands for them.
+        if (node is TermExpression term)
         {
-            case TermExpression t:
-                terms.Add(t.Identity);
-                break;
-            case NotExpression n:
-                CollectTerms(n.Operand, terms);
-                break;
-            case AndExpression a:
-                foreach (Expression o in a.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
+            terms.Add(term.Identity);
+            return;
+        }
 
-                break;
-            case OrExpression o2:
-                foreach (Expression o in o2.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
+        if (node is ConstantExpression)
+        {
+            return;
+        }
 
-                break;
-            case XorExpression x:
-                CollectTerms(x.Left, terms);
-                CollectTerms(x.Right, terms);
-                break;
-            case EquivalentExpression xn:
-                CollectTerms(xn.Left, terms);
-                CollectTerms(xn.Right, terms);
-                break;
-            case NandExpression nd:
-                CollectTerms(nd.Left, terms);
-                CollectTerms(nd.Right, terms);
-                break;
-            case NorExpression nr:
-                CollectTerms(nr.Left, terms);
-                CollectTerms(nr.Right, terms);
-                break;
-            case ImpliesExpression im:
-                CollectTerms(im.Antecedent, terms);
-                CollectTerms(im.Consequent, terms);
-                break;
-            case ParityExpression nx:
-                foreach (Expression o in nx.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case AnyExpression an:
-                foreach (Expression o in an.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case AllExpression al:
-                foreach (Expression o in al.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case NoneExpression no:
-                foreach (Expression o in no.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case ExactlyOneExpression e:
-                foreach (Expression o in e.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case ThresholdExpression th:
-                foreach (Expression o in th.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case BetweenExpression bt:
-                foreach (Expression o in bt.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case CoalesceExpression co:
-                foreach (Expression o in co.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case InspectionExpression ins:
-                CollectTerms(ins.Operand, terms);
-                break;
-            case IfExpression iff:
-                CollectTerms(iff.Condition, terms);
-                CollectTerms(iff.WhenTrue, terms);
-                CollectTerms(iff.WhenFalse, terms);
-                break;
+        foreach (Expression operand in ExpressionShape.Of(node).Operands)
+        {
+            CollectTerms(operand, terms);
         }
     }
 

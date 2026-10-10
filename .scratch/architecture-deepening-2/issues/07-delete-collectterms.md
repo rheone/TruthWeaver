@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (both edit `Analyzer`)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `CollectTerms` and its throwing default are deleted
 - [ ] A test pins that terms under every operator kind are collected, so a future operator without children handling fails loudly
