@@ -126,6 +126,11 @@ copyright line reads 2026.
 
 ### Changed
 
+- Breaking: `NullBehavior.Unknown` is the zero value (`0`) and `NullBehavior.False` is `1`. They were `1` and `0`, so
+  `default(NullBehavior)` was `False` while the documented default is `Unknown`. A forgotten or defaulted value now means
+  `Unknown`. Migration: nothing changes when you name the members. Replace any stored or cast numeric value (a
+  `(NullBehavior)0` that meant `False` is now `Unknown`) with the member name, and re-read a persisted `NullBehavior` as
+  its name rather than its number.
 - Breaking: the collection `IsEmpty` and `IsNotEmpty` take a `NullBehavior` that defaults to `Unknown`, as the string
   `IsEmpty` and the count predicates do. A null collection answered `True` for `IsEmpty` and `False` for `IsNotEmpty`
   before; it is now `Unknown` for both, with no fault. A missing value is `Unknown` unless the predicate is a null test.

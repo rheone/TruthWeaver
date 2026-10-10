@@ -16,14 +16,17 @@ using TruthWeaver.Abstractions;
 public enum NullBehavior
 {
     /// <summary>
-    /// A null selected value yields a definite <see cref="TruthValue.False"/> for a positive predicate and
-    /// <see cref="TruthValue.True"/> for its <c>NotX</c> twin. The exception is
-    /// <see cref="CollectionPredicates.SetEquals{TContext}"/>: it reads a null collection as an empty collection, so it
-    /// answers <see cref="TruthValue.True"/> when the argument array is empty, and
-    /// <see cref="CollectionPredicates.NotSetEquals{TContext}"/> answers the complement.
+    /// A null selected value yields <see cref="TruthValue.Unknown"/>, with no fault recorded. This is the zero value, so a
+    /// forgotten or defaulted <see cref="NullBehavior"/> is the documented default.
     /// </summary>
-    False = 0,
+    Unknown = 0,
 
-    /// <summary>A null selected value yields <see cref="TruthValue.Unknown"/>, with no fault recorded.</summary>
-    Unknown = 1,
+    /// <summary>
+    /// A null selected value yields a definite <see cref="TruthValue.False"/> for a positive predicate and
+    /// <see cref="TruthValue.True"/> for its <c>NotX</c> twin. The exceptions are
+    /// <see cref="CollectionPredicates.SetEquals{TContext}"/>, which reads a null collection as an empty collection, so it
+    /// answers <see cref="TruthValue.True"/> when the argument array is empty, and
+    /// <see cref="CollectionPredicates.NotSetEquals{TContext}"/>, which answers the complement.
+    /// </summary>
+    False = 1,
 }

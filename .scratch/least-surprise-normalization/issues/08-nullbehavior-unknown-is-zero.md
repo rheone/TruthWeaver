@@ -4,7 +4,7 @@
 
 **Blocked by:** 07 (both edit the predicate null handling)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A test pins `default(NullBehavior) == NullBehavior.Unknown`
 - [ ] No code or test depends on the old numeric values
