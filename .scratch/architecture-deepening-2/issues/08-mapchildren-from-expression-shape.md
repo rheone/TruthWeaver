@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `MapChildren` contains no case that only repeats the child list
 - [ ] The `ExpressionShape` completeness test still fails when an operator has no shape
