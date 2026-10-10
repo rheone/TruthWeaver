@@ -139,6 +139,7 @@ Each diagnostic is a build error. The generator registers no method that has an 
 | `TWG004` | An instance method, a generic method, a method with no context parameter, or a `ref`, `out` or `in` parameter. |
 | `TWG005` | A declaring type, or a type around it, that is not `partial` or is generic. |
 | `TWG006` | A default value with no literal form, for example `null` or `default` of a `Guid`. |
+| `TWG007` | A predicate name that the rule text reads as a keyword, such as `any` or `Between`, in any case. See [Grammar](rule-text.md#grammar). |
 
 ## Limits
 

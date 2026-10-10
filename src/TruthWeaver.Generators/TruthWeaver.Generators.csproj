@@ -33,6 +33,11 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- The keyword list is one file, shared with the TruthWeaver library, so the generator and the registry reject the same names. -->
+  <ItemGroup>
+    <Compile Include="..\TruthWeaver\Parsing\ReservedWords.cs" Link="Shared\ReservedWords.cs" />
+  </ItemGroup>
+
   <!-- Release tracking for the generator diagnostics (RS2008). -->
   <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />

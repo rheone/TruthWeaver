@@ -70,4 +70,14 @@ internal static class GeneratorDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>TWG007: a predicate name that the rule text reads as a keyword.</summary>
+    public static readonly DiagnosticDescriptor ReservedPredicateName = new(
+        "TWG007",
+        "Reserved predicate name",
+        "Predicate method '{0}' uses the name '{1}', which the rule text reads as a keyword. Choose another name.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

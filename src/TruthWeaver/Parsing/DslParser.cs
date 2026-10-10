@@ -14,44 +14,6 @@ using TruthWeaver.Diagnostics;
 /// </summary>
 internal sealed class DslParser
 {
-    private static readonly HashSet<string> ReservedWords =
-    [
-        with(StringComparer.OrdinalIgnoreCase),
-        "AND",
-        "OR",
-        "NOT",
-        "XOR",
-        "EQUIVALENT",
-        "IFF",
-        "XNOR",
-        "IMPLIES",
-        "NAND",
-        "NOR",
-        "TRUE",
-        "FALSE",
-        "UNKNOWN",
-        "PARITY",
-        "NXOR",
-        "ANY",
-        "ALL",
-        "NONE",
-        "BETWEEN",
-        "COALESCE",
-        "IF",
-        "ISTRUE",
-        "ISFALSE",
-        "ISUNKNOWN",
-        "ISKNOWN",
-        "PROJECT",
-        "COLLAPSE",
-        "EXACTLYONE",
-        "ATLEAST",
-        "ATMOST",
-        "GREATERTHAN",
-        "LESSTHAN",
-        "EXACTLY",
-    ];
-
     // Infix operators that sit outside the NOT > AND > OR precedence chain: they may not be mixed with
     // each other or with AND/OR at one nesting level without parentheses (ADR-0005 decision 8).
     // COALESCE is infix only as the symbol ?? (the word is a function call), and, being associative, a chain of it
@@ -81,7 +43,7 @@ internal sealed class DslParser
 
     private Token Current => this.tokens[this.position];
 
-    /// <summary>Determines whether a bare identifier is a reserved DSL keyword and therefore cannot be a predicate name.</summary>
+    /// <summary>Determines whether a bare identifier is a reserved DSL keyword, ignoring case, and therefore cannot be a predicate name.</summary>
     /// <param name="identifier">The identifier text.</param>
     /// <returns><see langword="true"/> if the identifier is reserved.</returns>
     public static bool IsReservedWord(string identifier)

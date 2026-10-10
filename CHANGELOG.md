@@ -209,6 +209,11 @@ copyright line reads 2026.
   diagnostic says the argument is not a string, number, boolean or array, at the argument's path. It was read as the string
   "null" (or an empty string). Migration: quote the value (`role: "null"`) where you meant the text, and remove the
   argument where you meant none. A quoted value is unchanged.
+- Breaking: registering a predicate named like a DSL keyword (`any`, `all`, `none`, `between`, `if`, `exactly` and the rest of the
+  reserved words, in any case) now throws an `ArgumentException` that names the word from `PredicateRegistryBuilder<TContext>`,
+  and the source generator reports the new build error `TWG007` for a `[Predicate]` method with such a name. Rule text could
+  never call these names, because the parser read the word as the keyword. Migration: rename the predicate. Rules that called
+  the old name need the same rename.
 - Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
   `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
   case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Registry builder and source generator both reject the reserved names, with a test for each
-- [ ] A case variant (`Between`) is rejected too
-- [ ] The page that describes the behavior is updated to the current truth, with no "changed from" text
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Registry builder and source generator both reject the reserved names, with a test for each
+- [x] A case variant (`Between`) is rejected too
+- [x] The page that describes the behavior is updated to the current truth, with no "changed from" text
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

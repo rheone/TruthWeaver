@@ -1,6 +1,7 @@
 namespace TruthWeaver.Registry;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Parsing;
 
 /// <summary>
 /// Builds a <see cref="PredicateRegistry{TContext}"/> via explicit registration — either a
@@ -16,7 +17,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <summary>Registers a class-based predicate, resolved from the per-evaluation <see cref="IServiceProvider"/>.</summary>
     /// <typeparam name="TPredicate">The predicate implementation type.</typeparam>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, or the schema declares two arguments whose names differ only in case.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add<TPredicate>()
         where TPredicate : IPredicate<TContext>
     {
@@ -29,7 +30,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <param name="schema">The predicate's schema.</param>
     /// <param name="evaluate">The stateless evaluation function.</param>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, or the schema declares two arguments whose names differ only in case.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add(
         PredicateSchema schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
@@ -67,6 +68,14 @@ public sealed class PredicateRegistryBuilder<TContext>
 
     private void AddDescriptor(string name, PredicateDescriptor<TContext> descriptor)
     {
+        if (DslParser.IsReservedWord(name))
+        {
+            throw new ArgumentException(
+                $"A predicate cannot be named '{name}': the name is reserved, because rule text reads it as a keyword (the check ignores case). Choose another name.",
+                nameof(name)
+            );
+        }
+
         RejectCaseVariantArguments(name, descriptor.Schema);
         string key = name.ToUpperInvariant();
         if (!this.descriptorsByName.TryAdd(key, descriptor))

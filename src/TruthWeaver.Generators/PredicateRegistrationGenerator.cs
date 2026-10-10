@@ -3,6 +3,7 @@ namespace TruthWeaver.Generators;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TruthWeaver.Generators.Model;
+using TruthWeaver.Parsing;
 
 /// <summary>
 /// Generates predicate registration code. For each type that declares <c>[Predicate]</c> methods, the generator emits a
@@ -70,6 +71,19 @@ public sealed class PredicateRegistrationGenerator : IIncrementalGenerator
         Dictionary<string, PredicateMethod> byName = [with(StringComparer.Ordinal)];
         foreach (PredicateMethod method in methods)
         {
+            if (ReservedWords.Contains(method.PredicateName))
+            {
+                output.ReportDiagnostic(
+                    Diagnostic.Create(
+                        GeneratorDiagnostics.ReservedPredicateName,
+                        method.Location?.ToLocation(),
+                        method.MethodName,
+                        method.PredicateName
+                    )
+                );
+                continue;
+            }
+
             string key = method.PredicateName.ToUpperInvariant();
             if (byName.TryGetValue(key, out PredicateMethod? first))
             {

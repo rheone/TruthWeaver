@@ -108,6 +108,38 @@ public sealed class PredicateRegistrationGeneratorTests
     }
 
     /// <summary>
+    /// A predicate named like a DSL keyword, in any case, is error TWG007 at the method, and the name is not registered.
+    /// </summary>
+    [Theory]
+    [InlineData("any")]
+    [InlineData("Between")]
+    public void Generator_ReservedPredicateName_ReportsTwg007_Test(string name)
+    {
+        string source = $$"""
+            using TruthWeaver.Abstractions;
+            using TruthWeaver.Generators;
+
+            public sealed record Account(bool Active);
+
+            public static partial class AccountPredicates
+            {
+                [Predicate("{{name}}", "Keyword", "A name the rule text reads as a keyword.")]
+                public static TruthValue Keyword(Account account)
+                {
+                    return TruthValue.True;
+                }
+            }
+            """;
+
+        GeneratorRun run = GeneratorHarness.Run(source);
+
+        Diagnostic diagnostic = Assert.Single(run.GeneratorDiagnostics);
+        Assert.Equal("TWG007", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains($"'{name}'", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// A method that returns something other than <c>TruthValue</c>, <c>ValueTask&lt;TruthValue&gt;</c> or
     /// <c>Task&lt;TruthValue&gt;</c> (here <see cref="bool"/>) is error TWG003, and the method is not registered.
     /// </summary>
