@@ -4,7 +4,7 @@ Scope decisions (owner, 2026-10-11) are in the spec; the worker adds no project,
 
 **What to build:** Open a JSON or YAML document that contains a rule among other content. Pick the rule by a path (JSONPath-style) or by browsing the document tree and pressing Enter. Edit it in the workbench. Save by patching only the rule's own span in the original text, so comments, key order and layout elsewhere are untouched (JSON and YAML both expose source positions), or choose a full round-trip write-back with a warning that YAML comments and layout may be lost. Support several rules in one document (switch between them).
 
-**Blocked by:** 01
+**Blocked by:** 01, C4 (the patcher lives in Core)
 
 **Status:** on-hold until tickets 16 and 20 (feature-backlog-2026-10-11) are done; then ready-for-agent
 

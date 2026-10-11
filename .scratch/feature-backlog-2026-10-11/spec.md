@@ -15,7 +15,7 @@ Before creating a new package or project, scoping one, or adding a heavy depende
 | 5 localized diagnostics, 10 decision caching, 24 other logics, 25 weighted logic | Dropped. Reasons: rarely asked of a rules library; hosts can cache themselves; the project is Strong K3; a different product. No tickets. |
 | 1, 2, 4, 6, 13 | Ready. |
 | 16, 17a, 18, 20 | Ready, each starting with a scope confirmation. New projects: `TruthWeaver.Tool` and `TruthWeaver.Tool.Tests` (16, 20), `TruthWeaver.AspNetCore` and `TruthWeaver.AspNetCore.Tests` (18). |
-| 16 scope | `System.CommandLine` in the tool project only (status checked first); stubs only (no registry loading, ticket 16b is on hold); permissive predicate inference with an optional YAML schema file. |
+| 16 scope | Rewritten 2026-10-11 as the CLI front end over `TruthWeaver.Tool.Core`; see [tool-platform](../tool-platform/spec.md) for the shared core, library additions (notes, truth table, round-trip), validation, export and reports. `System.CommandLine` in the CLI project only; stubs only (16b on hold); permissive inference with an optional YAML schema file. |
 | 20 scope | Runner library in `TruthWeaver.Testing`, which gains a reference to `TruthWeaver.Yaml` (confirmed). |
 | 18 scope | Authorization handler and policy builder with resource-based authorization; shipped `AuthorizationContext<TResource>` plus a custom mapper; fail closed with the decision kept; an opt-in to allow `Unknown`. |
 | 21, 22 | Spike tickets first (design notes). A grilling session on each note follows. |
