@@ -157,6 +157,31 @@ public sealed class DslRoundTripPropertyTests
     }
 
     /// <summary>
+    /// Ticket 06: <c>PrintRuleText(operatorStyle: OperatorStyle.Symbolic)</c> parses back to the same tree as the
+    /// word form, for any generated tree — the symbols it writes for <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/
+    /// <c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c> are exactly the ones the DSL lexer reads back for them.
+    /// </summary>
+    [Fact]
+    public void Parse_SymbolicPrintedGeneratedTree_ReproducesEqualTree_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+
+        GenExpressionTree.Sample(
+            tree =>
+            {
+                string printed = CanonicalPrinter.Print(tree, GroupingStyle.Parentheses, OperatorStyle.Symbolic);
+                CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+                string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
+                string failureMessage = $"Expected '{printed}' to compile cleanly but got: {diagnosticMessages}";
+
+                Assert.True(result.Succeeded, failureMessage);
+                Assert.Equal(tree, result.CompiledRule!.Root);
+            },
+            iter: SampleIterations
+        );
+    }
+
+    /// <summary>
     /// Ticket 21: the depth-cycling rendering, which mixes <c>()</c>, <c>[]</c> and <c>{}</c>, parses back to the same
     /// tree as the parentheses-only form for any generated tree (delimiters never change the compiled tree).
     /// </summary>

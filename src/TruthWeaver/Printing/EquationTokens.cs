@@ -77,6 +77,13 @@ internal sealed record EquationTokens
     public required string Nor { get; init; }
 
     /// <summary>
+    /// Gets the formatter for <c>If(condition, whenTrue, whenFalse)</c> as a ternary, given the three operands already
+    /// printed (and parenthesized, where their own context needs it). <see langword="null"/> (the default for every
+    /// dialect but <see cref="EquationDialect.CStyle"/>) means <c>If</c> prints in function-call form instead.
+    /// </summary>
+    public Func<string, string, string, string>? FormatIf { get; init; }
+
+    /// <summary>
     /// Gets the term formatter. It takes the term's identity and whether to show argument values, and returns the
     /// finished term text, escaped for the dialect.
     /// </summary>
@@ -102,6 +109,31 @@ internal sealed record EquationTokens
     /// example <c>$$...$$</c>. A dialect with no envelope returns the equation unchanged.
     /// </summary>
     public required Func<string, string> Wrap { get; init; }
+
+    /// <summary>
+    /// Gets the table for the C-family dialect: <c>&amp;&amp;</c>, <c>||</c>, <c>!</c>, <c>^</c>, <c>==</c>, and a
+    /// ternary for <c>If</c>. <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c> have no C-family spelling and keep their
+    /// word form; <c>COALESCE</c> keeps the function-call form in every dialect (<see cref="FormatIf"/> is the only
+    /// per-dialect restructuring the printer supports).
+    /// </summary>
+    public static EquationTokens CStyle { get; } =
+        new()
+        {
+            And = "&&",
+            Or = "||",
+            Not = "!",
+            Xor = "^",
+            Equivalent = "==",
+            Implies = "IMPLIES",
+            Nand = "NAND",
+            Nor = "NOR",
+            FormatIf = (condition, whenTrue, whenFalse) => $"{condition} ? {whenTrue} : {whenFalse}",
+            FormatTerm = (identity, showArgumentValues) => showArgumentValues ? identity.ToString() : identity.PredicateName,
+            FormatConstant = TruthValueText.Canonical,
+            FormatFunctionName = name => name,
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : letter + ToSubscriptDigits(subscript),
+            Wrap = equation => equation,
+        };
 
     /// <summary>
     /// Gets the table for the LaTeX dialect. A term and a function name are <c>\text</c> groups. The wrap mode sets the
@@ -146,6 +178,7 @@ internal sealed record EquationTokens
             EquationDialect.Unicode => Unicode,
             EquationDialect.LaTeX => Latex(options.LatexWrap),
             EquationDialect.AsciiMath => AsciiMath,
+            EquationDialect.CStyle => CStyle,
             _ => throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unhandled equation dialect."),
         };
     }

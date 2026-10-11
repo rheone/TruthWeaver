@@ -67,7 +67,7 @@ The printer writes each operator word in one fixed spelling. The rule is:
 - The other call words are upper camel case: `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`, `If`, `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`.
 - The constants are `True`, `False` and `Unknown`.
 
-The printer writes the word form of an operator and never a symbol. The printed spelling is the one that the [grammar](#grammar) uses for each word.
+`PrintRuleText` and `CanonicalText` write the word form of an operator by default. The printed spelling is the one that the [grammar](#grammar) uses for each word. See [Operator style](#operator-style) for the one other spelling `PrintRuleText` supports.
 
 <!-- doctest:rule casing -->
 ```text
@@ -111,6 +111,39 @@ rule.PrintRuleText(GroupingStyle.DepthCycling);          // a AND (b OR [c AND {
 
 `DepthCycling` is opt-in and deterministic. The delimiter depends only on how many groups enclose it, and it cycles through `(`, `[` and `{`. It helps people read a deeply nested rule. The output always parses back to a tree equal to the original, so `CanonicalText` stays the form to persist. Function-call argument lists keep `(`.
 
+## Operator style
+
+Pass an `OperatorStyle` to `PrintRuleText` to choose how `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND` and `NOR` are spelled:
+
+- `Word` (the default) writes the word form, exactly as `CanonicalText` does.
+- `Symbolic` writes the mathematical symbol the DSL parser itself reads back for that operator (`∧ ∨ ¬ ⊕ ↔ → ↑ ↓`), so the result still compiles to a tree equal to the original.
+- `CStyle` is rejected: the parser does not read `^` or `==` (see [Spellings](strong-k3/specification/syntax.md#spellings)), so there is no round-trippable C-style rule text. `PrintRuleText` throws `ArgumentException`; `TryPrintRuleText` returns `false` and sets its `out` text to `null` instead.
+
+`COALESCE` and `If` keep their word/function-call spelling in every style: the DSL reads `??` only as an infix operator, with no call syntax for it, so a function-call COALESCE has no symbol to switch to.
+
+<!-- doctest:rule opstyle -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext opstyle -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext opstyle symbolic -->
+```text
+approvedByAlice ∧ (approvedByBob ∨ ¬approvedByCarol)
+```
+
+```csharp
+rule.PrintRuleText();                                         // approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+rule.PrintRuleText(operatorStyle: OperatorStyle.Symbolic);     // approvedByAlice ∧ (approvedByBob ∨ ¬approvedByCarol)
+rule.PrintRuleText(operatorStyle: OperatorStyle.CStyle);       // throws ArgumentException
+
+bool ok = rule.TryPrintRuleText(GroupingStyle.Parentheses, OperatorStyle.CStyle, out string? text);  // false, text is null
+```
+
 ## Whitespace
 
 Whitespace between tokens never matters, so you can lay out rule text freely. `CanonicalText` prints one space around each infix operator and after each comma, with no leading or trailing whitespace, whatever spacing the rule had when you wrote it.
@@ -127,4 +160,4 @@ The result is the same for any input spacing, and a second call changes nothing.
 
 ## Printer spelling of the ternary
 
-`If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`.
+`If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`. `PrintRuleText` never renders the ternary form (see [Operator style](#operator-style)). [`PrintEquation`](equations.md) with `EquationDialect.CStyle` renders `If` as the ternary `c ? t : f` instead of a call; the other dialects keep the call form.

@@ -11,6 +11,14 @@ using TruthWeaver.Ast;
 /// regardless of context. This is the exact form <c>parse</c> reproduces a structurally equal tree
 /// from (ticket 06).
 /// </summary>
+/// <remarks>
+/// <see cref="OperatorStyle.Symbolic"/> (ticket 06) swaps <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>
+/// for the symbols the DSL lexer itself reads for them (<c>DslParser.SymbolAlias</c>), so
+/// the printed text still re-parses to an equal tree. <c>COALESCE</c> and <c>If</c> are unaffected: the DSL has no call
+/// syntax for <c>??</c>, so they always print in word/function-call form. <see cref="OperatorStyle.CStyle"/> is not
+/// supported here — the caller (<c>CompiledRule.PrintRuleText</c>) rejects it before this printer ever sees it, since
+/// <c>^</c> and <c>==</c> are not DSL tokens.
+/// </remarks>
 internal static class CanonicalPrinter
 {
     private enum PrintContext
@@ -28,10 +36,20 @@ internal static class CanonicalPrinter
     /// The grouping delimiters to wrap operands in. <see cref="GroupingStyle.Parentheses"/> (the default) is the canonical
     /// form; <see cref="GroupingStyle.DepthCycling"/> prints the same tree with the delimiter chosen by group depth.
     /// </param>
+    /// <param name="operatorStyle">
+    /// How to spell the binary connectives. <see cref="OperatorStyle.Word"/> (the default) or
+    /// <see cref="OperatorStyle.Symbolic"/>; the caller is expected to have already rejected
+    /// <see cref="OperatorStyle.CStyle"/>, which has no DSL spelling.
+    /// </param>
     /// <returns>The DSL text.</returns>
-    public static string Print(Expression root, GroupingStyle grouping = GroupingStyle.Parentheses)
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</exception>
+    public static string Print(
+        Expression root,
+        GroupingStyle grouping = GroupingStyle.Parentheses,
+        OperatorStyle operatorStyle = OperatorStyle.Word
+    )
     {
-        return PrintNode(root, PrintContext.Top, 0, grouping);
+        return PrintNode(root, PrintContext.Top, 0, grouping, operatorStyle);
     }
 
     private static bool NeedsWrap(Expression node, PrintContext context)
@@ -61,7 +79,13 @@ internal static class CanonicalPrinter
         };
     }
 
-    private static string PrintNode(Expression node, PrintContext context, int depth, GroupingStyle grouping)
+    private static string PrintNode(
+        Expression node,
+        PrintContext context,
+        int depth,
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle
+    )
     {
         // A node that gets wrapped opens a group, so its operands sit one group deeper than the node itself.
         bool wrap = NeedsWrap(node, context);
@@ -70,36 +94,54 @@ internal static class CanonicalPrinter
         {
             ConstantExpression c => TruthValueText.Canonical(c.Value),
             TermExpression t => t.Identity.ToString(),
-            NotExpression n => "NOT " + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping),
-            AndExpression => JoinOperands(node, " AND ", PrintContext.AndOperand, innerDepth, grouping),
-            OrExpression => JoinOperands(node, " OR ", PrintContext.OrOperand, innerDepth, grouping),
-            XorExpression x => PrintNode(x.Left, PrintContext.InfixOperand, innerDepth, grouping)
-                + " XOR "
-                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping),
-            EquivalentExpression xn => PrintNode(xn.Left, PrintContext.InfixOperand, innerDepth, grouping)
-                + " EQUIVALENT "
-                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping),
-            ImpliesExpression im => PrintNode(im.Antecedent, PrintContext.InfixOperand, innerDepth, grouping)
-                + " IMPLIES "
-                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping),
-            NandExpression nd => PrintNode(nd.Left, PrintContext.InfixOperand, innerDepth, grouping)
-                + " NAND "
-                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping),
-            NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping)
-                + " NOR "
-                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping),
-            ParityExpression => $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            AnyExpression => $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            AllExpression => $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            NoneExpression => $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            ExactlyOneExpression => $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            InspectionExpression ins => $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping)})",
-            IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
-            CoalesceExpression => $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
+            NotExpression n => NotToken(operatorStyle)
+                + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle),
+            AndExpression => JoinOperands(
+                node,
+                InfixToken("AND", operatorStyle),
+                PrintContext.AndOperand,
+                innerDepth,
+                grouping,
+                operatorStyle
+            ),
+            OrExpression => JoinOperands(
+                node,
+                InfixToken("OR", operatorStyle),
+                PrintContext.OrOperand,
+                innerDepth,
+                grouping,
+                operatorStyle
+            ),
+            XorExpression x => PrintNode(x.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + InfixToken("XOR", operatorStyle)
+                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
+            EquivalentExpression xn => PrintNode(xn.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + InfixToken("EQUIVALENT", operatorStyle)
+                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
+            ImpliesExpression im => PrintNode(im.Antecedent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + InfixToken("IMPLIES", operatorStyle)
+                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
+            NandExpression nd => PrintNode(nd.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + InfixToken("NAND", operatorStyle)
+                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
+            NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + InfixToken("NOR", operatorStyle)
+                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
+            ParityExpression => $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            AnyExpression => $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            AllExpression => $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            NoneExpression => $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            ExactlyOneExpression =>
+                $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            InspectionExpression ins =>
+                $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+            CoalesceExpression =>
+                $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
             BetweenExpression bt =>
-                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
+                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
             ThresholdExpression th =>
-                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping)})",
+                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -110,6 +152,48 @@ internal static class CanonicalPrinter
 
         (char open, char close) = Delimiters(depth, grouping);
         return $"{open}{inner}{close}";
+    }
+
+    /// <summary>Gets the prefix token for <c>NOT</c>: <c>"NOT "</c>, or <c>"¬"</c> with no trailing space in <see cref="OperatorStyle.Symbolic"/>.</summary>
+    private static string NotToken(OperatorStyle style)
+    {
+        return style switch
+        {
+            OperatorStyle.Word => "NOT ",
+            OperatorStyle.Symbolic => "¬",
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, "PrintRuleText supports only Word and Symbolic."),
+        };
+    }
+
+    /// <summary>
+    /// Gets the infix token for a binary connective, padded with one space on each side, in the given
+    /// <paramref name="style"/>. <see cref="OperatorStyle.Symbolic"/> uses the exact glyph the DSL lexer reads for
+    /// <paramref name="word"/> (<c>DslParser.SymbolAlias</c>), so the printed text re-parses to an equal tree.
+    /// </summary>
+    private static string InfixToken(string word, OperatorStyle style)
+    {
+        return style switch
+        {
+            OperatorStyle.Word => $" {word} ",
+            OperatorStyle.Symbolic => $" {SymbolFor(word)} ",
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, "PrintRuleText supports only Word and Symbolic."),
+        };
+    }
+
+    /// <summary>Maps a connective's canonical word to the symbol <c>DslParser.SymbolAlias</c> reads back to it.</summary>
+    private static string SymbolFor(string word)
+    {
+        return word switch
+        {
+            "AND" => "∧",
+            "OR" => "∨",
+            "XOR" => "⊕",
+            "EQUIVALENT" => "↔",
+            "IMPLIES" => "→",
+            "NAND" => "↑",
+            "NOR" => "↓",
+            _ => throw new ArgumentOutOfRangeException(nameof(word), word, "No symbolic spelling for this connective."),
+        };
     }
 
     /// <summary>
@@ -137,12 +221,13 @@ internal static class CanonicalPrinter
         string separator,
         PrintContext operandContext,
         int depth,
-        GroupingStyle grouping
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle
     )
     {
         return string.Join(
             separator,
-            ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, operandContext, depth, grouping))
+            ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, operandContext, depth, grouping, operatorStyle))
         );
     }
 }

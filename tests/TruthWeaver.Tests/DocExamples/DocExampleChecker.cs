@@ -25,8 +25,8 @@ using TruthWeaver.Yaml;
 /// <item><c>rule ID</c>: DSL text that must compile; its canonical text is remembered under <c>ID</c>.</item>
 /// <item><c>json ID</c>, <c>yaml ID</c>: a rule that must compile to the same canonical text as the <c>rule ID</c> example.</item>
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
-/// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID.</item>
-/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example.</item>
+/// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c>, <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID.</item>
+/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it).</item>
 /// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
 /// <item>An <c>equation</c> marker can stand above a display-math paragraph (a line that starts with <c>$$</c>) instead of a fence.</item>
 /// <item><c>rewrite-diagnostics ID</c>: documented output that must equal the diagnostics of the rewrite named by the rewrite word; <c>cap=N</c> sets the <c>maxNodeCount</c> of an expanding rewrite.</item>
@@ -211,8 +211,9 @@ internal static partial class DocExampleChecker
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
             case "tree" or "mermaid" or "equation" or "legend" or "ruletext" or "rewrite-diagnostics":
-                // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources). An equation or legend marker
-                // takes the dialect words "latex", "ascii", "double-dollar", "mathjax" and "simple".
+                // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources).
+                // A ruletext marker takes "symbolic" too (PrintRuleText(OperatorStyle) rejects "cstyle"). An equation or legend marker
+                // takes the dialect words "latex", "ascii", "cstyle", "double-dollar", "mathjax" and "simple".
                 string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string ruleId = words.Length > 0 ? words[0] : string.Empty;
                 if (!rules.TryGetValue(ruleId, out CompiledRule<RuleTestContext>? rule))
@@ -274,7 +275,7 @@ internal static partial class DocExampleChecker
                     {
                         "tree" => PlainTextTreePrinter.Print(rule.Outline(), operatorStyle),
                         "equation" => rule.PrintEquation(equationOptions),
-                        "ruletext" => rule.PrintRuleText(),
+                        "ruletext" => rule.PrintRuleText(operatorStyle: operatorStyle),
                         _ when words.Contains("trace") => rule.PrintMermaid(
                             await EvaluateWithoutDataSourcesAsync(rule),
                             mermaidOptions
@@ -409,7 +410,12 @@ internal static partial class DocExampleChecker
             return EquationDialect.LaTeX;
         }
 
-        return words.Contains("ascii") ? EquationDialect.AsciiMath : EquationDialect.Unicode;
+        if (words.Contains("ascii"))
+        {
+            return EquationDialect.AsciiMath;
+        }
+
+        return words.Contains("cstyle") ? EquationDialect.CStyle : EquationDialect.Unicode;
     }
 
     private static LatexWrapMode LatexWrapOf(string[] words)

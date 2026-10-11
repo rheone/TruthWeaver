@@ -13,18 +13,20 @@ string latex = rule.PrintEquation(new EquationOptions { Dialect = EquationDialec
 
 The connectives print as infix symbols. Every other operator prints in function-call form. The call uses the DSL spelling and the DSL argument order, with the count arguments first, for example `AtLeast(2, a, b, c)`.
 
-| Operator | Unicode | LaTeX | AsciiMath |
-| --- | --- | --- | --- |
-| `AND` | `∧` | `\land` | `^^` |
-| `OR` | `∨` | `\lor` | `vv` |
-| `NOT` | `¬` | `\lnot` | `not` |
-| `XOR` | `⊕` | `\oplus` | `oplus` |
-| `EQUIVALENT` | `↔` | `\leftrightarrow` | `<=>` |
-| `IMPLIES` | `→` | `\rightarrow` | `=>` |
-| `NAND` | `↑` | `\uparrow` | `uarr` |
-| `NOR` | `↓` | `\downarrow` | `darr` |
+| Operator | Unicode | LaTeX | AsciiMath | CStyle |
+| --- | --- | --- | --- | --- |
+| `AND` | `∧` | `\land` | `^^` | `&&` |
+| `OR` | `∨` | `\lor` | `vv` | `\|\|` |
+| `NOT` | `¬` | `\lnot` | `not` | `!` |
+| `XOR` | `⊕` | `\oplus` | `oplus` | `^` |
+| `EQUIVALENT` | `↔` | `\leftrightarrow` | `<=>` | `==` |
+| `IMPLIES` | `→` | `\rightarrow` | `=>` | `IMPLIES` (no C-family spelling) |
+| `NAND` | `↑` | `\uparrow` | `uarr` | `NAND` (no C-family spelling) |
+| `NOR` | `↓` | `\downarrow` | `darr` | `NOR` (no C-family spelling) |
 
-`ExactlyOne`, the threshold family (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`), `BETWEEN`, `PARITY`, `ANY`, `ALL`, `NONE`, `If`, `COALESCE` and the four inspections have no standard infix symbol. They print in function-call form in every dialect.
+`ExactlyOne`, the threshold family (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`), `BETWEEN`, `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and the four inspections have no standard infix symbol. They print in function-call form in every dialect. `If` follows the same rule in every dialect but `CStyle`, which renders it as the ternary `c ? t : f` instead of the call `If(c, t, f)` (see [Dialects](#dialects)).
+
+`CStyle` is a rendering aid, not C# semantics: `==` for `EQUIVALENT` and `?:` for `If` follow Strong K3, not C#'s `null`-handling `==`.
 
 Parentheses appear only around a connective that is an operand of another connective. The root has no outer pair. A negation and a function call never get parentheses.
 
@@ -41,6 +43,13 @@ Set `EquationOptions.Dialect` to choose the notation.
 | `Unicode` (default) | Plain text with the symbols in the table above. No delimiters and no escaping. |
 | `LaTeX` | LaTeX math. A term, a constant and a function name are `\text` groups. |
 | `AsciiMath` | AsciiMath between backticks. A term, a constant and a function name are quoted runs. |
+| `CStyle` | Plain text with the C-family symbols in the table above. No delimiters and no escaping. `If` renders as the ternary `c ? t : f`. |
+
+For the rule `a AND If(hasCrust(crust: "thin"), b, c)`, `CStyle` writes:
+
+```text
+a && (hasCrust(crust: "thin") ? b : c)
+```
 
 ## LaTeX wrap modes
 

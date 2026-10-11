@@ -131,6 +131,11 @@ internal static class EquationPrinter
             NoneExpression => FunctionCall("NONE", [], node, tokens, formatTerm),
             ExactlyOneExpression => FunctionCall("ExactlyOne", [], node, tokens, formatTerm),
             InspectionExpression ins => FunctionCall(ins.Kind.ToString(), [], node, tokens, formatTerm),
+            IfExpression iff when tokens.FormatIf is { } formatIf => formatIf(
+                PrintNode(iff.Condition, PrintContext.Operand, tokens, formatTerm),
+                PrintNode(iff.WhenTrue, PrintContext.Operand, tokens, formatTerm),
+                PrintNode(iff.WhenFalse, PrintContext.Operand, tokens, formatTerm)
+            ),
             IfExpression => FunctionCall("If", [], node, tokens, formatTerm),
             CoalesceExpression => FunctionCall("COALESCE", [], node, tokens, formatTerm),
             BetweenExpression bt => FunctionCall("BETWEEN", [bt.Min, bt.Max], node, tokens, formatTerm),
@@ -138,24 +143,31 @@ internal static class EquationPrinter
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
-        return NeedsParentheses(node, context) ? $"({inner})" : inner;
+        return NeedsParentheses(node, context, tokens) ? $"({inner})" : inner;
     }
 
     /// <summary>
     /// An infix connective needs parentheses only as an operand of another connective. <c>NOT</c> binds tightest
-    /// and never needs them. A function call delimits its own arguments, so it never needs them either.
+    /// and never needs them. A function call delimits its own arguments, so it never needs them either. <c>If</c>
+    /// needs them too, but only when <see cref="EquationTokens.FormatIf"/> turns it into a ternary — the function-call
+    /// form delimits itself like any other call.
     /// </summary>
-    private static bool NeedsParentheses(Expression node, PrintContext context)
+    private static bool NeedsParentheses(Expression node, PrintContext context, EquationTokens tokens)
     {
-        return context == PrintContext.Operand
-            && node
+        if (context != PrintContext.Operand)
+        {
+            return false;
+        }
+
+        return node
                 is AndExpression
                     or OrExpression
                     or XorExpression
                     or EquivalentExpression
                     or ImpliesExpression
                     or NandExpression
-                    or NorExpression;
+                    or NorExpression
+            || (node is IfExpression && tokens.FormatIf is not null);
     }
 
     private static string JoinInfix(Expression node, string token, EquationTokens tokens, Func<TermIdentity, string> formatTerm)

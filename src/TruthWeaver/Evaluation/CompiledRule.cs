@@ -74,10 +74,55 @@ public sealed class CompiledRule<TContext>
     /// and <c>{}</c> as the same grouping.
     /// </summary>
     /// <param name="grouping">The grouping delimiters to print with. Defaults to <see cref="GroupingStyle.Parentheses"/>.</param>
+    /// <param name="operatorStyle">
+    /// How to spell <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>.
+    /// <see cref="OperatorStyle.Word"/> (the default, and the only form <see cref="CanonicalText"/> ever uses) writes
+    /// the word form. <see cref="OperatorStyle.Symbolic"/> writes the mathematical symbols the DSL parser itself
+    /// reads (<c>∧ ∨ ¬ ⊕ ↔ → ↑ ↓</c>), so the result still re-parses to a tree equal to this one.
+    /// <see cref="OperatorStyle.CStyle"/> is rejected: the parser does not read <c>^</c> or <c>==</c>, so there is no
+    /// round-trippable C-style rule text. <c>COALESCE</c> and <c>If</c> always keep their word/function-call spelling
+    /// here, in every style, because the DSL reads <c>??</c> only infix and has no call syntax for it. Call
+    /// <see cref="TryPrintRuleText"/> to avoid the exception.
+    /// </param>
     /// <returns>The DSL text.</returns>
-    public string PrintRuleText(GroupingStyle grouping = GroupingStyle.Parentheses)
+    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</exception>
+    public string PrintRuleText(
+        GroupingStyle grouping = GroupingStyle.Parentheses,
+        OperatorStyle operatorStyle = OperatorStyle.Word
+    )
     {
-        return grouping == GroupingStyle.Parentheses ? this.CanonicalText : CanonicalPrinter.Print(this.Root, grouping);
+        if (operatorStyle == OperatorStyle.CStyle)
+        {
+            throw new ArgumentException(
+                "OperatorStyle.CStyle has no round-trippable rule text: the DSL parser does not read '^' or '=='. "
+                    + "Use Word or Symbolic, or call TryPrintRuleText.",
+                nameof(operatorStyle)
+            );
+        }
+
+        return grouping == GroupingStyle.Parentheses && operatorStyle == OperatorStyle.Word
+            ? this.CanonicalText
+            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle);
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText"/>, but reports an unsupported
+    /// <paramref name="operatorStyle"/> through the return value instead of throwing.
+    /// </summary>
+    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is the only value this rejects.</param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</returns>
+    public bool TryPrintRuleText(GroupingStyle grouping, OperatorStyle operatorStyle, [NotNullWhen(true)] out string? text)
+    {
+        if (operatorStyle == OperatorStyle.CStyle)
+        {
+            text = null;
+            return false;
+        }
+
+        text = this.PrintRuleText(grouping, operatorStyle);
+        return true;
     }
 
     /// <summary>

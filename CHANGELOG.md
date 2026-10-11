@@ -33,6 +33,14 @@ copyright line reads 2026.
 
 ### Added
 
+- `OperatorStyle` on `CompiledRule.PrintRuleText`: `Word` (the default, same output as before) or `Symbolic`, which
+  writes the mathematical symbol the DSL parser itself reads back for `AND`/`OR`/`NOT`/`XOR`/`EQUIVALENT`/`IMPLIES`/
+  `NAND`/`NOR`, so the result still compiles to an equal tree (proven by a property test over generated rules).
+  `OperatorStyle.CStyle` is rejected with an `ArgumentException`, since the parser does not read `^` or `==`;
+  `TryPrintRuleText` is the Try-first sibling that returns `false` instead. `EquationDialect.CStyle` is a new
+  `PrintEquation` dialect for code-like output (`&&`, `||`, `!`, `^`, `==`); it renders `If` as the ternary
+  `c ? t : f` instead of a call, a caveat documented on both types. `docs/rule-text.md` and `docs/equations.md`
+  cover both.
 - `Try` forms beside every method that returns a `CompilationResult<TContext>`: `RuleCompiler.TryCompile`, `TryCompileText`, `TryCompileJson` (text and `JsonElement`), `TryCompileYaml` (text and `YamlNode`), `RuleBuilder.TryCompile`, and on `CompiledRule` `TrySimplify`, `TryCanonicalize`, `TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`. Each is `bool Try…(…, out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)`; `rule` is non-null exactly when the method returns `true`, and a warning-only result returns `true`. `CompilationResult.TryGetRule` is the sibling of `GetRuleOrThrow`. Nothing breaks; the existing methods are unchanged. The convention (every public `…OrThrow` has a `Try…` sibling, and documentation shows the `Try` form first) is in `docs/contributing.md` and is enforced by an architecture test.
 - MinVer derives the package version from Git tags with the prefix `v`. An untagged build is `1.0.0-preview.0.N`. The
   hand-set `Version` of `1.0.0-dev` is removed from `Directory.Build.props`. CI checks out the full history so the
