@@ -163,7 +163,13 @@ internal sealed record EquationTokens
             Wrap = equation => $"<math xmlns=\"{MathMlText.Namespace}\">{equation}</math>",
         };
 
-    /// <summary>Gets the table for the Typst dialect: Typst math symbols, quoted strings for text, and <c>$</c> delimiters.</summary>
+    /// <summary>
+    /// Gets the table for the Typst dialect: Typst math symbols, quoted strings for text, and <c>$</c> delimiters. Every
+    /// name was checked against the Typst reference, <c>https://typst.app/docs/reference/symbols/sym/</c> (<c>and</c>,
+    /// <c>or</c>, <c>not</c>, <c>xor</c> = U+2295, <c>arrow.t</c> = U+2191, <c>arrow.b</c> = U+2193, <c>top</c>,
+    /// <c>bot</c>) and <c>https://typst.app/docs/reference/symbols/</c> (the math shorthands <c>=&gt;</c> and
+    /// <c>&lt;=&gt;</c>). String escapes follow <c>https://typst.app/docs/reference/foundations/str/</c>.
+    /// </summary>
     public static EquationTokens Typst { get; } =
         new()
         {

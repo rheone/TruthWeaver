@@ -204,6 +204,8 @@ A Typst string reads every character literally except the backslash and the doub
 
 Typst has no standard symbol for `NAND` and `NOR`. The dialect uses the arrows `arrow.t` and `arrow.b`, the same arrows as the Unicode dialect.
 
+Each symbol name is in the official Typst reference. The pages are [symbols](https://typst.app/docs/reference/symbols/sym/) (`and`, `or`, `not`, `xor`, `arrow.t`, `arrow.b`, `top` and `bot`), [math shorthands](https://typst.app/docs/reference/symbols/) (`=>` and `<=>`) and [strings](https://typst.app/docs/reference/foundations/str/) (the escapes in the table above). `xor` is the character U+2295, the same character as the `XOR` symbol of the Unicode dialect.
+
 ## Ascii
 
 The `Ascii` dialect writes only the characters from U+0020 to U+007E, and a line feed in a legend. It is for a log, a terminal or a system that accepts only 7-bit text. A term is not quoted. `NAND` and `NOR` have no ASCII symbol and keep their word form.
