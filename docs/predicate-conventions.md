@@ -53,7 +53,7 @@ The table lists each predicate whose name changed. The packages were not publish
 | `RegexPredicates.Matches`, `NotMatches` | `RegexPredicates.IsMatch`, `IsNotMatch` |
 | `RegexPredicates.MatchesIgnoreCase`, `NotMatchesIgnoreCase` | `RegexPredicates.IsMatch`, `IsNotMatch`, rule argument `flags: "i"` |
 
-The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsNotDefault`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `IsSubsetOf`, `IsNotSubsetOf`, the type tests and the Form B predicates keep their names. The collection count predicates now use the `HasCount` names, which are Form B verb phrases with the twin `NotHasCount…`.
+The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsNotDefault`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `IsSubsetOf`, `IsNotSubsetOf`, the type tests and the Form B predicates keep their names. The collection count predicates now use the `HasCount` names, which are Form B verb phrases with the twin `NotHasCountâ€¦`.
 
 ## Conventions
 

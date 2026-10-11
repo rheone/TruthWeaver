@@ -228,8 +228,8 @@ copyright line reads 2026.
   `NotMatchesIgnoreCase`, register `IsMatch` or `IsNotMatch` and add `flags: "i"` to those rules. The default labels are now
   `Is Match` and `Is Not Match`.
 
-- **Breaking:** the collection count predicates are renamed to `HasCount…` verb phrases, and their twins to
-  `NotHasCount…` (Form B in the [naming guide](docs/predicate-conventions.md#naming)). Behavior, arguments and null handling
+- **Breaking:** the collection count predicates are renamed to `HasCountâ€¦` verb phrases, and their twins to
+  `NotHasCountâ€¦` (Form B in the [naming guide](docs/predicate-conventions.md#naming)). Behavior, arguments and null handling
   do not change. The default labels follow the new names (for example `Has Count Equal To`). There are no `[Obsolete]`
   forwarders, because the packages are unpublished. The reference pages under `docs/strong-k3/predicates` are renamed to
   match, and their family is corrected to `CollectionPredicates`.
@@ -440,6 +440,7 @@ copyright line reads 2026.
 
 ### Fixed
 
+- `CHANGELOG.md` and `docs/predicate-conventions.md` held a stray Windows-1252 byte (0x85) in place of an ellipsis, so they were not valid UTF-8. Both are UTF-8 now, and `TextFileEncodingTests` fails for any Markdown, MSBuild, C#, JSON or YAML file that is not valid UTF-8 or starts with a byte order mark. No migration step.
 - `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
   supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
 

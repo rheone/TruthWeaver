@@ -4,8 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `CHANGELOG.md` is valid UTF-8 and its text is otherwise unchanged
-- [ ] A test fails for an invalid-UTF-8 text file (prove it with a fixture in the test, not a bad file in the repo)
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `CHANGELOG.md` is valid UTF-8 and its text is otherwise unchanged
+- [x] A test fails for an invalid-UTF-8 text file (prove it with a fixture in the test, not a bad file in the repo)
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+
+## Comments
+
+2026-10-11, dispatch run: The byte 0x85 occurred twice in `CHANGELOG.md` (both after `HasCount`) and once in `docs/predicate-conventions.md` (after `NotHasCount`); all three became U+2026. The new `TextFileEncodingTests` walks the repository (skipping bin, obj, .git, .tmp, artifacts, TestResults) and proves the failure cases with in-test byte fixtures.
