@@ -13,8 +13,8 @@ public enum ToolExitCode
     Failed = 1,
 
     /// <summary>
-    /// The command could not do its work: a tool core (<c>TWT</c>) error about the input, the configuration, a schema file
-    /// or an output file. This code wins over <see cref="Failed"/>.
+    /// The command could not do its work: a tool core (<c>TWT</c>) error about the input, the configuration, a schema file,
+    /// an output file, an artifact id or an image renderer. This code wins over <see cref="Failed"/>.
     /// </summary>
     Unusable = 2,
 }

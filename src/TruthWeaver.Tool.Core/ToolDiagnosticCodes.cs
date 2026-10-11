@@ -58,4 +58,25 @@ public static class ToolDiagnosticCodes
     /// with the same notes.
     /// </summary>
     public const string ConversionMismatch = "TWT0014";
+
+    /// <summary>
+    /// An export of every artifact left out one artifact, because the rule cannot give it with these options: a truth
+    /// table over the term cap. The manifest lists the artifact as skipped, with the reason.
+    /// </summary>
+    public const string ArtifactSkipped = "TWT0015";
+
+    /// <summary>
+    /// The external program that renders a diagram as an image (Graphviz <c>dot</c> or the Mermaid CLI <c>mmdc</c>) is not on
+    /// the search path. The tools have no renderer of their own.
+    /// </summary>
+    public const string RendererNotFound = "TWT0016";
+
+    /// <summary>
+    /// The external program that renders a diagram as an image did not finish, stopped with a non-zero exit code, or wrote no
+    /// image file.
+    /// </summary>
+    public const string RenderFailed = "TWT0017";
+
+    /// <summary>An artifact id is not in the artifact catalog.</summary>
+    public const string UnknownArtifact = "TWT0018";
 }

@@ -1,0 +1,2 @@
+/* Active editors, or active users while the role service is down. */
+isActive AND (hasRole(role: "editor") OR Unknown)

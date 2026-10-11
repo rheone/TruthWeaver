@@ -28,6 +28,34 @@ public static class ValidationReportWriter
         };
     }
 
+    /// <summary>
+    /// Writes the statistics of a rule alone, as the statistics section of a report: text lines (<c>nodes: 9</c>), or one
+    /// JSON object with the members of the <c>statistics</c> object of the JSON report.
+    /// </summary>
+    /// <param name="statistics">The statistics.</param>
+    /// <param name="format"><see cref="DiagnosticOutputFormat.Text"/> or <see cref="DiagnosticOutputFormat.Json"/>.</param>
+    /// <returns>The output, with line feeds and no final line feed. Write it with <see cref="OutputWriter"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="statistics"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="format"/> is <see cref="DiagnosticOutputFormat.Sarif"/>, which has no place for statistics, or is not
+    /// a defined value.
+    /// </exception>
+    public static string FormatStatistics(RuleStatistics statistics, DiagnosticOutputFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(statistics);
+
+        return format switch
+        {
+            DiagnosticOutputFormat.Text => string.Join("\n", StatisticsLines(statistics)),
+            DiagnosticOutputFormat.Json => DiagnosticWriter.WriteJson(json => WriteStatisticsObject(json, statistics)),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(format),
+                format,
+                "Statistics are written as text or JSON only; SARIF has no place for them."
+            ),
+        };
+    }
+
     /// <summary>Gets the name of a level as the JSON output writes it, such as <c>treeSchema</c>.</summary>
     /// <param name="level">One flag of <see cref="ValidationLevels"/>.</param>
     /// <returns>The name.</returns>
@@ -55,21 +83,7 @@ public static class ValidationReportWriter
         if (report.Statistics is { } statistics)
         {
             lines.Add("statistics");
-            lines.Add($"  nodes: {statistics.NodeCount}");
-            lines.Add($"  depth: {statistics.Depth}");
-            lines.Add($"  terms: {statistics.TermCount} ({statistics.DistinctTermCount} distinct)");
-            lines.Add($"  predicates: {List(statistics.Predicates)}");
-            lines.Add(
-                $"  operators: {List(statistics.OperatorHistogram.Select(o => $"{o.Key} {o.Value.ToString(CultureInfo.InvariantCulture)}"))}"
-            );
-            lines.Add($"  variables: {List(statistics.Variables.Select(v => $"from(\"{v.Source}\", \"{v.Query}\")"))}");
-            lines.Add($"  data sources: {List(statistics.DataSources)}");
-            lines.Add($"  BDD nodes: {statistics.BddNodeCount?.ToString(CultureInfo.InvariantCulture) ?? "not computed"}");
-            lines.Add($"  constancy: {CamelCase(statistics.Constancy.ToString())}");
-            lines.Add(
-                $"  truth table: {statistics.TruthTableRows} rows, {statistics.ClassicalTruthTableRows} classical rows, "
-                    + (statistics.TruthTableWithinCap ? "within the cap" : "over the cap")
-            );
+            lines.AddRange(StatisticsLines(statistics).Select(line => "  " + line));
         }
 
         string diagnostics = DiagnosticWriter.FormatText([document]);
@@ -124,7 +138,13 @@ public static class ValidationReportWriter
 
     private static void WriteStatistics(Utf8JsonWriter json, RuleStatistics statistics)
     {
-        json.WriteStartObject("statistics");
+        json.WritePropertyName("statistics");
+        WriteStatisticsObject(json, statistics);
+    }
+
+    private static void WriteStatisticsObject(Utf8JsonWriter json, RuleStatistics statistics)
+    {
+        json.WriteStartObject();
         json.WriteNumber("nodeCount", statistics.NodeCount);
         json.WriteNumber("depth", statistics.Depth);
         json.WriteNumber("termCount", statistics.TermCount);
@@ -166,6 +186,22 @@ public static class ValidationReportWriter
         json.WriteRawValue(statistics.ClassicalTruthTableRows.ToString(CultureInfo.InvariantCulture));
         json.WriteBoolean("truthTableWithinCap", statistics.TruthTableWithinCap);
         json.WriteEndObject();
+    }
+
+    // The statistics as text lines, without indentation: the statistics section of the text report.
+    private static IEnumerable<string> StatisticsLines(RuleStatistics statistics)
+    {
+        yield return $"nodes: {statistics.NodeCount}";
+        yield return $"depth: {statistics.Depth}";
+        yield return $"terms: {statistics.TermCount} ({statistics.DistinctTermCount} distinct)";
+        yield return $"predicates: {List(statistics.Predicates)}";
+        yield return $"operators: {List(statistics.OperatorHistogram.Select(o => $"{o.Key} {o.Value.ToString(CultureInfo.InvariantCulture)}"))}";
+        yield return $"variables: {List(statistics.Variables.Select(v => $"from(\"{v.Source}\", \"{v.Query}\")"))}";
+        yield return $"data sources: {List(statistics.DataSources)}";
+        yield return $"BDD nodes: {statistics.BddNodeCount?.ToString(CultureInfo.InvariantCulture) ?? "not computed"}";
+        yield return $"constancy: {CamelCase(statistics.Constancy.ToString())}";
+        yield return $"truth table: {statistics.TruthTableRows} rows, {statistics.ClassicalTruthTableRows} classical rows, "
+            + (statistics.TruthTableWithinCap ? "within the cap" : "over the cap");
     }
 
     private static void WriteStrings(Utf8JsonWriter json, string name, IEnumerable<string> values)

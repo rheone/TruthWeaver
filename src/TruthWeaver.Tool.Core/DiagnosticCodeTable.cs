@@ -239,6 +239,26 @@ public static class DiagnosticCodeTable
             nameof(ToolDiagnosticCodes.ConversionMismatch),
             "A conversion of the rule to another format does not compile to the same tree."
         ),
+        Warning(
+            ToolDiagnosticCodes.ArtifactSkipped,
+            nameof(ToolDiagnosticCodes.ArtifactSkipped),
+            "An export of every artifact left out an artifact that the rule cannot give."
+        ),
+        Error(
+            ToolDiagnosticCodes.RendererNotFound,
+            nameof(ToolDiagnosticCodes.RendererNotFound),
+            "The external program that renders a diagram as an image is not on the search path."
+        ),
+        Error(
+            ToolDiagnosticCodes.RenderFailed,
+            nameof(ToolDiagnosticCodes.RenderFailed),
+            "The external program that renders a diagram as an image failed."
+        ),
+        Error(
+            ToolDiagnosticCodes.UnknownArtifact,
+            nameof(ToolDiagnosticCodes.UnknownArtifact),
+            "An artifact id is not in the artifact catalog."
+        ),
     ];
 
     private static readonly FrozenDictionary<string, DiagnosticCodeInfo> ByCode = Rows.ToFrozenDictionary(

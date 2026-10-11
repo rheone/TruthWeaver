@@ -1,6 +1,6 @@
 # Tool core
 
-`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, validates them, measures them, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
+`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, validates them, measures them, exports them as artifacts and reports, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
 
 The front ends parse options and draw output. The behavior is in this library, so the command line and the terminal UI behave the same way. The library is not a NuGet package (see [Packaging](#packaging)).
 
@@ -21,6 +21,9 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `RuleStatistics` | Measures a compiled rule. |
 | `DiagnosticWriter`, `ValidationReportWriter` | Write diagnostics, or a whole validation report, as text, JSON or SARIF 2.1.0. |
 | `SeverityPolicy` | Finds the exit code from the diagnostics, with or without strict mode. |
+| `ArtifactCatalog`, `ArtifactExporter` | List the artifacts that the tools make from a rule, and export one artifact or all of them with a manifest. |
+| `RuleReport` | Writes the Markdown report of a rule. |
+| `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
 
 Each operation returns a `ToolResult<T>`: the value, or no value, and every diagnostic. An operation does not throw for an expected failure, such as a missing file, a malformed document or a rule that does not compile. It throws `ArgumentNullException` for a `null` argument and `ArgumentOutOfRangeException` for an undefined `RuleFormat`, because those are programming errors. `ToolResult<T>.Succeeded` is `true` when the value is present and no diagnostic is an error. `TryGetValue` gives the value and the diagnostics without the result object.
 
@@ -248,7 +251,7 @@ For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AN
 | --- | --- | --- |
 | `Success` | 0 | No error, and no warning in strict mode. |
 | `Failed` | 1 | An error, or a warning in strict mode. |
-| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file or an output file. This code wins over `Failed`. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id or an image renderer. This code wins over `Failed`. |
 
 ## Diagnostics output
 
@@ -271,6 +274,96 @@ The expected text, the found text and the suggestion are in the `properties` of 
 
 `ValidationReportWriter.Format(report, format)` writes a whole validation report. Text and JSON have the status of each level, the statistics and the diagnostics. SARIF has the diagnostics only, because SARIF has no place for statistics.
 
+## Artifacts and export
+
+An artifact is one output that the tools make from a rule. `ArtifactCatalog.All` lists every artifact in a fixed order. Each artifact calls one library printer with fixed options, so its text is exactly the text of that printer. From the settings, an artifact uses only the compile limits, the analysis limit and the schema file. `ArtifactCatalog.TryFind(id)` finds an artifact by its id. `ArtifactCatalog.Equation(dialect, constants, latexWrap)` and `ArtifactCatalog.TruthTable(format)` find an artifact from printer options.
+
+| Id | File | Text |
+| --- | --- | --- |
+| `rule-text` | `rule-text.rule` | `PrintRuleText()`: the word style, parentheses and the notes. |
+| `rule-text-symbolic` | `rule-text-symbolic.rule` | `PrintRuleText` with `OperatorStyle.Symbolic`. |
+| `rule-text-pretty` | `rule-text-pretty.rule` | `PrintRuleText` with `RuleTextOptions.Width` 80. |
+| `json`, `yaml` | `json.json`, `yaml.yaml` | `PrintJson()` and `PrintYaml()`, with the notes. |
+| `equation-<dialect>-<constants>` | `.txt`, `.tex`, `.mml` or `.typ` | `PrintEquation` in a dialect (`unicode`, `latex`, `asciimath`, `cstyle`, `mathml`, `typst`, `ascii`) with a constant style (`letters`, `word`, `logicsymbols`). |
+| `equation-latex-doubledollar-<constants>` | `.tex` | The LaTeX equation between `$$` delimiters (`LatexWrapMode.DoubleDollar`). |
+| `equation-latex-mathjax-<constants>` | `.md` | The LaTeX equation in the `` $`...`$ `` form for GitHub and MathJax (`LatexWrapMode.MathJaxSafe`). |
+| `tree`, `mermaid`, `dot`, `html` | `tree.txt`, `mermaid.mmd`, `dot.dot`, `html.html` | `PrintPlainText()`, `PrintMermaid()`, `PrintDot()` and `PrintHtml()`. |
+| `truth-table-<format>` | `.md`, `.csv`, `.json`, `.html`, `.tex` | `PrintTruthTable` in a [truth-table](truth-tables.md) format: `markdown`, `csv`, `json`, `html`, `latex`. |
+| `statistics`, `statistics-text` | `statistics.json`, `statistics-text.txt` | `ValidationReportWriter.FormatStatistics` as JSON or text. |
+| `diagnostics`, `diagnostics-json`, `diagnostics-sarif` | `.txt`, `.json`, `.sarif` | The diagnostics of every [validation level](#validation), as `DiagnosticWriter` writes them. |
+| `report` | `report.md` | The [Markdown report](#report). |
+
+An evaluation result (a decision) is not an artifact, because it needs stub values and a serializable decision record.
+
+`ArtifactExporter.Render(rule, id)` gives the text of one artifact. `ArtifactExporter.Export(rule, artifact, writer)` writes it to a `TextWriter`, such as standard output, and `ArtifactExporter.Export(rule, artifact, path)` writes it to a file. Both write through `OutputWriter`, so the output has LF line endings and one final newline.
+
+- A rule that does not compile gives no artifact, and the result has the compile diagnostics. The diagnostics artifacts are the exception: they show why the rule does not compile.
+- A truth table over the cap of 8 terms is refused with a `TRE0035` error. With `ExportOptions.AllowLargerTruthTable`, the table is printed up to 12 terms with a `TRE0034` warning.
+- An id that is not in the catalog is a `TWT0018` error that lists the ids.
+
+### Export of every artifact
+
+`ArtifactExporter.ExportAll(rule, folder, options)` writes every artifact to a folder, one file each, and then writes `manifest.json`. The rule is compiled and validated one time. A truth table over the cap is left out with a `TWT0015` warning, and the manifest lists it as skipped, so a large rule still exports. A rule that does not compile writes nothing. The export does not delete other files of the folder.
+
+<!-- doctest:skip a manifest, not a rule -->
+```json
+{
+  "source": {
+    "format": "text",
+    "hash": "sha256:590bb31f50f9feefafe055eccf71bc92439dd5d51a70c81db7886cdff905adf3"
+  },
+  "artifacts": [
+    {
+      "id": "equation-latex-mathjax-letters",
+      "file": "equation-latex-mathjax-letters.md",
+      "format": "markdown",
+      "options": {
+        "constants": "letters",
+        "dialect": "latex",
+        "latexWrap": "mathjax"
+      }
+    }
+  ],
+  "skipped": []
+}
+```
+
+- `source` has the format of the rule, the `path` of an embedded rule, and `hash`: SHA-256 of the rule text with its line endings made LF, in UTF-8 (`ArtifactExporter.HashOf`).
+- `artifacts` has each file in catalog order: the id, the file name, the format and the printer options. The example shows one item.
+- `skipped` has each artifact that was left out, with the reason.
+
+The manifest has no absolute path and no time, so two exports of the same rule give identical folders. `ArtifactExporter.RenderAll(rule, options)` makes the same files without writing them, with `manifest.json` last. A front end compares them with a folder through `OutputWriter.Check` for a `--check` option.
+
+### Images
+
+The tools have no renderer of their own. `ImageRenderer.Render(diagram, language, path, options)` runs an external program:
+
+| `DiagramLanguage` | Program | Command |
+| --- | --- | --- |
+| `Dot` | Graphviz `dot` | `dot -T<format> -o <output> <input>` |
+| `Mermaid` | Mermaid CLI `mmdc` | `mmdc -e <format> -o <output> -i <input>` |
+
+`ImageRenderOptions.Format` is `Svg` (the default) or `Png`. The program must be on the `PATH`, or on `ImageRenderOptions.SearchPath`. On Windows, the renderer looks for a `.exe`, `.cmd` or `.bat` file. The input is a temporary file. The program has `ImageRenderOptions.Timeout` (one minute by default) to finish.
+
+- A program that is not on the search path is a `TWT0016` error. The message names the program and tells where to get it: Graphviz from `https://graphviz.org/download/`, and the Mermaid CLI from `npm install -g @mermaid-js/mermaid-cli`.
+- A program that stops with an exit code other than 0, does not finish in time, or writes no file is a `TWT0017` error with the exit code and the error output of the program.
+
+With `ExportOptions.Images`, `ExportAll` also renders `mermaid.mmd` and `dot.dot` as `mermaid.svg` and `dot.svg` (or `.png`). The manifest lists each image that was written, with the ids `mermaid-svg` and `dot-svg`, the `renderer` and the `source` file. A missing renderer is an error, but the text artifacts and the manifest are still written. The image bytes come from the external program, so they are only as deterministic as that program.
+
+## Report
+
+`RuleReport.Format(rule, options)` writes a Markdown report of a rule. It is also the `report` artifact. The report has these sections:
+
+1. The source: the file name (not its directory), the path of an embedded rule, the format and the hash.
+2. **Rule**: the rule text, broken to a width of 80 characters, in a `text` code block.
+3. **Equation**: the LaTeX equation in the `` $`...`$ `` form, which GitHub draws with MathJax.
+4. **Diagram**: the Mermaid flowchart in a `mermaid` code block, which GitHub draws.
+5. **Truth table**: the Strong K3 table in Markdown. A rule over the cap gets a note in place of the table, with the term count and the row count. `ExportOptions.AllowLargerTruthTable` puts the table in and adds the `TRE0034` warning.
+6. **Statistics**: a table of the [statistics](#statistics).
+7. **Analysis**: the findings of the analysis level, each with its severity, code, tree path and message.
+
+The report holds no time, so it is the same on each run. A rule that does not compile has no report; the result has the compile diagnostics.
+
 ## Diagnostic codes
 
 The tool core reports a problem outside the rule with a `TWT` code. Compiler diagnostics keep their `TRE` codes. [Reading diagnostics](diagnostics.md) describes the members of a diagnostic.
@@ -291,6 +384,10 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0012` | `InvalidSchemaFile` | Error | The predicate schema file is not usable. |
 | `TWT0013` | `TreeSchemaViolation` | Error | A JSON or YAML rule does not match the JSON schema of the rule tree. |
 | `TWT0014` | `ConversionMismatch` | Error | A conversion of the rule to another format does not compile to the same tree. |
+| `TWT0015` | `ArtifactSkipped` | Warning | An export of every artifact left out an artifact that the rule cannot give. |
+| `TWT0016` | `RendererNotFound` | Error | The program that renders a diagram as an image is not on the search path. |
+| `TWT0017` | `RenderFailed` | Error | The program that renders a diagram as an image failed. |
+| `TWT0018` | `UnknownArtifact` | Error | An artifact id is not in the artifact catalog. |
 
 ## Packaging
 
