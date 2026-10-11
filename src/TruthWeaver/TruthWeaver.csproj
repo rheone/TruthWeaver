@@ -2,11 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>a19c0b9e-c1d5-4d3c-8e2f-7a9b6c5d4e3f</ProjectGuid>
     <RootNamespace>TruthWeaver</RootNamespace>
-    <Description>
-      TruthWeaver: the DSL parser, RuleCompiler, BDD-based analyzer, evaluator,
-      System.Text.Json tree support, and dependency-injection registration extensions for
-      the compile-once/evaluate-many boolean rule engine.
-    </Description>
+    <PackageId>TruthWeaver</PackageId>
+    <Description>Compile-once, evaluate-many Strong Kleene (K3) rule engine for .NET: parse a rule from text, JSON or a builder into an immutable tree, analyze it and evaluate it with True, False and Unknown.</Description>
+    <PackageTags>rules engine;rule engine;kleene;k3;three-valued logic;trinary logic;dsl;truthweaver</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

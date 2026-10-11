@@ -6,7 +6,13 @@
     <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
-    <Version>1.0.0-dev</Version>
+    <!-- No Version here: MinVer derives it from the Git tag (see docs/contributing.md). A hand-set Version, or
+         VersionPrefix/VersionSuffix, would fight MinVer. A tag `v1.2.3` gives 1.2.3 on that commit. A later
+         commit gives 1.2.4-preview.0.N (N = commits since the tag). With no tag the version is 1.0.0-preview.0.N
+         because of MinVerMinimumMajorMinor. -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>preview.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
     <Authors>Robert H. Engelhardt</Authors>
     <!-- No Company: this is an individual-authored project, not published under a company entity - Authors
          above already carries attribution. Deliberately omitted rather than a placeholder value. -->
@@ -18,7 +24,9 @@
     <PackageProjectUrl>https://github.com/rheone/TruthWeaver</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <PackageTags>rules engine;boolean;kleene;dsl;truthweaver</PackageTags>
+    <!-- Fallback only: every packable src project sets its own PackageId, Description and PackageTags. -->
+    <PackageTags>rules engine;kleene;k3;truthweaver</PackageTags>
+    <PackageReleaseNotes>See https://github.com/rheone/TruthWeaver/blob/main/CHANGELOG.md</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- No PackageIcon yet: no icon asset exists in the repo, and a placeholder image is worse than none -
          add one and set PackageIcon when real branding exists, rather than shipping a fabricated stand-in. -->

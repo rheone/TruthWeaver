@@ -7,7 +7,7 @@ All notable changes to TruthWeaver are recorded here. The format follows
 
 > [!IMPORTANT]
 > **TruthWeaver has not been published.** No package has been pushed to NuGet, the repository has no release tags, and
-> every package builds as `1.0.0-dev` (set once in [`Directory.Build.props`](Directory.Build.props)). Nothing below
+> every package version comes from MinVer, so an untagged build is `1.0.0-preview.0.N`. Nothing below
 > has been shipped to a consumer yet, so the "breaking changes" are measured against two reference points rather than
 > against a released version:
 >
@@ -17,15 +17,14 @@ All notable changes to TruthWeaver are recorded here. The format follows
 > - **The commit before the Strong K3 work, `57cf2c9`.** The K3 effort changed most of the public surface. See
 >   [Migrating across the Strong K3 work](#migrating-across-the-strong-k3-work).
 
-**Version policy.** The version stays `1.0.0-dev` until the first release. Until `1.0.0` ships, any change may break
+**Version policy.** MinVer derives the version from the Git tags (tag prefix `v`). Until the first release, no tag exists, so every build is a `1.0.0-preview.0.N` pre-release (`N` is the number of commits since the start of the history). Until `1.0.0` ships, any change may break
 compatibility, and this file is where each break is recorded with its migration step. From `1.0.0` the packages follow
 [Semantic Versioning](https://semver.org/): breaking changes only in a major version, new backward-compatible features
-in a minor version, fixes in a patch version. All six packages share one version.
+in a minor version, fixes in a patch version. All seven packages share one version. [How a version is made](docs/contributing.md#how-a-package-version-is-made).
 
-**Package metadata** (checked on the 1.0.0-dev build): the six packages (`TruthWeaver`, `TruthWeaver.Abstractions`,
-`TruthWeaver.DataSources.Json`, `TruthWeaver.Predicates`, `TruthWeaver.Testing`, `TruthWeaver.Yaml`) are packable, target `net11.0`, carry the Apache-2.0
-license expression, the repository URL, symbol packages (`.snupkg`), SourceLink and the repository `README.md` as the
-package readme. Open items, deliberately not changed here: there is no `PackageIcon` (no icon asset exists), and the
+**Package metadata**: the seven packages (`TruthWeaver`, `TruthWeaver.Abstractions`, `TruthWeaver.DataSources.Json`, `TruthWeaver.Generators`, `TruthWeaver.Predicates`, `TruthWeaver.Testing`, `TruthWeaver.Yaml`) are packable, carry the Apache-2.0
+license expression, the repository URL and commit, symbol packages (`.snupkg`, except the analyzer-only generator package), SourceLink and the repository `README.md` as the
+package readme. Each package sets its own `PackageId`, `Description` and `PackageTags`; the release notes link to this file. Open items, deliberately not changed here: there is no `PackageIcon` (no icon asset exists), and the
 copyright line reads 2026.
 
 **Consumer requirement.** None. The packages no longer set `EnablePreviewFeatures`, so they carry no requires-preview-features marker and a consuming project needs no preview opt-in (no `CA2252`). This is checked by compiling the README quick-start in a fresh project.
@@ -34,6 +33,10 @@ copyright line reads 2026.
 
 ### Added
 
+- MinVer derives the package version from Git tags with the prefix `v`. An untagged build is `1.0.0-preview.0.N`. The
+  hand-set `Version` of `1.0.0-dev` is removed from `Directory.Build.props`. CI checks out the full history so the
+  version is correct.
+- Each package sets its own `PackageId`, `Description` and `PackageTags`, and `PackageReleaseNotes` points to this file.
 - `docs/contributing.md`: what the pre-commit hook and `scripts/format-all.ps1` do, linked from the README.
 - `FakePredicates` factories label a predicate with its name when no `label` is given, instead of the constant `"Fake"`, so
   rendered diagrams show a distinct label for each fake. `PredicateHarness` and `docs/predicate-harness.md` state that the

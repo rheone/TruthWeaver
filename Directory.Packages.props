@@ -90,9 +90,22 @@
   <ItemGroup>
     <PackageVersion Include="CsCheck" Version="4.9.1" />
   </ItemGroup>
-  <!-- Source Link -->
+  <!-- MinVer derives every package version from the Git tags. It is a build-only reference, and only for projects that
+       pack, so test, sample and benchmark projects carry no MinVer version logic. -->
   <ItemGroup>
-    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="11.0.100-rc.1.26425.128" PrivateAssets="all" />
+    <GlobalPackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" Condition="'$(IsPackable)' != 'false'" />
+  </ItemGroup>
+  <!-- Source Link. Not applied to TruthWeaver.Generators: a project with a single TargetFramework gets only the
+       package's build/ assets, which omit Microsoft.Build.Tasks.Git, and the package also switches off the Source Link
+       that the .NET SDK includes (SuppressImplicitGitSourceLink). The generator package then lost its repository commit
+       and its source link. Without the package reference the SDK's own Source Link supplies both. -->
+  <ItemGroup>
+    <GlobalPackageReference
+      Include="Microsoft.SourceLink.GitHub"
+      Version="11.0.100-rc.1.26425.128"
+      PrivateAssets="all"
+      Condition="'$(MSBuildProjectName)' != 'TruthWeaver.Generators'"
+    />
   </ItemGroup>
   <!-- NetArchTest - architecture-test-project-only, asserting the ADR-0004 package-boundary rules
        (e.g. TruthWeaver.Abstractions has zero dependencies on the other TruthWeaver.* assemblies,

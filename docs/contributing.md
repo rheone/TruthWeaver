@@ -59,3 +59,24 @@ pwsh scripts/format-all.ps1 -CheckOnly
 
 The hook builds and tests only the files that you stage, and it does not run Roslynator. Run `format-all.ps1`, then
 `dotnet test`, before you push. The full list of checks is in the Required validation section of `CLAUDE.md`.
+
+## How a package version is made
+
+[MinVer](https://github.com/adamralph/minver) derives the version of every package from the Git tags. No project sets a
+`Version`. All packages share one version. The settings are in `Directory.Build.props` and the MinVer package reference
+is in `Directory.Packages.props`. Only projects that pack get MinVer.
+
+| Commit | Version |
+| --- | --- |
+| A commit with the tag `v1.2.3` | `1.2.3` |
+| The 4th commit after the tag `v1.2.3` | `1.2.4-preview.0.4` |
+| Any commit, when the repository has no `v` tag | `1.0.0-preview.0.N` (`N` is the commit height) |
+| Any commit, with a tag below `v1.0` | `1.0.0-preview.0.N` (`MinVerMinimumMajorMinor` is `1.0`) |
+
+To make a release version, put a tag with the prefix `v` on the commit, for example `v1.0.0`. A tag without the prefix
+is ignored. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
+
+MinVer needs the tags and the commit history. CI checks out with `fetch-depth: 0` for this reason. In a shallow clone
+the version is wrong. After `git clone --depth`, run `git fetch --unshallow --tags`.
+
+To see the version without packing, run `dotnet msbuild src/TruthWeaver -t:MinVer -getProperty:PackageVersion`.
