@@ -118,6 +118,28 @@ public sealed class DocExampleTests
         Assert.Empty(failures);
     }
 
+    /// <summary>The words <c>mathml</c>, <c>typst</c> and <c>plain-ascii</c> select the new equation dialects, so a block with that dialect's text passes and a stale one fails.</summary>
+    [Fact]
+    public async Task CheckAsync_NewEquationDialectWords_SelectTheDialectOfTheOutput_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n";
+
+        IReadOnlyList<string> current = await DocExampleChecker.CheckAsync(
+            rule
+                + "<!-- doctest:equation r mathml -->\n```text\n<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mtext>isDineIn</mtext> <mo>⊕</mo> <mtext>isTakeout</mtext></math>\n```\n"
+                + "<!-- doctest:equation r typst -->\n```text\n$\"isDineIn\" xor \"isTakeout\"$\n```\n"
+                + "<!-- doctest:equation r plain-ascii -->\n```text\nisDineIn (+) isTakeout\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> stale = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:equation r plain-ascii -->\n```text\nisDineIn ⊕ isTakeout\n```\n",
+            "sample.md"
+        );
+
+        Assert.Empty(current);
+        Assert.Single(stale);
+    }
+
     /// <summary>A rewrite word makes the block document the rewritten rule, so rule text that matches the real CNF passes.</summary>
     [Fact]
     public async Task CheckAsync_RuleTextOfARewrittenRuleThatIsCurrent_ReportsNoFailure_Test()

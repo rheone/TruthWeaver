@@ -1,6 +1,5 @@
 namespace TruthWeaver.Printing;
 
-using System.Globalization;
 using TruthWeaver.Ast;
 
 /// <summary>
@@ -85,7 +84,10 @@ internal static class EquationPrinter
         string equation = tokens.Wrap(
             PrintNode(root, PrintContext.Top, tokens, identity => variables[identity], options.Constants)
         );
-        string legendText = string.Join("\n", legend.Select(e => tokens.Wrap($"{e.Variable} = {e.TermText}")));
+        string legendText = string.Join(
+            "\n",
+            legend.Select(e => tokens.Wrap($"{e.Variable} {tokens.LegendEquals} {e.TermText}"))
+        );
         return new EquationWithLegend(equation, legend, legendText);
     }
 
@@ -152,7 +154,7 @@ internal static class EquationPrinter
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
-        return NeedsParentheses(node, context, tokens) ? $"({inner})" : inner;
+        return NeedsParentheses(node, context, tokens) ? tokens.OpenParen + inner + tokens.CloseParen : inner;
     }
 
     /// <summary>
@@ -207,10 +209,13 @@ internal static class EquationPrinter
     )
     {
         IEnumerable<string> arguments = counts
-            .Select(count => count.ToString(CultureInfo.InvariantCulture))
+            .Select(tokens.FormatNumber)
             .Concat(
                 ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, PrintContext.Top, tokens, formatTerm, constants))
             );
-        return $"{tokens.FormatFunctionName(name)}({string.Join(", ", arguments)})";
+        return tokens.FormatFunctionName(name)
+            + tokens.OpenParen
+            + string.Join(tokens.ArgumentSeparator, arguments)
+            + tokens.CloseParen;
     }
 }

@@ -578,6 +578,39 @@ string ascii = rule.PrintEquation(new EquationOptions { Dialect = EquationDialec
 `"hasTopping(topping: ”greenOlives”)" ^^ ("hasCrust(crust: ”thin”, ignoreCase: false, trim: false)" vv "hasCrust(crust: ”stuffed”, ignoreCase: true, trim: false)" vv ("isDineIn" oplus "isTakeout")) ^^ "totalAtMost(limit: from(”limits”, ”$.maxTotal”))"`
 ```
 
+The MathML dialect writes presentation MathML in one `math` element. A term is an `mtext` element, and the printer escapes `&`, `<` and `>`. Use it to put a formula in an HTML page or an e-book:
+
+```csharp
+string mathMl = rule.PrintEquation(new EquationOptions { Dialect = EquationDialect.MathML });
+```
+
+<!-- doctest:equation worked mathml -->
+```text
+<math xmlns="http://www.w3.org/1998/Math/MathML"><mtext>hasTopping(topping: "greenOlives")</mtext> <mo>∧</mo> <mo>(</mo><mtext>hasCrust(crust: "thin", ignoreCase: false, trim: false)</mtext> <mo>∨</mo> <mtext>hasCrust(crust: "stuffed", ignoreCase: true, trim: false)</mtext> <mo>∨</mo> <mo>(</mo><mtext>isDineIn</mtext> <mo>⊕</mo> <mtext>isTakeout</mtext><mo>)</mo><mo>)</mo> <mo>∧</mo> <mtext>totalAtMost(limit: from("limits", "$.maxTotal"))</mtext></math>
+```
+
+The Typst dialect writes Typst math markup. A term is a quoted string, and the printer escapes `"` and `\` inside it:
+
+```csharp
+string typst = rule.PrintEquation(new EquationOptions { Dialect = EquationDialect.Typst });
+```
+
+<!-- doctest:equation worked typst -->
+```text
+$"hasTopping(topping: \"greenOlives\")" and ("hasCrust(crust: \"thin\", ignoreCase: false, trim: false)" or "hasCrust(crust: \"stuffed\", ignoreCase: true, trim: false)" or ("isDineIn" xor "isTakeout")) and "totalAtMost(limit: from(\"limits\", \"$.maxTotal\"))"$
+```
+
+The `Ascii` dialect writes only the characters from space to tilde. The printer writes every other character of a term as a `\uXXXX` escape:
+
+```csharp
+string plain = rule.PrintEquation(new EquationOptions { Dialect = EquationDialect.Ascii });
+```
+
+<!-- doctest:equation worked plain-ascii -->
+```text
+hasTopping(topping: "greenOlives") /\ (hasCrust(crust: "thin", ignoreCase: false, trim: false) \/ hasCrust(crust: "stuffed", ignoreCase: true, trim: false) \/ (isDineIn (+) isTakeout)) /\ totalAtMost(limit: from("limits", "$.maxTotal"))
+```
+
 ### An equation with a legend
 
 A rule with long terms is hard to read as an equation. `PrintEquationWithLegend` gives each distinct term a letter and returns the legend that maps the letters back to the terms:
@@ -608,6 +641,23 @@ The table prints two rules in each notation. The first rule is the worked rule. 
 (isPrimaryReviewer XOR isBackupReviewer) AND (isContractor EQUIVALENT hasSignedNda) AND AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)
 ```
 
+The next three blocks print the second rule in the MathML, Typst and plain ASCII dialects. The table shows both rules in these dialects:
+
+<!-- doctest:equation review mathml -->
+```text
+<math xmlns="http://www.w3.org/1998/Math/MathML"><mo>(</mo><mtext>isPrimaryReviewer</mtext> <mo>⊕</mo> <mtext>isBackupReviewer</mtext><mo>)</mo> <mo>∧</mo> <mo>(</mo><mtext>isContractor</mtext> <mo>↔</mo> <mtext>hasSignedNda</mtext><mo>)</mo> <mo>∧</mo> <mtext>AtLeast</mtext><mo>(</mo><mn>2</mn> <mo>,</mo> <mtext>approvedByAlice</mtext> <mo>,</mo> <mtext>approvedByBob</mtext> <mo>,</mo> <mtext>approvedByCarol</mtext><mo>)</mo></math>
+```
+
+<!-- doctest:equation review typst -->
+```text
+$("isPrimaryReviewer" xor "isBackupReviewer") and ("isContractor" <=> "hasSignedNda") and "AtLeast"(2, "approvedByAlice", "approvedByBob", "approvedByCarol")$
+```
+
+<!-- doctest:equation review plain-ascii -->
+```text
+(isPrimaryReviewer (+) isBackupReviewer) /\ (isContractor <-> hasSignedNda) /\ AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)
+```
+
 | Notation | Worked rule | `XOR`, `EQUIVALENT` and threshold rule |
 | --- | --- | --- |
 | Word (rule text) | `hasTopping(topping: "greenOlives") AND (hasCrust(crust: "thin", ignoreCase: false, trim: false) OR hasCrust(crust: "stuffed", ignoreCase: true, trim: false) OR (isDineIn XOR isTakeout)) AND totalAtMost(limit: from("limits", "$.maxTotal"))` | `(isPrimaryReviewer XOR isBackupReviewer) AND (isContractor EQUIVALENT hasSignedNda) AND AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)` |
@@ -616,11 +666,14 @@ The table prints two rules in each notation. The first rule is the worked rule. 
 | Unicode (`PrintEquation`) | `hasTopping(topping: "greenOlives") ∧ (hasCrust(crust: "thin", ignoreCase: false, trim: false) ∨ hasCrust(crust: "stuffed", ignoreCase: true, trim: false) ∨ (isDineIn ⊕ isTakeout)) ∧ totalAtMost(limit: from("limits", "$.maxTotal"))` | `(isPrimaryReviewer ⊕ isBackupReviewer) ∧ (isContractor ↔ hasSignedNda) ∧ AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)` |
 | LaTeX or MathJax | `\text{hasTopping(topping: "greenOlives")} \land (\text{hasCrust(crust: "thin", ignoreCase: false, trim: false)} \lor \text{hasCrust(crust: "stuffed", ignoreCase: true, trim: false)} \lor (\text{isDineIn} \oplus \text{isTakeout})) \land \text{totalAtMost(limit: from("limits", "\$.maxTotal"))}` | `(\text{isPrimaryReviewer} \oplus \text{isBackupReviewer}) \land (\text{isContractor} \leftrightarrow \text{hasSignedNda}) \land \text{AtLeast}(2, \text{approvedByAlice}, \text{approvedByBob}, \text{approvedByCarol})` |
 | AsciiMath | `` `"hasTopping(topping: ”greenOlives”)" ^^ ("hasCrust(crust: ”thin”, ignoreCase: false, trim: false)" vv "hasCrust(crust: ”stuffed”, ignoreCase: true, trim: false)" vv ("isDineIn" oplus "isTakeout")) ^^ "totalAtMost(limit: from(”limits”, ”$.maxTotal”))"` `` | `` `("isPrimaryReviewer" oplus "isBackupReviewer") ^^ ("isContractor" <=> "hasSignedNda") ^^ "AtLeast"(2, "approvedByAlice", "approvedByBob", "approvedByCarol")` `` |
+| MathML | `<math xmlns="http://www.w3.org/1998/Math/MathML"><mtext>hasTopping(topping: "greenOlives")</mtext> <mo>∧</mo> <mo>(</mo><mtext>hasCrust(crust: "thin", ignoreCase: false, trim: false)</mtext> <mo>∨</mo> <mtext>hasCrust(crust: "stuffed", ignoreCase: true, trim: false)</mtext> <mo>∨</mo> <mo>(</mo><mtext>isDineIn</mtext> <mo>⊕</mo> <mtext>isTakeout</mtext><mo>)</mo><mo>)</mo> <mo>∧</mo> <mtext>totalAtMost(limit: from("limits", "$.maxTotal"))</mtext></math>` | `<math xmlns="http://www.w3.org/1998/Math/MathML"><mo>(</mo><mtext>isPrimaryReviewer</mtext> <mo>⊕</mo> <mtext>isBackupReviewer</mtext><mo>)</mo> <mo>∧</mo> <mo>(</mo><mtext>isContractor</mtext> <mo>↔</mo> <mtext>hasSignedNda</mtext><mo>)</mo> <mo>∧</mo> <mtext>AtLeast</mtext><mo>(</mo><mn>2</mn> <mo>,</mo> <mtext>approvedByAlice</mtext> <mo>,</mo> <mtext>approvedByBob</mtext> <mo>,</mo> <mtext>approvedByCarol</mtext><mo>)</mo></math>` |
+| Typst | `$"hasTopping(topping: \"greenOlives\")" and ("hasCrust(crust: \"thin\", ignoreCase: false, trim: false)" or "hasCrust(crust: \"stuffed\", ignoreCase: true, trim: false)" or ("isDineIn" xor "isTakeout")) and "totalAtMost(limit: from(\"limits\", \"$.maxTotal\"))"$` | `$("isPrimaryReviewer" xor "isBackupReviewer") and ("isContractor" <=> "hasSignedNda") and "AtLeast"(2, "approvedByAlice", "approvedByBob", "approvedByCarol")$` |
+| Plain ASCII | `hasTopping(topping: "greenOlives") /\ (hasCrust(crust: "thin", ignoreCase: false, trim: false) \/ hasCrust(crust: "stuffed", ignoreCase: true, trim: false) \/ (isDineIn (+) isTakeout)) /\ totalAtMost(limit: from("limits", "$.maxTotal"))` | `(isPrimaryReviewer (+) isBackupReviewer) /\ (isContractor <-> hasSignedNda) /\ AtLeast(2, approvedByAlice, approvedByBob, approvedByCarol)` |
 
 Notes on the table:
 
 - The Word row is `PrintRuleText`. The Symbolic and C-style rows are the operator spellings of `OperatorStyle.Symbolic` and `OperatorStyle.CStyle`. These two styles change the operator labels of `PrintPlainText` and `PrintMermaid` (`PrintMermaid` takes the style in `MermaidOptions.OperatorStyle`). No printer writes them as one line, so the two rows replace only the operators of the Word row. The Symbolic row is the same text as the Unicode row. [Operator styles and simple variables](#operator-styles-and-simple-variables) lists every symbol and states the C-style caveat.
-- The Unicode, LaTeX and AsciiMath rows are the output of `PrintEquation`. The LaTeX row is the output without a wrap. [Equations](equations.md#latex-wrap-modes) shows the `$$` and MathJax wraps.
+- The Unicode, LaTeX, AsciiMath, MathML, Typst and plain ASCII rows are the output of `PrintEquation`. The LaTeX row is the output without a wrap. [Equations](equations.md#latex-wrap-modes) shows the `$$` and MathJax wraps.
 - `AtLeast` has no infix symbol in any notation. Every notation writes it in function-call form.
 
 When each notation reads best:
@@ -630,6 +683,9 @@ When each notation reads best:
 - **C-style** reads best for a developer who thinks in `&&` and `||`. Use it as a reading aid.
 - **LaTeX and MathJax** read best in a paper, a wiki or a page that renders math. `MathJaxSafe` is the safe choice for GitHub Markdown.
 - **AsciiMath** reads best in a tool that renders AsciiMath and where LaTeX is too heavy to type by hand.
+- **MathML** reads best in an HTML page or an e-book, where the browser or reader draws the formula.
+- **Typst** reads best in a Typst document.
+- **Plain ASCII** reads best in a log, a terminal or a system that accepts only 7-bit text.
 
 ### Operator styles and simple variables
 

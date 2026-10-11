@@ -31,4 +31,25 @@ public enum EquationDialect
     /// so <c>Unknown == Unknown</c> prints as <c>==</c> but does not mean what C#'s <c>==</c> means for <c>null</c>.
     /// </summary>
     CStyle,
+
+    /// <summary>
+    /// Presentation MathML in one <c>&lt;math xmlns="http://www.w3.org/1998/Math/MathML"&gt;</c> element. An operator is an
+    /// <c>&lt;mo&gt;</c> element and a term, a constant and a function name are <c>&lt;mtext&gt;</c> elements, with the
+    /// text XML-escaped. The output is well-formed XML for any rule: the printer replaces each character that XML 1.0
+    /// cannot hold with U+FFFD.
+    /// </summary>
+    MathML,
+
+    /// <summary>
+    /// Typst math markup between <c>$</c> signs, for example <c>$"a" and ("b" or "c")$</c>. A term is a quoted string
+    /// with each double quote and backslash escaped. An operator with no Typst symbol keeps the function-call form.
+    /// </summary>
+    Typst,
+
+    /// <summary>
+    /// Plain text of the 7-bit ASCII range only, for example <c>a /\ (b \/ c)</c>. The output holds only the
+    /// characters U+0020 to U+007E and line feeds. The printer writes each backslash in a term as two backslashes, and each
+    /// other character outside that range as <c>\uXXXX</c>, where <c>XXXX</c> is the UTF-16 code unit in hexadecimal.
+    /// </summary>
+    Ascii,
 }

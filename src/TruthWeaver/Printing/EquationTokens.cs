@@ -52,6 +52,21 @@ internal sealed record EquationTokens
             Wrap = equation => $"`{equation}`",
         };
 
+    /// <summary>Gets the opening delimiter of a group or of a function call's argument list. The default is <c>(</c>.</summary>
+    public string OpenParen { get; init; } = "(";
+
+    /// <summary>Gets the closing delimiter of a group or of a function call's argument list. The default is <c>)</c>.</summary>
+    public string CloseParen { get; init; } = ")";
+
+    /// <summary>Gets the separator between the arguments of a function call. The default is a comma and a space.</summary>
+    public string ArgumentSeparator { get; init; } = ", ";
+
+    /// <summary>Gets the token between a variable and its term in a legend line. The default is <c>=</c>.</summary>
+    public string LegendEquals { get; init; } = "=";
+
+    /// <summary>Gets the formatter for a count argument of a function call, for example the <c>2</c> of <c>AtLeast(2, a, b)</c>.</summary>
+    public Func<int, string> FormatNumber { get; init; } = number => number.ToString(CultureInfo.InvariantCulture);
+
     /// <summary>Gets the infix token for <c>AND</c>.</summary>
     public required string And { get; init; }
 
@@ -116,6 +131,87 @@ internal sealed record EquationTokens
     /// example <c>$$...$$</c>. A dialect with no envelope returns the equation unchanged.
     /// </summary>
     public required Func<string, string> Wrap { get; init; }
+
+    /// <summary>Gets the table for the MathML dialect: <c>&lt;mo&gt;</c> operators and <c>&lt;mtext&gt;</c> text inside one <c>&lt;math&gt;</c> element.</summary>
+    public static EquationTokens MathMl { get; } =
+        new()
+        {
+            And = "<mo>∧</mo>",
+            Or = "<mo>∨</mo>",
+            Not = "<mo>¬</mo>",
+            Xor = "<mo>⊕</mo>",
+            Equivalent = "<mo>↔</mo>",
+            Implies = "<mo>→</mo>",
+            Nand = "<mo>↑</mo>",
+            Nor = "<mo>↓</mo>",
+            OpenParen = "<mo>(</mo>",
+            CloseParen = "<mo>)</mo>",
+            ArgumentSeparator = " <mo>,</mo> ",
+            LegendEquals = "<mo>=</mo>",
+            FormatNumber = number => $"<mn>{number.ToString(CultureInfo.InvariantCulture)}</mn>",
+            FormatTerm = (identity, showArgumentValues) =>
+                MathMlText.Text(showArgumentValues ? identity.ToString() : identity.PredicateName),
+            FormatConstant = (value, constants) =>
+                constants.IsLogicSymbol(value)
+                    ? ConstantFormat.SymbolCommand(value, "<mo>⊤</mo>", "<mo>⊥</mo>")
+                    : MathMlText.Text(constants.Text(value)),
+            FormatFunctionName = MathMlText.Text,
+            FormatVariable = (letter, subscript) =>
+                subscript == 0
+                    ? $"<mi>{letter}</mi>"
+                    : $"<msub><mi>{letter}</mi><mn>{subscript.ToString(CultureInfo.InvariantCulture)}</mn></msub>",
+            Wrap = equation => $"<math xmlns=\"{MathMlText.Namespace}\">{equation}</math>",
+        };
+
+    /// <summary>Gets the table for the Typst dialect: Typst math symbols, quoted strings for text, and <c>$</c> delimiters.</summary>
+    public static EquationTokens Typst { get; } =
+        new()
+        {
+            And = "and",
+            Or = "or",
+            Not = "not ",
+            Xor = "xor",
+            Equivalent = "<=>",
+            Implies = "=>",
+            Nand = "arrow.t",
+            Nor = "arrow.b",
+            FormatTerm = (identity, showArgumentValues) =>
+                TypstText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
+            FormatConstant = (value, constants) =>
+                constants.IsLogicSymbol(value)
+                    ? ConstantFormat.SymbolCommand(value, "top", "bot")
+                    : TypstText.Quote(constants.Text(value)),
+            FormatFunctionName = TypstText.Quote,
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{subscript}",
+            Wrap = equation => $"${equation}$",
+        };
+
+    /// <summary>
+    /// Gets the table for the plain ASCII dialect: <c>/\</c>, <c>\/</c>, <c>~</c>, <c>(+)</c>, <c>&lt;-&gt;</c> and
+    /// <c>-&gt;</c>. <c>NAND</c> and <c>NOR</c> have no ASCII symbol and keep their word form. <see cref="AsciiText.Escape"/>
+    /// escapes every text to the range U+0020 to U+007E.
+    /// </summary>
+    public static EquationTokens Ascii { get; } =
+        new()
+        {
+            And = @"/\",
+            Or = @"\/",
+            Not = "~",
+            Xor = "(+)",
+            Equivalent = "<->",
+            Implies = "->",
+            Nand = "NAND",
+            Nor = "NOR",
+            FormatTerm = (identity, showArgumentValues) =>
+                AsciiText.Escape(showArgumentValues ? identity.ToString() : identity.PredicateName),
+            FormatConstant = (value, constants) =>
+                constants.IsLogicSymbol(value)
+                    ? ConstantFormat.SymbolCommand(value, "top", "bot")
+                    : AsciiText.Escape(constants.Text(value)),
+            FormatFunctionName = AsciiText.Escape,
+            FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{subscript}",
+            Wrap = equation => equation,
+        };
 
     /// <summary>
     /// Gets the table for the C-family dialect: <c>&amp;&amp;</c>, <c>||</c>, <c>!</c>, <c>^</c>, <c>==</c>, and a
@@ -189,6 +285,9 @@ internal sealed record EquationTokens
             EquationDialect.LaTeX => Latex(options.LatexWrap),
             EquationDialect.AsciiMath => AsciiMath,
             EquationDialect.CStyle => CStyle,
+            EquationDialect.MathML => MathMl,
+            EquationDialect.Typst => Typst,
+            EquationDialect.Ascii => Ascii,
             _ => throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unhandled equation dialect."),
         };
     }
