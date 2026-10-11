@@ -6,3 +6,4 @@
 - Found while doing A: `docs/predicate-conventions.md` also has the invalid 0x85 byte (as CHANGELOG.md); ticket E covers both.
 - Ticket D: all Typst names confirmed, no behavior change. Verification used a page-summarizing fetch tool; the quoted-string-in-math-mode behavior was not shown on a fetched page. Worth one manual look at the Typst docs.
 - Ticket E: also fixed `docs/predicate-conventions.md` (same byte), which the ticket did not name. The guard test scans the working tree, not `git ls-files`.
+- REVIEW: stray empty commit `9c2baef` ("e", author x) sits on roadmap-tickets after d0b469f. A B3 agent created it by accident while cleaning a throwaway clone; the reset was denied, so it was left. Drop it before pushing/squash (`git rebase -i` or `git reset --soft`). `.tmp/minver-clone` is half-deleted and locked by a process; delete it when free.
