@@ -167,6 +167,27 @@ public sealed class DocExampleTests
         Assert.Single(failures);
     }
 
+    /// <summary>
+    /// Ticket 10: a <c>width=N</c> word on a <c>ruletext</c> marker checks the width-aware pretty printer; documented text
+    /// that does not match the real breaking is reported as stale.
+    /// </summary>
+    [Fact]
+    public async Task CheckAsync_RuleTextWidthWord_ChecksTheWidthAwarePrinter_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\napprovedByAlice AND (approvedByBob OR NOT approvedByCarol)\n```\n"
+            + "<!-- doctest:ruletext r width=20 -->\n```text\napprovedByAlice AND\n(\n  approvedByBob OR\n  NOT approvedByCarol\n)\n```\n";
+        const string stale =
+            "<!-- doctest:rule r -->\n```text\napprovedByAlice AND (approvedByBob OR NOT approvedByCarol)\n```\n"
+            + "<!-- doctest:ruletext r width=20 -->\n```text\napprovedByAlice AND (approvedByBob OR NOT approvedByCarol)\n```\n";
+
+        IReadOnlyList<string> current = await DocExampleChecker.CheckAsync(markdown, "sample.md");
+        IReadOnlyList<string> staleResult = await DocExampleChecker.CheckAsync(stale, "sample.md");
+
+        Assert.Empty(current);
+        Assert.Single(staleResult);
+    }
+
     /// <summary>A rewrite that is refused at its size cap is reported for a printing marker, and its diagnostics are checked by a rewrite-diagnostics marker.</summary>
     [Fact]
     public async Task CheckAsync_RewriteOverTheCap_ReportsAFailureForPrintingAndMatchesTheDiagnostics_Test()

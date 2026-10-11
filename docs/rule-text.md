@@ -183,6 +183,40 @@ RuleText.NormalizeWhitespace("named( value :\"x  y\" )");   // "named(value: \"x
 
 The result is the same for any input spacing, and a second call changes nothing. The result compiles to a tree equal to the tree of the input. The prefix `!` and `¬` touch their operand. The argument list of a call or term touches its name. Nothing pads the inside of `()`, `[]` or `{}`. The function keeps characters that the DSL does not recognize in place, so the text of a rule that does not compile yet is never lost.
 
+## Width-aware pretty printing
+
+`CompiledRule.PrintRuleText(RuleTextOptions)` and its Try-first sibling `TryPrintRuleText(RuleTextOptions, out string?)` take one options object instead of the `grouping`/`operatorStyle`/`constants` parameters. It adds one more setting, `Width`:
+
+- `Width = null` (the default) prints one line, the same text as the other `PrintRuleText` overloads.
+- `Width = N` breaks a group across lines when its one-line form would be longer than `N` characters at its current indent. `IndentSize` (default 2) is the number of spaces added per nesting level.
+
+The breaking rule, applied independently at every group, from the outermost in:
+
+- If the group's one-line form fits in `Width`, it prints on one line, exactly as `Width = null` would print it.
+- Otherwise, it breaks. An `AND`/`OR` chain or a binary connective (`XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`) breaks after each operator, one operand per line; a call form (`AtLeast(2, a, b, c)`, `BETWEEN(min, max, ...)`, `ANY(...)` and the rest) breaks one argument per line. Each broken operand or argument is indented one more `IndentSize` than its parent, and is itself checked against `Width` the same way, so only the groups that need to break do.
+- A single token (a term name, a constant) is never split. A width smaller than the longest token still prints that token whole, on its own line; it does not loop or throw.
+
+The result always compiles back to a tree equal to the original: breaking is only a presentation choice, the same way `GroupingStyle.DepthCycling` is.
+
+<!-- doctest:rule width -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext width width=20 -->
+```text
+approvedByAlice AND
+(
+  approvedByBob OR
+  NOT approvedByCarol
+)
+```
+
+```csharp
+rule.PrintRuleText(RuleTextOptions.Default);                           // one line (Width is null)
+rule.PrintRuleText(RuleTextOptions.Default with { Width = 20 });       // approvedByAlice AND\n(\n  approvedByBob OR\n  NOT approvedByCarol\n)
+```
+
 ## Printer spelling of the ternary
 
 `If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`. `PrintRuleText` never renders the ternary form (see [Operator style](#operator-style)). [`PrintEquation`](equations.md) with `EquationDialect.CStyle` renders `If` as the ternary `c ? t : f` instead of a call; the other dialects keep the call form.

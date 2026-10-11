@@ -27,7 +27,7 @@ using TruthWeaver.Yaml;
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
 /// <item><c>html ID</c>, <c>dot ID</c>: documented output (in an <c>html</c> or <c>dot</c> block) that must equal <c>PrintHtml()</c> / <c>PrintDot()</c> of the <c>rule ID</c> example; the option words <c>symbolic</c>, <c>cstyle</c>, <c>letters</c>, <c>logic-symbols</c> and <c>trace</c> follow the ID, <c>simple</c> on an <c>html</c> marker, and <c>plain</c> and <c>left-right</c> on a <c>dot</c> marker.</item>
 /// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c> (AsciiMath), <c>mathml</c>, <c>typst</c>, <c>plain-ascii</c> (the 7-bit <see cref="EquationDialect.Ascii"/> dialect), <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID, and so do the constant-style words <c>letters</c> and <c>logic-symbols</c> (also valid on a <c>tree</c> or <c>mermaid</c> marker).</item>
-/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it).</item>
+/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it). A <c>width=N</c> word (ticket 10) checks <c>PrintRuleText(RuleTextOptions)</c> with that width instead of the one-line form.</item>
 /// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
 /// <item>An <c>equation</c> marker can stand above a display-math paragraph (a line that starts with <c>$$</c>) instead of a fence.</item>
 /// <item><c>rewrite-diagnostics ID</c>: documented output that must equal the diagnostics of the rewrite named by the rewrite word; <c>cap=N</c> sets the <c>maxNodeCount</c> of an expanding rewrite.</item>
@@ -303,7 +303,9 @@ internal static partial class DocExampleChecker
                     {
                         "tree" => PlainTextTreePrinter.Print(rule.Outline(), operatorStyle, constants: constants),
                         "equation" => rule.PrintEquation(equationOptions),
-                        "ruletext" => rule.PrintRuleText(operatorStyle: operatorStyle),
+                        "ruletext" => WidthOf(words) is int width
+                            ? rule.PrintRuleText(new RuleTextOptions { OperatorStyle = operatorStyle, Width = width })
+                            : rule.PrintRuleText(operatorStyle: operatorStyle),
                         _ when words.Contains("trace") => rule.PrintMermaid(
                             await EvaluateWithoutDataSourcesAsync(rule),
                             mermaidOptions
@@ -336,6 +338,20 @@ internal static partial class DocExampleChecker
     private static Task<Decision> EvaluateWithoutDataSourcesAsync(CompiledRule<RuleTestContext> rule)
     {
         return rule.EvaluateAsync(new RuleTestContext());
+    }
+
+    /// <summary>Gets the <c>width=N</c> word's value on a <c>ruletext</c> marker (ticket 10), or <see langword="null"/> when no such word is present.</summary>
+    private static int? WidthOf(string[] words)
+    {
+        foreach (string word in words)
+        {
+            if (word.StartsWith("width=", StringComparison.Ordinal) && int.TryParse(word.AsSpan(6), out int parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

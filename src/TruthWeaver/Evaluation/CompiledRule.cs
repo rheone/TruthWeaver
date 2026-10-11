@@ -119,8 +119,46 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Renders this rule as DSL text, like <see cref="PrintRuleText"/>, but reports an unsupported
-    /// <paramref name="operatorStyle"/> through the return value instead of throwing.
+    /// Renders this rule as DSL text using <paramref name="options"/> (ticket 10). This is the same text as
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> for an equivalent grouping, operator
+    /// style and constants, with one addition: when <see cref="RuleTextOptions.Width"/> is set, a group that does not
+    /// fit the width breaks across lines, indented by <see cref="RuleTextOptions.IndentSize"/> per nesting level. The
+    /// breaking rule is documented in <c>docs/rule-text.md</c>. The result still compiles to a tree equal to
+    /// <see cref="Root"/>.
+    /// </summary>
+    /// <param name="options">The printing options.</param>
+    /// <returns>The DSL text, one line when <see cref="RuleTextOptions.Width"/> is <see langword="null"/>, otherwise possibly many.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/>'s <see cref="RuleTextOptions.OperatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or its <see cref="RuleTextOptions.Constants"/> is a format the parser does not read back.</exception>
+    public string PrintRuleText(RuleTextOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.OperatorStyle == OperatorStyle.CStyle)
+        {
+            throw new ArgumentException(
+                "OperatorStyle.CStyle has no round-trippable rule text: the DSL parser does not read '^' or '=='. "
+                    + "Use Word or Symbolic, or call TryPrintRuleText.",
+                nameof(options)
+            );
+        }
+
+        if (options.Constants is not null && !options.Constants.IsRuleTextSafe(out string? reason))
+        {
+            throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(options));
+        }
+
+        return
+            options.Width is null
+            && options.Grouping == GroupingStyle.Parentheses
+            && options.OperatorStyle == OperatorStyle.Word
+            && options.Constants is null
+            ? this.CanonicalText
+            : CanonicalPrinter.Print(this.Root, options);
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>,
+    /// but reports an unsupported <paramref name="operatorStyle"/> through the return value instead of throwing.
     /// </summary>
     /// <param name="grouping">The grouping delimiters to print with.</param>
     /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is the only value this rejects.</param>
@@ -132,12 +170,16 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Renders this rule as DSL text, like <see cref="PrintRuleText"/>, but reports an unsupported
-    /// <paramref name="operatorStyle"/> or <paramref name="constants"/> through the return value instead of throwing.
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>,
+    /// but reports an unsupported <paramref name="operatorStyle"/> or <paramref name="constants"/> through the return
+    /// value instead of throwing.
     /// </summary>
     /// <param name="grouping">The grouping delimiters to print with.</param>
     /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is rejected.</param>
-    /// <param name="constants">The constant format, or <see langword="null"/> for the word form. A format that the parser does not read back is rejected (see <see cref="PrintRuleText"/>).</param>
+    /// <param name="constants">
+    /// The constant format, or <see langword="null"/> for the word form. A format that the parser does not read back
+    /// is rejected (see <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>).
+    /// </param>
     /// <param name="text">The DSL text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
     /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/> or <paramref name="constants"/> is not read back.</returns>
     public bool TryPrintRuleText(
@@ -154,6 +196,28 @@ public sealed class CompiledRule<TContext>
         }
 
         text = this.PrintRuleText(grouping, operatorStyle, constants);
+        return true;
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(RuleTextOptions)"/>, but reports an unsupported
+    /// <see cref="RuleTextOptions.OperatorStyle"/> or <see cref="RuleTextOptions.Constants"/> through the return value
+    /// instead of throwing.
+    /// </summary>
+    /// <param name="options">The printing options. Rejected the same way as <see cref="PrintRuleText(RuleTextOptions)"/>.</param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="options"/> is rejected.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    public bool TryPrintRuleText(RuleTextOptions options, [NotNullWhen(true)] out string? text)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.OperatorStyle == OperatorStyle.CStyle || options.Constants?.IsRuleTextSafe(out _) == false)
+        {
+            text = null;
+            return false;
+        }
+
+        text = this.PrintRuleText(options);
         return true;
     }
 

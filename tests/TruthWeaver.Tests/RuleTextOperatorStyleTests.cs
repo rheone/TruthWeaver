@@ -7,7 +7,7 @@ using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
-/// Ticket 06: the <see cref="OperatorStyle"/> parameter of <see cref="CompiledRule{TContext}.PrintRuleText"/> and its
+/// Ticket 06: the <see cref="OperatorStyle"/> parameter of <see cref="CompiledRule{TContext}.PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> and its
 /// <see cref="CompiledRule{TContext}.TryPrintRuleText(GroupingStyle, OperatorStyle, out string)"/> Try-first sibling.
 /// </summary>
 public sealed class RuleTextOperatorStyleTests
@@ -97,7 +97,7 @@ public sealed class RuleTextOperatorStyleTests
         Assert.Equal("isManager ∧ (isDepartmentHead ∧ [isManager ∨ isDepartmentHead])", text);
     }
 
-    /// <summary><see cref="OperatorStyle.CStyle"/> has no round-trippable rule text, so <see cref="CompiledRule{TContext}.PrintRuleText"/> rejects it.</summary>
+    /// <summary><see cref="OperatorStyle.CStyle"/> has no round-trippable rule text, so <see cref="CompiledRule{TContext}.PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> rejects it.</summary>
     [Fact]
     public void PrintRuleText_CStyle_ThrowsArgumentException_Test()
     {
