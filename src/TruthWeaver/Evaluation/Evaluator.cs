@@ -61,71 +61,6 @@ internal sealed class Evaluator<TContext>(
         );
     }
 
-    private static string NodeText(Expression node)
-    {
-        if (node is ConstantExpression c)
-        {
-            return TruthValueText.Canonical(c.Value);
-        }
-
-        if (node is TermExpression t)
-        {
-            return t.Identity.ToString();
-        }
-
-        NodeShape shape = ExpressionShape.Of(node);
-
-        // Labels come from the operator table; the completeness test guarantees every operator has one, so the
-        // op-name fallback is only reachable for a node that skipped the table.
-        return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
-            ? definition.Label(shape)
-            : shape.OpName;
-    }
-
-    /// <summary>
-    /// Evaluates any count-threshold comparison against the range of true-operand counts still
-    /// reachable given how many operands remain <see cref="TruthValue.Unknown"/> — determinate only
-    /// when the comparison agrees at both the lowest and highest possible count (monotonic
-    /// comparisons) or when there is no remaining ambiguity at all (<see cref="ThresholdComparison.Exactly"/>,
-    /// which is not monotonic in the count).
-    /// </summary>
-    private static TruthValue EvaluateThreshold(ThresholdComparison comparison, int k, IReadOnlyList<TruthValue> operandValues)
-    {
-        int trueCount = operandValues.Count(v => v == TruthValue.True);
-        int unknownCount = operandValues.Count(v => v == TruthValue.Unknown);
-        int minCount = trueCount;
-        int maxCount = trueCount + unknownCount;
-
-        if (comparison == ThresholdComparison.Exactly)
-        {
-            if (k < minCount || k > maxCount)
-            {
-                return TruthValue.False;
-            }
-
-            return unknownCount == 0 ? TruthValue.True : TruthValue.Unknown;
-        }
-
-        bool SatisfiesAt(int count) =>
-            comparison switch
-            {
-                ThresholdComparison.AtLeast => count >= k,
-                ThresholdComparison.AtMost => count <= k,
-                ThresholdComparison.GreaterThan => count > k,
-                ThresholdComparison.LessThan => count < k,
-                _ => throw new InvalidOperationException($"Unhandled threshold comparison '{comparison}'."),
-            };
-
-        bool satisfiesMin = SatisfiesAt(minCount);
-        bool satisfiesMax = SatisfiesAt(maxCount);
-        if (satisfiesMin && satisfiesMax)
-        {
-            return TruthValue.True;
-        }
-
-        return !satisfiesMin && !satisfiesMax ? TruthValue.False : TruthValue.Unknown;
-    }
-
     /// <summary>
     /// Renders <paramref name="identity"/> as in the canonical text but with each variable followed by the value it
     /// resolved to (<c>v: from("user", "$.age") = 18</c>). Used for the trace only, and only on request.
@@ -151,7 +86,7 @@ internal sealed class Evaluator<TContext>(
     {
         if (this.aborted)
         {
-            string skippedDescription = NodeText(node);
+            string skippedDescription = TraceText.Of(node);
             this.trace.Add(new TraceEntry(skippedDescription, null, true));
             return new EvalResult(
                 TruthValue.Unknown,
@@ -165,7 +100,7 @@ internal sealed class Evaluator<TContext>(
         {
             case ConstantExpression c:
                 TruthValue constantValue = c.Value;
-                string constantDescription = NodeText(node);
+                string constantDescription = TraceText.Of(node);
                 this.trace.Add(new TraceEntry(constantDescription, constantValue, false));
                 return new EvalResult(
                     constantValue,
@@ -306,7 +241,7 @@ internal sealed class Evaluator<TContext>(
                 // ANY is AtLeast(1, ...) over the definitely-true / possibly-true interval (ADR-0005 decision 6).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateThreshold(ThresholdComparison.AtLeast, 1, [.. results.Select(r => r.Value)]);
+                TruthValue value = K3Logic.Threshold(ThresholdComparison.AtLeast, 1, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
                     new TraceNode("ANY", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
@@ -318,7 +253,7 @@ internal sealed class Evaluator<TContext>(
                 // ALL is AtLeast(n, ...) for the n operands.
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateThreshold(
+                TruthValue value = K3Logic.Threshold(
                     ThresholdComparison.AtLeast,
                     results.Count,
                     [.. results.Select(r => r.Value)]
@@ -334,7 +269,7 @@ internal sealed class Evaluator<TContext>(
                 // NONE is AtMost(0, ...).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateThreshold(ThresholdComparison.AtMost, 0, [.. results.Select(r => r.Value)]);
+                TruthValue value = K3Logic.Threshold(ThresholdComparison.AtMost, 0, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
                     new TraceNode("NONE", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
@@ -347,7 +282,7 @@ internal sealed class Evaluator<TContext>(
                 // cardinality operator (ticket 17: folded into the one threshold path, no separate evaluation).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateThreshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
+                TruthValue value = K3Logic.Threshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
                     new TraceNode("ExactlyOne", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
@@ -361,10 +296,10 @@ internal sealed class Evaluator<TContext>(
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue[] operandValues = [.. results.Select(r => r.Value)];
                 TruthValue value = K3Logic.And(
-                    EvaluateThreshold(ThresholdComparison.AtLeast, bt.Min, operandValues),
-                    EvaluateThreshold(ThresholdComparison.AtMost, bt.Max, operandValues)
+                    K3Logic.Threshold(ThresholdComparison.AtLeast, bt.Min, operandValues),
+                    K3Logic.Threshold(ThresholdComparison.AtMost, bt.Max, operandValues)
                 );
-                string description = NodeText(node);
+                string description = TraceText.Of(node);
                 return new EvalResult(
                     value,
                     new TraceNode(description, value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
@@ -377,7 +312,7 @@ internal sealed class Evaluator<TContext>(
                 // threshold never short-circuits. The cost is linear in the operand count.
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateThreshold(th.Comparison, th.K, [.. results.Select(r => r.Value)]);
+                TruthValue value = K3Logic.Threshold(th.Comparison, th.K, [.. results.Select(r => r.Value)]);
                 string description = $"{shape.OpName}({shape.K})";
                 return new EvalResult(
                     value,
@@ -427,7 +362,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Records <paramref name="node"/> as not evaluated in the trace and trace tree.</summary>
     private EvalResult Skip(Expression node)
     {
-        string skippedDescription = NodeText(node);
+        string skippedDescription = TraceText.Of(node);
         this.trace.Add(new TraceEntry(skippedDescription, null, true));
         return new EvalResult(
             TruthValue.Unknown,
@@ -458,7 +393,7 @@ internal sealed class Evaluator<TContext>(
         {
             if (stop || this.aborted)
             {
-                string skippedDescription = NodeText(operand);
+                string skippedDescription = TraceText.Of(operand);
                 this.trace.Add(new TraceEntry(skippedDescription, null, true));
                 children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
                 continue;
