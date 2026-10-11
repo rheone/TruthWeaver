@@ -59,6 +59,28 @@ public sealed record PredicateSchema(
     /// </remarks>
     public PredicateDeprecation? Deprecation { get; init; }
 
+    /// <summary>
+    /// Gets this predicate's relative evaluation cost hint, or <see langword="null"/> (the default, "neutral") when none
+    /// is given.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The value has no unit and is relative to the implicit neutral baseline of <c>0</c>: a predicate that is cheaper
+    /// than typical can use a negative value, a predicate that is expensive (a network call, a database lookup, heavy
+    /// computation) can use a positive one, and leaving it unset places the predicate at the same baseline as every
+    /// other predicate that also leaves it unset. <c>CompiledRule{TContext}.OptimizeOrder()</c> is the only consumer: it
+    /// stable-sorts the operands of <c>AND</c> and <c>OR</c> by the summed cost of the distinct terms each operand
+    /// reaches, cheapest first. A registry where no predicate sets this hint sorts every tie in original order, so
+    /// <c>OptimizeOrder()</c> changes nothing for it - setting this on no predicates is exactly today's behavior.
+    /// </para>
+    /// <para>
+    /// This is a static hint, known at registration time. A host that has measured actual per-predicate cost can pass
+    /// those values to <c>OptimizeOrder(OrderOptimizationOptions)</c> instead; a measured cost there overrides this hint
+    /// for that call, but does not change what this property reports.
+    /// </para>
+    /// </remarks>
+    public double? Cost { get; init; }
+
     /// <summary>Creates a schema for a zero-argument predicate.</summary>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>

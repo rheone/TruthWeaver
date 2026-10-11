@@ -437,6 +437,64 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Replaces this rule with an equivalent, same-size one whose <c>AND</c>/<c>OR</c> operands are reordered cheapest
+    /// first, and returns it as a new rule. Lets a rule author rely on the evaluator's left-to-right short-circuit
+    /// (<see cref="EvaluationMode.ShortCircuit"/>) to skip an expensive predicate once a cheap one already decides the
+    /// <c>AND</c> or <c>OR</c> it is part of.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every <c>AND</c> and <c>OR</c> node's operands are stable-sorted by subtree cost, cheapest first: the cost of an
+    /// operand is the sum of <see cref="Abstractions.PredicateSchema.Cost"/> over the distinct terms it reaches - a term
+    /// reached through two paths inside the same operand counts once, matching the evaluator's per-evaluation term
+    /// memoization (ADR-0002). A predicate with no <see cref="Abstractions.PredicateSchema.Cost"/> hint sits at the
+    /// neutral baseline of <c>0</c>; a rule whose predicates all leave it unset sorts every tie in original order
+    /// (<see cref="Enumerable.OrderBy{TSource,TKey}(IEnumerable{TSource},Func{TSource,TKey})"/> is a stable sort), so this
+    /// method changes nothing for it. <c>COALESCE</c>'s priority order, <c>IMPLIES</c>'s antecedent-first evaluation and
+    /// <c>If</c>'s condition-first evaluation all carry meaning beyond cost, so none of their operands is reordered.
+    /// </para>
+    /// <para>
+    /// The result evaluates to the same value as this rule for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment
+    /// and has exactly the same node count. <b>Evaluation order and side effects are not preserved.</b> A predicate the
+    /// original would have invoked, and any fault it would have reported, may no longer run (or may run earlier) once a
+    /// short-circuit applies in the new order; the value never changes. This is the same trade <see cref="Simplify"/>
+    /// already makes for operands it drops entirely.
+    /// </para>
+    /// <para>
+    /// Same inputs (this rule's tree, the registry's <c>Cost</c> hints and <paramref name="options"/>) give the same
+    /// order on every call - there is no randomness and no hidden state. Passing <see cref="OrderOptimizationOptions.MeasuredCosts"/>
+    /// is the only way to change the order for a fixed rule and registry.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">
+    /// The measured-cost override, or <see langword="null"/> (the default) to use only the registry's static
+    /// <see cref="Abstractions.PredicateSchema.Cost"/> hints.
+    /// </param>
+    /// <returns>A result that holds the new rule over the same predicates, with its <c>AND</c>/<c>OR</c> operands reordered.</returns>
+    public CompilationResult<TContext> OptimizeOrder(OrderOptimizationOptions? options = null)
+    {
+        Dictionary<string, double>? measuredCosts = (options ?? OrderOptimizationOptions.Default).MeasuredCosts is { } measured
+            ? new Dictionary<string, double>(measured, StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        double CostOf(TermIdentity identity)
+        {
+            if (measuredCosts is not null && measuredCosts.TryGetValue(identity.PredicateName, out double measuredCost))
+            {
+                return measuredCost;
+            }
+
+            return this.registry.TryGetSchema(identity.PredicateName, out PredicateSchema? schema) ? schema.Cost ?? 0.0 : 0.0;
+        }
+
+        Expression optimized = OrderOptimizer.Optimize(this.Root, CostOf);
+        return new CompilationResult<TContext>(
+            new CompiledRule<TContext>(optimized, this.registry, this.logger, this.options),
+            EquatableArray<Diagnostic>.Empty
+        );
+    }
+
+    /// <summary>
     /// Simplifies this rule as <see cref="Simplify"/> does and also reports each change, in the order the rewrite applied it.
     /// </summary>
     /// <remarks>
@@ -596,6 +654,20 @@ public sealed class CompiledRule<TContext>
     public bool TrySimplify([NotNullWhen(true)] out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)
     {
         return this.Simplify().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="OptimizeOrder"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised by this call.</param>
+    /// <param name="options">The measured-cost override, as for <see cref="OptimizeOrder"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced; otherwise <see langword="false"/>.</returns>
+    public bool TryOptimizeOrder(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        OrderOptimizationOptions? options = null
+    )
+    {
+        return this.OptimizeOrder(options).TryGetRule(out rule, out diagnostics);
     }
 
     /// <summary>The <c>Try</c> form of <see cref="ToNnf"/>.</summary>

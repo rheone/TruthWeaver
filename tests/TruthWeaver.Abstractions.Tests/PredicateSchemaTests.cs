@@ -41,4 +41,25 @@ public sealed class PredicateSchemaTests
         Assert.False(argument.Required);
         Assert.Equal(LiteralValue.OfInt64(1), argument.Default);
     }
+
+    /// <summary>A schema with no Cost hint given reports it as null (the neutral default).</summary>
+    [Fact]
+    public void Cost_NotSet_IsNull_Test()
+    {
+        PredicateSchema schema = PredicateSchema.NoArguments("isManager", "Is Manager", "Is the current user a manager?");
+
+        Assert.Null(schema.Cost);
+    }
+
+    /// <summary>Cost is set through the record's init accessor and read back unchanged.</summary>
+    [Fact]
+    public void Cost_SetViaInit_ReturnsTheGivenValue_Test()
+    {
+        PredicateSchema schema = PredicateSchema.NoArguments("fraudCheck", "Fraud Check", "An expensive fraud check.") with
+        {
+            Cost = 10.0,
+        };
+
+        Assert.Equal(10.0, schema.Cost);
+    }
 }

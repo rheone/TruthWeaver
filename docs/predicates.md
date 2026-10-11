@@ -13,6 +13,18 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 | Class-based (DI), 0 args | none | `IPredicate<TContext>` | Needs a scoped or injected dependency but no rule-authored parameter. |
 | Class-based (DI), n args | several | `IPredicate<TContext>` with a multi-argument schema | Needs rule-authored parameters and one or more injected dependencies. |
 
+## Cost hint
+
+`PredicateSchema.Cost` is an optional `double?`, set with `init` on any of the four shapes above. It is a relative number, not a unit of time: unset (the default) means "neutral", the same baseline as every other predicate that also leaves it unset. A predicate that is cheaper than typical (an in-memory check) can use a negative value; a predicate that is expensive (a network call, a database lookup, heavy computation) can use a positive one.
+
+```csharp
+builder.Add(
+    PredicateSchema.NoArguments("fraudCheck", "Fraud Check", "Calls the fraud-scoring service.") with { Cost = 10.0 },
+    FraudCheckPredicate.EvaluateAsync);
+```
+
+The only consumer is [`CompiledRule<TContext>.OptimizeOrder()`](rewriting-rules.md#optimize-evaluation-order): it stable-sorts the operands of `AND` and `OR`, cheapest first, so the evaluator's short-circuit reaches a deciding cheap predicate before an expensive one. Setting `Cost` on no predicate in a registry is exactly today's behavior - `OptimizeOrder()` then changes nothing, because every operand ties at the neutral baseline and a stable sort keeps ties in their written order. A host that has measured actual per-predicate cost can pass those values to `OptimizeOrder(OrderOptimizationOptions)` for one call instead of changing the registered hint.
+
 ## Ready-made predicates
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:

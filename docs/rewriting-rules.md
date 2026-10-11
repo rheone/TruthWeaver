@@ -15,6 +15,7 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 | [`CompressToDerived()`](#compress-to-derived-operators) | Primitive shapes written as derived operators. |
 | [`Canonicalize()`](#canonical-form) | One deterministic representation. |
 | [`Simplify()`](#simplify) | An equivalent, cheaper rule. |
+| [`OptimizeOrder()`](#optimize-evaluation-order) | The same rule, with `AND`/`OR` operands reordered cheapest first. |
 | [`ToNnf()`](#normal-forms) | Negation normal form: `NOT` only above a term or an atom. |
 | [`ToCnf()`](#normal-forms) / [`ToDnf()`](#normal-forms) | An `AND` of `OR`s (CNF), or an `OR` of `AND`s (DNF). |
 | [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | The same rule, and the list of laws applied. |
@@ -32,8 +33,9 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 | A list of conditions that must all hold, each an `OR` | [`ToCnf()`](#normal-forms) | The result can be much larger than the rule. |
 | A list of alternative ways to be `True`, each an `AND` | [`ToDnf()`](#normal-forms) | The result can be much larger than the rule. |
 | To know why a rule changed | [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | It lists each law the rewrite applied. |
+| To let a cheap predicate's short-circuit skip an expensive one | [`OptimizeOrder()`](#optimize-evaluation-order) | It reorders `AND`/`OR` operands cheapest first, by a `Cost` hint. |
 
-Expanding and normalizing rewrites can make a rule larger. `CompressToDerived()`, `Canonicalize()` and `Simplify()` never do.
+Expanding and normalizing rewrites can make a rule larger. `CompressToDerived()`, `Canonicalize()`, `Simplify()` and `OptimizeOrder()` never do; `OptimizeOrder()` never changes the node count at all.
 
 ### What a rewrite returns
 
@@ -41,7 +43,7 @@ A rewrite returns one of two shapes. A rewrite that can be refused at its size c
 
 | Shape | Rewrites | How to read the result |
 | --- | --- | --- |
-| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Call the `Try` form (`TrySimplify`, `TryToNnf` and so on), or check `Succeeded` and use `Rule`. `GetRuleOrThrow()` throws instead. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()`, `OptimizeOrder()` | Call the `Try` form (`TrySimplify`, `TryToNnf`, `TryOptimizeOrder` and so on), or check `Succeeded` and use `Rule`. `GetRuleOrThrow()` throws instead. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). `OptimizeOrder()` always returns a rule with no diagnostics: it only reorders operands, so it has no size cap and no pass limit. |
 | `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule`, `Steps` and `Diagnostics`. `Diagnostics` holds the same `TRE0033` warning as `Simplify()`. |
 
 To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It accepts a rewrite that returns a `CompilationResult<TContext>` or a `CompiledRule<TContext>`.
@@ -218,6 +220,37 @@ For a before and after, see [Example: canonical form](rewriting-examples.md#exam
 The rewrite does not use the dual-rail findings of the analyzer. The analyzer reports those as diagnostics (`StructuralTautology`, `StructuralContradiction`) for authors. Every simplification here is a local, structural rule.
 
 For a before and after, see [Example: simplify](rewriting-examples.md#example-simplify).
+
+### Optimize evaluation order
+
+`OptimizeOrder()` stable-sorts the operands of every `AND` and `OR`, cheapest subtree first, so the evaluator's left-to-right short-circuit (`EvaluationMode.ShortCircuit`, the default) reaches a deciding cheap predicate before an expensive one it can then skip. It never changes the rule's value, and never changes its node count: it only reorders operands.
+
+A predicate's cost comes from its [`PredicateSchema.Cost`](predicates.md#cost-hint) hint - an optional, relative number set at registration. A term with no hint sits at the neutral baseline of `0`. The cost of an `AND`/`OR` operand is the sum of `Cost` over the *distinct* terms it reaches; a term the operand reaches through two paths counts once, because the evaluator invokes a given term at most once per evaluation regardless of how many places reference it. Sorting is stable, so operands of equal cost - including the all-neutral case, where no predicate in the rule sets a `Cost` hint - keep their original relative order. **A rule whose predicates never set `Cost` is unchanged by `OptimizeOrder()`.**
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("fraudCheck AND accountActive AND notLocked").GetRuleOrThrow();
+// fraudCheck is registered with a high Cost; accountActive and notLocked are registered with none (neutral).
+
+CompiledRule<MyContext> optimized = rule.OptimizeOrder().GetRuleOrThrow();
+Console.WriteLine(optimized.CanonicalText);   // accountActive AND notLocked AND fraudCheck
+```
+
+`COALESCE`'s priority order, `IMPLIES`'s antecedent-first evaluation and `If`'s condition-first evaluation all carry meaning beyond cost, so none of their operands is ever reordered - only `AND` and `OR` are touched, at every depth of the rule.
+
+An opt-in measured-cost override replaces the schema's static hint for one call, for the predicates it names:
+
+```csharp
+CompilationResult<MyContext> optimized = rule.OptimizeOrder(
+    new OrderOptimizationOptions(MeasuredCosts: new Dictionary<string, double>
+    {
+        ["fraudCheck"] = 0.4,      // measured cheaper than its static hint suggested
+    }));
+```
+
+A predicate not named in `MeasuredCosts` falls back to its schema's `Cost` hint (or the neutral baseline when that is also unset). Without an override, the same rule and registry give the same order on every call - there is no randomness and no hidden state.
+
+> [!IMPORTANT]
+> Like `Canonicalize()` and `Simplify()`, `OptimizeOrder()` keeps the *value* but not the evaluation order or side effects. A predicate the original would have invoked, and any fault it would have reported, may no longer run (or may run earlier) once a short-circuit applies in the new order; the value never changes.
 
 ### See which laws Simplify applied
 
