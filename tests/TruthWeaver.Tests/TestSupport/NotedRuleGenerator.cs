@@ -7,7 +7,7 @@ using TruthWeaver.Printing;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Generates random rules over the inputs <c>a</c> to <c>e</c> and the three constants, using every operator, with notes
+/// Generates random rules, by default over the inputs <c>a</c> to <c>e</c> and the three constants, using every operator, with notes
 /// on random nodes. The note text deliberately includes <c>*/</c>, <c>//</c>, quotes and line feeds, so the printer must
 /// choose between block and line comments. Seeded by the caller, so a failure reproduces.
 /// </summary>
@@ -59,7 +59,16 @@ public static class NotedRuleGenerator
     /// <returns>The generated rule.</returns>
     public static NotedRule Next(Random random)
     {
-        Expression tree = NextExpression(random, 0);
+        return Next(random, NextLeaf);
+    }
+
+    /// <summary>Generates one rule with notes whose leaves come from <paramref name="leaf"/>, printed in a random operator style and grouping.</summary>
+    /// <param name="random">The source of randomness.</param>
+    /// <param name="leaf">Makes one leaf: a constant or a term the caller's registry knows.</param>
+    /// <returns>The generated rule.</returns>
+    public static NotedRule Next(Random random, Func<Random, Expression> leaf)
+    {
+        Expression tree = NextExpression(random, 0, leaf);
         Dictionary<string, string> notes = [];
         AddNotes(tree, "$", random, notes);
         OperatorStyle style = random.Next(2) == 0 ? OperatorStyle.Word : OperatorStyle.Symbolic;
@@ -116,49 +125,57 @@ public static class NotedRuleGenerator
             : new TermExpression(new TermIdentity(InputNames[random.Next(InputNames.Length)].ToString(), [], []));
     }
 
-    private static EquatableArray<Expression> NextOperands(Random random, int depth, int min, int max)
+    private static EquatableArray<Expression> NextOperands(
+        Random random,
+        int depth,
+        int min,
+        int max,
+        Func<Random, Expression> leaf
+    )
     {
         int count = random.Next(min, max + 1);
-        return new EquatableArray<Expression>([.. Enumerable.Range(0, count).Select(_ => NextExpression(random, depth + 1))]);
+        return new EquatableArray<Expression>([
+            .. Enumerable.Range(0, count).Select(_ => NextExpression(random, depth + 1, leaf)),
+        ]);
     }
 
-    private static Expression NextExpression(Random random, int depth)
+    private static Expression NextExpression(Random random, int depth, Func<Random, Expression> leaf)
     {
         if (depth >= MaxDepth || random.Next(4) == 0)
         {
-            return NextLeaf(random);
+            return leaf(random);
         }
 
         return random.Next(19) switch
         {
-            0 => new AndExpression(NextOperands(random, depth, 2, 3)),
-            1 => new OrExpression(NextOperands(random, depth, 2, 3)),
-            2 => new NotExpression(NextExpression(random, depth + 1)),
-            3 => new XorExpression(NextExpression(random, depth + 1), NextExpression(random, depth + 1)),
-            4 => new EquivalentExpression(NextExpression(random, depth + 1), NextExpression(random, depth + 1)),
-            5 => new ImpliesExpression(NextExpression(random, depth + 1), NextExpression(random, depth + 1)),
-            6 => new NandExpression(NextExpression(random, depth + 1), NextExpression(random, depth + 1)),
-            7 => new NorExpression(NextExpression(random, depth + 1), NextExpression(random, depth + 1)),
-            8 => new ParityExpression(NextOperands(random, depth, 2, 3)),
-            9 => new AnyExpression(NextOperands(random, depth, 2, 3)),
-            10 => new AllExpression(NextOperands(random, depth, 2, 3)),
-            11 => new NoneExpression(NextOperands(random, depth, 2, 3)),
-            12 => new ExactlyOneExpression(NextOperands(random, depth, 2, 3)),
-            13 => new CoalesceExpression(NextOperands(random, depth, 2, 3)),
+            0 => new AndExpression(NextOperands(random, depth, 2, 3, leaf)),
+            1 => new OrExpression(NextOperands(random, depth, 2, 3, leaf)),
+            2 => new NotExpression(NextExpression(random, depth + 1, leaf)),
+            3 => new XorExpression(NextExpression(random, depth + 1, leaf), NextExpression(random, depth + 1, leaf)),
+            4 => new EquivalentExpression(NextExpression(random, depth + 1, leaf), NextExpression(random, depth + 1, leaf)),
+            5 => new ImpliesExpression(NextExpression(random, depth + 1, leaf), NextExpression(random, depth + 1, leaf)),
+            6 => new NandExpression(NextExpression(random, depth + 1, leaf), NextExpression(random, depth + 1, leaf)),
+            7 => new NorExpression(NextExpression(random, depth + 1, leaf), NextExpression(random, depth + 1, leaf)),
+            8 => new ParityExpression(NextOperands(random, depth, 2, 3, leaf)),
+            9 => new AnyExpression(NextOperands(random, depth, 2, 3, leaf)),
+            10 => new AllExpression(NextOperands(random, depth, 2, 3, leaf)),
+            11 => new NoneExpression(NextOperands(random, depth, 2, 3, leaf)),
+            12 => new ExactlyOneExpression(NextOperands(random, depth, 2, 3, leaf)),
+            13 => new CoalesceExpression(NextOperands(random, depth, 2, 3, leaf)),
             14 => new IfExpression(
-                NextExpression(random, depth + 1),
-                NextExpression(random, depth + 1),
-                NextExpression(random, depth + 1)
+                NextExpression(random, depth + 1, leaf),
+                NextExpression(random, depth + 1, leaf),
+                NextExpression(random, depth + 1, leaf)
             ),
-            15 => new InspectionExpression((InspectionKind)random.Next(4), NextExpression(random, depth + 1)),
-            16 => NextBetween(random, depth),
-            _ => NextThreshold(random, depth),
+            15 => new InspectionExpression((InspectionKind)random.Next(4), NextExpression(random, depth + 1, leaf)),
+            16 => NextBetween(random, depth, leaf),
+            _ => NextThreshold(random, depth, leaf),
         };
     }
 
-    private static Expression NextBetween(Random random, int depth)
+    private static Expression NextBetween(Random random, int depth, Func<Random, Expression> leaf)
     {
-        EquatableArray<Expression> operands = NextOperands(random, depth, 2, 3);
+        EquatableArray<Expression> operands = NextOperands(random, depth, 2, 3, leaf);
         int n = operands.Count;
 
         // The compiler rejects the full range (0, n) as always true, so the maximum stays below n when the minimum is 0.
@@ -172,9 +189,9 @@ public static class NotedRuleGenerator
         return new BetweenExpression(min, max, operands);
     }
 
-    private static Expression NextThreshold(Random random, int depth)
+    private static Expression NextThreshold(Random random, int depth, Func<Random, Expression> leaf)
     {
-        EquatableArray<Expression> operands = NextOperands(random, depth, 2, 3);
+        EquatableArray<Expression> operands = NextOperands(random, depth, 2, 3, leaf);
         int n = operands.Count;
         ThresholdComparison comparison = (ThresholdComparison)random.Next(5);
 

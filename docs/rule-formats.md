@@ -13,7 +13,7 @@ Rule text (the DSL), JSON and YAML compile to the same tree through the same Par
 | **Package** | `TruthWeaver` | `TruthWeaver` | `TruthWeaver.Yaml` |
 | **Compile with** | `compiler.Compile(text)` (same method as `compiler.CompileText(text)`) | `compiler.CompileJson(json)` | `compiler.CompileYaml(yaml)` |
 | **Print with** | `rule.CanonicalText`, or `rule.PrintRuleText()` to keep [notes](#notes) | `rule.PrintJson()` | `rule.PrintYaml()` |
-| **Round-trips losslessly?** | Yes, by definition. | Yes. `parse(print(x))` is structurally equal to `x`. | Yes. The same guarantee holds. |
+| **Round-trips losslessly?** | Yes. See [The conversion guarantee](#the-conversion-guarantee). | Yes. `parse(print(x))` is structurally equal to `x`, with the same notes. | Yes. The same guarantee holds. |
 | **Nesting for `AND`/`OR`/`XOR`/`EQUIVALENT`/`IMPLIES`/`NAND`/`NOR`/`??`** | Infix with precedence (see [Precedence and grouping](strong-k3/specification/syntax.md#precedence-and-grouping)). `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR` and `??` need parentheses next to `AND`, `OR` or each other (see [The mixing rule](strong-k3/specification/syntax.md#the-mixing-rule)). | Explicit `{"op": "...", "operands": [...]}` nodes. There is no precedence to get wrong. | The same explicit `op` and `operands` shape as JSON. |
 | **Notes on nodes** | Yes: a `//` or `/* */` comment. See [Notes](#notes). | Yes: a `note` property. | Yes: a `note` key. A YAML `#` comment is not a note: the compiler ignores it and a printed rule does not have it. |
 
@@ -27,7 +27,27 @@ You can also build a rule without writing text in any of these formats. See [Rul
 
 ## Converting between DSL, JSON, and YAML
 
-A compiled rule converts without loss to any of the three formats. Print the rule in one format and compile the result in the other. Nothing in the compiled tree depends on the format:
+A compiled rule converts without loss to any of the three formats. Print the rule in one format and compile the result in the other. Nothing in the compiled tree depends on the format.
+
+`RuleFormat` names the three formats: `Text`, `Json` and `Yaml`. The `TruthWeaver.Yaml` package, which reads and writes all three, has helpers that take it:
+
+| Helper | What it does |
+| --- | --- |
+| `compiler.Convert(source, from, to)` | Compiles `source` as `from` and prints the rule as `to`. It returns a `RuleConversionResult`: the text, or no text and the diagnostics when the source does not compile. `TryConvert` is the `Try` form. |
+| `compiler.CompileAs(source, format)` | The same result as `Compile`, `CompileJson` or `CompileYaml`. `TryCompileAs` is the `Try` form. |
+| `rule.PrintAs(format)` | The same text as `PrintRuleText()`, `PrintJson()` or `PrintYaml()`. |
+
+Each helper takes `includeNotes` (`true` by default) where it prints. A format value that is not defined throws `ArgumentOutOfRangeException`.
+
+```csharp
+RuleConversionResult result = compiler.Convert(yamlText, RuleFormat.Yaml, RuleFormat.Text);
+if (result.Succeeded)
+{
+    Console.WriteLine(result.Text);                      // the rule text, with its notes
+}
+```
+
+The same conversion with the format-specific methods:
 
 ```csharp
 CompiledRule<PizzaOrder> rule = compiler.Compile(dslText).GetRuleOrThrow();
@@ -48,6 +68,17 @@ string backToDsl = fromJson.CanonicalText;              // JSON -> DSL
 A rule-authoring UI can use this to offer "export as JSON or YAML" or "paste JSON, get back DSL to review". The UI needs a parser only for the format that the user is editing at that moment.
 
 The conversion keeps the [notes](#notes) of the rule. `PrintRuleText()`, `PrintJson()` and `PrintYaml()` write them. `CanonicalText` does not.
+
+### The conversion guarantee
+
+For every rule that compiles, a conversion in any of the six directions (text to JSON, text to YAML, JSON to text, JSON to YAML, YAML to text and YAML to JSON) gives a document that compiles to a tree equal to the tree of the source, with the same notes. A property test checks this for generated rules that use every operator, every literal kind, variable references (`from("source", "query")`) and notes, over many seeds.
+
+The guarantee is about the compiled rule, not the source text. A conversion does not keep these:
+
+- **The layout and spelling of the source.** Whitespace, delimiter choice, operator aliases and symbols, letter case and the constant letters `T`, `F` and `U` are not in the tree. The printer writes its own spelling.
+- **YAML `#` comments.** They are not notes. Use a `note` key to keep a comment.
+- **Note text outside the normal form.** A note is normalized when it is read (see [Notes](#notes)), so trailing spaces and blank space around it are not kept.
+- **Notes, after a rewrite.** A rewrite such as `Simplify` returns a rule with no notes, so a rewritten rule converts without them. `CanonicalText`, and a print with `includeNotes: false`, also leave the notes out.
 
 ## Notes
 
