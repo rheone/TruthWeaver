@@ -36,6 +36,7 @@ copyright line reads 2026.
 - MinVer derives the package version from Git tags with the prefix `v`. An untagged build is `1.0.0-preview.0.N`. The
   hand-set `Version` of `1.0.0-dev` is removed from `Directory.Build.props`. CI checks out the full history so the
   version is correct.
+- `EnablePackageValidation` for the packable projects, a `pack` job in CI (`dotnet pack -warnaserror` and `scripts/check-packages.ps1`, which never pushes), and `docs/releasing.md`, the release runbook. SourceLink is verified on a local pack. The `Microsoft.SourceLink.GitHub` package reference is removed because it switched off the SDK Source Link, so the packed assemblies had no source link; the .NET SDK Source Link now supplies it.
 - Each package sets its own `PackageId`, `Description` and `PackageTags`, and `PackageReleaseNotes` points to this file.
 - `docs/contributing.md`: what the pre-commit hook and `scripts/format-all.ps1` do, linked from the README.
 - `FakePredicates` factories label a predicate with its name when no `label` is given, instead of the constant `"Fake"`, so

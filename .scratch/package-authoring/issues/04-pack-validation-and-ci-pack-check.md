@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] `dotnet pack` runs package validation with no errors
-- [ ] The CI workflow has a pack step that does not push
-- [ ] `docs/contributing.md` mentions the step
-- [ ] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `dotnet pack` runs package validation with no errors
+- [x] The CI workflow has a pack step that does not push
+- [x] `docs/contributing.md` mentions the step
+- [x] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

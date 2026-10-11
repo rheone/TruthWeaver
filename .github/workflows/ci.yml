@@ -53,3 +53,32 @@ jobs:
         # run the TruthWeaver.Generators source generator (it needs a newer Roslyn), so it would report the generated
         # code as missing in the generator tests.
         run: dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
+
+  pack:
+    # Packs every package and checks it. This job never pushes or publishes: it has no NuGet API key and only
+    # contents: read permission. The pack output stays in the runner's temp directory.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # MinVer reads the Git tags and the commit history to derive the package version.
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore TruthWeaver.slnx --locked-mode
+
+      - name: Pack
+        # -warnaserror turns a pack warning (a NuGet NU* warning or a package validation finding) into a failure.
+        # EnablePackageValidation (src/Directory.Build.props) runs during this step. CI=true is set by GitHub Actions
+        # and makes the build deterministic (ContinuousIntegrationBuild).
+        run: dotnet pack TruthWeaver.slnx --configuration Release --no-restore -warnaserror --output "$RUNNER_TEMP/packages"
+
+      - name: Check packages
+        run: pwsh scripts/check-packages.ps1 -PackageDirectory "$RUNNER_TEMP/packages"

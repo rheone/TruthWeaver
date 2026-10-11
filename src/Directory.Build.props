@@ -14,6 +14,14 @@
        Test and benchmark projects live outside this src/ subtree and are not covered: they are
        never published as libraries, and benchmark/test tooling (reflection-heavy by nature) has
        no need to be trim/AOT-safe. -->
+  <!-- Package validation runs during dotnet pack. It checks the package layout and the public API across target
+       frameworks. PackageValidationBaselineVersion is deliberately not set: no release exists yet, so there is nothing
+       to compare against. After the first release, set it to that version (for example 1.0.0) so that pack fails on a
+       breaking API change. -->
+  <PropertyGroup>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>

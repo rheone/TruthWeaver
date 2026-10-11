@@ -80,3 +80,30 @@ MinVer needs the tags and the commit history. CI checks out with `fetch-depth: 0
 the version is wrong. After `git clone --depth`, run `git fetch --unshallow --tags`.
 
 To see the version without packing, run `dotnet msbuild src/TruthWeaver -t:MinVer -getProperty:PackageVersion`.
+
+## The pack check
+
+The `pack` job in `.github/workflows/ci.yml` packs every package and checks the result. It never pushes or publishes a
+package. It has no NuGet API key and the job permission is `contents: read`. The job runs these steps:
+
+1. `dotnet pack TruthWeaver.slnx --configuration Release -warnaserror`. A pack warning fails the job. Package validation
+   (`EnablePackageValidation` in `src/Directory.Build.props`) runs in this step. It checks the package layout and the
+   public API across target frameworks.
+2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the seven packages the script checks that
+   the `.nupkg` exists, contains `README.md` and contains only the expected files. It also checks that the symbol package
+   (`.snupkg`) contains the `.pdb` file. `TruthWeaver.Generators` is an analyzer-only package and has no symbol package.
+   The script fails when it finds a symbol package for it.
+
+To run the same checks on your machine, pack into a directory outside the repository, then run the script on it:
+
+```powershell
+dotnet pack TruthWeaver.slnx --configuration Release -warnaserror --output $env:TEMP/tw-packages
+pwsh scripts/check-packages.ps1 -PackageDirectory $env:TEMP/tw-packages
+```
+
+`PackageValidationBaselineVersion` is not set, because no version has been released. After the first release, set it to
+that version so that pack fails on a breaking API change.
+
+## Releasing
+
+[Releasing](releasing.md) lists the steps to publish a version and the checks to make afterwards.

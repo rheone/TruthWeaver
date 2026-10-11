@@ -95,18 +95,10 @@
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" Condition="'$(IsPackable)' != 'false'" />
   </ItemGroup>
-  <!-- Source Link. Not applied to TruthWeaver.Generators: a project with a single TargetFramework gets only the
-       package's build/ assets, which omit Microsoft.Build.Tasks.Git, and the package also switches off the Source Link
-       that the .NET SDK includes (SuppressImplicitGitSourceLink). The generator package then lost its repository commit
-       and its source link. Without the package reference the SDK's own Source Link supplies both. -->
-  <ItemGroup>
-    <GlobalPackageReference
-      Include="Microsoft.SourceLink.GitHub"
-      Version="11.0.100-rc.1.26425.128"
-      PrivateAssets="all"
-      Condition="'$(MSBuildProjectName)' != 'TruthWeaver.Generators'"
-    />
-  </ItemGroup>
+  <!-- Source Link comes from the .NET SDK, which bundles Microsoft.SourceLink.GitHub, so no package reference is needed.
+       Do not add the Microsoft.SourceLink.GitHub package as a GlobalPackageReference: it sets SuppressImplicitGitSourceLink,
+       which switches off the SDK Source Link. In this repository no Source Link target then ran, so the packed
+       assemblies had no sourcelink.json and the symbol packages had no source link (found by the check in docs/releasing.md). -->
   <!-- NetArchTest - architecture-test-project-only, asserting the ADR-0004 package-boundary rules
        (e.g. TruthWeaver.Abstractions has zero dependencies on the other TruthWeaver.* assemblies,
        TruthWeaver.Predicates/Testing depend on Abstractions alone) as a build-time check rather than
