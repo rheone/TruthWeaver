@@ -64,6 +64,8 @@ Simple variables write letters. After the eleventh distinct term, the letters re
 <span class="tw-rule"><span class="tw-term tw-true">Is Dine In</span> <span class="tw-operator tw-true">AND</span> (<span class="tw-term tw-true">Is Takeout</span> <span class="tw-operator tw-true">OR</span> <span class="tw-operator tw-skipped">NOT</span> <span class="tw-term tw-skipped">Loves Pineapple</span>)</span>
 ```
 
+`PrintHtml(writer)` and `PrintHtml(writer, decision)` write the same fragment to a `TextWriter`. `PrintDot(writer)` and `PrintDot(writer, decision)` do the same for DOT. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
+
 ## Graphviz DOT
 
 ```csharp

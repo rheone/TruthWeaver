@@ -83,6 +83,30 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>PrintYaml to a writer writes exactly the YAML that the string form returns, and a failing writer's exception reaches the caller unchanged.</summary>
+    [Fact]
+    public void PrintYaml_ToWriter_WritesTheStringFormAndPropagatesWriterFailure_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(
+            PredicateRegistry<YamlTestContext>
+                .CreateBuilder()
+                .AddConstant("isManager", true)
+                .AddStringArgPredicate("hasRole", "role", "Y")
+                .Build()
+        );
+        CompiledRule<YamlTestContext> rule = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;
+        using StringWriter writer = new();
+        IOException failure = new("disk full");
+        using ThrowingWriter failing = new(failure);
+
+        rule.PrintYaml(writer);
+        IOException thrown = Assert.Throws<IOException>(() => rule.PrintYaml(failing));
+
+        Assert.Equal(rule.PrintYaml(), writer.ToString());
+        Assert.Same(failure, thrown);
+        Assert.Throws<ArgumentNullException>(() => rule.PrintYaml(null!));
+    }
+
     /// <summary>CompileYaml reports a diagnostic rather than throwing for an unknown predicate.</summary>
     [Fact]
     public void CompileYaml_UnknownPredicate_ReportsDiagnostic_Test()
@@ -135,5 +159,21 @@ public sealed class YamlRuleExtensionsTests
 
         Assert.True(result.Succeeded);
         Assert.Equal("hasRole(role: \"null\")", result.CompiledRule!.CanonicalText);
+    }
+
+    /// <summary>A writer whose every write fails with a preset exception.</summary>
+    private sealed class ThrowingWriter(Exception failure) : TextWriter
+    {
+        public override System.Text.Encoding Encoding => System.Text.Encoding.UTF8;
+
+        public override void Write(char value)
+        {
+            throw failure;
+        }
+
+        public override void Write(string? value)
+        {
+            throw failure;
+        }
     }
 }

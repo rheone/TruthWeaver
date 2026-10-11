@@ -246,6 +246,8 @@ foreach (EquationLegendEntry entry in result.Legend)
 
 An `EquationLegendEntry` has the `Variable` text, the `Term` identity (predicate name and arguments) and the `TermText`. `TermText` is the full term call in the notation of the dialect. It shows the argument values even when `ShowArgumentValues` is `false`.
 
+`PrintEquationWithLegend(writer)` writes the equation, a line feed and the legend text to a `TextWriter`. It writes only the equation when the rule has no term. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
+
 ### Lettering
 
 - Letters follow the first occurrence of a term, in a depth-first walk from left to right. The same rule always gets the same letters.

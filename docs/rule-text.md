@@ -217,6 +217,8 @@ rule.PrintRuleText(RuleTextOptions.Default);                           // one li
 rule.PrintRuleText(RuleTextOptions.Default with { Width = 20 });       // approvedByAlice AND\n(\n  approvedByBob OR\n  NOT approvedByCarol\n)
 ```
 
+`PrintRuleText(writer, ...)` and `PrintRuleText(writer, options)` write the same text to a `TextWriter`. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
+
 ## Printer spelling of the ternary
 
 `If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`. `PrintRuleText` never renders the ternary form (see [Operator style](#operator-style)). [`PrintEquation`](equations.md) with `EquationDialect.CStyle` renders `If` as the ternary `c ? t : f` instead of a call; the other dialects keep the call form.

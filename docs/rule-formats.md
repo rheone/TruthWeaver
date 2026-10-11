@@ -43,4 +43,6 @@ string backToDsl = fromJson.CanonicalText;              // JSON -> DSL
 // silently changes a rule's meaning.
 ```
 
+`PrintJson(writer)` and `PrintYaml(writer)` write the same text to a `TextWriter`. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
+
 A rule-authoring UI can use this to offer "export as JSON or YAML" or "paste JSON, get back DSL to review". The UI needs a parser only for the format that the user is editing at that moment.

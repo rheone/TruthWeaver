@@ -18,6 +18,26 @@ A compiled rule prints in several formats. Pick the printer for the job:
 | Write a rule as a formula in a report, a wiki or a paper. See [Equations](equations.md). | `PrintEquation` | [Section 8](#equations) |
 | Write a formula that stays short when the terms are long. See [Equations](equations.md). | `PrintEquationWithLegend` | [Section 8](#an-equation-with-a-legend) |
 
+## Write a printer to a TextWriter
+
+Each printer in the table has an overload that takes a `TextWriter` as its first parameter. The other parameters and their defaults stay the same. The overload writes exactly the text that the string form returns, so a large rule can go to a file, a response or a log without a string that you must hold. The overload does not flush or dispose the writer. A writer that fails throws its own exception to the caller, unchanged. A `null` writer throws `ArgumentNullException`.
+
+| String form | Writer form |
+| --- | --- |
+| `PrintRuleText(...)`, `PrintRuleText(options)` | `PrintRuleText(writer, ...)`, `PrintRuleText(writer, options)` |
+| `PrintJson()`, `PrintYaml()` | `PrintJson(writer)`, `PrintYaml(writer)` |
+| `PrintPlainText(...)`, `PrintPlainText(decision, ...)` | `PrintPlainText(writer, ...)`, `PrintPlainText(writer, decision, ...)` |
+| `PrintMermaid(...)`, `PrintMermaid(options)`, `PrintMermaid(decision, ...)`, `PrintMermaid(decision, options)` | The same calls with `writer` as the first argument |
+| `PrintEquation(options)` | `PrintEquation(writer, options)` |
+| `PrintEquationWithLegend(options)` | `PrintEquationWithLegend(writer, options)`. It writes the equation, a line feed, then the legend text. It writes only the equation when the rule has no term. |
+| `PrintHtml(...)`, `PrintDot(...)`, each with an optional `decision` | The same calls with `writer` as the first argument |
+| `RuleDiffPrinter.Print(diff)` | `RuleDiffPrinter.Print(writer, diff)` |
+
+```csharp
+await using StreamWriter file = new("rule.html");
+rule.PrintHtml(file);
+```
+
 ## 1. A single predicate
 
 <!-- doctest:rule ex1 -->

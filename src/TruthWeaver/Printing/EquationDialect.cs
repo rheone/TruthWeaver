@@ -1,6 +1,6 @@
 namespace TruthWeaver.Printing;
 
-/// <summary>The notation that <see cref="Evaluation.CompiledRule{TContext}.PrintEquation"/> writes an equation in.</summary>
+/// <summary>The notation that <see cref="Evaluation.CompiledRule{TContext}.PrintEquation(EquationOptions?)"/> writes an equation in.</summary>
 public enum EquationDialect
 {
     /// <summary>

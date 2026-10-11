@@ -1,6 +1,6 @@
 namespace TruthWeaver.Printing;
 
-/// <summary>The options for <see cref="Evaluation.CompiledRule{TContext}.PrintEquation"/>.</summary>
+/// <summary>The options for <see cref="Evaluation.CompiledRule{TContext}.PrintEquation(EquationOptions?)"/>.</summary>
 public sealed record EquationOptions
 {
     /// <summary>Gets the default options: the <see cref="EquationDialect.Unicode"/> dialect with argument values shown.</summary>
@@ -26,8 +26,8 @@ public sealed record EquationOptions
     /// Gets a value indicating whether each term prints as a letter (<c>p</c>, <c>q</c>, <c>r</c>) instead of its call.
     /// Letters follow the first occurrence of a term, depth first and left to right, and identical terms share a
     /// letter. After the eleventh distinct term (<c>z</c>), the letters repeat with a numeric subscript:
-    /// <c>p₁</c>, <c>q₁</c> and so on. <see cref="Evaluation.CompiledRule{TContext}.PrintEquation"/> then returns
-    /// only the equation. Use <see cref="Evaluation.CompiledRule{TContext}.PrintEquationWithLegend"/> to get the legend
+    /// <c>p₁</c>, <c>q₁</c> and so on. <see cref="Evaluation.CompiledRule{TContext}.PrintEquation(EquationOptions?)"/> then returns
+    /// only the equation. Use <see cref="Evaluation.CompiledRule{TContext}.PrintEquationWithLegend(EquationOptions?)"/> to get the legend
     /// too. The default is <see langword="false"/>.
     /// </summary>
     public bool SimpleVariables { get; init; }

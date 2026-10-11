@@ -86,6 +86,19 @@ public static class YamlRuleExtensions
         return YamlTreePrinter.Print(rule.Root);
     }
 
+    /// <summary>Writes a compiled rule to <paramref name="writer"/> as the YAML that <see cref="PrintYaml{TContext}(CompiledRule{TContext})"/> returns.</summary>
+    /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
+    /// <param name="rule">The compiled rule to print.</param>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public static void PrintYaml<TContext>(this CompiledRule<TContext> rule, TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(YamlTreePrinter.Print(rule.Root));
+    }
+
     private static CompilationResult<TContext> CompileFromParsedYaml<TContext>(
         RuleCompiler<TContext> compiler,
         RuleNode? root,

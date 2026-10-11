@@ -63,7 +63,7 @@ public sealed class CompiledRule<TContext>
     /// <summary>
     /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
     /// <c>InternalsVisibleTo</c>, so its YAML printer can render the same tree <see cref="CanonicalText"/>
-    /// and <see cref="PrintJson"/> render, without this package needing to know YAML exists.
+    /// and <see cref="PrintJson()"/> render, without this package needing to know YAML exists.
     /// </summary>
     internal Expression Root { get; }
 
@@ -119,6 +119,29 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule as DSL text to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> returns, without a large string
+    /// that the caller must hold.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="grouping">The grouping delimiters to print with. Defaults to <see cref="GroupingStyle.Parentheses"/>.</param>
+    /// <param name="operatorStyle">How to spell the connectives, as for the string overload. Defaults to <see cref="OperatorStyle.Word"/>.</param>
+    /// <param name="constants">How to spell the constants, as for the string overload, or <see langword="null"/> for the word form.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or <paramref name="constants"/> is a format that the parser does not read back. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintRuleText(
+        TextWriter writer,
+        GroupingStyle grouping = GroupingStyle.Parentheses,
+        OperatorStyle operatorStyle = OperatorStyle.Word,
+        ConstantFormat? constants = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintRuleText(grouping, operatorStyle, constants));
+    }
+
+    /// <summary>
     /// Renders this rule as DSL text using <paramref name="options"/> (ticket 10). This is the same text as
     /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> for an equivalent grouping, operator
     /// style and constants, with one addition: when <see cref="RuleTextOptions.Width"/> is set, a group that does not
@@ -154,6 +177,21 @@ public sealed class CompiledRule<TContext>
             && options.Constants is null
             ? this.CanonicalText
             : CanonicalPrinter.Print(this.Root, options);
+    }
+
+    /// <summary>
+    /// Writes this rule as DSL text to <paramref name="writer"/> using <paramref name="options"/>. The output is exactly the
+    /// text that <see cref="PrintRuleText(RuleTextOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The printing options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> has an operator style or constants that the parser does not read back. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintRuleText(TextWriter writer, RuleTextOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintRuleText(options));
     }
 
     /// <summary>
@@ -615,6 +653,16 @@ public sealed class CompiledRule<TContext>
         return JsonTreePrinter.Print(this.Root);
     }
 
+    /// <summary>Writes this rule to <paramref name="writer"/> as the JSON that <see cref="PrintJson()"/> returns.</summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintJson(TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintJson());
+    }
+
     /// <summary>
     /// Builds this rule's outline: its expression tree, recursively — every operator's label/description (from
     /// <see cref="OperatorInfo"/>) and every term's label/description (from its predicate's registered
@@ -669,6 +717,60 @@ public sealed class CompiledRule<TContext>
     public string PrintMermaid(MermaidOptions options)
     {
         return MermaidTreePrinter.Print(this.Outline(), options);
+    }
+
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text to <paramref name="writer"/>, with the operator labels in
+    /// <see cref="OperatorStyle.Word"/>. The output is exactly the text that
+    /// <see cref="PrintMermaid(bool, MermaidDirection, bool, bool, MermaidPalette?, Func{OutlineNode, NodeStyle?}?, int?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors, or <see langword="null"/> for <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> for no compaction.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(
+        TextWriter writer,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(
+            this.PrintMermaid(
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
+    }
+
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text to <paramref name="writer"/> using <paramref name="options"/>. The
+    /// output is exactly the text that <see cref="PrintMermaid(MermaidOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The diagram options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(TextWriter writer, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintMermaid(options));
     }
 
     /// <summary>
@@ -727,6 +829,68 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text, colored by one evaluation, to <paramref name="writer"/>, with the
+    /// operator labels in <see cref="OperatorStyle.Word"/>. The output is exactly the text that
+    /// <see cref="PrintMermaid(Decision, bool, MermaidDirection, bool, bool, MermaidPalette?, Func{OutlineNode, NodeStyle?}?, int?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors, or <see langword="null"/> for <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> for no compaction.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(
+        TextWriter writer,
+        Decision decision,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(
+            this.PrintMermaid(
+                decision,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
+    }
+
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text, colored by one evaluation, to <paramref name="writer"/> using
+    /// <paramref name="options"/>. The output is exactly the text that <see cref="PrintMermaid(Decision, MermaidOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The diagram options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(TextWriter writer, Decision decision, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintMermaid(decision, options));
+    }
+
+    /// <summary>
     /// Renders this rule as an HTML fragment: one infix formula in nested <c>span</c> elements with the classes
     /// <c>tw-operator</c>, <c>tw-term</c> and <c>tw-constant</c>, HTML entities for the logic symbols and a <c>sub</c> element for
     /// the subscript of a simple variable. The fragment has no <c>script</c> element and no <c>style</c> attribute, and every
@@ -737,6 +901,20 @@ public sealed class CompiledRule<TContext>
     public string PrintHtml(HtmlOptions? options = null)
     {
         return HtmlPrinter.Print(this.Outline(), options ?? HtmlOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as an HTML fragment to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintHtml(HtmlOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintHtml(TextWriter writer, HtmlOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintHtml(options));
     }
 
     /// <summary>
@@ -754,6 +932,23 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule as an HTML fragment, with a state class on each node of one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintHtml(Decision, HtmlOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintHtml(TextWriter writer, Decision decision, HtmlOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintHtml(decision, options));
+    }
+
+    /// <summary>
     /// Renders this rule as a Graphviz DOT <c>digraph</c>: a hexagon for each operator, a rounded box for each term and a circle
     /// for each constant, with one edge from each operator to each operand. The node ids are <c>n0</c>, <c>n1</c> and so on
     /// in depth-first order, and the labels are escaped for DOT.
@@ -763,6 +958,20 @@ public sealed class CompiledRule<TContext>
     public string PrintDot(DotOptions? options = null)
     {
         return DotPrinter.Print(this.Outline(), options ?? DotOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as a Graphviz DOT <c>digraph</c> to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintDot(DotOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintDot(TextWriter writer, DotOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintDot(options));
     }
 
     /// <summary>
@@ -779,6 +988,23 @@ public sealed class CompiledRule<TContext>
         return DotPrinter.Print(this.Outline(), RequireTraceTree(decision), options ?? DotOptions.Default);
     }
 
+    /// <summary>
+    /// Writes this rule as a Graphviz DOT <c>digraph</c>, with a fill color on each node of one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintDot(Decision, DotOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintDot(TextWriter writer, Decision decision, DotOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintDot(decision, options));
+    }
+
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
@@ -786,6 +1012,21 @@ public sealed class CompiledRule<TContext>
     public string PrintPlainText(bool showArgumentValues = true, ConstantFormat? constants = null)
     {
         return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues, constants: constants);
+    }
+
+    /// <summary>
+    /// Writes this rule's structure as an indented plain-text tree to <paramref name="writer"/>. The output is exactly the
+    /// text that <see cref="PrintPlainText(bool, ConstantFormat?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintPlainText(TextWriter writer, bool showArgumentValues = true, ConstantFormat? constants = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintPlainText(showArgumentValues, constants));
     }
 
     /// <summary>
@@ -809,6 +1050,29 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule's structure as an indented plain-text tree, annotated by one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintPlainText(Decision, bool, ConstantFormat?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintPlainText(
+        TextWriter writer,
+        Decision decision,
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintPlainText(decision, showArgumentValues, constants));
+    }
+
+    /// <summary>
     /// Renders this rule as a flat, single-line infix equation, for example <c>a ∧ (b ∨ c)</c>. The connectives
     /// <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c> print
     /// as infix symbols. Every other operator prints in function-call form, for example <c>AtLeast(2, a, b, c)</c>.
@@ -823,6 +1087,20 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule as a flat, single-line infix equation to <paramref name="writer"/>. The output is exactly the text
+    /// that <see cref="PrintEquation(EquationOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The dialect and term options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintEquation(TextWriter writer, EquationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintEquation(options));
+    }
+
+    /// <summary>
     /// Renders this rule as an equation with a letter for each term, and returns the legend that maps each letter back to
     /// its term. The call always uses simple-variable mode, so <see cref="EquationOptions.SimpleVariables"/> has no
     /// effect here. The legend shows each term as its full call, whatever <see cref="EquationOptions.ShowArgumentValues"/>
@@ -833,6 +1111,28 @@ public sealed class CompiledRule<TContext>
     public EquationWithLegend PrintEquationWithLegend(EquationOptions? options = null)
     {
         return EquationPrinter.PrintWithLegend(this.Root, options ?? EquationOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as an equation with a letter for each term, followed by its legend, to <paramref name="writer"/>.
+    /// The output is the <see cref="EquationWithLegend.Equation"/> of <see cref="PrintEquationWithLegend(EquationOptions?)"/>.
+    /// When the rule has at least one term, a <c>\n</c> and the <see cref="EquationWithLegend.LegendText"/> follow. The text
+    /// has no trailing newline. For a rule with no term, only the equation is written.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The dialect options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintEquationWithLegend(TextWriter writer, EquationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        EquationWithLegend result = this.PrintEquationWithLegend(options);
+        writer.Write(result.Equation);
+        if (result.LegendText.Length > 0)
+        {
+            writer.Write('\n');
+            writer.Write(result.LegendText);
+        }
     }
 
     /// <summary>
