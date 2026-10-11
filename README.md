@@ -158,7 +158,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
 - [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX or AsciiMath.
-- [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
+- [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent. [Which rewrite to use](docs/rewriting-rules.md#which-rewrite-to-use) helps you choose a rewrite, [Simplify](docs/rewriting-rules.md#simplify) describes the simplifier, and [Normal forms](docs/rewriting-rules.md#normal-forms) covers NNF, CNF and DNF.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
 - [Predicate conventions](docs/predicate-conventions.md): how the built-in predicates treat case, whitespace, range ends, null values and culture.
 - [Predicate source generator](docs/predicate-source-generator.md): register `[Predicate]` methods with generated code, and compare it with hand-written registration.
@@ -166,7 +166,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
 - [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent, that a rewrite is sound, and check a `Decision` in a test.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
-- [Examples](docs/examples.md): seven worked examples, from one predicate to a full rule.
+- [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
 - [Benchmarks](docs/benchmarks.md): the benchmark commands and the committed baseline.
 - [Documentation examples](docs/doc-examples.md): how the examples in the documentation are tested.
