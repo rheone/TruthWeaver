@@ -25,6 +25,7 @@ public static class SeverityPolicy
         ToolDiagnosticCodes.RendererNotFound,
         ToolDiagnosticCodes.RenderFailed,
         ToolDiagnosticCodes.UnknownArtifact,
+        ToolDiagnosticCodes.WriteBackFailed,
     ];
 
     /// <summary>Tells whether a diagnostic fails a command.</summary>
@@ -41,8 +42,8 @@ public static class SeverityPolicy
 
     /// <summary>
     /// Gets the exit code for the diagnostics of a command: <see cref="ToolExitCode.Unusable"/> when a tool core error says
-    /// that the tool could not read its input, configuration or schema file, write its output, find an artifact, or render an
-    /// image;
+    /// that the tool could not read its input, configuration or schema file, write its output, find an artifact, render an
+    /// image, or write an edited rule back;
     /// <see cref="ToolExitCode.Failed"/> when any other diagnostic fails (see <see cref="Fails"/>); otherwise
     /// <see cref="ToolExitCode.Success"/>.
     /// </summary>

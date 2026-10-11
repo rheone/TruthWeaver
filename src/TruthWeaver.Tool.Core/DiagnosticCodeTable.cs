@@ -259,6 +259,21 @@ public static class DiagnosticCodeTable
             nameof(ToolDiagnosticCodes.UnknownArtifact),
             "An artifact id is not in the artifact catalog."
         ),
+        Warning(
+            ToolDiagnosticCodes.RuleRewritten,
+            nameof(ToolDiagnosticCodes.RuleRewritten),
+            "A patch write-back wrote one rule again in full; comments and layout inside the rule are not kept."
+        ),
+        Warning(
+            ToolDiagnosticCodes.RoundTripWriteBack,
+            nameof(ToolDiagnosticCodes.RoundTripWriteBack),
+            "A round-trip write-back serialized the whole document again; YAML comments and layout can be lost."
+        ),
+        Error(
+            ToolDiagnosticCodes.WriteBackFailed,
+            nameof(ToolDiagnosticCodes.WriteBackFailed),
+            "An edited rule cannot be written back into its document."
+        ),
     ];
 
     private static readonly FrozenDictionary<string, DiagnosticCodeInfo> ByCode = Rows.ToFrozenDictionary(

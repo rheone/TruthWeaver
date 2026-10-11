@@ -1,0 +1,22 @@
+{
+  "service": "editor",
+  "rules": {
+    "publish": {
+      "note": "Editors who are active.",
+      "op": "and",
+      "operands": [
+        { "predicate": "isActive", "note": "Checked first." },
+        {
+          "predicate": "hasRole",
+          "args": { "role": "editor" }
+        }
+      ]
+    },
+    "audit": {
+      "op": "not",
+      "operands": [ { "predicate": "isBanned" } ]
+    },
+    "review": "isActive AND hasRole(role: \"reviewer\")"
+  },
+  "owner": "platform-team"
+}

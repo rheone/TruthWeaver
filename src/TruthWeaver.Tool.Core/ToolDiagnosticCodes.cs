@@ -79,4 +79,23 @@ public static class ToolDiagnosticCodes
 
     /// <summary>An artifact id is not in the artifact catalog.</summary>
     public const string UnknownArtifact = "TWT0018";
+
+    /// <summary>
+    /// A patch write-back wrote one rule again in full, because the edit did not fit the rule's values in place (a node, key
+    /// or operand was added or removed, or a changed value is a YAML block scalar, alias, anchor or tag) or the rule is rule
+    /// text. The text outside the rule is unchanged; comments and layout inside the rule are not kept.
+    /// </summary>
+    public const string RuleRewritten = "TWT0019";
+
+    /// <summary>
+    /// A round-trip write-back serialized the whole document again. YAML comments and the layout of the document can be
+    /// lost.
+    /// </summary>
+    public const string RoundTripWriteBack = "TWT0020";
+
+    /// <summary>
+    /// An edited rule cannot be written back into its document: the written document does not read back as the edited rule,
+    /// or the rule is shared through a YAML anchor or alias. The document is not changed.
+    /// </summary>
+    public const string WriteBackFailed = "TWT0021";
 }

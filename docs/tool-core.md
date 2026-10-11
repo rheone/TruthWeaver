@@ -1,6 +1,6 @@
 # Tool core
 
-`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, validates them, measures them, exports them as artifacts and reports, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
+`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, writes edited rules back into their documents, validates them, measures them, exports them as artifacts and reports, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
 
 The front ends parse options and draw output. The behavior is in this library, so the command line and the terminal UI behave the same way. The library is not a NuGet package (see [Packaging](#packaging)).
 
@@ -24,6 +24,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `ArtifactCatalog`, `ArtifactExporter` | List the artifacts that the tools make from a rule, and export one artifact or all of them with a manifest. |
 | `RuleReport` | Writes the Markdown report of a rule. |
 | `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
+| `RulePatcher` | Writes an edited rule back into its document, and keeps the comments and layout of the document. |
 
 Each operation returns a `ToolResult<T>`: the value, or no value, and every diagnostic. An operation does not throw for an expected failure, such as a missing file, a malformed document or a rule that does not compile. It throws `ArgumentNullException` for a `null` argument and `ArgumentOutOfRangeException` for an undefined `RuleFormat`, because those are programming errors. `ToolResult<T>.Succeeded` is `true` when the value is present and no diagnostic is an error. `TryGetValue` gives the value and the diagnostics without the result object.
 
@@ -95,6 +96,54 @@ A path that selects nothing is a `TWT0005` error that names the first segment th
 The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name and every argument as written. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors and limits are still diagnostics. The limits come from the [settings](#configuration-file).
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
+
+## Writing a rule back
+
+`RulePatcher.Patch` writes an edited rule back into the document that it came from, in the format of the document. The edit is a `CompiledRule` (from `RuleConverter.Compile`, a rewrite or the `RuleBuilder`). The patcher uses only its tree and its notes.
+
+| Overload | Writes back |
+| --- | --- |
+| `Patch(LoadedRule, CompiledRule, mode, settings)` | One rule, at the path it was loaded from. |
+| `Patch(SourceText, RuleFormat, edits, mode, settings)` | Each `RuleEdit` (a path, or `null` for the whole document, and a rule), in order. Each edit applies to the text that the previous edit gave, so several rules in one document patch independently. |
+
+The result is a `DocumentPatch`: the new text, the encoding of the original, and one `RulePatchOutcome` (the path and a `RulePatchKind`) for each edit. When one edit fails, the result has no text and the document does not change.
+
+### Patch mode
+
+`WriteBackMode.Patch` is the default. The patcher compares the tree form of the rule in the document with the edited rule, and replaces only the values that changed. A value is an operator name, a predicate name, an argument, a constant or a note. Comments, key order, quotes, indentation and every byte outside the changed values stay. A changed string keeps its YAML style (plain, single-quoted or double-quoted) when the new value can have that style with the same meaning. Otherwise it is double-quoted.
+
+<!-- doctest:skip a document that holds rules, not one rule -->
+```yaml
+rules:
+  # Who may publish.
+  publish:
+    op: and  # all of these
+    operands:
+      - predicate: isActive  # checked first
+      - predicate: hasRole
+        args:
+          role: editor
+```
+
+An edit that changes `editor` to `admin` changes only that word. The comments stay.
+
+The patcher writes the whole rule again, in its span only, when the change does not fit the old values:
+
+- The structure changed: a node, a key (such as a new `note`) or an operand was added or removed.
+- A changed value is a YAML block scalar, an alias, an anchored value or a tagged value. A value with an anchor is shared with its aliases, so a change to it would change other values too.
+- The rule is rule text: a rule text file, or a string that holds rule text. Rule text has no positions for its parts. The new text keeps the quote style or the block header of the string.
+
+The rewrite fits the place of the rule: a YAML block mapping is indented to its column, a YAML flow mapping stays on one line in flow style, and a JSON object takes the indentation of the document. The text outside the rule stays. Comments and layout inside the rule do not stay. The outcome is `RuleRewritten`, with a `TWT0019` warning that gives the reason.
+
+The patcher reads every result back and compiles it. When the result does not compile to the edited tree with the edited notes, the patch is a `TWT0021` error. A change to a rule that is itself anchored, so that an alias shares it, is a `TWT0021` error too. An edit that compiles to the same tree and notes as the rule in the document is `Unchanged`, and no byte changes.
+
+### Round-trip mode
+
+`WriteBackMode.RoundTrip` reads the whole document into a document model, puts each edited rule at its path, and serializes the whole document again. JSON is indented by two spaces. YAML comments, quotes, key layout and indentation can be lost, so this mode always gives a `TWT0020` warning. The outcome of each edit is `DocumentRewritten`.
+
+### Writing the file
+
+`RulePatcher.WriteFile` writes a `DocumentPatch` in the encoding of the original, with its byte order mark and its line endings. `RulePatcher.Encode` gives the same bytes. Do not write a patch with `OutputWriter`: it changes line endings to LF and removes a byte order mark, so bytes outside the rule change.
 
 ## Configuration file
 
@@ -251,7 +300,7 @@ For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AN
 | --- | --- | --- |
 | `Success` | 0 | No error, and no warning in strict mode. |
 | `Failed` | 1 | An error, or a warning in strict mode. |
-| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id or an image renderer. This code wins over `Failed`. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer or a write-back. This code wins over `Failed`. |
 
 ## Diagnostics output
 
@@ -388,6 +437,9 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0016` | `RendererNotFound` | Error | The program that renders a diagram as an image is not on the search path. |
 | `TWT0017` | `RenderFailed` | Error | The program that renders a diagram as an image failed. |
 | `TWT0018` | `UnknownArtifact` | Error | An artifact id is not in the artifact catalog. |
+| `TWT0019` | `RuleRewritten` | Warning | A patch wrote one rule again in full; comments and layout inside the rule are not kept. |
+| `TWT0020` | `RoundTripWriteBack` | Warning | A round-trip write-back serialized the whole document again; YAML comments and layout can be lost. |
+| `TWT0021` | `WriteBackFailed` | Error | An edited rule cannot be written back into its document. |
 
 ## Packaging
 

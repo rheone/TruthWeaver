@@ -22,6 +22,22 @@ internal static class EmbeddedRuleReader
         return format == RuleFormat.Json ? SelectJson(document, path) : SelectYaml(document, path);
     }
 
+    /// <summary>Gets the character offset of a mark, from its 1-based line and column.</summary>
+    /// <param name="document">The document text.</param>
+    /// <param name="mark">The mark.</param>
+    /// <returns>The offset, at most the length of the document.</returns>
+    internal static int OffsetOf(string document, Mark mark)
+    {
+        int offset = 0;
+        for (long line = 1; line < mark.Line && offset < document.Length; line++)
+        {
+            int lineFeed = document.IndexOf('\n', offset);
+            offset = lineFeed < 0 ? document.Length : lineFeed + 1;
+        }
+
+        return Math.Min(offset + checked((int)mark.Column) - 1, document.Length);
+    }
+
     private static ToolResult<RuleSelection> SelectJson(string document, DocumentPath path)
     {
         JsonDocument parsed;
@@ -170,19 +186,6 @@ internal static class EmbeddedRuleReader
         }
 
         return document.Length;
-    }
-
-    // The character offset of a mark, from its 1-based line and column.
-    private static int OffsetOf(string document, Mark mark)
-    {
-        int offset = 0;
-        for (long line = 1; line < mark.Line && offset < document.Length; line++)
-        {
-            int lineFeed = document.IndexOf('\n', offset);
-            offset = lineFeed < 0 ? document.Length : lineFeed + 1;
-        }
-
-        return Math.Min(offset + checked((int)mark.Column) - 1, document.Length);
     }
 
     private static ToolResult<RuleSelection> NotFound(DocumentPath path, int failedSegment)

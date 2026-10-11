@@ -57,25 +57,7 @@ public static class OutputWriter
     public static ToolResult<string> WriteFile(string path, string text)
     {
         ArgumentNullException.ThrowIfNull(path);
-        byte[] bytes = Encode(text);
-        try
-        {
-            string fullPath = Path.GetFullPath(path);
-            if (Path.GetDirectoryName(fullPath) is { Length: > 0 } directory)
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.WriteAllBytes(fullPath, bytes);
-            return ToolResults.Success(fullPath);
-        }
-        catch (Exception ex) when (IsFileError(ex))
-        {
-            return ToolResults.Failure<string>(
-                ToolDiagnosticCodes.OutputFailed,
-                $"The file '{path}' cannot be written: {ex.Message}"
-            );
-        }
+        return WriteBytes(path, Encode(text));
     }
 
     /// <summary>
@@ -112,6 +94,32 @@ public static class OutputWriter
         return ToolResults.Success(
             new OutputCheck(path, line is null ? OutputCheckStatus.Identical : OutputCheckStatus.Differs, line)
         );
+    }
+
+    /// <summary>Writes bytes to a file, and creates the directory when it does not exist.</summary>
+    /// <param name="path">The file path.</param>
+    /// <param name="bytes">The bytes.</param>
+    /// <returns>The full path of the file, or a <see cref="ToolDiagnosticCodes.OutputFailed"/> error.</returns>
+    internal static ToolResult<string> WriteBytes(string path, byte[] bytes)
+    {
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            if (Path.GetDirectoryName(fullPath) is { Length: > 0 } directory)
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllBytes(fullPath, bytes);
+            return ToolResults.Success(fullPath);
+        }
+        catch (Exception ex) when (IsFileError(ex))
+        {
+            return ToolResults.Failure<string>(
+                ToolDiagnosticCodes.OutputFailed,
+                $"The file '{path}' cannot be written: {ex.Message}"
+            );
+        }
     }
 
     // The line of the first differing byte, counted by the line feeds before it, or null when the bytes are equal.
