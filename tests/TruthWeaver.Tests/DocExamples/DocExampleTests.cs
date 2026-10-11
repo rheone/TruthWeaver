@@ -26,33 +26,36 @@ public sealed class DocExampleTests
     [InlineData("docs/examples.md")]
     [InlineData("docs/diagnostics.md")]
     [InlineData("docs/benchmarks.md")]
-    public void Check_DocumentationFile_ReportsNoFailures_Test(string fileName)
+    public async Task CheckAsync_DocumentationFile_ReportsNoFailures_Test(string fileName)
     {
-        string markdown = File.ReadAllText(Path.Combine(DocExampleChecker.FindRepositoryRoot(), fileName));
+        string markdown = await File.ReadAllTextAsync(
+            Path.Combine(DocExampleChecker.FindRepositoryRoot(), fileName),
+            TestContext.Current.CancellationToken
+        );
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, fileName);
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, fileName);
 
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
     /// <summary>A variable example that names a source the checker does not declare is reported, so the data-source examples are really compiled.</summary>
     [Fact]
-    public void Check_VariableExampleWithUndeclaredSource_ReportsAFailure_Test()
+    public async Task CheckAsync_VariableExampleWithUndeclaredSource_ReportsAFailure_Test()
     {
         const string markdown = "<!-- doctest:rule v -->\n```text\nageAtLeast(min: from(\"nobody\", \"$.minAge\"))\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>A tagged rule example whose text no longer compiles is reported, naming the example.</summary>
     [Fact]
-    public void Check_RuleExampleThatDoesNotCompile_ReportsAFailure_Test()
+    public async Task CheckAsync_RuleExampleThatDoesNotCompile_ReportsAFailure_Test()
     {
         const string markdown = "<!-- doctest:rule broken -->\n```text\nlovesPineapple ANDD isBanned\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         string failure = Assert.Single(failures);
         Assert.Contains("broken", failure, StringComparison.Ordinal);
@@ -60,26 +63,26 @@ public sealed class DocExampleTests
 
     /// <summary>A documented tree rendering that no longer matches the rule's real rendering is reported.</summary>
     [Fact]
-    public void Check_TreeOutputThatIsStale_ReportsAFailure_Test()
+    public async Task CheckAsync_TreeOutputThatIsStale_ReportsAFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
             + "<!-- doctest:tree r -->\n```text\nXOR\n├─ Is Dine In\n└─ Is Takeaway\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>The same rule written as JSON that differs from the DSL rule is reported.</summary>
     [Fact]
-    public void Check_JsonExampleThatDiffersFromTheRuleText_ReportsAFailure_Test()
+    public async Task CheckAsync_JsonExampleThatDiffersFromTheRuleText_ReportsAFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn OR isTakeout\n```\n"
             + "<!-- doctest:json r -->\n```json\n{ \"op\": \"and\", \"operands\": [{ \"predicate\": \"isDineIn\" }, { \"predicate\": \"isTakeout\" }] }\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
@@ -89,20 +92,20 @@ public sealed class DocExampleTests
     [InlineData("equation r")]
     [InlineData("legend r")]
     [InlineData("equation r latex double-dollar")]
-    public void Check_EquationOutputThatIsStale_ReportsAFailure_Test(string marker)
+    public async Task CheckAsync_EquationOutputThatIsStale_ReportsAFailure_Test(string marker)
     {
         string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
             + $"<!-- doctest:{marker} -->\n```text\nisDineIn AND isTakeout\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>Documented equation output that matches the real printing passes, for the default and the LaTeX dialects.</summary>
     [Fact]
-    public void Check_EquationOutputThatIsCurrent_ReportsNoFailure_Test()
+    public async Task CheckAsync_EquationOutputThatIsCurrent_ReportsNoFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
@@ -110,49 +113,49 @@ public sealed class DocExampleTests
             + "<!-- doctest:equation r latex -->\n```text\n\\text{isDineIn} \\oplus \\text{isTakeout}\n```\n"
             + "<!-- doctest:legend r -->\n```text\np ⊕ q\np = isDineIn\nq = isTakeout\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Empty(failures);
     }
 
     /// <summary>A rewrite word makes the block document the rewritten rule, so rule text that matches the real CNF passes.</summary>
     [Fact]
-    public void Check_RuleTextOfARewrittenRuleThatIsCurrent_ReportsNoFailure_Test()
+    public async Task CheckAsync_RuleTextOfARewrittenRuleThatIsCurrent_ReportsNoFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n"
             + "<!-- doctest:ruletext r cnf -->\n```text\n(NOT approvedByAlice OR NOT approvedByBob) AND (NOT approvedByAlice OR NOT approvedByCarol)\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Empty(failures);
     }
 
     /// <summary>Rule text that is the unrewritten rule, where the marker asks for a rewrite, is reported as stale.</summary>
     [Fact]
-    public void Check_RuleTextThatIgnoresTheRewriteWord_ReportsAFailure_Test()
+    public async Task CheckAsync_RuleTextThatIgnoresTheRewriteWord_ReportsAFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n"
             + "<!-- doctest:ruletext r cnf -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>A rewrite that is refused at its size cap is reported for a printing marker, and its diagnostics are checked by a rewrite-diagnostics marker.</summary>
     [Fact]
-    public void Check_RewriteOverTheCap_ReportsAFailureForPrintingAndMatchesTheDiagnostics_Test()
+    public async Task CheckAsync_RewriteOverTheCap_ReportsAFailureForPrintingAndMatchesTheDiagnostics_Test()
     {
         const string rule =
             "<!-- doctest:rule r -->\n```text\n(isDineIn AND isTakeout) OR (isBanned AND isContractor) OR (hasSignedNda AND lovesPineapple)\n```\n";
 
-        IReadOnlyList<string> printing = DocExampleChecker.Check(
+        IReadOnlyList<string> printing = await DocExampleChecker.CheckAsync(
             rule + "<!-- doctest:ruletext r cnf cap=10 -->\n```text\nanything\n```\n",
             "sample.md"
         );
-        IReadOnlyList<string> diagnostics = DocExampleChecker.Check(
+        IReadOnlyList<string> diagnostics = await DocExampleChecker.CheckAsync(
             rule + "<!-- doctest:rewrite-diagnostics r cnf cap=10 -->\n```text\nTRE9999 something else\n```\n",
             "sample.md"
         );
@@ -163,18 +166,21 @@ public sealed class DocExampleTests
 
     /// <summary>A metrics table must hold the real depth and node count of the rule and of each rewrite, so a wrong number is reported.</summary>
     [Fact]
-    public void Check_MetricsTable_ReportsOnlyAWrongNumber_Test()
+    public async Task CheckAsync_MetricsTable_ReportsOnlyAWrongNumber_Test()
     {
         const string rule =
             "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n";
         const string current = "| Form | Depth | NodeCount |\n| --- | --- | --- |\n| Original | 4 | 6 |\n| CNF | 4 | 11 |\n";
         const string stale = "| Form | Depth | NodeCount |\n| --- | --- | --- |\n| Original | 4 | 6 |\n| CNF | 4 | 12 |\n";
 
-        IReadOnlyList<string> passing = DocExampleChecker.Check(
+        IReadOnlyList<string> passing = await DocExampleChecker.CheckAsync(
             rule + "<!-- doctest:metrics r cnf -->\n" + current,
             "sample.md"
         );
-        IReadOnlyList<string> failing = DocExampleChecker.Check(rule + "<!-- doctest:metrics r cnf -->\n" + stale, "sample.md");
+        IReadOnlyList<string> failing = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:metrics r cnf -->\n" + stale,
+            "sample.md"
+        );
 
         Assert.Empty(passing);
         Assert.Single(failing);
@@ -182,30 +188,30 @@ public sealed class DocExampleTests
 
     /// <summary>Several rewrite words apply in order, so expanding to primitives and compressing back gives the derived operator.</summary>
     [Fact]
-    public void Check_RuleTextAfterTwoRewrites_AppliesThemInOrder_Test()
+    public async Task CheckAsync_RuleTextAfterTwoRewrites_AppliesThemInOrder_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nNOT isContractor OR hasSignedNda\n```\n"
             + "<!-- doctest:ruletext r primitives compress -->\n```text\n(isContractor IMPLIES hasSignedNda)\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Empty(failures);
     }
 
     /// <summary>A display-math paragraph after an equation marker is checked against the printed LaTeX, so a stale formula is reported.</summary>
     [Fact]
-    public void Check_DisplayMathParagraph_ReportsOnlyAStaleFormula_Test()
+    public async Task CheckAsync_DisplayMathParagraph_ReportsOnlyAStaleFormula_Test()
     {
         const string rule = "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n";
         const string current = "$$\\text{isDineIn} \\oplus \\text{isTakeout}$$\n";
         const string stale = "$$\\text{isDineIn} \\land \\text{isTakeout}$$\n";
 
-        IReadOnlyList<string> passing = DocExampleChecker.Check(
+        IReadOnlyList<string> passing = await DocExampleChecker.CheckAsync(
             rule + "<!-- doctest:equation r latex double-dollar -->\n" + current,
             "sample.md"
         );
-        IReadOnlyList<string> failing = DocExampleChecker.Check(
+        IReadOnlyList<string> failing = await DocExampleChecker.CheckAsync(
             rule + "<!-- doctest:equation r latex double-dollar -->\n" + stale,
             "sample.md"
         );
@@ -216,70 +222,70 @@ public sealed class DocExampleTests
 
     /// <summary>A documented operator-style tree that uses the word spelling where the marker asks for C-style is reported.</summary>
     [Fact]
-    public void Check_TreeInTheWrongOperatorStyle_ReportsAFailure_Test()
+    public async Task CheckAsync_TreeInTheWrongOperatorStyle_ReportsAFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
             + "<!-- doctest:tree r cstyle -->\n```text\nXOR\n├─ Is Dine In\n└─ Is Takeout\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>A trace diagram colors the nodes of an evaluation, so the uncolored diagram is reported as stale for a trace marker.</summary>
     [Fact]
-    public void Check_TraceDiagramWithoutColors_ReportsAFailure_Test()
+    public async Task CheckAsync_TraceDiagramWithoutColors_ReportsAFailure_Test()
     {
         const string markdown =
             "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
             + "<!-- doctest:mermaid r trace -->\n```mermaid\nflowchart TD\n    Start([\"Start\"]) --> n0\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>Documented diagnostics output that no longer matches the formatter's output is reported.</summary>
     [Fact]
-    public void Check_DiagnosticsOutputThatIsStale_ReportsAFailure_Test()
+    public async Task CheckAsync_DiagnosticsOutputThatIsStale_ReportsAFailure_Test()
     {
         const string markdown = "<!-- doctest:diagnostics-dsl a ANDD b -->\n```text\nTRE9999 something else\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>A block in a checked language that carries no marker is reported, so new examples cannot escape the check.</summary>
     [Fact]
-    public void Check_UntaggedTextBlock_ReportsAFailure_Test()
+    public async Task CheckAsync_UntaggedTextBlock_ReportsAFailure_Test()
     {
         const string markdown = "```text\nlovesPineapple\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>A block explicitly allow-listed with a reason is not checked and produces no failure.</summary>
     [Fact]
-    public void Check_SkippedBlock_ReportsNoFailure_Test()
+    public async Task CheckAsync_SkippedBlock_ReportsNoFailure_Test()
     {
         const string markdown = "<!-- doctest:skip pseudo-grammar, not a rule -->\n```text\nExpression = Term\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Empty(failures);
     }
 
     /// <summary>A skip marker without a reason is reported, so every allow-listed block explains itself.</summary>
     [Fact]
-    public void Check_SkipWithoutAReason_ReportsAFailure_Test()
+    public async Task CheckAsync_SkipWithoutAReason_ReportsAFailure_Test()
     {
         const string markdown = "<!-- doctest:skip -->\n```text\nExpression = Term\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
@@ -288,22 +294,22 @@ public sealed class DocExampleTests
     [Theory]
     [InlineData("<!-- doctest:bogus x -->")]
     [InlineData("<!-- doctest:tree nothing-defined-this -->")]
-    public void Check_MarkerThatCannotBeResolved_ReportsAFailure_Test(string marker)
+    public async Task CheckAsync_MarkerThatCannotBeResolved_ReportsAFailure_Test(string marker)
     {
         string markdown = marker + "\n```text\nanything\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
     }
 
     /// <summary>Languages that are not runnable here (C# fragments, shell, diagrams outside a marker) are left alone.</summary>
     [Fact]
-    public void Check_CSharpBlock_IsNotChecked_Test()
+    public async Task CheckAsync_CSharpBlock_IsNotChecked_Test()
     {
         const string markdown = "```csharp\nvar x = notRunnable;\n```\n";
 
-        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Empty(failures);
     }

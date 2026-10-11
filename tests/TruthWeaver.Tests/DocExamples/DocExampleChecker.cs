@@ -83,7 +83,7 @@ internal static partial class DocExampleChecker
     /// <param name="markdown">The Markdown text.</param>
     /// <param name="fileName">The file's name, used to locate failures.</param>
     /// <returns>One message per failing example; empty when every example holds.</returns>
-    internal static IReadOnlyList<string> Check(string markdown, string fileName)
+    internal static async Task<IReadOnlyList<string>> CheckAsync(string markdown, string fileName)
     {
         List<string> failures = [];
         Dictionary<string, CompiledRule<RuleTestContext>> rules = [with(StringComparer.Ordinal)];
@@ -123,7 +123,7 @@ internal static partial class DocExampleChecker
                     paragraphEnd++;
                 }
 
-                CheckBlock(
+                await CheckBlockAsync(
                     marker,
                     "math",
                     string.Join('\n', lines[paragraphStart..paragraphEnd]),
@@ -154,7 +154,7 @@ internal static partial class DocExampleChecker
             string language = fence.Groups[1].Value;
             if (Array.IndexOf(CheckedLanguages, language) >= 0)
             {
-                CheckBlock(marker, language, body, $"{fileName}:{openLine}", rules, failures);
+                await CheckBlockAsync(marker, language, body, $"{fileName}:{openLine}", rules, failures);
             }
 
             marker = null;
@@ -164,7 +164,7 @@ internal static partial class DocExampleChecker
         return failures;
     }
 
-    private static void CheckBlock(
+    private static async Task CheckBlockAsync(
         string? markerLine,
         string language,
         string body,
@@ -275,7 +275,10 @@ internal static partial class DocExampleChecker
                         "tree" => PlainTextTreePrinter.Print(rule.Outline(), operatorStyle),
                         "equation" => rule.PrintEquation(equationOptions),
                         "ruletext" => rule.PrintRuleText(),
-                        _ when words.Contains("trace") => rule.PrintMermaid(EvaluateWithoutDataSources(rule), mermaidOptions),
+                        _ when words.Contains("trace") => rule.PrintMermaid(
+                            await EvaluateWithoutDataSourcesAsync(rule),
+                            mermaidOptions
+                        ),
                         _ => rule.PrintMermaid(mermaidOptions),
                     };
                 }
@@ -301,13 +304,9 @@ internal static partial class DocExampleChecker
     /// Evaluates a rule with no service provider and no data sources, so a variable reference gives <c>Unknown</c> and a fault
     /// while a documentation predicate gives <c>True</c>. The trace of this decision is what the <c>trace</c> word draws.
     /// </summary>
-    private static Decision EvaluateWithoutDataSources(CompiledRule<RuleTestContext> rule)
+    private static Task<Decision> EvaluateWithoutDataSourcesAsync(CompiledRule<RuleTestContext> rule)
     {
-        // The checker is synchronous and the documentation predicates complete synchronously, so blocking cannot deadlock
-        // (no synchronization context runs here). Making Check async would change every caller for one marker word.
-#pragma warning disable VSTHRD002
-        return rule.EvaluateAsync(new RuleTestContext()).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
+        return rule.EvaluateAsync(new RuleTestContext());
     }
 
     /// <summary>
