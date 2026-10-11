@@ -1,0 +1,2 @@
+/* Editors who are active. */
+(isActive AND hasRole(role: "editor"))

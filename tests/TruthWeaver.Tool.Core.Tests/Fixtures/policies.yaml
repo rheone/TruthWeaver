@@ -1,0 +1,18 @@
+# Access policies for the editor service.
+service: editor
+rules:
+  # Who may publish.
+  publish:
+    op: and
+    note: Editors who are active.
+    operands:
+      - predicate: isActive  # checked first
+      - predicate: hasRole
+        args:
+          role: editor
+  review: 'isActive AND hasRole(role: "reviewer")'
+  list:
+    - op: not
+      operands:
+        - predicate: isBanned
+owner: platform-team

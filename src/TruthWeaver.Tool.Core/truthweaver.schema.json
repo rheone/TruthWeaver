@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rheone/TruthWeaver/truthweaver.schema.json",
+  "title": "TruthWeaver tool configuration",
+  "description": "The truthweaver.json file: defaults for the truthweaver command line and terminal UI. A command-line option wins over this file, and this file wins over the built-in defaults. The tool reads enumeration values with any case.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "The schema of this file.",
+      "type": "string"
+    },
+    "operatorStyle": {
+      "description": "The operator spelling for printed output. Default: word.",
+      "enum": ["word", "symbolic", "cstyle"]
+    },
+    "constantStyle": {
+      "description": "How printed output writes True, False and Unknown. When absent, each printer uses its own default: letters for equations and truth tables, word for rule text and trees.",
+      "enum": ["word", "letters", "logicsymbols"]
+    },
+    "dialect": {
+      "description": "The notation of printed equations. Default: unicode.",
+      "enum": ["unicode", "latex", "asciimath", "cstyle", "mathml", "typst", "ascii"]
+    },
+    "limits": {
+      "description": "Compile limits. Each default is the compiler default.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxDepth": {
+          "description": "The maximum tree depth. Default: 32.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "maxNodeCount": {
+          "description": "The maximum node count. Default: 512.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "maxAnalysisTerms": {
+          "description": "The maximum number of distinct terms that the analysis considers. Default: 20.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "maxRewriteNodeCount": {
+          "description": "The maximum node count of a rewrite result. Default: 100000.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "schemaFile": {
+      "description": "The path of the optional predicate schema file, relative to the directory of this file.",
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

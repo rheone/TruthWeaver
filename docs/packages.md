@@ -61,3 +61,7 @@ flowchart LR
 ```
 
 A service that only implements domain predicates references `TruthWeaver.Abstractions` alone. It needs no parser, no BDD analyzer and no YAML library.
+
+## Tool libraries
+
+`TruthWeaver.Tool.Core` is a project of the repository, not a package. It is the UI-free library under the `truthweaver` command line and the terminal UI, and it references `TruthWeaver`, `TruthWeaver.Yaml` and `TruthWeaver.DataSources.Json`. No package references it. `dotnet pack` makes no package for it, and the CI build and tests include it. See [Tool core](tool-core.md).

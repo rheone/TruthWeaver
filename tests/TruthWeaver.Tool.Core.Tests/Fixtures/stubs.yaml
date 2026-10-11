@@ -1,0 +1,3 @@
+# Stub values for access.rule.
+isActive: True
+'hasRole(role: "editor")': unknown

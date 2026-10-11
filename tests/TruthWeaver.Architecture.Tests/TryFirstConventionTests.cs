@@ -11,6 +11,7 @@ public sealed class TryFirstConventionTests
 {
     private const string Suffix = "OrThrow";
 
+    // The packages, and the tool core: not a package, but the public API under the command line and terminal UI.
     private static readonly Assembly[] Shipped =
     [
         typeof(TruthWeaver.Abstractions.TruthValue).Assembly,
@@ -18,6 +19,7 @@ public sealed class TryFirstConventionTests
         typeof(TruthWeaver.Yaml.YamlRuleExtensions).Assembly,
         typeof(TruthWeaver.Predicates.StringPredicates).Assembly,
         typeof(TruthWeaver.Testing.DecisionAssertions).Assembly,
+        typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly,
     ];
 
     /// <summary>Every public OrThrow method in a shipped assembly has a Try sibling on the same type.</summary>

@@ -30,6 +30,7 @@ public sealed class DocExampleTests
     [InlineData("docs/examples.md")]
     [InlineData("docs/diagnostics.md")]
     [InlineData("docs/benchmarks.md")]
+    [InlineData("docs/tool-core.md")]
     public async Task CheckAsync_DocumentationFile_ReportsNoFailures_Test(string fileName)
     {
         string markdown = await File.ReadAllTextAsync(

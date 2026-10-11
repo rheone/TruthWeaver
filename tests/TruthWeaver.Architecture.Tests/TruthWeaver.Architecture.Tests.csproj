@@ -9,7 +9,7 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
-  <!-- Every shipping project, referenced purely so this project's own build forces them all to build
+  <!-- Every shipping project and the tool core, referenced purely so this project's own build forces them all to build
        first and so NetArchTest can load each assembly by type instead of a brittle on-disk path. -->
   <ItemGroup>
     <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
@@ -19,6 +19,7 @@
     <ProjectReference Include="../../src/TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Generators/TruthWeaver.Generators.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Tool.Core/TruthWeaver.Tool.Core.csproj" />
   </ItemGroup>
 
   <!-- Every test project, referenced so TestNamingTests can reflect over their test methods. -->
@@ -29,6 +30,7 @@
     <ProjectReference Include="../TruthWeaver.Generators.Tests/TruthWeaver.Generators.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Predicates.Tests/TruthWeaver.Predicates.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Testing.Tests/TruthWeaver.Testing.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Tool.Core.Tests/TruthWeaver.Tool.Core.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Yaml.Tests/TruthWeaver.Yaml.Tests.csproj" />
     <ProjectReference Include="../../samples/Consumer.Tests/Consumer.Tests.csproj" />
     <ProjectReference Include="../../samples/DataSource.Tests/DataSource.Tests.csproj" />

@@ -19,6 +19,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly JsonDataSources = typeof(TruthWeaver.DataSources.Json.JsonDataSource).Assembly;
     private static readonly Assembly Predicates = typeof(TruthWeaver.Predicates.StringPredicates).Assembly;
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
+    private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
     // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) —
@@ -191,6 +192,34 @@ public sealed class PackageBoundaryTests
         {
             Assert.DoesNotContain(
                 "TruthWeaver.Generators",
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Tool.Core</c> is the UI-free core of the command line and terminal UI. It references only TruthWeaver
+    /// assemblies and the libraries they bring, never a command-line or terminal UI library, and no test support.
+    /// </summary>
+    [Fact]
+    public void ToolCore_References_ExcludeUiCommandLineAndTestingAssemblies_Test()
+    {
+        string[] forbidden = ["System.CommandLine", "Terminal.Gui", "TruthWeaver.Testing", "TruthWeaver.Predicates"];
+
+        string[] referenced = [.. ToolCore.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver", referenced);
+        Assert.DoesNotContain(referenced, name => forbidden.Contains(name, StringComparer.Ordinal));
+    }
+
+    /// <summary>No shipping package depends on the tool core: the tools build on the packages, never the reverse.</summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludeToolCore_Test()
+    {
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing })
+        {
+            Assert.DoesNotContain(
+                ToolCore.GetName().Name,
                 assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
             );
         }
