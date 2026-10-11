@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Ready-made, generic string-comparison predicate factories, each parameterized by a

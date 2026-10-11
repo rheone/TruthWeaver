@@ -1,7 +1,6 @@
 namespace TruthWeaver.Ast;
 
 using System.Diagnostics;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Printing;
 
 // SA1402 (one type per file) is intentionally relaxed here: these records are a single closed-set

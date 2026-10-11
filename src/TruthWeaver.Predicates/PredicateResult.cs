@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Adapts the built-in predicates' internally boolean comparisons to the Kleene
 /// <see cref="TruthValue"/> a predicate delegate returns. Built-in predicates always reach a definite

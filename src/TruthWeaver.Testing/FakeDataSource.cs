@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// An in-memory <see cref="IDataSource"/> for tests of rules that use variable references (ADR-0006), so a test needs no
 /// JSON parsing and no query engine. A query is matched by its exact text: <see cref="With(string, long)"/> and its

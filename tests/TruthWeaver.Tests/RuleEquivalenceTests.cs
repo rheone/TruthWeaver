@@ -6,7 +6,6 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>Ticket 08: the K3-aware rule equivalence check and the diff's "preserves meaning" verdict.</summary>

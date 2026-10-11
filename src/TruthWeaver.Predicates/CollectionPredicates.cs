@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Ready-made, generic collection predicate factories, each parameterized by a selector supplied at
 /// registration.

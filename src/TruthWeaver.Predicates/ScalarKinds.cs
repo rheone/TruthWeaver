@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 
 /// <summary>The scalar kinds the catalog supports, one per existing <see cref="LiteralKind"/> pair.</summary>
 internal static class ScalarKinds

@@ -1,6 +1,5 @@
 namespace TruthWeaver.Evaluation;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 
 /// <summary>The result of <see cref="CompiledRule{TContext}.SimplifyWithSteps"/>: the simplified rule and how it got there.</summary>

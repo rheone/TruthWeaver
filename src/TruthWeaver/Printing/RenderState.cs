@@ -1,7 +1,5 @@
 namespace TruthWeaver.Printing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// A node's rendering state, independent of output format: whether it ran, what it resolved to, or
 /// whether it (or an ancestor) was skipped by short-circuiting.

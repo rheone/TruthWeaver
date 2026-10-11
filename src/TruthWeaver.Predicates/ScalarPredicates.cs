@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Ready-made predicate factories over nullable <c>Boolean</c>, <c>Guid</c> and <c>DateTimeOffset</c> selections.
 /// Each member has an overload per kind, with arguments of the matching <c>LiteralKind</c>. The members are

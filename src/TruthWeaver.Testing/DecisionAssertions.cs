@@ -1,7 +1,6 @@
 namespace TruthWeaver.Testing;
 
 using System.Diagnostics;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Fluent assertions over a <see cref="Decision"/>, so a test reads "the decision should be

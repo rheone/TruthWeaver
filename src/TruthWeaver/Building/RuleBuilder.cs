@@ -2,7 +2,6 @@ namespace TruthWeaver.Building;
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;

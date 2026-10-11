@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Analysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;

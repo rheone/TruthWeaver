@@ -1,7 +1,5 @@
 namespace TruthWeaver.Ast;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// The Strong Kleene (K3) scalar truth functions over <see cref="TruthValue"/>. This is the one place the connective
 /// truth tables live: <c>Evaluator</c> applies them to evaluated operands, and the rewriters (<c>Simplifier</c>,

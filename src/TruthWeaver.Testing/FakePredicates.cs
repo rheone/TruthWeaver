@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Fake/stub predicate factories for tests: a fixed answer, a Kleene (<see cref="TruthValue"/>)
 /// answer, a simulated fault, or a scripted sequence of answers across successive calls — without

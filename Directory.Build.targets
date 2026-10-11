@@ -14,6 +14,17 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Global usings by project kind (the root Directory.Build.props holds the shared BCL ones):
+       - Xunit: every test project uses [Fact], [Theory] and Assert.
+       - TruthWeaver.Testing: only for a test project that references it (FakePredicates, DecisionAssertions);
+         the 31 test files in TruthWeaver.Tests and the sample test projects import it. Detected from the
+         ProjectReference items, so a test project with no reference never gets a namespace it cannot resolve.
+       - NSubstitute is deliberately not global: 7 of about 230 test files use it, so a per-file using stays.
+       - TruthWeaver.Abstractions for src projects is set in src/Directory.Build.props. -->
+  <ItemGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) and '@(ProjectReference->AnyHaveMetadataValue('Filename', 'TruthWeaver.Testing'))' == 'true'">
+    <Using Include="TruthWeaver.Testing" />
+  </ItemGroup>
+
   <!-- Auto-configure architecture test projects -->
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Architecture.Tests'))">
     <OutputType>Exe</OutputType>

@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Chooses what a built-in predicate answers when its selector returns <see langword="null"/>. The host
 /// picks this once, when it registers the predicate; rule authors cannot change it. Every built-in predicate that takes

@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// An <see cref="IDataSource"/> over a JSON document that answers JSONPath (<see href="https://www.rfc-editor.org/rfc/rfc9535">RFC 9535</see>)

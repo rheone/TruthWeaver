@@ -1,6 +1,5 @@
 namespace TruthWeaver.Yaml;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;

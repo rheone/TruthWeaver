@@ -1,7 +1,6 @@
 namespace TruthWeaver.Tests;
 
 using TruthWeaver.Evaluation;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

@@ -1,7 +1,6 @@
 namespace TruthWeaver.Testing;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;

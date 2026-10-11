@@ -1,6 +1,5 @@
 namespace TruthWeaver.Printing;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 
 /// <summary>

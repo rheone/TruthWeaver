@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>The baseline and boundary argument values that <see cref="PredicateHarness"/> generates per <see cref="LiteralKind"/>.</summary>
 internal static class HarnessValues
 {

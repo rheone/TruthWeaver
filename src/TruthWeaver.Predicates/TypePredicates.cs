@@ -2,7 +2,6 @@ namespace TruthWeaver.Predicates;
 
 using System.Globalization;
 using System.Numerics;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Ready-made type-test predicate factories. Each test has two overloads under one name: a <see cref="string"/> selector

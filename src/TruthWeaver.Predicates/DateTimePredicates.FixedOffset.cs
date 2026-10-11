@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 
 /// <content>
 /// The calendar predicates. Each reads the selected instant in a fixed offset from UTC (<c>Z</c> or <c>±hh:mm</c>) that

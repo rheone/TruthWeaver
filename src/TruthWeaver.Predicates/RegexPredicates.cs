@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Text.RegularExpressions;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Ready-made, generic regular-expression predicate factories, each parameterized by a selector

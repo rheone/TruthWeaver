@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// An independent Strong Kleene (K3) truth-table oracle for conformance tests. It computes the
 /// expected result of an operator from the primitive definitions only (<c>NOT</c>, <c>AND</c>,

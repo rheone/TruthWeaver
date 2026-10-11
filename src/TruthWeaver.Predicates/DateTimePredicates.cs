@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Ready-made <see cref="DateTimeOffset"/> comparison predicate factories, each parameterized by a
 /// <c>Func&lt;TContext, DateTimeOffset?&gt;</c> selector supplied at registration and

@@ -2,7 +2,6 @@ namespace TruthWeaver.Evaluation;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Logging;
 using TruthWeaver.Metrics;

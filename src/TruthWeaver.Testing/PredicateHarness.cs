@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Runs standard checks against a real predicate and reports what held: a deterministic answer, robust handling of
 /// boundary argument values, conformance to the declared schema, and the response to cancellation.

@@ -1,7 +1,5 @@
 namespace TruthWeaver.Analysis;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>The result of <see cref="RuleEquivalence.Compare{TContext}"/>.</summary>
 /// <param name="Outcome">The verdict.</param>
 /// <param name="CounterExample">

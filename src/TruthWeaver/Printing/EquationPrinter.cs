@@ -1,7 +1,6 @@
 namespace TruthWeaver.Printing;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
 /// <summary>

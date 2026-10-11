@@ -2,7 +2,6 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 public sealed class LiteralKindFuzzTests

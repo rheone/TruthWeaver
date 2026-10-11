@@ -3,7 +3,6 @@ namespace TruthWeaver.Evaluation;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;

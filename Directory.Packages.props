@@ -2,31 +2,36 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <!-- The analyzer packages and Source Link below are GlobalPackageReference items, not PackageVersion items.
+       A global reference applies to every project in the repository (src, tests, samples, benchmarks and the
+       netstandard2.0 generator) from this one file, so a new project gets the same analyzers without a
+       PackageReference in Directory.Build.props. PrivateAssets="all" keeps them out of the packages we ship.
+       NSubstitute.Analyzers.CSharp stays a PackageReference in the test projects that use NSubstitute. -->
   <!-- Roslynator. (Roslynator.CodeFixes/Roslynator.Refactorings are IDE-extension-only packages,
        not referenced by any PackageReference here, so they are deliberately not pinned.) -->
   <ItemGroup>
-    <PackageVersion Include="Roslynator.Analyzers" Version="5.0.0" />
-    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.0" />
-    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.0" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.0" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.0" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.0" PrivateAssets="all" />
   </ItemGroup>
   <!-- StyleCop -->
   <ItemGroup>
     <!-- 1.2.0-beta is required for record support: 1.1.x SA1313 flags PascalCase positional-record
          parameters, which are correct (they become public properties). -->
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
+    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
   </ItemGroup>
   <!-- SonarAnalyzer -->
   <ItemGroup>
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" PrivateAssets="all" />
   </ItemGroup>
   <!-- Async/await usage analyzers -->
   <ItemGroup>
-    <PackageVersion Include="AsyncFixer" Version="2.1.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
+    <GlobalPackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
+    <GlobalPackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" PrivateAssets="all" />
   </ItemGroup>
   <!-- IDisposable usage analyzer -->
   <ItemGroup>
-    <PackageVersion Include="IDisposableAnalyzers" Version="4.0.8" />
+    <GlobalPackageReference Include="IDisposableAnalyzers" Version="4.0.8" PrivateAssets="all" />
   </ItemGroup>
   <!-- Microsoft extensions (ship with .NET 11). Abstractions packages are what TruthWeaver
        itself depends on (ADR-0004); the non-Abstractions packages are test-only, wiring a real DI
@@ -87,7 +92,7 @@
   </ItemGroup>
   <!-- Source Link -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="11.0.100-rc.1.26425.128" />
+    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="11.0.100-rc.1.26425.128" PrivateAssets="all" />
   </ItemGroup>
   <!-- NetArchTest - architecture-test-project-only, asserting the ADR-0004 package-boundary rules
        (e.g. TruthWeaver.Abstractions has zero dependencies on the other TruthWeaver.* assemblies,

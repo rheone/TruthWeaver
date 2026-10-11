@@ -1,7 +1,6 @@
 namespace TruthWeaver.Parsing;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 
 /// <summary>The structural kind of a tree-format node, as far as the shared <see cref="TreeFormatReader"/> cares.</summary>

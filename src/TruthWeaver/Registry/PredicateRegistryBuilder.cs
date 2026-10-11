@@ -1,6 +1,5 @@
 namespace TruthWeaver.Registry;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Parsing;
 
 /// <summary>

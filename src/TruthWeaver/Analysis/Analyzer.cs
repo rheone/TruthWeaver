@@ -1,6 +1,5 @@
 namespace TruthWeaver.Analysis;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;

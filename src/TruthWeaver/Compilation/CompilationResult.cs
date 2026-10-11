@@ -1,7 +1,6 @@
 namespace TruthWeaver.Compilation;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 

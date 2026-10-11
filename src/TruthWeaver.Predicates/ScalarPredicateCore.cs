@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// The shared builders behind <see cref="NumericPredicates"/> and <see cref="ScalarPredicates"/>. Every

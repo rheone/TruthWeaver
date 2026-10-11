@@ -1,6 +1,5 @@
 namespace TruthWeaver.Rewriting;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;

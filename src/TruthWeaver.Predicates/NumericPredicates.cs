@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Ready-made predicate factories over nullable <c>Int64</c> and <c>Decimal</c> selections, each parameterized by a
 /// selector supplied at registration. Every member has an overload for <c>long?</c> (arguments of kind
