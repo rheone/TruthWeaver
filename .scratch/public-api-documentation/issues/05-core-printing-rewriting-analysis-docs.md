@@ -7,7 +7,7 @@
 **Status:** on-hold (do not start or dispatch until the owner approves explicitly)
 
 - [ ] Every gap the inventory lists for this package is closed or recorded as intentionally undocumented, with the reason
-- [ ] The package README (if the map calls for one) exists and links into `docs/`
+- [ ] The package README exists and links into `docs/`: short for every package except the main `TruthWeaver` package, which keeps the full root README; it is the package's NuGet readme (`PackageReadmeFile`)
 - [ ] Diagrams are made with the `mermaid-diagram-generator` skill, only where a diagram adds something a table or prose does not
 - [ ] Markdown dialect is checked with the `github-markdown` skill
 - [ ] Prose passes the `humanizer` and `voice-of-robert` skills

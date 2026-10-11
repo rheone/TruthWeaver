@@ -1,6 +1,6 @@
 # 09: Consistency pass, diagrams, prose and link check
 
-**What to build:** Across all pages touched by tickets 03 to 08: one set of terms (`CONTEXT.md`, `docs/glossary.md`), consistent headings and navigation, diagrams only where they help, no AI-sounding prose, all links valid, and the inventory re-run to show zero uncovered public types.
+**What to build:** Across all pages touched by tickets 03 to 08: one set of terms (`CONTEXT.md`, `docs/glossary.md`), consistent headings and navigation, diagrams only where they help, no AI-sounding prose, all links valid, and the inventory re-run to show zero uncovered public types. Includes the prose pass with the `humanizer` and `voice-of-robert` skills (not by hand) over `rewriting-rules.md`, `rewriting-examples.md`, `rewriting-normal-form-examples.md`, `equations.md`, `html-and-dot.md` and the printing sections of `rule-text.md` and `examples.md`; tested blocks and their output stay unchanged.
 
 **Blocked by:** 03, 04, 05, 06, 07, 08
 

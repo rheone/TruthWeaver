@@ -21,11 +21,12 @@ In scope: the public API of `TruthWeaver`, `TruthWeaver.Abstractions`, `TruthWea
 
 `mermaid-diagram-generator` (diagrams), `github-markdown` (dialect), `humanizer` and `voice-of-robert` (prose). Run them while writing, not only at the end.
 
-## Open questions for the owner (to settle when the hold lifts)
+## Decisions (grilled 2026-10-11)
 
-- Should per-package `README.md` files be the NuGet readme of each package (today every package ships the root README)? Recommended: yes, a short per-package README that links into `docs/`.
-- Is a generated API reference (for example DocFX from the XML comments) wanted beside the hand-written pages, or is hand-written markdown the only target? Recommended: hand-written only for now; XML comments stay the source for member-level detail.
-- Should `docs/strong-k3/` stay a separate language reference, linked from the map but not reorganised? Recommended: yes.
+- Per-package README: every package except the main `TruthWeaver` package gets a short README (what it is, install line, one minimal example, links into `docs/`) that becomes its NuGet readme. The main package keeps the full root `README.md`.
+- Generated API reference (DocFX): not now. A later spike ticket (10) tries DocFX with the `modern` template on this repository's pages and reports what breaks (`<details>`, doctest comments, the GitHub MathJax form). DocFX is built in CI and published to GitHub Pages; the generated site is not committed.
+- `docs/strong-k3/` is folded into the main documentation structure. This ends the rule that its pages link only to each other, so the map ticket (02) must propose the new link rules, the update to the "K3 reference" and "Reference sync" bullets in `CLAUDE.md`, and the changes `K3ReferenceSyncChecker` and `DocumentationLint` need. The owner approves those before they land.
+- The prose pass (`humanizer`, `voice-of-robert`) over the rewrite and printer pages (`rewriting-rules.md`, `rewriting-examples.md`, `rewriting-normal-form-examples.md`, `equations.md`, `html-and-dot.md`, the printing sections of `rule-text.md` and `examples.md`) belongs to ticket 09. The earlier pass was done by hand.
 
 ## Tickets
 
@@ -40,3 +41,4 @@ In scope: the public API of `TruthWeaver`, `TruthWeaver.Abstractions`, `TruthWea
 | [07](issues/07-testing-package-docs.md) | TruthWeaver.Testing docs | 02 | on hold |
 | [08](issues/08-yaml-datasources-generators-docs.md) | Yaml, DataSources.Json and Generators docs | 02 | on hold |
 | [09](issues/09-consistency-pass-and-link-check.md) | Consistency pass, diagrams, prose and link check | 03 to 08 | on hold |
+| [10](issues/10-docfx-spike.md) | DocFX spike | 09 | on hold |
