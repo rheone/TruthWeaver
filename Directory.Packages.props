@@ -93,7 +93,7 @@
   <!-- MinVer derives every package version from the Git tags. It is a build-only reference, and only for projects that
        pack, so test, sample and benchmark projects carry no MinVer version logic. -->
   <ItemGroup>
-    <GlobalPackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" Condition="'$(IsPackable)' != 'false'" />
+    <GlobalPackageReference Include="MinVer" Version="8.0.0" PrivateAssets="all" Condition="'$(IsPackable)' != 'false'" />
   </ItemGroup>
   <!-- Source Link comes from the .NET SDK, which bundles Microsoft.SourceLink.GitHub, so no package reference is needed.
        Do not add the Microsoft.SourceLink.GitHub package as a GlobalPackageReference: it sets SuppressImplicitGitSourceLink,
