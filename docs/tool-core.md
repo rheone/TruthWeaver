@@ -1,6 +1,6 @@
 # Tool core
 
-`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, reads the configuration file, loads stub values and data files, and writes deterministic output.
+`TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, validates them, measures them, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
 
 The front ends parse options and draw output. The behavior is in this library, so the command line and the terminal UI behave the same way. The library is not a NuGet package (see [Packaging](#packaging)).
 
@@ -16,6 +16,11 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `StubAssignment` | Loads stub values: one truth value for each term. |
 | `DataSourceFiles` | Loads JSON and YAML data files for `from("source", "query")` references. |
 | `OutputWriter` | Writes output with LF line endings and a final newline, and compares a file with the output. |
+| `RuleValidator` | Validates a loaded rule in levels, and gives a `ValidationReport` with the statistics. |
+| `PredicateSchemaFile` | Reads the predicate schema file for the strict schema level. |
+| `RuleStatistics` | Measures a compiled rule. |
+| `DiagnosticWriter`, `ValidationReportWriter` | Write diagnostics, or a whole validation report, as text, JSON or SARIF 2.1.0. |
+| `SeverityPolicy` | Finds the exit code from the diagnostics, with or without strict mode. |
 
 Each operation returns a `ToolResult<T>`: the value, or no value, and every diagnostic. An operation does not throw for an expected failure, such as a missing file, a malformed document or a rule that does not compile. It throws `ArgumentNullException` for a `null` argument and `ArgumentOutOfRangeException` for an undefined `RuleFormat`, because those are programming errors. `ToolResult<T>.Succeeded` is `true` when the value is present and no diagnostic is an error. `TryGetValue` gives the value and the diagnostics without the result object.
 
@@ -118,7 +123,7 @@ The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive
 | `limits.maxNodeCount` | A whole number from 1 | 512 |
 | `limits.maxAnalysisTerms` | A whole number from 1 | 20 |
 | `limits.maxRewriteNodeCount` | A whole number from 1 | 100000 |
-| `schemaFile` | A file path, relative to the directory of `truthweaver.json` | None |
+| `schemaFile` | The path of the [predicate schema file](#predicate-schema-file), relative to the directory of `truthweaver.json` | None |
 
 The reader ignores case in a value. Property names match exactly. A value of the wrong type, an unknown value or a limit below 1 is a `TWT0007` error. An unknown property is a `TWT0008` warning, and the reader ignores the property.
 
@@ -165,6 +170,107 @@ For stub-value files and data files, the format comes from the extension (`.json
 
 `OutputWriter.WriteFile` writes a file and creates its directory. `OutputWriter.Write` writes to a `TextWriter`, such as standard output. `OutputWriter.Check` compares a file with the output byte for byte and does not change the file. The result is `Identical`, `Differs` (with the first line that differs) or `Missing`. A file with CRLF line endings, a byte order mark or no final newline differs. The front ends use `Check` for a `--check` option.
 
+## Validation
+
+`RuleValidator.Validate(rule, options)` validates a loaded rule in levels. Every level is on by default. `ValidationOptions.Levels` switches a level off. The result is a `ToolResult<ValidationReport>` that always has the report. `Succeeded` is `false` when a level found an error.
+
+### Levels
+
+| Level (`ValidationLevels`) | What it checks | Codes |
+| --- | --- | --- |
+| `Compile` | The syntax and the compile diagnostics of the [permissive compile](#compiling-and-converting). | The `TRE` codes that no other level takes |
+| `TreeSchema` | A JSON or YAML rule against the JSON schema of the rule tree, `rule-tree.schema.json`. | `TWT0013`, and `TWT0003` for a document that is not well formed |
+| `Limits` | The depth limit and the node limit of the settings. | `TRE0009`, `TRE0010` |
+| `PredicateSchema` | The predicate names, the argument names and the argument kinds against the [predicate schema file](#predicate-schema-file). | `TRE0002` to `TRE0005`, and `TWT0012` for a schema file that is not usable |
+| `Analysis` | The Strong K3 analysis (tautologies, contradictions, a skipped analysis) and the lints of `ValidationOptions.Lints`. The default is `LintRules.All`. Add `LintRules.Style` for the style lint. | `TRE0011` to `TRE0013`, the lint codes |
+| `ConversionCheck` | The rule printed as rule text, JSON and YAML compiles back to the same tree with the same notes. | `TWT0014` |
+
+The report has one `ValidationLevelReport` for each level, in the order of the table. Each one has a status and the diagnostics of that level only:
+
+| Status (`ValidationStatus`) | Meaning |
+| --- | --- |
+| `Passed` | The level ran. It found no error and no warning. It can have information diagnostics, such as a lint finding. |
+| `PassedWithWarnings` | The level ran and found warnings, but no error. |
+| `Failed` | The level ran and found at least one error. |
+| `Skipped` | The level is on, but it did not run. `Reason` says why: the rule is rule text (tree schema), no schema file is set (predicate schema), or the rule does not compile. |
+| `Off` | `ValidationOptions.Levels` switched the level off. |
+
+The validator compiles the rule one time and gives each compile diagnostic to its level. When the rule fails only a limit, the validator compiles it again without the depth and node limits, so the other levels and the statistics still run. With the `Limits` level off, the validator does not apply the depth and node limits, and the deep-nesting lint (`TRE0028`) does not report.
+
+The tree schema level uses the `rule-tree.schema.json` file of the `TruthWeaver` package, embedded in the tool core. It reads a YAML scalar as the YAML rule reader does: a plain `1` is a number and a quoted `'1'` is a string. A finding has the tree path and the span of the value. When a node matches no kind of node, the finding is about the kind that it is nearest to.
+
+### Predicate schema file
+
+The tool has no host registry, so the compile level accepts every predicate. The predicate schema file declares the predicates that a rule may use. The `PredicateSchema` level compiles the rule again against it, in strict mode. `ValidationOptions.PredicateSchema` gives a file that is already read. Otherwise the validator reads the file of `ToolSettings.SchemaFile`.
+
+<!-- doctest:skip a predicate schema file, not a rule -->
+```yaml
+predicates:
+  isActive:
+    description: Is the user active?
+  hasRole:
+    arguments:
+      role: string
+  inGroup:
+    arguments:
+      group: string
+      since: { kind: dateTimeOffset, required: false }
+```
+
+- `predicates` maps a predicate name to its declaration. A declaration has the optional members `description` and `arguments`. A predicate with no arguments can have an empty declaration (`{}`).
+- `arguments` maps an argument name to a kind, or to a mapping with `kind`, `required` (`true` or `false`, the default is `true`) and `description`.
+- A kind is `string`, `int64`, `decimal`, `boolean`, `dateTimeOffset` or `guid`, or one of them with `Array` at the end, such as `stringArray`. The reader ignores case in a kind.
+
+A file that is not well-formed YAML is a `TWT0003` error. An unknown member, an unknown kind, a reserved predicate name (such as `AND` or `T`) and two predicate names that differ only in case are `TWT0012` errors.
+
+### Statistics
+
+`ValidationReport.Statistics` has the statistics of the rule, or `null` when the rule does not compile. `RuleStatistics.Compute` measures any compiled rule. Each list is in ordinal order.
+
+| Member of `RuleStatistics` | Meaning |
+| --- | --- |
+| `NodeCount`, `Depth` | The nodes of the tree, and the nodes on the longest path from the root to a leaf. |
+| `TermCount`, `DistinctTermCount` | The term nodes (a term used two times counts two times), and the distinct terms. |
+| `Predicates` | The distinct predicate names. |
+| `OperatorHistogram` | The number of nodes of each operator, by its name in the JSON tree format, such as `and` or `atLeast`. |
+| `Variables`, `DataSources` | The distinct `from("source", "query")` references, and the distinct source names. |
+| `BddNodeCount` | The size of the Strong K3 analysis, or `null` over the analysis limit. |
+| `Constancy` | `Tautology` (always `True`), `Contradiction` (always `False`), `Contingent`, or `Undecided` over the analysis limit. |
+| `TruthTableRows`, `ClassicalTruthTableRows`, `TruthTableWithinCap` | 3 and 2 to the power of the distinct terms, and whether the terms are within the default truth-table cap of 8. |
+
+For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AND inRegion(region: from("user", "$.region")))`, the node count is 9, the depth is 4, the term count is 5 and the distinct terms are 4. The histogram is `and` 1, `atLeast` 1, `not` 1 and `or` 1. The truth table has 81 rows, or 16 classical rows.
+
+### Exit codes
+
+`SeverityPolicy.ExitCodeFor(diagnostics, strict)` and `ValidationReport.ExitCode(strict)` give the exit code. An error fails a command. A warning fails a command only in strict mode. An information diagnostic never fails a command.
+
+| `ToolExitCode` | Value | Meaning |
+| --- | --- | --- |
+| `Success` | 0 | No error, and no warning in strict mode. |
+| `Failed` | 1 | An error, or a warning in strict mode. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file or an output file. This code wins over `Failed`. |
+
+## Diagnostics output
+
+`DiagnosticWriter.Format` and `DiagnosticWriter.Write` write the diagnostics of one or more inputs. A `DiagnosticDocument` holds the diagnostics of one input, with its origin, the text that the spans point into and the path of an embedded rule. `DiagnosticDocument.For(rule, diagnostics)` makes one from a loaded rule. The output is deterministic: the order is the order given, and every line ends with LF.
+
+| `DiagnosticOutputFormat` | Output |
+| --- | --- |
+| `Text` | For each diagnostic, the input and then the text that [Reading diagnostics](diagnostics.md) shows: the code, the severity, the line and column, the message, the source line with a caret under the span, and the expected, found and suggestion lines. |
+| `Json` | An object with a `diagnostics` array. Each item has `origin`, `code`, `name`, `severity`, `message`, and, when they apply, `rulePath`, `path`, `span` (`start`, `length`), `line`, `column`, `endLine`, `endColumn`, `expected`, `found` and `suggestion` (`kind`, `text`). |
+| `Sarif` | A SARIF 2.1.0 log with one run. |
+
+In the SARIF log, the rules of the tool are the rows of `DiagnosticCodeTable`: every `TRE` code and every `TWT` code, with its name, a short description and its usual level. Each result names its rule by `ruleId` and `ruleIndex`. The level is `error`, `warning` or `note`. A location comes from the span:
+
+- When the whole input is the rule, the result has the file (`artifactLocation`) and a `region` with the start and end line and column and the character offset and length. Columns count UTF-16 code units.
+- When the rule is embedded in a larger document, the spans point into the rule, not into the file. The result has the file without a region.
+- When the diagnostic has a tree path, or the rule is embedded, the result has a logical location with the full path, such as `$.rules.publish.operands[1]`.
+- Standard input has no file, so its results have no physical location.
+
+The expected text, the found text and the suggestion are in the `properties` of the result.
+
+`ValidationReportWriter.Format(report, format)` writes a whole validation report. Text and JSON have the status of each level, the statistics and the diagnostics. SARIF has the diagnostics only, because SARIF has no place for statistics.
+
 ## Diagnostic codes
 
 The tool core reports a problem outside the rule with a `TWT` code. Compiler diagnostics keep their `TRE` codes. [Reading diagnostics](diagnostics.md) describes the members of a diagnostic.
@@ -182,6 +288,9 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0009` | `InvalidStubValue` | Error | A stub-value entry is not usable. |
 | `TWT0010` | `OutputFailed` | Error | An output file cannot be written or read. |
 | `TWT0011` | `DuplicateDataSource` | Error | Two data files have the same source name. |
+| `TWT0012` | `InvalidSchemaFile` | Error | The predicate schema file is not usable. |
+| `TWT0013` | `TreeSchemaViolation` | Error | A JSON or YAML rule does not match the JSON schema of the rule tree. |
+| `TWT0014` | `ConversionMismatch` | Error | A conversion of the rule to another format does not compile to the same tree. |
 
 ## Packaging
 

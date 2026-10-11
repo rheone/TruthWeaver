@@ -27,5 +27,8 @@
 
   <ItemGroup>
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The SARIF 2.1.0 schema (the draft-07 copy from SchemaStore, https://json.schemastore.org/sarif-2.1.0.json), so the
+         SARIF test validates without the network. -->
+    <None Include="TestSupport/sarif-schema-2.1.0.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

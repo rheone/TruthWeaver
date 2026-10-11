@@ -43,4 +43,19 @@ public static class ToolDiagnosticCodes
 
     /// <summary>Two data files have the same data source name.</summary>
     public const string DuplicateDataSource = "TWT0011";
+
+    /// <summary>
+    /// The predicate schema file is not usable: it is not well formed, a predicate or an argument is not described
+    /// correctly, or an argument kind is not known.
+    /// </summary>
+    public const string InvalidSchemaFile = "TWT0012";
+
+    /// <summary>A JSON or YAML rule does not match the JSON schema of the rule tree, <c>rule-tree.schema.json</c>.</summary>
+    public const string TreeSchemaViolation = "TWT0013";
+
+    /// <summary>
+    /// The conversion self-check failed: the rule, converted to rule text, JSON or YAML, does not compile to the same tree
+    /// with the same notes.
+    /// </summary>
+    public const string ConversionMismatch = "TWT0014";
 }

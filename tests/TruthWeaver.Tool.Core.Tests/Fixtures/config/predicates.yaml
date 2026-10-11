@@ -1,0 +1,11 @@
+# The predicates that the access rules may use.
+predicates:
+  isActive:
+    description: Is the user active?
+  hasRole:
+    arguments:
+      role: string
+  inGroup:
+    arguments:
+      group: string
+      since: { kind: dateTimeOffset, required: false }
