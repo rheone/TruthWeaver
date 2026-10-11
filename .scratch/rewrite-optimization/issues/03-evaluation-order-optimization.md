@@ -4,7 +4,7 @@
 
 **Blocked by:** [01](01-rewrite-soundness-assertion.md), and a benchmark result (first checkbox)
 
-**Status:** needs measurement first
+**Status:** done
 
 - [x] A benchmark shows that operand order changes evaluation time on a realistic rule with mixed-cost predicates; if it does not, close this ticket
 - [x] `PredicateSchema` gains an optional relative `Cost` set with `init`; unset means neutral, so existing registrations do not change

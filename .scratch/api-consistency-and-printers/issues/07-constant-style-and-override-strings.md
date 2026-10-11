@@ -4,10 +4,10 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The three styles and the overrides are tested for each printer that supports them
-- [ ] An override that would break `PrintRuleText` round-trip is rejected with a clear message
-- [ ] Docs explain why `⊥` can read as Unknown in partial logic and why letters are the default
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] The three styles and the overrides are tested for each printer that supports them
+- [x] An override that would break `PrintRuleText` round-trip is rejected with a clear message
+- [x] Docs explain why `⊥` can read as Unknown in partial logic and why letters are the default
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

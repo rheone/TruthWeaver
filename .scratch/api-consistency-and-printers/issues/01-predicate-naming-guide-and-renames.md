@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `docs/predicate-conventions.md` states the guide with the complete old to new table
-- [ ] Every renamed predicate has its `docs/strong-k3/predicates/` page renamed, the category index and root navigation updated, and `K3ReferenceSyncChecker` passes
-- [ ] `NotXTwinTable` covers the new ordering twins
-- [ ] `EqualsIgnoreCase` and `EqualsConfigurable` no longer exist; their behavior is reachable through `IsEqualTo` arguments, with tests
-- [ ] No old name remains in `src`, `tests`, `docs`, `samples` or `benchmarks` outside the CHANGELOG migration table
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `docs/predicate-conventions.md` states the guide with the complete old to new table
+- [x] Every renamed predicate has its `docs/strong-k3/predicates/` page renamed, the category index and root navigation updated, and `K3ReferenceSyncChecker` passes
+- [x] `NotXTwinTable` covers the new ordering twins
+- [x] `EqualsIgnoreCase` and `EqualsConfigurable` no longer exist; their behavior is reachable through `IsEqualTo` arguments, with tests
+- [x] No old name remains in `src`, `tests`, `docs`, `samples` or `benchmarks` outside the CHANGELOG migration table
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

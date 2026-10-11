@@ -4,10 +4,10 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A property test shows pretty output compiles to an equal tree for generated rules at several widths
-- [ ] A width too small to fit the longest unbreakable token does not loop or throw
-- [ ] `docs/rule-text.md` states the rule with one example
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] A property test shows pretty output compiles to an equal tree for generated rules at several widths
+- [x] A width too small to fit the longest unbreakable token does not loop or throw
+- [x] `docs/rule-text.md` states the rule with one example
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

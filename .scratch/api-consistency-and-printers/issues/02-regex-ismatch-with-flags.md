@@ -4,10 +4,10 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `IsMatch` and `IsNotMatch` exist; the four old predicates and their docs pages are gone
-- [ ] An unknown flag letter, a repeated flag and an invalid literal pattern each give a compile diagnostic, pinned by tests
-- [ ] Case-insensitive matching uses `RegexOptions.IgnoreCase | CultureInvariant`, as the removed twin did
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `IsMatch` and `IsNotMatch` exist; the four old predicates and their docs pages are gone
+- [x] An unknown flag letter, a repeated flag and an invalid literal pattern each give a compile diagnostic, pinned by tests
+- [x] Case-insensitive matching uses `RegexOptions.IgnoreCase | CultureInvariant`, as the removed twin did
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

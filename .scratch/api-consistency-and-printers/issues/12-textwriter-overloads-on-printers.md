@@ -4,10 +4,10 @@
 
 **Blocked by:** 06, 08, 09, 10
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each overload has a test that its output equals the string form
-- [ ] A test with a failing writer shows the exception reaches the caller unchanged
-- [ ] Docs list the overloads next to each printer
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Each overload has a test that its output equals the string form
+- [x] A test with a failing writer shows the exception reaches the caller unchanged
+- [x] Docs list the overloads next to each printer
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

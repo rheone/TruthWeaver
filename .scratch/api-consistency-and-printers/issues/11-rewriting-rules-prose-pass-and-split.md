@@ -4,10 +4,10 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Neither page exceeds about 700 lines
-- [ ] Doc example markers still pass after the move; no anchor link is broken (`DocumentationLint`)
-- [ ] `humanizer` and `voice-of-robert` were applied and the AI-tell patterns they list are gone
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Neither page exceeds about 700 lines
+- [x] Doc example markers still pass after the move; no anchor link is broken (`DocumentationLint`)
+- [x] `humanizer` and `voice-of-robert` were applied and the AI-tell patterns they list are gone
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

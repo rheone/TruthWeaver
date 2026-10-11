@@ -4,11 +4,11 @@
 
 **Blocked by:** 06, 07
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each dialect prints every operator, term, constant and the `SimpleVariables` legend, with tests
-- [ ] MathML output is well-formed XML (parse it in a test)
-- [ ] `Ascii` output contains only characters 0x20 to 0x7E and newline, for any rule, proven by a property test
-- [ ] `docs/equations.md` and `docs/examples.md` show a rule in each new dialect
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Each dialect prints every operator, term, constant and the `SimpleVariables` legend, with tests
+- [x] MathML output is well-formed XML (parse it in a test)
+- [x] `Ascii` output contains only characters 0x20 to 0x7E and newline, for any rule, proven by a property test
+- [x] `docs/equations.md` and `docs/examples.md` show a rule in each new dialect
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

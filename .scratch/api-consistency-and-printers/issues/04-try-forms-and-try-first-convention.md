@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each listed method has a `Try…` form with the nullable-flow attributes (`[NotNullWhen(true)]`) and tests for success, error and warning-only results
-- [ ] `CompilationResult` has `TryGetRule`
-- [ ] The architecture test exists and fails when a sibling is missing (prove it with a deliberately failing fixture type)
-- [ ] Docs show the `Try` form first
-- [ ] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Each listed method has a `Try…` form with the nullable-flow attributes (`[NotNullWhen(true)]`) and tests for success, error and warning-only results
+- [x] `CompilationResult` has `TryGetRule`
+- [x] The architecture test exists and fails when a sibling is missing (prove it with a deliberately failing fixture type)
+- [x] Docs show the `Try` form first
+- [x] The page that describes the changed behavior is updated in the same change (no "changed from" text), `CHANGELOG.md` records each break with a migration step, and `K3ReferenceSyncChecker` and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
