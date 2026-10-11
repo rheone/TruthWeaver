@@ -4,11 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A side-by-side table shows the worked rule and the `XOR`/`EQUIVALENT`/threshold rule in word, symbolic, C-style, Unicode, LaTeX and AsciiMath form
-- [ ] Every printer has one example with its real, tested output
-- [ ] The LaTeX output is shown as source and as a rendered `$$` math block
-- [ ] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"` and `"*DocumentationLint*"` pass
-- [ ] The page follows `docs/agents/documentation-standard.md` (plain language, ASD-STE100, no links to ADRs or `.scratch`)
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] A side-by-side table shows the worked rule and the `XOR`/`EQUIVALENT`/threshold rule in word, symbolic, C-style, Unicode, LaTeX and AsciiMath form
+- [x] Every printer has one example with its real, tested output
+- [x] The LaTeX output is shown as source and as a rendered `$$` math block
+- [x] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"` and `"*DocumentationLint*"` pass
+- [x] The page follows `docs/agents/documentation-standard.md` (plain language, ASD-STE100, no links to ADRs or `.scratch`)
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

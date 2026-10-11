@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] `dotnet pack` runs package validation with no errors
 - [x] The CI workflow has a pack step that does not push

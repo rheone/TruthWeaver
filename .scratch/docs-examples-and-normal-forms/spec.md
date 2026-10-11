@@ -1,6 +1,6 @@
 # Examples rework and richer rewrite documentation
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** done 2026-10-10
 
 ## Request
 
@@ -34,10 +34,10 @@
 
 | Ticket | Change | Blocked by | Status |
 | --- | --- | --- | --- |
-| [01](issues/01-examples-use-data-source-predicate-and-variable.md) | Examples use a predicate, a variable and a data source | None | ready-for-agent |
-| [02](issues/02-examples-show-every-printing-format.md) | Examples show every printing format | 01 | ready-for-agent |
-| [03](issues/03-mermaid-operator-shapes.md) | Mermaid example with distinct operator shapes | 01 | ready-for-agent |
-| [04](issues/04-examples-symbol-sets-and-printer-guide.md) | Symbol sets and a printer guide | 02 | ready-for-agent |
-| [05](issues/05-normal-forms-notations.md) | Normal forms in rewriting-rules.md with printed, Mermaid and MathJax output | None | ready-for-agent |
-| [06](issues/06-simplification-notations.md) | Simplify, Canonicalize and CompressToDerived with the same notations | 05 | ready-for-agent |
-| [07](issues/07-link-docs-from-root.md) | Link the content from the root README and glossary | 04, 06 | ready-for-agent |
+| [01](issues/01-examples-use-data-source-predicate-and-variable.md) | Examples use a predicate, a variable and a data source | None | done |
+| [02](issues/02-examples-show-every-printing-format.md) | Examples show every printing format | 01 | done |
+| [03](issues/03-mermaid-operator-shapes.md) | Mermaid example with distinct operator shapes | 01 | done |
+| [04](issues/04-examples-symbol-sets-and-printer-guide.md) | Symbol sets and a printer guide | 02 | done |
+| [05](issues/05-normal-forms-notations.md) | Normal forms in rewriting-rules.md with printed, Mermaid and MathJax output | None | done |
+| [06](issues/06-simplification-notations.md) | Simplify, Canonicalize and CompressToDerived with the same notations | 05 | done |
+| [07](issues/07-link-docs-from-root.md) | Link the content from the root README and glossary | 04, 06 | done |

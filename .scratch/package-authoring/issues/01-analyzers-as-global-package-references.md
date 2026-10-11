@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No analyzer `PackageReference` remains in `Directory.Build.props`
-- [ ] The same diagnostics fire as before: build output and `dotnet roslynator analyze` match the pre-change result
-- [ ] A comment in `Directory.Packages.props` says why the packages are global
-- [ ] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] No analyzer `PackageReference` remains in `Directory.Build.props`
+- [x] The same diagnostics fire as before: build output and `dotnet roslynator analyze` match the pre-change result
+- [x] A comment in `Directory.Packages.props` says why the packages are global
+- [x] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

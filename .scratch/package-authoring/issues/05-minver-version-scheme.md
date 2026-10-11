@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet pack` shows the MinVer-derived version and `InformationalVersion`
-- [ ] CI checks out full history (or tags) so the version is correct
-- [ ] `CHANGELOG.md` and `docs/contributing.md` describe how a version is made
-- [ ] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `dotnet pack` shows the MinVer-derived version and `InformationalVersion`
+- [x] CI checks out full history (or tags) so the version is correct
+- [x] `CHANGELOG.md` and `docs/contributing.md` describe how a version is made
+- [x] `dotnet restore --locked-mode` is satisfied and nothing is pushed or released
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

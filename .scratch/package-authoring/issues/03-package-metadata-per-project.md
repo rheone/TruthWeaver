@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet pack -c Release` into a scratch directory produces every package with the metadata in its nuspec
-- [ ] The README, license expression and repository commit are in each package
-- [ ] Nothing is pushed
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] `dotnet pack -c Release` into a scratch directory produces every package with the metadata in its nuspec
+- [x] The README, license expression and repository commit are in each package
+- [x] Nothing is pushed
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

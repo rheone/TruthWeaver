@@ -1,6 +1,6 @@
 # Package authoring and build configuration
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** done 2026-10-10
 
 ## Request
 
@@ -33,9 +33,9 @@
 
 | Ticket | Change | Blocked by | Status |
 | --- | --- | --- | --- |
-| [01](issues/01-analyzers-as-global-package-references.md) | Analyzer packages become `GlobalPackageReference` | None | ready-for-agent |
-| [02](issues/02-implicit-usings-per-project-kind.md) | Implicit usings per project kind | 01 | ready-for-agent |
-| [03](issues/03-package-metadata-per-project.md) | Complete package metadata for each packable project | None | ready-for-agent |
-| [04](issues/04-pack-validation-and-ci-pack-check.md) | Package validation and a no-push CI pack check | 03 | ready-for-agent |
-| [05](issues/05-minver-version-scheme.md) | MinVer version scheme | None | ready-for-agent |
-| [06](issues/06-sourcelink-verification-and-release-runbook.md) | Verify SourceLink and write the release runbook | 03, 05 | ready-for-agent |
+| [01](issues/01-analyzers-as-global-package-references.md) | Analyzer packages become `GlobalPackageReference` | None | done |
+| [02](issues/02-implicit-usings-per-project-kind.md) | Implicit usings per project kind | 01 | done |
+| [03](issues/03-package-metadata-per-project.md) | Complete package metadata for each packable project | None | done |
+| [04](issues/04-pack-validation-and-ci-pack-check.md) | Package validation and a no-push CI pack check | 03 | done |
+| [05](issues/05-minver-version-scheme.md) | MinVer version scheme | None | done |
+| [06](issues/06-sourcelink-verification-and-release-runbook.md) | Verify SourceLink and write the release runbook | 03, 05 | done |

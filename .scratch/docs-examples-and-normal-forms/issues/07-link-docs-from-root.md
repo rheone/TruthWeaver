@@ -4,11 +4,11 @@
 
 **Blocked by:** 04, 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] README navigation links to both pages
-- [ ] Glossary has NNF, CNF and DNF
-- [ ] The examples intro matches the page
-- [ ] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"` and `"*DocumentationLint*"` pass
-- [ ] The page follows `docs/agents/documentation-standard.md` (plain language, ASD-STE100, no links to ADRs or `.scratch`)
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] README navigation links to both pages
+- [x] Glossary has NNF, CNF and DNF
+- [x] The examples intro matches the page
+- [x] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"` and `"*DocumentationLint*"` pass
+- [x] The page follows `docs/agents/documentation-standard.md` (plain language, ASD-STE100, no links to ADRs or `.scratch`)
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

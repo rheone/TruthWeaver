@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The chosen `Using` sets are listed in a comment with the reason for each
-- [ ] `TruthWeaver.Architecture.Tests` pass
-- [ ] No behavior change; only `using` lines move
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] The chosen `Using` sets are listed in a comment with the reason for each
+- [x] `TruthWeaver.Architecture.Tests` pass
+- [x] No behavior change; only `using` lines move
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

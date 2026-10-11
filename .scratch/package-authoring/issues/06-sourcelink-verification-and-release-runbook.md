@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Each package and its symbol package pass the SourceLink check, with the result recorded in the ticket
 - [x] `docs/releasing.md` exists, is linked from `docs/contributing.md`, and states that the runbook has not been run

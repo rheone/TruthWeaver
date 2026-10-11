@@ -30,7 +30,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- No PackageIcon yet: no icon asset exists in the repo, and a placeholder image is worse than none -
          add one and set PackageIcon when real branding exists, rather than shipping a fabricated stand-in. -->
-    <!-- Symbol packages + deterministic builds: the standard pairing with SourceLink above so a
+    <!-- Symbol packages + deterministic builds: the standard pairing with the SDK's built-in Source Link so a
          consumer's debugger can step into this package's source from nuget.org/a symbol server. -->
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
