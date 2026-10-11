@@ -4,6 +4,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -254,7 +255,9 @@ public sealed class AnalyzerTests
 
         for (int i = 0; i < 400; i++)
         {
-            foreach (GeneratedRule node in K3RuleGenerator.Subtrees(K3RuleGenerator.GenerateRule(random, depth: 3)))
+            foreach (
+                GeneratedRule node in K3RuleGenerator.Subtrees(K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]))
+            )
             {
                 if (node.Children.Count == 0)
                 {
@@ -270,7 +273,7 @@ public sealed class AnalyzerTests
                 }
 
                 checkedRules++;
-                (bool tautology, bool contradiction) = node.Verdict();
+                (bool tautology, bool contradiction) = node.Verdict(termCount: 3);
                 flagged += tautology || contradiction ? 1 : 0;
                 if (IsRootFlagged(result, DiagnosticCodes.StructuralTautology) != tautology)
                 {

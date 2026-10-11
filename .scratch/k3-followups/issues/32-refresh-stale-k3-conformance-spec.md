@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] Stories 13-16 and 22-23 describe `PARITY`, `Decision.Project` and `Decision.Collapse`
-- [ ] The header names the current diagnostics and decision numbering
-- [ ] ADR-0005 remains the authority and the spec points to it where they could diverge
+- [x] Stories 13-16 and 22-23 describe `PARITY`, `Decision.Project` and `Decision.Collapse`
+- [ ] The header names the current diagnostics and decision numbering Note 2026-10-10: header numbering was not re-checked.
+- [x] ADR-0005 remains the authority and the spec points to it where they could diverge
 
 Source: review of PR #4, Spec axis, missing or partial item on `spec.md`.
 

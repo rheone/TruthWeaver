@@ -6,13 +6,16 @@ namespace TruthWeaver.Evaluation;
 /// — every knob here is an explicit caller opt-in, not a change to those defaults.
 /// </summary>
 /// <param name="FaultBudget">
-/// Once this many faults have been recorded during one evaluation, evaluation aborts immediately.
-/// <see langword="null"/> (the default) means unlimited.
+/// Evaluation aborts when the number of recorded faults reaches this value, so a budget of 1 aborts on the first fault.
+/// <see langword="null"/> (the default) means unlimited. A value below 1 makes
+/// <c>CompiledRule.EvaluateAsync</c> throw <see cref="ArgumentOutOfRangeException"/>.
 /// </param>
 /// <param name="Mode">Whether short-circuiting applies (<see cref="EvaluationMode.ShortCircuit"/>) or every reachable term runs (<see cref="EvaluationMode.Exhaustive"/>).</param>
 /// <param name="Timeout">
 /// An overall wall-clock bound for the evaluation, linked into the caller's
-/// <see cref="CancellationToken"/>. <see langword="null"/> (the default) means no timeout.
+/// <see cref="CancellationToken"/>. <see langword="null"/> (the default) means no timeout. When the time expires, the
+/// evaluation throws <see cref="OperationCanceledException"/>; the timeout is not a <c>Fault</c> and does not become
+/// <c>Unknown</c>.
 /// </param>
 /// <param name="IncludeResolvedValues">
 /// <see langword="true"/> to show the value each variable reference resolved to in the trace (ADR-0006 decision 13); the

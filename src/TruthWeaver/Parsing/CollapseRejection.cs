@@ -17,7 +17,7 @@ internal static class CollapseRejection
         "Remove Collapse from the rule and call Decision.Collapse(CollapsePolicy.UnknownAsFalse), UnknownAsTrue or UnknownIsError on the result instead.";
 
     /// <summary>Creates the diagnostic for a declared <c>Collapse</c>.</summary>
-    /// <param name="code">The diagnostic code of the front end's error class (<see cref="DiagnosticCodes.SyntaxError"/> for DSL text, <see cref="DiagnosticCodes.MalformedTree"/> for JSON/YAML).</param>
+    /// <param name="code">The diagnostic code to report, <see cref="DiagnosticCodes.UnknownPredicate"/> on every surface.</param>
     /// <param name="span">The source span of the collapse expression, or <see cref="SourceSpan.None"/> for a tree format.</param>
     /// <param name="path">The JSON/YAML path of the offending node, or <see langword="null"/> for DSL text.</param>
     /// <returns>An error diagnostic whose suggestion points at <c>Decision.Collapse</c>.</returns>

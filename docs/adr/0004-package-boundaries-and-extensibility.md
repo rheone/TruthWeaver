@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place).
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place). The `TruthWeaver.Testing` dependency described below was reversed on 2026-10-09 (changed in place; see the amendment under "Four packages"). A seventh package, `TruthWeaver.Generators`, was added on 2026-10-09 (changed in place; see the amendments under "Four packages" and "Extensibility: explicit registration only").
 
 ## Context
 
@@ -33,6 +33,23 @@ observability is deferred, not v1).
 > depends on `TruthWeaver.Abstractions` alone), was added by [ADR-0006](0006-data-sources-for-expression-variables.md).
 > `TruthWeaver.Yaml` now also references it for `YamlDataSource`, and `TruthWeaver.Testing` gained `FakeDataSource`; the core
 > `TruthWeaver` package still takes no JSON or YAML query dependency.
+>
+> **Amendment (2026-10-09):** `TruthWeaver.Testing` now takes a project reference to `TruthWeaver`
+> (the compiler/analyzer package), reversing the "`Abstractions` alone" rule stated above. The
+> testing-tools roadmap (equivalence assertions over `RuleEquivalence`, a predicate harness, and a
+> public rule fuzzer built on the compiler, evaluator and analyzer) needs those types, and gating them
+> behind a hand-rolled duplicate of the compiler was a worse outcome than letting a test-support
+> package depend on the package it tests. `TruthWeaver` still does not, and must not, depend on
+> `TruthWeaver.Testing` — the dependency is one-directional, so no cycle is introduced. `Testing`
+> still never depends on `TruthWeaver.Yaml`, `TruthWeaver.Predicates`, or
+> `TruthWeaver.DataSources.Json`, which remain optional and orthogonal to testing support.
+>
+> **Amendment (2026-10-09, predicate source generator):** a seventh package, `TruthWeaver.Generators`, ships a Roslyn
+> source generator and its `[Predicate]` attribute as an analyzer only (`netstandard2.0`, no `lib/` assembly). It
+> references no TruthWeaver assembly: it runs inside the compiler, and the code it emits names `TruthWeaver.Abstractions`
+> and `TruthWeaver.Registry.PredicateRegistryBuilder<TContext>` in the consuming project. It is a separate package, not
+> part of `Abstractions`, so the zero-dependency kernel takes no analyzer and no Roslyn dependency, and the attribute is
+> generated into each consuming compilation instead of shipped as a run-time type. No other package references it.
 
 - **`TruthWeaver.Abstractions`** — `IPredicate<TContext>`,
   `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`.
@@ -126,7 +143,9 @@ registering the type (resolved per-evaluation from `IServiceProvider`, so
 scoped dependencies work correctly per
 [ADR-0002](0002-evaluation-semantics.md#predicate-registration-and-dependency-lifetimes)),
 or registering a stateless lambda directly. There is no attribute-scanning
-or assembly-scanning discovery mechanism. New *operators* are added inside
+or assembly-scanning discovery mechanism at run time. (Amendment, 2026-10-09: `TruthWeaver.Generators` reads a
+`[Predicate]` attribute on static methods at compile time and emits a `Register` method that makes the same explicit
+`Add` calls. The host still calls `Register`, so registration stays explicit, and no reflection runs.) New *operators* are added inside
 `TruthWeaver` itself (parser, compiler, evaluator, analyzer each
 need to know about a new operator) rather than through an operator plugin
 model — the operator set is closed by design

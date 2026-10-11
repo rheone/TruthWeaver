@@ -119,6 +119,25 @@ internal static class Analyzer
         );
     }
 
+    /// <summary>
+    /// Measures the cost of a tree's Strong K3 analysis: the number of decision nodes in the shared dual-rail BDD
+    /// manager after the tree is built. Sub-graphs shared between the two rails or between sub-expressions count once.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <param name="maxTerms">The distinct-term cap; a tree with more is not analysed.</param>
+    /// <returns>The node count, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms.</returns>
+    public static int? BddNodeCount(Expression root, int maxTerms)
+    {
+        if (DistinctTerms(root).Count > maxTerms)
+        {
+            return null;
+        }
+
+        BddManager bdd = new();
+        _ = Build(root, bdd, [], []);
+        return bdd.NodeCount;
+    }
+
     /// <summary>Collects the distinct terms of a tree.</summary>
     /// <param name="root">The tree.</param>
     /// <returns>The distinct term identities.</returns>
@@ -166,114 +185,27 @@ internal static class Analyzer
         return possible ? TruthValue.Unknown : TruthValue.False;
     }
 
+    /// <summary>
+    /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
+    /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
+    /// </summary>
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
-        switch (node)
+        // Terms and constants are leaves: ExpressionShape has no operands for them.
+        if (node is TermExpression term)
         {
-            case TermExpression t:
-                terms.Add(t.Identity);
-                break;
-            case NotExpression n:
-                CollectTerms(n.Operand, terms);
-                break;
-            case AndExpression a:
-                foreach (Expression o in a.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
+            terms.Add(term.Identity);
+            return;
+        }
 
-                break;
-            case OrExpression o2:
-                foreach (Expression o in o2.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
+        if (node is ConstantExpression)
+        {
+            return;
+        }
 
-                break;
-            case XorExpression x:
-                CollectTerms(x.Left, terms);
-                CollectTerms(x.Right, terms);
-                break;
-            case EquivalentExpression xn:
-                CollectTerms(xn.Left, terms);
-                CollectTerms(xn.Right, terms);
-                break;
-            case NandExpression nd:
-                CollectTerms(nd.Left, terms);
-                CollectTerms(nd.Right, terms);
-                break;
-            case NorExpression nr:
-                CollectTerms(nr.Left, terms);
-                CollectTerms(nr.Right, terms);
-                break;
-            case ImpliesExpression im:
-                CollectTerms(im.Antecedent, terms);
-                CollectTerms(im.Consequent, terms);
-                break;
-            case ParityExpression nx:
-                foreach (Expression o in nx.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case AnyExpression an:
-                foreach (Expression o in an.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case AllExpression al:
-                foreach (Expression o in al.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case NoneExpression no:
-                foreach (Expression o in no.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case ExactlyOneExpression e:
-                foreach (Expression o in e.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case ThresholdExpression th:
-                foreach (Expression o in th.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case BetweenExpression bt:
-                foreach (Expression o in bt.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case CoalesceExpression co:
-                foreach (Expression o in co.Operands)
-                {
-                    CollectTerms(o, terms);
-                }
-
-                break;
-            case InspectionExpression ins:
-                CollectTerms(ins.Operand, terms);
-                break;
-            case IfExpression iff:
-                CollectTerms(iff.Condition, terms);
-                CollectTerms(iff.WhenTrue, terms);
-                CollectTerms(iff.WhenFalse, terms);
-                break;
+        foreach (Expression operand in ExpressionShape.Of(node).Operands)
+        {
+            CollectTerms(operand, terms);
         }
     }
 
@@ -428,7 +360,24 @@ internal static class Analyzer
     /// <summary>"Exactly <paramref name="k"/> operands are true": <c>AtLeast(k) AND NOT AtLeast(k + 1)</c>.</summary>
     private static DualRail Exactly(BddManager bdd, IReadOnlyList<DualRail> operands, int k)
     {
-        return And(bdd, AtLeast(bdd, operands, k), Not(bdd, AtLeast(bdd, operands, k + 1)));
+        return Threshold(bdd, operands, ThresholdSemantics.Terms(ThresholdComparison.Exactly, k));
+    }
+
+    /// <summary>
+    /// Builds a count condition from its "at least" terms: the lower test and the negated upper test, joined with
+    /// <c>AND</c> when both are present. <see cref="ThresholdSemantics"/> owns the <c>k + 1</c> rules.
+    /// </summary>
+    private static DualRail Threshold(BddManager bdd, IReadOnlyList<DualRail> operands, ThresholdTerms terms)
+    {
+        DualRail? lower = terms.AtLeast is int low ? AtLeast(bdd, operands, low) : null;
+        DualRail? upper = terms.NotAtLeast is int high ? Not(bdd, AtLeast(bdd, operands, high)) : null;
+        return (lower, upper) switch
+        {
+            ({ } l, { } u) => And(bdd, l, u),
+            ({ } l, null) => l,
+            (null, { } u) => u,
+            _ => throw new InvalidOperationException("A threshold has at least one test."),
+        };
     }
 
     private static string Message(string alwaysValue, Expression node)
@@ -544,9 +493,11 @@ internal static class Analyzer
                 rail = Exactly(bdd, BuildOperands(e.Operands, bdd, variableIndex, diagnostics), 1);
                 break;
             case BetweenExpression bt:
-                // AND(AtLeast(min, ...), AtMost(max, ...)): AtMost(max) is the negation of AtLeast(max + 1).
-                List<DualRail> betweenOperands = BuildOperands(bt.Operands, bdd, variableIndex, diagnostics);
-                rail = And(bdd, AtLeast(bdd, betweenOperands, bt.Min), Not(bdd, AtLeast(bdd, betweenOperands, bt.Max + 1)));
+                rail = Threshold(
+                    bdd,
+                    BuildOperands(bt.Operands, bdd, variableIndex, diagnostics),
+                    ThresholdSemantics.Between(bt.Min, bt.Max)
+                );
                 break;
             case CoalesceExpression co:
                 rail = Coalesce(bdd, BuildOperands(co.Operands, bdd, variableIndex, diagnostics));
@@ -564,15 +515,7 @@ internal static class Analyzer
                 break;
             case ThresholdExpression th:
                 List<DualRail> operands = BuildOperands(th.Operands, bdd, variableIndex, diagnostics);
-                rail = th.Comparison switch
-                {
-                    ThresholdComparison.AtLeast => AtLeast(bdd, operands, th.K),
-                    ThresholdComparison.AtMost => Not(bdd, AtLeast(bdd, operands, th.K + 1)),
-                    ThresholdComparison.GreaterThan => AtLeast(bdd, operands, th.K + 1),
-                    ThresholdComparison.LessThan => Not(bdd, AtLeast(bdd, operands, th.K)),
-                    ThresholdComparison.Exactly => Exactly(bdd, operands, th.K),
-                    _ => throw new InvalidOperationException($"Unhandled threshold comparison '{th.Comparison}'."),
-                };
+                rail = Threshold(bdd, operands, ThresholdSemantics.Terms(th.Comparison, th.K));
                 break;
             default:
                 throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'.");

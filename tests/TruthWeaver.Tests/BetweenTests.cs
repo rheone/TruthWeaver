@@ -8,6 +8,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -147,19 +148,19 @@ public sealed class BetweenTests
         Assert.Contains("BETWEEN", diagnostic.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>A missing or non-integer bound is a syntax error that names the bound.</summary>
+    /// <summary>A missing or non-integer bound is an invalid-threshold error that names the bound.</summary>
     [Theory]
     [InlineData("BETWEEN(a, b)", "minimum")]
     [InlineData("BETWEEN(1, a, b)", "maximum")]
     [InlineData("BETWEEN(1.5, 2, a, b)", "minimum")]
-    public void Compile_WithoutIntegerBounds_ReportsSyntaxError_Test(string text, string bound)
+    public void Compile_WithoutIntegerBounds_ReportsInvalidThresholdValue_Test(string text, string bound)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
         Assert.Contains(
             result.Diagnostics,
-            d => d.Code == DiagnosticCodes.SyntaxError && d.Message.Contains(bound, StringComparison.Ordinal)
+            d => d.Code == DiagnosticCodes.InvalidThresholdValue && d.Message.Contains(bound, StringComparison.Ordinal)
         );
     }
 
@@ -167,12 +168,12 @@ public sealed class BetweenTests
     [Theory]
     [InlineData("BETWEEN(0, 0, a)")]
     [InlineData("BETWEEN(0, 0)")]
-    public void Compile_WithFewerThanTwoOperands_ReportsMalformedTree_Test(string text)
+    public void Compile_WithFewerThanTwoOperands_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>JSON carries the bounds as 'min' and 'max', round-trips, and reads the op name in any letter case.</summary>
@@ -193,17 +194,17 @@ public sealed class BetweenTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
-    /// <summary>A JSON BETWEEN without a numeric 'min' or 'max' is a malformed tree.</summary>
+    /// <summary>A JSON BETWEEN without a numeric 'min' or 'max' is an invalid-threshold error.</summary>
     [Theory]
     [InlineData("""{"op":"between","max":1,"operands":[{"predicate":"a"},{"predicate":"b"}]}""")]
     [InlineData("""{"op":"between","min":0,"operands":[{"predicate":"a"},{"predicate":"b"}]}""")]
     [InlineData("""{"op":"between","min":"0","max":1,"operands":[{"predicate":"a"},{"predicate":"b"}]}""")]
-    public void CompileJson_BetweenWithoutNumericBounds_ReportsMalformedTree_Test(string json)
+    public void CompileJson_BetweenWithoutNumericBounds_ReportsInvalidThresholdValue_Test(string json)
     {
         CompilationResult<RuleTestContext> result = Compiler.CompileJson(json);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InvalidThresholdValue);
     }
 
     /// <summary>YAML uses the same node shape and round-trips.</summary>
@@ -221,16 +222,16 @@ public sealed class BetweenTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
-    /// <summary>A YAML BETWEEN without a numeric 'min' or 'max' is a malformed tree.</summary>
+    /// <summary>A YAML BETWEEN without a numeric 'min' or 'max' is an invalid-threshold error.</summary>
     [Fact]
-    public void CompileYaml_BetweenWithoutBounds_ReportsMalformedTree_Test()
+    public void CompileYaml_BetweenWithoutBounds_ReportsInvalidThresholdValue_Test()
     {
         CompilationResult<RuleTestContext> result = Compiler.CompileYaml(
             "op: between\nmin: 0\noperands:\n  - predicate: a\n  - predicate: b\n"
         );
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InvalidThresholdValue);
     }
 
     /// <summary>The builder produces the same rule as the DSL.</summary>

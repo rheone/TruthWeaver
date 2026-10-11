@@ -70,13 +70,14 @@ internal static class NandNorExpander
         }
 
         // Each threshold subset contributes at least one node per operand, so that is a lower bound on the result.
-        if (SubsetCost(primitive, maxNodes, new Dictionary<Expression, long>(ReferenceEqualityComparer.Instance)) > maxNodes)
+        if (SubsetCost(primitive, maxNodes, [with(ReferenceEqualityComparer.Instance)]) > maxNodes)
         {
             return null;
         }
 
-        Expression result = Convert(primitive, nand);
-        return ExpressionTools.Size(result) > maxNodes ? null : result;
+        Conversion conversion = new(nand, maxNodes);
+        Expression result = Convert(primitive, conversion);
+        return conversion.OverBudget || ExpressionTools.Size(result) > maxNodes ? null : result;
     }
 
     /// <summary>
@@ -100,62 +101,46 @@ internal static class NandNorExpander
         return total;
     }
 
-    /// <summary>The operand slots of every subset conjunction <see cref="ConvertThreshold"/> will build for <paramref name="t"/>.</summary>
+    /// <summary>The operand slots of every subset conjunction the threshold expansion will build for <paramref name="t"/>.</summary>
     private static long ThresholdCost(ThresholdExpression t, int cap)
     {
         int n = t.Operands.Count;
         long limit = (long)cap + 1;
         return t.Comparison switch
         {
-            ThresholdComparison.AtLeast => SubsetSlots(n, t.K, limit),
-            ThresholdComparison.AtMost => SubsetSlots(n, t.K + 1, limit),
+            ThresholdComparison.AtLeast => ThresholdExpansion.SubsetSlots(n, t.K, limit),
+            ThresholdComparison.AtMost => ThresholdExpansion.SubsetSlots(n, t.K + 1, limit),
             ThresholdComparison.Exactly => Math.Min(
-                (t.K >= 1 ? SubsetSlots(n, t.K, limit) : 0) + (t.K <= n - 1 ? SubsetSlots(n, t.K + 1, limit) : 0),
+                (t.K >= 1 ? ThresholdExpansion.SubsetSlots(n, t.K, limit) : 0)
+                    + (t.K <= n - 1 ? ThresholdExpansion.SubsetSlots(n, t.K + 1, limit) : 0),
                 limit
             ),
             _ => 0,
         };
     }
 
-    /// <summary><c>C(n, k) * k</c> (the operand slots over every k-subset), saturated at <paramref name="limit"/>.</summary>
-    private static long SubsetSlots(int n, int k, long limit)
+    private static Expression Convert(Expression node, Conversion conversion)
     {
-        // C(n, k) = C(n, n - k); walking the smaller side keeps the running product exact (each step is an exact division).
-        int small = Math.Min(k, n - k);
-        long combinations = 1;
-        for (int i = 0; i < small; i++)
-        {
-            combinations = combinations * (n - i) / (i + 1);
-            if (combinations > limit)
-            {
-                return limit;
-            }
-        }
-
-        return Math.Min(combinations * Math.Max(k, 1), limit);
-    }
-
-    private static Expression Convert(Expression node, bool nand)
-    {
+        bool nand = conversion.Nand;
         return node switch
         {
             ConstantExpression or TermExpression => node,
-            NotExpression n => Not(Convert(n.Operand, nand), nand),
-            AndExpression a => Fold(ConvertAll(a.Operands, nand), (l, r) => And(l, r, nand)),
-            OrExpression o => Fold(ConvertAll(o.Operands, nand), (l, r) => Or(l, r, nand)),
+            NotExpression n => Not(Convert(n.Operand, conversion), nand),
+            AndExpression a => Fold(ConvertAll(a.Operands, conversion), (l, r) => And(l, r, nand)),
+            OrExpression o => Fold(ConvertAll(o.Operands, conversion), (l, r) => Or(l, r, nand)),
 
             // The boundary: not expressible with a monotone connective, so only the operands are rewritten.
-            CoalesceExpression c => new CoalesceExpression(new EquatableArray<Expression>(ConvertAll(c.Operands, nand))),
-            ThresholdExpression t => ConvertThreshold(t, ConvertAll(t.Operands, nand), nand),
+            CoalesceExpression c => new CoalesceExpression(new EquatableArray<Expression>(ConvertAll(c.Operands, conversion))),
+            ThresholdExpression t => ConvertThreshold(t, ConvertAll(t.Operands, conversion), conversion),
 
             // PrimitiveExpander has already removed every other node type.
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
         };
     }
 
-    private static List<Expression> ConvertAll(EquatableArray<Expression> operands, bool nand)
+    private static List<Expression> ConvertAll(EquatableArray<Expression> operands, Conversion conversion)
     {
-        return [.. operands.Select(operand => Convert(operand, nand))];
+        return [.. operands.Select(operand => Convert(operand, conversion))];
     }
 
     private static Expression Fold(List<Expression> operands, Func<Expression, Expression, Expression> combine)
@@ -204,101 +189,36 @@ internal static class NandNorExpander
     }
 
     /// <summary>
-    /// Builds the threshold from the (already converted) operands. <c>AtLeast(k)</c> / <c>AtMost(k)</c> /
-    /// <c>Exactly(k)</c> only reach here with the compiler's valid <c>k</c>, so <c>AtLeast</c> is asked for only
-    /// <c>1..n</c> and <c>Exactly(k)</c> drops whichever side would be vacuous (<c>AtLeast(0)</c> / <c>AtMost(n)</c>).
+    /// Builds the threshold from the (already converted) operands through <see cref="ThresholdExpansion"/>, written in
+    /// the target connective. A threshold whose outcome the operand count alone fixes becomes a constant. A threshold
+    /// over budget marks the conversion, and the caller discards the result.
     /// </summary>
-    private static Expression ConvertThreshold(ThresholdExpression t, List<Expression> operands, bool nand)
+    private static Expression ConvertThreshold(ThresholdExpression t, List<Expression> operands, Conversion conversion)
     {
-        return t.Comparison switch
+        bool nand = conversion.Nand;
+        if (ThresholdSemantics.Constant(t.Comparison, t.K, operands.Count) is { } fixedOutcome)
         {
-            ThresholdComparison.AtLeast => AtLeast(t.K, operands, nand),
-            ThresholdComparison.AtMost => AtMost(t.K, operands, nand),
-            ThresholdComparison.Exactly => Exactly(t.K, operands, nand),
-            _ => throw new InvalidOperationException(
-                $"Threshold '{t.Comparison}' should have been expanded to AtLeast/AtMost."
-            ),
-        };
-    }
-
-    private static Expression AtLeast(int k, List<Expression> operands, bool nand)
-    {
-        List<Expression> subsetConjunctions = [];
-        foreach (int[] subset in Combinations(operands.Count, k))
-        {
-            subsetConjunctions.Add(Fold([.. subset.Select(index => operands[index])], (l, r) => And(l, r, nand)));
+            return new ConstantExpression(fixedOutcome ? TruthValue.True : TruthValue.False);
         }
 
-        // Balanced rather than left-folded: with thousands of subsets a left fold is thousands of levels deep, which the
-        // size check (and any later recursive walk of the result) cannot traverse without exhausting the stack.
-        return FoldBalanced(subsetConjunctions, 0, subsetConjunctions.Count, (l, r) => Or(l, r, nand));
-    }
-
-    /// <summary>Combines <c>items[start..end)</c> as a balanced tree; sound for the associative <c>OR</c>, and depth is logarithmic.</summary>
-    private static Expression FoldBalanced(
-        List<Expression> items,
-        int start,
-        int end,
-        Func<Expression, Expression, Expression> combine
-    )
-    {
-        if (end - start == 1)
+        ThresholdConnectives connectives = new((l, r) => And(l, r, nand), (l, r) => Or(l, r, nand), o => Not(o, nand));
+        Expression? expansion = ThresholdExpansion.Expand(t.Comparison, t.K, operands, connectives, conversion.MaxNodes);
+        if (expansion is null)
         {
-            return items[start];
+            conversion.OverBudget = true;
+            return new ConstantExpression(TruthValue.Unknown);
         }
 
-        int middle = start + ((end - start) / 2);
-        return combine(FoldBalanced(items, start, middle, combine), FoldBalanced(items, middle, end, combine));
+        return expansion;
     }
 
-    /// <summary><c>count &lt;= k</c> is the negation of <c>count &gt;= k + 1</c> for every count in the interval, so it holds in K3.</summary>
-    private static Expression AtMost(int k, List<Expression> operands, bool nand)
+    /// <summary>The target connective, the node cap, and whether any threshold exceeded the cap during one conversion.</summary>
+    private sealed class Conversion(bool nand, int maxNodes)
     {
-        return Not(AtLeast(k + 1, operands, nand), nand);
-    }
+        public bool Nand { get; } = nand;
 
-    private static Expression Exactly(int k, List<Expression> operands, bool nand)
-    {
-        bool hasLower = k >= 1;
-        bool hasUpper = k <= operands.Count - 1;
-        if (hasLower && hasUpper)
-        {
-            return And(AtLeast(k, operands, nand), AtMost(k, operands, nand), nand);
-        }
+        public int MaxNodes { get; } = maxNodes;
 
-        return hasLower ? AtLeast(k, operands, nand) : AtMost(k, operands, nand);
-    }
-
-    /// <summary>Every ascending index combination of size <paramref name="size"/> drawn from <c>0..count-1</c>.</summary>
-    private static IEnumerable<int[]> Combinations(int count, int size)
-    {
-        int[] current = new int[size];
-        for (int i = 0; i < size; i++)
-        {
-            current[i] = i;
-        }
-
-        while (true)
-        {
-            yield return [.. current];
-
-            // Advance the rightmost index that still has room, then reset everything after it.
-            int position = size - 1;
-            while (position >= 0 && current[position] == count - size + position)
-            {
-                position--;
-            }
-
-            if (position < 0)
-            {
-                yield break;
-            }
-
-            current[position]++;
-            for (int i = position + 1; i < size; i++)
-            {
-                current[i] = current[i - 1] + 1;
-            }
-        }
+        public bool OverBudget { get; set; }
     }
 }

@@ -11,8 +11,9 @@ public static class RuleText
 {
     // The prefix and infix operator words. A '(' right after one of these starts a group, so it keeps a space before it
     // ("a AND (b)"); a '(' right after any other word starts a call or a term's arguments, which hug the name ("ANY(a)").
-    private static readonly HashSet<string> OperatorWords = new(StringComparer.OrdinalIgnoreCase)
-    {
+    private static readonly HashSet<string> OperatorWords =
+    [
+        with(StringComparer.OrdinalIgnoreCase),
         "AND",
         "OR",
         "NOT",
@@ -23,7 +24,7 @@ public static class RuleText
         "IMPLIES",
         "NAND",
         "NOR",
-    };
+    ];
 
     /// <summary>
     /// Normalises the whitespace of DSL rule text: every run of whitespace (spaces, tabs, newlines) between tokens

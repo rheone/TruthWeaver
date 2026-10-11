@@ -23,10 +23,7 @@ public sealed class DataSourcesGuideTests
     [Fact]
     public async Task Guide_DeclareCompileAndEvaluate_GivesTheResolvedAnswer_Test()
     {
-        RuleCompiler<RuleTestContext> compiler = new(
-            Registry(),
-            new CompilerOptions(DataSources: new DataSourceDeclarations { "user", "request" })
-        );
+        RuleCompiler<RuleTestContext> compiler = new(Registry(), new CompilerOptions(DataSources: ["user", "request"]));
         CompilationResult<RuleTestContext> result = compiler.Compile(
             "ageAtLeast(min: from(\"user\", \"$.minAge\")) AND hasRole(role: from(\"request\", \"$.requiredRole\"))"
         );
@@ -89,10 +86,7 @@ public sealed class DataSourcesGuideTests
     [Fact]
     public async Task Guide_RuleBuilder_DeferredAndEagerForms_CompileAsDocumented_Test()
     {
-        RuleCompiler<RuleTestContext> compiler = new(
-            Registry(),
-            new CompilerOptions(DataSources: new DataSourceDeclarations { "user" })
-        );
+        RuleCompiler<RuleTestContext> compiler = new(Registry(), new CompilerOptions(DataSources: ["user"]));
         IDataSource configSource = JsonDataSource.Parse("""{ "limits": { "age": 21 } }""");
 
         RuleBuilder deferred = RuleBuilder.Predicate("ageAtLeast", ("min", Arg.From("user", "$.minAge")));
@@ -107,10 +101,7 @@ public sealed class DataSourcesGuideTests
     [Fact]
     public async Task Guide_IncludeResolvedValues_TraceShowsTheValueAndFaultsDoNot_Test()
     {
-        RuleCompiler<RuleTestContext> compiler = new(
-            Registry(),
-            new CompilerOptions(DataSources: new DataSourceDeclarations { "user", "request" })
-        );
+        RuleCompiler<RuleTestContext> compiler = new(Registry(), new CompilerOptions(DataSources: ["user", "request"]));
         CompiledRule<RuleTestContext> rule = compiler
             .Compile("ageAtLeast(min: from(\"user\", \"$.minAge\")) OR hasRole(role: from(\"request\", \"$.missing\"))")
             .CompiledRule!;

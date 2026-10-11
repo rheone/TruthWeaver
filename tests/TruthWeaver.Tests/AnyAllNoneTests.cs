@@ -8,6 +8,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -146,12 +147,12 @@ public sealed class AnyAllNoneTests
     [InlineData("ANY(a)")]
     [InlineData("ALL()")]
     [InlineData("NONE(a)")]
-    public void Compile_WithFewerThanTwoOperands_ReportsMalformedTree_Test(string text)
+    public void Compile_WithFewerThanTwoOperands_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>JSON uses lower-case op names, round-trips, and reads the op name in any letter case.</summary>

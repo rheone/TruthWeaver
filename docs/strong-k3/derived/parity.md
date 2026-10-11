@@ -21,7 +21,7 @@ Derived. `PARITY` is defined as the disjunction of `Exactly(k, ...)` over every 
 
 ## Arity
 
-Two or more operands. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. Fewer than two operands is a compile error, `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). This holds for `PARITY(a)` and `PARITY()` in the DSL and for JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])`. See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input domain
 
@@ -282,7 +282,7 @@ For two operands all three are the same function. From three operands `XOR` is n
 
 - Unknown is never absorbed. Unlike `AND`, `OR` and the cardinality operations, no definite operand settles `PARITY`. One `Unknown` operand gives `Unknown`.
 - Two operands give the same value as `XOR` but a different node, which prints as `PARITY(a, b)` rather than `a XOR b`.
-- Empty and single-operand conventions. Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The rule languages accept neither: `PARITY(a)` and `PARITY()` in the DSL, and JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged.
+- Empty and single-operand conventions. Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The rule languages accept neither: `PARITY(a)` and `PARITY()` in the DSL, and JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])` with fewer than two operands compile to `InfixArityViolation`. Only `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged.
 - Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |

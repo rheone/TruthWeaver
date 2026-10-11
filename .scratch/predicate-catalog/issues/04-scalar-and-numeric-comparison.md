@@ -6,12 +6,12 @@
 
 **Status:** done
 
-- [ ] The failing test run is shown before the implementation
+- [ ] The failing test run is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
 - [x] Every listed predicate is registerable for each kind where it is defined, and the kinds where it is not defined are documented
 - [x] Null selections behave per the catalog rules, and the null tests are definite
 - [x] `Between` is inclusive on both ends and `Outside` is its exact complement, with tests at each boundary
 - [x] Reversed bounds are a compile-time diagnostic for literal bounds and an argument error otherwise, and are never swapped
-- [ ] Every positive predicate has a registered `NotX` twin that agrees with its K3 complement, including for `Unknown`
+- [x] Every positive predicate has a registered `NotX` twin that agrees with its K3 complement, including for `Unknown`
 - [x] `Decimal` versus `Int64` comparison is documented and tested
 - [x] README and the gap list show the predicates as present
 - [x] The full validation from CLAUDE.md passes

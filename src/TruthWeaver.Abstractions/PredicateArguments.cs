@@ -11,7 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 /// authoring bug in the predicate itself, not a rule-authoring error.
 /// </summary>
 /// <remarks>Initializes a new instance of the <see cref="PredicateArguments"/> class.</remarks>
-/// <param name="values">The argument values, keyed by name (ordinal, case-sensitive — argument names in a schema are exact).</param>
+/// <param name="values">The argument values, keyed by the schema's argument names (ordinal). The compiler maps the spelling that a rule used to the schema's spelling, so a predicate reads an argument by the name its schema declares.</param>
 public sealed class PredicateArguments(IReadOnlyDictionary<string, LiteralValue> values)
 {
     private readonly IReadOnlyDictionary<string, LiteralValue> values = values;

@@ -75,7 +75,7 @@ public sealed class VariableEvaluationTests
 
         Decision decision = await VariableHarness.EvaluateAsync(
             rule,
-            new DataSources(),
+            [],
             cancellationToken: TestContext.Current.CancellationToken
         );
 

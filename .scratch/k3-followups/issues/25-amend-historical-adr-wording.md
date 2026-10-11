@@ -6,10 +6,10 @@
 
 **Status:** done
 
-- [ ] Every passage in ADR-0001, ADR-0002 and ADR-0004 that presents `Project` or `Collapse` as a rule-language feature carries a dated amendment note linking ADR-0005
-- [ ] Any remaining `NXOR` mention in those ADRs carries a note naming `PARITY`
-- [ ] No original decision text is deleted
-- [ ] `dotnet build` and `dotnet csharpier check .` pass
+- [x] Every passage in ADR-0001, ADR-0002 and ADR-0004 that presents `Project` or `Collapse` as a rule-language feature carries a dated amendment note linking ADR-0005
+- [x] Any remaining `NXOR` mention in those ADRs carries a note naming `PARITY`
+- [x] No original decision text is deleted
+- [x] `dotnet build` and `dotnet csharpier check .` pass
 
 Source: k3-followups ticket 15 report (historical mentions left untouched); [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md).
 

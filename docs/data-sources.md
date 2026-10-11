@@ -102,7 +102,7 @@ var sources = new DataSources
     ["user"] = userSource,
     ["request"] = requestSource,
 };
-Decision decision = await result.CompiledRule!.EvaluateAsync(context, services, sources, cancellationToken: cancellationToken);
+Decision decision = await result.GetRuleOrThrow().EvaluateAsync(context, services, sources, cancellationToken: cancellationToken);
 ```
 
 A rule that uses `from(...)` but is evaluated without the source it names returns `Unknown` and records a
@@ -208,9 +208,13 @@ The predicate's argument declares a `LiteralKind`, and that decides what a query
 | Scalar (`String`, `Int64`, `Decimal`, `Boolean`, `DateTimeOffset`, `Guid`) | Exactly one match of a convertible type. |
 | Array (`StringArray`, `Int64Array`, and so on) | Every match, each convertible to the element type. No match, including a path to a missing property, gives an empty array. |
 
+An array query that matches no node is not a failure, so no fault is recorded. The trace marks the term instead, so a mistyped
+path does not pass unseen. The trace text of the term ends with `[no match for from("user", "$.rolez[*]")]`, with or without
+`IncludeResolvedValues`. The note names the query and never a value.
+
 Conversions are deliberately the same as for literals written in a rule:
 
-- a string becomes a `DateTimeOffset` (ISO 8601) or a `Guid` when the argument asks for one;
+- a string becomes a `DateTimeOffset` or a `Guid` when the argument asks for one. A date-time string must end in `Z` or carry an offset such as `+02:00`; text without an offset is a type-mismatch failure, because the host time zone must not decide the instant;
 - a JSON integer widens to `Decimal`, and a whole-number `Decimal` narrows to `Int64` only if it is exactly representable;
 - a string is never turned into a number or boolean, and a number is never turned into a string.
 

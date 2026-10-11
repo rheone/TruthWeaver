@@ -1,6 +1,6 @@
 # AOT/trimming compatibility
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

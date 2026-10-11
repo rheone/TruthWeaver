@@ -14,43 +14,6 @@ using TruthWeaver.Diagnostics;
 /// </summary>
 internal sealed class DslParser
 {
-    private static readonly HashSet<string> ReservedWords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "AND",
-        "OR",
-        "NOT",
-        "XOR",
-        "EQUIVALENT",
-        "IFF",
-        "XNOR",
-        "IMPLIES",
-        "NAND",
-        "NOR",
-        "TRUE",
-        "FALSE",
-        "UNKNOWN",
-        "PARITY",
-        "NXOR",
-        "ANY",
-        "ALL",
-        "NONE",
-        "BETWEEN",
-        "COALESCE",
-        "IF",
-        "ISTRUE",
-        "ISFALSE",
-        "ISUNKNOWN",
-        "ISKNOWN",
-        "PROJECT",
-        "COLLAPSE",
-        "EXACTLYONE",
-        "ATLEAST",
-        "ATMOST",
-        "GREATERTHAN",
-        "LESSTHAN",
-        "EXACTLY",
-    };
-
     // Infix operators that sit outside the NOT > AND > OR precedence chain: they may not be mixed with
     // each other or with AND/OR at one nesting level without parentheses (ADR-0005 decision 8).
     // COALESCE is infix only as the symbol ?? (the word is a function call), and, being associative, a chain of it
@@ -80,7 +43,7 @@ internal sealed class DslParser
 
     private Token Current => this.tokens[this.position];
 
-    /// <summary>Determines whether a bare identifier is a reserved DSL keyword and therefore cannot be a predicate name.</summary>
+    /// <summary>Determines whether a bare identifier is a reserved DSL keyword, ignoring case, and therefore cannot be a predicate name.</summary>
     /// <param name="identifier">The identifier text.</param>
     /// <returns><see langword="true"/> if the identifier is reserved.</returns>
     public static bool IsReservedWord(string identifier)
@@ -808,24 +771,7 @@ internal sealed class DslParser
         int start = this.Current.Span.Start;
         this.position++;
         Token opener = this.ExpectOpenParen();
-        int k = 0;
-        if (this.Current.Kind == TokenKind.NumberLiteral)
-        {
-            k = int.TryParse(this.Current.Text, out int parsed) ? parsed : 0;
-            this.position++;
-        }
-        else
-        {
-            this.diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.SyntaxError,
-                    $"Expected an integer threshold as {comparison}'s first argument.",
-                    this.Current.Span,
-                    expected: "an integer",
-                    found: DescribeFound(this.Current)
-                )
-            );
-        }
+        int k = this.ParseIntegerBound($"threshold as {comparison}'s first argument");
 
         List<RuleNode> operands = [];
         while (this.Current.Kind == TokenKind.Comma)
@@ -848,9 +794,9 @@ internal sealed class DslParser
         int start = this.Current.Span.Start;
         this.position++;
         Token opener = this.ExpectOpenParen();
-        int min = this.ParseIntegerBound("minimum");
+        int min = this.ParseIntegerBound("minimum as BETWEEN's first argument");
         this.Expect(TokenKind.Comma, "','");
-        int max = this.ParseIntegerBound("maximum");
+        int max = this.ParseIntegerBound("maximum as BETWEEN's second argument");
 
         List<RuleNode> operands = [];
         while (this.Current.Kind == TokenKind.Comma)
@@ -874,7 +820,7 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.SyntaxError, span));
+                this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.UnknownPredicate, span));
                 return new ErrorNode(span);
             }
         );
@@ -890,7 +836,7 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.SyntaxError, span, "PARITY"));
+                this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.UnknownPredicate, span, "PARITY"));
                 return new ErrorNode(span);
             }
         );
@@ -906,17 +852,20 @@ internal sealed class DslParser
         return this.ParseOperandCall(
             (_, span) =>
             {
-                this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.SyntaxError, span));
+                this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.UnknownPredicate, span));
                 return new ErrorNode(span);
             }
         );
     }
 
     /// <summary>
-    /// Reads one integer literal for a BETWEEN bound. A missing or non-integer (for example <c>1.5</c>) bound is a
-    /// syntax error; a non-integer number token is still consumed so parsing can continue.
+    /// Reads one integer literal for a threshold <c>k</c> or a BETWEEN bound. The text is parsed with the invariant
+    /// culture, so the result does not depend on the host. A missing, fractional or out-of-range (for example
+    /// <c>1.5</c> or <c>99999999999</c>) value is an <see cref="DiagnosticCodes.InvalidThresholdValue"/> error, as in the tree formats; the number token is still consumed so parsing can
+    /// continue, and <c>0</c> is returned only as a placeholder next to that error.
     /// </summary>
-    private int ParseIntegerBound(string which)
+    /// <param name="description">What is expected, as "name as OPERATOR's Nth argument", for the diagnostic.</param>
+    private int ParseIntegerBound(string description)
     {
         if (
             this.Current.Kind == TokenKind.NumberLiteral
@@ -929,8 +878,8 @@ internal sealed class DslParser
 
         this.diagnostics.Add(
             Diagnostic.Error(
-                DiagnosticCodes.SyntaxError,
-                $"Expected an integer {which} as BETWEEN's {(which == "minimum" ? "first" : "second")} argument.",
+                DiagnosticCodes.InvalidThresholdValue,
+                $"Expected an integer {description}.",
                 this.Current.Span,
                 expected: "an integer",
                 found: DescribeFound(this.Current)

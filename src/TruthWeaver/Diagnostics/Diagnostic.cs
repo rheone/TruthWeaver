@@ -30,6 +30,13 @@ public sealed record Diagnostic(string Code, DiagnosticSeverity Severity, string
     /// <summary>Gets a "did you mean" replacement or a short piece of advice, or <see langword="null"/> when there is none.</summary>
     public DiagnosticSuggestion? Suggestion { get; init; }
 
+    /// <summary>
+    /// Gets the nearest enclosing finding when this one is a lint finding whose construct sits inside another finding's
+    /// construct, so a UI can group it under the outermost one; <see langword="null"/> when the finding stands alone. Both
+    /// findings are still reported.
+    /// </summary>
+    public Diagnostic? EnclosedBy { get; init; }
+
     // Code, severity and message are what identify a diagnostic; the optional members make the default ToString long.
     private string DebuggerDisplay => $"{this.Code} {this.Severity}: {this.Message}";
 

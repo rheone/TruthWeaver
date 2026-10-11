@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word.
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -61,6 +61,8 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node. The printer writes one spelling: operator words in upper case (`AND`, `XOR`), threshold and function names in upper camel case (`AtLeast`, `ExactlyOne`, `If`, `IsTrue`) and the constants as `True`, `False` and `Unknown`. The printer writes the word form of an operator and never a symbol.
 
+Predicate names and argument names are case-insensitive too. `hasCrust(Crust: "thin")` and `hasCrust(crust: "thin")` compile to the same term, and the printer writes the name as the predicate's schema spells it. Argument values are case-sensitive.
+
 The [Spellings](strong-k3/specification/syntax.md#spellings) table lists the accepted words and symbols.
 
 ## Grouping delimiters
@@ -81,13 +83,14 @@ A delimiter mistake is a `SyntaxError` diagnostic with the exact span:
 | Unclosed group | `a AND (b OR c` | `Unclosed '(' at offset 6: expected ')' before the end of the rule.` (the `(`) |
 | Closer with no opener | `a AND b)` | `Unexpected closing ')' with no matching opener.` (the `)`) |
 
-To print a rule with delimiters that change with the nesting depth, pass a `GroupingStyle` to `CompiledRule.PrintRuleText`:
+To print a rule with delimiters that change with the nesting depth, pass a `GroupingStyle` to `CompiledRule.PrintRuleText`. Without an argument it prints the parentheses style:
 
 ```csharp
-CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").CompiledRule!;
+CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").GetRuleOrThrow();
 
 rule.CanonicalText;                                  // a AND (b OR (c AND (d OR (e AND (f OR g)))))  (parentheses only)
-rule.PrintRuleText(GroupingStyle.Parentheses);           // same as CanonicalText
+rule.PrintRuleText();                                    // same as CanonicalText
+rule.PrintRuleText(GroupingStyle.Parentheses);           // the same, written out
 rule.PrintRuleText(GroupingStyle.DepthCycling);          // a AND (b OR [c AND {d OR (e AND [f OR g])}])
 ```
 

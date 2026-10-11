@@ -176,14 +176,157 @@ public sealed class LintTests
         Assert.DoesNotContain(result.Diagnostics, d => IsLint(d));
     }
 
+    /// <summary>
+    /// An <c>If</c> whose condition holds a redundant inspection yields two findings: the constant condition on the
+    /// <c>If</c> and the redundant inspection inside it. Both are reported, and the inner one links to the outer one.
+    /// </summary>
+    [Fact]
+    public void Compile_IfWithRedundantInspectionInCondition_LinksInnerFindingToOuterFinding_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            "If(IsKnown(IsTrue(a)), a, b)",
+            LintRules.RedundantInspection | LintRules.ConstantIfCondition
+        );
+
+        Diagnostic outer = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.ConstantIfCondition);
+        Diagnostic inner = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+        Assert.Null(outer.EnclosedBy);
+        Assert.Same(outer, inner.EnclosedBy);
+        Assert.True(result.Diagnostics.ToList().IndexOf(outer) < result.Diagnostics.ToList().IndexOf(inner));
+    }
+
+    /// <summary>Findings in separate branches of the rule do not enclose each other, so neither links to the other.</summary>
+    [Fact]
+    public void Compile_IndependentFindingsInSeparateBranches_HaveNoLink_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("IsKnown(IsTrue(a)) AND NOT NOT b", LintRules.All);
+
+        Diagnostic inspection = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+        Diagnostic negation = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DoubleNegation);
+        Assert.Null(inspection.EnclosedBy);
+        Assert.Null(negation.EnclosedBy);
+    }
+
+    /// <summary>A rule at or past the configured share of <c>MaxDepth</c> is reported by the deep-nesting lint.</summary>
+    [Fact]
+    public void Compile_RuleAtDepthFractionOfMaxDepth_ReportsDeepNesting_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            "NOT NOT NOT a",
+            new CompilerOptions(MaxDepth: 5, Lints: LintRules.DeepNesting)
+        );
+
+        Diagnostic finding = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DeepNesting);
+        Assert.Equal(DiagnosticSeverity.Info, finding.Severity);
+        Assert.Null(finding.EnclosedBy);
+    }
+
+    /// <summary>A rule below the configured share of <c>MaxDepth</c> and a chain at the operand limit produce no finding.</summary>
+    [Fact]
+    public void Compile_RuleUnderBothThresholds_ReportsNeitherDeepNestingNorWideChain_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            "a AND b AND c",
+            new CompilerOptions(MaxDepth: 10, Lints: LintRules.DeepNesting | LintRules.WideChain, WideChainOperandLimit: 3)
+        );
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code is DiagnosticCodes.DeepNesting or DiagnosticCodes.WideChain);
+    }
+
+    /// <summary>An <c>AND</c> or <c>OR</c> chain with more operands than the limit is reported by the wide-chain lint.</summary>
+    [Theory]
+    [InlineData("a AND b AND c")]
+    [InlineData("a OR b OR c")]
+    public void Compile_ChainWithMoreOperandsThanLimit_ReportsWideChain_Test(string rule)
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            rule,
+            new CompilerOptions(Lints: LintRules.WideChain, WideChainOperandLimit: 2)
+        );
+
+        Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.WideChain);
+    }
+
+    /// <summary>
+    /// <c>LintRules.All</c> holds the logic and structure lints only: a valid rule that is not in canonical operand order
+    /// gets no finding, and <c>All | Style</c> reports it.
+    /// </summary>
+    [Fact]
+    public void Compile_RuleOutOfCanonicalOrder_AllIsQuietAndAllWithStyleReportsNotCanonical_Test()
+    {
+        CompilationResult<RuleTestContext> quiet = Compile("b AND a", LintRules.All);
+        CompilationResult<RuleTestContext> full = Compile("b AND a", LintRules.All | LintRules.Style);
+
+        Assert.DoesNotContain(quiet.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+        Assert.Contains(full.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
+    /// <summary>
+    /// A rule that <c>Canonicalize()</c> would reorder is reported by the not-canonical lint, with the canonical rule text as
+    /// the replacement suggestion.
+    /// </summary>
+    [Fact]
+    public void Compile_RuleWithOperandsOutOfCanonicalOrder_ReportsNotCanonicalWithCanonicalText_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("b AND a", LintRules.Style);
+
+        Diagnostic finding = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+        Assert.Equal(DiagnosticSuggestionKind.Replacement, finding.Suggestion?.Kind);
+        Assert.Equal("a AND b", finding.Suggestion?.Text);
+    }
+
+    /// <summary>A rule that is already canonical produces no not-canonical finding.</summary>
+    [Fact]
+    public void Compile_CanonicalRule_ReportsNoNotCanonical_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("a AND b", LintRules.Style);
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
+    /// <summary>A rule larger than <c>MaxRewriteNodeCount</c> is not canonicalized, so the lint stays silent.</summary>
+    [Fact]
+    public void Compile_RuleLargerThanRewriteCap_ReportsNoNotCanonical_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            "b AND a",
+            new CompilerOptions(MaxRewriteNodeCount: 1, Lints: LintRules.Style)
+        );
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
+    /// <summary>A rule whose node count equals <c>MaxRewriteNodeCount</c> is still canonicalized: only a larger rule is skipped.</summary>
+    [Fact]
+    public void Compile_RuleExactlyAtRewriteCap_ReportsNotCanonical_Test()
+    {
+        // "b AND a" is three nodes: the AND and its two terms.
+        CompilationResult<RuleTestContext> atCap = Compile(
+            "b AND a",
+            new CompilerOptions(MaxRewriteNodeCount: 3, Lints: LintRules.Style)
+        );
+        CompilationResult<RuleTestContext> overCap = Compile(
+            "b AND a",
+            new CompilerOptions(MaxRewriteNodeCount: 2, Lints: LintRules.Style)
+        );
+
+        Assert.Contains(atCap.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+        Assert.DoesNotContain(overCap.Diagnostics, d => d.Code == DiagnosticCodes.NotCanonical);
+    }
+
     private static bool IsLint(Diagnostic diagnostic)
     {
         return string.CompareOrdinal(diagnostic.Code, "TRE0017") >= 0
-            && string.CompareOrdinal(diagnostic.Code, "TRE0023") <= 0
+            && string.CompareOrdinal(diagnostic.Code, "TRE0030") <= 0
             && diagnostic.Severity == DiagnosticSeverity.Info;
     }
 
     private static CompilationResult<RuleTestContext> Compile(string rule, LintRules lints)
+    {
+        return Compile(rule, new CompilerOptions(Lints: lints));
+    }
+
+    private static CompilationResult<RuleTestContext> Compile(string rule, CompilerOptions options)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -192,7 +335,7 @@ public sealed class LintTests
                 .AddConstant("b", true)
                 .AddConstant("c", true)
                 .Build(),
-            new CompilerOptions(Lints: lints)
+            options
         );
         return compiler.Compile(rule);
     }

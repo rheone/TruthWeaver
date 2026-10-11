@@ -10,7 +10,8 @@ using TruthWeaver.Diagnostics;
 /// <c>const</c>, <c>predicate</c> or <c>op</c>. The reader owns that dispatch, the op-name to node mapping, the <c>k</c>,
 /// <c>min</c>, <c>max</c> and operand-count checks and the <c>Collapse</c>, <c>NXOR</c> and <c>Project</c> rejections; a
 /// format contributes only an <see cref="ITreeNodeCursor"/> over its document model. Never throws for malformed input: it
-/// reports <see cref="DiagnosticCodes.MalformedTree"/> diagnostics located by their path from the root (<c>$.operands[1].op</c>).
+/// reports diagnostics located by their path from the root (<c>$.operands[1].op</c>). A structural problem is <see cref="DiagnosticCodes.MalformedTree"/>; a bad count, bound or
+/// operator name has the code the DSL gives it.
 /// </summary>
 internal sealed class TreeFormatReader
 {
@@ -40,9 +41,67 @@ internal sealed class TreeFormatReader
         return count == 1 ? "1 operand" : $"{count} operands";
     }
 
+    private static string FormatKeys(string[] keys)
+    {
+        return string.Join(", ", keys.Select(k => $"'{k}'"));
+    }
+
     private void Report(string message, SourceSpan span, string expected, string found, string path)
     {
-        this.diagnostics.Add(Diagnostic.Error(DiagnosticCodes.MalformedTree, message, span, expected, found, path: path));
+        this.Report(DiagnosticCodes.MalformedTree, message, span, expected, found, path);
+    }
+
+    // The code is a parameter because the same mistake has one code on every surface: a bad count or bound keeps the
+    // code the DSL gives it, and only a tree shape problem is TRE0014.
+    private void Report(string code, string message, SourceSpan span, string expected, string found, string path)
+    {
+        this.diagnostics.Add(Diagnostic.Error(code, message, span, expected, found, path: path));
+    }
+
+    // Rejects every key of a node that its kind does not define (the published schema sets additionalProperties to false).
+    // A key that belongs to another kind of node, such as "op" next to "predicate", is called a conflict, because the
+    // author wrote two nodes into one.
+    private bool CheckKeys(ITreeNodeCursor node, string path, string kind, string[] allowed)
+    {
+        bool valid = true;
+        foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in node.Members)
+        {
+            if (name is null)
+            {
+                this.Report(
+                    $"A key of {kind} node must be a {this.words.StringNoun}.",
+                    key!.Span,
+                    $"a {this.words.StringNoun}",
+                    key.Describe(),
+                    path
+                );
+                valid = false;
+            }
+            else if (!allowed.Contains(name, StringComparer.Ordinal))
+            {
+                bool conflict = name is "const" or "predicate" or "op";
+                string message = conflict
+                    ? $"The key '{name}' conflicts with the other keys: {kind} node takes only {FormatKeys(allowed)}."
+                    : $"Unknown key '{name}' in {kind} node, which takes only {FormatKeys(allowed)}.";
+                DiagnosticSuggestion? suggestion = conflict
+                    ? new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Remove '{name}', or split the node in two.")
+                    : NameSuggester.Suggest(name, allowed);
+                this.diagnostics.Add(
+                    Diagnostic.Error(
+                        DiagnosticCodes.MalformedTree,
+                        message,
+                        value.Span,
+                        expected: $"only {FormatKeys(allowed)}",
+                        found: $"'{name}'",
+                        suggestion: suggestion,
+                        path: TreePath.Property(path, name)
+                    )
+                );
+                valid = false;
+            }
+        }
+
+        return valid;
     }
 
     private RuleNode? ReadNode(ITreeNodeCursor node, string path)
@@ -67,6 +126,11 @@ internal sealed class TreeFormatReader
 
         if (node.TryGetChild("const", out ITreeNodeCursor? constNode))
         {
+            if (!this.CheckKeys(node, path, "a constant", ["const"]))
+            {
+                return null;
+            }
+
             if (constNode.TryGetTruthValue(out TruthValue constValue))
             {
                 return new ConstantNode(constValue, SourceSpan.None);
@@ -116,6 +180,11 @@ internal sealed class TreeFormatReader
 
     private RuleNode? ReadTerm(ITreeNodeCursor node, ITreeNodeCursor predicateNode, string path)
     {
+        if (!this.CheckKeys(node, path, "a predicate", ["predicate", "args"]))
+        {
+            return null;
+        }
+
         if (predicateNode.StringValue is not { } predicateName)
         {
             this.Report(
@@ -182,19 +251,19 @@ internal sealed class TreeFormatReader
         // tell the author where collapse went.
         if (string.Equals(op, "collapse", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, path));
+            this.diagnostics.Add(CollapseRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, path));
             return null;
         }
 
         if (string.Equals(op, "nxor", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, "parity", path));
+            this.diagnostics.Add(NxorRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, "parity", path));
             return null;
         }
 
         if (string.Equals(op, "project", StringComparison.OrdinalIgnoreCase))
         {
-            this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.MalformedTree, opNode.Span, path));
+            this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, path));
             return null;
         }
 
@@ -203,7 +272,7 @@ internal sealed class TreeFormatReader
         {
             this.diagnostics.Add(
                 Diagnostic.Error(
-                    DiagnosticCodes.MalformedTree,
+                    DiagnosticCodes.UnknownPredicate,
                     $"Unknown operator '{op}'.",
                     opNode.Span,
                     expected: "a known operator",
@@ -212,6 +281,17 @@ internal sealed class TreeFormatReader
                     path: TreePath.Property(path, "op")
                 )
             );
+            return null;
+        }
+
+        string[] operatorKeys = canonicalOpName switch
+        {
+            "AtLeast" or "AtMost" or "GreaterThan" or "LessThan" or "Exactly" => ["op", "operands", "k"],
+            "Between" => ["op", "operands", "min", "max"],
+            _ => ["op", "operands"],
+        };
+        if (!this.CheckKeys(node, path, $"a '{op}' operator", operatorKeys))
+        {
             return null;
         }
 
@@ -253,6 +333,7 @@ internal sealed class TreeFormatReader
                 if (operands.Count != 1)
                 {
                     this.Report(
+                        DiagnosticCodes.InfixArityViolation,
                         "'not' requires exactly one operand.",
                         operandsNode.Span,
                         "1 operand",
@@ -324,6 +405,7 @@ internal sealed class TreeFormatReader
         if (!present || !kNode!.TryGetInt32(out int k))
         {
             this.Report(
+                DiagnosticCodes.InvalidThresholdValue,
                 $"'{op}' requires a numeric 'k'.",
                 present ? kNode!.Span : node.Span,
                 "an integer",
@@ -357,6 +439,7 @@ internal sealed class TreeFormatReader
         }
 
         this.Report(
+            DiagnosticCodes.InvalidThresholdValue,
             $"'{op}' requires integer 'min' and 'max'.",
             present ? child!.Span : node.Span,
             "an integer",

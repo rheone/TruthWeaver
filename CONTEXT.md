@@ -40,7 +40,13 @@ the rest, such as **Expression**, **CompiledRule**, `CompilerOptions` and `Evalu
 | **External operator** | An operator that is not a Strong Kleene connective because it is not monotone in the **information order**: `COALESCE` (`??`) and the four inspections. They are the SQL (`COALESCE`, `IS [NOT] TRUE/FALSE/UNKNOWN`) and Bochvar (external connectives) precedents applied to truth values. Only the connectives (`NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators and `If`) are Strong K3, so the "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to external operators (`IsKnown(a) OR IsUnknown(a)` is a tautology). |
 | **Information order** | `Unknown` below both `True` and `False`, which are incomparable. A function is monotone in it when refining an `Unknown` input never changes a definite output; Kleene's strong connectives are exactly the monotone ones. It sits beside the truth order `False < Unknown < True` (`AND` is min, `OR` is max), which is only an implementation aid. |
 | **Project** | A TruthWeaver term (not K3 literature; in relational algebra "projection" means selecting columns) and a method on the result, not part of the rule language: `Decision.Project(unknownAs)` keeps `True`/`False` and replaces only `Unknown` with the chosen definite value, so the answer is never `Unknown`. Inside a rule, `COALESCE(x, True)` / `COALESCE(x, False)` does the same; rule text, JSON and YAML that declare a `Project` are rejected with a diagnostic pointing to `COALESCE` and `Decision.Project`. It is pure, so it never records a **Fault** and never changes `Decision.Result`; `Decision.IsSatisfied` stays fail-closed. |
-| **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify`. The compiler never rewrites on its own. Whitespace tidying of rule text (`RuleText.NormalizeWhitespace`) and depth-varying delimiters (`PrintRuleText(GroupingStyle)`) are text-level formatting, not rewrites. |
+| **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify` (and `SimplifyWithSteps`, which also reports each **rewrite step**), `ToNnf`, `ToCnf`, `ToDnf`. The compiler never rewrites on its own. Whitespace tidying of rule text (`RuleText.NormalizeWhitespace`) and depth-varying delimiters (`PrintRuleText(GroupingStyle)`) are text-level formatting, not rewrites. |
+| **Threshold** | One of the five comparisons of the true-operand count against `k` (`AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`). They share one expression node. `BETWEEN`, `ExactlyOne`, `ANY`, `ALL`, `NONE` and `PARITY` are not thresholds. They are **cardinality operators** that expand to thresholds. |
+| **Cardinality operator** | An **operator** whose result depends on how many of its operands are `True`: the five **thresholds** plus `ExactlyOne`, `ANY`, `ALL`, `NONE`, `BETWEEN` and `PARITY`. |
+| **Primitive kernel** | The operators a rule keeps after `ExpandToPrimitives`: `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly` and `COALESCE`. Every other operator is a **derived operator**. |
+| **Derived operator** | An operator that has a defined expansion into the **primitive kernel** (for example `XOR`, `IMPLIES`, `NAND`, `If`, `BETWEEN`). It is its own node, so a rule round-trips as written. |
+| **Normal form** | A shape a rewrite gives a rule: negation (NNF), conjunctive (CNF) or disjunctive (DNF). Each has the same Strong Kleene value as the original rule. |
+| **Rewrite step** | One law that a rewrite applied, with the text of the changed part before and after. The **rewrite law** names the rule used, such as `Absorption` or `DeMorgan`. |
 | **Diagnostic** | One structured compile-time problem: a stable code (`TRE` plus four digits, for "Trinary Rule Expression"), severity, message, source span (DSL) or `Path` (JSON/YAML), optional expected/found text and a `DiagnosticSuggestion` ("did you mean", or a hint). |
 | **TruthValue** | `True` / `False` / `Unknown`: a dedicated three-valued (Kleene) type, never `bool?`. A predicate returns one directly (`ValueTask<TruthValue>`); `Unknown` is never implicitly converted to `True` or `False` outside an explicit boundary (`COALESCE` with a constant inside a rule, or `Decision.Project` / `Decision.Collapse` on the result). `False < Unknown < True` is an implementation aid, not a numeric order of truth. |
 | **Fault** | A predicate or data source failed to produce an answer during one evaluation (exception, its own timeout, its own cancellation). Faults become `Unknown`, not thrown exceptions, at the expression level. A predicate that simply returns `Unknown` is a normal answer and records no fault. Cancellation of the evaluation's own token (the caller's token, or the token `EvaluationOptions.Timeout` links into it) is not a fault: it propagates as `OperationCanceledException` instead. |
@@ -191,13 +197,14 @@ contradiction analysis sound. Two terms are "the same variable" if and only
 if:
 
 - predicate name, normalized case-insensitively to the registered casing, **and**
-- arguments, sorted by name, each compared by exact type-normalized value. A **variable reference**
+- arguments, sorted by name (each name normalized case-insensitively to the schema's spelling), each compared by exact type-normalized value. A **variable reference**
   compares by its source name and query text, never by the value it resolves to, so two references are the
   same variable only when both match exactly.
 
 Argument **values** are case-**sensitive** (`role: "Y"` and `role: "y"` are
 different terms: role codes are frequently case-significant, and folding
 them silently would be a security bug in an authorization consumer).
+Argument **names** are case-**insensitive** (`Role:` and `role:` are the same argument), like predicate names.
 Argument **order** in the source text does not affect identity. Array-valued
 arguments **are** order-sensitive.
 
@@ -281,7 +288,7 @@ catalog members, not for the engine.
 - **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
   `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
   depend on the host's locale, which is unsafe for authorization rules. `EqualsConfigurable` follows the
-  rule too and has no `culture` argument; a rule that still passes one is rejected at compile time
+  rule too: it is case-sensitive unless the rule sets `ignoreCase: true`, and it has no `culture` argument; a rule that still passes one is rejected at compile time
   with an `UnknownArgument` diagnostic that says to remove it.
 - **Date and time use `DateTimeOffset` only.** There is no `DateTime` literal kind; a host holding a
   `DateTime` converts it in its selector. Rationale: `DateTime` with an unspecified `Kind` is ambiguous,

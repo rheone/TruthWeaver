@@ -99,7 +99,7 @@ or RC included. The file does not pin that exact patch.
 4. **Evaluate it against a context:**
 
    ```csharp
-   Decision decision = await result.CompiledRule!.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
+   Decision decision = await result.Rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 
    if (decision.IsSatisfied)
    {
@@ -108,6 +108,9 @@ or RC included. The file does not pin that exact patch.
    ```
 
 The lifecycle is: implement, register, compile once, evaluate many times.
+The [Consumer sample](samples/Consumer/) shows these steps with dependency injection and a test.
+The [PredicateLibrary sample](samples/PredicateLibrary/) shows a project that defines predicates and references `TruthWeaver.Abstractions` alone.
+The [DataSource sample](samples/DataSource/) shows a JSON data source and a rule that reads a value from it.
 [Examples](docs/examples.md) builds from here to named arguments, the full
 operator set and a worked example in rule text, JSON and YAML.
 
@@ -121,6 +124,7 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
 | `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests. |
+| `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
 
@@ -152,13 +156,20 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule text](docs/rule-text.md): the grammar, grouping delimiters, whitespace and case.
 - [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
+- [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX or AsciiMath.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
+- [Predicate conventions](docs/predicate-conventions.md): how the built-in predicates treat case, whitespace, range ends, null values and culture.
+- [Predicate source generator](docs/predicate-source-generator.md): register `[Predicate]` methods with generated code, and compare it with hand-written registration.
+- [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
+- [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
+- [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent, that a rewrite is sound, and check a `Decision` in a test.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
 - [Examples](docs/examples.md): seven worked examples, from one predicate to a full rule.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
 - [Benchmarks](docs/benchmarks.md): the benchmark commands and the committed baseline.
 - [Documentation examples](docs/doc-examples.md): how the examples in the documentation are tested.
+- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.ps1` do.
 - [CONTEXT.md](CONTEXT.md): the domain vocabulary and the predicate-author contract.
 
 ## License

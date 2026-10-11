@@ -1,6 +1,6 @@
 # Predicate types
 
-How to write and register the predicates that a rule calls. The meaning of each operator is in the [Strong Kleene (K3) reference](strong-k3/README.md). Back to the [README](../README.md).
+How to write and register the predicates that a rule calls. The meaning of each operator is in the [Strong Kleene (K3) reference](strong-k3/README.md). Back to the [README](../README.md). The defaults that all built-in predicates share are in [Predicate conventions](predicate-conventions.md).
 
 ## Registration shapes
 
@@ -17,12 +17,12 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:
 
-- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching.
+- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates` has no case option: a pattern that ignores case starts with `(?i)`.
 - `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 - `TypePredicates` covers the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset`. Each has an `IsNot...` twin that is its Strong Kleene complement. See [Type tests](#type-tests).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
 
-Every method on `StringPredicates` except one is ordinal-only and has a fixed behavior. A case-insensitive variant is a separate predicate (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception is `StringPredicates.EqualsConfigurable`. It is one predicate whose `ignoreCase` and `trim` arguments the rule sets. It is case-insensitive by default. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `EqualsConfigurable` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
+Every method on `StringPredicates` except one is ordinal-only and has a fixed behavior. A case-insensitive variant is a separate predicate (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception is `StringPredicates.EqualsConfigurable`. It is one predicate whose `ignoreCase` and `trim` arguments the rule sets. It is case-sensitive by default; a rule sets `ignoreCase: true` to ignore case. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `EqualsConfigurable` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
 
 ### Null selected values
 
@@ -83,7 +83,7 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 
 ### Collection predicates
 
-`CollectionPredicates` selects an `IReadOnlyCollection<string>?`. Comparison is ordinal and case-sensitive. Every predicate has a `NotX` twin that is its Strong Kleene complement: `True` becomes `False`, `False` becomes `True`, and `Unknown` stays `Unknown`.
+`CollectionPredicates` selects an `IReadOnlyCollection<string>?`. Comparison is ordinal and case-sensitive (see [Predicate conventions](predicate-conventions.md)). Every predicate has a `NotX` twin that is its Strong Kleene complement: `True` becomes `False`, `False` becomes `True`, and `Unknown` stays `Unknown`.
 
 | Predicate | Twin | Argument | `True` when |
 | --- | --- | --- | --- |
@@ -102,11 +102,11 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 
 `In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
 
-A null collection counts as empty for `IsEmpty` and `IsNotEmpty`. These two predicates always return a definite answer and have no `nullBehavior` option. The other predicates in this table answer a null selected value as [Null selected values](#null-selected-values) describes.
+Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. A null collection is a missing value, not an empty one.
 
 ### Date and time predicates
 
-`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. Values compare by instant, so the same moment with a different offset is equal.
+`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. A date-time literal must end in `Z` or carry an offset such as `+02:00`. Text such as `"2026-01-01"` or `"2026-01-01T09:00"` is a compile error, so a stored rule means the same instant on every host. Values compare by instant, so the same moment with a different offset is equal. `After` and `Before` are strict, and `InTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
 
 | Predicate | Twin | Arguments | `True` when |
 | --- | --- | --- | --- |
@@ -128,6 +128,20 @@ DateTimePredicates.AfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, 
 ```
 
 The predicate reads the clock each time the engine evaluates it, never at registration. The engine evaluates one term once per `Evaluate` call, so a repeated term sees one instant. Two different terms each read the clock and can see different instants if the clock advances between them. To give every term one instant, register a `TimeProvider` that returns a fixed instant for each evaluation.
+
+`OnDayOfWeek`, `InMonth` and `InTimeWindow` read the selected instant in the fixed offset that the `offset` argument gives: `"Z"` or `"+hh:mm"` / `"-hh:mm"`. Time zone names such as `Europe/Paris` are not accepted, and there are no daylight-saving rules. The argument names are fixed.
+
+| Predicate | Twin | Arguments | `True` when |
+| --- | --- | --- | --- |
+| `OnDayOfWeek` | `NotOnDayOfWeek` | `days` (English day names), `offset` | The day of the week in `offset` is in `days`. |
+| `InMonth` | `NotInMonth` | `months` (numbers 1 to 12), `offset` | The month in `offset` is in `months`. |
+| `InTimeWindow` | `NotInTimeWindow` | `start`, `end` or `duration`, `includeStart`, `includeEnd`, `offset` | The time of day in `offset` is inside the window. By default the window is $[start, end)$. A start later than the end crosses midnight. |
+
+```csharp
+DateTimePredicates.InTimeWindow<Order>("placedInHours", order => order.PlacedAt);
+```
+
+A rule then calls `placedInHours(start: "09:00", end: "17:00", offset: "+01:00")`, or gives `duration: "PT8H"` in place of `end`. A literal argument that is not valid, a time zone name included, is a `TRE0026` compile error. The [date-time predicates reference](strong-k3/predicates/README.md#fixed-offsets) gives every argument rule.
 
 Reversed bounds (`lower` later than `upper`) follow the reversed-bounds rule of the numeric range predicates in [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 

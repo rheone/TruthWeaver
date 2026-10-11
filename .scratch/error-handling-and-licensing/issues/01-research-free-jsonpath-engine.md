@@ -15,12 +15,12 @@ Known so far (verify each; web results are not authoritative):
 - `JsonCons.JsonPath`: license, RFC 9535 status and net11 compatibility not confirmed.
 - Option: build our own RFC 9535 subset. ADR-0006 rejected this as too large a surface; revisit only if no library qualifies.
 
-- [ ] Each candidate's license is read from its published package and repository, not from a summary
-- [ ] Each candidate is checked for RFC 9535 conformance, `net11.0`, trim/AOT warnings (the repo builds with `IsAotCompatible`), dependency licenses and maintenance activity
-- [ ] The recommendation and rejected alternatives are recorded in ADR-0006 (amended in place and marked)
-- [ ] The chosen engine replaces `JsonPath.Net` behind `JsonPaths`; the `JsonDataSource` and `JsonQueryValidator` tests pass unchanged in meaning, including the `$.` malformed-query case
-- [ ] If the package or its transitive dependencies change, `Directory.Packages.props` and the lock files are updated
-- [ ] The full validation from CLAUDE.md passes
+- [x] Each candidate's license is read from its published package and repository, not from a summary
+- [x] Each candidate is checked for RFC 9535 conformance, `net11.0`, trim/AOT warnings (the repo builds with `IsAotCompatible`), dependency licenses and maintenance activity
+- [x] The recommendation and rejected alternatives are recorded in ADR-0006 (amended in place and marked)
+- [x] The chosen engine replaces `JsonPath.Net` behind `JsonPaths`; the `JsonDataSource` and `JsonQueryValidator` tests pass unchanged in meaning, including the `$.` malformed-query case
+- [x] If the package or its transitive dependencies change, `Directory.Packages.props` and the lock files are updated
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 1).
 

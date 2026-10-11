@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] The failing test run is shown before the implementation
+- [ ] The failing test run is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
 - [x] `After`, `Before` and `Between` are registerable and correct at, just before and just after each boundary, including across offsets
 - [x] `Between` is inclusive on both ends and `Outside` is its exact complement
 - [x] Reversed bounds are a compile-time diagnostic for literal bounds and an argument error otherwise, and are never swapped

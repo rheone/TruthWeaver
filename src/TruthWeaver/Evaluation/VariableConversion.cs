@@ -1,6 +1,7 @@
 namespace TruthWeaver.Evaluation;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Ast;
 
 /// <summary>
 /// Turns the nodes a data source matched into the value of one predicate argument (ADR-0006 decisions 6 and 7).
@@ -35,13 +36,15 @@ internal static class VariableConversion
             // An array argument collects every match; zero matches, including a path to a missing property, is an
             // empty array because a query result cannot tell the two apart.
             LiteralKind elementKind = LiteralValue.ToElementKind(kind);
-            List<LiteralValue> elements = new(matches.Count);
+            List<LiteralValue> elements = [with(matches.Count)];
             foreach (LiteralValue match in matches)
             {
                 if (!TryConvertScalar(match, elementKind, out LiteralValue element))
                 {
                     failure = VariableFailureKind.TypeMismatch;
-                    message = $"A match of kind {match.Kind} cannot be an element of kind {elementKind} (expected {kind}).";
+                    message =
+                        $"A match of kind {match.Kind} cannot be an element of kind {elementKind} (expected {kind})."
+                        + OffsetFixFor(match, elementKind);
                     return false;
                 }
 
@@ -69,14 +72,16 @@ internal static class VariableConversion
         if (!TryConvertScalar(matches[0], kind, out value))
         {
             failure = VariableFailureKind.TypeMismatch;
-            message = $"The match is of kind {matches[0].Kind} but the argument expects {kind}.";
+            message =
+                $"The match is of kind {matches[0].Kind} but the argument expects {kind}." + OffsetFixFor(matches[0], kind);
             return false;
         }
 
         return true;
     }
 
-    private static bool IsArrayKind(LiteralKind kind)
+    /// <summary>Gets a value indicating whether <paramref name="kind"/> is one of the array kinds.</summary>
+    internal static bool IsArrayKind(LiteralKind kind)
     {
         return kind
             is LiteralKind.StringArray
@@ -85,6 +90,14 @@ internal static class VariableConversion
                 or LiteralKind.BooleanArray
                 or LiteralKind.DateTimeOffsetArray
                 or LiteralKind.GuidArray;
+    }
+
+    /// <summary>Gives the sentence that names the fix when the only problem is a date-time string with no offset; the text itself is never quoted.</summary>
+    private static string OffsetFixFor(LiteralValue match, LiteralKind kind)
+    {
+        return kind == LiteralKind.DateTimeOffset && match.TryAsString(out string? text) && DateTimeText.IsMissingOffset(text)
+            ? $" {DateTimeText.OffsetFix}"
+            : string.Empty;
     }
 
     private static bool TryConvertScalar(LiteralValue match, LiteralKind kind, out LiteralValue value)
@@ -115,14 +128,7 @@ internal static class VariableConversion
 
                 return false;
             case LiteralKind.DateTimeOffset when match.Kind == LiteralKind.String:
-                if (
-                    DateTimeOffset.TryParse(
-                        match.AsString(),
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.RoundtripKind,
-                        out DateTimeOffset date
-                    )
-                )
+                if (DateTimeText.TryParse(match.AsString(), out DateTimeOffset date))
                 {
                     value = LiteralValue.OfDateTimeOffset(date);
                     return true;

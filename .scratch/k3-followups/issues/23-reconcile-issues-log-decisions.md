@@ -6,11 +6,11 @@
 
 **Status:** done
 
-- [ ] Rows 15, 18, 19 and 27 carry their final status and a pointer to the deciding ticket or ADR
-- [ ] The `culture` removal and the counted-operator overloads are recorded
-- [ ] The "Summary for review" lists only genuinely open questions
-- [ ] No decision is left unrecorded in either the issues-log or ADR-0005
-- [ ] `dotnet build` and `dotnet csharpier check .` pass
+- [x] Rows 15, 18, 19 and 27 carry their final status and a pointer to the deciding ticket or ADR
+- [x] The `culture` removal and the counted-operator overloads are recorded
+- [x] The "Summary for review" lists only genuinely open questions
+- [x] No decision is left unrecorded in either the issues-log or ADR-0005
+- [x] `dotnet build` and `dotnet csharpier check .` pass
 
 Source: owner decisions 2026-10-03. See [issues-log](../../k3-conformance/issues-log.md).
 

@@ -1,6 +1,6 @@
 # Library roadmap: feature candidates, impact/complexity, and verdicts
 
-**Status:** brainstorm, re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
+**Status:** closed 2026-10-09 (decisions below). Re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
 
 ## Purpose
 
@@ -15,6 +15,22 @@ reason), or **Don't do** (rejected, with a reason — not "maybe later").
 
 Impact/complexity are both Low/Medium/High. This is a prioritization
 write-up, not a commitment — nothing here is scheduled.
+
+## Decisions (grilled 2026-10-09)
+
+These settle the open items in the tables below.
+
+| Item | Decision |
+| --- | --- |
+| Compile-cost regression | Already resolved by k3-hardening 18 and 19 (quadratic fold in `Analyzer.Build`; budget met). No new work. |
+| Source-generator predicate registration | Spec it: [predicate-source-generator](../predicate-source-generator/spec.md). |
+| Date/time day-of-week, month, time-window | Spec it with ISO 8601 and UTC or fixed offset only, no IANA names: [datetime-offset-predicates](../datetime-offset-predicates/spec.md). |
+| Unicode normalization | Document the limitation only: [predicate-catalog ticket 14](../predicate-catalog/issues/14-document-ordinal-string-comparison-and-unicode-normalization.md). |
+| `RuleDiff.Compare` with `CompilerOptions` | Already built (commit 681581f, k3-followups 38) and tested. No ticket. |
+| Satisfying assignment, substitution, tracing | Stay deferred ([deferred-features](../deferred-features/spec.md)). |
+| NNF print mode, lint spans and paths | Stay "Not now". |
+| Equation rendering | Spec it: [equation-rendering](../equation-rendering/spec.md). |
+| Predicate catalog questions 2, 4, 7, 8 | Already resolved; the "gated by open questions" notes below are stale. |
 
 ## Re-score (2026-10-03, k3-hardening ticket 01)
 
@@ -38,7 +54,7 @@ the reason given). The others are unchanged. Impact and complexity describe the 
 | Date/time: calendar/holiday predicates *in the engine* | — | — | **Don't do** | Unchanged. |
 | Culture/case: extend `EqualsConfigurable` to `StartsWith`/`EndsWith`/`Contains`/`SetEquals` | — | — | **Obsolete** | `culture` was removed; `EqualsConfigurable` is ordinal with `ignoreCase` and `trim` only (k3-followups 12 and 20). Only an `ignoreCase`/`trim` extension remains, folded into the predicate-catalog batch above. The Turkish-I test pattern went with the culture argument. |
 | Unicode normalization (NFC/NFKC) support | Low–Medium | Medium | Not now | Unchanged. Ordinal comparison makes the limitation more visible, so document it rather than build it. |
-| Starter templates (`dotnet new`) | Medium | Low | Do (sequenced) | The API surface moved a lot (TruthValue predicates, breaking renames). Sequence after the breaking-change notes (k3-hardening 02) so templates are written once against the settled API. |
+| Starter templates (`dotnet new`) | Medium | Low | Do (sequenced) | The API surface moved a lot (TruthValue predicates, breaking renames). Sequence after the breaking-change notes (k3-hardening 02) so templates are written once against the settled API. 2026-10-09: the breaking-change notes are done, but the packages are not published, so a `dotnet new` pack waits for the first NuGet release. In-repo samples ship first ([starter-samples](../starter-samples/spec.md)). |
 | Rule complexity metrics (incl. BDD-node-count) | Medium | Low | **Do now**, re-shaped | Still not public: `RuleMetrics` exists only as a test helper, and `src/TruthWeaver/Metrics/TruthWeaverMetrics.cs` is runtime instrumentation, not rule metrics. The analyzer is now dual-rail, so a BDD node count must say which rail, or the union. `MaxRewriteNodeCount` and `ExpressionTools.Size` already define "tree size" for the rewrites. |
 | Joining compiled rules via an operator | High | Medium–High | Do (sequenced) | Unchanged. Still needs the re-validate design; the builder can express the join once both trees exist. |
 | Public `RuleFuzzer` (structural/AST fuzzing) | Medium | Low–Medium | **Do now**, re-shaped | The generator is now `K3RuleGenerator` plus `K3Oracle` in `tests/TruthWeaver.Tests/TestSupport` and drives the equivalence, rewrite and analyzer tests. Publishing it means moving it into `TruthWeaver.Testing` and decoupling it from the test predicates; the oracle gives a ready correctness check. More than "nearly free". |

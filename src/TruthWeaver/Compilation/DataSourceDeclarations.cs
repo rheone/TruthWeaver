@@ -12,7 +12,7 @@ using TruthWeaver.Abstractions;
 /// </summary>
 public sealed class DataSourceDeclarations : IEnumerable<string>
 {
-    private readonly Dictionary<string, IQueryValidator?> declared = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IQueryValidator?> declared = [with(StringComparer.Ordinal)];
 
     /// <summary>Gets the declared names.</summary>
     public IReadOnlyCollection<string> Names => this.declared.Keys;

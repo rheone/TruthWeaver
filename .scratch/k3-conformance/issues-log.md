@@ -9,10 +9,10 @@ Reconciled 2026-10-03 after the k3-followups tickets 01-19. The evidence is [res
 - **Open**: needs the repo owner's confirmation. Nothing blocks the work; each has a working default.
 - **Info**: recorded for information, no decision needed.
 
-Still open (nothing blocks the work; each has a working default):
+Still open: none. Items 1 and 2 below are resolved (kept for the record):
 
 1. **Ternary precedence wording (row 18).** Resolved 2026-10-03 (k3-followups 31): the strict parser stays and ADR-0005 decision 13 now says the ternary is not an operand of a bare infix expression and must be parenthesised.
-2. **Predicate catalog.** Questions 2, 4, 7 and 8 in [`.scratch/predicate-catalog/k3-gap-list.md`](../predicate-catalog/k3-gap-list.md) (`NotX` shape, collection `In`/`NotIn`, bounds, selector shapes) are deferred and gate any implementation of the 49 missing inventory predicates. Questions 1, 3, 5 and 6 are resolved (k3-followups 10).
+2. **Predicate catalog.** Resolved. Questions 1 to 8 in [`.scratch/predicate-catalog/k3-gap-list.md`](../predicate-catalog/k3-gap-list.md) are all answered, and every inventory predicate is implemented (2026-10-09).
 
 Answered by the owner on 2026-10-03 and recorded (ADR-0005 "Open decisions"): rows 15, 19 and 27 (Kept or Resolved in the table), the `EqualsConfigurable` `culture` removal (row 42) and the counted-operator enumerable overloads (row 43).
 

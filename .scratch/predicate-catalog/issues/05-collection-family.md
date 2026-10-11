@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] The failing test run is shown before the implementation
+- [ ] The failing test run is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
 - [x] Each listed predicate is registerable and returns the documented value for a null, empty, one-item and many-item collection
 - [x] `ContainsAny`, `ContainsAll` and `IsSubsetOf` are registerable, each defined in one line in its XML docs, with tests that distinguish the three
 - [x] `In` and `NotIn` over a collection selector are a compile error

@@ -4,6 +4,10 @@ using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
+using TruthWeaver.Evaluation;
+using TruthWeaver.Json;
+using TruthWeaver.Parsing;
 
 /// <summary>
 /// A fluent, programmatic way to assemble a rule without hand-writing DSL/JSON/YAML text —
@@ -35,6 +39,35 @@ public abstract class RuleBuilder
         return new ConstantBuilder(value);
     }
 
+    /// <summary>
+    /// Creates a builder that holds the tree of an already compiled rule, so a host can join rules with any builder
+    /// operator without a JSON round trip.
+    /// </summary>
+    /// <remarks>
+    /// The source rule may come from another registry, so the join is not trusted. Compiling the joined builder
+    /// validates every term again against the destination registry. A predicate missing there, or with a different
+    /// schema, gives the normal compile diagnostics. Data-source declarations (<c>TRE0024</c>) and the destination
+    /// <c>CompilerOptions</c> limits apply to the joined tree. A term that appears in both source rules is one term in
+    /// the joined rule, so its predicate runs once per evaluation.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// CompilationResult&lt;User&gt; joined = RuleBuilder
+    ///     .And(RuleBuilder.FromCompiled(baseRule), RuleBuilder.FromCompiled(tenantRule))
+    ///     .Compile(compiler);
+    /// </code>
+    /// </example>
+    /// <typeparam name="TContext">The application context type of the rule. Joined rules share it.</typeparam>
+    /// <param name="rule">The compiled rule whose tree the builder holds.</param>
+    /// <returns>A builder for the rule's tree.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder FromCompiled<TContext>(CompiledRule<TContext> rule)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+
+        return new CompiledBuilder(rule.Root);
+    }
+
     /// <summary>Creates a builder for a zero-argument predicate reference.</summary>
     /// <param name="name">The predicate's registered name.</param>
     /// <returns>A builder for the term.</returns>
@@ -58,73 +91,71 @@ public abstract class RuleBuilder
     }
 
     /// <summary>Creates a builder for logical conjunction.</summary>
-    /// <param name="operands">The conjuncts (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="And(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
-    /// <returns>A builder for the <c>AND</c> expression.</returns>
+    /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.True)</c>; one operand is itself.</param>
+    /// <remarks>
+    /// Fewer than two operands fold when the rule is built, the same as for the <see cref="And(IEnumerable{RuleBuilder})"/>
+    /// overload: an empty array yields <c>Constant(TruthValue.True)</c>, the identity of <c>AND</c>, and a single operand yields that operand unchanged.
+    /// An array and a list of the same operands give the same rule.
+    /// </remarks>
+    /// <returns>A builder for the <c>AND</c> expression, or the folded constant or operand.</returns>
     public static RuleBuilder And(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("And", operands);
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return operands.Length switch
+        {
+            0 => Constant(TruthValue.True),
+            1 => operands[0],
+            _ => new OperatorBuilder("And", operands),
+        };
     }
 
     /// <summary>
-    /// Creates a builder for <c>AND</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="And(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="And(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>AND</c> from a sequence of operands whose length is only known at run time. It gives the same
+    /// rule as the array overload <see cref="And(RuleBuilder[])"/> for the same operands: an empty sequence yields
+    /// <c>Constant(TruthValue.True)</c>, a single operand yields that operand unchanged, and two or more operands build the full node. The
+    /// sequence is enumerated once.
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>AND</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.And(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.And(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.And(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
-    /// </code>
-    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder And(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.True, And);
+        return And(Materialize(operands));
     }
 
     /// <summary>Creates a builder for logical disjunction.</summary>
-    /// <param name="operands">The disjuncts (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Or(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
-    /// <returns>A builder for the <c>OR</c> expression.</returns>
+    /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.False)</c>; one operand is itself.</param>
+    /// <remarks>
+    /// Fewer than two operands fold when the rule is built, the same as for the <see cref="Or(IEnumerable{RuleBuilder})"/>
+    /// overload: an empty array yields <c>Constant(TruthValue.False)</c>, the identity of <c>OR</c>, and a single operand yields that operand unchanged.
+    /// An array and a list of the same operands give the same rule.
+    /// </remarks>
+    /// <returns>A builder for the <c>OR</c> expression, or the folded constant or operand.</returns>
     public static RuleBuilder Or(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("Or", operands);
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return operands.Length switch
+        {
+            0 => Constant(TruthValue.False),
+            1 => operands[0],
+            _ => new OperatorBuilder("Or", operands),
+        };
     }
 
     /// <summary>
-    /// Creates a builder for <c>OR</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="Or(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="Or(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>OR</c> from a sequence of operands whose length is only known at run time. It gives the same
+    /// rule as the array overload <see cref="Or(RuleBuilder[])"/> for the same operands: an empty sequence yields
+    /// <c>Constant(TruthValue.False)</c>, a single operand yields that operand unchanged, and two or more operands build the full node. The
+    /// sequence is enumerated once.
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>OR</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.Or(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.Or(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.Or(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
-    /// </code>
-    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Or(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.False, Or);
+        return Or(Materialize(operands));
     }
 
     /// <summary>Creates a builder for logical negation.</summary>
@@ -194,7 +225,10 @@ public abstract class RuleBuilder
 
     /// <summary>Creates a builder for n-ary parity (<c>PARITY(a, b, ...)</c>): <c>Unknown</c> if any operand is <c>Unknown</c>, otherwise <c>True</c> for an odd number of <c>True</c> operands.</summary>
     /// <param name="operands">The operands (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Parity(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
+    /// <remarks>
+    /// <c>PARITY</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="Parity(IEnumerable{RuleBuilder})"/> overload.
+    /// </remarks>
     /// <returns>A builder for the <c>PARITY</c> expression.</returns>
     public static RuleBuilder Parity(params RuleBuilder[] operands)
     {
@@ -202,139 +236,126 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
-    /// Creates a builder for <c>PARITY</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="Parity(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="Parity(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>PARITY</c> from a sequence of operands whose length is only known at run time. It builds the
+    /// same node and gets the same compile diagnostic as the array overload <see cref="Parity(RuleBuilder[])"/>. A short or empty
+    /// sequence is <b>not</b> folded, because <c>PARITY</c> has no identity constant. The sequence is enumerated once.
     /// </summary>
-    /// <param name="operands">The operands; may be empty or hold a single item.</param>
-    /// <returns>A builder for the folded or full <c>PARITY</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.Parity(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.Parity(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.Parity(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
-    /// </code>
-    /// </example>
+    /// <param name="operands">The operands (at least two, otherwise a compile diagnostic).</param>
+    /// <returns>A builder for the <c>PARITY</c> expression.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Parity(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.False, Parity);
+        return Parity(Materialize(operands));
     }
 
     /// <summary>Creates a builder for <c>ANY(...)</c>: at least one operand is true (<c>AtLeast(1, ...)</c>).</summary>
-    /// <param name="operands">The operands (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Any(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
-    /// <returns>A builder for the <c>ANY</c> expression.</returns>
+    /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.False)</c>; one operand is itself.</param>
+    /// <remarks>
+    /// Fewer than two operands fold when the rule is built, the same as for the <see cref="Any(IEnumerable{RuleBuilder})"/>
+    /// overload: an empty array yields <c>Constant(TruthValue.False)</c>, the identity of <c>ANY</c>, and a single operand yields that operand unchanged.
+    /// An array and a list of the same operands give the same rule.
+    /// </remarks>
+    /// <returns>A builder for the <c>ANY</c> expression, or the folded constant or operand.</returns>
     public static RuleBuilder Any(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("Any", operands);
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return operands.Length switch
+        {
+            0 => Constant(TruthValue.False),
+            1 => operands[0],
+            _ => new OperatorBuilder("Any", operands),
+        };
     }
 
     /// <summary>
-    /// Creates a builder for <c>ANY</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="Any(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="Any(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>ANY</c> from a sequence of operands whose length is only known at run time. It gives the same
+    /// rule as the array overload <see cref="Any(RuleBuilder[])"/> for the same operands: an empty sequence yields
+    /// <c>Constant(TruthValue.False)</c>, a single operand yields that operand unchanged, and two or more operands build the full node. The
+    /// sequence is enumerated once.
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>ANY</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.Any(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.Any(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.Any(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
-    /// </code>
-    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Any(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.False, Any);
+        return Any(Materialize(operands));
     }
 
     /// <summary>Creates a builder for <c>ALL(...)</c>: every operand is true (<c>AtLeast(n, ...)</c>).</summary>
-    /// <param name="operands">The operands (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="All(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
-    /// <returns>A builder for the <c>ALL</c> expression.</returns>
+    /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.True)</c>; one operand is itself.</param>
+    /// <remarks>
+    /// Fewer than two operands fold when the rule is built, the same as for the <see cref="All(IEnumerable{RuleBuilder})"/>
+    /// overload: an empty array yields <c>Constant(TruthValue.True)</c>, the identity of <c>ALL</c>, and a single operand yields that operand unchanged.
+    /// An array and a list of the same operands give the same rule.
+    /// </remarks>
+    /// <returns>A builder for the <c>ALL</c> expression, or the folded constant or operand.</returns>
     public static RuleBuilder All(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("All", operands);
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return operands.Length switch
+        {
+            0 => Constant(TruthValue.True),
+            1 => operands[0],
+            _ => new OperatorBuilder("All", operands),
+        };
     }
 
     /// <summary>
-    /// Creates a builder for <c>ALL</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="All(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="All(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>ALL</c> from a sequence of operands whose length is only known at run time. It gives the same
+    /// rule as the array overload <see cref="All(RuleBuilder[])"/> for the same operands: an empty sequence yields
+    /// <c>Constant(TruthValue.True)</c>, a single operand yields that operand unchanged, and two or more operands build the full node. The
+    /// sequence is enumerated once.
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>ALL</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.All(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.All(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.All(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
-    /// </code>
-    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder All(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.True, All);
+        return All(Materialize(operands));
     }
 
     /// <summary>Creates a builder for <c>NONE(...)</c>: no operand is true (<c>AtMost(0, ...)</c>).</summary>
-    /// <param name="operands">The operands (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="None(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
-    /// <returns>A builder for the <c>NONE</c> expression.</returns>
+    /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.True)</c>; one operand is its negation.</param>
+    /// <remarks>
+    /// Fewer than two operands fold when the rule is built, the same as for the <see cref="None(IEnumerable{RuleBuilder})"/>
+    /// overload: an empty array yields <c>Constant(TruthValue.True)</c>, the identity of <c>NONE</c>, and a single operand yields its negation.
+    /// An array and a list of the same operands give the same rule.
+    /// </remarks>
+    /// <returns>A builder for the <c>NONE</c> expression, or the folded constant or operand.</returns>
     public static RuleBuilder None(params RuleBuilder[] operands)
     {
-        return new OperatorBuilder("None", operands);
+        ArgumentNullException.ThrowIfNull(operands);
+
+        return operands.Length switch
+        {
+            0 => Constant(TruthValue.True),
+            1 => Not(operands[0]),
+            _ => new OperatorBuilder("None", operands),
+        };
     }
 
     /// <summary>
-    /// Creates a builder for <c>NONE</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="None(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.True)</c> and a single operand yields its negation. Two or more
-    /// operands build the same node as <see cref="None(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>NONE</c> from a sequence of operands whose length is only known at run time. It gives the same
+    /// rule as the array overload <see cref="None(RuleBuilder[])"/> for the same operands: an empty sequence yields
+    /// <c>Constant(TruthValue.True)</c>, a single operand yields its negation, and two or more operands build the full node. The
+    /// sequence is enumerated once.
     /// </summary>
     /// <param name="operands">The operands; may be empty or hold a single item.</param>
     /// <returns>A builder for the folded or full <c>NONE</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.None(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.None(list);  // IEnumerable overload: folds to Not(x)
-    /// RuleBuilder.None(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.True)
-    /// </code>
-    /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder None(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.True, None, RuleBuilder.Not);
+        return None(Materialize(operands));
     }
 
     /// <summary>Creates a builder for the n-ary "exactly one of these is true" operator.</summary>
     /// <param name="operands">The operands (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="ExactlyOne(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
+    /// <remarks>
+    /// <c>EXACTLYONE</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="ExactlyOne(IEnumerable{RuleBuilder})"/> overload.
+    /// </remarks>
     /// <returns>A builder for the <c>ExactlyOne</c> expression.</returns>
     public static RuleBuilder ExactlyOne(params RuleBuilder[] operands)
     {
@@ -342,29 +363,16 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
-    /// Creates a builder for <c>ExactlyOne</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="ExactlyOne(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.False)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="ExactlyOne(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>EXACTLYONE</c> from a sequence of operands whose length is only known at run time. It builds the
+    /// same node and gets the same compile diagnostic as the array overload <see cref="ExactlyOne(RuleBuilder[])"/>. A short or empty
+    /// sequence is <b>not</b> folded, because <c>EXACTLYONE</c> has no identity constant. The sequence is enumerated once.
     /// </summary>
-    /// <param name="operands">The operands; may be empty or hold a single item.</param>
-    /// <returns>A builder for the folded or full <c>ExactlyOne</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.ExactlyOne(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.ExactlyOne(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.ExactlyOne(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.False)
-    /// </code>
-    /// </example>
+    /// <param name="operands">The operands (at least two, otherwise a compile diagnostic).</param>
+    /// <returns>A builder for the <c>EXACTLYONE</c> expression.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder ExactlyOne(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.False, ExactlyOne);
+        return ExactlyOne(Materialize(operands));
     }
 
     /// <summary>
@@ -372,7 +380,10 @@ public abstract class RuleBuilder
     /// <c>False</c> pass through).
     /// </summary>
     /// <param name="operands">The operands in priority order (at least two).</param>
-    /// <remarks>An array (or any <c>params</c> argument list) binds this overload, which builds a node the rule compiler rejects for fewer than two operands (<c>MalformedTree</c>). A <see cref="List{T}"/> or other sequence binds <see cref="Coalesce(IEnumerable{RuleBuilder})"/>, which folds a short sequence instead; see the example there.</remarks>
+    /// <remarks>
+    /// <c>COALESCE</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
+    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="Coalesce(IEnumerable{RuleBuilder})"/> overload.
+    /// </remarks>
     /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)
     {
@@ -380,29 +391,16 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
-    /// Creates a builder for <c>COALESCE</c> from a sequence of operands whose length is only known at run time. Unlike
-    /// <see cref="Coalesce(RuleBuilder[])"/>, a short sequence is folded at build time instead of being rejected: an empty
-    /// sequence yields <c>Constant(TruthValue.Unknown)</c> and a single operand yields that operand unchanged. Two or more
-    /// operands build the same node as <see cref="Coalesce(RuleBuilder[])"/>. The sequence is enumerated once.
+    /// Creates a builder for <c>COALESCE</c> from a sequence of operands whose length is only known at run time. It builds the
+    /// same node and gets the same compile diagnostic as the array overload <see cref="Coalesce(RuleBuilder[])"/>. A short or empty
+    /// sequence is <b>not</b> folded, because <c>COALESCE</c> has no identity constant. The sequence is enumerated once.
     /// </summary>
-    /// <param name="operands">The operands; may be empty or hold a single item.</param>
-    /// <returns>A builder for the folded or full <c>COALESCE</c> expression.</returns>
-    /// <example>
-    /// The same single operand through both overloads:
-    /// <code>
-    /// RuleBuilder x = RuleBuilder.Predicate("isActive");
-    /// RuleBuilder[] array = [x];
-    /// List&lt;RuleBuilder&gt; list = [x];
-    ///
-    /// RuleBuilder.Coalesce(array); // params overload: builds a node the rule compiler rejects (needs at least two operands)
-    /// RuleBuilder.Coalesce(list);  // IEnumerable overload: folds to x
-    /// RuleBuilder.Coalesce(new List&lt;RuleBuilder&gt;()); // folds to Constant(TruthValue.Unknown)
-    /// </code>
-    /// </example>
+    /// <param name="operands">The operands (at least two, otherwise a compile diagnostic).</param>
+    /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Coalesce(IEnumerable<RuleBuilder> operands)
     {
-        return FromSequence(operands, TruthValue.Unknown, Coalesce);
+        return Coalesce(Materialize(operands));
     }
 
     /// <summary>
@@ -540,6 +538,18 @@ public abstract class RuleBuilder
         return new ThresholdBuilder("GreaterThan", k, operands);
     }
 
+    /// <summary>
+    /// Creates a builder for "more than <paramref name="k"/> of these operands are true" from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operands">The operands.</param>
+    /// <returns>A builder for the <c>GreaterThan</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder GreaterThan(int k, IEnumerable<RuleBuilder> operands)
+    {
+        return GreaterThan(k, Materialize(operands));
+    }
+
     /// <summary>Creates a builder for "fewer than <paramref name="k"/> of these operands are true".</summary>
     /// <param name="k">The threshold.</param>
     /// <param name="operands">The operands.</param>
@@ -547,6 +557,18 @@ public abstract class RuleBuilder
     public static RuleBuilder LessThan(int k, params RuleBuilder[] operands)
     {
         return new ThresholdBuilder("LessThan", k, operands);
+    }
+
+    /// <summary>
+    /// Creates a builder for "fewer than <paramref name="k"/> of these operands are true" from a sequence of operands. It is meant for a sequence whose length is only known at run time; it builds the same node and goes through the same count validation: a short or empty sequence is <b>not</b> folded (a counted operator has no identity constant), so an unmeetable count is the same compile diagnostic as with <c>params</c>. An empty sequence is therefore probably a bug. The sequence is enumerated once.
+    /// </summary>
+    /// <param name="k">The threshold.</param>
+    /// <param name="operands">The operands.</param>
+    /// <returns>A builder for the <c>LessThan</c> expression.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder LessThan(int k, IEnumerable<RuleBuilder> operands)
+    {
+        return LessThan(k, Materialize(operands));
     }
 
     /// <summary>Creates a builder for "exactly <paramref name="k"/> of these operands are true".</summary>
@@ -572,8 +594,20 @@ public abstract class RuleBuilder
 
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
+    /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// A predicate in the tree is given the same argument name twice. JSON cannot hold both, and keeping one would hide the
+    /// mistake; <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.DuplicateArgument"/> instead.
+    /// </exception>
     public string ToJson()
     {
+        List<Diagnostic> problems = [];
+        this.CollectProblems(TreePath.Root, problems);
+        if (problems.Find(d => d.Code == DiagnosticCodes.DuplicateArgument) is { } duplicate)
+        {
+            throw new InvalidOperationException(duplicate.Message);
+        }
+
         return this.ToNode().ToJsonString();
     }
 
@@ -586,10 +620,30 @@ public abstract class RuleBuilder
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> Compile<TContext>(RuleCompiler<TContext> compiler)
     {
-        return compiler.CompileJson(this.ToJson());
+        // A mistake that the JSON shape cannot carry (a repeated argument name) is reported here, before rendering.
+        List<Diagnostic> problems = [];
+        this.CollectProblems(TreePath.Root, problems);
+        return problems.Count > 0 ? new CompilationResult<TContext>(null, problems) : compiler.CompileJson(this.ToJson());
     }
 
     private protected abstract JsonNode ToNode();
+
+    /// <summary>
+    /// Collects the mistakes in this tree that the JSON rendering would hide, each as an error located by its path in the
+    /// rendered tree. The default tree has none.
+    /// </summary>
+    /// <param name="path">The path of this builder's node in the rendered tree.</param>
+    /// <param name="problems">Receives the diagnostics.</param>
+    private protected virtual void CollectProblems(string path, List<Diagnostic> problems) { }
+
+    private static void CollectOperandProblems(string path, IReadOnlyList<RuleBuilder> operands, List<Diagnostic> problems)
+    {
+        string operandsPath = TreePath.Property(path, "operands");
+        for (int i = 0; i < operands.Count; i++)
+        {
+            operands[i].CollectProblems(TreePath.Index(operandsPath, i), problems);
+        }
+    }
 
     /// <summary>Rejects a null sequence and materialises it once, without folding, for the counted operators.</summary>
     private static RuleBuilder[] Materialize(IEnumerable<RuleBuilder> operands)
@@ -599,30 +653,7 @@ public abstract class RuleBuilder
         return [.. operands];
     }
 
-    /// <summary>
-    /// Folds a run-time operand sequence: empty becomes the operator's identity constant, one item becomes
-    /// <paramref name="single"/> applied to it (or the item itself), and two or more build the full operator node.
-    /// </summary>
-    private static RuleBuilder FromSequence(
-        IEnumerable<RuleBuilder> operands,
-        TruthValue emptyValue,
-        Func<RuleBuilder[], RuleBuilder> create,
-        Func<RuleBuilder, RuleBuilder>? single = null
-    )
-    {
-        ArgumentNullException.ThrowIfNull(operands);
-
-        // Materialise once so a single-pass sequence is safe and the count decides the fold.
-        RuleBuilder[] items = [.. operands];
-        return items.Length switch
-        {
-            0 => Constant(emptyValue),
-            1 => single is null ? items[0] : single(items[0]),
-            _ => create(items),
-        };
-    }
-
-    private static JsonNode ValueToNode(object value)
+    private static JsonNode ValueToNode(object? value)
     {
         return value switch
         {
@@ -636,7 +667,7 @@ public abstract class RuleBuilder
             Guid g => JsonValue.Create(g.ToString()),
             VariableReference reference => new JsonObject { ["from"] = reference.Source, ["query"] = reference.Query },
             System.Collections.IEnumerable items => ArrayToNode(items),
-            _ => throw new ArgumentException($"Unsupported argument value type '{value.GetType()}'.", nameof(value)),
+            _ => throw new ArgumentException($"Unsupported argument value type '{value?.GetType()}'.", nameof(value)),
         };
     }
 
@@ -667,6 +698,17 @@ public abstract class RuleBuilder
         return array;
     }
 
+    private sealed class CompiledBuilder(Expression root) : RuleBuilder
+    {
+        private readonly Expression root = root;
+
+        private protected override JsonNode ToNode()
+        {
+            // Same printer as CompiledRule.PrintJson, so the tree re-enters the pipeline in the JSON shape.
+            return JsonTreePrinter.ToNode(this.root);
+        }
+    }
+
     private sealed class ConstantBuilder(TruthValue value) : RuleBuilder
     {
         private readonly TruthValue value = value;
@@ -688,6 +730,49 @@ public abstract class RuleBuilder
         private readonly string name = name;
         private readonly (string Name, object Value)[] arguments = arguments;
 
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            // The compiler matches argument names ignoring case, so two spellings of one name are one argument given twice.
+            HashSet<string> seen = [with(StringComparer.OrdinalIgnoreCase)];
+            foreach ((string argName, object? argValue) in this.arguments)
+            {
+                string argumentPath = TreePath.Property(TreePath.Property(path, "args"), argName);
+
+                // A value the JSON shape cannot carry is a rule mistake, so it is a diagnostic and never an exception from Compile.
+                if (UnsupportedValueType(argValue) is { } typeName)
+                {
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.ArgumentTypeMismatch,
+                            $"Argument '{argName}' of predicate '{this.name}' has an unsupported value type '{typeName}'.",
+                            SourceSpan.None,
+                            expected: "a string, bool, int, long, double, decimal, DateTimeOffset, Guid, Arg.From(...) or a sequence of those",
+                            found: $"'{typeName}'",
+                            path: argumentPath
+                        )
+                    );
+                }
+
+                if (!seen.Add(argName))
+                {
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.DuplicateArgument,
+                            $"Argument '{argName}' of predicate '{this.name}' is given more than once.",
+                            SourceSpan.None,
+                            expected: "each argument once",
+                            found: $"'{argName}' repeated",
+                            suggestion: new DiagnosticSuggestion(
+                                DiagnosticSuggestionKind.Hint,
+                                $"Remove one '{argName}' argument."
+                            ),
+                            path: argumentPath
+                        )
+                    );
+                }
+            }
+        }
+
         private protected override JsonNode ToNode()
         {
             JsonObject node = new() { ["predicate"] = this.name };
@@ -704,12 +789,44 @@ public abstract class RuleBuilder
 
             return node;
         }
+
+        /// <summary>
+        /// Finds the first value, at any depth of a sequence, that <see cref="ValueToNode"/> cannot render.
+        /// </summary>
+        /// <returns>The offending type's name (<c>null</c> for a null value), or <see langword="null"/> when every value is supported.</returns>
+        private static string? UnsupportedValueType(object? value)
+        {
+            switch (value)
+            {
+                case null:
+                    return "null";
+                case string or bool or int or long or double or decimal or DateTimeOffset or Guid or VariableReference:
+                    return null;
+                case System.Collections.IEnumerable items:
+                    foreach (object? item in items)
+                    {
+                        if (UnsupportedValueType(item) is { } nested)
+                        {
+                            return nested;
+                        }
+                    }
+
+                    return null;
+                default:
+                    return value.GetType().ToString();
+            }
+        }
     }
 
     private sealed class OperatorBuilder(string op, IReadOnlyList<RuleBuilder> operands) : RuleBuilder
     {
         private readonly string op = op;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
 
         private protected override JsonNode ToNode()
         {
@@ -726,6 +843,11 @@ public abstract class RuleBuilder
         private readonly int min = min;
         private readonly int max = max;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
 
         private protected override JsonNode ToNode()
         {
@@ -744,6 +866,11 @@ public abstract class RuleBuilder
         private readonly string op = op;
         private readonly int k = k;
         private readonly IReadOnlyList<RuleBuilder> operands = operands;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.operands, problems);
+        }
 
         private protected override JsonNode ToNode()
         {

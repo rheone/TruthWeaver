@@ -250,6 +250,26 @@ public sealed class DslParserDiagnosticTests
         Assert.Single(between.Operands);
     }
 
+    /// <summary>
+    /// A threshold that is not a whole number in the int range is a syntax error with the shape BETWEEN's bounds give,
+    /// never a silent <c>0</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("AtLeast(1.5, a, b)", "'1.5'")]
+    [InlineData("AtLeast(99999999999, a, b)", "'99999999999'")]
+    [InlineData("AtMost(2.0, a, b)", "'2.0'")]
+    public void Parse_ThresholdWithABadK_ReportsTheSameDiagnosticShapeAsBetween_Test(string source, string found)
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(source);
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.StartsWith("Expected an integer threshold as ", diagnostic.Message);
+        Assert.Equal("an integer", diagnostic.Expected);
+        Assert.Equal(found, diagnostic.Found);
+        ThresholdNode threshold = Assert.IsType<ThresholdNode>(root);
+        Assert.Equal(2, threshold.Operands.Count);
+    }
+
     /// <summary>A call without its opening parenthesis expects one and reports the token it found.</summary>
     [Fact]
     public void Parse_CallWithoutAnOpeningParenthesis_ExpectsAParenthesis_Test()

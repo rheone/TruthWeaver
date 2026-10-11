@@ -3,6 +3,7 @@ namespace TruthWeaver.Tests;
 using System.Text;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -24,7 +25,7 @@ public sealed class CanonicalizeTests
 
         for (int i = 0; i < 600; i++)
         {
-            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3);
+            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
             K3Rule? original = K3Rule.TryCreate(generated.Text, 3);
             if (original is null)
             {
@@ -44,7 +45,7 @@ public sealed class CanonicalizeTests
                 failures.Add($"{generated.Text}: not deterministic ({once})");
             }
 
-            if (RuleMetrics.NodeCount(canonical.Compiled) > RuleMetrics.NodeCount(original.Compiled))
+            if (PrintedTreeSize.NodeCount(canonical.Compiled) > PrintedTreeSize.NodeCount(original.Compiled))
             {
                 failures.Add($"{generated.Text}: canonical form is larger ({once})");
             }
@@ -182,7 +183,7 @@ public sealed class CanonicalizeTests
         }
 
         // Nothing was dropped or folded: the node count is unchanged for these shapes.
-        Assert.Equal(RuleMetrics.NodeCount(original.Compiled), RuleMetrics.NodeCount(canonical.Compiled));
+        Assert.Equal(PrintedTreeSize.NodeCount(original.Compiled), PrintedTreeSize.NodeCount(canonical.Compiled));
     }
 
     /// <summary>

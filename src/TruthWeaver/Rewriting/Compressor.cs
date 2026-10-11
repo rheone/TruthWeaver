@@ -46,7 +46,7 @@ internal static class Compressor
     /// <summary>One top-down sweep. The memo keeps shared sub-trees shared and stops a repeated operand being rewritten twice.</summary>
     private sealed class Pass
     {
-        private readonly Dictionary<Expression, Expression> memo = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Expression, Expression> memo = [with(ReferenceEqualityComparer.Instance)];
 
         public Expression Visit(Expression node)
         {
@@ -58,156 +58,6 @@ internal static class Compressor
             Expression result = this.Match(node) ?? ExpressionTools.MapChildren(node, this.Visit);
             this.memo[node] = result;
             return result;
-        }
-
-        /// <summary><c>XOR(l, r) = (l AND NOT r) OR (NOT l AND r)</c>.</summary>
-        private static bool IsXor(
-            Expression first,
-            Expression second,
-            [NotNullWhen(true)] out Expression? left,
-            [NotNullWhen(true)] out Expression? right
-        )
-        {
-            left = null;
-            right = null;
-            if (
-                first is AndExpression { Operands: { Count: 2 } a }
-                && second is AndExpression { Operands: { Count: 2 } b }
-                && a[1] is NotExpression notRight
-                && b[0] is NotExpression notLeft
-                && notLeft.Operand.Equals(a[0])
-                && notRight.Operand.Equals(b[1])
-            )
-            {
-                left = a[0];
-                right = b[1];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary><c>EQUIVALENT(l, r) = (l AND r) OR (NOT l AND NOT r)</c>.</summary>
-        private static bool IsEquivalent(
-            Expression first,
-            Expression second,
-            [NotNullWhen(true)] out Expression? left,
-            [NotNullWhen(true)] out Expression? right
-        )
-        {
-            left = null;
-            right = null;
-            if (
-                first is AndExpression { Operands: { Count: 2 } a }
-                && second is AndExpression { Operands: { Count: 2 } b }
-                && b[0] is NotExpression notLeft
-                && b[1] is NotExpression notRight
-                && notLeft.Operand.Equals(a[0])
-                && notRight.Operand.Equals(a[1])
-            )
-            {
-                left = a[0];
-                right = a[1];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary><c>If(c, t, f) = (c AND t) OR (NOT c AND f) OR (t AND f)</c> (the multiplexer plus the consensus term).</summary>
-        private static bool IsIf(
-            EquatableArray<Expression> ops,
-            [NotNullWhen(true)] out Expression? condition,
-            [NotNullWhen(true)] out Expression? whenTrue,
-            [NotNullWhen(true)] out Expression? whenFalse
-        )
-        {
-            condition = null;
-            whenTrue = null;
-            whenFalse = null;
-            if (
-                ops[0] is AndExpression { Operands: { Count: 2 } first }
-                && ops[1] is AndExpression { Operands: { Count: 2 } second }
-                && ops[2] is AndExpression { Operands: { Count: 2 } consensus }
-                && second[0] is NotExpression negated
-                && negated.Operand.Equals(first[0])
-                && consensus[0].Equals(first[1])
-                && consensus[1].Equals(second[1])
-            )
-            {
-                condition = first[0];
-                whenTrue = first[1];
-                whenFalse = second[1];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// <c>COALESCE(x, fallback)</c> beside <c>COALESCE(NOT x, fallback)</c>: the two halves of <c>IsKnown</c> (fallback
-        /// <c>False</c>) and <c>IsUnknown</c> (fallback <c>True</c>).
-        /// </summary>
-        private static bool IsInspectionPair(
-            Expression first,
-            Expression second,
-            bool falseFallback,
-            [NotNullWhen(true)] out Expression? operand
-        )
-        {
-            operand = null;
-            TruthValue fallback = falseFallback ? TruthValue.False : TruthValue.True;
-            if (
-                first is CoalesceExpression { Operands: { Count: 2 } a }
-                && second is CoalesceExpression { Operands: { Count: 2 } b }
-                && a[1] is ConstantExpression { Value: var fa }
-                && b[1] is ConstantExpression { Value: var fb }
-                && fa == fallback
-                && fb == fallback
-                && b[0] is NotExpression negated
-                && negated.Operand.Equals(a[0])
-            )
-            {
-                operand = a[0];
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// <c>OR(Exactly(1, ops), Exactly(3, ops), ...)</c> over every odd count up to <c>n</c> is the expansion of
-        /// <c>PARITY(ops)</c> (see <see cref="PrimitiveExpander"/>). It needs at least three operands: two operands expand to a
-        /// single <c>Exactly(1)</c>, which is not an <c>OR</c>.
-        /// </summary>
-        private static bool IsParity(EquatableArray<Expression> ops, out EquatableArray<Expression> operands)
-        {
-            operands = default;
-            if (ops[0] is not ThresholdExpression { Comparison: ThresholdComparison.Exactly, K: 1 } first)
-            {
-                return false;
-            }
-
-            int n = first.Operands.Count;
-            if (n < 3 || ops.Count != (n + 1) / 2)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < ops.Count; i++)
-            {
-                if (
-                    ops[i] is not ThresholdExpression { Comparison: ThresholdComparison.Exactly } term
-                    || term.K != (2 * i) + 1
-                    || !term.Operands.Equals(first.Operands)
-                )
-                {
-                    return false;
-                }
-            }
-
-            operands = first.Operands;
-            return true;
         }
 
         private Expression? Match(Expression node)
@@ -229,24 +79,18 @@ internal static class Compressor
             if (ops.Count == 2)
             {
                 // XOR and EQUIVALENT expand to a two-term OR of two-term ANDs (see PrimitiveExpander); OR is commutative.
-                if (IsXor(ops[0], ops[1], out Expression? xl, out Expression? xr) || IsXor(ops[1], ops[0], out xl, out xr))
+                if (XorForm.TryMatch(ops, out Expression? xl, out Expression? xr))
                 {
                     return new XorExpression(this.Visit(xl), this.Visit(xr));
                 }
 
-                if (
-                    IsEquivalent(ops[0], ops[1], out Expression? el, out Expression? er)
-                    || IsEquivalent(ops[1], ops[0], out el, out er)
-                )
+                if (EquivalentForm.TryMatch(ops, out Expression? el, out Expression? er))
                 {
                     return new EquivalentExpression(this.Visit(el), this.Visit(er));
                 }
 
                 // IsKnown(x) = COALESCE(x, False) OR COALESCE(NOT x, False).
-                if (
-                    IsInspectionPair(ops[0], ops[1], falseFallback: true, out Expression? known)
-                    || IsInspectionPair(ops[1], ops[0], true, out known)
-                )
+                if (InspectionForm.TryMatchPair(ops, InspectionKind.IsKnown, out Expression? known))
                 {
                     return new InspectionExpression(InspectionKind.IsKnown, this.Visit(known));
                 }
@@ -268,12 +112,12 @@ internal static class Compressor
                 }
             }
 
-            if (ops.Count == 3 && IsIf(ops, out Expression? c, out Expression? t, out Expression? f))
+            if (IfForm.TryMatch(ops, out Expression? c, out Expression? t, out Expression? f))
             {
                 return new IfExpression(this.Visit(c), this.Visit(t), this.Visit(f));
             }
 
-            return IsParity(ops, out EquatableArray<Expression> parityOperands)
+            return ParityForm.TryMatch(ops, out EquatableArray<Expression> parityOperands)
                 ? new ParityExpression(ExpressionTools.Array(parityOperands.Select(this.Visit)))
                 : null;
         }
@@ -289,10 +133,7 @@ internal static class Compressor
                 }
 
                 // IsUnknown(x) = COALESCE(x, True) AND COALESCE(NOT x, True).
-                if (
-                    IsInspectionPair(ops[0], ops[1], falseFallback: false, out Expression? unknown)
-                    || IsInspectionPair(ops[1], ops[0], false, out unknown)
-                )
+                if (InspectionForm.TryMatchPair(ops, InspectionKind.IsUnknown, out Expression? unknown))
                 {
                     return new InspectionExpression(InspectionKind.IsUnknown, this.Visit(unknown));
                 }
@@ -367,15 +208,11 @@ internal static class Compressor
                     this.Visit(or.Operands[0]),
                     this.Visit(or.Operands[1])
                 ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtLeast } atLeast => new ThresholdExpression(
-                    ThresholdComparison.AtMost,
-                    atLeast.K - 1,
-                    ExpressionTools.Array(atLeast.Operands.Select(this.Visit))
-                ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtMost } atMost => new ThresholdExpression(
-                    ThresholdComparison.AtLeast,
-                    atMost.K + 1,
-                    ExpressionTools.Array(atMost.Operands.Select(this.Visit))
+                ThresholdExpression threshold
+                    when ThresholdSemantics.Negate(threshold.Comparison, threshold.K) is { } flipped => new ThresholdExpression(
+                    flipped.Comparison,
+                    flipped.K,
+                    ExpressionTools.Array(threshold.Operands.Select(this.Visit))
                 ),
                 _ => null,
             };

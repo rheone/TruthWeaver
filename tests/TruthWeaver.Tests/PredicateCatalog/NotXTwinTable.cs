@@ -22,7 +22,7 @@ using TruthWeaver.Predicates;
 /// </para>
 /// <para>
 /// Definite pairs have no Unknown probe: <c>IsNull</c>/<c>IsNotNull</c>, the string null tests
-/// (<c>IsNullOrEmpty</c>, <c>IsNullOrWhiteSpace</c> and their complements) and the collection emptiness tests answer a
+/// (<c>IsNullOrEmpty</c>, <c>IsNullOrWhiteSpace</c> and their complements) answer a
 /// definite value for a null selection, so no selected value is Unknown. Their True probe is the null selection, which
 /// proves the definite answer is still the complement.
 /// </para>
@@ -51,12 +51,17 @@ internal static class NotXTwinTable
 
     private static readonly string[] AandZ = ["a", "z"];
 
+    private static readonly string[] FridayOnly = ["Friday"];
+
+    private static readonly long[] JanuaryOnly = [1L];
+
     /// <summary>Gets every row of the table.</summary>
     public static IReadOnlyList<TwinTableEntry> Entries { get; } =
     [
         .. StringRows(),
         .. CollectionRows(),
         .. DateTimeRows(),
+        .. CalendarRows(),
         .. Int64Rows(),
         .. DecimalRows(),
         .. BooleanRows(),
@@ -189,7 +194,7 @@ internal static class NotXTwinTable
             n => StringPredicates.EqualsConfigurable<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             n => StringPredicates.NotEqualsConfigurable<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             [("value", "a")],
-            Text("A"),
+            Text("a"),
             Text("b"),
             Missing,
             Nulls: new(
@@ -277,13 +282,18 @@ internal static class NotXTwinTable
         yield return new TwinPair(
             "CollectionPredicates.IsEmpty(IReadOnlyCollection<String>)",
             "CollectionPredicates.IsNotEmpty(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items),
-            n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items),
+            n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
             [],
-            Missing,
+            Items(),
             Items("a"),
-            null,
-            "An emptiness test: a null collection counts as empty, so no input is Unknown."
+            Missing,
+            Nulls: new(
+                n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.IsEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
+                n => CollectionPredicates.IsNotEmpty<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False)
+            )
         );
         yield return new TwinPair(
             "CollectionPredicates.Contains(IReadOnlyCollection<String>)",
@@ -579,6 +589,63 @@ internal static class NotXTwinTable
                         Clock,
                         nullBehavior: NullBehavior.False
                     )
+            )
+        );
+    }
+
+    /// <summary>
+    /// The fixed-offset calendar pairs. <c>T0</c> is Thursday 2026-01-01 12:00 UTC, so the probes read it in an offset:
+    /// at <c>+14:00</c> it is Friday 02:00, which moves the day and keeps the month.
+    /// </summary>
+    private static IEnumerable<TwinTableEntry> CalendarRows()
+    {
+        const NullBehavior unknown = NullBehavior.Unknown;
+        yield return new TwinPair(
+            "DateTimePredicates.OnDayOfWeek(DateTimeOffset)",
+            "DateTimePredicates.NotOnDayOfWeek(DateTimeOffset)",
+            n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("days", FridayOnly), ("offset", "+14:00")],
+            Instant(T0),
+            Instant(T0.AddDays(1)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.OnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotOnDayOfWeek<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
+            )
+        );
+        yield return new TwinPair(
+            "DateTimePredicates.InMonth(DateTimeOffset)",
+            "DateTimePredicates.NotInMonth(DateTimeOffset)",
+            n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("months", JanuaryOnly), ("offset", "Z")],
+            Instant(T0),
+            Instant(T0.AddMonths(1)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.InMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotInMonth<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
+            )
+        );
+        yield return new TwinPair(
+            "DateTimePredicates.InTimeWindow(DateTimeOffset)",
+            "DateTimePredicates.NotInTimeWindow(DateTimeOffset)",
+            n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: unknown),
+            [("start", "09:00"), ("end", "17:00"), ("offset", "Z")],
+            Instant(T0),
+            Instant(T0.AddHours(8)),
+            Missing,
+            Nulls: new(
+                n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant),
+                n => DateTimePredicates.InTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False),
+                n => DateTimePredicates.NotInTimeWindow<TwinProbeContext>(n, c => c.Instant, nullBehavior: NullBehavior.False)
             )
         );
     }

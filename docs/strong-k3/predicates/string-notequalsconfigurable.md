@@ -30,12 +30,12 @@ The selector has one overload. See [Argument kinds](README.md#argument-kinds).
 | Name | Kind | Meaning |
 | --- | --- | --- |
 | `value` | `String` | The comparison target. |
-| `ignoreCase` | `Boolean` | Optional. Default `true`. When `true`, the comparison ignores case. |
+| `ignoreCase` | `Boolean` | Optional. Default `false`. When `true`, the comparison ignores case. |
 | `trim` | `Boolean` | Optional. Default `false`. When `true`, both sides lose leading and trailing whitespace before the comparison. |
 
 ## Definition
 
-`True` when the selected string differs from `value` under the rule options `ignoreCase` and `trim`. `False` when the two strings are equal under those options. When `trim` is `true`, both sides lose leading and trailing whitespace before the comparison. The comparison is ordinal. It ignores case unless `ignoreCase` is `false`.
+`True` when the selected string differs from `value` under the rule options `ignoreCase` and `trim`. `False` when the two strings are equal under those options. When `trim` is `true`, both sides lose leading and trailing whitespace before the comparison. The comparison is ordinal. It is case-sensitive unless `ignoreCase` is `true`.
 
 ## Answers
 
@@ -44,7 +44,7 @@ The table shows the rule `statusNotEqualsConfigurable(value: "Active")`.
 | Selected value | Answer | Answer with `NullBehavior.False` |
 | --- | --- | --- |
 | `"Active"` | `False` | `False` |
-| `"active"` | `False` | `False` |
+| `"active"` | `True` | `True` |
 | `" Active "` | `True` | `True` |
 | `"Inactive"` | `True` | `True` |
 | `null` | `Unknown` | `True` |
@@ -57,17 +57,18 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 
 | Rule | Selected values | Result | Why |
 | --- | --- | --- | --- |
-| `statusNotEqualsConfigurable(value: "Active", ignoreCase: false)` | `status = "active"` | `True` | `ignoreCase: false` makes the comparison case-sensitive, so the strings differ. |
-| `statusNotEqualsConfigurable(value: "Active", trim: true)` | `status = "  active "` | `False` | Both sides are trimmed and the case is ignored, so the strings are equal. |
-| `statusNotEqualsConfigurable(value: "Active", ignoreCase: false, trim: true)` | `status = " Active "` | `False` | Trimming leaves `Active` on both sides, and the case matches, so they are equal. |
-| `statusNotEqualsConfigurable(value: "Active", ignoreCase: false, trim: true)` | `status = " active "` | `True` | Trimming removes the spaces, but the case still differs, so the strings differ. |
+| `statusNotEqualsConfigurable(value: "Active", ignoreCase: true)` | `status = "active"` | `False` | `ignoreCase: true` makes the comparison ignore case, so the strings are equal. |
+| `statusNotEqualsConfigurable(value: "Active", ignoreCase: true, trim: true)` | `status = "  active "` | `False` | Both sides are trimmed and `ignoreCase: true` ignores the case, so the strings are equal. |
+| `statusNotEqualsConfigurable(value: "Active", trim: true)` | `status = " Active "` | `False` | Trimming leaves `Active` on both sides, and the case matches, so they are equal. |
+| `statusNotEqualsConfigurable(value: "Active", trim: true)` | `status = " active "` | `True` | Trimming removes the spaces, but the default case-sensitive comparison still sees a difference, so the strings differ. |
 | `statusNotEqualsConfigurable(value: "Active")` | `status = null` | `Unknown` | A null selected value is `Unknown` by default. |
 
 ## Edge cases
 
-- `ignoreCase` is `true` when the rule omits it. This differs from [Equals](string-equals.md), which is always case-sensitive.
+- `ignoreCase` is `false` when the rule omits it. The comparison then matches [Equals](string-equals.md) and is case-sensitive.
 - `trim` is `false` when the rule omits it.
 - The comparison is ordinal. The culture of the host process has no effect.
+- The comparison does not normalize Unicode. Precomposed and decomposed forms of the same character compare unequal. The host normalizes the input to NFC or NFKC first. See [String predicates](README.md#string-predicates).
 
 ## Related predicates
 

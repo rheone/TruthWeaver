@@ -6,12 +6,12 @@
 
 **Status:** done
 
-- [ ] The failing test run (a rule with `culture`, expected to be rejected with the diagnostic) is shown before the implementation
-- [ ] `EqualsConfigurable` has no `culture` argument in its factory, schema or argument descriptions
-- [ ] A rule that passes `culture` is rejected with a diagnostic that names the argument and says to remove it
-- [ ] Ordinal and ordinal-ignore-case behavior is unchanged and still covered by tests
-- [ ] README, CONTEXT.md and the gap list no longer mention `culture` as accepted
-- [ ] The full validation from CLAUDE.md passes
+- [ ] The failing test run (a rule with `culture`, expected to be rejected with the diagnostic) is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] `EqualsConfigurable` has no `culture` argument in its factory, schema or argument descriptions
+- [x] A rule that passes `culture` is rejected with a diagnostic that names the argument and says to remove it
+- [x] Ordinal and ordinal-ignore-case behavior is unchanged and still covered by tests
+- [x] README, CONTEXT.md and the gap list no longer mention `culture` as accepted
+- [x] The full validation from CLAUDE.md passes
 
 Source: ticket 12 comments (`culture` kept restricted to empty); owner decision 2026-10-03. See also [spec](../spec.md).
 

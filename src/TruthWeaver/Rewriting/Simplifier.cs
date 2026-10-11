@@ -2,6 +2,7 @@ namespace TruthWeaver.Rewriting;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
+using TruthWeaver.Evaluation;
 
 /// <summary>
 /// Replaces an expression with an equivalent, never larger one using only rewrites that are identities of Strong Kleene logic
@@ -27,13 +28,14 @@ internal static class Simplifier
 
     /// <summary>Simplifies <paramref name="root"/> and everything below it.</summary>
     /// <param name="root">The tree to simplify.</param>
+    /// <param name="trace">Receives each change in the order it is made, or <see langword="null"/> to report nothing.</param>
     /// <returns>An equivalent tree that is never larger than <paramref name="root"/>.</returns>
-    public static Expression Simplify(Expression root)
+    public static Expression Simplify(Expression root, RewriteTrace? trace = null)
     {
-        Expression current = Canonicalizer.Canonicalize(root);
+        Expression current = Canonicalizer.Canonicalize(root, trace);
         for (int pass = 0; pass < MaxPasses; pass++)
         {
-            Expression next = Canonicalizer.Canonicalize(new Pass().Visit(current));
+            Expression next = Canonicalizer.Canonicalize(new Pass(trace).Visit(current), trace);
             if (next.Equals(current))
             {
                 break;
@@ -43,14 +45,26 @@ internal static class Simplifier
         }
 
         // Every rewrite is size-guarded, so this only protects against a future rule that is not.
-        return ExpressionTools.Size(current) <= ExpressionTools.Size(root) ? current : root;
+        if (ExpressionTools.Size(current) <= ExpressionTools.Size(root))
+        {
+            return current;
+        }
+
+        // The rule is returned unchanged, so no step describes it.
+        trace?.Clear();
+        return root;
     }
 
+    /// <summary>The result of one rewrite and the law it applied.</summary>
+    /// <param name="Result">The rewritten node.</param>
+    /// <param name="Law">The law applied.</param>
+    private readonly record struct Rewritten(Expression Result, RewriteLaw Law);
+
     /// <summary>One bottom-up sweep.</summary>
-    private sealed class Pass
+    private sealed class Pass(RewriteTrace? trace)
     {
-        private readonly Dictionary<Expression, Expression> memo = new(ReferenceEqualityComparer.Instance);
-        private readonly Dictionary<Expression, bool> definite = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Expression, Expression> memo = [with(ReferenceEqualityComparer.Instance)];
+        private readonly Dictionary<Expression, bool> definite = [with(ReferenceEqualityComparer.Instance)];
 
         public Expression Visit(Expression node)
         {
@@ -62,13 +76,13 @@ internal static class Simplifier
             Expression result = ExpressionTools.MapChildren(node, this.Visit);
             for (int round = 0; round < 8; round++)
             {
-                Expression? next = this.Rewrite(result);
-                if (next is null)
+                if (this.Rewrite(result) is not { } rewritten)
                 {
                     break;
                 }
 
-                result = next;
+                trace?.Report(rewritten.Law, result, rewritten.Result);
+                result = rewritten.Result;
             }
 
             // A result is a fixed point of this sweep, so revisiting it (when a rewrite re-simplifies an expansion) is free.
@@ -100,52 +114,51 @@ internal static class Simplifier
             return new InspectionExpression(kind, operand);
         }
 
-        /// <summary>The value of an inspection of a known constant.</summary>
-        private static TruthValue Inspected(InspectionKind kind, TruthValue value)
+        /// <summary>De Morgan's result, kept only when it is smaller than the <c>NOT</c> it replaces.</summary>
+        private static Rewritten? DeMorganIfSmaller(Expression original, Expression candidate)
         {
-            bool result = kind switch
-            {
-                InspectionKind.IsTrue => value == TruthValue.True,
-                InspectionKind.IsFalse => value == TruthValue.False,
-                InspectionKind.IsUnknown => value == TruthValue.Unknown,
-                _ => value != TruthValue.Unknown,
-            };
-            return result ? TruthValue.True : TruthValue.False;
+            return ExpressionTools.Size(candidate) < ExpressionTools.Size(original)
+                ? new Rewritten(candidate, RewriteLaw.DeMorgan)
+                : null;
         }
 
-        private static Expression? SmallerOrNull(Expression original, Expression candidate)
-        {
-            return ExpressionTools.Size(candidate) < ExpressionTools.Size(original) ? candidate : null;
-        }
-
-        private static Expression? RewriteNot(NotExpression n)
+        /// <summary>Rewrites a <c>NOT</c> by what it negates, naming the law with the result so the caller need not re-inspect the operand.</summary>
+        private static Rewritten? RewriteNot(NotExpression n)
         {
             // Threshold rows: count < k is the negation of count >= k for every count in the interval, so NOT flips the
             // comparison. De Morgan holds in K3 too, but pushing NOT inward adds a NOT per operand: only take it when smaller.
             return n.Operand switch
             {
-                ConstantExpression or NotExpression => Negate(n.Operand),
-                NandExpression nand => new AndExpression(ExpressionTools.Array([nand.Left, nand.Right])),
-                NorExpression nor => new OrExpression(ExpressionTools.Array([nor.Left, nor.Right])),
-                InspectionExpression { Kind: InspectionKind.IsKnown } known => Inspect(InspectionKind.IsUnknown, known.Operand),
-                InspectionExpression { Kind: InspectionKind.IsUnknown } unknown => Inspect(
-                    InspectionKind.IsKnown,
-                    unknown.Operand
+                ConstantExpression => new Rewritten(Negate(n.Operand), RewriteLaw.ConstantFold),
+                NotExpression => new Rewritten(Negate(n.Operand), RewriteLaw.DoubleNegation),
+                NandExpression nand => Derived(new AndExpression(ExpressionTools.Array([nand.Left, nand.Right]))),
+                NorExpression nor => Derived(new OrExpression(ExpressionTools.Array([nor.Left, nor.Right]))),
+                InspectionExpression { Kind: InspectionKind.IsKnown } known => Derived(
+                    Inspect(InspectionKind.IsUnknown, known.Operand)
                 ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtLeast } atLeast => new ThresholdExpression(
-                    ThresholdComparison.AtMost,
-                    atLeast.K - 1,
-                    atLeast.Operands
+                InspectionExpression { Kind: InspectionKind.IsUnknown } unknown => Derived(
+                    Inspect(InspectionKind.IsKnown, unknown.Operand)
                 ),
-                ThresholdExpression { Comparison: ThresholdComparison.AtMost } atMost => new ThresholdExpression(
-                    ThresholdComparison.AtLeast,
-                    atMost.K + 1,
-                    atMost.Operands
+                ThresholdExpression threshold
+                    when ThresholdSemantics.Negate(threshold.Comparison, threshold.K) is { } flipped => Derived(
+                    new ThresholdExpression(flipped.Comparison, flipped.K, threshold.Operands)
                 ),
-                AndExpression and => SmallerOrNull(n, new OrExpression(ExpressionTools.Array(and.Operands.Select(Negate)))),
-                OrExpression or => SmallerOrNull(n, new AndExpression(ExpressionTools.Array(or.Operands.Select(Negate)))),
+                AndExpression and => DeMorganIfSmaller(n, new OrExpression(ExpressionTools.Array(and.Operands.Select(Negate)))),
+                OrExpression or => DeMorganIfSmaller(n, new AndExpression(ExpressionTools.Array(or.Operands.Select(Negate)))),
                 _ => null,
             };
+        }
+
+        /// <summary>A rewrite of a <c>NOT</c> through a derived operator.</summary>
+        private static Rewritten Derived(Expression result)
+        {
+            return new Rewritten(result, RewriteLaw.NegationThroughDerived);
+        }
+
+        /// <summary>A rewrite of an inspection.</summary>
+        private static Rewritten Inspection(Expression result)
+        {
+            return new Rewritten(result, RewriteLaw.Inspection);
         }
 
         /// <summary>
@@ -153,10 +166,11 @@ internal static class Simplifier
         /// drops out, the dominant one decides the whole node, and an <c>Unknown</c> constant stays (it is neither).
         /// Absorption (<c>a AND (a OR b) = a</c>) is the lattice law that does hold in K3; the complement variants do not.
         /// </summary>
-        private static Expression? RewriteJunction(EquatableArray<Expression> operands, bool isAnd)
+        private static Rewritten? RewriteJunction(EquatableArray<Expression> operands, bool isAnd)
         {
             TruthValue identity = isAnd ? TruthValue.True : TruthValue.False;
             TruthValue dominant = isAnd ? TruthValue.False : TruthValue.True;
+            bool onlyConstants = operands.All(o => o is ConstantExpression);
             List<Expression> kept = [];
             foreach (Expression operand in operands)
             {
@@ -164,7 +178,10 @@ internal static class Simplifier
                 {
                     if (constant.Value == dominant)
                     {
-                        return Constant(dominant);
+                        return new Rewritten(
+                            Constant(dominant),
+                            onlyConstants ? RewriteLaw.ConstantFold : RewriteLaw.Annihilator
+                        );
                     }
 
                     if (constant.Value == identity)
@@ -176,21 +193,28 @@ internal static class Simplifier
                 kept.Add(operand);
             }
 
-            // An operand of the dual operator that contains a sibling operand is redundant.
-            List<Expression> survivors = [.. kept.Where(candidate => !IsAbsorbed(candidate, kept, isAnd))];
+            // Dropping identity constants is one step; absorption is left to the next round, so each step has one law.
+            RewriteLaw law = onlyConstants ? RewriteLaw.ConstantFold : RewriteLaw.Identity;
+            List<Expression> survivors = kept;
+            if (kept.Count == operands.Count)
+            {
+                // An operand of the dual operator that contains a sibling operand is redundant.
+                survivors = [.. kept.Where(candidate => !IsAbsorbed(candidate, kept, isAnd))];
+                law = RewriteLaw.Absorption;
+            }
+
             if (survivors.Count == operands.Count)
             {
                 return null;
             }
 
-            return survivors.Count switch
+            Expression rewritten = survivors.Count switch
             {
                 0 => Constant(identity),
                 1 => survivors[0],
-                _ => isAnd
-                    ? new AndExpression(ExpressionTools.Array(survivors))
-                    : new OrExpression(ExpressionTools.Array(survivors)),
+                _ => ExpressionTools.Junction(survivors, isAnd),
             };
+            return new Rewritten(rewritten, law);
         }
 
         private static bool IsAbsorbed(Expression candidate, List<Expression> siblings, bool inAnd)
@@ -216,7 +240,7 @@ internal static class Simplifier
         /// <c>Xor(NOT l, r)</c> is <c>Equivalent(l, r)</c> and <c>Xor(NOT l, NOT r)</c> is <c>Xor(l, r)</c> (and dually for
         /// <c>Equivalent</c>): each negation strips a <c>NOT</c> and an odd number flips the operator.
         /// </summary>
-        private static Expression? RewriteNegatedPair(Expression left, Expression right, bool xor)
+        private static Rewritten? RewriteNegatedPair(Expression left, Expression right, bool xor)
         {
             bool leftNegated = left is NotExpression;
             bool rightNegated = right is NotExpression;
@@ -228,7 +252,7 @@ internal static class Simplifier
             Expression newLeft = left is NotExpression l ? l.Operand : left;
             Expression newRight = right is NotExpression r ? r.Operand : right;
             bool useXor = xor ^ (leftNegated ^ rightNegated);
-            return useXor ? new XorExpression(newLeft, newRight) : new EquivalentExpression(newLeft, newRight);
+            return Derived(useXor ? new XorExpression(newLeft, newRight) : new EquivalentExpression(newLeft, newRight));
         }
 
         /// <summary>
@@ -236,7 +260,13 @@ internal static class Simplifier
         /// shifts <c>k</c> down by one for all three comparisons; a <c>False</c> operand adds nothing and just drops out.
         /// What is left is a smaller, sometimes structurally constant, threshold.
         /// </summary>
-        private static Expression? RewriteThreshold(ThresholdExpression t)
+        private static Rewritten? RewriteThreshold(ThresholdExpression t)
+        {
+            Expression? result = ShiftThreshold(t);
+            return result is null ? null : new Rewritten(result, RewriteLaw.Threshold);
+        }
+
+        private static Expression? ShiftThreshold(ThresholdExpression t)
         {
             if (t.Comparison is ThresholdComparison.GreaterThan or ThresholdComparison.LessThan)
             {
@@ -300,7 +330,7 @@ internal static class Simplifier
             return new ThresholdExpression(t.Comparison, shifted, ExpressionTools.Array(rest));
         }
 
-        private Expression? Rewrite(Expression node)
+        private Rewritten? Rewrite(Expression node)
         {
             return node switch
             {
@@ -311,14 +341,16 @@ internal static class Simplifier
                 InspectionExpression s => this.RewriteInspection(s),
                 IfExpression f => this.RewriteIf(f),
                 ThresholdExpression t => RewriteThreshold(t),
-                ImpliesExpression { Antecedent: NotExpression negated } i => new OrExpression(
-                    ExpressionTools.Array([negated.Operand, i.Consequent])
+                ImpliesExpression { Antecedent: NotExpression negated } i => Derived(
+                    new OrExpression(ExpressionTools.Array([negated.Operand, i.Consequent]))
                 ),
-                NandExpression { Left: NotExpression l, Right: NotExpression r } => new OrExpression(
-                    ExpressionTools.Array([l.Operand, r.Operand])
+                NandExpression { Left: NotExpression l, Right: NotExpression r } => new Rewritten(
+                    new OrExpression(ExpressionTools.Array([l.Operand, r.Operand])),
+                    RewriteLaw.DeMorgan
                 ),
-                NorExpression { Left: NotExpression l, Right: NotExpression r } => new AndExpression(
-                    ExpressionTools.Array([l.Operand, r.Operand])
+                NorExpression { Left: NotExpression l, Right: NotExpression r } => new Rewritten(
+                    new AndExpression(ExpressionTools.Array([l.Operand, r.Operand])),
+                    RewriteLaw.DeMorgan
                 ),
                 XorExpression x => RewriteNegatedPair(x.Left, x.Right, xor: true) ?? this.ViaExpansion(node),
                 EquivalentExpression e => RewriteNegatedPair(e.Left, e.Right, xor: false) ?? this.ViaExpansion(node),
@@ -329,7 +361,7 @@ internal static class Simplifier
             };
         }
 
-        private Expression? RewriteCoalesce(CoalesceExpression c)
+        private Rewritten? RewriteCoalesce(CoalesceExpression c)
         {
             List<Expression> kept = [];
             foreach (Expression operand in c.Operands)
@@ -354,56 +386,61 @@ internal static class Simplifier
                 return null;
             }
 
-            return kept.Count switch
+            Expression result = kept.Count switch
             {
                 0 => Constant(TruthValue.Unknown),
                 1 => kept[0],
                 _ => new CoalesceExpression(ExpressionTools.Array(kept)),
             };
+            return new Rewritten(result, RewriteLaw.Coalesce);
         }
 
-        private Expression? RewriteInspection(InspectionExpression s)
+        private Rewritten? RewriteInspection(InspectionExpression s)
         {
             if (s.Operand is ConstantExpression constant)
             {
-                return Constant(Inspected(s.Kind, constant.Value));
+                return Inspection(Constant(K3Logic.Inspect(s.Kind, constant.Value)));
             }
 
             if (this.IsDefinite(s.Operand))
             {
-                return s.Kind switch
-                {
-                    InspectionKind.IsKnown => Constant(TruthValue.True),
-                    InspectionKind.IsUnknown => Constant(TruthValue.False),
-                    InspectionKind.IsTrue => s.Operand,
-                    _ => Negate(s.Operand),
-                };
+                return Inspection(
+                    s.Kind switch
+                    {
+                        InspectionKind.IsKnown => Constant(TruthValue.True),
+                        InspectionKind.IsUnknown => Constant(TruthValue.False),
+                        InspectionKind.IsTrue => s.Operand,
+                        _ => Negate(s.Operand),
+                    }
+                );
             }
 
             // NOT swaps True and False and fixes Unknown, so inspecting a negation inspects the opposite state.
             if (s.Operand is NotExpression negated)
             {
-                return s.Kind switch
-                {
-                    InspectionKind.IsTrue => Inspect(InspectionKind.IsFalse, negated.Operand),
-                    InspectionKind.IsFalse => Inspect(InspectionKind.IsTrue, negated.Operand),
-                    _ => Inspect(s.Kind, negated.Operand),
-                };
+                return Inspection(
+                    s.Kind switch
+                    {
+                        InspectionKind.IsTrue => Inspect(InspectionKind.IsFalse, negated.Operand),
+                        InspectionKind.IsFalse => Inspect(InspectionKind.IsTrue, negated.Operand),
+                        _ => Inspect(s.Kind, negated.Operand),
+                    }
+                );
             }
 
             return null;
         }
 
-        private Expression? RewriteIf(IfExpression f)
+        private Rewritten? RewriteIf(IfExpression f)
         {
             return f.Condition switch
             {
-                ConstantExpression { Value: TruthValue.True } => f.WhenTrue,
-                ConstantExpression { Value: TruthValue.False } => f.WhenFalse,
+                ConstantExpression { Value: TruthValue.True } => new Rewritten(f.WhenTrue, RewriteLaw.If),
+                ConstantExpression { Value: TruthValue.False } => new Rewritten(f.WhenFalse, RewriteLaw.If),
 
                 // For an Unknown condition the definition adds the (t AND f) consensus term, which makes equal branches
                 // exactly that branch, so the condition is irrelevant.
-                _ when f.WhenTrue.Equals(f.WhenFalse) => f.WhenTrue,
+                _ when f.WhenTrue.Equals(f.WhenFalse) => new Rewritten(f.WhenTrue, RewriteLaw.If),
                 _ => this.ViaExpansion(f),
             };
         }
@@ -412,15 +449,23 @@ internal static class Simplifier
         /// For a derived operator with a constant operand: expands that one operator to the primitive kernel (its verified
         /// definition), simplifies the result, and keeps it only if it is no larger than the operator it replaces.
         /// </summary>
-        private Expression? ViaExpansion(Expression node)
+        private Rewritten? ViaExpansion(Expression node)
         {
             if (!ExpressionTools.Children(node).Exists(child => child is ConstantExpression))
             {
                 return null;
             }
 
-            Expression candidate = this.Visit(PrimitiveExpander.ExpandTop(node));
-            return ExpressionTools.Size(candidate) <= ExpressionTools.Size(node) ? candidate : null;
+            // The inner steps are not reported: the candidate may be discarded, and the accepted one is a single step.
+            Expression candidate;
+            using (trace?.Pause())
+            {
+                candidate = this.Visit(PrimitiveExpander.ExpandTop(node));
+            }
+
+            return ExpressionTools.Size(candidate) <= ExpressionTools.Size(node)
+                ? new Rewritten(candidate, RewriteLaw.DerivedWithConstant)
+                : null;
         }
 
         /// <summary>

@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] ADR-0007, the CHANGELOG rename table and `CONTEXT.md` say "outline" (concept) and `OutlineNode` (type) and never name a `RuleOutline` type
-- [ ] The naming-cleanup spec's rename table is left as historical; a note says `RuleOutline` was elided on 2026-10-04
-- [ ] The vocabulary guard still passes
-- [ ] The full validation from CLAUDE.md passes
+- [x] ADR-0007, the CHANGELOG rename table and `CONTEXT.md` say "outline" (concept) and `OutlineNode` (type) and never name a `RuleOutline` type
+- [x] The naming-cleanup spec's rename table is left as historical; a note says `RuleOutline` was elided on 2026-10-04
+- [x] The vocabulary guard still passes
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 2).

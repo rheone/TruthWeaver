@@ -142,7 +142,7 @@ public sealed class RuleDiffTests
         CompiledRule<RuleTestContext> after = compiler.Compile(string.Join(" AND ", terms.Reverse())).CompiledRule!;
 
         RuleDiffResult byDefault = RuleDiff.Compare(before, after);
-        RuleDiffResult raised = RuleDiff.Compare(before, after, new CompilerOptions(MaxAnalysisTerms: 21));
+        RuleDiffResult raised = RuleDiff.Compare(before, after, 21);
 
         Assert.True(byDefault.HasChanges);
         Assert.Null(byDefault.PreservesMeaning);

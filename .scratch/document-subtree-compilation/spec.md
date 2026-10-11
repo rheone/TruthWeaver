@@ -1,6 +1,6 @@
 # Compiling a rule from a sub-tree of a larger document
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

@@ -80,6 +80,38 @@ public sealed class VariableTraceRedactionTests
         Assert.Equal("takesString(v: from(\"user\", \"$.secret\"))", decision.TraceTree!.Text);
     }
 
+    /// <summary>An array query that matches no node stays an empty array without a fault, and the trace names the query.</summary>
+    [Fact]
+    public async Task EvaluateAsync_ArrayQueryMatchingNothing_TraceNotesTheZeroMatchAndRecordsNoFault_Test()
+    {
+        const string Rule = "takesStrings(v: from(\"user\", \"$.rolez[*]\"))";
+        Decision decision = await EvaluateAsync(
+            new FakeDataSource().With("$.roles[*]", ["admin"]),
+            EvaluationOptions.Default,
+            Rule
+        );
+
+        decision.Should().HaveNoFaults();
+        Assert.Equal(TruthValue.True, decision.Result);
+        const string expected = Rule + " [no match for from(\"user\", \"$.rolez[*]\")]";
+        Assert.Equal(expected, decision.TraceTree!.Text);
+        Assert.Equal(expected, decision.Trace!.Entries[0].Text);
+    }
+
+    /// <summary>An array query that matches a node adds no note to the trace.</summary>
+    [Fact]
+    public async Task EvaluateAsync_ArrayQueryMatchingANode_TraceCarriesNoNote_Test()
+    {
+        const string Rule = "takesStrings(v: from(\"user\", \"$.roles[*]\"))";
+        Decision decision = await EvaluateAsync(
+            new FakeDataSource().With("$.roles[*]", ["admin"]),
+            EvaluationOptions.Default,
+            Rule
+        );
+
+        Assert.Equal(Rule, decision.TraceTree!.Text);
+    }
+
     private static Task<Decision> EvaluateAsync(
         FakeDataSource source,
         EvaluationOptions options,

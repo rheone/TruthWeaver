@@ -1,6 +1,6 @@
 # Shared op-name lookup for JSON/YAML print and parse
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

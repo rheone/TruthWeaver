@@ -15,9 +15,14 @@ namespace TruthWeaver.Evaluation;
 /// A term's rule-text arguments, rendered as comma-joined <c>name: value</c> pairs, or
 /// <see langword="null"/> for an operator, a constant, or a zero-argument term.
 /// </param>
+/// <param name="Kind">
+/// The node's role. The printers use it to pick a node shape. A node with operands is always an operator,
+/// whatever its <paramref name="Kind"/>; a hand-built leaf defaults to <see cref="OutlineNodeKind.Term"/>.
+/// </param>
 public sealed record OutlineNode(
     string Label,
     string Description,
     IReadOnlyList<OutlineNode> Operands,
-    string? ArgumentText = null
+    string? ArgumentText = null,
+    OutlineNodeKind Kind = OutlineNodeKind.Term
 );

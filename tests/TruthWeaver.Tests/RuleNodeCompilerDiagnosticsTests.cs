@@ -16,13 +16,12 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class RuleNodeCompilerDiagnosticsTests
 {
+    /// <summary>A JSON operator below its minimum operand count is an operand-count diagnostic, not an exception.</summary>
     [Theory]
     [InlineData("""{"op": "and", "operands": [{"const": true}]}""")]
     [InlineData("""{"op": "or", "operands": []}""")]
     [InlineData("""{"op": "exactlyOne", "operands": [{"const": true}]}""")]
-    public void A_variadic_operator_with_fewer_than_two_operands_produces_a_malformed_tree_diagnostic_not_an_exception(
-        string json
-    )
+    public void CompileJson_VariadicOperatorWithFewerThanTwoOperands_ReportsInfixArityViolationNotAnException_Test(string json)
     {
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 
@@ -33,14 +32,15 @@ public sealed class RuleNodeCompilerDiagnosticsTests
         Assert.Contains(
             result.Diagnostics,
             d =>
-                d.Code == DiagnosticCodes.MalformedTree
+                d.Code == DiagnosticCodes.InfixArityViolation
                 && d.Severity == DiagnosticSeverity.Error
                 && d.Message.Contains("requires at least", StringComparison.Ordinal)
         );
     }
 
+    /// <summary>A JSON threshold with no operands is an operand-count diagnostic, not an exception.</summary>
     [Fact]
-    public void A_threshold_operator_with_zero_operands_produces_a_malformed_tree_diagnostic_not_an_exception()
+    public void CompileJson_ThresholdWithZeroOperands_ReportsInfixArityViolationNotAnException_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
 
@@ -51,7 +51,7 @@ public sealed class RuleNodeCompilerDiagnosticsTests
         Assert.Contains(
             result.Diagnostics,
             d =>
-                d.Code == DiagnosticCodes.MalformedTree
+                d.Code == DiagnosticCodes.InfixArityViolation
                 && d.Severity == DiagnosticSeverity.Error
                 && d.Message.Contains("requires at least one operand", StringComparison.Ordinal)
         );

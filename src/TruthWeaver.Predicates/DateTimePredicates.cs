@@ -6,7 +6,8 @@ using TruthWeaver.Abstractions;
 /// Ready-made <see cref="DateTimeOffset"/> comparison predicate factories, each parameterized by a
 /// <c>Func&lt;TContext, DateTimeOffset?&gt;</c> selector supplied at registration and
 /// <see cref="DateTimeOffset"/> literal arguments supplied in rule text. Values compare by instant, so the same
-/// moment written with different offsets is equal.
+/// moment written with different offsets is equal. The calendar predicates (<c>OnDayOfWeek</c>, <c>InMonth</c> and
+/// <c>InTimeWindow</c>) read the instant in a fixed offset that the rule gives.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,7 +23,7 @@ using TruthWeaver.Abstractions;
 /// <c>Between</c>.
 /// </para>
 /// </remarks>
-public static class DateTimePredicates
+public static partial class DateTimePredicates
 {
     private const string NullNote =
         " A null selected value is Unknown, never a fault, unless the host registers it with NullBehavior.False, "

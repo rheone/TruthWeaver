@@ -41,3 +41,13 @@ current verdict for each item. "Still deferred" means the original reason still 
 
 New deferred items from the K3 work (diagnostic properties and JSON pointer, k3-followups 26; lint spans, k3-hardening 09)
 are tracked in the [roadmap's new candidates](../library-roadmap/spec.md#new-candidates) rather than duplicated here.
+
+## Added 2026-10-09 (grilling session)
+
+| Item | Why deferred |
+| --- | --- |
+| **Structured, serializable render tree for UI consumers** (a public, JSON-friendly form of `RuleRenderTree`/`RenderNode`/`RenderState`) | From `diagram-rendering-options`. A rule-authoring web UI would draw its own diagram instead of parsing Mermaid text. No UI consumer exists yet. |
+| **Mermaid web-UI knobs** (`click` tooltips and callbacks, HTML/CSS labels, custom themes under a relaxed `securityLevel`) | GitHub's `strict` security level strips them, so they only matter to a host that embeds mermaid.js. Same reason as above. |
+| **Public satisfying assignment and substitution (`Bind` plus `Simplify()`)** | Confirmed deferred on 2026-10-09. K3 assignments need a designed result type and there is no consumer. |
+| **Tracing (`ActivitySource`)** | Confirmed deferred on 2026-10-09. Metrics and evaluated-tree traces cover current needs. |
+| **Negation-normal-form print mode, lint spans and paths** | Confirmed "Not now" on 2026-10-09. `Simplify()` covers most of NNF. Spans need every expression node to carry a source location. |

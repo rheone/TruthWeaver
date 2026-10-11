@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] Registering two class-based predicates (`Add<TPredicate>()`) under the same name throws `ArgumentException` with an "already registered" message.
-- [ ] Registering two lambda predicates (`Add(schema, evaluate)`) under the same name throws the same way.
-- [ ] Registering the same name with different casing (e.g. `"Foo"` then `"foo"`) is treated as a collision and throws.
-- [ ] Existing registry-building tests continue to pass unchanged.
+- [x] Registering two class-based predicates (`Add<TPredicate>()`) under the same name throws `ArgumentException` with an "already registered" message.
+- [x] Registering two lambda predicates (`Add(schema, evaluate)`) under the same name throws the same way.
+- [x] Registering the same name with different casing (e.g. `"Foo"` then `"foo"`) is treated as a collision and throws.
+- [x] Existing registry-building tests continue to pass unchanged.

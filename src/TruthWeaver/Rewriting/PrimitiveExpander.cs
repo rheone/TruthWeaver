@@ -46,13 +46,13 @@ internal static class PrimitiveExpander
 
             // Derived binary operators (ADR-0005 decision 3).
             ImpliesExpression i => Or(Not(i.Antecedent), i.Consequent),
-            XorExpression x => Xor(x.Left, x.Right),
-            EquivalentExpression e => Equivalent(e.Left, e.Right),
+            XorExpression x => XorForm.Build(x.Left, x.Right),
+            EquivalentExpression e => EquivalentForm.Build(e.Left, e.Right),
             NandExpression nd => Not(And(nd.Left, nd.Right)),
             NorExpression nr => Not(Or(nr.Left, nr.Right)),
 
-            // Parity: True for an odd number of True operands, Unknown if any operand is Unknown (see ExpandParity).
-            ParityExpression nx => ExpandParity(nx.Operands),
+            // Parity: True for an odd number of True operands, Unknown if any operand is Unknown (see ParityForm).
+            ParityExpression nx => ParityForm.Build(nx.Operands),
 
             // Cardinality aliases over the definitely-true / possibly-true interval (ADR-0005 decision 6).
             AnyExpression any => Threshold(ThresholdComparison.AtLeast, 1, any.Operands),
@@ -62,8 +62,8 @@ internal static class PrimitiveExpander
             BetweenExpression b => ExpandBetween(b),
 
             // Conditional and boundary operators.
-            IfExpression f => ExpandIf(f.Condition, f.WhenTrue, f.WhenFalse),
-            InspectionExpression s => ExpandInspection(s.Kind, s.Operand),
+            IfExpression f => IfForm.Build(f.Condition, f.WhenTrue, f.WhenFalse),
+            InspectionExpression s => InspectionForm.Build(s.Kind, s.Operand),
 
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
         };
@@ -89,28 +89,6 @@ internal static class PrimitiveExpander
         return new ThresholdExpression(comparison, k, operands);
     }
 
-    private static ConstantExpression Constant(TruthValue value)
-    {
-        return new ConstantExpression(value);
-    }
-
-    private static CoalesceExpression Coalesce(Expression operand, TruthValue fallback)
-    {
-        return new CoalesceExpression(new EquatableArray<Expression>([operand, Constant(fallback)]));
-    }
-
-    /// <summary><c>(a AND NOT b) OR (NOT a AND b)</c>: Unknown whenever either operand is.</summary>
-    private static OrExpression Xor(Expression left, Expression right)
-    {
-        return Or(And(left, Not(right)), And(Not(left), right));
-    }
-
-    /// <summary><c>(a AND b) OR (NOT a AND NOT b)</c>: the negation of XOR, Unknown whenever either operand is.</summary>
-    private static OrExpression Equivalent(Expression left, Expression right)
-    {
-        return Or(And(left, right), And(Not(left), Not(right)));
-    }
-
     /// <summary>
     /// <c>GreaterThan(k)</c> is <c>AtLeast(k + 1)</c> and <c>LessThan(k)</c> is <c>AtMost(k - 1)</c>: both ask the same
     /// question of every count in the interval, so the equivalence holds for <c>Unknown</c> operands too. The compiler's
@@ -118,13 +96,8 @@ internal static class PrimitiveExpander
     /// </summary>
     private static Expression ExpandThreshold(ThresholdExpression t)
     {
-        EquatableArray<Expression> operands = t.Operands;
-        return t.Comparison switch
-        {
-            ThresholdComparison.GreaterThan => Threshold(ThresholdComparison.AtLeast, t.K + 1, operands),
-            ThresholdComparison.LessThan => Threshold(ThresholdComparison.AtMost, t.K - 1, operands),
-            _ => Threshold(t.Comparison, t.K, operands),
-        };
+        (ThresholdComparison comparison, int k) = ThresholdSemantics.Normalise(t.Comparison, t.K);
+        return Threshold(comparison, k, t.Operands);
     }
 
     /// <summary>
@@ -148,54 +121,5 @@ internal static class PrimitiveExpander
         return hasLower
             ? Threshold(ThresholdComparison.AtLeast, b.Min, operands)
             : Threshold(ThresholdComparison.AtMost, b.Max, operands);
-    }
-
-    /// <summary>
-    /// <c>PARITY</c> is "an odd number of operands are True", and Unknown if any operand is Unknown. That is exactly
-    /// <c>OR(Exactly(1), Exactly(3), ...)</c> over the odd counts: with no Unknown operand the interval is a single count
-    /// and the disjunction is True iff that count is odd; with at least one Unknown the interval holds two or more
-    /// consecutive counts, so every <c>Exactly(k)</c> that can match is Unknown (never True) and at least one odd count is
-    /// always inside the interval, which makes the disjunction Unknown. This is linear in the operand count, unlike a fold
-    /// of the binary XOR expansion, which repeats its accumulator twice per step and so grows exponentially.
-    /// </summary>
-    private static Expression ExpandParity(EquatableArray<Expression> operands)
-    {
-        List<Expression> oddCounts = [];
-        for (int k = 1; k <= operands.Count; k += 2)
-        {
-            oddCounts.Add(Threshold(ThresholdComparison.Exactly, k, operands));
-        }
-
-        // Two operands have a single odd count (1), and an OR needs at least two operands.
-        return oddCounts.Count == 1 ? oddCounts[0] : new OrExpression(new EquatableArray<Expression>(oddCounts));
-    }
-
-    /// <summary>
-    /// The multiplexer <c>(c AND t) OR (NOT c AND f)</c> plus the consensus term <c>(t AND f)</c>, the same primitive
-    /// definition the oracle uses (ADR-0005 decision 13, k3-conformance 16): an Unknown condition does not guess a branch.
-    /// </summary>
-    private static OrExpression ExpandIf(Expression condition, Expression whenTrue, Expression whenFalse)
-    {
-        return Or(And(condition, whenTrue), And(Not(condition), whenFalse), And(whenTrue, whenFalse));
-    }
-
-    /// <summary>
-    /// The inspections look at the K3 <em>state</em>, which no connective alone can see, but <c>COALESCE</c> can:
-    /// <c>COALESCE(x, False)</c> maps Unknown to False and leaves True/False alone. From it:
-    /// <c>IsTrue(x) = COALESCE(x, False)</c>; <c>IsFalse(x) = COALESCE(NOT x, False)</c>;
-    /// <c>IsUnknown(x) = COALESCE(x, True) AND COALESCE(NOT x, True)</c> (both are True only when x is Unknown: a True x
-    /// makes the second False and a False x makes the first False); <c>IsKnown(x) = IsTrue(x) OR IsFalse(x)</c>.
-    /// All four therefore expand to the kernel and no inspection is left as a semantic boundary.
-    /// </summary>
-    private static Expression ExpandInspection(InspectionKind kind, Expression operand)
-    {
-        return kind switch
-        {
-            InspectionKind.IsTrue => Coalesce(operand, TruthValue.False),
-            InspectionKind.IsFalse => Coalesce(Not(operand), TruthValue.False),
-            InspectionKind.IsUnknown => And(Coalesce(operand, TruthValue.True), Coalesce(Not(operand), TruthValue.True)),
-            InspectionKind.IsKnown => Or(Coalesce(operand, TruthValue.False), Coalesce(Not(operand), TruthValue.False)),
-            _ => throw new InvalidOperationException($"Unhandled inspection kind '{kind}'."),
-        };
     }
 }

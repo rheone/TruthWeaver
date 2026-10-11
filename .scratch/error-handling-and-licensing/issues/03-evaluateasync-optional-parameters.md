@@ -8,11 +8,11 @@
 
 Open point the implementer settles and records: parameter order. Keeping `services` second preserves existing positional callers; passing `dataSources` by name is then the norm. Do not leave two overloads that make a call ambiguous.
 
-- [ ] A test fails first: evaluating with neither services nor data sources compiles and runs
-- [ ] A rule that needs a service and gets none yields `Unknown` plus a fault, not an exception
-- [ ] Existing call sites (tests, README, docs, benchmarks) compile; the public change is in the CHANGELOG
-- [ ] XML docs describe each parameter's null meaning
-- [ ] The full validation from CLAUDE.md passes
+- [ ] A test fails first: evaluating with neither services nor data sources compiles and runs Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] A rule that needs a service and gets none yields `Unknown` plus a fault, not an exception
+- [x] Existing call sites (tests, README, docs, benchmarks) compile; the public change is in the CHANGELOG
+- [x] XML docs describe each parameter's null meaning
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 3).
 

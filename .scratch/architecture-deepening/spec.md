@@ -1,6 +1,6 @@
 # Deepen the tree-format reader and the operator definitions
 
-**Status:** ready-for-agent
+**Status:** done
 
 Source: the 2026-10-03 `/improve-codebase-architecture` review and its grilling round (owner answers Q1 a, Q2 a, Q3 a, Q4 a, Q5 a). Uses the `/codebase-design` vocabulary (module, interface, depth, seam, adapter, leverage, locality).
 

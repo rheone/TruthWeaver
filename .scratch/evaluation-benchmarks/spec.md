@@ -1,6 +1,6 @@
 # Evaluation and compile-time benchmarks
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

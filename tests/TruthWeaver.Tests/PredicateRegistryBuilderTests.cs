@@ -42,4 +42,24 @@ public sealed class PredicateRegistryBuilderTests
 
         Assert.Contains("already registered", exception.Message, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// A predicate named like a DSL keyword is rejected at registration, whatever its case, and the message names the
+    /// word. The rule text could never call such a predicate, because the parser reads the word as the keyword.
+    /// </summary>
+    [Theory]
+    [InlineData("any")]
+    [InlineData("Between")]
+    [InlineData("IF")]
+    [InlineData("exactly")]
+    [InlineData("None")]
+    public void Registering_a_predicate_named_like_a_keyword_throws_naming_the_word_Test(string name)
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => builder.AddConstant(name, value: true));
+
+        Assert.Contains($"'{name}'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("reserved", exception.Message, StringComparison.Ordinal);
+    }
 }

@@ -16,7 +16,7 @@ public static class FakePredicates
     /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="result">The fixed result every call returns.</param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
     /// <param name="description">A human-readable description of this fake predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -25,11 +25,11 @@ public static class FakePredicates
     ) Returning<TContext>(
         string name,
         bool result,
-        string label = "Fake",
+        string? label = null,
         string description = "A fake predicate that always returns a fixed result, registered for a test."
     )
     {
-        PredicateSchema schema = PredicateSchema.NoArguments(name, label, description);
+        PredicateSchema schema = PredicateSchema.NoArguments(name, label ?? name, description);
         return (schema, (_, _, _) => ValueTask.FromResult(result ? TruthValue.True : TruthValue.False));
     }
 
@@ -43,7 +43,7 @@ public static class FakePredicates
     /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="result">The fixed three-valued result every call answers with.</param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
     /// <param name="description">A human-readable description of this fake predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
@@ -52,11 +52,11 @@ public static class FakePredicates
     ) Returning<TContext>(
         string name,
         TruthValue result,
-        string label = "Fake",
+        string? label = null,
         string description = "A fake predicate that always answers with a fixed Kleene result, registered for a test."
     )
     {
-        PredicateSchema schema = PredicateSchema.NoArguments(name, label, description);
+        PredicateSchema schema = PredicateSchema.NoArguments(name, label ?? name, description);
         return (schema, (_, _, _) => ValueTask.FromResult(result));
     }
 
@@ -67,7 +67,7 @@ public static class FakePredicates
     /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="exception">The exception every call throws.</param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
     /// <param name="description">A human-readable description of this fake predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/>.</exception>
@@ -77,13 +77,13 @@ public static class FakePredicates
     ) Faulting<TContext>(
         string name,
         Exception exception,
-        string label = "Fake",
+        string? label = null,
         string description =
             "A fake predicate that always throws, simulating a fault (recorded, Unknown), registered for a test."
     )
     {
         ArgumentNullException.ThrowIfNull(exception);
-        PredicateSchema schema = PredicateSchema.NoArguments(name, label, description);
+        PredicateSchema schema = PredicateSchema.NoArguments(name, label ?? name, description);
         return (schema, (_, _, _) => throw exception);
     }
 
@@ -100,7 +100,7 @@ public static class FakePredicates
     /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="script">The ordered sequence of answers, one consumed per call.</param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
     /// <param name="description">A human-readable description of this fake predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     /// <exception cref="ArgumentException"><paramref name="script"/> is empty.</exception>
@@ -110,7 +110,7 @@ public static class FakePredicates
     ) Scripted<TContext>(
         string name,
         IReadOnlyList<TruthValue> script,
-        string label = "Fake",
+        string? label = null,
         string description =
             "A fake predicate that answers with successive scripted results across calls, registered for a test."
     )
@@ -120,7 +120,7 @@ public static class FakePredicates
             throw new ArgumentException("A scripted fake predicate needs at least one scripted answer.", nameof(script));
         }
 
-        PredicateSchema schema = PredicateSchema.NoArguments(name, label, description);
+        PredicateSchema schema = PredicateSchema.NoArguments(name, label ?? name, description);
         int callCount = 0;
         return (
             schema,
