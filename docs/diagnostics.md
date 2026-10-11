@@ -45,8 +45,21 @@ TRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expressi
 
 ## Getting the rule out of a result
 
-`CompilationResult<TContext>` holds the compiled rule only when compilation succeeded. After a `Succeeded` check, `Rule` is not
-`null` for the compiler, so no `!` is needed:
+Every method that returns a `CompilationResult<TContext>` has a `Try` form with the same inputs plus two `out` parameters:
+`TryCompile`, `TryCompileText`, `TryCompileJson`, `TryCompileYaml`, `RuleBuilder.TryCompile`, `TrySimplify`, `TryCanonicalize`,
+`TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`.
+The method returns `true` exactly when `rule` is not `null`, so no `!` is needed. A result that has only warnings returns
+`true`, and `diagnostics` holds the warnings. `diagnostics` is set in both cases.
+
+```csharp
+if (!compiler.TryCompile(source, out CompiledRule<MyContext>? rule, out EquatableArray<Diagnostic> diagnostics))
+{
+    return;
+}
+```
+
+`CompilationResult<TContext>.TryGetRule` does the same for a result you already hold. `CompilationResult<TContext>` itself
+holds the compiled rule only when compilation succeeded. After a `Succeeded` check, `Rule` is not `null`:
 
 ```csharp
 CompilationResult<MyContext> result = compiler.Compile(source);

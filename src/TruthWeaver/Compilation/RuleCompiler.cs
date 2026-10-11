@@ -80,6 +80,62 @@ public sealed class RuleCompiler<TContext>(
         return this.CompileFromParsedJson(root, parseDiagnostics);
     }
 
+    /// <summary>Compiles canonical DSL rule text without a result object: the <c>Try</c> form of <see cref="Compile(string)"/>.</summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompile(
+        string dslText,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Compile(dslText).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles canonical DSL rule text without a result object: the <c>Try</c> form of <see cref="CompileText(string)"/>.</summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileText(
+        string dslText,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileText(dslText).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles the JSON tree shape without a result object: the <c>Try</c> form of <see cref="CompileJson(string)"/>.</summary>
+    /// <param name="json">The JSON tree text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileJson(
+        [StringSyntax(StringSyntaxAttribute.Json)] string json,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileJson(json).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles the JSON tree shape from a <see cref="JsonElement"/> without a result object: the <c>Try</c> form of <see cref="CompileJson(JsonElement)"/>.</summary>
+    /// <param name="element">The JSON tree node.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileJson(
+        JsonElement element,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileJson(element).TryGetRule(out rule, out diagnostics);
+    }
+
     /// <summary>
     /// Notifies this compiler's logger that the host application swapped its active
     /// <see cref="CompiledRule{TContext}"/> reference — the library owns compilation and evaluation

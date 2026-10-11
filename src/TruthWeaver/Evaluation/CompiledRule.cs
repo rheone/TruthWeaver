@@ -1,5 +1,6 @@
 namespace TruthWeaver.Evaluation;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -341,6 +342,129 @@ public sealed class CompiledRule<TContext>
     public CompilationResult<TContext> ToDnf(NormalFormOptions? normalForm = null, int? maxNodeCount = null)
     {
         return this.NormalFormResult(NormalForms.Form.Dnf, nameof(this.ToDnf), normalForm, maxNodeCount);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToPrimitives"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToPrimitives"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToPrimitives(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToPrimitives(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToNand"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToNand"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToNand(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToNand(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToNor"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToNor"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToNor(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToNor(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="CompressToDerived"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompressToDerived(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompressToDerived().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="Canonicalize"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCanonicalize(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Canonicalize().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="Simplify"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TrySimplify([NotNullWhen(true)] out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)
+    {
+        return this.Simplify().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToNnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToNnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToNnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToNnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToCnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToCnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToCnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToCnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToDnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToDnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToDnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToDnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
     }
 
     /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>

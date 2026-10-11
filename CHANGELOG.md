@@ -33,6 +33,7 @@ copyright line reads 2026.
 
 ### Added
 
+- `Try` forms beside every method that returns a `CompilationResult<TContext>`: `RuleCompiler.TryCompile`, `TryCompileText`, `TryCompileJson` (text and `JsonElement`), `TryCompileYaml` (text and `YamlNode`), `RuleBuilder.TryCompile`, and on `CompiledRule` `TrySimplify`, `TryCanonicalize`, `TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`. Each is `bool Try…(…, out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)`; `rule` is non-null exactly when the method returns `true`, and a warning-only result returns `true`. `CompilationResult.TryGetRule` is the sibling of `GetRuleOrThrow`. Nothing breaks; the existing methods are unchanged. The convention (every public `…OrThrow` has a `Try…` sibling, and documentation shows the `Try` form first) is in `docs/contributing.md` and is enforced by an architecture test.
 - MinVer derives the package version from Git tags with the prefix `v`. An untagged build is `1.0.0-preview.0.N`. The
   hand-set `Version` of `1.0.0-dev` is removed from `Directory.Build.props`. CI checks out the full history so the
   version is correct.

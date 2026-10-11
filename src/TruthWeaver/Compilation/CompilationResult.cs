@@ -28,6 +28,20 @@ public sealed record CompilationResult<TContext>(CompiledRule<TContext>? Compile
     [MemberNotNullWhen(true, nameof(Rule))]
     public bool Succeeded => this.CompiledRule is not null;
 
+    /// <summary>
+    /// Gets the compiled rule without throwing: the sibling of <see cref="GetRuleOrThrow"/> for code that handles a failed
+    /// compilation as a normal outcome. A result with warnings only still returns <see langword="true"/>.
+    /// </summary>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic of this result, whether the method returns <see langword="true"/> or not.</param>
+    /// <returns><see langword="true"/> when compilation produced a rule (no <see cref="DiagnosticSeverity.Error"/> diagnostics); otherwise <see langword="false"/>.</returns>
+    public bool TryGetRule([NotNullWhen(true)] out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)
+    {
+        rule = this.CompiledRule;
+        diagnostics = this.Diagnostics;
+        return rule is not null;
+    }
+
     /// <summary>Gets the compiled rule, or throws when compilation failed, for code where a rule that does not compile is a bug (a startup path, a test).</summary>
     /// <returns>The compiled rule.</returns>
     /// <exception cref="InvalidOperationException">Compilation produced no rule. The message lists each <see cref="DiagnosticSeverity.Error"/> diagnostic as <see cref="FormatDiagnostics"/> renders it, without rule text.</exception>

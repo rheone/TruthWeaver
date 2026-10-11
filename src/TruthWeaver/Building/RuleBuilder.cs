@@ -1,5 +1,6 @@
 namespace TruthWeaver.Building;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TruthWeaver.Ast;
@@ -642,6 +643,21 @@ public abstract class RuleBuilder
         // for a diagnostic's span, so every diagnostic here carries only its builder path and Diagnostic.Span.None.
         using JsonDocument document = JsonDocument.Parse(this.ToJson());
         return compiler.CompileJson(document.RootElement);
+    }
+
+    /// <summary>Compiles this builder's tree without a result object: the <c>Try</c> form of <see cref="Compile{TContext}(RuleCompiler{TContext})"/>.</summary>
+    /// <typeparam name="TContext">The application context type the compiler's registry evaluates against.</typeparam>
+    /// <param name="compiler">The compiler to validate and build this tree with.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompile<TContext>(
+        RuleCompiler<TContext> compiler,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Compile(compiler).TryGetRule(out rule, out diagnostics);
     }
 
     private protected abstract JsonNode ToNode();

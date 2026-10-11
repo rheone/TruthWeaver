@@ -1,11 +1,13 @@
 namespace TruthWeaver.Yaml.Tests;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Yaml;
 using TruthWeaver.Yaml.Tests.TestSupport;
+using YamlDotNet.RepresentationModel;
 
 public sealed class YamlRuleExtensionsTests
 {
@@ -21,6 +23,45 @@ public sealed class YamlRuleExtensionsTests
 
         Assert.True(result.Succeeded);
         Assert.Equal("isManager", result.CompiledRule!.CanonicalText);
+    }
+
+    /// <summary>TryCompileYaml returns the rule for valid YAML text and false with diagnostics for an unknown predicate.</summary>
+    [Fact]
+    public void TryCompileYaml_ValidAndUnknownPredicate_ReturnsRuleOrFailure_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(
+            PredicateRegistry<YamlTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
+        );
+
+        Assert.True(compiler.TryCompileYaml("predicate: isManager", out CompiledRule<YamlTestContext>? rule, out _));
+        Assert.Equal("isManager", rule.CanonicalText);
+        Assert.False(
+            compiler.TryCompileYaml(
+                "predicate: neverRegistered",
+                out CompiledRule<YamlTestContext>? none,
+                out EquatableArray<Diagnostic> diagnostics
+            )
+        );
+        Assert.Null(none);
+        Assert.NotEmpty(diagnostics);
+    }
+
+    /// <summary>TryCompileYaml accepts a YamlNode extracted from a larger document.</summary>
+    [Fact]
+    public void TryCompileYaml_YamlNode_ReturnsRule_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(
+            PredicateRegistry<YamlTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
+        );
+        YamlStream stream = [];
+        using StringReader reader = new("predicate: isManager");
+        stream.Load(reader);
+
+        bool ok = compiler.TryCompileYaml(stream.Documents[0].RootNode, out CompiledRule<YamlTestContext>? rule, out _);
+
+        Assert.True(ok);
+        Assert.NotNull(rule);
+        Assert.Equal("isManager", rule.CanonicalText);
     }
 
     /// <summary>PrintYaml and CompileYaml round trip a compiled rule.</summary>

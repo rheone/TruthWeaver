@@ -1,5 +1,6 @@
 namespace TruthWeaver.Yaml;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
@@ -40,6 +41,40 @@ public static class YamlRuleExtensions
     {
         (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = YamlTreeParser.Parse(node);
         return CompileFromParsedYaml(compiler, root, diagnostics);
+    }
+
+    /// <summary>Compiles the YAML tree shape without a result object: the <c>Try</c> form of <see cref="CompileYaml{TContext}(RuleCompiler{TContext}, string)"/>.</summary>
+    /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
+    /// <param name="compiler">The compiler to validate the parsed tree against.</param>
+    /// <param name="yaml">The YAML tree text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public static bool TryCompileYaml<TContext>(
+        this RuleCompiler<TContext> compiler,
+        string yaml,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return compiler.CompileYaml(yaml).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles the YAML tree shape from a <see cref="YamlNode"/> without a result object: the <c>Try</c> form of <see cref="CompileYaml{TContext}(RuleCompiler{TContext}, YamlNode)"/>.</summary>
+    /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
+    /// <param name="compiler">The compiler to validate the parsed tree against.</param>
+    /// <param name="node">The YAML tree node.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public static bool TryCompileYaml<TContext>(
+        this RuleCompiler<TContext> compiler,
+        YamlNode node,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return compiler.CompileYaml(node).TryGetRule(out rule, out diagnostics);
     }
 
     /// <summary>Prints a compiled rule to the flat, key-discriminated YAML tree shape (ADR-0003).</summary>

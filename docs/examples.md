@@ -26,7 +26,10 @@ lovesPineapple
 ```csharp
 PredicateRegistry<Customer> registry = PredicateRegistry<Customer>.CreateBuilder().Add<LovesPineapple>().Build();
 RuleCompiler<Customer> compiler = new(registry);
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple").GetRuleOrThrow();
+if (!compiler.TryCompile("lovesPineapple", out CompiledRule<Customer>? rule, out EquatableArray<Diagnostic> diagnostics))
+{
+    return;
+}
 
 Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 ```

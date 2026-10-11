@@ -60,6 +60,14 @@ pwsh scripts/format-all.ps1 -CheckOnly
 The hook builds and tests only the files that you stage, and it does not run Roslynator. Run `format-all.ps1`, then
 `dotnet test`, before you push. The full list of checks is in the Required validation section of `CLAUDE.md`.
 
+## API conventions
+
+- **Try first.** Every public member named `XOrThrow` has a public sibling named `TryX` that returns `bool` and reports the
+  failure through an `out` parameter. For example, `CompilationResult<TContext>.GetRuleOrThrow` has `TryGetRule`.
+  `TruthWeaver.Architecture.Tests` fails when a sibling is missing.
+- **Docs show the `Try` form first.** An example in a documentation page uses the `Try` form. It uses the `OrThrow` form
+  only where a failure is a bug, such as at startup or in a test, and says so.
+
 ## How a package version is made
 
 [MinVer](https://github.com/adamralph/minver) derives the version of every package from the Git tags. No project sets a

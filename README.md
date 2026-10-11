@@ -88,11 +88,10 @@ or RC included. The file does not pin that exact patch.
    ```csharp
    PredicateRegistry<Customer> registry = PredicateRegistry<Customer>.CreateBuilder().Add<LovesPineapple>().Build();
    RuleCompiler<Customer> compiler = new(registry);
-   CompilationResult<Customer> result = compiler.Compile("lovesPineapple");
 
-   if (!result.Succeeded)
+   if (!compiler.TryCompile("lovesPineapple", out CompiledRule<Customer>? rule, out EquatableArray<Diagnostic> diagnostics))
    {
-       // result.Diagnostics explains why - surface it to whoever authored the rule.
+       // diagnostics explains why - surface it to whoever authored the rule.
        return;
    }
    ```
@@ -100,7 +99,7 @@ or RC included. The file does not pin that exact patch.
 4. **Evaluate it against a context:**
 
    ```csharp
-   Decision decision = await result.Rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
+   Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 
    if (decision.IsSatisfied)
    {

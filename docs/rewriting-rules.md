@@ -41,7 +41,7 @@ A rewrite returns one of two shapes. A rewrite that can be refused at its size c
 
 | Shape | Rewrites | How to read the result |
 | --- | --- | --- |
-| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Check `Succeeded`, then use `Rule` (or call `GetRuleOrThrow()`). A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Call the `Try` form (`TrySimplify`, `TryToNnf` and so on), or check `Succeeded` and use `Rule`. `GetRuleOrThrow()` throws instead. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). |
 | `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule`, `Steps` and `Diagnostics`. `Diagnostics` holds the same `TRE0033` warning as `Simplify()`. |
 
 To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It accepts a rewrite that returns a `CompilationResult<TContext>` or a `CompiledRule<TContext>`.
@@ -129,7 +129,10 @@ $$\text{hasTopping(topping: "greenOlives")} \land (\text{hasCrust(crust: "thin",
 
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("a IMPLIES ANY(b, c)").GetRuleOrThrow();
-CompiledRule<MyContext> kernel = rule.ExpandToPrimitives().GetRuleOrThrow();
+if (!rule.TryExpandToPrimitives(out CompiledRule<MyContext>? kernel, out EquatableArray<Diagnostic> diagnostics))
+{
+    return;
+}
 
 Console.WriteLine(kernel.CanonicalText);   // only primitive operators
 Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
@@ -864,9 +867,20 @@ Each `RewriteStep` has three members:
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("NOT (a AND (b OR c))").GetRuleOrThrow();
 
-Console.WriteLine(rule.ToNnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToDnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToCnf().GetRuleOrThrow().CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+if (rule.TryToNnf(out CompiledRule<MyContext>? nnf, out _))
+{
+    Console.WriteLine(nnf.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+}
+
+if (rule.TryToDnf(out CompiledRule<MyContext>? dnf, out _))
+{
+    Console.WriteLine(dnf.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+}
+
+if (rule.TryToCnf(out CompiledRule<MyContext>? cnf, out _))
+{
+    Console.WriteLine(cnf.CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+}
 ```
 
 | Form | Shape | How |
