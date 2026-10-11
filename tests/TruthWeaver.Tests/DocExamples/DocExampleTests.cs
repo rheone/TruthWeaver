@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tests.DocExamples;
 
 /// <summary>
-/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md, docs/packages.md, docs/rule-text.md, docs/rule-formats.md, docs/html-and-dot.md, docs/rulebuilder.md, docs/rewriting-rules.md, docs/predicates.md, docs/predicate-conventions.md, docs/examples.md, docs/diagnostics.md and docs/benchmarks.md are checked on every build by <see cref="DocExampleChecker"/>, so a
+/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md, docs/packages.md, docs/rule-text.md, docs/rule-formats.md, docs/html-and-dot.md, docs/rulebuilder.md, docs/rewriting-rules.md, docs/rewriting-examples.md, docs/rewriting-normal-form-examples.md, docs/predicates.md, docs/predicate-conventions.md, docs/examples.md, docs/diagnostics.md and docs/benchmarks.md are checked on every build by <see cref="DocExampleChecker"/>, so a
 /// change that breaks a documented example, or changes documented output, fails the build. The checker itself is proven to
 /// fail on a deliberately broken example. The procedure for adding an example is in docs/doc-examples.md.
 /// </summary>
@@ -22,6 +22,8 @@ public sealed class DocExampleTests
     [InlineData("docs/html-and-dot.md")]
     [InlineData("docs/rulebuilder.md")]
     [InlineData("docs/rewriting-rules.md")]
+    [InlineData("docs/rewriting-examples.md")]
+    [InlineData("docs/rewriting-normal-form-examples.md")]
     [InlineData("docs/predicates.md")]
     [InlineData("docs/predicate-conventions.md")]
     [InlineData("docs/examples.md")]

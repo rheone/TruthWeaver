@@ -10,7 +10,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Canonical form** | For a derived Operation, its definition in terms of primitives, such as `OR(NOT(a), b)` for `IMPLIES`. It is not canonical text. See [terminology](strong-k3/specification/terminology.md#forms-of-an-operation). |
 | **Canonical text** | The one spelling of a compiled rule that the printer writes. It is the form to store. It is not a canonical form. |
 | **Category** | The one group that an Operation belongs to in the K3 reference, such as Gates / Operators or Cardinality Functions. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
-| **CNF** | Conjunctive normal form: an `AND` of `OR`s of literals and atoms. `ToCnf()` returns it. See [conjunctive normal form](rewriting-rules.md#conjunctive-normal-form). |
+| **CNF** | Conjunctive normal form: an `AND` of `OR`s of literals and atoms. `ToCnf()` returns it. See [conjunctive normal form](rewriting-normal-form-examples.md#conjunctive-normal-form). |
 | **Collapse** | A method on a `Decision`, not part of a rule. `Decision.Collapse(policy)` turns the result into a `CollapseOutcome`. `CollapsePolicy` is `UnknownAsFalse`, `UnknownAsTrue` or `UnknownIsError`. `CollapseOutcome` is `True`, `False` or `RejectedUnresolved`. See [Collapse](strong-k3/result-transformations/collapse.md). |
 | **CompilationMode** | `Strict`, the default, makes an unregistered predicate a compile error. `Lenient` compiles it to a term that is always `Unknown`. |
 | **CompilationResult** | What `Compile`, `CompileJson` and `CompileYaml` return: a `CompiledRule`, which is `null` when compilation fails, and every diagnostic. |
@@ -25,7 +25,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Decision** | The result of one evaluation: a `TruthValue`, the faults that the evaluation absorbed and, if requested, a trace. `IsSatisfied` is `true` only for `True`. See [evaluation](strong-k3/specification/evaluation.md). |
 | **Derived** | An Operation that has a definition in terms of primitives. It stays a node of its own. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
 | **Diagnostic** | One compile-time problem or finding: a code, a severity, a message, and a span or path. Only the severity Error blocks compilation. See [diagnostics](strong-k3/specification/diagnostics.md). |
-| **DNF** | Disjunctive normal form: an `OR` of `AND`s of literals and atoms. `ToDnf()` returns it. See [disjunctive normal form](rewriting-rules.md#disjunctive-normal-form). |
+| **DNF** | Disjunctive normal form: an `OR` of `AND`s of literals and atoms. `ToDnf()` returns it. See [disjunctive normal form](rewriting-normal-form-examples.md#disjunctive-normal-form). |
 | **Evaluation mode** | `ShortCircuit`, the default, stops an Operation when its result is settled. `Exhaustive` runs every reachable term. The mode never changes the result. See [evaluation](strong-k3/specification/evaluation.md#evaluation-modes). |
 | **EvaluationOptions** | The per-call options: `Mode`, `Timeout`, `FaultBudget` and `IncludeResolvedValues`. |
 | **Expression** | The immutable tree of Operations over terms and constants. A `CompiledRule` wraps one. |
@@ -42,7 +42,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Kind** | `Primitive` or `Derived`. Every Operation document states it. |
 | **Kleene logic** | Three-valued logic with `True`, `False` and `Unknown`. A predicate fault becomes `Unknown`, and it is never a thrown exception or a silent `false`. See [values](strong-k3/specification/values.md). |
 | **Memoization** | Within one evaluation, a term identity runs at most once, however many places in the tree use it. It does not carry over to the next evaluation. |
-| **NNF** | Negation normal form: `NOT` appears only directly above a term or an atom. `ToNnf()` returns it. See [negation normal form](rewriting-rules.md#negation-normal-form). |
+| **NNF** | Negation normal form: `NOT` appears only directly above a term or an atom. `ToNnf()` returns it. See [negation normal form](rewriting-normal-form-examples.md#negation-normal-form). |
 | **Operation** | Anything with its own document in the K3 reference: an operator, a cardinality function, a function or a result transformation. See [operations](strong-k3/specification/operations.md). |
 | **Operator** | One way to combine terms and sub-expressions, such as `AND` or `If`. The engine and its API say Operator. |
 | **Operator spelling** | The one printed spelling of an operator word in canonical text. Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case. The other call words, such as `ExactlyOne`, `AtLeast`, `If` and `IsTrue`, are upper camel case. See [case](rule-text.md#case). |
