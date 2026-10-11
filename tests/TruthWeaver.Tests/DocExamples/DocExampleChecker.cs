@@ -26,6 +26,11 @@ using TruthWeaver.Yaml;
 /// <item><c>json ID</c>, <c>yaml ID</c>: a rule that must compile to the same canonical text as the <c>rule ID</c> example.</item>
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
 /// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID.</item>
+/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example.</item>
+/// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
+/// <item>An <c>equation</c> marker can stand above a display-math paragraph (a line that starts with <c>$$</c>) instead of a fence.</item>
+/// <item><c>rewrite-diagnostics ID</c>: documented output that must equal the diagnostics of the rewrite named by the rewrite word; <c>cap=N</c> sets the <c>maxNodeCount</c> of an expanding rewrite.</item>
+/// <item><c>metrics ID</c>: the Markdown table that follows must equal the depth and node count of the <c>rule ID</c> example and of each rewrite word that follows the ID.</item>
 /// <item><c>diagnostics-dsl SOURCE</c>, <c>diagnostics-json SOURCE</c>, <c>diagnostics-yaml SOURCE</c>: documented output that must equal <c>FormatDiagnostics</c> for compiling the rest of the marker line as that format.</item>
 /// <item><c>skip REASON</c>: the block is not runnable (a pseudo-grammar, a class diagram); the reason is mandatory.</item>
 /// </list>
@@ -33,6 +38,18 @@ using TruthWeaver.Yaml;
 /// </remarks>
 internal static partial class DocExampleChecker
 {
+    // The rewrite words a marker accepts, with the row label a metrics table shows for each.
+    private static readonly Dictionary<string, string> RewriteLabels = new(StringComparer.Ordinal)
+    {
+        ["nnf"] = "NNF",
+        ["cnf"] = "CNF",
+        ["dnf"] = "DNF",
+        ["simplify"] = "Simplify",
+        ["canonicalize"] = "Canonicalize",
+        ["compress"] = "CompressToDerived",
+        ["primitives"] = "ExpandToPrimitives",
+    };
+
     private static readonly string[] CheckedLanguages = ["text", "json", "yaml", "mermaid", "ebnf"];
 
     // The data source names the documentation's variable examples use; "user" carries the JSONPath validator.
@@ -78,6 +95,47 @@ internal static partial class DocExampleChecker
         {
             string line = lines[i++];
             Match fence = FenceRegex().Match(line);
+
+            if (!fence.Success && marker is not null && line.StartsWith('|') && MetricsMarkerRegex().IsMatch(marker))
+            {
+                // A metrics marker is followed by a Markdown table, not a fence. The table is every consecutive line that starts with a pipe.
+                int tableStart = i - 1;
+                int tableEnd = tableStart;
+                while (tableEnd < lines.Length && lines[tableEnd].StartsWith('|'))
+                {
+                    tableEnd++;
+                }
+
+                CheckMetricsTable(marker, string.Join('\n', lines[tableStart..tableEnd]), $"{fileName}:{i}", rules, failures);
+                marker = null;
+                i = tableEnd;
+                continue;
+            }
+
+            if (!fence.Success && marker is not null && line.StartsWith("$$", StringComparison.Ordinal))
+            {
+                // A display-math paragraph (a line that starts with $$) after an equation marker is checked like a fenced block.
+                // The paragraph is every consecutive non-blank line.
+                int paragraphStart = i - 1;
+                int paragraphEnd = paragraphStart;
+                while (paragraphEnd < lines.Length && lines[paragraphEnd].Length > 0)
+                {
+                    paragraphEnd++;
+                }
+
+                CheckBlock(
+                    marker,
+                    "math",
+                    string.Join('\n', lines[paragraphStart..paragraphEnd]),
+                    $"{fileName}:{i}",
+                    rules,
+                    failures
+                );
+                marker = null;
+                i = paragraphEnd;
+                continue;
+            }
+
             if (!fence.Success)
             {
                 if (line.Length > 0)
@@ -152,7 +210,7 @@ internal static partial class DocExampleChecker
             case "json" or "yaml":
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
-            case "tree" or "mermaid" or "equation" or "legend":
+            case "tree" or "mermaid" or "equation" or "legend" or "ruletext" or "rewrite-diagnostics":
                 // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources). An equation or legend marker
                 // takes the dialect words "latex", "ascii", "double-dollar", "mathjax" and "simple".
                 string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -161,6 +219,34 @@ internal static partial class DocExampleChecker
                 {
                     failures.Add($"{example}: no earlier doctest:rule {ruleId}.");
                     break;
+                }
+
+                CompilationResult<RuleTestContext>? rewritten = Rewrite(rule, words);
+                if (kind == "rewrite-diagnostics")
+                {
+                    if (rewritten is null)
+                    {
+                        failures.Add($"{example}: names no rewrite word.");
+                    }
+                    else
+                    {
+                        CompareOutput(rewritten.FormatDiagnostics(), body, example, failures);
+                    }
+
+                    break;
+                }
+
+                if (rewritten is not null)
+                {
+                    if (rewritten.CompiledRule is null)
+                    {
+                        failures.Add(
+                            $"{example}: the rewrite did not produce a rule.{Environment.NewLine}{rewritten.FormatDiagnostics()}"
+                        );
+                        break;
+                    }
+
+                    rule = rewritten.CompiledRule;
                 }
 
                 OperatorStyle operatorStyle = OperatorStyleOf(words);
@@ -188,6 +274,7 @@ internal static partial class DocExampleChecker
                     {
                         "tree" => PlainTextTreePrinter.Print(rule.Outline(), operatorStyle),
                         "equation" => rule.PrintEquation(equationOptions),
+                        "ruletext" => rule.PrintRuleText(),
                         _ when words.Contains("trace") => rule.PrintMermaid(EvaluateWithoutDataSources(rule), mermaidOptions),
                         _ => rule.PrintMermaid(mermaidOptions),
                     };
@@ -221,6 +308,89 @@ internal static partial class DocExampleChecker
 #pragma warning disable VSTHRD002
         return rule.EvaluateAsync(new RuleTestContext()).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
+    }
+
+    /// <summary>
+    /// Applies the rewrites that a marker names with rewrite words (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>,
+    /// <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>), in the order written. A <c>cap=N</c> word sets the
+    /// <c>maxNodeCount</c> of the expanding rewrites.
+    /// </summary>
+    /// <returns>The rewrite result, or <see langword="null"/> when the marker names no rewrite.</returns>
+    private static CompilationResult<RuleTestContext>? Rewrite(CompiledRule<RuleTestContext> rule, string[] words)
+    {
+        int? cap = null;
+        foreach (string word in words)
+        {
+            if (word.StartsWith("cap=", StringComparison.Ordinal) && int.TryParse(word.AsSpan(4), out int parsed))
+            {
+                cap = parsed;
+            }
+        }
+
+        // Several rewrite words apply in the order written, each to the rule the one before produced; a refused step ends the chain.
+        CompilationResult<RuleTestContext>? result = null;
+        CompiledRule<RuleTestContext> current = rule;
+        foreach (string word in words.Where(word => RewriteLabels.ContainsKey(word)))
+        {
+            result = word switch
+            {
+                "nnf" => current.ToNnf(maxNodeCount: cap),
+                "cnf" => current.ToCnf(maxNodeCount: cap),
+                "dnf" => current.ToDnf(maxNodeCount: cap),
+                "simplify" => current.Simplify(),
+                "canonicalize" => current.Canonicalize(),
+                "compress" => current.CompressToDerived(),
+                _ => current.ExpandToPrimitives(cap),
+            };
+            if (result.CompiledRule is null)
+            {
+                return result;
+            }
+
+            current = result.CompiledRule;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Checks the Markdown table after a <c>metrics</c> marker. The table has one row for the rule and one row for each
+    /// rewrite word, with the depth and node count that <c>RuleMetrics</c> reports.
+    /// </summary>
+    private static void CheckMetricsTable(
+        string markerLine,
+        string table,
+        string location,
+        Dictionary<string, CompiledRule<RuleTestContext>> rules,
+        List<string> failures
+    )
+    {
+        Match marker = MarkerRegex().Match(markerLine);
+        string example = $"{location} (doctest:{marker.Groups[1].Value} {marker.Groups[2].Value})";
+        string[] words = marker.Groups[2].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0 || !rules.TryGetValue(words[0], out CompiledRule<RuleTestContext>? rule))
+        {
+            failures.Add($"{example}: no earlier doctest:rule {(words.Length == 0 ? string.Empty : words[0])}.");
+            return;
+        }
+
+        StringBuilder builder = new();
+        builder.Append("| Form | Depth | NodeCount |\n| --- | --- | --- |\n");
+        builder.Append($"| Original | {rule.Metrics.Depth} | {rule.Metrics.NodeCount} |\n");
+        foreach (string word in words.Skip(1))
+        {
+            CompilationResult<RuleTestContext>? rewritten = Rewrite(rule, [word]);
+            if (rewritten?.CompiledRule is null)
+            {
+                failures.Add($"{example}: '{word}' is not a rewrite that produces a rule.");
+                return;
+            }
+
+            RuleMetrics metrics = rewritten.CompiledRule.Metrics;
+            builder.Append($"| {RewriteLabels[word]} | {metrics.Depth} | {metrics.NodeCount} |\n");
+        }
+
+        CompareOutput(builder.ToString(), table, example, failures);
     }
 
     private static OperatorStyle OperatorStyleOf(string[] words)
@@ -433,6 +603,9 @@ internal static partial class DocExampleChecker
 
     [GeneratedRegex(@"^<!--\s*doctest:(\S+)[ \t]*(.*?)\s*-->$")]
     private static partial Regex MarkerRegex();
+
+    [GeneratedRegex(@"^<!--\s*doctest:metrics\b")]
+    private static partial Regex MetricsMarkerRegex();
 
     [GeneratedRegex("(?<=[a-z])([A-Z])")]
     private static partial Regex CamelBoundaryRegex();

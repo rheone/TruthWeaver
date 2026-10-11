@@ -115,6 +115,105 @@ public sealed class DocExampleTests
         Assert.Empty(failures);
     }
 
+    /// <summary>A rewrite word makes the block document the rewritten rule, so rule text that matches the real CNF passes.</summary>
+    [Fact]
+    public void Check_RuleTextOfARewrittenRuleThatIsCurrent_ReportsNoFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n"
+            + "<!-- doctest:ruletext r cnf -->\n```text\n(NOT approvedByAlice OR NOT approvedByBob) AND (NOT approvedByAlice OR NOT approvedByCarol)\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Empty(failures);
+    }
+
+    /// <summary>Rule text that is the unrewritten rule, where the marker asks for a rewrite, is reported as stale.</summary>
+    [Fact]
+    public void Check_RuleTextThatIgnoresTheRewriteWord_ReportsAFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n"
+            + "<!-- doctest:ruletext r cnf -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Single(failures);
+    }
+
+    /// <summary>A rewrite that is refused at its size cap is reported for a printing marker, and its diagnostics are checked by a rewrite-diagnostics marker.</summary>
+    [Fact]
+    public void Check_RewriteOverTheCap_ReportsAFailureForPrintingAndMatchesTheDiagnostics_Test()
+    {
+        const string rule =
+            "<!-- doctest:rule r -->\n```text\n(isDineIn AND isTakeout) OR (isBanned AND isContractor) OR (hasSignedNda AND lovesPineapple)\n```\n";
+
+        IReadOnlyList<string> printing = DocExampleChecker.Check(
+            rule + "<!-- doctest:ruletext r cnf cap=10 -->\n```text\nanything\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> diagnostics = DocExampleChecker.Check(
+            rule + "<!-- doctest:rewrite-diagnostics r cnf cap=10 -->\n```text\nTRE9999 something else\n```\n",
+            "sample.md"
+        );
+
+        Assert.Contains("did not produce a rule", Assert.Single(printing), StringComparison.Ordinal);
+        Assert.Contains("documented output is stale", Assert.Single(diagnostics), StringComparison.Ordinal);
+    }
+
+    /// <summary>A metrics table must hold the real depth and node count of the rule and of each rewrite, so a wrong number is reported.</summary>
+    [Fact]
+    public void Check_MetricsTable_ReportsOnlyAWrongNumber_Test()
+    {
+        const string rule =
+            "<!-- doctest:rule r -->\n```text\nNOT (approvedByAlice AND (approvedByBob OR approvedByCarol))\n```\n";
+        const string current = "| Form | Depth | NodeCount |\n| --- | --- | --- |\n| Original | 4 | 6 |\n| CNF | 4 | 11 |\n";
+        const string stale = "| Form | Depth | NodeCount |\n| --- | --- | --- |\n| Original | 4 | 6 |\n| CNF | 4 | 12 |\n";
+
+        IReadOnlyList<string> passing = DocExampleChecker.Check(
+            rule + "<!-- doctest:metrics r cnf -->\n" + current,
+            "sample.md"
+        );
+        IReadOnlyList<string> failing = DocExampleChecker.Check(rule + "<!-- doctest:metrics r cnf -->\n" + stale, "sample.md");
+
+        Assert.Empty(passing);
+        Assert.Single(failing);
+    }
+
+    /// <summary>Several rewrite words apply in order, so expanding to primitives and compressing back gives the derived operator.</summary>
+    [Fact]
+    public void Check_RuleTextAfterTwoRewrites_AppliesThemInOrder_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nNOT isContractor OR hasSignedNda\n```\n"
+            + "<!-- doctest:ruletext r primitives compress -->\n```text\n(isContractor IMPLIES hasSignedNda)\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Empty(failures);
+    }
+
+    /// <summary>A display-math paragraph after an equation marker is checked against the printed LaTeX, so a stale formula is reported.</summary>
+    [Fact]
+    public void Check_DisplayMathParagraph_ReportsOnlyAStaleFormula_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n";
+        const string current = "$$\\text{isDineIn} \\oplus \\text{isTakeout}$$\n";
+        const string stale = "$$\\text{isDineIn} \\land \\text{isTakeout}$$\n";
+
+        IReadOnlyList<string> passing = DocExampleChecker.Check(
+            rule + "<!-- doctest:equation r latex double-dollar -->\n" + current,
+            "sample.md"
+        );
+        IReadOnlyList<string> failing = DocExampleChecker.Check(
+            rule + "<!-- doctest:equation r latex double-dollar -->\n" + stale,
+            "sample.md"
+        );
+
+        Assert.Empty(passing);
+        Assert.Single(failing);
+    }
+
     /// <summary>A documented operator-style tree that uses the word spelling where the marker asks for C-style is reported.</summary>
     [Fact]
     public void Check_TreeInTheWrongOperatorStyle_ReportsAFailure_Test()
