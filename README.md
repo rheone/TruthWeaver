@@ -142,7 +142,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
   evaluation timeout.
 - Scoped dependency injection for class-based predicates, structured logging and
   a `"TruthWeaver"` `Meter` for metrics.
-- Mermaid and plain-text rendering of a compiled rule, optionally colored by one
+- Mermaid, HTML, Graphviz DOT and plain-text rendering of a compiled rule, optionally colored by one
   evaluation.
 - Ready-made predicates and test support in `TruthWeaver.Predicates` and
   `TruthWeaver.Testing`.
@@ -157,6 +157,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
 - [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX, AsciiMath, a C-style notation, MathML, Typst or plain ASCII.
+- [HTML and Graphviz DOT](docs/html-and-dot.md): print a rule as an HTML fragment for a web page, or as a DOT graph for Graphviz.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent. [Which rewrite to use](docs/rewriting-rules.md#which-rewrite-to-use) helps you choose a rewrite, [Simplify](docs/rewriting-rules.md#simplify) describes the simplifier, and [Normal forms](docs/rewriting-rules.md#normal-forms) covers NNF, CNF and DNF.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
 - [Predicate conventions](docs/predicate-conventions.md): how the built-in predicates treat case, whitespace, range ends, null values and culture.

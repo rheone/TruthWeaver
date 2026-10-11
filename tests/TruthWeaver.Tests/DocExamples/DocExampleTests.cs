@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tests.DocExamples;
 
 /// <summary>
-/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md, docs/packages.md, docs/rule-text.md, docs/rule-formats.md, docs/rulebuilder.md, docs/rewriting-rules.md, docs/predicates.md, docs/predicate-conventions.md, docs/examples.md, docs/diagnostics.md and docs/benchmarks.md are checked on every build by <see cref="DocExampleChecker"/>, so a
+/// The runnable examples in README.md, CONTEXT.md, docs/data-sources.md, docs/architecture.md, docs/packages.md, docs/rule-text.md, docs/rule-formats.md, docs/html-and-dot.md, docs/rulebuilder.md, docs/rewriting-rules.md, docs/predicates.md, docs/predicate-conventions.md, docs/examples.md, docs/diagnostics.md and docs/benchmarks.md are checked on every build by <see cref="DocExampleChecker"/>, so a
 /// change that breaks a documented example, or changes documented output, fails the build. The checker itself is proven to
 /// fail on a deliberately broken example. The procedure for adding an example is in docs/doc-examples.md.
 /// </summary>
@@ -19,6 +19,7 @@ public sealed class DocExampleTests
     [InlineData("docs/packages.md")]
     [InlineData("docs/rule-text.md")]
     [InlineData("docs/rule-formats.md")]
+    [InlineData("docs/html-and-dot.md")]
     [InlineData("docs/rulebuilder.md")]
     [InlineData("docs/rewriting-rules.md")]
     [InlineData("docs/predicates.md")]
@@ -264,6 +265,86 @@ public sealed class DocExampleTests
         Assert.Empty(letters);
         Assert.Empty(symbols);
         Assert.Single(stale);
+    }
+
+    /// <summary>An html marker checks the block against <c>PrintHtml</c>, with the option words, so current output passes and stale output fails.</summary>
+    [Fact]
+    public async Task CheckAsync_HtmlMarker_ComparesTheBlockWithPrintHtml_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n";
+        const string plain =
+            "<span class=\"tw-rule\"><span class=\"tw-term\">Is Dine In</span> <span class=\"tw-operator\">XOR</span> <span class=\"tw-term\">Is Takeout</span></span>";
+        const string symbolic =
+            "<span class=\"tw-rule\"><span class=\"tw-term\">Is Dine In</span> <span class=\"tw-operator\">&oplus;</span> <span class=\"tw-term\">Is Takeout</span></span>";
+
+        IReadOnlyList<string> passing = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:html r -->\n```html\n" + plain + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> passingSymbolic = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:html r symbolic -->\n```html\n" + symbolic + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> stale = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:html r -->\n```html\n" + symbolic + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> untagged = await DocExampleChecker.CheckAsync("```html\n" + plain + "\n```\n", "sample.md");
+
+        Assert.Empty(passing);
+        Assert.Empty(passingSymbolic);
+        Assert.Single(stale);
+        Assert.Single(untagged);
+    }
+
+    /// <summary>A dot marker checks the block against <c>PrintDot</c>, with the option words, so current output passes and stale output fails.</summary>
+    [Fact]
+    public async Task CheckAsync_DotMarker_ComparesTheBlockWithPrintDot_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nNOT isDineIn\n```\n";
+        const string dot =
+            "digraph TruthWeaver {\n    rankdir=TB;\n    n0 [label=\"NOT\", shape=hexagon];\n    n1 [label=\"Is Dine In\", shape=box, style=\"rounded\"];\n    n0 -> n1;\n}";
+        string plain = dot.Replace("shape=hexagon", "shape=box").Replace("shape=box, style=\"rounded\"", "shape=box");
+
+        IReadOnlyList<string> passing = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:dot r -->\n```dot\n" + dot + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> passingPlain = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:dot r plain -->\n```dot\n" + plain + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> stale = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:dot r -->\n```dot\n" + plain + "\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> untagged = await DocExampleChecker.CheckAsync("```dot\n" + dot + "\n```\n", "sample.md");
+
+        Assert.Empty(passing);
+        Assert.Empty(passingPlain);
+        Assert.Single(stale);
+        Assert.Single(untagged);
+    }
+
+    /// <summary>The word <c>trace</c> on an html or dot marker prints the decision, so the uncolored output is stale.</summary>
+    [Fact]
+    public async Task CheckAsync_TraceWordOnHtmlAndDot_PrintsTheDecisionOutput_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nisDineIn\n```\n";
+
+        IReadOnlyList<string> html = await DocExampleChecker.CheckAsync(
+            rule
+                + "<!-- doctest:html r trace -->\n```html\n<span class=\"tw-rule\"><span class=\"tw-term tw-true\">Is Dine In</span></span>\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> staleDot = await DocExampleChecker.CheckAsync(
+            rule
+                + "<!-- doctest:dot r trace -->\n```dot\ndigraph TruthWeaver {\n    rankdir=TB;\n    n0 [label=\"Is Dine In\", shape=box, style=\"rounded\"];\n}\n```\n",
+            "sample.md"
+        );
+
+        Assert.Empty(html);
+        Assert.Single(staleDot);
     }
 
     /// <summary>A documented operator-style tree that uses the word spelling where the marker asks for C-style is reported.</summary>

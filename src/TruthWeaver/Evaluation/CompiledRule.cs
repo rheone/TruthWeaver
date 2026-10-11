@@ -662,6 +662,59 @@ public sealed class CompiledRule<TContext>
         return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), options);
     }
 
+    /// <summary>
+    /// Renders this rule as an HTML fragment: one infix formula in nested <c>span</c> elements with the classes
+    /// <c>tw-operator</c>, <c>tw-term</c> and <c>tw-constant</c>, HTML entities for the logic symbols and a <c>sub</c> element for
+    /// the subscript of a simple variable. The fragment has no <c>script</c> element and no <c>style</c> attribute, and every
+    /// term, argument and constant is escaped, so it is safe to put in a page.
+    /// </summary>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <returns>The HTML fragment.</returns>
+    public string PrintHtml(HtmlOptions? options = null)
+    {
+        return HtmlPrinter.Print(this.Outline(), options ?? HtmlOptions.Default);
+    }
+
+    /// <summary>
+    /// Renders this rule as an HTML fragment, with the state class <c>tw-true</c>, <c>tw-false</c>, <c>tw-unknown</c> or
+    /// <c>tw-skipped</c> added to each node of one evaluation.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <returns>The HTML fragment.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
+    public string PrintHtml(Decision decision, HtmlOptions? options = null)
+    {
+        return HtmlPrinter.Print(this.Outline(), RequireTraceTree(decision), options ?? HtmlOptions.Default);
+    }
+
+    /// <summary>
+    /// Renders this rule as a Graphviz DOT <c>digraph</c>: a hexagon for each operator, a rounded box for each term and a circle
+    /// for each constant, with one edge from each operator to each operand. The node ids are <c>n0</c>, <c>n1</c> and so on
+    /// in depth-first order, and the labels are escaped for DOT.
+    /// </summary>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <returns>The DOT text.</returns>
+    public string PrintDot(DotOptions? options = null)
+    {
+        return DotPrinter.Print(this.Outline(), options ?? DotOptions.Default);
+    }
+
+    /// <summary>
+    /// Renders this rule as a Graphviz DOT <c>digraph</c>, with a fill color on each node of one evaluation: green for
+    /// <c>True</c>, red for <c>False</c>, yellow for <c>Unknown</c> and gray for a node that short-circuiting skipped.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <returns>The DOT text.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
+    public string PrintDot(Decision decision, DotOptions? options = null)
+    {
+        return DotPrinter.Print(this.Outline(), RequireTraceTree(decision), options ?? DotOptions.Default);
+    }
+
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>

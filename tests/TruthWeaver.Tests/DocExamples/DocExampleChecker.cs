@@ -17,7 +17,7 @@ using TruthWeaver.Yaml;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A fenced block in a checked language (<c>text</c>, <c>json</c>, <c>yaml</c>, <c>mermaid</c>, <c>ebnf</c>) must be preceded
+/// A fenced block in a checked language (<c>text</c>, <c>json</c>, <c>yaml</c>, <c>mermaid</c>, <c>ebnf</c>, <c>html</c>, <c>dot</c>) must be preceded
 /// (ignoring blank lines) by a marker comment <c>&lt;!-- doctest:KIND ARGUMENT --&gt;</c>; other languages, including C#
 /// fragments, are not checked. The kinds are:
 /// </para>
@@ -25,6 +25,7 @@ using TruthWeaver.Yaml;
 /// <item><c>rule ID</c>: DSL text that must compile; its canonical text is remembered under <c>ID</c>.</item>
 /// <item><c>json ID</c>, <c>yaml ID</c>: a rule that must compile to the same canonical text as the <c>rule ID</c> example.</item>
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
+/// <item><c>html ID</c>, <c>dot ID</c>: documented output (in an <c>html</c> or <c>dot</c> block) that must equal <c>PrintHtml()</c> / <c>PrintDot()</c> of the <c>rule ID</c> example; the option words <c>symbolic</c>, <c>cstyle</c>, <c>letters</c>, <c>logic-symbols</c> and <c>trace</c> follow the ID, <c>simple</c> on an <c>html</c> marker, and <c>plain</c> and <c>left-right</c> on a <c>dot</c> marker.</item>
 /// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c> (AsciiMath), <c>mathml</c>, <c>typst</c>, <c>plain-ascii</c> (the 7-bit <see cref="EquationDialect.Ascii"/> dialect), <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID, and so do the constant-style words <c>letters</c> and <c>logic-symbols</c> (also valid on a <c>tree</c> or <c>mermaid</c> marker).</item>
 /// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it).</item>
 /// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
@@ -50,7 +51,7 @@ internal static partial class DocExampleChecker
         ["primitives"] = "ExpandToPrimitives",
     };
 
-    private static readonly string[] CheckedLanguages = ["text", "json", "yaml", "mermaid", "ebnf"];
+    private static readonly string[] CheckedLanguages = ["text", "json", "yaml", "mermaid", "ebnf", "html", "dot"];
 
     // The data source names the documentation's variable examples use; "user" carries the JSONPath validator.
     private static readonly RuleCompiler<RuleTestContext> Compiler = new(
@@ -210,7 +211,7 @@ internal static partial class DocExampleChecker
             case "json" or "yaml":
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
-            case "tree" or "mermaid" or "equation" or "legend" or "ruletext" or "rewrite-diagnostics":
+            case "tree" or "mermaid" or "html" or "dot" or "equation" or "legend" or "ruletext" or "rewrite-diagnostics":
                 // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources).
                 // A ruletext marker takes "symbolic" too (PrintRuleText(OperatorStyle) rejects "cstyle"). An equation or legend marker
                 // takes the dialect words "latex", "ascii" (AsciiMath), "mathml", "typst", "plain-ascii", "cstyle", "double-dollar", "mathjax" and "simple". The words "letters" and "logic-symbols" select the constant style of any of them.
@@ -266,8 +267,32 @@ internal static partial class DocExampleChecker
                     LatexWrap = LatexWrapOf(words),
                     SimpleVariables = words.Contains("simple"),
                 };
+                HtmlOptions htmlOptions = new()
+                {
+                    OperatorStyle = operatorStyle,
+                    Constants = constants,
+                    SimpleVariables = words.Contains("simple"),
+                };
+                DotOptions dotOptions = new()
+                {
+                    OperatorStyle = operatorStyle,
+                    Constants = constants,
+                    NodeShapes = !words.Contains("plain"),
+                    Direction = words.Contains("left-right") ? MermaidDirection.LeftRight : MermaidDirection.TopDown,
+                };
                 string actualOutput;
-                if (kind == "legend")
+                if (kind is "html" or "dot")
+                {
+                    Decision? traced = words.Contains("trace") ? await EvaluateWithoutDataSourcesAsync(rule) : null;
+                    actualOutput = (kind, traced) switch
+                    {
+                        ("html", null) => rule.PrintHtml(htmlOptions),
+                        ("html", { } decision) => rule.PrintHtml(decision, htmlOptions),
+                        (_, null) => rule.PrintDot(dotOptions),
+                        (_, { } decision) => rule.PrintDot(decision, dotOptions),
+                    };
+                }
+                else if (kind == "legend")
                 {
                     EquationWithLegend withLegend = rule.PrintEquationWithLegend(equationOptions);
                     actualOutput = withLegend.Equation + "\n" + withLegend.LegendText;

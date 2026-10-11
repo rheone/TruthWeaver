@@ -12,6 +12,8 @@ A compiled rule prints in several formats. Pick the printer for the job:
 | Store a rule, or send it to another tool. | `PrintJson` | [Section 8](#json) |
 | Read the structure of a rule in a log or a terminal. | `PrintPlainText` | [Section 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
 | Draw a rule in a document or a UI that renders diagrams. | `PrintMermaid` | [Section 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
+| Put a rule in a web page as markup that your CSS styles. See [HTML and Graphviz DOT](html-and-dot.md). | `PrintHtml` | [HTML and Graphviz DOT](html-and-dot.md#html) |
+| Draw a rule as a graph with Graphviz. See [HTML and Graphviz DOT](html-and-dot.md). | `PrintDot` | [HTML and Graphviz DOT](html-and-dot.md#graphviz-dot) |
 | Show why a decision came out as it did. | `PrintPlainText` or `PrintMermaid`, with the decision | [The bonus section](#bonus-explaining-a-denied-decision) |
 | Write a rule as a formula in a report, a wiki or a paper. See [Equations](equations.md). | `PrintEquation` | [Section 8](#equations) |
 | Write a formula that stays short when the terms are long. See [Equations](equations.md). | `PrintEquationWithLegend` | [Section 8](#an-equation-with-a-legend) |
