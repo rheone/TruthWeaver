@@ -1,20 +1,20 @@
-# Collection NotCountLessThan
+# Collection NotHasCountLessThan
 
-`NotCountLessThan` is `True` when the selected collection has the argument number of elements or more. The count includes repeated elements and `null` elements. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
+`NotHasCountLessThan` is `True` when the selected collection has the argument number of elements or more. The count includes repeated elements and `null` elements. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
-- Factory: `CollectionPredicates.NotCountLessThan`
-- Default label: `Not Count Less Than`
+- Factory: `CollectionPredicates.NotHasCountLessThan`
+- Default label: `Not Has Count Less Than`
 - Default argument name: `count`. The host can change it when it registers the predicate.
-- Rule text: `tagsNotCountLessThan(count: 2)`. The host chooses the name `tagsNotCountLessThan` when it registers the predicate.
+- Rule text: `tagsNotHasCountLessThan(count: 2)`. The host chooses the name `tagsNotHasCountLessThan` when it registers the predicate.
 
 ## Classification
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `StringPredicates`
-- Twin: [CountLessThan](collection-countlessthan.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
+- Family: `CollectionPredicates`
+- Twin: [HasCountLessThan](collection-hascountlessthan.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
 
@@ -36,7 +36,7 @@ The selector has one overload. The element type is `string`. See [Argument kinds
 
 ## Answers
 
-The table shows the rule `tagsNotCountLessThan(count: 2)`.
+The table shows the rule `tagsNotHasCountLessThan(count: 2)`.
 
 | Selected value | Answer | Answer with `NullBehavior.False` |
 | --- | --- | --- |
@@ -54,10 +54,10 @@ A null selected collection answers `Unknown` by default. It records no fault. A 
 
 | Rule | Selected values | Result | Why |
 | --- | --- | --- | --- |
-| `tagsNotCountLessThan(count: 2)` | `tags = ["a", "a"]` | `True` | A repeated element counts each time. The collection has 2 elements. |
-| `tagsNotCountLessThan(count: 2)` | `tags = ["a", null]` | `True` | A `null` element counts. The collection has 2 elements. |
-| `tagsNotCountLessThan(count: 0)` | `tags = []` | `True` | The empty collection has 0 elements. |
-| `tagsNotCountLessThan(count: 2)` | `tags = null` | `Unknown` | A null selected collection is `Unknown` by default. |
+| `tagsNotHasCountLessThan(count: 2)` | `tags = ["a", "a"]` | `True` | A repeated element counts each time. The collection has 2 elements. |
+| `tagsNotHasCountLessThan(count: 2)` | `tags = ["a", null]` | `True` | A `null` element counts. The collection has 2 elements. |
+| `tagsNotHasCountLessThan(count: 0)` | `tags = []` | `True` | The empty collection has 0 elements. |
+| `tagsNotHasCountLessThan(count: 2)` | `tags = null` | `Unknown` | A null selected collection is `Unknown` by default. |
 
 ## Edge cases
 
@@ -66,7 +66,7 @@ A null selected collection answers `Unknown` by default. It records no fault. A 
 
 ## Related predicates
 
-- [CountLessThan](collection-countlessthan.md) is the exact complement of this predicate.
-- [NotCountEqual](collection-notcountequal.md) compares the number of elements in another way.
-- [NotCountGreaterThan](collection-notcountgreaterthan.md) compares the number of elements in another way.
+- [HasCountLessThan](collection-hascountlessthan.md) is the exact complement of this predicate.
+- [NotHasCountEqualTo](collection-nothascountequalto.md) compares the number of elements in another way.
+- [NotHasCountGreaterThan](collection-nothascountgreaterthan.md) compares the number of elements in another way.
 - [IsNotEmpty](collection-isnotempty.md) tests for zero elements.

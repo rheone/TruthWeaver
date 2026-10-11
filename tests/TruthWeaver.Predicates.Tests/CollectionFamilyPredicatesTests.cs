@@ -200,10 +200,10 @@ public class CollectionFamilyPredicatesTests
             CollectionPredicates.NotContainsAll<TestContext>("p", c => c.Values).Evaluate,
             CollectionPredicates.IsSubsetOf<TestContext>("p", c => c.Values).Evaluate,
             CollectionPredicates.IsNotSubsetOf<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountEqual<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.NotCountEqual<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountLessThan<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountGreaterThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.NotHasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountLessThan<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountGreaterThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
         ];
         PredicateArguments args = new(
             new Dictionary<string, LiteralValue>
@@ -238,7 +238,7 @@ public class CollectionFamilyPredicatesTests
     public async Task Count_NullCollectionWithFalseOption_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> equal) =
-            CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values, nullBehavior: NullBehavior.False);
+            CollectionPredicates.HasCountEqualTo<TestContext>("countEqual", c => c.Values, nullBehavior: NullBehavior.False);
 
         TruthValue result = await RunAsync(equal, new TestContext(null, null), Scalar("count", 0L));
 
@@ -249,7 +249,7 @@ public class CollectionFamilyPredicatesTests
     [Fact]
     public void Schema_CountContainsAnyContainsAndIn_DeclareLiteralKindsAndDescription_Test()
     {
-        (PredicateSchema count, _) = CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values);
+        (PredicateSchema count, _) = CollectionPredicates.HasCountEqualTo<TestContext>("countEqual", c => c.Values);
         (PredicateSchema any, _) = CollectionPredicates.ContainsAny<TestContext>("any", c => c.Values);
         (PredicateSchema contains, _) = CollectionPredicates.Contains<TestContext>("contains", c => c.Values);
         (PredicateSchema isIn, _) = StringPredicates.IsIn<TestContext>("in", c => c.Value);
@@ -269,24 +269,24 @@ public class CollectionFamilyPredicatesTests
         return kind switch
         {
             "Equal" => (
-                CollectionPredicates.CountEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
             "LessThan" => (
-                CollectionPredicates.CountLessThan<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountLessThan<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountLessThan<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountLessThan<TestContext>("t", c => c.Values).Evaluate
             ),
             "GreaterThan" => (
-                CollectionPredicates.CountGreaterThan<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountGreaterThan<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountGreaterThan<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountGreaterThan<TestContext>("t", c => c.Values).Evaluate
             ),
             "LessThanOrEqual" => (
-                CollectionPredicates.CountLessThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountLessThanOrEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountLessThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountLessThanOrEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
             _ => (
-                CollectionPredicates.CountGreaterThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountGreaterThanOrEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountGreaterThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountGreaterThanOrEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
         };
     }

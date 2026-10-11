@@ -13,7 +13,7 @@
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `StringPredicates`
+- Family: `CollectionPredicates`
 - Twin: [IsEmpty](collection-isempty.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
@@ -64,5 +64,5 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 ## Related predicates
 
 - [IsEmpty](collection-isempty.md) is the exact complement of this predicate.
-- [NotCountEqual](collection-notcountequal.md) compares the number of elements with a number.
+- [NotHasCountEqualTo](collection-nothascountequalto.md) compares the number of elements with a number.
 - [IsNotEmpty](string-isnotempty.md) tests a string. A null string is `Unknown` by default.

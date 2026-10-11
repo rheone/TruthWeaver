@@ -17,7 +17,7 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:
 
-- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates` has no case option: a pattern that ignores case starts with `(?i)`.
+- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates.IsMatch` and `IsNotMatch` take the optional rule argument `flags`, a string of the letters `i` (ignore case), `m`, `s`, `n` and `x`. A pattern can also start with an inline option such as `(?i)`.
 - `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 - `TypePredicates` covers the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset`. Each has an `IsNot...` twin that is its Strong Kleene complement. See [Type tests](#type-tests).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
@@ -42,9 +42,8 @@ The `StringPredicates` and `RegexPredicates` twins are:
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
 | `IsIn` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
 | `IsNotIn` | `StringPredicates` | Twin of `IsIn` |
-| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid literal pattern is a compile error (`TRE0026`). An invalid pattern from a data source faults to `Unknown` with a `Fault`. |
-| `MatchesIgnoreCase` | `RegexPredicates` | `Matches` that ignores case (`RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`). |
-| `NotMatchesIgnoreCase` | `RegexPredicates` | Twin of `MatchesIgnoreCase` |
+| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`), `m`, `s`, `n` and `x`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
+| `IsNotMatch` | `RegexPredicates` | Twin of `IsMatch`. It takes the same optional `flags` argument. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
 
@@ -97,11 +96,11 @@ NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "
 | `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
 | `ContainsAll` | `NotContainsAll` | `values` (`StringArray`) | Every string in the array is an element. |
 | `IsSubsetOf` | `IsNotSubsetOf` | `values` (`StringArray`) | Every element is in the array. |
-| `CountEqual` | `NotCountEqual` | `count` (`Int64`) | The element count equals `count`. |
-| `CountLessThan` | `NotCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
-| `CountGreaterThan` | `NotCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
-| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` | `count` (`Int64`) | The element count is at most `count`. |
-| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` | `count` (`Int64`) | The element count is at least `count`. |
+| `HasCountEqualTo` | `NotHasCountEqualTo` | `count` (`Int64`) | The element count equals `count`. |
+| `HasCountLessThan` | `NotHasCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
+| `HasCountGreaterThan` | `NotHasCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
+| `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` | `count` (`Int64`) | The element count is at most `count`. |
+| `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` | `count` (`Int64`) | The element count is at least `count`. |
 
 To test one string against several candidates, use `StringPredicates.IsIn` and `StringPredicates.IsNotIn`.
 

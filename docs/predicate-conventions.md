@@ -45,8 +45,15 @@ The table lists each predicate whose name changed. The packages were not publish
 | `DateTimePredicates.OnDayOfWeek`, `NotOnDayOfWeek` | `DateTimePredicates.IsOnDayOfWeek`, `IsNotOnDayOfWeek` |
 | `DateTimePredicates.InMonth`, `NotInMonth` | `DateTimePredicates.IsInMonth`, `IsNotInMonth` |
 | `DateTimePredicates.InTimeWindow`, `NotInTimeWindow` | `DateTimePredicates.IsInTimeWindow`, `IsNotInTimeWindow` |
+| `CollectionPredicates.CountEqual`, `NotCountEqual` | `CollectionPredicates.HasCountEqualTo`, `NotHasCountEqualTo` |
+| `CollectionPredicates.CountGreaterThan`, `NotCountGreaterThan` | `CollectionPredicates.HasCountGreaterThan`, `NotHasCountGreaterThan` |
+| `CollectionPredicates.CountGreaterThanOrEqual`, `NotCountGreaterThanOrEqual` | `CollectionPredicates.HasCountGreaterThanOrEqualTo`, `NotHasCountGreaterThanOrEqualTo` |
+| `CollectionPredicates.CountLessThan`, `NotCountLessThan` | `CollectionPredicates.HasCountLessThan`, `NotHasCountLessThan` |
+| `CollectionPredicates.CountLessThanOrEqual`, `NotCountLessThanOrEqual` | `CollectionPredicates.HasCountLessThanOrEqualTo`, `NotHasCountLessThanOrEqualTo` |
+| `RegexPredicates.Matches`, `NotMatches` | `RegexPredicates.IsMatch`, `IsNotMatch` |
+| `RegexPredicates.MatchesIgnoreCase`, `NotMatchesIgnoreCase` | `RegexPredicates.IsMatch`, `IsNotMatch`, rule argument `flags: "i"` |
 
-The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsNotDefault`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `IsSubsetOf`, `IsNotSubsetOf`, the type tests and the Form B predicates keep their names. The regex and collection count predicates keep their names until their own changes.
+The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsNotDefault`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`, `IsSubsetOf`, `IsNotSubsetOf`, the type tests and the Form B predicates keep their names. The collection count predicates now use the `HasCount` names, which are Form B verb phrases with the twin `NotHasCount…`.
 
 ## Conventions
 
@@ -69,6 +76,7 @@ The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsN
 | --- | --- | --- |
 | `IsEqualTo`, `IsNotEqualTo` (string) | `ignoreCase` | `false` |
 | `IsEqualTo`, `IsNotEqualTo` (string) | `trim` | `false` |
+| `IsMatch`, `IsNotMatch` | `flags` | empty (no options) |
 | `IsInTimeWindow`, `IsNotInTimeWindow` | `includeStart` | `true` |
 | `IsInTimeWindow`, `IsNotInTimeWindow` | `includeEnd` | `false` |
 | String, collection, regex, numeric, scalar and date predicates (set at registration) | `nullBehavior` | `Unknown` |
@@ -80,7 +88,7 @@ A predicate that is not in the table has no setting. Its behavior is fixed.
 - String predicates compare with ordinal, case-sensitive rules and do not trim.
 - Collection predicates compare their elements with ordinal, case-sensitive rules.
 - `Contains`, `StartsWith` and `EndsWith` have no case or trim setting. Use `IsEqualTo` to match a whole string with options.
-- `Matches` uses `RegexOptions.None` and a timeout of one second. To ignore case, start the pattern with `(?i)`.
+- `IsMatch` and `IsNotMatch` use no regular expression options unless the rule sets the optional `flags` argument. They use a timeout of one second.
 - `IsBetween` and `IsNotBetween` include both bounds.
 - `IsAfter` and `IsBefore` exclude an equal instant.
 

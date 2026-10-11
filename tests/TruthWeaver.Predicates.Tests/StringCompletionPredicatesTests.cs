@@ -82,7 +82,7 @@ public class StringCompletionPredicatesTests
     [Theory]
     [InlineData("IsEqualTo", "IsNotEqualTo", "value", "abc")]
     [InlineData("Contains", "NotContains", "value", "b")]
-    [InlineData("Matches", "NotMatches", "pattern", "^a")]
+    [InlineData("IsMatch", "IsNotMatch", "pattern", "^a")]
     public async Task ComparisonTwin_AnySelection_IsK3ComplementOfPositive_Test(
         string positive,
         string twin,
@@ -142,9 +142,9 @@ public class StringCompletionPredicatesTests
 
     /// <summary>An invalid pattern throws at evaluation time, which the evaluator turns into Unknown plus a Fault.</summary>
     [Fact]
-    public Task NotMatches_InvalidPattern_ThrowsSoTheEvaluatorRecordsAFault_Test()
+    public Task IsNotMatch_InvalidPattern_ThrowsSoTheEvaluatorRecordsAFault_Test()
     {
-        Evaluate evaluate = Comparison("NotMatches");
+        Evaluate evaluate = Comparison("IsNotMatch");
 
         return Assert.ThrowsAsync<RegexParseException>(async () =>
             await evaluate(new TestContext("anything"), Args("pattern", "("), CancellationToken.None)
@@ -163,18 +163,19 @@ public class StringCompletionPredicatesTests
             StringPredicates.IsNullOrWhiteSpace<TestContext>("a", c => c.Value).Schema,
             StringPredicates.IsNotNullOrWhiteSpace<TestContext>("a", c => c.Value).Schema,
         ];
-        PredicateSchema[] oneArg =
-        [
-            StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema,
-            RegexPredicates.NotMatches<TestContext>("a", c => c.Value).Schema,
-        ];
+        PredicateSchema[] oneArg = [StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema];
+        PredicateSchema isNotMatch = RegexPredicates.IsNotMatch<TestContext>("a", c => c.Value).Schema;
 
         Assert.All(noArgs, s => Assert.Empty(s.Arguments));
         Assert.All(oneArg, s => Assert.Equal(LiteralKind.String, Assert.Single(s.Arguments).Type));
         PredicateSchema notEqualTo = StringPredicates.IsNotEqualTo<TestContext>("a", c => c.Value).Schema;
         Assert.Equal(LiteralKind.String, notEqualTo.Arguments[0].Type);
         Assert.Equal(["value", "ignoreCase", "trim"], notEqualTo.Arguments.Select(a => a.Name));
-        Assert.All(noArgs.Concat(oneArg).Append(notEqualTo), s => Assert.False(string.IsNullOrWhiteSpace(s.Description)));
+        Assert.Equal(["pattern", "flags"], isNotMatch.Arguments.Select(a => a.Name));
+        Assert.All(
+            noArgs.Concat(oneArg).Append(notEqualTo).Append(isNotMatch),
+            s => Assert.False(string.IsNullOrWhiteSpace(s.Description))
+        );
     }
 
     private static TruthValue Complement(TruthValue value)
@@ -218,9 +219,9 @@ public class StringCompletionPredicatesTests
             "NotContains" => StringPredicates
                 .NotContains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
-            "Matches" => RegexPredicates.Matches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotMatches" => RegexPredicates
-                .NotMatches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+            "IsMatch" => RegexPredicates.IsMatch<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
+            "IsNotMatch" => RegexPredicates
+                .IsNotMatch<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
             _ => throw new ArgumentException(member),
         };

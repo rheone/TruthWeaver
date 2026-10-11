@@ -451,10 +451,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) CountEqual<TContext>(
+    ) HasCountEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Count Equal",
+        string label = "Has Count Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -473,7 +473,7 @@ public static class CollectionPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotCountEqual</c> twin of <see cref="CountEqual{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotHasCountEqualTo</c> twin of <see cref="HasCountEqualTo{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
@@ -488,10 +488,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotCountEqual<TContext>(
+    ) NotHasCountEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Not Count Equal",
+        string label = "Not Has Count Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -499,7 +499,7 @@ public static class CollectionPredicates
         return Build(
             name,
             label,
-            "The Strong Kleene complement of CountEqual: True when CountEqual is False, False when CountEqual is True, and Unknown when CountEqual is Unknown. CountEqual is true when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            "The Strong Kleene complement of HasCountEqualTo: True when HasCountEqualTo is False, False when HasCountEqualTo is True, and Unknown when HasCountEqualTo is Unknown. HasCountEqualTo is true when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
             nullBehavior,
             true,
@@ -521,10 +521,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) CountLessThan<TContext>(
+    ) HasCountLessThan<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Count Less Than",
+        string label = "Has Count Less Than",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -543,7 +543,7 @@ public static class CollectionPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotCountLessThan</c> twin of <see cref="CountLessThan{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotHasCountLessThan</c> twin of <see cref="HasCountLessThan{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
@@ -558,10 +558,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotCountLessThan<TContext>(
+    ) NotHasCountLessThan<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Not Count Less Than",
+        string label = "Not Has Count Less Than",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -569,7 +569,7 @@ public static class CollectionPredicates
         return Build(
             name,
             label,
-            "The Strong Kleene complement of CountLessThan: True when CountLessThan is False, False when CountLessThan is True, and Unknown when CountLessThan is Unknown. CountLessThan is true when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            "The Strong Kleene complement of HasCountLessThan: True when HasCountLessThan is False, False when HasCountLessThan is True, and Unknown when HasCountLessThan is Unknown. HasCountLessThan is true when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
             nullBehavior,
             true,
@@ -591,10 +591,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) CountGreaterThan<TContext>(
+    ) HasCountGreaterThan<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Count Greater Than",
+        string label = "Has Count Greater Than",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -613,7 +613,7 @@ public static class CollectionPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotCountGreaterThan</c> twin of <see cref="CountGreaterThan{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotHasCountGreaterThan</c> twin of <see cref="HasCountGreaterThan{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
@@ -628,10 +628,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotCountGreaterThan<TContext>(
+    ) NotHasCountGreaterThan<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Not Count Greater Than",
+        string label = "Not Has Count Greater Than",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -639,7 +639,7 @@ public static class CollectionPredicates
         return Build(
             name,
             label,
-            "The Strong Kleene complement of CountGreaterThan: True when CountGreaterThan is False, False when CountGreaterThan is True, and Unknown when CountGreaterThan is Unknown. CountGreaterThan is true when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            "The Strong Kleene complement of HasCountGreaterThan: True when HasCountGreaterThan is False, False when HasCountGreaterThan is True, and Unknown when HasCountGreaterThan is Unknown. HasCountGreaterThan is true when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
             nullBehavior,
             true,
@@ -661,10 +661,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) CountLessThanOrEqual<TContext>(
+    ) HasCountLessThanOrEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Count Less Than Or Equal",
+        string label = "Has Count Less Than Or Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -683,7 +683,7 @@ public static class CollectionPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotCountLessThanOrEqual</c> twin of <see cref="CountLessThanOrEqual{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotHasCountLessThanOrEqualTo</c> twin of <see cref="HasCountLessThanOrEqualTo{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
@@ -698,10 +698,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotCountLessThanOrEqual<TContext>(
+    ) NotHasCountLessThanOrEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Not Count Less Than Or Equal",
+        string label = "Not Has Count Less Than Or Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -709,7 +709,7 @@ public static class CollectionPredicates
         return Build(
             name,
             label,
-            "The Strong Kleene complement of CountLessThanOrEqual: True when CountLessThanOrEqual is False, False when CountLessThanOrEqual is True, and Unknown when CountLessThanOrEqual is Unknown. CountLessThanOrEqual is true when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            "The Strong Kleene complement of HasCountLessThanOrEqualTo: True when HasCountLessThanOrEqualTo is False, False when HasCountLessThanOrEqualTo is True, and Unknown when HasCountLessThanOrEqualTo is Unknown. HasCountLessThanOrEqualTo is true when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
             nullBehavior,
             true,
@@ -731,10 +731,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) CountGreaterThanOrEqual<TContext>(
+    ) HasCountGreaterThanOrEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Count Greater Than Or Equal",
+        string label = "Has Count Greater Than Or Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -753,7 +753,7 @@ public static class CollectionPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotCountGreaterThanOrEqual</c> twin of <see cref="CountGreaterThanOrEqual{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
+    /// <summary>Creates the <c>NotHasCountGreaterThanOrEqualTo</c> twin of <see cref="HasCountGreaterThanOrEqualTo{TContext}"/>: the Strong Kleene complement, so a definite answer is inverted and <see cref="TruthValue.Unknown"/> stays <see cref="TruthValue.Unknown"/>.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
@@ -768,10 +768,10 @@ public static class CollectionPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotCountGreaterThanOrEqual<TContext>(
+    ) NotHasCountGreaterThanOrEqualTo<TContext>(
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        string label = "Not Count Greater Than Or Equal",
+        string label = "Not Has Count Greater Than Or Equal To",
         string argumentName = "count",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -779,7 +779,7 @@ public static class CollectionPredicates
         return Build(
             name,
             label,
-            "The Strong Kleene complement of CountGreaterThanOrEqual: True when CountGreaterThanOrEqual is False, False when CountGreaterThanOrEqual is True, and Unknown when CountGreaterThanOrEqual is Unknown. CountGreaterThanOrEqual is true when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
+            "The Strong Kleene complement of HasCountGreaterThanOrEqualTo: True when HasCountGreaterThanOrEqualTo is False, False when HasCountGreaterThanOrEqualTo is True, and Unknown when HasCountGreaterThanOrEqualTo is Unknown. HasCountGreaterThanOrEqualTo is true when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
             nullBehavior,
             true,

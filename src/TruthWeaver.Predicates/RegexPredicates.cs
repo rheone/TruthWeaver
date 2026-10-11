@@ -8,27 +8,30 @@ using System.Text.RegularExpressions;
 /// </summary>
 public static class RegexPredicates
 {
-    /// <summary>The number of distinct patterns each pattern cache holds before it clears itself.</summary>
+    /// <summary>The number of distinct pattern and option pairs the pattern cache holds before it clears itself.</summary>
     internal const int PatternCacheCapacity = 256;
+
+    private const string FlagsArgumentName = "flags";
+
+    private const string FlagsArgumentDescription =
+        "Optional regular-expression flags, as single letters: i (ignore case), m (multiline), s (single line), "
+        + "n (explicit capture), x (ignore pattern white space). Defaults to none.";
 
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
-    private static readonly RegexPatternCache CaseSensitiveCache = new(RegexOptions.None, MatchTimeout, PatternCacheCapacity);
-
-    private static readonly RegexPatternCache IgnoreCaseCache = new(
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-        MatchTimeout,
-        PatternCacheCapacity
-    );
+    private static readonly RegexPatternCache Cache = new(MatchTimeout, PatternCacheCapacity);
 
     /// <summary>
     /// Creates a predicate that is true when the selected string matches the given regular-expression
-    /// pattern argument (<see cref="System.Text.RegularExpressions.Regex"/>), with no regex options. The compiled
-    /// <see cref="Regex"/> is cached per distinct pattern string in a process-wide cache of at most 256 patterns, so a
-    /// pattern reused across many terms or evaluations is compiled once, not once per evaluation call. A pattern that is
-    /// a literal in the rule is checked when the rule compiles: an invalid one is a <c>TRE0026</c> error. A pattern that
-    /// comes from a data source is known only at evaluation, where an invalid pattern surfaces as a fault: the
-    /// underlying <see cref="Regex"/> constructor throws, and the evaluator absorbs that as
+    /// pattern argument (<see cref="System.Text.RegularExpressions.Regex"/>). The optional rule argument <c>flags</c> is a
+    /// string of the single letters <c>i</c> (ignore case, with the invariant culture), <c>m</c> (multiline),
+    /// <c>s</c> (single line), <c>n</c> (explicit capture) and <c>x</c> (ignore pattern white space). It is empty when
+    /// omitted, which means no options. The compiled <see cref="Regex"/> is cached per distinct pattern and options pair in
+    /// a process-wide cache of at most 256 entries, so a pattern reused across many terms or evaluations is compiled once,
+    /// not once per evaluation call. A pattern or flags string that is a literal in the rule is checked when the rule
+    /// compiles: an invalid pattern, an unknown flag letter or a repeated flag letter is a <c>TRE0026</c> error. A pattern
+    /// or flags string that comes from a data source is known only at evaluation, where an invalid value surfaces as a
+    /// fault: the underlying <see cref="Regex"/> constructor or the flags parser throws, and the evaluator absorbs that as
     /// <see cref="TruthValue.Unknown"/> per ADR-0001's Kleene failure model, the same as any other predicate-evaluation
     /// failure.
     /// </summary>
@@ -48,20 +51,21 @@ public static class RegexPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Matches<TContext>(
+    ) IsMatch<TContext>(
         string name,
         Func<TContext, string?> selector,
-        string label = "Matches",
+        string label = "Is Match",
         string argumentName = "pattern",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string matches the given regular-expression pattern "
-            + "(System.Text.RegularExpressions). The compiled pattern is cached per distinct pattern "
-            + "string, not recompiled per evaluation. A literal pattern is validated when the rule compiles "
-            + "(an invalid one is a compile error); an invalid pattern from a data source surfaces as an "
-            + "evaluation-time fault (Unknown). "
+            + "(System.Text.RegularExpressions). The optional flags argument is a string of the letters i (ignore case, "
+            + "invariant culture), m (multiline), s (single line), n (explicit capture) and x (ignore pattern white space). "
+            + "The compiled pattern is cached per distinct pattern and flags, not recompiled per evaluation. A literal "
+            + "pattern or flags string is validated when the rule compiles (an invalid one is a compile error); an invalid "
+            + "value from a data source surfaces as an evaluation-time fault (Unknown). "
             + "A null selected value is Unknown, never a fault, unless the host registers it with "
             + "NullBehavior.False, which makes it False.";
         return Create(
@@ -72,67 +76,18 @@ public static class RegexPredicates
             nullBehavior,
             argumentName,
             "The regular-expression pattern to match against.",
-            negate: false,
-            CaseSensitiveCache
+            negate: false
         );
     }
 
     /// <summary>
-    /// Creates the case-insensitive twin of <see cref="Matches{TContext}"/>: true when the selected string matches the
-    /// pattern, ignoring case (<see cref="RegexOptions.IgnoreCase"/> with <see cref="RegexOptions.CultureInvariant"/>).
-    /// It has the same cache bound, compile-time check of a literal pattern, null handling and fault behavior as
-    /// <c>Matches</c>. An inline option in the pattern, such as <c>(?-i)</c>, still takes effect.
-    /// </summary>
-    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
-    /// <param name="name">The predicate's registered name.</param>
-    /// <param name="selector">
-    /// Reads the string value to test from the context. A <see langword="null"/> result answers per
-    /// <paramref name="nullBehavior"/>, never a fault.
-    /// </param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
-    /// <param name="argumentName">The rule-text argument name for the regular-expression pattern.</param>
-    /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
-    /// <see cref="NullBehavior.False"/>. Neither is a fault.
-    /// </param>
-    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
-    public static (
-        PredicateSchema Schema,
-        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) MatchesIgnoreCase<TContext>(
-        string name,
-        Func<TContext, string?> selector,
-        string label = "Matches Ignore Case",
-        string argumentName = "pattern",
-        NullBehavior nullBehavior = NullBehavior.Unknown
-    )
-    {
-        const string description =
-            "True when the selected string matches the given regular-expression pattern (System.Text.RegularExpressions), "
-            + "ignoring case with the invariant culture. A literal pattern is validated when the rule compiles; an invalid "
-            + "pattern from a data source surfaces as an evaluation-time fault (Unknown). "
-            + "A null selected value is Unknown, never a fault, unless the host registers it with "
-            + "NullBehavior.False, which makes it False.";
-        return Create(
-            name,
-            label,
-            description,
-            selector,
-            nullBehavior,
-            argumentName,
-            "The regular-expression pattern to match against, ignoring case.",
-            negate: false,
-            IgnoreCaseCache
-        );
-    }
-
-    /// <summary>
-    /// Creates the <c>NotX</c> twin of <see cref="Matches{TContext}"/>: true when the selected string does not match
-    /// the pattern. It is the Strong Kleene complement of <c>Matches</c>, so a <see langword="null"/> selection
+    /// Creates the <c>IsNotX</c> twin of <see cref="IsMatch{TContext}"/>: true when the selected string does not match
+    /// the pattern. It is the Strong Kleene complement of <c>IsMatch</c>, so a <see langword="null"/> selection
     /// answers <see cref="TruthValue.Unknown"/> by default and <see cref="TruthValue.True"/> under
-    /// <see cref="NullBehavior.False"/>. A literal pattern is checked when the rule compiles, as for <c>Matches</c>. An
-    /// invalid pattern from a data source throws at evaluation time exactly as <c>Matches</c> does, which the evaluator
-    /// records as a <c>Fault</c> and <see cref="TruthValue.Unknown"/> (ADR-0001).
+    /// <see cref="NullBehavior.False"/>. It takes the same optional <c>flags</c> argument. A literal pattern or flags
+    /// string is checked when the rule compiles, as for <c>IsMatch</c>. An invalid pattern or flags string from a data
+    /// source throws at evaluation time exactly as <c>IsMatch</c> does, which the evaluator records as a <c>Fault</c> and
+    /// <see cref="TruthValue.Unknown"/> (ADR-0001).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -148,20 +103,20 @@ public static class RegexPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotMatches<TContext>(
+    ) IsNotMatch<TContext>(
         string name,
         Func<TContext, string?> selector,
-        string label = "Not Matches",
+        string label = "Is Not Match",
         string argumentName = "pattern",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
             "True when the selected string does not match the given regular-expression pattern "
-            + "(System.Text.RegularExpressions). The K3 complement of Matches: a null selected value answers Unknown "
-            + "(never a fault), unless the host registers both with NullBehavior.False, which makes Matches "
-            + "False and this predicate True. "
-            + "A literal pattern is validated when the rule compiles; an invalid pattern from a data source "
+            + "(System.Text.RegularExpressions). The optional flags argument is the same as for IsMatch. The K3 complement "
+            + "of IsMatch: a null selected value answers Unknown (never a fault), unless the host registers both with "
+            + "NullBehavior.False, which makes IsMatch False and this predicate True. "
+            + "A literal pattern or flags string is validated when the rule compiles; an invalid value from a data source "
             + "surfaces as an evaluation-time fault (Unknown).";
         return Create(
             name,
@@ -171,56 +126,7 @@ public static class RegexPredicates
             nullBehavior,
             argumentName,
             "The regular-expression pattern the selected value must not match.",
-            negate: true,
-            CaseSensitiveCache
-        );
-    }
-
-    /// <summary>
-    /// Creates the <c>NotX</c> twin of <see cref="MatchesIgnoreCase{TContext}"/>: true when the selected string does not
-    /// match the pattern, ignoring case. It is the Strong Kleene complement of <c>MatchesIgnoreCase</c>, so a
-    /// <see langword="null"/> selection answers <see cref="TruthValue.Unknown"/> by default and
-    /// <see cref="TruthValue.True"/> under <see cref="NullBehavior.False"/>.
-    /// </summary>
-    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
-    /// <param name="name">The predicate's registered name.</param>
-    /// <param name="selector">Reads the string value to test from the context.</param>
-    /// <param name="label">A short, human-friendly display name for this predicate.</param>
-    /// <param name="argumentName">The rule-text argument name for the regular-expression pattern.</param>
-    /// <param name="nullBehavior">
-    /// What a <see langword="null"/> selected value answers for the positive predicate: <see cref="NullBehavior.Unknown"/>
-    /// (the default, the same as the positive predicate) or <see cref="NullBehavior.False"/>. This twin answers the
-    /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
-    /// </param>
-    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
-    public static (
-        PredicateSchema Schema,
-        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotMatchesIgnoreCase<TContext>(
-        string name,
-        Func<TContext, string?> selector,
-        string label = "Not Matches Ignore Case",
-        string argumentName = "pattern",
-        NullBehavior nullBehavior = NullBehavior.Unknown
-    )
-    {
-        const string description =
-            "True when the selected string does not match the given regular-expression pattern "
-            + "(System.Text.RegularExpressions), ignoring case with the invariant culture. The K3 complement of "
-            + "MatchesIgnoreCase: a null selected value answers Unknown (never a fault), unless the host registers both with "
-            + "NullBehavior.False, which makes MatchesIgnoreCase False and this predicate True. "
-            + "A literal pattern is validated when the rule compiles; an invalid pattern from a data source "
-            + "surfaces as an evaluation-time fault (Unknown).";
-        return Create(
-            name,
-            label,
-            description,
-            selector,
-            nullBehavior,
-            argumentName,
-            "The regular-expression pattern the selected value must not match, ignoring case.",
-            negate: true,
-            IgnoreCaseCache
+            negate: true
         );
     }
 
@@ -239,18 +145,26 @@ public static class RegexPredicates
         NullBehavior nullBehavior,
         string argumentName,
         string argumentDescription,
-        bool negate,
-        RegexPatternCache cache
+        bool negate
     )
     {
         PredicateSchema schema = new(
             name,
             label,
             description,
-            [new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.String)]
+            [
+                new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.String),
+                new PredicateArgumentSchema(
+                    FlagsArgumentName,
+                    FlagsArgumentDescription,
+                    LiteralKind.String,
+                    Required: false,
+                    Default: LiteralValue.OfString(string.Empty)
+                ),
+            ]
         )
         {
-            ArgumentValidator = args => ValidatePattern(args, argumentName, cache),
+            ArgumentValidator = args => ValidateArguments(args, argumentName),
         };
 
         return (
@@ -264,41 +178,71 @@ public static class RegexPredicates
                 }
 
                 string pattern = args.GetString(argumentName);
-                return PredicateResult.FromBoolAsync(cache.Get(pattern).IsMatch(selected) != negate);
+
+                // The schema defaults flags to empty. TryGet keeps a delegate that is invoked directly, with only the
+                // pattern, behaving as that default instead of failing on a missing argument.
+                args.TryGetString(FlagsArgumentName, out string? flags);
+                RegexOptions options = ParseFlags(flags ?? string.Empty);
+                return PredicateResult.FromBoolAsync(Cache.Get(pattern, options).IsMatch(selected) != negate);
             }
         );
     }
 
     /// <summary>
-    /// Checks a literal pattern at compile time. A pattern that comes from a data source is absent from
-    /// <paramref name="args"/> and is checked at evaluation instead.
+    /// Converts the flags string to options at evaluation. A flags string that a data source supplies is not checked at
+    /// compile time, so an invalid one throws here and the evaluator records a fault.
     /// </summary>
-    private static List<PredicateArgumentProblem> ValidatePattern(
-        PredicateArguments args,
-        string argumentName,
-        RegexPatternCache cache
-    )
+    private static RegexOptions ParseFlags(string flags)
+    {
+        return RegexFlags.TryParse(flags, out RegexOptions options, out string? error)
+            ? options
+            : throw new ArgumentException($"'{FlagsArgumentName}' is not valid: {error}", FlagsArgumentName);
+    }
+
+    /// <summary>
+    /// Checks a literal flags string and a literal pattern at compile time. A value that comes from a data source is
+    /// absent from <paramref name="args"/> and is checked at evaluation instead. The pattern is checked under the
+    /// options the flags name, because a flag such as <c>x</c> changes which patterns are valid.
+    /// </summary>
+    private static List<PredicateArgumentProblem> ValidateArguments(PredicateArguments args, string argumentName)
     {
         List<PredicateArgumentProblem> problems = [];
-        if (!args.TryGetString(argumentName, out string? pattern))
+        RegexOptions options = RegexOptions.None;
+        bool flagsValid = true;
+        if (
+            args.TryGetString(FlagsArgumentName, out string? flags)
+            && !RegexFlags.TryParse(flags, out options, out string? error)
+        )
         {
-            return problems;
-        }
-
-        try
-        {
-            cache.Validate(pattern);
-        }
-        catch (ArgumentException exception)
-        {
+            flagsValid = false;
             problems.Add(
                 new PredicateArgumentProblem(
-                    $"'{argumentName}' is not a valid regular expression: {exception.Message}",
-                    "a valid .NET regular expression",
-                    $"'{argumentName}' is '{pattern}'",
-                    "Fix the pattern. Escape a literal metacharacter with a backslash."
+                    $"'{FlagsArgumentName}' is not valid: {error}",
+                    $"zero or more of the letters {RegexFlags.Letters}, each at most once",
+                    $"'{FlagsArgumentName}' is '{flags}'",
+                    "Remove the unknown or repeated letter."
                 )
             );
+        }
+
+        // With invalid flags the options are unknown, so the pattern is not checked: one problem at a time.
+        if (flagsValid && args.TryGetString(argumentName, out string? pattern))
+        {
+            try
+            {
+                Cache.Validate(pattern, options);
+            }
+            catch (ArgumentException exception)
+            {
+                problems.Add(
+                    new PredicateArgumentProblem(
+                        $"'{argumentName}' is not a valid regular expression: {exception.Message}",
+                        "a valid .NET regular expression",
+                        $"'{argumentName}' is '{pattern}'",
+                        "Fix the pattern. Escape a literal metacharacter with a backslash."
+                    )
+                );
+            }
         }
 
         return problems;

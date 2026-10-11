@@ -75,4 +75,4 @@ A null selected value answers `Unknown` by default, because the type of a missin
 
 - [IsUrl](type-isurl.md) is the exact complement of this predicate.
 - [NotStartsWith](string-notstartswith.md) tests a string prefix, for example `"https://"`.
-- [NotMatches](regex-notmatches.md) tests text against your own pattern.
+- [IsNotMatch](regex-isnotmatch.md) tests text against your own pattern.

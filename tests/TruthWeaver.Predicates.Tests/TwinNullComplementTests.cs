@@ -97,19 +97,19 @@ public sealed class TwinNullComplementTests
                 () => StringPredicates.IsNotEmpty<Selections>("t", c => c.Text),
                 PredicateArguments.Empty
             ),
-            ["Regex.Matches/NotMatches"] = new(
-                nb => RegexPredicates.Matches<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => RegexPredicates.NotMatches<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => RegexPredicates.Matches<Selections>("p", c => c.Text),
-                () => RegexPredicates.NotMatches<Selections>("t", c => c.Text),
+            ["Regex.IsMatch/IsNotMatch"] = new(
+                nb => RegexPredicates.IsMatch<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => RegexPredicates.IsMatch<Selections>("p", c => c.Text),
+                () => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text),
                 Args(("pattern", LiteralValue.OfString("^a")))
             ),
-            ["Regex.MatchesIgnoreCase/NotMatchesIgnoreCase"] = new(
-                nb => RegexPredicates.MatchesIgnoreCase<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => RegexPredicates.NotMatchesIgnoreCase<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => RegexPredicates.MatchesIgnoreCase<Selections>("p", c => c.Text),
-                () => RegexPredicates.NotMatchesIgnoreCase<Selections>("t", c => c.Text),
-                Args(("pattern", LiteralValue.OfString("^a")))
+            ["Regex.IsMatch/IsNotMatch with flags"] = new(
+                nb => RegexPredicates.IsMatch<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => RegexPredicates.IsMatch<Selections>("p", c => c.Text),
+                () => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text),
+                Args(("pattern", LiteralValue.OfString("^a")), ("flags", LiteralValue.OfString("i")))
             ),
             ["Collection.Contains/NotContains"] = new(
                 nb => CollectionPredicates.Contains<Selections>("p", c => c.Items, nullBehavior: nb),
@@ -146,39 +146,39 @@ public sealed class TwinNullComplementTests
                 () => StringPredicates.IsNotIn<Selections>("t", c => c.Text),
                 Args(("values", Strings("a")))
             ),
-            ["Collection.CountEqual/NotCountEqual"] = new(
-                nb => CollectionPredicates.CountEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountEqualTo/NotHasCountEqualTo"] = new(
+                nb => CollectionPredicates.HasCountEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountLessThan/NotCountLessThan"] = new(
-                nb => CollectionPredicates.CountLessThan<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountLessThan<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountLessThan<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountLessThan<Selections>("t", c => c.Items),
+            ["Collection.HasCountLessThan/NotHasCountLessThan"] = new(
+                nb => CollectionPredicates.HasCountLessThan<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountLessThan<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountLessThan<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountLessThan<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountGreaterThan/NotCountGreaterThan"] = new(
-                nb => CollectionPredicates.CountGreaterThan<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountGreaterThan<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountGreaterThan<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountGreaterThan<Selections>("t", c => c.Items),
+            ["Collection.HasCountGreaterThan/NotHasCountGreaterThan"] = new(
+                nb => CollectionPredicates.HasCountGreaterThan<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountGreaterThan<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountGreaterThan<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountGreaterThan<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountLessThanOrEqual/NotCountLessThanOrEqual"] = new(
-                nb => CollectionPredicates.CountLessThanOrEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountLessThanOrEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountLessThanOrEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountLessThanOrEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountLessThanOrEqualTo/NotHasCountLessThanOrEqualTo"] = new(
+                nb => CollectionPredicates.HasCountLessThanOrEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountLessThanOrEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountLessThanOrEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountLessThanOrEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountGreaterThanOrEqual/NotCountGreaterThanOrEqual"] = new(
-                nb => CollectionPredicates.CountGreaterThanOrEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountGreaterThanOrEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountGreaterThanOrEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountGreaterThanOrEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountGreaterThanOrEqualTo/NotHasCountGreaterThanOrEqualTo"] = new(
+                nb => CollectionPredicates.HasCountGreaterThanOrEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountGreaterThanOrEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
             ["DateTime.IsAfter/IsNotAfter"] = new(

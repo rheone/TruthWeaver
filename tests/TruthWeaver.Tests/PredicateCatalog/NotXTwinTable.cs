@@ -227,35 +227,19 @@ internal static class NotXTwinTable
             Definite
         );
         yield return new TwinPair(
-            "RegexPredicates.Matches(String)",
-            "RegexPredicates.NotMatches(String)",
-            n => RegexPredicates.Matches<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
-            n => RegexPredicates.NotMatches<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            "RegexPredicates.IsMatch(String)",
+            "RegexPredicates.IsNotMatch(String)",
+            n => RegexPredicates.IsMatch<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
+            n => RegexPredicates.IsNotMatch<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
             [("pattern", "^a")],
             Text("abc"),
             Text("xbc"),
             Missing,
             Nulls: new(
-                n => RegexPredicates.Matches<TwinProbeContext>(n, c => c.Text),
-                n => RegexPredicates.NotMatches<TwinProbeContext>(n, c => c.Text),
-                n => RegexPredicates.Matches<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
-                n => RegexPredicates.NotMatches<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
-            )
-        );
-        yield return new TwinPair(
-            "RegexPredicates.MatchesIgnoreCase(String)",
-            "RegexPredicates.NotMatchesIgnoreCase(String)",
-            n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
-            n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: unknown),
-            [("pattern", "^a")],
-            Text("ABC"),
-            Text("xbc"),
-            Missing,
-            Nulls: new(
-                n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text),
-                n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text),
-                n => RegexPredicates.MatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
-                n => RegexPredicates.NotMatchesIgnoreCase<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
+                n => RegexPredicates.IsMatch<TwinProbeContext>(n, c => c.Text),
+                n => RegexPredicates.IsNotMatch<TwinProbeContext>(n, c => c.Text),
+                n => RegexPredicates.IsMatch<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False),
+                n => RegexPredicates.IsNotMatch<TwinProbeContext>(n, c => c.Text, nullBehavior: NullBehavior.False)
             )
         );
     }
@@ -376,52 +360,37 @@ internal static class NotXTwinTable
             )
         );
         yield return new TwinPair(
-            "CollectionPredicates.CountEqual(IReadOnlyCollection<String>)",
-            "CollectionPredicates.NotCountEqual(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.CountEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            n => CollectionPredicates.NotCountEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            "CollectionPredicates.HasCountEqualTo(IReadOnlyCollection<String>)",
+            "CollectionPredicates.NotHasCountEqualTo(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.HasCountEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.NotHasCountEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
             [("count", 2L)],
             Items("a", "b"),
             Items("a"),
             Missing,
             Nulls: new(
-                n => CollectionPredicates.CountEqual<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.NotCountEqual<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.CountEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
-                n => CollectionPredicates.NotCountEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False)
-            )
-        );
-        yield return new TwinPair(
-            "CollectionPredicates.CountLessThan(IReadOnlyCollection<String>)",
-            "CollectionPredicates.NotCountLessThan(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.CountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            n => CollectionPredicates.NotCountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            [("count", 2L)],
-            Items("a"),
-            Items("a", "b"),
-            Missing,
-            Nulls: new(
-                n => CollectionPredicates.CountLessThan<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.NotCountLessThan<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.CountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
-                n => CollectionPredicates.NotCountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False)
-            )
-        );
-        yield return new TwinPair(
-            "CollectionPredicates.CountGreaterThan(IReadOnlyCollection<String>)",
-            "CollectionPredicates.NotCountGreaterThan(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.CountGreaterThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            n => CollectionPredicates.NotCountGreaterThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            [("count", 1L)],
-            Items("a", "b"),
-            Items("a"),
-            Missing,
-            Nulls: new(
-                n => CollectionPredicates.CountGreaterThan<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.NotCountGreaterThan<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.CountGreaterThan<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
+                n => CollectionPredicates.HasCountEqualTo<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.NotHasCountEqualTo<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.HasCountEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
                 n =>
-                    CollectionPredicates.NotCountGreaterThan<TwinProbeContext>(
+                    CollectionPredicates.NotHasCountEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False)
+            )
+        );
+        yield return new TwinPair(
+            "CollectionPredicates.HasCountLessThan(IReadOnlyCollection<String>)",
+            "CollectionPredicates.NotHasCountLessThan(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.HasCountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.NotHasCountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            [("count", 2L)],
+            Items("a"),
+            Items("a", "b"),
+            Missing,
+            Nulls: new(
+                n => CollectionPredicates.HasCountLessThan<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.NotHasCountLessThan<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.HasCountLessThan<TwinProbeContext>(n, c => c.Items, nullBehavior: NullBehavior.False),
+                n =>
+                    CollectionPredicates.NotHasCountLessThan<TwinProbeContext>(
                         n,
                         c => c.Items,
                         nullBehavior: NullBehavior.False
@@ -429,25 +398,25 @@ internal static class NotXTwinTable
             )
         );
         yield return new TwinPair(
-            "CollectionPredicates.CountLessThanOrEqual(IReadOnlyCollection<String>)",
-            "CollectionPredicates.NotCountLessThanOrEqual(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.CountLessThanOrEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            n => CollectionPredicates.NotCountLessThanOrEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            "CollectionPredicates.HasCountGreaterThan(IReadOnlyCollection<String>)",
+            "CollectionPredicates.NotHasCountGreaterThan(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.HasCountGreaterThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.NotHasCountGreaterThan<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
             [("count", 1L)],
-            Items("a"),
             Items("a", "b"),
+            Items("a"),
             Missing,
             Nulls: new(
-                n => CollectionPredicates.CountLessThanOrEqual<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.NotCountLessThanOrEqual<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.HasCountGreaterThan<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.NotHasCountGreaterThan<TwinProbeContext>(n, c => c.Items),
                 n =>
-                    CollectionPredicates.CountLessThanOrEqual<TwinProbeContext>(
+                    CollectionPredicates.HasCountGreaterThan<TwinProbeContext>(
                         n,
                         c => c.Items,
                         nullBehavior: NullBehavior.False
                     ),
                 n =>
-                    CollectionPredicates.NotCountLessThanOrEqual<TwinProbeContext>(
+                    CollectionPredicates.NotHasCountGreaterThan<TwinProbeContext>(
                         n,
                         c => c.Items,
                         nullBehavior: NullBehavior.False
@@ -455,25 +424,51 @@ internal static class NotXTwinTable
             )
         );
         yield return new TwinPair(
-            "CollectionPredicates.CountGreaterThanOrEqual(IReadOnlyCollection<String>)",
-            "CollectionPredicates.NotCountGreaterThanOrEqual(IReadOnlyCollection<String>)",
-            n => CollectionPredicates.CountGreaterThanOrEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            n => CollectionPredicates.NotCountGreaterThanOrEqual<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
-            [("count", 2L)],
-            Items("a", "b"),
+            "CollectionPredicates.HasCountLessThanOrEqualTo(IReadOnlyCollection<String>)",
+            "CollectionPredicates.NotHasCountLessThanOrEqualTo(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.HasCountLessThanOrEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.NotHasCountLessThanOrEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            [("count", 1L)],
             Items("a"),
+            Items("a", "b"),
             Missing,
             Nulls: new(
-                n => CollectionPredicates.CountGreaterThanOrEqual<TwinProbeContext>(n, c => c.Items),
-                n => CollectionPredicates.NotCountGreaterThanOrEqual<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.HasCountLessThanOrEqualTo<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.NotHasCountLessThanOrEqualTo<TwinProbeContext>(n, c => c.Items),
                 n =>
-                    CollectionPredicates.CountGreaterThanOrEqual<TwinProbeContext>(
+                    CollectionPredicates.HasCountLessThanOrEqualTo<TwinProbeContext>(
                         n,
                         c => c.Items,
                         nullBehavior: NullBehavior.False
                     ),
                 n =>
-                    CollectionPredicates.NotCountGreaterThanOrEqual<TwinProbeContext>(
+                    CollectionPredicates.NotHasCountLessThanOrEqualTo<TwinProbeContext>(
+                        n,
+                        c => c.Items,
+                        nullBehavior: NullBehavior.False
+                    )
+            )
+        );
+        yield return new TwinPair(
+            "CollectionPredicates.HasCountGreaterThanOrEqualTo(IReadOnlyCollection<String>)",
+            "CollectionPredicates.NotHasCountGreaterThanOrEqualTo(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.HasCountGreaterThanOrEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            n => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),
+            [("count", 2L)],
+            Items("a", "b"),
+            Items("a"),
+            Missing,
+            Nulls: new(
+                n => CollectionPredicates.HasCountGreaterThanOrEqualTo<TwinProbeContext>(n, c => c.Items),
+                n => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<TwinProbeContext>(n, c => c.Items),
+                n =>
+                    CollectionPredicates.HasCountGreaterThanOrEqualTo<TwinProbeContext>(
+                        n,
+                        c => c.Items,
+                        nullBehavior: NullBehavior.False
+                    ),
+                n =>
+                    CollectionPredicates.NotHasCountGreaterThanOrEqualTo<TwinProbeContext>(
                         n,
                         c => c.Items,
                         nullBehavior: NullBehavior.False

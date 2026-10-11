@@ -13,7 +13,7 @@
 
 - Category: Predicates
 - Category index: [Predicates](README.md)
-- Family: `StringPredicates`
+- Family: `CollectionPredicates`
 - Twin: [SetEquals](collection-setequals.md). The two predicates are exact complements: where one answers `True` the other answers `False`, and where one answers `Unknown` the other answers `Unknown`. See [NotX twins](README.md#notx-twins).
 
 ## Selector and kinds
@@ -77,4 +77,4 @@ A null selected collection answers `Unknown` by default. It records no fault. A 
 - [SetEquals](collection-setequals.md) is the exact complement of this predicate.
 - [NotContainsAll](collection-notcontainsall.md) needs only one direction.
 - [IsNotSubsetOf](collection-isnotsubsetof.md) needs only the other direction.
-- [NotCountEqual](collection-notcountequal.md) compares only the number of elements.
+- [NotHasCountEqualTo](collection-nothascountequalto.md) compares only the number of elements.

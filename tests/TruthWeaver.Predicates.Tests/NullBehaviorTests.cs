@@ -11,7 +11,7 @@ public class NullBehaviorTests
 {
     /// <summary>Gets one entry per factory that takes a selector and a null-behavior option.</summary>
     public static TheoryData<string> FactoryNames =>
-        ["IsEqualTo", "IsEqualToIgnoringCase", "StartsWith", "EndsWith", "Contains", "Matches", "SetEquals"];
+        ["IsEqualTo", "IsEqualToIgnoringCase", "StartsWith", "EndsWith", "Contains", "IsMatch", "SetEquals"];
 
     /// <summary>A defaulted or forgotten <see cref="NullBehavior"/> is the documented default, <see cref="NullBehavior.Unknown"/>.</summary>
     [Fact]
@@ -110,9 +110,9 @@ public class NullBehaviorTests
             "Contains" => useDefault
                 ? StringPredicates.Contains<TestContext>("p", c => c.Value)
                 : StringPredicates.Contains<TestContext>("p", c => c.Value, nullBehavior: behavior),
-            "Matches" => useDefault
-                ? RegexPredicates.Matches<TestContext>("p", c => c.Value)
-                : RegexPredicates.Matches<TestContext>("p", c => c.Value, nullBehavior: behavior),
+            "IsMatch" => useDefault
+                ? RegexPredicates.IsMatch<TestContext>("p", c => c.Value)
+                : RegexPredicates.IsMatch<TestContext>("p", c => c.Value, nullBehavior: behavior),
             "SetEquals" => useDefault
                 ? CollectionPredicates.SetEquals<TestContext>("p", c => c.Values)
                 : CollectionPredicates.SetEquals<TestContext>("p", c => c.Values, nullBehavior: behavior),
@@ -121,7 +121,7 @@ public class NullBehaviorTests
 
         PredicateArguments args = factoryName switch
         {
-            "Matches" => Args("pattern", "a"),
+            "IsMatch" => Args("pattern", "a"),
             "SetEquals" => ArrayArgs("a"),
             "IsEqualToIgnoringCase" => new PredicateArguments(
                 new Dictionary<string, LiteralValue>

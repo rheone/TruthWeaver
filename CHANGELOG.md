@@ -179,6 +179,41 @@ copyright line reads 2026.
   register `IsEqualTo` or `IsNotEqualTo` and add `ignoreCase: true` to those rules. The default labels follow the new names
   (for example `Is Less Than`).
 
+- **Breaking:** the regular-expression predicates become `IsMatch` and `IsNotMatch`, and take the optional rule argument
+  `flags`: a string of the single letters `i` (`RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`), `m`
+  (`Multiline`), `s` (`Singleline`), `n` (`ExplicitCapture`) and `x` (`IgnorePatternWhitespace`). The separate
+  case-insensitive predicates are removed: they are `flags: "i"`. An unknown flag letter, a repeated flag letter and an
+  invalid pattern, when literal, are `TRE0026` compile errors. The pattern cache is keyed on the pattern and the options. There
+  are no `[Obsolete]` forwarders, because the packages are unpublished.
+
+  | Old | New |
+  | --- | --- |
+  | `RegexPredicates.Matches` | `RegexPredicates.IsMatch` |
+  | `RegexPredicates.NotMatches` | `RegexPredicates.IsNotMatch` |
+  | `RegexPredicates.MatchesIgnoreCase` | `RegexPredicates.IsMatch`, with `flags: "i"` in the rule |
+  | `RegexPredicates.NotMatchesIgnoreCase` | `RegexPredicates.IsNotMatch`, with `flags: "i"` in the rule |
+
+  **Migrate:** rename each factory call as the table shows. For a registration of `MatchesIgnoreCase` or
+  `NotMatchesIgnoreCase`, register `IsMatch` or `IsNotMatch` and add `flags: "i"` to those rules. The default labels are now
+  `Is Match` and `Is Not Match`.
+
+- **Breaking:** the collection count predicates are renamed to `HasCount…` verb phrases, and their twins to
+  `NotHasCount…` (Form B in the [naming guide](docs/predicate-conventions.md#naming)). Behavior, arguments and null handling
+  do not change. The default labels follow the new names (for example `Has Count Equal To`). There are no `[Obsolete]`
+  forwarders, because the packages are unpublished. The reference pages under `docs/strong-k3/predicates` are renamed to
+  match, and their family is corrected to `CollectionPredicates`.
+
+  | Old | New |
+  | --- | --- |
+  | `CollectionPredicates.CountEqual`, `NotCountEqual` | `CollectionPredicates.HasCountEqualTo`, `NotHasCountEqualTo` |
+  | `CollectionPredicates.CountGreaterThan`, `NotCountGreaterThan` | `CollectionPredicates.HasCountGreaterThan`, `NotHasCountGreaterThan` |
+  | `CollectionPredicates.CountGreaterThanOrEqual`, `NotCountGreaterThanOrEqual` | `CollectionPredicates.HasCountGreaterThanOrEqualTo`, `NotHasCountGreaterThanOrEqualTo` |
+  | `CollectionPredicates.CountLessThan`, `NotCountLessThan` | `CollectionPredicates.HasCountLessThan`, `NotHasCountLessThan` |
+  | `CollectionPredicates.CountLessThanOrEqual`, `NotCountLessThanOrEqual` | `CollectionPredicates.HasCountLessThanOrEqualTo`, `NotHasCountLessThanOrEqualTo` |
+
+  **Migrate:** rename each factory call as the table shows. The name that a host gives a predicate at registration does not
+  change, so rule text is unaffected.
+
 - **Breaking (behavior):** `IsLessThanOrEqualTo` and `IsGreaterThanOrEqualTo` (formerly `LessThanOrEqual` and
   `GreaterThanOrEqual`) are positive predicates. Registered with `NullBehavior.False`, a null selected value now answers
   `False`, like every other positive predicate. Before, it answered `True`, because they were built as the twins of

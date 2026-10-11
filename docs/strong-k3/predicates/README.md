@@ -49,17 +49,16 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `IsEmpty` | `IsNotEmpty` |
 | `IsNullOrEmpty` | `IsNotNullOrEmpty` |
 | `IsNullOrWhiteSpace` | `IsNotNullOrWhiteSpace` |
-| `Matches` | `NotMatches` |
-| `MatchesIgnoreCase` | `NotMatchesIgnoreCase` |
+| `IsMatch` | `IsNotMatch` |
 | `ContainsAny` | `NotContainsAny` |
 | `ContainsAll` | `NotContainsAll` |
 | `IsSubsetOf` | `IsNotSubsetOf` |
 | `SetEquals` | `NotSetEquals` |
-| `CountEqual` | `NotCountEqual` |
-| `CountLessThan` | `NotCountLessThan` |
-| `CountGreaterThan` | `NotCountGreaterThan` |
-| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` |
-| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` |
+| `HasCountEqualTo` | `NotHasCountEqualTo` |
+| `HasCountLessThan` | `NotHasCountLessThan` |
+| `HasCountGreaterThan` | `NotHasCountGreaterThan` |
+| `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` |
+| `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` |
 | `IsAfter` | `IsNotAfter` |
 | `IsBefore` | `IsNotBefore` |
 | `IsAfterNow` | `IsNotAfterNow` |
@@ -164,14 +163,12 @@ The comparison does not normalize Unicode. A precomposed character such as `é` 
 
 ## Regex predicates
 
-The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). A pattern that is a literal in the rule is checked when the rule compiles: an invalid one is a `TRE0026` error. An invalid pattern from a data source is a fault. `Matches` and `NotMatches` use no regex options. `MatchesIgnoreCase` and `NotMatchesIgnoreCase` ignore case with the invariant culture. All four use a timeout of one second. Each of the two options keeps at most 256 compiled patterns.
+The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). A pattern or flags string that is a literal in the rule is checked when the rule compiles: an invalid pattern, an unknown flag letter and a repeated flag letter are each a `TRE0026` error. An invalid pattern or flags string from a data source is a fault. The optional argument `flags` holds the letters `i` (ignore case, with the invariant culture), `m` (multiline), `s` (single line), `n` (explicit capture) and `x` (ignore pattern white space). Both predicates use a timeout of one second. The cache keeps at most 256 compiled pairs of pattern and options.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [Matches](regex-matches.md) | [NotMatches](regex-notmatches.md) | `Matches` is `True` when the selected string matches the regular expression. |
-| [NotMatches](regex-notmatches.md) | [Matches](regex-matches.md) | `NotMatches` is `True` when the selected string does not match the regular expression. |
-| [MatchesIgnoreCase](regex-matchesignorecase.md) | [NotMatchesIgnoreCase](regex-notmatchesignorecase.md) | `MatchesIgnoreCase` is `True` when the selected string matches the regular expression, ignoring case. |
-| [NotMatchesIgnoreCase](regex-notmatchesignorecase.md) | [MatchesIgnoreCase](regex-matchesignorecase.md) | `NotMatchesIgnoreCase` is `True` when the selected string does not match the regular expression, ignoring case. |
+| [IsMatch](regex-ismatch.md) | [IsNotMatch](regex-isnotmatch.md) | `IsMatch` is `True` when the selected string matches the regular expression. The optional argument `flags` sets regular expression options. |
+| [IsNotMatch](regex-isnotmatch.md) | [IsMatch](regex-ismatch.md) | `IsNotMatch` is `True` when the selected string does not match the regular expression. It takes the same optional argument `flags`. |
 
 ## Collection predicates
 
@@ -179,7 +176,7 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 
 - Every collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - To test a single string against several candidates, use `IsIn` and `IsNotIn` in the [string predicates](#string-predicates).
-- A repeated element and a `null` element count as elements in the `Count` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
+- A repeated element and a `null` element count as elements in the `HasCount` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -195,16 +192,16 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 | [IsNotSubsetOf](collection-isnotsubsetof.md) | [IsSubsetOf](collection-issubsetof.md) | `IsNotSubsetOf` is `True` when an element is not in the argument array. |
 | [SetEquals](collection-setequals.md) | [NotSetEquals](collection-notsetequals.md) | `SetEquals` is `True` when the collection and the argument array have the same distinct elements. |
 | [NotSetEquals](collection-notsetequals.md) | [SetEquals](collection-setequals.md) | `NotSetEquals` is `True` when the collection and the argument array have different distinct elements. |
-| [CountEqual](collection-countequal.md) | [NotCountEqual](collection-notcountequal.md) | `CountEqual` is `True` when the number of elements equals the argument. |
-| [NotCountEqual](collection-notcountequal.md) | [CountEqual](collection-countequal.md) | `NotCountEqual` is `True` when the number of elements differs from the argument. |
-| [CountLessThan](collection-countlessthan.md) | [NotCountLessThan](collection-notcountlessthan.md) | `CountLessThan` is `True` when the number of elements is less than the argument. |
-| [NotCountLessThan](collection-notcountlessthan.md) | [CountLessThan](collection-countlessthan.md) | `NotCountLessThan` is `True` when the number of elements is not less than the argument. |
-| [CountGreaterThan](collection-countgreaterthan.md) | [NotCountGreaterThan](collection-notcountgreaterthan.md) | `CountGreaterThan` is `True` when the number of elements is greater than the argument. |
-| [NotCountGreaterThan](collection-notcountgreaterthan.md) | [CountGreaterThan](collection-countgreaterthan.md) | `NotCountGreaterThan` is `True` when the number of elements is not greater than the argument. |
-| [CountLessThanOrEqual](collection-countlessthanorequal.md) | [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | `CountLessThanOrEqual` is `True` when the number of elements is at most the argument. |
-| [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | [CountLessThanOrEqual](collection-countlessthanorequal.md) | `NotCountLessThanOrEqual` is `True` when the number of elements is more than the argument. |
-| [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | `CountGreaterThanOrEqual` is `True` when the number of elements is at least the argument. |
-| [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | `NotCountGreaterThanOrEqual` is `True` when the number of elements is less than the argument. |
+| [HasCountEqualTo](collection-hascountequalto.md) | [NotHasCountEqualTo](collection-nothascountequalto.md) | `HasCountEqualTo` is `True` when the number of elements equals the argument. |
+| [NotHasCountEqualTo](collection-nothascountequalto.md) | [HasCountEqualTo](collection-hascountequalto.md) | `NotHasCountEqualTo` is `True` when the number of elements differs from the argument. |
+| [HasCountLessThan](collection-hascountlessthan.md) | [NotHasCountLessThan](collection-nothascountlessthan.md) | `HasCountLessThan` is `True` when the number of elements is less than the argument. |
+| [NotHasCountLessThan](collection-nothascountlessthan.md) | [HasCountLessThan](collection-hascountlessthan.md) | `NotHasCountLessThan` is `True` when the number of elements is not less than the argument. |
+| [HasCountGreaterThan](collection-hascountgreaterthan.md) | [NotHasCountGreaterThan](collection-nothascountgreaterthan.md) | `HasCountGreaterThan` is `True` when the number of elements is greater than the argument. |
+| [NotHasCountGreaterThan](collection-nothascountgreaterthan.md) | [HasCountGreaterThan](collection-hascountgreaterthan.md) | `NotHasCountGreaterThan` is `True` when the number of elements is not greater than the argument. |
+| [HasCountLessThanOrEqualTo](collection-hascountlessthanorequalto.md) | [NotHasCountLessThanOrEqualTo](collection-nothascountlessthanorequalto.md) | `HasCountLessThanOrEqualTo` is `True` when the number of elements is at most the argument. |
+| [NotHasCountLessThanOrEqualTo](collection-nothascountlessthanorequalto.md) | [HasCountLessThanOrEqualTo](collection-hascountlessthanorequalto.md) | `NotHasCountLessThanOrEqualTo` is `True` when the number of elements is more than the argument. |
+| [HasCountGreaterThanOrEqualTo](collection-hascountgreaterthanorequalto.md) | [NotHasCountGreaterThanOrEqualTo](collection-nothascountgreaterthanorequalto.md) | `HasCountGreaterThanOrEqualTo` is `True` when the number of elements is at least the argument. |
+| [NotHasCountGreaterThanOrEqualTo](collection-nothascountgreaterthanorequalto.md) | [HasCountGreaterThanOrEqualTo](collection-hascountgreaterthanorequalto.md) | `NotHasCountGreaterThanOrEqualTo` is `True` when the number of elements is less than the argument. |
 
 ## Date-time predicates
 
