@@ -13,6 +13,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **CNF** | Conjunctive normal form: an `AND` of `OR`s of literals and atoms. `ToCnf()` returns it. See [conjunctive normal form](rewriting-normal-form-examples.md#conjunctive-normal-form). |
 | **Collapse** | A method on a `Decision`, not part of a rule. `Decision.Collapse(policy)` turns the result into a `CollapseOutcome`. `CollapsePolicy` is `UnknownAsFalse`, `UnknownAsTrue` or `UnknownIsError`. `CollapseOutcome` is `True`, `False` or `RejectedUnresolved`. See [Collapse](strong-k3/result-transformations/collapse.md). |
 | **CompilationMode** | `Strict`, the default, makes an unregistered predicate a compile error. `Lenient` compiles it to a term that is always `Unknown`. |
+| **Constant letters** | The spellings `T`, `F` and `U` for `True`, `False` and `Unknown`. Rule text reads them in any case, and `ConstantStyle.Letters` writes them. They are reserved names, so a predicate cannot be named `T`, `F` or `U`. See [Constant style](rule-text.md#constant-style). |
 | **CompilationResult** | What `Compile`, `CompileJson` and `CompileYaml` return: a `CompiledRule`, which is `null` when compilation fails, and every diagnostic. |
 | **CompiledRule** | The immutable, thread-safe result of a successful compile. It can be cached, shared and evaluated many times. |
 | **CompilerOptions** | The compile-time limits (tree depth, node count, analyzer term count, rewrite size) and the `CompilationMode`. |

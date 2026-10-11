@@ -154,6 +154,14 @@ copyright line reads 2026.
 
 ### Changed
 
+- **Breaking:** the rule text parser reads the bare letters `T`, `F` and `U` (any case) as the constants `True`, `False` and
+  `Unknown`, so `PrintRuleText` and `TryPrintRuleText` now accept `ConstantStyle.Letters` (and an override that is a letter of
+  the constant's own value, for example `TrueText = "t"`) and the output compiles back to an equal tree. `LogicSymbols` is
+  still rejected. `T`, `F` and `U` become reserved names, in any case: registering a predicate with one of these names throws
+  `ArgumentException`, the source generator reports `TWG007`, and a term with one of these names (from JSON, YAML or
+  `RuleBuilder`) is an `UnknownPredicate` error whose message says the name is reserved. Migration: rename a predicate named
+  `T`, `F` or `U` (any case) before you upgrade, and rename a rule-text term `t`, `f` or `u` to a longer name. JSON and YAML
+  still read the words only. [Rule text](docs/rule-text.md#constant-style) describes it.
 - **Breaking:** `ConstantStyle.Letters` (`T`, `F`, `U`) is the default constant style of `PrintEquation` in every dialect
   (Unicode, LaTeX, AsciiMath, CStyle, MathML, Typst and Ascii) and of `PrintEquationWithLegend`. `EquationOptions.Default.Constants`
   is now a `Letters` format, not `ConstantFormat.Default`. `PrintRuleText`, `PrintPlainText`, `PrintMermaid`, `PrintHtml` and

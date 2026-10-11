@@ -36,7 +36,7 @@ Every Operation has one canonical word. The canonical printer writes the word an
 
 A lone `&` or `|` is a syntax error. A lone `?` is valid only as the `?` of a ternary. Words, symbols and constants mix freely, and `a && b OR c` is valid.
 
-Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input. In JSON and YAML the `op` value is case-insensitive on read. The printer writes `AND`, `AtLeast`, `If` and `True`.
+Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input. Rule text also reads the letters `T`, `F` and `U` as the constants, and those three names are reserved. In JSON and YAML the `op` value is case-insensitive on read. The printer writes `AND`, `AtLeast`, `If` and `True`.
 
 ## Forms
 

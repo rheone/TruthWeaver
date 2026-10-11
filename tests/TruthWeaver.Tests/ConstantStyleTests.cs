@@ -2,6 +2,7 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
@@ -243,24 +244,46 @@ public sealed class ConstantStyleTests
     }
 
     /// <summary>Rule text rejects a style that the parser does not read back, with a message that names the style.</summary>
-    [Theory]
-    [InlineData(ConstantStyle.Letters)]
-    [InlineData(ConstantStyle.LogicSymbols)]
-    public void PrintRuleText_StyleTheParserDoesNotRead_ThrowsWithAClearMessage_Test(ConstantStyle style)
+    [Fact]
+    public void PrintRuleText_LogicSymbolsStyle_ThrowsWithAClearMessage_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(AllConstants);
 
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            rule.PrintRuleText(constants: new ConstantFormat { Style = style })
+            rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.LogicSymbols })
         );
 
-        Assert.Contains(style.ToString(), exception.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(ConstantStyle.LogicSymbols), exception.Message, StringComparison.Ordinal);
         Assert.Contains("TryPrintRuleText", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>The letters style is rule text: it writes T, F and U, and the text compiles back to an equal tree.</summary>
+    [Fact]
+    public void PrintRuleText_LettersStyle_WritesLettersThatCompileBackToAnEqualTree_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(AllConstants);
+
+        string text = rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.Letters });
+
+        Assert.Equal("T AND F AND U", text);
+        Assert.Equal(rule.CanonicalText, Compile(text).CanonicalText);
+    }
+
+    /// <summary>An override that is a letter of the constant's own value is rule text, in any letter case.</summary>
+    [Fact]
+    public void PrintRuleText_OverrideThatIsTheConstantsOwnLetter_IsAccepted_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(AllConstants);
+
+        string text = rule.PrintRuleText(constants: new ConstantFormat { TrueText = "t", UnknownText = "U" });
+
+        Assert.Equal("t AND False AND U", text);
+        Assert.Equal(rule.CanonicalText, Compile(text).CanonicalText);
     }
 
     /// <summary>Rule text rejects an override that the parser would read as another constant or as a term.</summary>
     [Theory]
-    [InlineData("T")]
+    [InlineData("F")]
     [InlineData("Unknown")]
     [InlineData("1")]
     public void PrintRuleText_OverrideThatBreaksRoundTrip_ThrowsWithAClearMessage_Test(string text)
@@ -274,7 +297,7 @@ public sealed class ConstantStyleTests
         Assert.Contains($"'{text}'", exception.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>The Try form reports a rejected format through its return value, and an accepted one through the text.</summary>
+    /// <summary>The Try form reports a rejected format through its return value, and an accepted one through the text. Letters is accepted.</summary>
     [Fact]
     public void TryPrintRuleText_RejectedAndAcceptedFormats_ReportThroughTheReturnValue_Test()
     {
@@ -283,8 +306,14 @@ public sealed class ConstantStyleTests
         bool letters = rule.TryPrintRuleText(
             GroupingStyle.Parentheses,
             OperatorStyle.Word,
-            new ConstantFormat { Style = ConstantStyle.Letters },
+            new ConstantFormat { Style = ConstantStyle.LogicSymbols },
             out string? lettersText
+        );
+        bool lettersAccepted = rule.TryPrintRuleText(
+            GroupingStyle.Parentheses,
+            OperatorStyle.Word,
+            new ConstantFormat { Style = ConstantStyle.Letters },
+            out string? acceptedLettersText
         );
         bool word = rule.TryPrintRuleText(
             GroupingStyle.Parentheses,
@@ -295,6 +324,8 @@ public sealed class ConstantStyleTests
 
         Assert.False(letters);
         Assert.Null(lettersText);
+        Assert.True(lettersAccepted);
+        Assert.Equal("T AND F AND U", acceptedLettersText);
         Assert.True(word);
         Assert.Equal(rule.CanonicalText, wordText);
     }
@@ -369,6 +400,44 @@ public sealed class ConstantStyleTests
 
         Assert.Contains("n1[\"a#quot;b\"]", diagram, StringComparison.Ordinal);
         Assert.Contains("n2[\"F\"]", diagram, StringComparison.Ordinal);
+    }
+
+    /// <summary>The letters T, F and U, in any case, compile to the same tree as the words True, False and Unknown.</summary>
+    [Theory]
+    [InlineData("T AND f AND u")]
+    [InlineData("t AND F AND U")]
+    public void Compile_ConstantLetters_GiveTheSameTreeAsTheWords_Test(string letters)
+    {
+        Assert.Equal(Compile(AllConstants).Root, Compile(letters).Root);
+    }
+
+    /// <summary>A term named T, F or U (possible only from a tree format) is a compile diagnostic that says the name is reserved.</summary>
+    [Theory]
+    [InlineData("T")]
+    [InlineData("f")]
+    [InlineData("U")]
+    public void Compile_TermNamedLikeAConstantLetter_ReportsAReservedNameDiagnostic_Test(string name)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson("{\"predicate\":\"" + name + "\"}");
+
+        Assert.False(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Contains("reserved", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains($"'{name}'", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A call written with a constant letter as its name is a term, so it reports the reserved name instead of a stray parenthesis.</summary>
+    [Fact]
+    public void Compile_CallNamedLikeAConstantLetter_ReportsAReservedNameDiagnostic_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("T(x: 1)");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Message.Contains("reserved", StringComparison.Ordinal));
     }
 
     private static CompiledRule<RuleTestContext> Compile(string dsl)

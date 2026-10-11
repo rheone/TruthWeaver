@@ -207,7 +207,7 @@ public sealed class NormalFormTests
     [InlineData("dnf")]
     public void NormalForm_ResultOverTheCap_ReturnsRewriteTooLargeAndNoRule_Test(string form)
     {
-        CompiledRule<RuleTestContext> rule = Rule("(a OR b) AND (c OR d) AND (e OR f)", 6).Compiled;
+        CompiledRule<RuleTestContext> rule = Rule("(a OR b) AND (c OR d) AND (e OR g)", 6).Compiled;
         const int tight = 5;
 
         CompilationResult<RuleTestContext> result = form switch
@@ -227,7 +227,7 @@ public sealed class NormalFormTests
     {
         // C(20, 10) = 184756 subsets is far beyond the default cap.
         CompiledRule<RuleTestContext> rule = Rule(
-            "AtLeast(10, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t)",
+            "AtLeast(10, a, b, c, d, e, g, h, i, j, k, l, m, n, o, p, q, r, s, v, w)",
             20
         ).Compiled;
 

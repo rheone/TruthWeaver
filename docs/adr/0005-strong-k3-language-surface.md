@@ -516,6 +516,13 @@ the aliases are cheap once the canonical form stays single.
     (implemented in k3-conformance 03): JSON `{"const": true|false}` is kept,
     and `Unknown` is `{"const": "unknown"}` (a string constant in any letter
     case is also accepted for all three values); YAML is `const: unknown`.
+    *Amended 2026-10-11 (followups C); this adds to the decision.* The DSL also
+    reads the bare letters `T`, `F` and `U` (any case) as `True`, `False` and
+    `Unknown`, so `ConstantStyle.Letters` output is rule text. The three
+    letters are reserved words: a predicate cannot be registered with one of
+    these names, and a term with one of them is a compile error. A letter
+    followed by `(` stays a term, so it reports the reserved name. JSON and
+    YAML do not read the letters. `LogicSymbols` stays outside the grammar.
 17. **The analyzer is K3-aware.** A dual-rail BDD tracking "definitely true"
     and "possibly true" replaces classical two-valued analysis, so
     `A AND NOT A` is a K3 contradiction only when it is, and `A OR NOT A` is

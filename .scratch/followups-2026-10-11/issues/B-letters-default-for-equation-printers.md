@@ -14,4 +14,4 @@
 
 ## Comments
 
-- 2026-10-11 (dispatch run): The `Architecture.Tests` and `Generators.Tests` projects could not be built here: a running `CSharpLanguageServer` process locks `src/TruthWeaver.Generators/bin/.../TruthWeaver.Generators.dll` (MSB3027). The other six test projects pass, `dotnet build -p:CI=true` passes (built with a separate `--artifacts-path`), and csharpier and `dotnet format` checks are clean. The doc-example checker gained a `words` option word; an equation or legend marker with no constant word now documents the letters default.
+- 2026-10-11 (dispatch run): All test projects, `dotnet build -p:CI=true`, csharpier and `dotnet format` pass (the pre-commit hook ran the full suite in Release). A running `CSharpLanguageServer` locks `TruthWeaver.Generators.dll` in Debug, so use `--artifacts-path` for a CI build while the editor is open. The doc-example checker gained a `words` option word; an equation or legend marker with no constant word now documents the letters default.

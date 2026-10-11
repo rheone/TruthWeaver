@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
 
@@ -137,6 +138,44 @@ public sealed class DslParserTests
     public void IsReservedWord_EveryKeyword_ReturnsTrueCaseInsensitively_Test(string keyword)
     {
         Assert.True(DslParser.IsReservedWord(keyword));
+    }
+
+    /// <summary>The constant letters T, F and U are reserved words, in either case.</summary>
+    [Theory]
+    [InlineData("T")]
+    [InlineData("f")]
+    [InlineData("U")]
+    public void IsReservedWord_ConstantLetter_ReturnsTrueCaseInsensitively_Test(string letter)
+    {
+        Assert.True(DslParser.IsReservedWord(letter));
+    }
+
+    /// <summary>The bare letters T, F and U, in any case, parse as the constants True, False and Unknown.</summary>
+    [Theory]
+    [InlineData("T", TruthValue.True)]
+    [InlineData("t", TruthValue.True)]
+    [InlineData("F", TruthValue.False)]
+    [InlineData("f", TruthValue.False)]
+    [InlineData("U", TruthValue.Unknown)]
+    [InlineData("u", TruthValue.Unknown)]
+    public void Parse_ConstantLetter_YieldsTheConstant_Test(string text, TruthValue expected)
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(text);
+
+        Assert.Empty(diagnostics);
+        ConstantNode constant = Assert.IsType<ConstantNode>(root);
+        Assert.Equal(expected, constant.Value);
+    }
+
+    /// <summary>A longer identifier that starts with a constant letter is still a term name.</summary>
+    [Fact]
+    public void Parse_IdentifierStartingWithAConstantLetter_IsATerm_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("Total AND farm");
+
+        Assert.Empty(diagnostics);
+        AndNode and = Assert.IsType<AndNode>(root);
+        Assert.All(and.Operands, operand => Assert.IsType<TermNode>(operand));
     }
 
     /// <summary>IsReservedWord returns false for an arbitrary predicate name.</summary>

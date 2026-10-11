@@ -86,10 +86,10 @@ public sealed class CompiledRule<TContext>
     /// </param>
     /// <param name="constants">
     /// How to spell <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> (the default) for the word form.
-    /// Only a format that the parser reads back is accepted: <see cref="ConstantStyle.Word"/> with no override, or with an
-    /// override that is a letter-case variant of the constant's own word (for example <c>TRUE</c>).
-    /// <see cref="ConstantStyle.Letters"/> and <see cref="ConstantStyle.LogicSymbols"/> are rejected, because the parser
-    /// reads a bare <c>T</c> as a term name and does not read <c>⊤</c> or <c>⊥</c> at all.
+    /// Only a format that the parser reads back is accepted: <see cref="ConstantStyle.Word"/> or
+    /// <see cref="ConstantStyle.Letters"/> (<c>T</c>, <c>F</c>, <c>U</c>), with no override, or with an override that is a
+    /// letter-case variant of the constant's own word or letter (for example <c>TRUE</c> or <c>t</c>).
+    /// <see cref="ConstantStyle.LogicSymbols"/> is rejected, because the parser does not read <c>⊤</c> or <c>⊥</c> at all.
     /// </param>
     /// <returns>The DSL text.</returns>
     /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or <paramref name="constants"/> is a format that the parser does not read back.</exception>

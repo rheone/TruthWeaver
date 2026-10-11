@@ -183,6 +183,33 @@ public sealed class DslRoundTripPropertyTests
     }
 
     /// <summary>
+    /// Followups C: printing a generated tree with <see cref="ConstantStyle.Letters"/> (T, F, U) compiles back to an equal
+    /// tree, in both operator styles.
+    /// </summary>
+    [Fact]
+    public void Parse_LettersPrintedGeneratedTree_ReproducesEqualTree_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+        ConstantFormat letters = new() { Style = ConstantStyle.Letters };
+
+        GenExpressionTree.Sample(
+            tree =>
+            {
+                foreach (OperatorStyle style in (OperatorStyle[])[OperatorStyle.Word, OperatorStyle.Symbolic])
+                {
+                    string printed = CanonicalPrinter.Print(tree, GroupingStyle.Parentheses, style, letters);
+                    CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+                    string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
+
+                    Assert.True(result.Succeeded, $"Expected '{printed}' to compile cleanly but got: {diagnosticMessages}");
+                    Assert.Equal(tree, result.CompiledRule!.Root);
+                }
+            },
+            iter: SampleIterations
+        );
+    }
+
+    /// <summary>
     /// Ticket 21: the depth-cycling rendering, which mixes <c>()</c>, <c>[]</c> and <c>{}</c>, parses back to the same
     /// tree as the parentheses-only form for any generated tree (delimiters never change the compiled tree).
     /// </summary>

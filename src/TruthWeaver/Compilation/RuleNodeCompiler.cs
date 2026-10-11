@@ -583,10 +583,14 @@ internal sealed class RuleNodeCompiler<TContext>
                 return new TermExpression(BuildUnknownIdentity(node), IsUnknownPredicate: true);
             }
 
+            // A reserved word can never be registered, so say that instead of suggesting a registration.
+            string message = DslParser.IsReservedWord(node.PredicateName)
+                ? $"'{node.PredicateName}' is a reserved word and cannot be a predicate name."
+                : $"No predicate named '{node.PredicateName}' is registered.";
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.UnknownPredicate,
-                    $"No predicate named '{node.PredicateName}' is registered.",
+                    message,
                     node.Span,
                     expected: "a registered predicate name or an operator",
                     found: $"'{node.PredicateName}'",

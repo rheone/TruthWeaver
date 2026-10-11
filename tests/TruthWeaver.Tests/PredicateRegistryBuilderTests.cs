@@ -56,6 +56,9 @@ public sealed class PredicateRegistryBuilderTests
     [InlineData("IF")]
     [InlineData("exactly")]
     [InlineData("None")]
+    [InlineData("T")]
+    [InlineData("f")]
+    [InlineData("U")]
     public void Registering_a_predicate_named_like_a_keyword_throws_naming_the_word_Test(string name)
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();

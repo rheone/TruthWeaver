@@ -97,21 +97,27 @@ public sealed record ConstantFormat
     /// <returns><see langword="true"/> when printed rule text with this format re-parses to an equal tree.</returns>
     internal bool IsRuleTextSafe(out string? reason)
     {
-        if (this.Style != ConstantStyle.Word)
+        if (this.Style == ConstantStyle.LogicSymbols)
         {
             reason =
-                $"ConstantStyle.{this.Style} is not rule text: the parser reads only True, False and Unknown, so "
-                + "a bare letter or symbol would parse as a term name or fail. Use ConstantStyle.Word.";
+                $"ConstantStyle.{this.Style} is not rule text: the parser reads True, False and Unknown (or T, F and U), "
+                + "and it does not read the symbols. Use ConstantStyle.Word or ConstantStyle.Letters.";
             return false;
         }
 
         foreach (TruthValue value in (TruthValue[])[TruthValue.True, TruthValue.False, TruthValue.Unknown])
         {
-            if (this.OverrideFor(value) is { } text && !(TruthValueText.TryParse(text, out TruthValue read) && read == value))
+            if (
+                this.OverrideFor(value) is { } text
+                && !(
+                    (TruthValueText.TryParse(text, out TruthValue read) || TruthValueText.TryParseLetter(text, out read))
+                    && read == value
+                )
+            )
             {
                 reason =
                     $"The override '{text}' for {TruthValueText.Canonical(value)} is not rule text: the parser would not "
-                    + $"read it back as {TruthValueText.Canonical(value)}. Only a letter-case variant of the word is read back.";
+                    + $"read it back as {TruthValueText.Canonical(value)}. Only a letter-case variant of the word or of its letter is read back.";
                 return false;
             }
         }

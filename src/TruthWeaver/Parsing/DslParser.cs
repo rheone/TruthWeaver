@@ -490,6 +490,26 @@ internal sealed class DslParser
             return this.ConsumeConstant(TruthValue.Unknown);
         }
 
+        // T, F and U are the short spellings of the constants (ConstantStyle.Letters). A letter followed by '(' is a call
+        // to a predicate with a reserved name, so it stays a term and the compiler reports the reserved name.
+        if (this.Current.Kind == TokenKind.Identifier && this.tokens[this.position + 1].Kind != TokenKind.LParen)
+        {
+            if (this.IsKeyword("T"))
+            {
+                return this.ConsumeConstant(TruthValue.True);
+            }
+
+            if (this.IsKeyword("F"))
+            {
+                return this.ConsumeConstant(TruthValue.False);
+            }
+
+            if (this.IsKeyword("U"))
+            {
+                return this.ConsumeConstant(TruthValue.Unknown);
+            }
+        }
+
         if (this.IsKeyword("EXACTLYONE"))
         {
             return this.ParseExactlyOne();

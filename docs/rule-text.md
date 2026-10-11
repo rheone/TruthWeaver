@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -36,7 +36,7 @@ not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
 
 primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"
             | constant | call | term ;
-constant    = "True" | "False" | "Unknown" ;
+constant    = "True" | "False" | "Unknown" | "T" | "F" | "U" ;
 call        = list_op "(" expression { "," expression } ")"
             | threshold "(" integer "," expression { "," expression } ")"
             | "BETWEEN" "(" integer "," integer "," expression { "," expression } ")"
@@ -59,13 +59,13 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 ## Case
 
-Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node.
+Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. Rule text also reads the letters `T`, `F` and `U` (any case) as the constants, so `T AND f` and `True AND False` compile to the same tree. JSON and YAML read the words only. `and`, `And` and `AND` compile to the same node.
 
 The printer writes each operator word in one fixed spelling. The rule is:
 
 - Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case: `NOT`, `AND`, `OR`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN`.
 - The other call words are upper camel case: `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`, `If`, `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`.
-- The constants are `True`, `False` and `Unknown`.
+- The constants are `True`, `False` and `Unknown`. `ConstantStyle.Letters` writes them as `T`, `F` and `U`.
 
 `PrintRuleText` and `CanonicalText` write the word form of an operator by default. The printed spelling is the one that the [grammar](#grammar) uses for each word. See [Operator style](#operator-style) for the one other spelling `PrintRuleText` supports.
 
@@ -146,19 +146,22 @@ bool ok = rule.TryPrintRuleText(GroupingStyle.Parentheses, OperatorStyle.CStyle,
 
 ## Constant style
 
-`PrintRuleText` and `TryPrintRuleText` take an optional `ConstantFormat` to choose how `True`, `False` and `Unknown` are spelled. The parser reads a constant only as the word, in any letter case. So rule text accepts only a format that the parser reads back to the same constants:
+`PrintRuleText` and `TryPrintRuleText` take an optional `ConstantFormat` to choose how `True`, `False` and `Unknown` are spelled. The parser reads a constant as the word or as the letter, in any letter case. So rule text accepts only a format that the parser reads back to the same constants:
 
 - `ConstantStyle.Word` (the default) writes `True`, `False` and `Unknown`.
-- An override is accepted when it is a letter-case variant of the constant's own word, for example `TrueText = "TRUE"`.
-- `Letters` is rejected. The parser reads a bare `T` as the name of a term, not as `True`.
+- `ConstantStyle.Letters` writes `T`, `F` and `U`.
+- An override is accepted when it is a letter-case variant of the constant's own word or letter, for example `TrueText = "TRUE"` or `TrueText = "t"`.
 - `LogicSymbols` is rejected. The parser does not read `⊤` or `⊥`.
-- Any other override is rejected, for example `"1"` or `"Unknown"` for `True`.
+- Any other override is rejected, for example `"1"` for `True`, or `"F"` for `True`.
+
+The names `T`, `F` and `U` are reserved, in any case. A predicate cannot have one of these names, and a term with one of these names is a compile error that says the name is reserved.
 
 `PrintRuleText` throws `ArgumentException` with a message that names the style or the override. `TryPrintRuleText` returns `false` and sets its `out` text to `null` instead.
 
 ```csharp
 rule.PrintRuleText(constants: new ConstantFormat { TrueText = "TRUE" });                   // TRUE AND Unknown
-rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.Letters });       // throws ArgumentException
+rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.Letters });       // T AND U
+rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.LogicSymbols });  // throws ArgumentException
 
 bool ok = rule.TryPrintRuleText(
     GroupingStyle.Parentheses,
@@ -167,7 +170,7 @@ bool ok = rule.TryPrintRuleText(
     out string? text);                                                                     // false, text is null
 ```
 
-To print `T`, `F` and `U`, or `⊤` and `⊥`, use [`PrintEquation`](equations.md#constants) or a tree printer. They are read views, not rule text. See [tree printers](rulebuilder.md#rendering-a-rule-as-a-diagram).
+To print `⊤` and `⊥`, use [`PrintEquation`](equations.md#constants) or a tree printer. They are read views, not rule text. See [tree printers](rulebuilder.md#rendering-a-rule-as-a-diagram).
 
 ## Whitespace
 

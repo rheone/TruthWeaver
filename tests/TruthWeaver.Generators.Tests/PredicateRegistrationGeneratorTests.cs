@@ -113,6 +113,7 @@ public sealed class PredicateRegistrationGeneratorTests
     [Theory]
     [InlineData("any")]
     [InlineData("Between")]
+    [InlineData("U")]
     public void Generator_ReservedPredicateName_ReportsTwg007_Test(string name)
     {
         string source = $$"""

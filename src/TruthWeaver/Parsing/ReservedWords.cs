@@ -4,7 +4,7 @@ namespace TruthWeaver.Parsing;
 /// The words the rule text reads as keywords, compared without case. A predicate cannot have one of these names, because
 /// the parser would read a call to it as the keyword. This file is the single list: the registry builder reads it through
 /// <c>DslParser.IsReservedWord</c>, and the source generator project compiles the same file, so the two cannot
-/// disagree.
+/// disagree. The letters <c>T</c>, <c>F</c> and <c>U</c> are the short spellings of the constants.
 /// </summary>
 internal static class ReservedWords
 {
@@ -24,6 +24,9 @@ internal static class ReservedWords
         "TRUE",
         "FALSE",
         "UNKNOWN",
+        "T",
+        "F",
+        "U",
         "PARITY",
         "NXOR",
         "ANY",
