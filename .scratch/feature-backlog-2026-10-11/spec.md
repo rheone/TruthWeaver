@@ -21,7 +21,8 @@ Before creating a new package or project, scoping one, or adding a heavy depende
 | 21, 22 | Spike tickets first (design notes). A grilling session on each note follows. |
 | 11 definitions and parameters | Grilled 2026-10-11, now ready: definitions inside one document in all four forms, expanded at compile time, literal or sub-expression parameters, no recursion, unique names, expansion counts toward the limits plus a `MaxDefinitionDepth`, printing shows the expanded form. |
 | 11b rule library | On hold, built on 11. |
-| 3, 7, 8, 9, 12, 14, 15, 17b, 19, 22b, 23, t1 | On hold. |
+| t1 terminal UI | Planned in [tui-workbench](../tui-workbench/spec.md) (7 tickets, on hold until 16 and 20 ship). |
+| 3, 7, 8, 9, 12, 14, 15, 17b, 19, 22b, 23 | On hold. |
 | 23 | On hold in the backlog with notes: semantics fit SQL's NULL logic, predicates are opaque, `Expression.Compile` conflicts with the AOT goal, so a separate package is the recommended design. |
 
 ## Tickets
