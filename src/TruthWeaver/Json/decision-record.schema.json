@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/rheone/TruthWeaver/main/src/TruthWeaver/Json/decision-record.schema.json",
+  "title": "TruthWeaver decision record",
+  "description": "A Decision stored as JSON by DecisionRecord.PrintJson and read back by DecisionRecord.TryParseJson: the result, the faults, the trace and the trace tree, with the identity of the rule and the evaluation options. The reader rejects a member that this schema does not name.",
+  "type": "object",
+  "properties": {
+    "formatVersion": {
+      "description": "The version of this format. The reader accepts only 1.",
+      "const": 1
+    },
+    "rule": { "$ref": "#/$defs/rule" },
+    "options": { "$ref": "#/$defs/options" },
+    "argumentValues": {
+      "description": "Whether the literal argument values of faulting terms are in the record. 'omitted' (the default) writes each argument's name and kind without its value.",
+      "enum": ["included", "omitted"]
+    },
+    "result": {
+      "description": "The result of the rule.",
+      "$ref": "#/$defs/truthValue"
+    },
+    "faults": {
+      "description": "Every fault the evaluation absorbed, in the order they occurred.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/fault" }
+    },
+    "trace": {
+      "description": "The flat trace: every node visited or skipped, in evaluation order. Absent when the decision has no trace.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/traceEntry" }
+    },
+    "traceTree": {
+      "description": "The trace tree: the rule's tree with the outcome of each node. Absent when the decision has no trace tree.",
+      "$ref": "#/$defs/traceNode"
+    }
+  },
+  "required": ["formatVersion", "argumentValues", "result", "faults"],
+  "additionalProperties": false,
+  "$defs": {
+    "truthValue": {
+      "enum": ["True", "False", "Unknown"]
+    },
+    "rule": {
+      "description": "The rule that made the decision.",
+      "type": "object",
+      "properties": {
+        "canonicalTextSha256": {
+          "description": "The SHA-256 hash of the UTF-8 bytes of the canonical rule text, as 64 lower-case hexadecimal digits.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "name": { "description": "A name for the rule, chosen by the caller.", "type": "string" },
+        "version": { "description": "A version string for the rule, chosen by the caller.", "type": "string" }
+      },
+      "required": ["canonicalTextSha256"],
+      "additionalProperties": false
+    },
+    "options": {
+      "description": "The evaluation options the decision was made with.",
+      "type": "object",
+      "properties": {
+        "faultBudget": {
+          "description": "The fault count at which the evaluation stops, or null for no limit.",
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "mode": { "enum": ["ShortCircuit", "Exhaustive"] },
+        "timeout": {
+          "description": "The time limit in the .NET constant TimeSpan format ([-][d.]hh:mm:ss[.fffffff]), or null for none.",
+          "oneOf": [
+            { "type": "string", "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$" },
+            { "type": "null" }
+          ]
+        },
+        "includeResolvedValues": {
+          "description": "Whether the trace shows the values that data sources resolved.",
+          "type": "boolean"
+        }
+      },
+      "required": ["faultBudget", "mode", "timeout", "includeResolvedValues"],
+      "additionalProperties": false
+    },
+    "fault": {
+      "description": "One fault: the term that failed and its exception.",
+      "type": "object",
+      "properties": {
+        "term": { "$ref": "#/$defs/term" },
+        "exception": { "$ref": "#/$defs/exception" }
+      },
+      "required": ["term", "exception"],
+      "additionalProperties": false
+    },
+    "term": {
+      "description": "The identity of a term: the predicate name, the literal arguments and the variable arguments, each sorted by name.",
+      "type": "object",
+      "properties": {
+        "predicate": { "type": "string" },
+        "arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "variables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variable" }
+        }
+      },
+      "required": ["predicate", "arguments", "variables"],
+      "additionalProperties": false
+    },
+    "argument": {
+      "description": "A literal argument. 'value' is present only when argumentValues is 'included'. Strings, GUIDs (format D) and instants (round-trip format O) are JSON strings, Int64 and Decimal values are JSON numbers, Boolean values are JSON booleans and an array kind is a JSON array of its element kind.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "kind": {
+          "enum": [
+            "String",
+            "Int64",
+            "Decimal",
+            "Boolean",
+            "DateTimeOffset",
+            "Guid",
+            "StringArray",
+            "Int64Array",
+            "DecimalArray",
+            "BooleanArray",
+            "DateTimeOffsetArray",
+            "GuidArray"
+          ]
+        },
+        "value": {
+          "type": ["string", "number", "boolean", "array"]
+        }
+      },
+      "required": ["name", "kind"],
+      "additionalProperties": false
+    },
+    "variable": {
+      "description": "A variable argument: the data source and the query, written as from(\"source\", \"query\") in rule text.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "source": { "type": "string" },
+        "query": { "type": "string" }
+      },
+      "required": ["name", "source", "query"],
+      "additionalProperties": false
+    },
+    "exception": {
+      "description": "The exception of a fault: its full type name and message. 'variable' is present exactly when the type is TruthWeaver.Abstractions.VariableResolutionException.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "variable": {
+          "type": "object",
+          "properties": {
+            "source": { "type": "string" },
+            "query": { "type": "string" },
+            "failure": { "enum": ["Missing", "Ambiguous", "TypeMismatch", "SourceError", "UnsuppliedSource"] }
+          },
+          "required": ["source", "query", "failure"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["type", "message"],
+      "additionalProperties": false
+    },
+    "traceEntry": {
+      "description": "One trace entry. 'result' is null exactly when 'notEvaluated' is true.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "result": { "oneOf": [{ "$ref": "#/$defs/truthValue" }, { "type": "null" }] },
+        "notEvaluated": { "type": "boolean" }
+      },
+      "required": ["text", "result", "notEvaluated"],
+      "additionalProperties": false
+    },
+    "traceNode": {
+      "description": "One trace tree node with its operands. A node that was not evaluated has a null result and no children.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "result": { "oneOf": [{ "$ref": "#/$defs/truthValue" }, { "type": "null" }] },
+        "notEvaluated": { "type": "boolean" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/traceNode" }
+        }
+      },
+      "required": ["text", "result", "notEvaluated", "children"],
+      "additionalProperties": false
+    }
+  }
+}

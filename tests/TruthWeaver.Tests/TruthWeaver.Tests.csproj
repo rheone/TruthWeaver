@@ -38,5 +38,10 @@
       Link="TestSupport/rule-tree.schema.json"
       CopyToOutputDirectory="PreserveNewest"
     />
+    <None
+      Include="../../src/TruthWeaver/Json/decision-record.schema.json"
+      Link="TestSupport/decision-record.schema.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>

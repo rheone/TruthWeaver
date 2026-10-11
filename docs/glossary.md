@@ -24,6 +24,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | --- | --- |
 | **Data source** | A named supplier of values, declared when the compiler is built and supplied at evaluation. A variable reference reads from it. See [data sources](data-sources.md). |
 | **Decision** | The result of one evaluation: a `TruthValue`, the faults that the evaluation absorbed and, if requested, a trace. `IsSatisfied` is `true` only for `True`. See [evaluation](strong-k3/specification/evaluation.md). |
+| **Decision record** | A `Decision` stored as JSON for an audit log, with the identity of the rule (a hash of its canonical text, a name and a version) and the evaluation options. `DecisionRecord.TryParseJson` reads it back. See [Decision records](decision-records.md). |
 | **Derived** | An Operation that has a definition in terms of primitives. It stays a node of its own. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
 | **Diagnostic** | One compile-time problem or finding: a code, a severity, a message, and a span or path. Only the severity Error blocks compilation. See [diagnostics](strong-k3/specification/diagnostics.md). |
 | **DNF** | Disjunctive normal form: an `OR` of `AND`s of literals and atoms. `ToDnf()` returns it. See [disjunctive normal form](rewriting-normal-form-examples.md#disjunctive-normal-form). |
