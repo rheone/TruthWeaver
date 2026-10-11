@@ -115,6 +115,32 @@ public sealed class DocExampleTests
         Assert.Empty(failures);
     }
 
+    /// <summary>A documented operator-style tree that uses the word spelling where the marker asks for C-style is reported.</summary>
+    [Fact]
+    public void Check_TreeInTheWrongOperatorStyle_ReportsAFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
+            + "<!-- doctest:tree r cstyle -->\n```text\nXOR\n├─ Is Dine In\n└─ Is Takeout\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Single(failures);
+    }
+
+    /// <summary>A trace diagram colors the nodes of an evaluation, so the uncolored diagram is reported as stale for a trace marker.</summary>
+    [Fact]
+    public void Check_TraceDiagramWithoutColors_ReportsAFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
+            + "<!-- doctest:mermaid r trace -->\n```mermaid\nflowchart TD\n    Start([\"Start\"]) --> n0\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Single(failures);
+    }
+
     /// <summary>Documented diagnostics output that no longer matches the formatter's output is reported.</summary>
     [Fact]
     public void Check_DiagnosticsOutputThatIsStale_ReportsAFailure_Test()

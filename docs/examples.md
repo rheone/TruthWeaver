@@ -1,6 +1,20 @@
 # Examples
 
-Eight examples, each adding one piece: a single predicate, combined predicates, named arguments, `XOR`, `EQUIVALENT`, `ExactlyOne` and the threshold family, the full worked example (a class-based predicate, a delegate predicate and a data-source variable) in all four forms, the same rule assembled with `RuleBuilder`, a match against one or several constants, and the worked rule in every printing format. A bonus section shows how to turn a denial into a sentence. Back to the [README](../README.md).
+Eight examples, each adding one piece: a single predicate, combined predicates, named arguments, `XOR`, `EQUIVALENT`, `ExactlyOne` and the threshold family, the full worked example (a class-based predicate, a delegate predicate and a data-source variable) in all four forms, the same rule assembled with `RuleBuilder`, a match against one or several constants, and the worked rule in every printing format. A bonus section draws a denied decision and shows how to turn it into a sentence. Back to the [README](../README.md).
+
+## Which printer to use
+
+A compiled rule prints in several formats. Pick the printer for the job:
+
+| Job | Printer | Shown in |
+| --- | --- | --- |
+| Save a rule as text that a person can edit and compile again. See [Rule text](rule-text.md). | `PrintRuleText` | [Section 8](#rule-text) |
+| Store a rule, or send it to another tool. | `PrintJson` | [Section 8](#json) |
+| Read the structure of a rule in a log or a terminal. | `PrintPlainText` | [Section 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
+| Draw a rule in a document or a UI that renders diagrams. | `PrintMermaid` | [Section 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
+| Show why a decision came out as it did. | `PrintPlainText` or `PrintMermaid`, with the decision | [The bonus section](#bonus-explaining-a-denied-decision) |
+| Write a rule as a formula in a report, a wiki or a paper. See [Equations](equations.md). | `PrintEquation` | [Section 8](#equations) |
+| Write a formula that stays short when the terms are long. See [Equations](equations.md). | `PrintEquationWithLegend` | [Section 8](#an-equation-with-a-legend) |
 
 ## 1. A single predicate
 
@@ -343,6 +357,37 @@ limit: from(#quot;limits#quot;, #quot;$.maxTotal#quot;)`"]
     n0 --> n8
 ```
 
+Set `NodeShapes` to draw each kind of node in its own shape:
+
+```csharp
+string shapes = result.GetRuleOrThrow().PrintMermaid(new MermaidOptions { NodeShapes = true });
+```
+
+<!-- doctest:mermaid worked shapes -->
+```mermaid
+flowchart TD
+    Start(["Start"]) --> n0
+    n0{{"AND"}}
+    n1("Has Topping (topping: #quot;greenOlives#quot;)")
+    n0 --> n1
+    n2{{"OR"}}
+    n3("Has Crust (crust: #quot;thin#quot;, ignoreCase: false, trim: false)")
+    n2 --> n3
+    n4("Has Crust (crust: #quot;stuffed#quot;, ignoreCase: true, trim: false)")
+    n2 --> n4
+    n5{{"XOR"}}
+    n6("Is Dine In")
+    n5 --> n6
+    n7("Is Takeout")
+    n5 --> n7
+    n2 --> n5
+    n0 --> n2
+    n8("Total At Most (limit: from(#quot;limits#quot;, #quot;$.maxTotal#quot;))")
+    n0 --> n8
+```
+
+An operator (`AND`, `OR`, `XOR`) is a hexagon. A term is a box with rounded corners, and no operator uses that shape. A constant (`True`, `False` or `Unknown`) is a circle. The worked rule has no constants, so no circle appears. A variable is not a node. It is part of the label of the term that takes it, so `totalAtMost(limit: from(...))` is one rounded box.
+
 This code renders the same rule as a text tree:
 
 ```csharp
@@ -445,14 +490,7 @@ A rule uses the predicate as `hasToppingMatching(pattern: "^EXTRA-.+$")`, which 
 
 A compiled rule prints in several formats. Each format serves a different reader. This section prints the rule of [example 5](#5-the-full-worked-example-in-all-four-forms) with every printer. Each block is real output, and `dotnet test` checks it against the library.
 
-| Printer | Output | Shown in |
-| --- | --- | --- |
-| `PrintRuleText` | Rule text that compiles back to the same rule | This section |
-| `PrintJson` | One-line JSON | This section |
-| `PrintPlainText` | An indented tree | [Example 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
-| `PrintMermaid` | A Mermaid flowchart | [Example 6](#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) |
-| `PrintEquation` | One line of math: Unicode, LaTeX or AsciiMath | This section |
-| `PrintEquationWithLegend` | An equation with one letter for each term, and a legend | This section |
+The table at the top of this page shows which printer suits which job.
 
 ### Rule text
 
@@ -556,7 +594,7 @@ t = isTakeout
 u = totalAtMost(limit: from("limits", "$.maxTotal"))
 ```
 
-The first line is `result.Equation`. The other lines are `result.LegendText`. The same rule with `SimpleVariables` set prints only the first line.
+The first line is `result.Equation`. The other lines are `result.LegendText`. [Operator styles and simple variables](#operator-styles-and-simple-variables) shows the same rule with `SimpleVariables` set.
 
 ### The same rule in each notation, side by side
 
@@ -578,7 +616,7 @@ The table prints two rules in each notation. The first rule is the worked rule. 
 
 Notes on the table:
 
-- The Word row is `PrintRuleText`. The Symbolic and C-style rows are the operator spellings of `OperatorStyle.Symbolic` and `OperatorStyle.CStyle`. These two styles change the operator labels of `PrintPlainText` and `PrintMermaid` (`PrintMermaid` takes the style in `MermaidOptions.OperatorStyle`). No printer writes them as one line, so the two rows replace only the operators of the Word row. The Symbolic row is the same text as the Unicode row. Rule text accepts the Symbolic spelling and the C-style `&&`, `||` and `!`. It does not accept `^` and `==`, so use the C-style row to read a rule and not to author one.
+- The Word row is `PrintRuleText`. The Symbolic and C-style rows are the operator spellings of `OperatorStyle.Symbolic` and `OperatorStyle.CStyle`. These two styles change the operator labels of `PrintPlainText` and `PrintMermaid` (`PrintMermaid` takes the style in `MermaidOptions.OperatorStyle`). No printer writes them as one line, so the two rows replace only the operators of the Word row. The Symbolic row is the same text as the Unicode row. [Operator styles and simple variables](#operator-styles-and-simple-variables) lists every symbol and states the C-style caveat.
 - The Unicode, LaTeX and AsciiMath rows are the output of `PrintEquation`. The LaTeX row is the output without a wrap. [Equations](equations.md#latex-wrap-modes) shows the `$$` and MathJax wraps.
 - `AtLeast` has no infix symbol in any notation. Every notation writes it in function-call form.
 
@@ -590,9 +628,141 @@ When each notation reads best:
 - **LaTeX and MathJax** read best in a paper, a wiki or a page that renders math. `MathJaxSafe` is the safe choice for GitHub Markdown.
 - **AsciiMath** reads best in a tool that renders AsciiMath and where LaTeX is too heavy to type by hand.
 
+### Operator styles and simple variables
+
+`OperatorStyle` selects the operator symbols that `PrintPlainText` and `PrintMermaid` write. `PrintPlainText` on a compiled rule always uses `Word`. To choose another style, call `PlainTextTreePrinter.Print` with the outline of the rule, or pass `MermaidOptions.OperatorStyle` to `PrintMermaid`. `PrintRuleText` and `PrintEquation` do not take the style. The Word row of the notation table is `PrintRuleText`, and the Unicode row is the Symbolic symbols.
+
+| Operator | `Word` | `Symbolic` | `CStyle` |
+| --- | --- | --- | --- |
+| `NOT` | `NOT` | `¬` | `!` |
+| `AND` | `AND` | `∧` | `&&` |
+| `OR` | `OR` | `∨` | `\|\|` |
+| `XOR` | `XOR` | `⊕` | `^` |
+| `EQUIVALENT` | `EQUIVALENT` | `↔` | `==` |
+| `IMPLIES` | `IMPLIES` | `→` | `IMPLIES` |
+| `NAND` | `NAND` | `↑` | `NAND` |
+| `NOR` | `NOR` | `↓` | `NOR` |
+| `If` | `If` | `If` | `?:` |
+| `COALESCE` | `COALESCE` | `??` | `??` |
+| `AtLeast`, `AtMost`, `Exactly`, `ExactlyOne` and the other cardinality operators | Function-call form | Function-call form | Function-call form |
+
+An operator with no spelling in a style keeps its word. This is why `IMPLIES`, `NAND` and `NOR` read the same in `CStyle`, and why the cardinality operators read the same in every style.
+
+The tree of the second rule, `review`, shows all three styles. It holds `XOR`, `EQUIVALENT` and a threshold operator:
+
+```csharp
+string word = PlainTextTreePrinter.Print(review.Outline(), OperatorStyle.Word);
+string symbolic = PlainTextTreePrinter.Print(review.Outline(), OperatorStyle.Symbolic);
+string cStyle = PlainTextTreePrinter.Print(review.Outline(), OperatorStyle.CStyle);
+```
+
+<!-- doctest:tree review -->
+```text
+AND
+├─ XOR
+│  ├─ Is Primary Reviewer
+│  └─ Is Backup Reviewer
+├─ EQUIVALENT
+│  ├─ Is Contractor
+│  └─ Has Signed Nda
+└─ AtLeast(2)
+   ├─ Approved By Alice
+   ├─ Approved By Bob
+   └─ Approved By Carol
+```
+
+<!-- doctest:tree review symbolic -->
+```text
+∧
+├─ ⊕
+│  ├─ Is Primary Reviewer
+│  └─ Is Backup Reviewer
+├─ ↔
+│  ├─ Is Contractor
+│  └─ Has Signed Nda
+└─ AtLeast(2)
+   ├─ Approved By Alice
+   ├─ Approved By Bob
+   └─ Approved By Carol
+```
+
+<!-- doctest:tree review cstyle -->
+```text
+&&
+├─ ^
+│  ├─ Is Primary Reviewer
+│  └─ Is Backup Reviewer
+├─ ==
+│  ├─ Is Contractor
+│  └─ Has Signed Nda
+└─ AtLeast(2)
+   ├─ Approved By Alice
+   ├─ Approved By Bob
+   └─ Approved By Carol
+```
+
+`CStyle` is a reading aid, not C semantics. In C, `==` is true when both sides are equal, and `null == null` is true. `EQUIVALENT` with two `Unknown` operands is `Unknown`, not `True`. Rule text accepts `&&`, `||` and `!`, but not `^` and `==`. Use the `CStyle` output to read a rule, and do not copy it back into a rule.
+
+`SimpleVariables` is an `EquationOptions` switch. It replaces each term with a letter and prints no legend, so the equation stays short:
+
+```csharp
+string simple = rule.PrintEquation(new EquationOptions { SimpleVariables = true });
+```
+
+<!-- doctest:equation worked simple -->
+```text
+p ∧ (q ∨ r ∨ (s ⊕ t)) ∧ u
+```
+
+Use `PrintEquationWithLegend` when the reader needs the terms as well.
+
 ## Bonus: explaining a denied decision
 
 `Decision`, `Fault` and `Trace` give the structured reason for a denial. The host turns that reason into a sentence for an end user or a support agent. [Humanizer](https://github.com/Humanizr/Humanizer) is a convenient pairing: predicate names are camelCase words, and fault counts are numbers:
+
+The trace of the decision shows where the denial came from. This code draws it:
+
+```csharp
+string trace = rule.PrintMermaid(decision, new MermaidOptions { NodeShapes = true });
+```
+
+The host did not supply the `limits` data source of the [worked rule](#5-the-full-worked-example-in-all-four-forms). The diagram colors each node by its result. Green is `True`, yellow is `Unknown` and gray with a dashed border is a node that the evaluation skipped. The first `hasCrust` term is `True`, so the `OR` stops there and skips the rest of its operands. `totalAtMost` is `Unknown` because its variable has no source, and so the `AND` is `Unknown`. The decision is not satisfied.
+
+<!-- doctest:mermaid worked shapes trace -->
+```mermaid
+flowchart TD
+    Start(["Start"]) --> n0
+    n0{{"AND"}}
+    n1("Has Topping (topping: #quot;greenOlives#quot;)")
+    n0 --> n1
+    n2{{"OR"}}
+    n3("Has Crust (crust: #quot;thin#quot;, ignoreCase: false, trim: false)")
+    n2 --> n3
+    n4("Has Crust (crust: #quot;stuffed#quot;, ignoreCase: true, trim: false)")
+    n2 --> n4
+    n5{{"XOR"}}
+    n6("Is Dine In")
+    n5 --> n6
+    n7("Is Takeout")
+    n5 --> n7
+    n2 --> n5
+    n0 --> n2
+    n8("Total At Most (limit: from(#quot;limits#quot;, #quot;$.maxTotal#quot;))")
+    n0 --> n8
+    class n0 brUnknown
+    class n1 brTrue
+    class n2 brTrue
+    class n3 brTrue
+    class n4 brSkipped
+    class n5 brSkipped
+    class n6 brSkipped
+    class n7 brSkipped
+    class n8 brUnknown
+    classDef brTrue fill:#d4edda,stroke:#28a745,color:#155724;
+    classDef brFalse fill:#f8d7da,stroke:#dc3545,color:#721c24;
+    classDef brUnknown fill:#fff3cd,stroke:#ffc107,color:#856404;
+    classDef brSkipped fill:#e9ecef,stroke:#adb5bd,color:#6c757d,stroke-dasharray: 4 3;
+```
 
 ```csharp
 using Humanizer;

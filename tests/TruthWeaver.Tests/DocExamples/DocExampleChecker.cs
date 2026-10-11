@@ -153,7 +153,7 @@ internal static partial class DocExampleChecker
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
             case "tree" or "mermaid" or "equation" or "legend":
-                // A mermaid marker may follow the rule id with option words: "shapes" and "two-line". An equation or legend marker
+                // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources). An equation or legend marker
                 // takes the dialect words "latex", "ascii", "double-dollar", "mathjax" and "simple".
                 string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string ruleId = words.Length > 0 ? words[0] : string.Empty;
@@ -163,8 +163,10 @@ internal static partial class DocExampleChecker
                     break;
                 }
 
+                OperatorStyle operatorStyle = OperatorStyleOf(words);
                 MermaidOptions mermaidOptions = new()
                 {
+                    OperatorStyle = operatorStyle,
                     NodeShapes = words.Contains("shapes"),
                     TwoLineTermLabels = words.Contains("two-line"),
                 };
@@ -184,8 +186,9 @@ internal static partial class DocExampleChecker
                 {
                     actualOutput = kind switch
                     {
-                        "tree" => rule.PrintPlainText(),
+                        "tree" => PlainTextTreePrinter.Print(rule.Outline(), operatorStyle),
                         "equation" => rule.PrintEquation(equationOptions),
+                        _ when words.Contains("trace") => rule.PrintMermaid(EvaluateWithoutDataSources(rule), mermaidOptions),
                         _ => rule.PrintMermaid(mermaidOptions),
                     };
                 }
@@ -205,6 +208,29 @@ internal static partial class DocExampleChecker
                 failures.Add($"{example}: unknown doctest kind '{kind}'.");
                 break;
         }
+    }
+
+    /// <summary>
+    /// Evaluates a rule with no service provider and no data sources, so a variable reference gives <c>Unknown</c> and a fault
+    /// while a documentation predicate gives <c>True</c>. The trace of this decision is what the <c>trace</c> word draws.
+    /// </summary>
+    private static Decision EvaluateWithoutDataSources(CompiledRule<RuleTestContext> rule)
+    {
+        // The checker is synchronous and the documentation predicates complete synchronously, so blocking cannot deadlock
+        // (no synchronization context runs here). Making Check async would change every caller for one marker word.
+#pragma warning disable VSTHRD002
+        return rule.EvaluateAsync(new RuleTestContext()).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+    }
+
+    private static OperatorStyle OperatorStyleOf(string[] words)
+    {
+        if (words.Contains("symbolic"))
+        {
+            return OperatorStyle.Symbolic;
+        }
+
+        return words.Contains("cstyle") ? OperatorStyle.CStyle : OperatorStyle.Word;
     }
 
     private static EquationDialect EquationDialectOf(string[] words)
