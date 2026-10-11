@@ -1,0 +1,16 @@
+# 06: TruthWeaver.Predicates docs
+
+**What to build:** Following the approved map, write or improve the consumer documentation for `TruthWeaver.Predicates`: the predicate catalog by category, the null-behaviour conventions and how a host registers a predicate. Each public type and member the gap list names for this package is covered by a page a consumer can reach from the root README in two clicks. Reuse and move existing content. Every example is tested.
+
+**Blocked by:** 02
+
+**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+
+- [ ] Every gap the inventory lists for this package is closed or recorded as intentionally undocumented, with the reason
+- [ ] The package README (if the map calls for one) exists and links into `docs/`
+- [ ] Diagrams are made with the `mermaid-diagram-generator` skill, only where a diagram adds something a table or prose does not
+- [ ] Markdown dialect is checked with the `github-markdown` skill
+- [ ] Prose passes the `humanizer` and `voice-of-robert` skills
+- [ ] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"`, `"*DocumentationLint*"` and `"*K3Reference*"` pass
+- [ ] The page follows `docs/agents/documentation-standard.md`
+- [ ] The full validation set from `CLAUDE.md` passes
