@@ -15,6 +15,8 @@ Before creating a new package or project, scoping one, or adding a heavy depende
 | 5 localized diagnostics, 10 decision caching, 24 other logics, 25 weighted logic | Dropped. Reasons: rarely asked of a rules library; hosts can cache themselves; the project is Strong K3; a different product. No tickets. |
 | 1, 2, 4, 6, 13 | Ready. |
 | 16, 17a, 18, 20 | Ready, each starting with a scope confirmation. New projects: `TruthWeaver.Tool` and `TruthWeaver.Tool.Tests` (16, 20), `TruthWeaver.AspNetCore` and `TruthWeaver.AspNetCore.Tests` (18). |
+| 16 scope | `System.CommandLine` in the tool project only (status checked first); stubs only (no registry loading, ticket 16b is on hold); permissive predicate inference with an optional YAML schema file. |
+| 20 scope | Runner library in `TruthWeaver.Testing`, which gains a reference to `TruthWeaver.Yaml` (confirmed). |
 | 18 scope | Authorization handler and policy builder with resource-based authorization; shipped `AuthorizationContext<TResource>` plus a custom mapper; fail closed with the decision kept; an opt-in to allow `Unknown`. |
 | 21, 22 | Spike tickets first (design notes). A grilling session on each note follows. |
 | 3, 7, 8, 9, 11, 12, 14, 15, 17b, 19, 22b, 23, t1 | On hold. |
@@ -26,7 +28,7 @@ Ready: [01](issues/01-counterfactual-what-would-make-this-true.md), [02](issues/
 
 Spikes: [21](issues/21-spike-overlap-and-conflict-analysis.md), [22](issues/22-spike-quantifiers.md).
 
-On hold: [03](issues/03-plain-english-explanation.md), [07](issues/07-policy-sets-and-combining-algorithms.md), [08](issues/08-shared-term-results-across-rules.md), [09](issues/09-activitysource-tracing.md), [11](issues/11-named-sub-rules-and-parameters.md), [12](issues/12-rule-store-with-hot-reload.md), [14](issues/14-shadow-replay-of-recorded-contexts.md), [15](issues/15-importers-and-exporters.md), [17b](issues/17b-language-server.md), [19](issues/19-web-playground.md), [t1](issues/t1-terminal-ui-workbench.md), [22b](issues/22b-quantifiers-build.md), [23](issues/23-linq-and-sql-translation.md).
+On hold: [03](issues/03-plain-english-explanation.md), [07](issues/07-policy-sets-and-combining-algorithms.md), [08](issues/08-shared-term-results-across-rules.md), [09](issues/09-activitysource-tracing.md), [11](issues/11-named-sub-rules-and-parameters.md), [12](issues/12-rule-store-with-hot-reload.md), [14](issues/14-shadow-replay-of-recorded-contexts.md), [15](issues/15-importers-and-exporters.md), [17b](issues/17b-language-server.md), [19](issues/19-web-playground.md), [16b](issues/16b-registry-assembly-loading.md), [t1](issues/t1-terminal-ui-workbench.md), [22b](issues/22b-quantifiers-build.md), [23](issues/23-linq-and-sql-translation.md).
 
 ## Dependencies
 
