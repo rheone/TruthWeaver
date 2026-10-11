@@ -11,7 +11,7 @@ public class NullBehaviorTests
 {
     /// <summary>Gets one entry per factory that takes a selector and a null-behavior option.</summary>
     public static TheoryData<string> FactoryNames =>
-        ["Equals", "EqualsIgnoreCase", "StartsWith", "EndsWith", "Contains", "EqualsConfigurable", "Matches", "SetEquals"];
+        ["IsEqualTo", "IsEqualToIgnoringCase", "StartsWith", "EndsWith", "Contains", "Matches", "SetEquals"];
 
     /// <summary>A defaulted or forgotten <see cref="NullBehavior"/> is the documented default, <see cref="NullBehavior.Unknown"/>.</summary>
     [Fact]
@@ -63,10 +63,10 @@ public class NullBehaviorTests
     /// answer from the comparison.
     /// </summary>
     [Fact]
-    public async Task Equals_NonNullSelectedValueWithUnknownOption_ReturnsDefiniteAnswer_Test()
+    public async Task IsEqualTo_NonNullSelectedValueWithUnknownOption_ReturnsDefiniteAnswer_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.Equals<TestContext>("isAlice", c => c.Value, nullBehavior: NullBehavior.Unknown);
+            StringPredicates.IsEqualTo<TestContext>("isAlice", c => c.Value, nullBehavior: NullBehavior.Unknown);
 
         TruthValue match = await evaluate(new TestContext("alice"), Args("value", "alice"), CancellationToken.None);
         TruthValue mismatch = await evaluate(new TestContext("bob"), Args("value", "alice"), CancellationToken.None);
@@ -98,12 +98,9 @@ public class NullBehaviorTests
 
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = factoryName switch
         {
-            "Equals" => useDefault
-                ? StringPredicates.Equals<TestContext>("p", c => c.Value)
-                : StringPredicates.Equals<TestContext>("p", c => c.Value, nullBehavior: behavior),
-            "EqualsIgnoreCase" => useDefault
-                ? StringPredicates.EqualsIgnoreCase<TestContext>("p", c => c.Value)
-                : StringPredicates.EqualsIgnoreCase<TestContext>("p", c => c.Value, nullBehavior: behavior),
+            "IsEqualTo" or "IsEqualToIgnoringCase" => useDefault
+                ? StringPredicates.IsEqualTo<TestContext>("p", c => c.Value)
+                : StringPredicates.IsEqualTo<TestContext>("p", c => c.Value, nullBehavior: behavior),
             "StartsWith" => useDefault
                 ? StringPredicates.StartsWith<TestContext>("p", c => c.Value)
                 : StringPredicates.StartsWith<TestContext>("p", c => c.Value, nullBehavior: behavior),
@@ -113,9 +110,6 @@ public class NullBehaviorTests
             "Contains" => useDefault
                 ? StringPredicates.Contains<TestContext>("p", c => c.Value)
                 : StringPredicates.Contains<TestContext>("p", c => c.Value, nullBehavior: behavior),
-            "EqualsConfigurable" => useDefault
-                ? StringPredicates.EqualsConfigurable<TestContext>("p", c => c.Value)
-                : StringPredicates.EqualsConfigurable<TestContext>("p", c => c.Value, nullBehavior: behavior),
             "Matches" => useDefault
                 ? RegexPredicates.Matches<TestContext>("p", c => c.Value)
                 : RegexPredicates.Matches<TestContext>("p", c => c.Value, nullBehavior: behavior),
@@ -129,7 +123,7 @@ public class NullBehaviorTests
         {
             "Matches" => Args("pattern", "a"),
             "SetEquals" => ArrayArgs("a"),
-            "EqualsConfigurable" => new PredicateArguments(
+            "IsEqualToIgnoringCase" => new PredicateArguments(
                 new Dictionary<string, LiteralValue>
                 {
                     ["value"] = LiteralValue.OfString("a"),

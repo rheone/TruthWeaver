@@ -139,6 +139,53 @@ copyright line reads 2026.
 
 ### Changed
 
+- **Breaking:** predicate factories follow one twin-naming guide ([Predicate conventions](docs/predicate-conventions.md#naming)).
+  A state or relation is `IsX` with the twin `IsNotX`. A verb phrase is `Verb` with the twin `NotVerb`. A twin is always the
+  Strong Kleene complement of its positive. `Equals`, `Equal`, `NotEquals` and `NotEqual` become `IsEqualTo` and `IsNotEqualTo`.
+  `EqualsConfigurable` merges into the string `IsEqualTo`, so one predicate takes the optional rule arguments `ignoreCase` and
+  `trim` (both `false` by default). `EqualsIgnoreCase` and `NotEqualsIgnoreCase` are removed: they are `ignoreCase: true`.
+  The four ordering predicates get exact-complement twins. There are no `[Obsolete]` forwarders, because the packages are
+  unpublished. The reference pages under `docs/strong-k3/predicates` are renamed to match.
+
+  | Old | New |
+  | --- | --- |
+  | `StringPredicates.Equals` | `StringPredicates.IsEqualTo` |
+  | `StringPredicates.NotEquals` | `StringPredicates.IsNotEqualTo` |
+  | `StringPredicates.EqualsIgnoreCase` | `StringPredicates.IsEqualTo`, with `ignoreCase: true` in the rule |
+  | `StringPredicates.NotEqualsIgnoreCase` | `StringPredicates.IsNotEqualTo`, with `ignoreCase: true` in the rule |
+  | `StringPredicates.EqualsConfigurable` | `StringPredicates.IsEqualTo` |
+  | `StringPredicates.NotEqualsConfigurable` | `StringPredicates.IsNotEqualTo` |
+  | `StringPredicates.In`, `NotIn` | `StringPredicates.IsIn`, `IsNotIn` |
+  | `NumericPredicates.Equal`, `NotEqual` | `NumericPredicates.IsEqualTo`, `IsNotEqualTo` |
+  | `NumericPredicates.LessThan` | `NumericPredicates.IsLessThan`, new twin `IsNotLessThan` |
+  | `NumericPredicates.GreaterThan` | `NumericPredicates.IsGreaterThan`, new twin `IsNotGreaterThan` |
+  | `NumericPredicates.LessThanOrEqual` | `NumericPredicates.IsLessThanOrEqualTo`, new twin `IsNotLessThanOrEqualTo` |
+  | `NumericPredicates.GreaterThanOrEqual` | `NumericPredicates.IsGreaterThanOrEqualTo`, new twin `IsNotGreaterThanOrEqualTo` |
+  | `NumericPredicates.Between`, `NotBetween` | `NumericPredicates.IsBetween`, `IsNotBetween` |
+  | `NumericPredicates.In`, `NotIn` | `NumericPredicates.IsIn`, `IsNotIn` |
+  | `ScalarPredicates.Equal`, `NotEqual` | `ScalarPredicates.IsEqualTo`, `IsNotEqualTo` |
+  | `ScalarPredicates.In`, `NotIn` | `ScalarPredicates.IsIn`, `IsNotIn` |
+  | `DateTimePredicates.After`, `NotAfter` | `DateTimePredicates.IsAfter`, `IsNotAfter` |
+  | `DateTimePredicates.Before`, `NotBefore` | `DateTimePredicates.IsBefore`, `IsNotBefore` |
+  | `DateTimePredicates.AfterNow`, `NotAfterNow` | `DateTimePredicates.IsAfterNow`, `IsNotAfterNow` |
+  | `DateTimePredicates.BeforeNow`, `NotBeforeNow` | `DateTimePredicates.IsBeforeNow`, `IsNotBeforeNow` |
+  | `DateTimePredicates.Between`, `NotBetween` | `DateTimePredicates.IsBetween`, `IsNotBetween` |
+  | `DateTimePredicates.OnDayOfWeek`, `NotOnDayOfWeek` | `DateTimePredicates.IsOnDayOfWeek`, `IsNotOnDayOfWeek` |
+  | `DateTimePredicates.InMonth`, `NotInMonth` | `DateTimePredicates.IsInMonth`, `IsNotInMonth` |
+  | `DateTimePredicates.InTimeWindow`, `NotInTimeWindow` | `DateTimePredicates.IsInTimeWindow`, `IsNotInTimeWindow` |
+
+  **Migrate:** rename each factory call as the table shows. The name that a host gives a predicate at registration does not
+  change, so rule text is unaffected, except where a rule used a registration of `EqualsIgnoreCase` or `NotEqualsIgnoreCase`:
+  register `IsEqualTo` or `IsNotEqualTo` and add `ignoreCase: true` to those rules. The default labels follow the new names
+  (for example `Is Less Than`).
+
+- **Breaking (behavior):** `IsLessThanOrEqualTo` and `IsGreaterThanOrEqualTo` (formerly `LessThanOrEqual` and
+  `GreaterThanOrEqual`) are positive predicates. Registered with `NullBehavior.False`, a null selected value now answers
+  `False`, like every other positive predicate. Before, it answered `True`, because they were built as the twins of
+  `GreaterThan` and `LessThan`. **Migrate:** to keep the old answer for a null value, register `IsNotLessThan` (for
+  `IsGreaterThanOrEqualTo`) or `IsNotGreaterThan` (for `IsLessThanOrEqualTo`) with `NullBehavior.False`.
+- The string `IsEqualTo` and `IsNotEqualTo` read a missing `ignoreCase` or `trim` argument as `false`, so a delegate called
+  directly with only the comparison target behaves as the rule-text default.
 - **Breaking:** `RuleMetrics.MaxDepth` is renamed `Depth`, so a measured value no longer shares a name with the
   `CompilerOptions.MaxDepth` limit (least-surprise-normalization 29). `NodeCount` keeps its name; its limit stays
   `CompilerOptions.MaxNodeCount`. Migration: read `rule.Metrics.Depth` instead of `rule.Metrics.MaxDepth`.

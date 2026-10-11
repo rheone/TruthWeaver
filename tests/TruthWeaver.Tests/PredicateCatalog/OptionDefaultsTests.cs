@@ -31,8 +31,8 @@ public sealed class OptionDefaultsTests
     {
         string[] factories = [.. NotXTwinTable.Pairs.SelectMany(pair => pair.Factories)];
 
-        Assert.Contains("StringPredicates.EqualsConfigurable(String)", factories);
-        Assert.Contains("DateTimePredicates.InTimeWindow(DateTimeOffset)", factories);
+        Assert.Contains("StringPredicates.IsEqualTo(String)", factories);
+        Assert.Contains("DateTimePredicates.IsInTimeWindow(DateTimeOffset)", factories);
     }
 
     /// <summary>An optional <c>ignoreCase</c> argument that defaults to <c>true</c> is reported with the rule and the page.</summary>

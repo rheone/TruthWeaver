@@ -287,13 +287,13 @@ catalog members, not for the engine.
   reading of it, and it stays fail-closed under `Decision.IsSatisfied`.
 - **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
   `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
-  depend on the host's locale, which is unsafe for authorization rules. `EqualsConfigurable` follows the
+  depend on the host's locale, which is unsafe for authorization rules. `IsEqualTo` follows the
   rule too: it is case-sensitive unless the rule sets `ignoreCase: true`, and it has no `culture` argument; a rule that still passes one is rejected at compile time
   with an `UnknownArgument` diagnostic that says to remove it.
 - **Date and time use `DateTimeOffset` only.** There is no `DateTime` literal kind; a host holding a
   `DateTime` converts it in its selector. Rationale: `DateTime` with an unspecified `Kind` is ambiguous,
   and adding a kind breaks exhaustive switches over the closed `LiteralKind` set.
-- **Clock predicates receive a `TimeProvider` at registration.** `AfterNow`/`BeforeNow` take the
+- **Clock predicates receive a `TimeProvider` at registration.** `IsAfterNow`/`IsBeforeNow` take the
   provider as a required registration parameter with no ambient default. Rationale: the clock stays an
   explicit dependency, so evaluation is testable with a fake provider, consistent with the
   [predicate-author contract](#the-predicate-author-contract).
@@ -304,16 +304,16 @@ catalog members, not for the engine.
   A twin has the same default `NullBehavior` as `X`, so both members of a pair registered with the
   defaults answer `Unknown` for a null selected value. Rationale: under `NullBehavior.Unknown` a twin keeps a null input `Unknown` instead of an
   accidental `True`, one rule covers every pair, and rule text can name the negation directly.
-  A twin is named by putting `Not` before the name of `X` (`Equals`/`NotEquals`, `Between`/`NotBetween`). The
-  exceptions are the `Is...` tests (`IsNull`/`IsNotNull`) and the order comparisons of the numeric and scalar
-  predicates (`LessThan`/`GreaterThanOrEqual`).
-- **`In` and `NotIn` test string membership.** They live in `StringPredicates`. The selector returns one scalar value, and the
+  A twin of an `IsX` predicate is `IsNotX` (`IsEqualTo`/`IsNotEqualTo`, `IsLessThan`/`IsNotLessThan`,
+  `IsBetween`/`IsNotBetween`). A twin of a verb predicate is `NotVerb` (`Contains`/`NotContains`). See
+  [Predicate conventions](docs/predicate-conventions.md#naming).
+- **`IsIn` and `IsNotIn` test scalar membership.** They live in `StringPredicates`, `NumericPredicates` and `ScalarPredicates`. The selector returns one scalar value, and the
   predicate is `True` when that value is in the literal candidate array. A collection selector is a
   compile error. The collection predicates are `ContainsAny` (at least one element is in the candidate
   array), `ContainsAll` (every candidate is an element) and `IsSubsetOf` (every element is in the
   candidate array). Each of them has a `NotX` twin.
-- **`Between` is inclusive and `NotBetween` is its exact complement.** `Between(value, n, k)` is `True`
-  when `n <= value <= k`, for numeric and `DateTimeOffset` values. `NotBetween` is `True` when `Between` is
+- **`IsBetween` is inclusive and `IsNotBetween` is its exact complement.** `IsBetween(value, n, k)` is `True`
+  when `n <= value <= k`, for numeric and `DateTimeOffset` values. `IsNotBetween` is `True` when `IsBetween` is
   `False`. Reversed bounds (`n > k`) are an authoring error. When both bounds are literals, the
   compiler reports a diagnostic. Otherwise the predicate throws an argument error. The catalog never
   swaps the bounds silently. Rationale: a swapped range hides a mistake in the rule.

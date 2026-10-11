@@ -74,5 +74,5 @@ A null selected value answers `Unknown` by default, because the type of a missin
 ## Related predicates
 
 - [IsNotGuid](type-isnotguid.md) is the exact complement of this predicate.
-- [Equal](scalar-equal.md) tests a `Guid` selector for equality with a `Guid` literal.
+- [IsEqualTo](scalar-isequalto.md) tests a `Guid` selector for equality with a `Guid` literal.
 - [IsString](type-isstring.md) tests for a string.

@@ -14,7 +14,7 @@ public sealed class K3ReferenceSyncTests
 
     private static readonly string[] Transformations = ["project", "collapse"];
 
-    private static readonly string[] Predicates = ["string-equals", "regex-matches"];
+    private static readonly string[] Predicates = ["string-isequalto", "regex-matches"];
 
     private static readonly string[] CompleteDocuments =
     [
@@ -24,7 +24,7 @@ public sealed class K3ReferenceSyncTests
         "docs/strong-k3/cardinality/atleast.md",
         "docs/strong-k3/result-transformations/project.md",
         "docs/strong-k3/result-transformations/collapse.md",
-        "docs/strong-k3/predicates/string-equals.md",
+        "docs/strong-k3/predicates/string-isequalto.md",
         "docs/strong-k3/predicates/README.md",
     ];
 
@@ -85,9 +85,9 @@ public sealed class K3ReferenceSyncTests
     [Fact]
     public void Check_HeldPredicateWithDocument_ReportsTheStaleHold_Test()
     {
-        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-matches", "string-equals"]));
+        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-matches", "string-isequalto"]));
 
-        Assert.Contains("'string-equals'", failure, StringComparison.Ordinal);
+        Assert.Contains("'string-isequalto'", failure, StringComparison.Ordinal);
     }
 
     /// <summary>A hold entry for a predicate the engine lacks is reported.</summary>

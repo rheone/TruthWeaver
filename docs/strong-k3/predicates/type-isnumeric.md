@@ -78,5 +78,5 @@ A null selected value answers `Unknown` by default, because the type of a missin
 ## Related predicates
 
 - [IsNotNumeric](type-isnotnumeric.md) is the exact complement of this predicate.
-- [Equal](numeric-equal.md) compares a number with a number literal.
+- [IsEqualTo](numeric-isequalto.md) compares a number with a number literal.
 - [Matches](regex-matches.md) tests text against your own pattern.

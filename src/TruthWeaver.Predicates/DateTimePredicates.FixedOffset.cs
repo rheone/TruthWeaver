@@ -46,10 +46,10 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) OnDayOfWeek<TContext>(
+    ) IsOnDayOfWeek<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "On Day Of Week",
+        string label = "Is On Day Of Week",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
@@ -60,7 +60,7 @@ public static partial class DateTimePredicates
     }
 
     /// <summary>
-    /// Creates the <c>NotOnDayOfWeek</c> twin of <see cref="OnDayOfWeek{TContext}"/>: its Strong Kleene complement (true
+    /// Creates the <c>IsNotOnDayOfWeek</c> twin of <see cref="IsOnDayOfWeek{TContext}"/>: its Strong Kleene complement (true
     /// when the instant, read in the offset, falls on none of the listed days; Unknown stays Unknown).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -76,15 +76,15 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotOnDayOfWeek<TContext>(
+    ) IsNotOnDayOfWeek<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not On Day Of Week",
+        string label = "Is Not On Day Of Week",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "The Strong Kleene complement of OnDayOfWeek: True when the selected instant falls on none of the listed days of the week, False when it falls on one, Unknown when OnDayOfWeek is Unknown."
+            "The Strong Kleene complement of IsOnDayOfWeek: True when the selected instant falls on none of the listed days of the week, False when it falls on one, Unknown when IsOnDayOfWeek is Unknown."
             + OffsetNote;
         return DayOfWeekPredicate(name, label, description, selector, nullBehavior, negate: true);
     }
@@ -103,10 +103,10 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) InMonth<TContext>(
+    ) IsInMonth<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "In Month",
+        string label = "Is In Month",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
@@ -117,7 +117,7 @@ public static partial class DateTimePredicates
     }
 
     /// <summary>
-    /// Creates the <c>NotInMonth</c> twin of <see cref="InMonth{TContext}"/>: its Strong Kleene complement (true when the
+    /// Creates the <c>IsNotInMonth</c> twin of <see cref="IsInMonth{TContext}"/>: its Strong Kleene complement (true when the
     /// instant, read in the offset, falls in none of the listed months; Unknown stays Unknown).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -133,15 +133,15 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotInMonth<TContext>(
+    ) IsNotInMonth<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not In Month",
+        string label = "Is Not In Month",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "The Strong Kleene complement of InMonth: True when the selected instant falls in none of the listed months, False when it falls in one, Unknown when InMonth is Unknown."
+            "The Strong Kleene complement of IsInMonth: True when the selected instant falls in none of the listed months, False when it falls in one, Unknown when IsInMonth is Unknown."
             + OffsetNote;
         return MonthPredicate(name, label, description, selector, nullBehavior, negate: true);
     }
@@ -172,10 +172,10 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) InTimeWindow<TContext>(
+    ) IsInTimeWindow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "In Time Window",
+        string label = "Is In Time Window",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
@@ -187,9 +187,9 @@ public static partial class DateTimePredicates
     }
 
     /// <summary>
-    /// Creates the <c>NotInTimeWindow</c> twin of <see cref="InTimeWindow{TContext}"/>: its Strong Kleene complement (true
+    /// Creates the <c>IsNotInTimeWindow</c> twin of <see cref="IsInTimeWindow{TContext}"/>: its Strong Kleene complement (true
     /// when the time of day, read in the offset, is outside the window; Unknown stays Unknown). The arguments and their
-    /// rules are those of <see cref="InTimeWindow{TContext}"/>.
+    /// rules are those of <see cref="IsInTimeWindow{TContext}"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -204,15 +204,15 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotInTimeWindow<TContext>(
+    ) IsNotInTimeWindow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not In Time Window",
+        string label = "Is Not In Time Window",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "The Strong Kleene complement of InTimeWindow: True when the time of day of the selected instant is outside the window, False when it is inside, Unknown when InTimeWindow is Unknown."
+            "The Strong Kleene complement of IsInTimeWindow: True when the time of day of the selected instant is outside the window, False when it is inside, Unknown when IsInTimeWindow is Unknown."
             + OffsetNote;
         return TimeWindowPredicate(name, label, description, selector, nullBehavior, negate: true);
     }

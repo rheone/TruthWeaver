@@ -4,7 +4,7 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Pins the collection family of <see cref="CollectionPredicates"/>: emptiness, membership, the
-/// containment predicates, scalar <c>In</c>/<c>NotIn</c> and the count comparisons, each with its
+/// containment predicates, scalar <c>IsIn</c>/<c>IsNotIn</c> and the count comparisons, each with its
 /// Strong Kleene <c>NotX</c> twin, for a null, empty, one-item and many-item collection.
 /// </summary>
 public class CollectionFamilyPredicatesTests
@@ -137,19 +137,19 @@ public class CollectionFamilyPredicatesTests
     }
 
     /// <summary>
-    /// In and NotIn read a scalar string selector, so a collection selector does not compile: that is
+    /// IsIn and IsNotIn read a scalar string selector, so a collection selector does not compile: that is
     /// how a collection selector is rejected. The scalar is tested against the candidate array.
     /// </summary>
     [Theory]
     [InlineData("a", TruthValue.True)]
     [InlineData("A", TruthValue.False)]
     [InlineData("z", TruthValue.False)]
-    public async Task In_ScalarSelector_ReturnsMembership_Test(string value, TruthValue expected)
+    public async Task IsIn_ScalarSelector_ReturnsMembership_Test(string value, TruthValue expected)
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            StringPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.IsIn<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            StringPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.IsNotIn<TestContext>("notIn", c => c.Value);
         TestContext context = new(value);
 
         Assert.Equal(expected, await RunAsync(isIn, context, Array("values", "a", "b")));
@@ -220,14 +220,14 @@ public class CollectionFamilyPredicatesTests
         }
     }
 
-    /// <summary>A null scalar is Unknown for In and NotIn by default.</summary>
+    /// <summary>A null scalar is Unknown for IsIn and IsNotIn by default.</summary>
     [Fact]
-    public async Task In_NullScalarByDefault_ReturnsUnknown_Test()
+    public async Task IsIn_NullScalarByDefault_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            StringPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.IsIn<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            StringPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.IsNotIn<TestContext>("notIn", c => c.Value);
 
         Assert.Equal(TruthValue.Unknown, await RunAsync(isIn, new TestContext(null), Array("values", "a")));
         Assert.Equal(TruthValue.Unknown, await RunAsync(notIn, new TestContext(null), Array("values", "a")));
@@ -252,7 +252,7 @@ public class CollectionFamilyPredicatesTests
         (PredicateSchema count, _) = CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values);
         (PredicateSchema any, _) = CollectionPredicates.ContainsAny<TestContext>("any", c => c.Values);
         (PredicateSchema contains, _) = CollectionPredicates.Contains<TestContext>("contains", c => c.Values);
-        (PredicateSchema isIn, _) = StringPredicates.In<TestContext>("in", c => c.Value);
+        (PredicateSchema isIn, _) = StringPredicates.IsIn<TestContext>("in", c => c.Value);
 
         Assert.Equal(LiteralKind.Int64, Assert.Single(count.Arguments).Type);
         Assert.Equal(LiteralKind.StringArray, Assert.Single(any.Arguments).Type);

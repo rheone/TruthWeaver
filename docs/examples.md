@@ -219,7 +219,7 @@ This code registers the predicates, declares the data source name, compiles the 
 
 ```csharp
 (PredicateSchema hasCrustSchema, var hasCrustEvaluate) =
-    StringPredicates.EqualsConfigurable<PizzaOrder>("hasCrust", order => order.Crust, "Has Crust", argumentName: "crust");
+    StringPredicates.IsEqualTo<PizzaOrder>("hasCrust", order => order.Crust, "Has Crust", argumentName: "crust");
 
 PredicateRegistry<PizzaOrder> registry = PredicateRegistry<PizzaOrder>.CreateBuilder()
     .Add<IsDineIn>()
@@ -268,7 +268,7 @@ if (decision.IsSatisfied)
 }
 ```
 
-`IsDineIn` and `IsTakeout` are class-based predicates. The engine resolves them again from `serviceProvider` on every call. This is the correct shape for a predicate with a scoped dependency, such as a `DbContext`. `hasTopping` and `totalAtMost` are hand-written stateless lambdas. `hasCrust` comes from the ready-made `StringPredicates.EqualsConfigurable` factory (see [Predicate types](predicates.md)). It takes `crust` as the rule-text comparison target, plus the `ignoreCase` and `trim` arguments with defaults, so `hasCrust(crust: "thin")` compiles alone. All forms register against the same `PredicateRegistryBuilder<TContext>`. When a compilation fails, the previously persisted rule stays active.
+`IsDineIn` and `IsTakeout` are class-based predicates. The engine resolves them again from `serviceProvider` on every call. This is the correct shape for a predicate with a scoped dependency, such as a `DbContext`. `hasTopping` and `totalAtMost` are hand-written stateless lambdas. `hasCrust` comes from the ready-made `StringPredicates.IsEqualTo` factory (see [Predicate types](predicates.md)). It takes `crust` as the rule-text comparison target, plus the `ignoreCase` and `trim` arguments with defaults, so `hasCrust(crust: "thin")` compiles alone. All forms register against the same `PredicateRegistryBuilder<TContext>`. When a compilation fails, the previously persisted rule stays active.
 
 For an order with the total 25, the rule is `True` when the document says `"maxTotal": 40` and `False` when it says `"maxTotal": 10`. The data source decides, and the rule text does not change. A YAML document (`YamlDataSource.Parse("maxTotal: 40")`) gives the same answer. If the host does not supply the `limits` source, `totalAtMost` is `Unknown`, the evaluation records a fault, and `decision.IsSatisfied` is `false`. [Failures](data-sources.md#failures) lists the other outcomes.
 
@@ -410,7 +410,7 @@ AND
 └─ Total At Most (limit: from("limits", "$.maxTotal"))
 ```
 
-The second `hasCrust` term sets `ignoreCase: true` in the rule text. `StringPredicates.EqualsConfigurable` (see [Predicate types](predicates.md)) declares three rule-text arguments: `crust`, `ignoreCase` and `trim`. This term shows a rule that sets more than the one required argument that every other predicate in this example takes. Both outputs show the argument values of every term by default. The compiler fills in the `ignoreCase` and `trim` values of the first `hasCrust` term from the schema defaults, although its rule text does not name them. For this reason the two `hasCrust` terms are different in the output, which a predicate label alone does not show. Pass `showArgumentValues: false` to `PrintMermaid` or `PrintPlainText` to render labels that show only the structure (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)).
+The second `hasCrust` term sets `ignoreCase: true` in the rule text. `StringPredicates.IsEqualTo` (see [Predicate types](predicates.md)) declares three rule-text arguments: `crust`, `ignoreCase` and `trim`. This term shows a rule that sets more than the one required argument that every other predicate in this example takes. Both outputs show the argument values of every term by default. The compiler fills in the `ignoreCase` and `trim` values of the first `hasCrust` term from the schema defaults, although its rule text does not name them. For this reason the two `hasCrust` terms are different in the output, which a predicate label alone does not show. Pass `showArgumentValues: false` to `PrintMermaid` or `PrintPlainText` to render labels that show only the structure (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)).
 
 `RuleBuilder` is not a fourth parser. Every builder method renders the same flat JSON tree shape as a hand-written JSON rule, and `Compile` gives that JSON to the same `CompileJson` that any other tool uses. A rule from a builder therefore gets every diagnostic that a hand-written rule gets. These include an unknown predicate, a bad argument, an out-of-range threshold, the operand count of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND` and `NOR`, resource limits, and a structural tautology or contradiction. The builder does not bypass the Validate and Analyze stages of the [compilation pipeline](architecture.md#compilation-pipeline). See [RuleBuilder](rulebuilder.md) for the full API.
 

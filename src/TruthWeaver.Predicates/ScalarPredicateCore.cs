@@ -76,7 +76,7 @@ internal static class ScalarPredicateCore
     /// <param name="nullBehavior">What a null selection answers.</param>
     /// <param name="lowerName">The lower-bound argument name.</param>
     /// <param name="upperName">The upper-bound argument name.</param>
-    /// <param name="outside"><see langword="true"/> for <c>NotBetween</c>, <see langword="false"/> for <c>Between</c>.</param>
+    /// <param name="outside"><see langword="true"/> for <c>IsNotBetween</c>, <see langword="false"/> for <c>IsBetween</c>.</param>
     /// <typeparam name="TContext">The application context type.</typeparam>
     /// <typeparam name="T">The scalar value type.</typeparam>
     /// <returns>The schema and delegate.</returns>
@@ -141,7 +141,7 @@ internal static class ScalarPredicateCore
         );
     }
 
-    /// <summary>Builds a scalar-membership predicate over a candidate array. <paramref name="negate"/> selects <c>NotIn</c>.</summary>
+    /// <summary>Builds a scalar-membership predicate over a candidate array. <paramref name="negate"/> selects <c>IsNotIn</c>.</summary>
     /// <param name="kind">The scalar kind of the selector and the candidates.</param>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="label">A short display name.</param>
@@ -149,7 +149,7 @@ internal static class ScalarPredicateCore
     /// <param name="selector">Reads the value from the context.</param>
     /// <param name="nullBehavior">What a null selection answers.</param>
     /// <param name="argumentName">The candidate-array argument name.</param>
-    /// <param name="negate"><see langword="true"/> for <c>NotIn</c>.</param>
+    /// <param name="negate"><see langword="true"/> for <c>IsNotIn</c>.</param>
     /// <typeparam name="TContext">The application context type.</typeparam>
     /// <typeparam name="T">The scalar value type.</typeparam>
     /// <returns>The schema and delegate.</returns>

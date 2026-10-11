@@ -635,7 +635,7 @@ internal sealed class RuleNodeCompiler<TContext>
                 string expectedArguments = declared.Length == 0 ? "no arguments" : $"one of {string.Join(", ", declared)}";
 
                 // A near-miss gets a "did you mean"; anything else (typically an argument the predicate has
-                // retired, such as EqualsConfigurable's former culture) gets advice naming it, so the author
+                // retired, such as a former culture argument) gets advice naming it, so the author
                 // knows deleting it is the fix rather than renaming it.
                 DiagnosticSuggestion suggestion =
                     NameSuggester.Suggest(arg.Name, declared)

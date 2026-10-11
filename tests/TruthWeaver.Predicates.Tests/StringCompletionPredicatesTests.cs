@@ -80,7 +80,7 @@ public class StringCompletionPredicatesTests
 
     /// <summary>Comparison twins agree with the K3 complement of the positive form for null, match and non-match.</summary>
     [Theory]
-    [InlineData("Equals", "NotEquals", "value", "abc")]
+    [InlineData("IsEqualTo", "IsNotEqualTo", "value", "abc")]
     [InlineData("Contains", "NotContains", "value", "b")]
     [InlineData("Matches", "NotMatches", "pattern", "^a")]
     public async Task ComparisonTwin_AnySelection_IsK3ComplementOfPositive_Test(
@@ -101,9 +101,9 @@ public class StringCompletionPredicatesTests
 
     /// <summary>The comparison twins use ordinal, case-sensitive comparison.</summary>
     [Fact]
-    public async Task NotEqual_DifferentCase_ReturnsTrue_Test()
+    public async Task IsNotEqualTo_DifferentCase_ReturnsTrue_Test()
     {
-        Evaluate evaluate = Comparison("NotEquals");
+        Evaluate evaluate = Comparison("IsNotEqualTo");
 
         TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "alice"), CancellationToken.None);
 
@@ -126,14 +126,14 @@ public class StringCompletionPredicatesTests
     }
 
     /// <summary>
-    /// Under <c>NullBehavior.False</c>, <c>Equals</c> answers False for a null selection, so its twin answers the
+    /// Under <c>NullBehavior.False</c>, <c>IsEqualTo</c> answers False for a null selection, so its twin answers the
     /// complement, True.
     /// </summary>
     [Fact]
-    public async Task NotEqual_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
+    public async Task IsNotEqualTo_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.NotEquals<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
+            StringPredicates.IsNotEqualTo<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
@@ -166,13 +166,15 @@ public class StringCompletionPredicatesTests
         PredicateSchema[] oneArg =
         [
             StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema,
-            StringPredicates.NotEquals<TestContext>("a", c => c.Value).Schema,
             RegexPredicates.NotMatches<TestContext>("a", c => c.Value).Schema,
         ];
 
         Assert.All(noArgs, s => Assert.Empty(s.Arguments));
         Assert.All(oneArg, s => Assert.Equal(LiteralKind.String, Assert.Single(s.Arguments).Type));
-        Assert.All(noArgs.Concat(oneArg), s => Assert.False(string.IsNullOrWhiteSpace(s.Description)));
+        PredicateSchema notEqualTo = StringPredicates.IsNotEqualTo<TestContext>("a", c => c.Value).Schema;
+        Assert.Equal(LiteralKind.String, notEqualTo.Arguments[0].Type);
+        Assert.Equal(["value", "ignoreCase", "trim"], notEqualTo.Arguments.Select(a => a.Name));
+        Assert.All(noArgs.Concat(oneArg).Append(notEqualTo), s => Assert.False(string.IsNullOrWhiteSpace(s.Description)));
     }
 
     private static TruthValue Complement(TruthValue value)
@@ -204,9 +206,11 @@ public class StringCompletionPredicatesTests
     {
         Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
-            "Equals" => StringPredicates.Equals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotEquals" => StringPredicates
-                .NotEquals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+            "IsEqualTo" => StringPredicates
+                .IsEqualTo<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+                .Evaluate,
+            "IsNotEqualTo" => StringPredicates
+                .IsNotEqualTo<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
             "Contains" => StringPredicates
                 .Contains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)

@@ -188,12 +188,12 @@ public sealed class ReversedBoundsDiagnosticTests
     private static RuleCompiler<Ranges> CreateCompiler()
     {
         PredicateRegistryBuilder<Ranges> builder = PredicateRegistry<Ranges>.CreateBuilder();
-        Register(builder, NumericPredicates.Between<Ranges>("countBetween", c => c.Count));
-        Register(builder, NumericPredicates.NotBetween<Ranges>("countNotBetween", c => c.Count));
-        Register(builder, NumericPredicates.Between<Ranges>("priceBetween", c => c.Price));
-        Register(builder, NumericPredicates.NotBetween<Ranges>("priceNotBetween", c => c.Price));
-        Register(builder, DateTimePredicates.Between<Ranges>("atBetween", c => c.At));
-        Register(builder, DateTimePredicates.NotBetween<Ranges>("atNotBetween", c => c.At));
+        Register(builder, NumericPredicates.IsBetween<Ranges>("countBetween", c => c.Count));
+        Register(builder, NumericPredicates.IsNotBetween<Ranges>("countNotBetween", c => c.Count));
+        Register(builder, NumericPredicates.IsBetween<Ranges>("priceBetween", c => c.Price));
+        Register(builder, NumericPredicates.IsNotBetween<Ranges>("priceNotBetween", c => c.Price));
+        Register(builder, DateTimePredicates.IsBetween<Ranges>("atBetween", c => c.At));
+        Register(builder, DateTimePredicates.IsNotBetween<Ranges>("atNotBetween", c => c.At));
         return new RuleCompiler<Ranges>(builder.Build(), new CompilerOptions(DataSources: ["limits"]));
     }
 

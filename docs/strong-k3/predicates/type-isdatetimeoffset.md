@@ -70,10 +70,10 @@ A null selected value answers `Unknown` by default, because the type of a missin
 ## Edge cases
 
 - Parsing uses the invariant culture. The culture of the host process does not change the answer.
-- The test answers only whether the text has this form. The [date-time predicates](datetime-after.md) compare instants from a `DateTimeOffset` selector.
+- The test answers only whether the text has this form. The [date-time predicates](datetime-isafter.md) compare instants from a `DateTimeOffset` selector.
 
 ## Related predicates
 
 - [IsNotDateTimeOffset](type-isnotdatetimeoffset.md) is the exact complement of this predicate.
-- [After](datetime-after.md) compares a `DateTimeOffset` selector with an instant.
-- [Equal](scalar-equal.md) tests a `DateTimeOffset` selector for equality with a literal.
+- [IsAfter](datetime-isafter.md) compares a `DateTimeOffset` selector with an instant.
+- [IsEqualTo](scalar-isequalto.md) tests a `DateTimeOffset` selector for equality with a literal.

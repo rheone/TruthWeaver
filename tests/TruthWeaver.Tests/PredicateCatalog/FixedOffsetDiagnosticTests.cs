@@ -80,9 +80,9 @@ public sealed class FixedOffsetDiagnosticTests
     private static RuleCompiler<Clock> CreateCompiler(CompilerOptions? options = null)
     {
         PredicateRegistryBuilder<Clock> builder = PredicateRegistry<Clock>.CreateBuilder();
-        Register(builder, DateTimePredicates.OnDayOfWeek<Clock>("onDay", c => c.At));
-        Register(builder, DateTimePredicates.InMonth<Clock>("inMonth", c => c.At));
-        Register(builder, DateTimePredicates.InTimeWindow<Clock>("inWindow", c => c.At));
+        Register(builder, DateTimePredicates.IsOnDayOfWeek<Clock>("onDay", c => c.At));
+        Register(builder, DateTimePredicates.IsInMonth<Clock>("inMonth", c => c.At));
+        Register(builder, DateTimePredicates.IsInTimeWindow<Clock>("inWindow", c => c.At));
         return new RuleCompiler<Clock>(builder.Build(), options);
     }
 

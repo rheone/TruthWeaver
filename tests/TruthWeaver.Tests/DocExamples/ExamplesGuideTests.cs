@@ -213,12 +213,7 @@ public sealed class ExamplesGuideTests
         (
             PredicateSchema hasCrustSchema,
             Func<PizzaOrder, PredicateArguments, CancellationToken, ValueTask<TruthValue>>? hasCrustEvaluate
-        ) = StringPredicates.EqualsConfigurable<PizzaOrder>(
-            "hasCrust",
-            order => order.Crust,
-            "Has Crust",
-            argumentName: "crust"
-        );
+        ) = StringPredicates.IsEqualTo<PizzaOrder>("hasCrust", order => order.Crust, "Has Crust", argumentName: "crust");
 
         PredicateRegistry<PizzaOrder> registry = PredicateRegistry<PizzaOrder>
             .CreateBuilder()

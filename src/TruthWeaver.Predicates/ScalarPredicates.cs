@@ -3,7 +3,7 @@ namespace TruthWeaver.Predicates;
 /// <summary>
 /// Ready-made predicate factories over nullable <c>Boolean</c>, <c>Guid</c> and <c>DateTimeOffset</c> selections.
 /// Each member has an overload per kind, with arguments of the matching <c>LiteralKind</c>. The members are
-/// <c>Equal</c>, <c>NotEqual</c>, <c>In</c>, <c>NotIn</c>, <c>IsNull</c>, <c>IsNotNull</c>, <c>IsDefault</c> and
+/// <c>IsEqualTo</c>, <c>IsNotEqualTo</c>, <c>IsIn</c>, <c>IsNotIn</c>, <c>IsNull</c>, <c>IsNotNull</c>, <c>IsDefault</c> and
 /// <c>IsNotDefault</c>.
 /// <para>
 /// Ordering and range members are not defined for <c>Boolean</c> and <c>Guid</c>, where an order has no meaning for a
@@ -11,7 +11,7 @@ namespace TruthWeaver.Predicates;
 /// values compare by instant, so the same instant in two offsets is equal.
 /// </para>
 /// <para>
-/// A null selection is a missing value. <c>Equal</c>, <c>NotEqual</c>, <c>In</c>, <c>NotIn</c>, <c>IsDefault</c> and
+/// A null selection is a missing value. <c>IsEqualTo</c>, <c>IsNotEqualTo</c>, <c>IsIn</c>, <c>IsNotIn</c>, <c>IsDefault</c> and
 /// <c>IsNotDefault</c> answer <see cref="TruthValue.Unknown"/> for it by default, and a host can pass
 /// <see cref="NullBehavior.False"/>. The null tests are definite. Every positive member has a registered <c>NotX</c>
 /// twin that is the Strong Kleene complement for every selection, a null one included, so under
@@ -33,10 +33,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Equal<TContext>(
+    ) IsEqualTo<TContext>(
         string name,
         Func<TContext, bool?> selector,
-        string label = "Equal",
+        string label = "Is Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -69,10 +69,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Equal<TContext>(
+    ) IsEqualTo<TContext>(
         string name,
         Func<TContext, Guid?> selector,
-        string label = "Equal",
+        string label = "Is Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -105,10 +105,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Equal<TContext>(
+    ) IsEqualTo<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Equal",
+        string label = "Is Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -128,7 +128,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsEqualTo</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -143,16 +143,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotEqual<TContext>(
+    ) IsNotEqualTo<TContext>(
         string name,
         Func<TContext, bool?> selector,
-        string label = "Not Equal",
+        string label = "Is Not Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected boolean value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected boolean value differs from the argument. The K3 complement of IsEqualTo. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Boolean,
             name,
@@ -167,7 +167,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsEqualTo</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -182,16 +182,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotEqual<TContext>(
+    ) IsNotEqualTo<TContext>(
         string name,
         Func<TContext, Guid?> selector,
-        string label = "Not Equal",
+        string label = "Is Not Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected GUID value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected GUID value differs from the argument. The K3 complement of IsEqualTo. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.Guid,
             name,
@@ -206,7 +206,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>Equal</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsEqualTo</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -221,16 +221,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotEqual<TContext>(
+    ) IsNotEqualTo<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not Equal",
+        string label = "Is Not Equal To",
         string argumentName = "value",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected date-time value differs from the argument. The K3 complement of Equal. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected date-time value differs from the argument. The K3 complement of IsEqualTo. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Compare(
             ScalarKinds.DateTimeOffset,
             name,
@@ -258,10 +258,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) In<TContext>(
+    ) IsIn<TContext>(
         string name,
         Func<TContext, bool?> selector,
-        string label = "In",
+        string label = "Is In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -293,10 +293,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) In<TContext>(
+    ) IsIn<TContext>(
         string name,
         Func<TContext, Guid?> selector,
-        string label = "In",
+        string label = "Is In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -328,10 +328,10 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) In<TContext>(
+    ) IsIn<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "In",
+        string label = "Is In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
@@ -350,7 +350,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsIn</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the boolean value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -365,16 +365,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotIn<TContext>(
+    ) IsNotIn<TContext>(
         string name,
         Func<TContext, bool?> selector,
-        string label = "Not In",
+        string label = "Is Not In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected boolean value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected boolean value is not one of the candidate values. The K3 complement of IsIn. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Boolean,
             name,
@@ -387,7 +387,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsIn</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the GUID value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -402,16 +402,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotIn<TContext>(
+    ) IsNotIn<TContext>(
         string name,
         Func<TContext, Guid?> selector,
-        string label = "Not In",
+        string label = "Is Not In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected GUID value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected GUID value is not one of the candidate values. The K3 complement of IsIn. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.Guid,
             name,
@@ -424,7 +424,7 @@ public static class ScalarPredicates
         );
     }
 
-    /// <summary>Creates the <c>NotX</c> twin of <c>In</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
+    /// <summary>Creates the <c>NotX</c> twin of <c>IsIn</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the date-time value from the context. A <see langword="null"/> result is a missing value.</param>
@@ -439,16 +439,16 @@ public static class ScalarPredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotIn<TContext>(
+    ) IsNotIn<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not In",
+        string label = "Is Not In",
         string argumentName = "values",
         NullBehavior nullBehavior = NullBehavior.Unknown
     )
     {
         const string description =
-            "True when the selected date-time value is not one of the candidate values. The K3 complement of In. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
+            "True when the selected date-time value is not one of the candidate values. The K3 complement of IsIn. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
         return ScalarPredicateCore.Membership(
             ScalarKinds.DateTimeOffset,
             name,
