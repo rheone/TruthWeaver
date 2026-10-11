@@ -15,11 +15,12 @@ internal static class YamlTreePrinter
 {
     /// <summary>Prints an expression tree to YAML tree text.</summary>
     /// <param name="root">The tree to print.</param>
+    /// <param name="notes">The notes to write as <c>note</c> keys, or <see langword="null"/> for none.</param>
     /// <returns>The YAML text.</returns>
-    public static string Print(Expression root)
+    public static string Print(Expression root, NoteLookup? notes = null)
     {
         YamlNodeWriter nodeWriter = new();
-        TreeFormatEmitter.Emit(root, nodeWriter);
+        TreeFormatEmitter.Emit(root, nodeWriter, notes);
         YamlDocument document = new(nodeWriter.Result!);
         YamlStream stream = [with(document)];
         using StringWriter writer = new();

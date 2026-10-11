@@ -1,5 +1,6 @@
 namespace TruthWeaver.Evaluation;
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -26,21 +27,34 @@ public sealed class CompiledRule<TContext>
     private readonly Lazy<IReadOnlySet<string>> predicateNames;
     private readonly Lazy<RuleMetrics> metrics;
     private readonly CompilerOptions options;
+    private readonly Lazy<NoteLookup?> noteLookup;
 
+    /// <summary>Initializes a new instance of the <see cref="CompiledRule{TContext}"/> class.</summary>
+    /// <param name="root">The compiled tree.</param>
+    /// <param name="registry">The registry the tree's terms were resolved against.</param>
+    /// <param name="logger">The logger for evaluation, or <see langword="null"/> to log nowhere.</param>
+    /// <param name="options">The options the tree was compiled with, or <see langword="null"/> for the defaults.</param>
+    /// <param name="notes">
+    /// The notes by tree path, or <see langword="null"/> for none. Only the compiler passes notes: a rewrite builds a new
+    /// tree whose paths no longer name the nodes the notes were written on, so its result has none.
+    /// </param>
     internal CompiledRule(
         Expression root,
         PredicateRegistry<TContext> registry,
         ILogger? logger = null,
-        CompilerOptions? options = null
+        CompilerOptions? options = null,
+        IReadOnlyDictionary<string, string>? notes = null
     )
     {
         this.options = options ?? CompilerOptions.Default;
         this.Root = root;
         this.registry = registry;
         this.logger = logger ?? NullLogger.Instance;
+        this.Notes = notes is { Count: > 0 } ? notes.ToFrozenDictionary(StringComparer.Ordinal) : [];
         this.canonicalText = new Lazy<string>(() => CanonicalPrinter.Print(this.Root));
         this.predicateNames = new Lazy<IReadOnlySet<string>>(() => CollectPredicateNames(this.Root));
         this.metrics = new Lazy<RuleMetrics>(() => RuleMetrics.Measure(this.Root, this.options.MaxAnalysisTerms));
+        this.noteLookup = new Lazy<NoteLookup?>(() => NoteLookup.Create(this.Root, this.Notes));
     }
 
     /// <summary>Gets this rule's canonical printed DSL text — the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
@@ -61,11 +75,34 @@ public sealed class CompiledRule<TContext>
     public RuleMetrics Metrics => this.metrics.Value;
 
     /// <summary>
+    /// Gets the notes written on this rule's nodes, keyed by each node's tree path: <c>$</c> for the root,
+    /// <c>$.operands[1]</c> for its second operand, and so on, the same paths JSON and YAML diagnostics use. A note is a
+    /// <c>//</c> or <c>/* */</c> comment in rule text, a <c>note</c> property in JSON or YAML, or
+    /// <c>RuleBuilder.WithNote</c>. The dictionary is empty for a rule with no notes.
+    /// </summary>
+    /// <remarks>
+    /// Notes sit beside the tree, not in it: a rule with notes compiles to the same tree, the same
+    /// <see cref="CanonicalText"/> and the same diagnostics as the rule without them, and evaluates the same way.
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>, <see cref="PrintJson()"/> and
+    /// <c>PrintYaml</c> write them by default, so a conversion between the formats keeps them; <see cref="CanonicalText"/>
+    /// never does. A rewrite (<see cref="Simplify"/>, <see cref="Canonicalize"/>, <see cref="ExpandToPrimitives"/>, the
+    /// normal forms, <see cref="OptimizeOrder"/> and the rest) returns a rule with no notes, because the rewritten tree's
+    /// paths no longer name the nodes the notes were written on.
+    /// </remarks>
+    public IReadOnlyDictionary<string, string> Notes { get; }
+
+    /// <summary>
     /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
     /// <c>InternalsVisibleTo</c>, so its YAML printer can render the same tree <see cref="CanonicalText"/>
     /// and <see cref="PrintJson()"/> render, without this package needing to know YAML exists.
     /// </summary>
     internal Expression Root { get; }
+
+    /// <summary>
+    /// Gets the notes looked up by node for the printers, or <see langword="null"/> when this rule has none. Internal and
+    /// visible to <c>TruthWeaver.Yaml</c>, whose printer writes the notes the same way the JSON printer does.
+    /// </summary>
+    internal NoteLookup? NoteLookup => this.noteLookup.Value;
 
     /// <summary>
     /// Prints this rule as DSL text with the chosen grouping delimiters. <see cref="GroupingStyle.Parentheses"/> returns
@@ -113,9 +150,13 @@ public sealed class CompiledRule<TContext>
             throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(constants));
         }
 
-        return grouping == GroupingStyle.Parentheses && operatorStyle == OperatorStyle.Word && constants is null
+        return
+            grouping == GroupingStyle.Parentheses
+            && operatorStyle == OperatorStyle.Word
+            && constants is null
+            && this.NoteLookup is null
             ? this.CanonicalText
-            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants);
+            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants, this.NoteLookup);
     }
 
     /// <summary>
@@ -170,13 +211,15 @@ public sealed class CompiledRule<TContext>
             throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(options));
         }
 
+        NoteLookup? notes = options.IncludeNotes ? this.NoteLookup : null;
         return
             options.Width is null
             && options.Grouping == GroupingStyle.Parentheses
             && options.OperatorStyle == OperatorStyle.Word
             && options.Constants is null
+            && notes is null
             ? this.CanonicalText
-            : CanonicalPrinter.Print(this.Root, options);
+            : CanonicalPrinter.Print(this.Root, options, notes);
     }
 
     /// <summary>
@@ -718,11 +761,25 @@ public sealed class CompiledRule<TContext>
         return this.ToDnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
     }
 
-    /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
+    /// <summary>
+    /// Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003), with each of its <see cref="Notes"/> as
+    /// a <c>note</c> property on its node, so the JSON compiles back to the same tree and the same notes.
+    /// </summary>
     /// <returns>The JSON text.</returns>
     public string PrintJson()
     {
-        return JsonTreePrinter.Print(this.Root);
+        return this.PrintJson(includeNotes: true);
+    }
+
+    /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003), with or without its notes.</summary>
+    /// <param name="includeNotes">
+    /// <see langword="true"/> to write each of <see cref="Notes"/> as a <c>note</c> property (the lossless form that
+    /// <see cref="PrintJson()"/> gives); <see langword="false"/> for the tree alone, for example to compare two rules.
+    /// </param>
+    /// <returns>The JSON text.</returns>
+    public string PrintJson(bool includeNotes)
+    {
+        return JsonTreePrinter.Print(this.Root, includeNotes ? this.NoteLookup : null);
     }
 
     /// <summary>Writes this rule to <paramref name="writer"/> as the JSON that <see cref="PrintJson()"/> returns.</summary>
@@ -731,8 +788,18 @@ public sealed class CompiledRule<TContext>
     /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
     public void PrintJson(TextWriter writer)
     {
+        this.PrintJson(writer, includeNotes: true);
+    }
+
+    /// <summary>Writes this rule to <paramref name="writer"/> as the JSON that <see cref="PrintJson(bool)"/> returns.</summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="includeNotes"><see langword="true"/> to write the notes, as for <see cref="PrintJson(bool)"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintJson(TextWriter writer, bool includeNotes)
+    {
         ArgumentNullException.ThrowIfNull(writer);
-        writer.Write(this.PrintJson());
+        writer.Write(this.PrintJson(includeNotes));
     }
 
     /// <summary>

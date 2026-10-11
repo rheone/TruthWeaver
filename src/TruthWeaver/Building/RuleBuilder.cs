@@ -46,8 +46,9 @@ public abstract class RuleBuilder
     /// operator without a JSON round trip.
     /// </summary>
     /// <remarks>
-    /// The source rule may come from another registry, so the join is not trusted. Compiling the joined builder
-    /// validates every term again against the destination registry. A predicate missing there, or with a different
+    /// The builder keeps the rule's notes (<see cref="CompiledRule{TContext}.Notes"/>) on their nodes, so they come out of
+    /// the joined rule under their new paths. The source rule may come from another registry, so the join is not trusted.
+    /// Compiling the joined builder validates every term again against the destination registry. A predicate missing there, or with a different
     /// schema, gives the normal compile diagnostics. Data-source declarations (<c>TRE0024</c>) and the destination
     /// <c>CompilerOptions</c> limits apply to the joined tree. A term that appears in both source rules is one term in
     /// the joined rule, so its predicate runs once per evaluation.
@@ -67,7 +68,7 @@ public abstract class RuleBuilder
     {
         ArgumentNullException.ThrowIfNull(rule);
 
-        return new CompiledBuilder(rule.Root);
+        return new CompiledBuilder(rule.Root, rule.NoteLookup);
     }
 
     /// <summary>Creates a builder for a zero-argument predicate reference.</summary>
@@ -594,6 +595,27 @@ public abstract class RuleBuilder
         return Exactly(k, Materialize(operands));
     }
 
+    /// <summary>
+    /// Puts a note on this builder's node: free text for the people who read the rule, kept beside the compiled tree as
+    /// one of <see cref="CompiledRule{TContext}.Notes"/> and written by the text, JSON and YAML printers. A note never
+    /// changes the compiled tree or how the rule evaluates.
+    /// </summary>
+    /// <remarks>
+    /// The note is normalized when the rule compiles: line endings become a line feed, each line loses its trailing
+    /// whitespace and the whole note is trimmed, so a note of only whitespace is no note. Calling this method on a builder
+    /// that already has a note replaces that note. An operator that folds (<c>And()</c> with one operand is that operand)
+    /// has no node of its own, so put the note on the operand.
+    /// </remarks>
+    /// <param name="note">The note text.</param>
+    /// <returns>A builder for the same node, with the note.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="note"/> is <see langword="null"/>.</exception>
+    public RuleBuilder WithNote(string note)
+    {
+        ArgumentNullException.ThrowIfNull(note);
+
+        return new NotedBuilder(this, note);
+    }
+
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
@@ -732,14 +754,35 @@ public abstract class RuleBuilder
         return array;
     }
 
-    private sealed class CompiledBuilder(Expression root) : RuleBuilder
+    private sealed class CompiledBuilder(Expression root, NoteLookup? notes) : RuleBuilder
     {
         private readonly Expression root = root;
+        private readonly NoteLookup? notes = notes;
 
         private protected override JsonNode ToNode()
         {
-            // Same printer as CompiledRule.PrintJson, so the tree re-enters the pipeline in the JSON shape.
-            return JsonTreePrinter.ToNode(this.root);
+            // Same printer as CompiledRule.PrintJson, so the tree and its notes re-enter the pipeline in the JSON shape.
+            return JsonTreePrinter.ToNode(this.root, this.notes);
+        }
+    }
+
+    /// <summary>A node with a note: the inner builder's node with a <c>note</c> property added (or replaced).</summary>
+    private sealed class NotedBuilder(RuleBuilder inner, string note) : RuleBuilder
+    {
+        private readonly RuleBuilder inner = inner;
+        private readonly string note = note;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            // The note does not move the node, so the inner node keeps its path.
+            this.inner.CollectProblems(path, problems);
+        }
+
+        private protected override JsonNode ToNode()
+        {
+            JsonNode node = this.inner.ToNode();
+            node["note"] = this.note;
+            return node;
         }
     }
 

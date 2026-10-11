@@ -40,6 +40,41 @@ the aliases are cheap once the canonical form stays single.
    input and maps to the canonical named operator. The canonical printer and persisted DSL text
    remain word-only. `True`/`False`/`Unknown` literals are case-insensitive,
    and `Unknown` becomes a valid literal.
+
+   *Amended 2026-10-11 (tool-platform L1): node notes.* Any node can carry an
+   optional **note**, free text for the people who read the rule. Rule text
+   writes it as a comment: `// note` to the end of the line, or `/* note */`,
+   which can span lines and does not nest. JSON and YAML write it as a `note`
+   string key on the node, accepted on every node kind (`rule-tree.schema.json`
+   lists it); any other value type is `MalformedTree`. An unterminated `/*` is a
+   `SyntaxError`.
+
+   *Attachment.* A comment is the note of exactly one node, chosen in this
+   order: (1) trailing: on the same line as the token before it, the smallest
+   node that ends at that token (`b // note`); (2) leading: the smallest node
+   that starts at the token after it (`/* note */ b`, or `// note` on the line
+   above); (3) the smallest node that ends at the token before it, on any line;
+   (4) the smallest node that encloses it (a comment beside a call's bound). A
+   node's extent includes a group written around it, so `/* n */ (a AND b)` is
+   the note of the `AND` node and `/* n */ a AND b` is the note of `a`. Several
+   comments on one node join in source order with a line feed. Every format
+   normalizes a note the same way: line endings become a line feed, each line
+   loses its trailing whitespace, the whole note is trimmed, and an empty note
+   is no note. A `//` comment loses one space after the slashes.
+
+   *Not part of the tree.* Notes are a side annotation on the compiled rule
+   (`CompiledRule.Notes`, keyed by tree path such as `$.operands[1]`). They are
+   not part of tree equality: a rule with notes compiles to an equal tree, the
+   same `CanonicalText`, the same diagnostics, the same BDD and the same
+   evaluation as the rule without them. Rewrites return rules without notes,
+   because the rewritten tree's paths no longer name the noted nodes.
+   `PrintRuleText`, `PrintJson` and `PrintYaml` write notes by default
+   (lossless conversion) and take an option to leave them out (comparison);
+   `CanonicalText` never writes them. The text printer writes each note as a
+   leading `/* note */`, or as `//` lines when the note contains `*/`, and puts
+   a group around a noted `AND` or `OR` so the comment attaches to it. YAML `#`
+   comments stay outside the rule: they are not notes. `RuleBuilder.WithNote`
+   attaches a note to a builder node.
 3. **Primitive kernel and derived operators.** Primitives: `NOT`, `AND`, `OR`,
    `AtLeast`, `AtMost`, `Exactly`, `COALESCE`. Derived: `IMPLIES` (`¬A ∨ B`,
    Strong Kleene material implication), `EQUIVALENT` (alias `IFF`), `XOR`,

@@ -48,22 +48,27 @@ internal static class CanonicalPrinter
     /// expected to have already rejected a format that the parser does not read back
     /// (<see cref="ConstantFormat.IsRuleTextSafe"/>).
     /// </param>
+    /// <param name="notes">
+    /// The notes to write as comments, or <see langword="null"/> (the default) for none. Each note is written as a leading
+    /// comment, and a noted infix node is put in a group so the comment attaches to it when the text is read back.
+    /// </param>
     /// <returns>The DSL text.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</exception>
     public static string Print(
         Expression root,
         GroupingStyle grouping = GroupingStyle.Parentheses,
         OperatorStyle operatorStyle = OperatorStyle.Word,
-        ConstantFormat? constants = null
+        ConstantFormat? constants = null,
+        NoteLookup? notes = null
     )
     {
-        return PrintNode(root, PrintContext.Top, 0, grouping, operatorStyle, constants ?? ConstantFormat.Default);
+        return PrintNode(root, PrintContext.Top, 0, grouping, operatorStyle, constants ?? ConstantFormat.Default, notes);
     }
 
     /// <summary>
     /// Prints an expression tree to DSL text using <paramref name="options"/> (ticket 10). When
     /// <see cref="RuleTextOptions.Width"/> is <see langword="null"/>, this returns exactly what
-    /// <see cref="Print(Expression, GroupingStyle, OperatorStyle, ConstantFormat?)"/> returns for the same grouping,
+    /// <see cref="Print(Expression, GroupingStyle, OperatorStyle, ConstantFormat?, NoteLookup?)"/> returns for the same grouping,
     /// operator style and constants. Otherwise, a group that does not fit the width breaks across lines: see the
     /// breaking rule documented in <c>docs/rule-text.md</c>.
     /// </summary>
@@ -71,13 +76,14 @@ internal static class CanonicalPrinter
     /// <param name="options">The printing options. The caller is expected to have already rejected
     /// <see cref="OperatorStyle.CStyle"/> and a <see cref="ConstantFormat"/> the parser does not read back (the same
     /// checks <c>CompiledRule.PrintRuleText</c> makes for the other overloads).</param>
+    /// <param name="notes">The notes to write as comments, or <see langword="null"/> for none. <see cref="RuleTextOptions.IncludeNotes"/> is the caller's to apply.</param>
     /// <returns>The DSL text, one line or many.</returns>
-    public static string Print(Expression root, RuleTextOptions options)
+    public static string Print(Expression root, RuleTextOptions options, NoteLookup? notes = null)
     {
         ConstantFormat constants = options.Constants ?? ConstantFormat.Default;
         if (options.Width is null)
         {
-            return PrintNode(root, PrintContext.Top, 0, options.Grouping, options.OperatorStyle, constants);
+            return PrintNode(root, PrintContext.Top, 0, options.Grouping, options.OperatorStyle, constants, notes);
         }
 
         return PrintPretty(
@@ -89,8 +95,19 @@ internal static class CanonicalPrinter
             options.OperatorStyle,
             constants,
             options.Width,
-            options.IndentSize
+            options.IndentSize,
+            notes
         );
+    }
+
+    /// <summary>
+    /// Whether a node prints with a group around it. Besides the precedence rules, a noted <c>AND</c>, <c>OR</c> or binary
+    /// connective always gets one: its text otherwise starts with its first operand's text, so a leading comment would
+    /// attach to that operand when the text is read back.
+    /// </summary>
+    private static bool NeedsWrap(Expression node, PrintContext context, string? note)
+    {
+        return NeedsWrap(node, context) || (note is not null && node is AndExpression or OrExpression);
     }
 
     private static bool NeedsWrap(Expression node, PrintContext context)
@@ -120,24 +137,46 @@ internal static class CanonicalPrinter
         };
     }
 
+    /// <summary>
+    /// Writes a note as the comment that goes in front of its node: a block comment, or line comments (each ended by a line
+    /// feed) when the note contains <c>*/</c>, which would end a block comment early.
+    /// </summary>
+    private static string NoteComment(string note)
+    {
+        if (!note.Contains("*/", StringComparison.Ordinal))
+        {
+            return $"/* {note} */ ";
+        }
+
+        StringBuilder builder = new();
+        foreach (string line in note.Split('\n'))
+        {
+            builder.Append(line.Length == 0 ? "//" : $"// {line}").Append('\n');
+        }
+
+        return builder.ToString();
+    }
+
     private static string PrintNode(
         Expression node,
         PrintContext context,
         int depth,
         GroupingStyle grouping,
         OperatorStyle operatorStyle,
-        ConstantFormat constants
+        ConstantFormat constants,
+        NoteLookup? notes
     )
     {
         // A node that gets wrapped opens a group, so its operands sit one group deeper than the node itself.
-        bool wrap = NeedsWrap(node, context);
+        string? note = notes?.Of(node);
+        bool wrap = NeedsWrap(node, context, note);
         int innerDepth = wrap ? depth + 1 : depth;
         string inner = node switch
         {
             ConstantExpression c => constants.Text(c.Value),
             TermExpression t => t.Identity.ToString(),
             NotExpression n => NotToken(operatorStyle)
-                + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle, constants),
+                + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle, constants, notes),
             AndExpression => JoinOperands(
                 node,
                 InfixToken("AND", operatorStyle),
@@ -145,7 +184,8 @@ internal static class CanonicalPrinter
                 innerDepth,
                 grouping,
                 operatorStyle,
-                constants
+                constants,
+                notes
             ),
             OrExpression => JoinOperands(
                 node,
@@ -154,66 +194,95 @@ internal static class CanonicalPrinter
                 innerDepth,
                 grouping,
                 operatorStyle,
-                constants
+                constants,
+                notes
             ),
-            XorExpression x => PrintNode(x.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
+            XorExpression x => PrintNode(
+                x.Left,
+                PrintContext.InfixOperand,
+                innerDepth,
+                grouping,
+                operatorStyle,
+                constants,
+                notes
+            )
                 + InfixToken("XOR", operatorStyle)
-                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants, notes),
             EquivalentExpression xn => PrintNode(
                 xn.Left,
                 PrintContext.InfixOperand,
                 innerDepth,
                 grouping,
                 operatorStyle,
-                constants
+                constants,
+                notes
             )
                 + InfixToken("EQUIVALENT", operatorStyle)
-                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants, notes),
             ImpliesExpression im => PrintNode(
                 im.Antecedent,
                 PrintContext.InfixOperand,
                 innerDepth,
                 grouping,
                 operatorStyle,
-                constants
+                constants,
+                notes
             )
                 + InfixToken("IMPLIES", operatorStyle)
-                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
-            NandExpression nd => PrintNode(nd.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
+                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants, notes),
+            NandExpression nd => PrintNode(
+                nd.Left,
+                PrintContext.InfixOperand,
+                innerDepth,
+                grouping,
+                operatorStyle,
+                constants,
+                notes
+            )
                 + InfixToken("NAND", operatorStyle)
-                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
-            NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
+                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants, notes),
+            NorExpression nr => PrintNode(
+                nr.Left,
+                PrintContext.InfixOperand,
+                innerDepth,
+                grouping,
+                operatorStyle,
+                constants,
+                notes
+            )
                 + InfixToken("NOR", operatorStyle)
-                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants, notes),
             ParityExpression =>
-                $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             AnyExpression =>
-                $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             AllExpression =>
-                $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             NoneExpression =>
-                $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             ExactlyOneExpression =>
-                $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             InspectionExpression ins =>
-                $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
-            IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
+            IfExpression =>
+                $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             CoalesceExpression =>
-                $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             BetweenExpression bt =>
-                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             ThresholdExpression th =>
-                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
+        string comment = note is null ? string.Empty : NoteComment(note);
         if (!wrap)
         {
-            return inner;
+            return comment + inner;
         }
 
         (char open, char close) = Delimiters(depth, grouping);
-        return $"{open}{inner}{close}";
+        return $"{comment}{open}{inner}{close}";
     }
 
     /// <summary>
@@ -234,21 +303,24 @@ internal static class CanonicalPrinter
         OperatorStyle operatorStyle,
         ConstantFormat constants,
         int? width,
-        int indentSize
+        int indentSize,
+        NoteLookup? notes
     )
     {
-        bool wrap = NeedsWrap(node, context);
+        string? note = notes?.Of(node);
+        bool wrap = NeedsWrap(node, context, note);
         int innerDepth = wrap ? depth + 1 : depth;
         int innerIndentLevel = wrap ? indentLevel + 1 : indentLevel;
 
-        string flat = PrintNode(node, context, depth, grouping, operatorStyle, constants);
+        string flat = PrintNode(node, context, depth, grouping, operatorStyle, constants, notes);
         bool fits = width is null || (indentLevel * indentSize) + flat.Length <= width.Value;
         if (fits || node is ConstantExpression or TermExpression)
         {
             return flat;
         }
 
-        return node switch
+        // The note's comment goes in front of the broken form exactly as it goes in front of the flat one.
+        string broken = node switch
         {
             NotExpression n => NotToken(operatorStyle)
                 + PrintPretty(
@@ -260,7 +332,8 @@ internal static class CanonicalPrinter
                     operatorStyle,
                     constants,
                     width,
-                    indentSize
+                    indentSize,
+                    notes
                 ),
             AndExpression => BreakChain(
                 node,
@@ -275,7 +348,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             OrExpression => BreakChain(
                 node,
@@ -290,7 +364,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             XorExpression x => BreakBinary(
                 wrap,
@@ -305,7 +380,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             EquivalentExpression xn => BreakBinary(
                 wrap,
@@ -320,7 +396,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             ImpliesExpression im => BreakBinary(
                 wrap,
@@ -335,7 +412,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             NandExpression nd => BreakBinary(
                 wrap,
@@ -350,7 +428,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             NorExpression nr => BreakBinary(
                 wrap,
@@ -365,7 +444,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             ParityExpression
             or AnyExpression
@@ -384,10 +464,12 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             ),
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
+        return note is null ? broken : NoteComment(note) + broken;
     }
 
     /// <summary>
@@ -408,7 +490,8 @@ internal static class CanonicalPrinter
         OperatorStyle operatorStyle,
         ConstantFormat constants,
         int? width,
-        int indentSize
+        int indentSize,
+        NoteLookup? notes
     )
     {
         IReadOnlyList<Expression> operands = ExpressionShape.Of(node).Operands;
@@ -437,7 +520,8 @@ internal static class CanonicalPrinter
                     operatorStyle,
                     constants,
                     width,
-                    indentSize
+                    indentSize,
+                    notes
                 )
             );
             if (i < operands.Count - 1)
@@ -468,7 +552,8 @@ internal static class CanonicalPrinter
         OperatorStyle operatorStyle,
         ConstantFormat constants,
         int? width,
-        int indentSize
+        int indentSize,
+        NoteLookup? notes
     )
     {
         string token = OperatorToken(opWord, operatorStyle);
@@ -489,7 +574,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             )
         );
         builder.Append(' ').Append(token);
@@ -504,7 +590,8 @@ internal static class CanonicalPrinter
                 operatorStyle,
                 constants,
                 width,
-                indentSize
+                indentSize,
+                notes
             )
         );
 
@@ -530,7 +617,8 @@ internal static class CanonicalPrinter
         OperatorStyle operatorStyle,
         ConstantFormat constants,
         int? width,
-        int indentSize
+        int indentSize,
+        NoteLookup? notes
     )
     {
         NodeShape shape = ExpressionShape.Of(node);
@@ -576,7 +664,8 @@ internal static class CanonicalPrinter
                     operatorStyle,
                     constants,
                     width,
-                    indentSize
+                    indentSize,
+                    notes
                 )
             );
             index++;
@@ -690,14 +779,15 @@ internal static class CanonicalPrinter
         int depth,
         GroupingStyle grouping,
         OperatorStyle operatorStyle,
-        ConstantFormat constants
+        ConstantFormat constants,
+        NoteLookup? notes
     )
     {
         return string.Join(
             separator,
             ExpressionShape
                 .Of(node)
-                .Operands.Select(o => PrintNode(o, operandContext, depth, grouping, operatorStyle, constants))
+                .Operands.Select(o => PrintNode(o, operandContext, depth, grouping, operatorStyle, constants, notes))
         );
     }
 }

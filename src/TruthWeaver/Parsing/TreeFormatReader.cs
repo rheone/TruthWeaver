@@ -106,7 +106,46 @@ internal sealed class TreeFormatReader
     private RuleNode? ReadNode(ITreeNodeCursor node, string path)
     {
         RuleNode? parsed = this.ReadNodeCore(node, path);
-        return parsed is null ? null : parsed with { Path = path, Span = node.Span };
+        if (parsed is null || !this.TryReadNote(node, path, out string? note))
+        {
+            return null;
+        }
+
+        return parsed with
+        {
+            Path = path,
+            Span = node.Span,
+            Note = note,
+        };
+    }
+
+    /// <summary>
+    /// Reads the optional <c>note</c> key every node kind accepts. Its value must be a string; it is kept in normal form
+    /// (<see cref="NoteText.Normalize"/>), so an empty note is no note.
+    /// </summary>
+    /// <returns><see langword="false"/> when the key is present but not a string; the error is reported.</returns>
+    private bool TryReadNote(ITreeNodeCursor node, string path, out string? note)
+    {
+        note = null;
+        if (!node.TryGetChild("note", out ITreeNodeCursor? noteNode))
+        {
+            return true;
+        }
+
+        if (noteNode.Shape != TreeNodeShape.Scalar || noteNode.StringValue is not { } text)
+        {
+            this.Report(
+                $"'note' must be a {this.words.StringNoun}.",
+                noteNode.Span,
+                $"a {this.words.StringNoun}",
+                noteNode.Describe(),
+                TreePath.Property(path, "note")
+            );
+            return false;
+        }
+
+        note = NoteText.Normalize(text);
+        return true;
     }
 
     private RuleNode? ReadNodeCore(ITreeNodeCursor node, string path)
@@ -125,7 +164,7 @@ internal sealed class TreeFormatReader
 
         if (node.TryGetChild("const", out ITreeNodeCursor? constNode))
         {
-            if (!this.CheckKeys(node, path, "a constant", ["const"]))
+            if (!this.CheckKeys(node, path, "a constant", ["const", "note"]))
             {
                 return null;
             }
@@ -179,7 +218,7 @@ internal sealed class TreeFormatReader
 
     private RuleNode? ReadTerm(ITreeNodeCursor node, ITreeNodeCursor predicateNode, string path)
     {
-        if (!this.CheckKeys(node, path, "a predicate", ["predicate", "args"]))
+        if (!this.CheckKeys(node, path, "a predicate", ["predicate", "args", "note"]))
         {
             return null;
         }
@@ -285,9 +324,9 @@ internal sealed class TreeFormatReader
 
         string[] operatorKeys = canonicalOpName switch
         {
-            "AtLeast" or "AtMost" or "GreaterThan" or "LessThan" or "Exactly" => ["op", "operands", "k"],
-            "Between" => ["op", "operands", "min", "max"],
-            _ => ["op", "operands"],
+            "AtLeast" or "AtMost" or "GreaterThan" or "LessThan" or "Exactly" => ["op", "operands", "k", "note"],
+            "Between" => ["op", "operands", "min", "max", "note"],
+            _ => ["op", "operands", "note"],
         };
         if (!this.CheckKeys(node, path, $"a '{op}' operator", operatorKeys))
         {

@@ -6,22 +6,23 @@ using TruthWeaver.Ast;
 /// Walks an expression tree and emits the flat, key-discriminated tree shape (ADR-0003) through an
 /// <see cref="ITreeWriter"/>. It is the only place that decides the tree-format keys (<c>const</c>,
 /// <c>predicate</c>, <c>args</c>, <c>from</c>/<c>query</c>, <c>op</c>, <c>operands</c>, <c>min</c>/<c>max</c>,
-/// <c>k</c>), their order and the nesting. A format adapter supplies only the writer.
+/// <c>k</c>, <c>note</c>), their order and the nesting. A format adapter supplies only the writer.
 /// </summary>
 internal static class TreeFormatEmitter
 {
     /// <summary>Emits <paramref name="node"/> and everything below it.</summary>
     /// <param name="node">The tree to emit.</param>
     /// <param name="writer">The sink for the document.</param>
-    public static void Emit(Expression node, ITreeWriter writer)
+    /// <param name="notes">The notes to write as a <c>note</c> key on their nodes, or <see langword="null"/> for none.</param>
+    public static void Emit(Expression node, ITreeWriter writer, NoteLookup? notes = null)
     {
         switch (node)
         {
             case ConstantExpression c:
-                EmitConstant(c, writer);
+                EmitConstant(c, writer, notes);
                 return;
             case TermExpression t:
-                EmitTerm(t, writer);
+                EmitTerm(t, writer, notes);
                 return;
         }
 
@@ -33,7 +34,7 @@ internal static class TreeFormatEmitter
         writer.BeginArray();
         foreach (Expression operand in shape.Operands)
         {
-            Emit(operand, writer);
+            Emit(operand, writer, notes);
         }
 
         writer.EndArray();
@@ -51,10 +52,21 @@ internal static class TreeFormatEmitter
             writer.Int64(k);
         }
 
+        EmitNote(node, writer, notes);
         writer.EndObject();
     }
 
-    private static void EmitConstant(ConstantExpression constant, ITreeWriter writer)
+    /// <summary>Writes the node's note as its last key, after the keys that say what the node is.</summary>
+    private static void EmitNote(Expression node, ITreeWriter writer, NoteLookup? notes)
+    {
+        if (notes?.Of(node) is { } note)
+        {
+            writer.Property("note");
+            writer.String(note, quoted: true);
+        }
+    }
+
+    private static void EmitConstant(ConstantExpression constant, ITreeWriter writer, NoteLookup? notes)
     {
         writer.BeginObject();
         writer.Property("const");
@@ -74,10 +86,11 @@ internal static class TreeFormatEmitter
                 break;
         }
 
+        EmitNote(constant, writer, notes);
         writer.EndObject();
     }
 
-    private static void EmitTerm(TermExpression term, ITreeWriter writer)
+    private static void EmitTerm(TermExpression term, ITreeWriter writer, NoteLookup? notes)
     {
         writer.BeginObject();
         writer.Property("predicate");
@@ -106,6 +119,7 @@ internal static class TreeFormatEmitter
             writer.EndObject();
         }
 
+        EmitNote(term, writer, notes);
         writer.EndObject();
     }
 

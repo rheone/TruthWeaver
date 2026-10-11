@@ -66,6 +66,22 @@ Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumera
 
 A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it.
 
+### Notes
+
+`WithNote(string note)` puts a [note](rule-formats.md#notes) on the node of a builder. The note is in `Notes` of the compiled rule, and the text, JSON and YAML printers write it. It does not change the compiled tree.
+
+```csharp
+CompiledRule<PizzaOrder> rule = RuleBuilder
+    .And(RuleBuilder.Predicate("isDineIn"), RuleBuilder.Not(RuleBuilder.Predicate("isBanned")).WithNote("banned customers cannot order"))
+    .WithNote("Dine-in orders only")
+    .Compile(compiler)
+    .GetRuleOrThrow();
+
+rule.Notes["$.operands[1]"];                    // "banned customers cannot order"
+```
+
+A second `WithNote` on the same builder replaces the note. An operator that folds has no node of its own: `RuleBuilder.And(x)` is `x`, so its note is the note of `x`.
+
 ### Compiling a builder
 
 `RuleBuilder.Compile(compiler)` renders the tree and compiles it through `compiler.CompileJson(JsonElement)` (not the `string` overload), so a diagnostic carries only its builder path and no span into the rendered JSON. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once; it still produces the same JSON text `CompileJson(string)` would read.
@@ -80,7 +96,7 @@ CompilationResult<Customer> joined = RuleBuilder
     .Compile(compiler);
 ```
 
-The joined rule compiles against the registry of `compiler`. The compiler validates every term again, because the two source rules may come from other registries. A predicate that is missing from that registry, or that has a different schema there, gives the normal compile diagnostics. Data-source declarations and the compiler options (depth and node limits) apply to the whole joined tree. A term that appears in both rules is one term in the joined rule, so its predicate runs once for each evaluation.
+The joined builder keeps the notes of each source rule, under their new paths. The joined rule compiles against the registry of `compiler`. The compiler validates every term again, because the two source rules may come from other registries. A predicate that is missing from that registry, or that has a different schema there, gives the normal compile diagnostics. Data-source declarations and the compiler options (depth and node limits) apply to the whole joined tree. A term that appears in both rules is one term in the joined rule, so its predicate runs once for each evaluation.
 
 ## Outlining a compiled rule
 

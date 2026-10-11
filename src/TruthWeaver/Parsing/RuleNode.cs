@@ -26,6 +26,46 @@ internal abstract record RuleNode(SourceSpan Span)
     /// compiler copies it onto the diagnostics it raises for the node.
     /// </summary>
     public string? Path { get; init; }
+
+    /// <summary>
+    /// Gets or sets the note written on this node, in normal form (<c>NoteText.Normalize</c>), or <see langword="null"/>
+    /// for none. A tree front end sets it from the node's <c>note</c> key; the DSL parser sets it after parsing, when it
+    /// attaches each comment to a node, which is why it is settable. The compiler copies it beside the built tree, never
+    /// into it, so a note never changes the compiled expression.
+    /// </summary>
+    public string? Note { get; set; }
+
+    /// <summary>
+    /// Gets the operand nodes of <paramref name="node"/> in order, the same order the compiled expression keeps them in;
+    /// empty for a constant, a term and an error placeholder.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The operands.</returns>
+    public static IReadOnlyList<RuleNode> OperandsOf(RuleNode node)
+    {
+        return node switch
+        {
+            NotNode not => [not.Operand],
+            AndNode and => and.Operands,
+            OrNode or => or.Operands,
+            XorNode xor => xor.Operands,
+            EquivalentNode equivalent => equivalent.Operands,
+            ImpliesNode implies => implies.Operands,
+            NandNode nand => nand.Operands,
+            NorNode nor => nor.Operands,
+            ParityNode parity => parity.Operands,
+            AnyNode any => any.Operands,
+            AllNode all => all.Operands,
+            NoneNode none => none.Operands,
+            ExactlyOneNode exactlyOne => exactlyOne.Operands,
+            ThresholdNode threshold => threshold.Operands,
+            BetweenNode between => between.Operands,
+            InspectionNode inspection => inspection.Operands,
+            IfNode conditional => conditional.Operands,
+            CoalesceNode coalesce => coalesce.Operands,
+            _ => [],
+        };
+    }
 }
 
 /// <summary>The literal K3 constant: <c>True</c>, <c>False</c> or <c>Unknown</c>.</summary>

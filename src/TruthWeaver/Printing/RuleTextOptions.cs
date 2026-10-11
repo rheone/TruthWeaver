@@ -10,8 +10,8 @@ public sealed record RuleTextOptions
 {
     /// <summary>
     /// Gets the default options: one-line output (<see cref="Width"/> is <see langword="null"/>), 2-space indents,
-    /// <see cref="GroupingStyle.Parentheses"/>, <see cref="Printing.OperatorStyle.Word"/> and the word constants. They give
-    /// the output of <see cref="Evaluation.CompiledRule{TContext}.CanonicalText"/>.
+    /// <see cref="GroupingStyle.Parentheses"/>, <see cref="Printing.OperatorStyle.Word"/>, the word constants and the notes
+    /// included. For a rule with no notes they give the output of <see cref="Evaluation.CompiledRule{TContext}.CanonicalText"/>.
     /// </summary>
     public static RuleTextOptions Default { get; } = new();
 
@@ -44,4 +44,13 @@ public sealed record RuleTextOptions
     /// rejected the same way as the other <c>PrintRuleText</c> overloads (see <see cref="ConstantFormat.IsRuleTextSafe"/>).
     /// </summary>
     public ConstantFormat? Constants { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the rule's notes (<see cref="Evaluation.CompiledRule{TContext}.Notes"/>) are written
+    /// as comments. Defaults to <see langword="true"/>, so printed text compiles back to the same notes as well as the same
+    /// tree. Set it to <see langword="false"/> for text that compares as a tree alone. Each note is a leading
+    /// <c>/* note */</c> comment, or <c>// note</c> line comments when the note contains <c>*/</c>, and a noted
+    /// <c>AND</c> or <c>OR</c> is put in a group so the comment attaches to it and not to its first operand.
+    /// </summary>
+    public bool IncludeNotes { get; init; } = true;
 }

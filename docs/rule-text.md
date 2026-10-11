@@ -55,6 +55,7 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 - **No implicit mixing.** An `infix_op` expression, a `??` chain or a ternary cannot sit next to `AND`, `OR`, another infix operator or a nested ternary at the same level without parentheses. The compiler reports `AmbiguousOperatorMixing`. See [The mixing rule](strong-k3/specification/syntax.md#the-mixing-rule).
 - **Checks after parsing.** The compiler checks operand counts, threshold bounds and argument schemas after it parses the rule. A failure is a diagnostic, not a syntax error.
+- **Comments.** A `//` comment runs to the end of its line, and a `/* */` comment can span lines. A comment can go anywhere whitespace can, and the parser keeps it as the note of a node. See [Notes](rule-formats.md#notes).
 - **Rejected spellings.** `NXOR`, `Project` and `Collapse` are not in the language. The compiler rejects them in rule text, JSON and YAML, and the diagnostic names the replacement. See [Operations outside the rule language](strong-k3/specification/syntax.md#operations-outside-the-rule-language).
 
 ## Case
@@ -104,7 +105,7 @@ To print a rule with delimiters that change with the nesting depth, pass a `Grou
 CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").GetRuleOrThrow();
 
 rule.CanonicalText;                                  // a AND (b OR (c AND (d OR (e AND (f OR g)))))  (parentheses only)
-rule.PrintRuleText();                                    // same as CanonicalText
+rule.PrintRuleText();                                    // same as CanonicalText (the rule has no notes)
 rule.PrintRuleText(GroupingStyle.Parentheses);           // the same, written out
 rule.PrintRuleText(GroupingStyle.DepthCycling);          // a AND (b OR [c AND {d OR (e AND [f OR g])}])
 ```
@@ -184,7 +185,7 @@ RuleText.NormalizeWhitespace("ANY( a ,b,	c )");            // "ANY(a, b, c)"
 RuleText.NormalizeWhitespace("named( value :\"x  y\" )");   // "named(value: \"x  y\")" (string contents untouched)
 ```
 
-The result is the same for any input spacing, and a second call changes nothing. The result compiles to a tree equal to the tree of the input. The prefix `!` and `¬` touch their operand. The argument list of a call or term touches its name. Nothing pads the inside of `()`, `[]` or `{}`. The function keeps characters that the DSL does not recognize in place, so the text of a rule that does not compile yet is never lost.
+The result is the same for any input spacing, and a second call changes nothing. The result compiles to a tree equal to the tree of the input. A comment stays as written, with one space on each side like a token. A `//` comment is followed by a line feed, because it runs to the end of its line. The prefix `!` and `¬` touch their operand. The argument list of a call or term touches its name. Nothing pads the inside of `()`, `[]` or `{}`. The function keeps characters that the DSL does not recognize in place, so the text of a rule that does not compile yet is never lost.
 
 ## Width-aware pretty printing
 

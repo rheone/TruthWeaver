@@ -14,6 +14,9 @@ internal sealed class Lexer(string source)
     /// <summary>Gets the diagnostics raised while lexing (unterminated strings, invalid characters).</summary>
     public List<Diagnostic> Diagnostics { get; } = [];
 
+    /// <summary>Gets the <c>//</c> and <c>/* */</c> comments read while lexing, in source order.</summary>
+    public List<Comment> Comments { get; } = [];
+
     public IReadOnlyList<Token> Tokenize()
     {
         List<Token> tokens = [];
@@ -123,12 +126,80 @@ internal sealed class Lexer(string source)
         return this.NextToken();
     }
 
+    /// <summary>
+    /// Skips whitespace and comments. Comments are trivia to the token stream, like whitespace, but each one is kept in
+    /// <see cref="Comments"/> so the parser can attach it to a node as a note.
+    /// </summary>
     private void SkipTrivia()
     {
-        while (this.position < this.source.Length && char.IsWhiteSpace(this.source[this.position]))
+        while (this.position < this.source.Length)
         {
-            this.position++;
+            char c = this.source[this.position];
+            char next = this.position + 1 < this.source.Length ? this.source[this.position + 1] : '\0';
+            if (char.IsWhiteSpace(c))
+            {
+                this.position++;
+            }
+            else if (c == '/' && next == '/')
+            {
+                this.ReadLineComment();
+            }
+            else if (c == '/' && next == '*')
+            {
+                this.ReadBlockComment();
+            }
+            else
+            {
+                return;
+            }
         }
+    }
+
+    /// <summary>Reads a <c>//</c> comment up to, not including, the line feed that ends it.</summary>
+    private void ReadLineComment()
+    {
+        int start = this.position;
+        int end = this.source.IndexOf('\n', start);
+        if (end < 0)
+        {
+            end = this.source.Length;
+        }
+
+        // One space after the slashes is the usual spacing, not content; any further indentation is kept.
+        string text = this.source[(start + 2)..end].TrimEnd('\r');
+        if (text.StartsWith(' '))
+        {
+            text = text[1..];
+        }
+
+        this.position = end;
+        this.Comments.Add(new Comment(text, new SourceSpan(start, end - start), IsLine: true));
+    }
+
+    /// <summary>Reads a <c>/* */</c> comment. Comments do not nest; the first <c>*/</c> ends it.</summary>
+    private void ReadBlockComment()
+    {
+        int start = this.position;
+        int close = this.source.IndexOf("*/", start + 2, StringComparison.Ordinal);
+        if (close < 0)
+        {
+            this.position = this.source.Length;
+            this.Diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.SyntaxError,
+                    "Unterminated block comment.",
+                    new SourceSpan(start, this.position - start),
+                    expected: "a closing '*/'",
+                    found: "end of rule"
+                )
+            );
+            return;
+        }
+
+        this.position = close + 2;
+        this.Comments.Add(
+            new Comment(this.source[(start + 2)..close], new SourceSpan(start, this.position - start), IsLine: false)
+        );
     }
 
     private Token ReadIdentifier(int start)

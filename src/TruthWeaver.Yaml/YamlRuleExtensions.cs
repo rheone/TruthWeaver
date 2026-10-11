@@ -77,13 +77,32 @@ public static class YamlRuleExtensions
         return compiler.CompileYaml(node).TryGetRule(out rule, out diagnostics);
     }
 
-    /// <summary>Prints a compiled rule to the flat, key-discriminated YAML tree shape (ADR-0003).</summary>
+    /// <summary>
+    /// Prints a compiled rule to the flat, key-discriminated YAML tree shape (ADR-0003), with each of its
+    /// <see cref="CompiledRule{TContext}.Notes"/> as a <c>note</c> key on its node, so the YAML compiles back to the same
+    /// tree and the same notes.
+    /// </summary>
     /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
     /// <param name="rule">The compiled rule to print.</param>
     /// <returns>The YAML text.</returns>
     public static string PrintYaml<TContext>(this CompiledRule<TContext> rule)
     {
-        return YamlTreePrinter.Print(rule.Root);
+        return rule.PrintYaml(includeNotes: true);
+    }
+
+    /// <summary>Prints a compiled rule to the flat, key-discriminated YAML tree shape (ADR-0003), with or without its notes.</summary>
+    /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
+    /// <param name="rule">The compiled rule to print.</param>
+    /// <param name="includeNotes">
+    /// <see langword="true"/> to write each of <see cref="CompiledRule{TContext}.Notes"/> as a <c>note</c> key (the lossless
+    /// form that <see cref="PrintYaml{TContext}(CompiledRule{TContext})"/> gives); <see langword="false"/> for the tree alone.
+    /// </param>
+    /// <returns>The YAML text.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
+    public static string PrintYaml<TContext>(this CompiledRule<TContext> rule, bool includeNotes)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        return YamlTreePrinter.Print(rule.Root, includeNotes ? rule.NoteLookup : null);
     }
 
     /// <summary>Writes a compiled rule to <paramref name="writer"/> as the YAML that <see cref="PrintYaml{TContext}(CompiledRule{TContext})"/> returns.</summary>
@@ -94,9 +113,21 @@ public static class YamlRuleExtensions
     /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
     public static void PrintYaml<TContext>(this CompiledRule<TContext> rule, TextWriter writer)
     {
+        rule.PrintYaml(writer, includeNotes: true);
+    }
+
+    /// <summary>Writes a compiled rule to <paramref name="writer"/> as the YAML that <see cref="PrintYaml{TContext}(CompiledRule{TContext}, bool)"/> returns.</summary>
+    /// <typeparam name="TContext">The application context type the compiled rule evaluates against.</typeparam>
+    /// <param name="rule">The compiled rule to print.</param>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="includeNotes"><see langword="true"/> to write the notes, as for <see cref="PrintYaml{TContext}(CompiledRule{TContext}, bool)"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public static void PrintYaml<TContext>(this CompiledRule<TContext> rule, TextWriter writer, bool includeNotes)
+    {
         ArgumentNullException.ThrowIfNull(rule);
         ArgumentNullException.ThrowIfNull(writer);
-        writer.Write(YamlTreePrinter.Print(rule.Root));
+        writer.Write(rule.PrintYaml(includeNotes));
     }
 
     private static CompilationResult<TContext> CompileFromParsedYaml<TContext>(

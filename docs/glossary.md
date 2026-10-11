@@ -44,6 +44,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Kleene logic** | Three-valued logic with `True`, `False` and `Unknown`. A predicate fault becomes `Unknown`, and it is never a thrown exception or a silent `false`. See [values](strong-k3/specification/values.md). |
 | **Memoization** | Within one evaluation, a term identity runs at most once, however many places in the tree use it. It does not carry over to the next evaluation. |
 | **NNF** | Negation normal form: `NOT` appears only directly above a term or an atom. `ToNnf()` returns it. See [negation normal form](rewriting-normal-form-examples.md#negation-normal-form). |
+| **Note** | Free text on one node of a rule: a `//` or `/* */` comment in rule text, or a `note` key in JSON and YAML. It does not change what the rule means, and a rewrite drops it. See [Notes](rule-formats.md#notes). |
 | **Operation** | Anything with its own document in the K3 reference: an operator, a cardinality function, a function or a result transformation. See [operations](strong-k3/specification/operations.md). |
 | **Operator** | One way to combine terms and sub-expressions, such as `AND` or `If`. The engine and its API say Operator. |
 | **Operator spelling** | The one printed spelling of an operator word in canonical text. Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case. The other call words, such as `ExactlyOne`, `AtLeast`, `If` and `IsTrue`, are upper camel case. See [case](rule-text.md#case). |
