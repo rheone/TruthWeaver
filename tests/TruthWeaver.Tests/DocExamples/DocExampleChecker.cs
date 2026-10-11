@@ -25,6 +25,7 @@ using TruthWeaver.Yaml;
 /// <item><c>rule ID</c>: DSL text that must compile; its canonical text is remembered under <c>ID</c>.</item>
 /// <item><c>json ID</c>, <c>yaml ID</c>: a rule that must compile to the same canonical text as the <c>rule ID</c> example.</item>
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
+/// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID.</item>
 /// <item><c>diagnostics-dsl SOURCE</c>, <c>diagnostics-json SOURCE</c>, <c>diagnostics-yaml SOURCE</c>: documented output that must equal <c>FormatDiagnostics</c> for compiling the rest of the marker line as that format.</item>
 /// <item><c>skip REASON</c>: the block is not runnable (a pseudo-grammar, a class diagram); the reason is mandatory.</item>
 /// </list>
@@ -42,6 +43,7 @@ internal static partial class DocExampleChecker
             {
                 ["user"] = JsonQueryValidator.Instance,
                 ["request"] = JsonQueryValidator.Instance,
+                ["limits"] = JsonQueryValidator.Instance,
             }
         )
     );
@@ -150,8 +152,9 @@ internal static partial class DocExampleChecker
             case "json" or "yaml":
                 CheckSameRule(kind, argument, body, example, rules, failures);
                 break;
-            case "tree" or "mermaid":
-                // A mermaid marker may follow the rule id with option words: "shapes" and "two-line".
+            case "tree" or "mermaid" or "equation" or "legend":
+                // A mermaid marker may follow the rule id with option words: "shapes" and "two-line". An equation or legend marker
+                // takes the dialect words "latex", "ascii", "double-dollar", "mathjax" and "simple".
                 string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string ruleId = words.Length > 0 ? words[0] : string.Empty;
                 if (!rules.TryGetValue(ruleId, out CompiledRule<RuleTestContext>? rule))
@@ -165,12 +168,29 @@ internal static partial class DocExampleChecker
                     NodeShapes = words.Contains("shapes"),
                     TwoLineTermLabels = words.Contains("two-line"),
                 };
-                CompareOutput(
-                    kind == "tree" ? rule.PrintPlainText() : rule.PrintMermaid(mermaidOptions),
-                    body,
-                    example,
-                    failures
-                );
+                EquationOptions equationOptions = new()
+                {
+                    Dialect = EquationDialectOf(words),
+                    LatexWrap = LatexWrapOf(words),
+                    SimpleVariables = words.Contains("simple"),
+                };
+                string actualOutput;
+                if (kind == "legend")
+                {
+                    EquationWithLegend withLegend = rule.PrintEquationWithLegend(equationOptions);
+                    actualOutput = withLegend.Equation + "\n" + withLegend.LegendText;
+                }
+                else
+                {
+                    actualOutput = kind switch
+                    {
+                        "tree" => rule.PrintPlainText(),
+                        "equation" => rule.PrintEquation(equationOptions),
+                        _ => rule.PrintMermaid(mermaidOptions),
+                    };
+                }
+
+                CompareOutput(actualOutput, body, example, failures);
                 break;
             case "diagnostics-dsl" or "diagnostics-json" or "diagnostics-yaml":
                 CompilationResult<RuleTestContext> result = kind switch
@@ -185,6 +205,26 @@ internal static partial class DocExampleChecker
                 failures.Add($"{example}: unknown doctest kind '{kind}'.");
                 break;
         }
+    }
+
+    private static EquationDialect EquationDialectOf(string[] words)
+    {
+        if (words.Contains("latex"))
+        {
+            return EquationDialect.LaTeX;
+        }
+
+        return words.Contains("ascii") ? EquationDialect.AsciiMath : EquationDialect.Unicode;
+    }
+
+    private static LatexWrapMode LatexWrapOf(string[] words)
+    {
+        if (words.Contains("double-dollar"))
+        {
+            return LatexWrapMode.DoubleDollar;
+        }
+
+        return words.Contains("mathjax") ? LatexWrapMode.MathJaxSafe : LatexWrapMode.None;
     }
 
     private static void CheckSameRule(
@@ -335,6 +375,15 @@ internal static partial class DocExampleChecker
                 "Has Role",
                 "Does the user have the given role?",
                 [new PredicateArgumentSchema("role", "The role to check for.", LiteralKind.String)]
+            ),
+            ConstantAsync
+        );
+        builder.Add(
+            new PredicateSchema(
+                "totalAtMost",
+                "Total At Most",
+                "Is the order total at most the given limit?",
+                [new PredicateArgumentSchema("limit", "The highest total that is allowed.", LiteralKind.Int64)]
             ),
             ConstantAsync
         );

@@ -15,12 +15,13 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 | `<!-- doctest:rule ID -->` | `text` | The DSL text compiles; its canonical text is remembered as `ID`. |
 | `<!-- doctest:json ID -->`, `<!-- doctest:yaml ID -->` | `json`, `yaml` | The rule compiles to the same canonical text as `rule ID`. |
 | `<!-- doctest:tree ID -->`, `<!-- doctest:mermaid ID -->` | `text`, `mermaid` | The block equals `PrintPlainText()` or `PrintMermaid()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the mermaid marker accepts the words `shapes` and `two-line`, which switch on `MermaidOptions.NodeShapes` and `MermaidOptions.TwoLineTermLabels`. |
+| `<!-- doctest:equation ID -->`, `<!-- doctest:legend ID -->` | `text` | The block equals `PrintEquation()` or `PrintEquationWithLegend()` of `rule ID` (the `rule` block must come earlier in the file). The legend block is the equation, a line feed, then the legend text. After the ID, the words `latex`, `ascii`, `double-dollar`, `mathjax` and `simple` select the dialect, the LaTeX wrap and simple variables. |
 | `<!-- doctest:diagnostics-dsl SOURCE -->` (also `-json`, `-yaml`) | `text` | The block equals `FormatDiagnostics(SOURCE)`; `SOURCE` is the rest of the marker line, verbatim. |
 | `<!-- doctest:skip REASON -->` | any | Not runnable (pseudo-grammar, class diagram). The reason is mandatory. |
 
 3. Predicates the examples use come from `BuildRegistry` in `DocExampleChecker.cs`. Add a predicate there (same name,
    label and argument defaults the documentation shows) when a new example needs one. The checker
-   declares the data source names `user` and `request` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
+   declares the data source names `user`, `request` and `limits` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
    source name needs adding to the `Compiler` declarations in the same file.
 4. An untagged `text`, `json`, `yaml`, `mermaid` or `ebnf` block fails the check, so a new example cannot be forgotten.
 5. Run `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExampleTests"`. A failure names the file, line and marker

@@ -14,13 +14,14 @@ or anything else.
 <details>
 <summary><strong>Table of contents</strong></summary>
 
-- [What it is (and isn't)](#what-it-is-and-isnt)
-- [Requirements](#requirements)
-- [Getting started](#getting-started)
-- [Packages](#packages)
-- [Features](#features)
-- [Documentation](#documentation)
-- [License](#license)
+- [TruthWeaver](#truthweaver)
+  - [What it is (and isn't)](#what-it-is-and-isnt)
+  - [Requirements](#requirements)
+  - [Getting started](#getting-started)
+  - [Packages](#packages)
+  - [Features](#features)
+  - [Documentation](#documentation)
+  - [License](#license)
 
 </details>
 

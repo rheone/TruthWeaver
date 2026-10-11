@@ -84,6 +84,37 @@ public sealed class DocExampleTests
         Assert.Single(failures);
     }
 
+    /// <summary>A documented equation or legend that no longer matches the rule's real printing is reported.</summary>
+    [Theory]
+    [InlineData("equation r")]
+    [InlineData("legend r")]
+    [InlineData("equation r latex double-dollar")]
+    public void Check_EquationOutputThatIsStale_ReportsAFailure_Test(string marker)
+    {
+        string markdown =
+            "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
+            + $"<!-- doctest:{marker} -->\n```text\nisDineIn AND isTakeout\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Single(failures);
+    }
+
+    /// <summary>Documented equation output that matches the real printing passes, for the default and the LaTeX dialects.</summary>
+    [Fact]
+    public void Check_EquationOutputThatIsCurrent_ReportsNoFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nisDineIn XOR isTakeout\n```\n"
+            + "<!-- doctest:equation r -->\n```text\nisDineIn ⊕ isTakeout\n```\n"
+            + "<!-- doctest:equation r latex -->\n```text\n\\text{isDineIn} \\oplus \\text{isTakeout}\n```\n"
+            + "<!-- doctest:legend r -->\n```text\np ⊕ q\np = isDineIn\nq = isTakeout\n```\n";
+
+        IReadOnlyList<string> failures = DocExampleChecker.Check(markdown, "sample.md");
+
+        Assert.Empty(failures);
+    }
+
     /// <summary>Documented diagnostics output that no longer matches the formatter's output is reported.</summary>
     [Fact]
     public void Check_DiagnosticsOutputThatIsStale_ReportsAFailure_Test()
