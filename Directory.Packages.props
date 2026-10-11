@@ -10,9 +10,9 @@
   <!-- Roslynator. (Roslynator.CodeFixes/Roslynator.Refactorings are IDE-extension-only packages,
        not referenced by any PackageReference here, so they are deliberately not pinned.) -->
   <ItemGroup>
-    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.0" PrivateAssets="all" />
-    <GlobalPackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.0" PrivateAssets="all" />
-    <GlobalPackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.0" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.1" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.1" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.1" PrivateAssets="all" />
   </ItemGroup>
   <!-- StyleCop -->
   <ItemGroup>
@@ -61,8 +61,8 @@
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
-    <PackageVersion Include="xunit.v3" Version="4.0.1" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.4.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <!-- coverlet.MTP, not coverlet.collector (a VSTest data collector, which the
