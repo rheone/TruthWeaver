@@ -111,6 +111,6 @@
        throwaway console app that measures RuleCompiler/CompiledRule performance from outside the
        library. -->
   <ItemGroup>
-    <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
 </Project>
