@@ -1429,6 +1429,97 @@ public sealed class CompiledRule<TContext>
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Evaluates this rule against each context of a sequence and yields one <see cref="Decision"/> per context, in the
+    /// order of the contexts. Each context is one <see cref="EvaluateAsync"/> call with the same
+    /// <paramref name="services"/>, <paramref name="dataSources"/> and <paramref name="options"/>, so
+    /// <see cref="EvaluationOptions.Timeout"/> and <see cref="EvaluationOptions.FaultBudget"/> apply to each context
+    /// separately. A predicate fault in one context makes only that decision <see cref="TruthValue.Unknown"/>; the
+    /// other contexts are evaluated as usual.
+    /// </summary>
+    /// <remarks>
+    /// At most <paramref name="maxDegreeOfParallelism"/> evaluations are in flight at one time, and a decision that
+    /// finishes early waits for the decisions before it, so the output order never depends on timing. The sequence is
+    /// read lazily, one context per free slot. The default of 1 evaluates one context at a time; use a higher value
+    /// only when the predicates and <paramref name="services"/> are safe to call from several threads at once. When the
+    /// consumer stops reading, or an evaluation throws, the evaluations still in flight are cancelled and awaited
+    /// before the enumeration ends. Collect every decision with <c>ToArrayAsync</c> from <c>System.Linq</c>.
+    /// </remarks>
+    /// <param name="contexts">The contexts to evaluate, read lazily.</param>
+    /// <param name="services">The service provider for every evaluation, as for <see cref="EvaluateAsync"/>. With a parallelism above 1 it is used from several threads.</param>
+    /// <param name="dataSources">The data sources for every evaluation, or <see langword="null"/> when the rule has no variables. They are only read.</param>
+    /// <param name="options">The options for every evaluation, or <see langword="null"/> for the defaults.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of evaluations in flight at one time. The default is 1.</param>
+    /// <param name="cancellationToken">A token that stops the batch. It reaches every evaluation in flight.</param>
+    /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
+    public IAsyncEnumerable<Decision> EvaluateManyAsync(
+        IEnumerable<TContext> contexts,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
+        EvaluationOptions? options = null,
+        int maxDegreeOfParallelism = 1,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(contexts);
+        return this.EvaluateManyAsync(
+            contexts.ToAsyncEnumerable(),
+            services,
+            dataSources,
+            options,
+            maxDegreeOfParallelism,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Evaluates this rule against each context of an asynchronous stream and yields one <see cref="Decision"/> per
+    /// context, in the order the stream produces them. The behavior is the same as for the
+    /// <see cref="IEnumerable{T}"/> overload of <c>EvaluateManyAsync</c>: options per context, bounded parallelism,
+    /// stable order and cancellation of the evaluations in flight when the enumeration stops.
+    /// </summary>
+    /// <param name="contexts">The contexts to evaluate, read lazily with <paramref name="cancellationToken"/>.</param>
+    /// <param name="services">The service provider for every evaluation, as for <see cref="EvaluateAsync"/>. With a parallelism above 1 it is used from several threads.</param>
+    /// <param name="dataSources">The data sources for every evaluation, or <see langword="null"/> when the rule has no variables. They are only read.</param>
+    /// <param name="options">The options for every evaluation, or <see langword="null"/> for the defaults.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of evaluations in flight at one time. The default is 1.</param>
+    /// <param name="cancellationToken">A token that stops the batch. It reaches the stream and every evaluation in flight.</param>
+    /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
+    public IAsyncEnumerable<Decision> EvaluateManyAsync(
+        IAsyncEnumerable<TContext> contexts,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
+        EvaluationOptions? options = null,
+        int maxDegreeOfParallelism = 1,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(contexts);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, 1);
+
+        // Checked here, not in the iterator, so a bad option fails at the call rather than at the first read.
+        if (options is { FaultBudget: < 1 })
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.FaultBudget, "The fault budget must be 1 or more.");
+        }
+
+        return BatchEvaluator.EvaluateAsync(
+            this,
+            contexts,
+            services,
+            dataSources,
+            options,
+            maxDegreeOfParallelism,
+            cancellationToken
+        );
+    }
+
     /// <inheritdoc />
     public override string ToString()
     {

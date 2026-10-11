@@ -167,6 +167,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
 - [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent, that a rewrite is sound, and check a `Decision` in a test.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
+- [Batch evaluation](docs/batch-evaluation.md): evaluate one rule against many contexts, in order, with bounded parallelism.
 - [Tool core](docs/tool-core.md): the library under the command line and the terminal UI: load, detect, extract and convert rules, validate them in levels with statistics, write diagnostics as text, JSON or SARIF, export every artifact with a manifest, write a Markdown report, render images with Graphviz or the Mermaid CLI, the `truthweaver.json` file, stub values, data files and deterministic output.
 - [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
