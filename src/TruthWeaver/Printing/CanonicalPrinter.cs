@@ -41,15 +41,21 @@ internal static class CanonicalPrinter
     /// <see cref="OperatorStyle.Symbolic"/>; the caller is expected to have already rejected
     /// <see cref="OperatorStyle.CStyle"/>, which has no DSL spelling.
     /// </param>
+    /// <param name="constants">
+    /// How to spell <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> for the word form. The caller is
+    /// expected to have already rejected a format that the parser does not read back
+    /// (<see cref="ConstantFormat.IsRuleTextSafe"/>).
+    /// </param>
     /// <returns>The DSL text.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</exception>
     public static string Print(
         Expression root,
         GroupingStyle grouping = GroupingStyle.Parentheses,
-        OperatorStyle operatorStyle = OperatorStyle.Word
+        OperatorStyle operatorStyle = OperatorStyle.Word,
+        ConstantFormat? constants = null
     )
     {
-        return PrintNode(root, PrintContext.Top, 0, grouping, operatorStyle);
+        return PrintNode(root, PrintContext.Top, 0, grouping, operatorStyle, constants ?? ConstantFormat.Default);
     }
 
     private static bool NeedsWrap(Expression node, PrintContext context)
@@ -84,7 +90,8 @@ internal static class CanonicalPrinter
         PrintContext context,
         int depth,
         GroupingStyle grouping,
-        OperatorStyle operatorStyle
+        OperatorStyle operatorStyle,
+        ConstantFormat constants
     )
     {
         // A node that gets wrapped opens a group, so its operands sit one group deeper than the node itself.
@@ -92,17 +99,18 @@ internal static class CanonicalPrinter
         int innerDepth = wrap ? depth + 1 : depth;
         string inner = node switch
         {
-            ConstantExpression c => TruthValueText.Canonical(c.Value),
+            ConstantExpression c => constants.Text(c.Value),
             TermExpression t => t.Identity.ToString(),
             NotExpression n => NotToken(operatorStyle)
-                + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle),
+                + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle, constants),
             AndExpression => JoinOperands(
                 node,
                 InfixToken("AND", operatorStyle),
                 PrintContext.AndOperand,
                 innerDepth,
                 grouping,
-                operatorStyle
+                operatorStyle,
+                constants
             ),
             OrExpression => JoinOperands(
                 node,
@@ -110,38 +118,57 @@ internal static class CanonicalPrinter
                 PrintContext.OrOperand,
                 innerDepth,
                 grouping,
-                operatorStyle
+                operatorStyle,
+                constants
             ),
-            XorExpression x => PrintNode(x.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+            XorExpression x => PrintNode(x.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
                 + InfixToken("XOR", operatorStyle)
-                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
-            EquivalentExpression xn => PrintNode(xn.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + PrintNode(x.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+            EquivalentExpression xn => PrintNode(
+                xn.Left,
+                PrintContext.InfixOperand,
+                innerDepth,
+                grouping,
+                operatorStyle,
+                constants
+            )
                 + InfixToken("EQUIVALENT", operatorStyle)
-                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
-            ImpliesExpression im => PrintNode(im.Antecedent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + PrintNode(xn.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+            ImpliesExpression im => PrintNode(
+                im.Antecedent,
+                PrintContext.InfixOperand,
+                innerDepth,
+                grouping,
+                operatorStyle,
+                constants
+            )
                 + InfixToken("IMPLIES", operatorStyle)
-                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
-            NandExpression nd => PrintNode(nd.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + PrintNode(im.Consequent, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+            NandExpression nd => PrintNode(nd.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
                 + InfixToken("NAND", operatorStyle)
-                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
-            NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle)
+                + PrintNode(nd.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+            NorExpression nr => PrintNode(nr.Left, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants)
                 + InfixToken("NOR", operatorStyle)
-                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle),
-            ParityExpression => $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
-            AnyExpression => $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
-            AllExpression => $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
-            NoneExpression => $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                + PrintNode(nr.Right, PrintContext.InfixOperand, innerDepth, grouping, operatorStyle, constants),
+            ParityExpression =>
+                $"PARITY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+            AnyExpression =>
+                $"ANY({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+            AllExpression =>
+                $"ALL({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+            NoneExpression =>
+                $"NONE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             ExactlyOneExpression =>
-                $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                $"ExactlyOne({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             InspectionExpression ins =>
-                $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping, operatorStyle)})",
-            IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                $"{ins.Kind}({PrintNode(ins.Operand, PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
+            IfExpression => $"If({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             CoalesceExpression =>
-                $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                $"COALESCE({JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             BetweenExpression bt =>
-                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             ThresholdExpression th =>
-                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle)})",
+                $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants)})",
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -222,12 +249,15 @@ internal static class CanonicalPrinter
         PrintContext operandContext,
         int depth,
         GroupingStyle grouping,
-        OperatorStyle operatorStyle
+        OperatorStyle operatorStyle,
+        ConstantFormat constants
     )
     {
         return string.Join(
             separator,
-            ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, operandContext, depth, grouping, operatorStyle))
+            ExpressionShape
+                .Of(node)
+                .Operands.Select(o => PrintNode(o, operandContext, depth, grouping, operatorStyle, constants))
         );
     }
 }

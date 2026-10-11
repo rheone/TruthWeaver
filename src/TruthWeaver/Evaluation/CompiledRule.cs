@@ -82,13 +82,21 @@ public sealed class CompiledRule<TContext>
     /// <see cref="OperatorStyle.CStyle"/> is rejected: the parser does not read <c>^</c> or <c>==</c>, so there is no
     /// round-trippable C-style rule text. <c>COALESCE</c> and <c>If</c> always keep their word/function-call spelling
     /// here, in every style, because the DSL reads <c>??</c> only infix and has no call syntax for it. Call
-    /// <see cref="TryPrintRuleText"/> to avoid the exception.
+    /// <see cref="TryPrintRuleText(GroupingStyle, OperatorStyle, out string?)"/> to avoid the exception.
+    /// </param>
+    /// <param name="constants">
+    /// How to spell <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> (the default) for the word form.
+    /// Only a format that the parser reads back is accepted: <see cref="ConstantStyle.Word"/> with no override, or with an
+    /// override that is a letter-case variant of the constant's own word (for example <c>TRUE</c>).
+    /// <see cref="ConstantStyle.Letters"/> and <see cref="ConstantStyle.LogicSymbols"/> are rejected, because the parser
+    /// reads a bare <c>T</c> as a term name and does not read <c>⊤</c> or <c>⊥</c> at all.
     /// </param>
     /// <returns>The DSL text.</returns>
-    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or <paramref name="constants"/> is a format that the parser does not read back.</exception>
     public string PrintRuleText(
         GroupingStyle grouping = GroupingStyle.Parentheses,
-        OperatorStyle operatorStyle = OperatorStyle.Word
+        OperatorStyle operatorStyle = OperatorStyle.Word,
+        ConstantFormat? constants = null
     )
     {
         if (operatorStyle == OperatorStyle.CStyle)
@@ -100,9 +108,14 @@ public sealed class CompiledRule<TContext>
             );
         }
 
-        return grouping == GroupingStyle.Parentheses && operatorStyle == OperatorStyle.Word
+        if (constants is not null && !constants.IsRuleTextSafe(out string? reason))
+        {
+            throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(constants));
+        }
+
+        return grouping == GroupingStyle.Parentheses && operatorStyle == OperatorStyle.Word && constants is null
             ? this.CanonicalText
-            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle);
+            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants);
     }
 
     /// <summary>
@@ -115,13 +128,32 @@ public sealed class CompiledRule<TContext>
     /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</returns>
     public bool TryPrintRuleText(GroupingStyle grouping, OperatorStyle operatorStyle, [NotNullWhen(true)] out string? text)
     {
-        if (operatorStyle == OperatorStyle.CStyle)
+        return this.TryPrintRuleText(grouping, operatorStyle, constants: null, out text);
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText"/>, but reports an unsupported
+    /// <paramref name="operatorStyle"/> or <paramref name="constants"/> through the return value instead of throwing.
+    /// </summary>
+    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is rejected.</param>
+    /// <param name="constants">The constant format, or <see langword="null"/> for the word form. A format that the parser does not read back is rejected (see <see cref="PrintRuleText"/>).</param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/> or <paramref name="constants"/> is not read back.</returns>
+    public bool TryPrintRuleText(
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle,
+        ConstantFormat? constants,
+        [NotNullWhen(true)] out string? text
+    )
+    {
+        if (operatorStyle == OperatorStyle.CStyle || constants?.IsRuleTextSafe(out _) == false)
         {
             text = null;
             return false;
         }
 
-        text = this.PrintRuleText(grouping, operatorStyle);
+        text = this.PrintRuleText(grouping, operatorStyle, constants);
         return true;
     }
 
@@ -632,10 +664,11 @@ public sealed class CompiledRule<TContext>
 
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
-    public string PrintPlainText(bool showArgumentValues = true)
+    public string PrintPlainText(bool showArgumentValues = true, ConstantFormat? constants = null)
     {
-        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues, constants: constants);
     }
 
     /// <summary>
@@ -644,12 +677,18 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
-    public string PrintPlainText(Decision decision, bool showArgumentValues = true)
+    public string PrintPlainText(Decision decision, bool showArgumentValues = true, ConstantFormat? constants = null)
     {
-        return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(
+            this.Outline(),
+            RequireTraceTree(decision),
+            showArgumentValues: showArgumentValues,
+            constants: constants
+        );
     }
 
     /// <summary>

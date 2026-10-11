@@ -56,7 +56,7 @@ public static class MermaidTreePrinter
     public static string Print(OutlineNode root, MermaidOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return Print(RuleRenderTree.Build(root, options.OperatorStyle, options.ShowArgumentValues), options);
+        return Print(RuleRenderTree.Build(root, options.OperatorStyle, options.ShowArgumentValues, options.Constants), options);
     }
 
     /// <summary>Prints a rule's structure, colored by one evaluation's result and short-circuit path.</summary>
@@ -108,7 +108,10 @@ public static class MermaidTreePrinter
     public static string Print(OutlineNode root, TraceNode traceTree, MermaidOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return Print(RuleRenderTree.Build(root, traceTree, options.OperatorStyle, options.ShowArgumentValues), options);
+        return Print(
+            RuleRenderTree.Build(root, traceTree, options.OperatorStyle, options.ShowArgumentValues, options.Constants),
+            options
+        );
     }
 
     private static string Print(RenderNode root, MermaidOptions options)

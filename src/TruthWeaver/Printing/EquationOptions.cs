@@ -31,4 +31,11 @@ public sealed record EquationOptions
     /// too. The default is <see langword="false"/>.
     /// </summary>
     public bool SimpleVariables { get; init; }
+
+    /// <summary>
+    /// Gets how the constants <c>True</c>, <c>False</c> and <c>Unknown</c> are written. The default is
+    /// <see cref="ConstantFormat.Default"/>, the <see cref="ConstantStyle.Word"/> style. For strict-logic output, the
+    /// recommended setting is <see cref="ConstantStyle.Letters"/>.
+    /// </summary>
+    public ConstantFormat Constants { get; init; } = ConstantFormat.Default;
 }

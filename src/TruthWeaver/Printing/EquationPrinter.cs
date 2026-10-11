@@ -45,7 +45,13 @@ internal static class EquationPrinter
 
         EquationTokens tokens = EquationTokens.For(options);
         return tokens.Wrap(
-            PrintNode(root, PrintContext.Top, tokens, identity => tokens.FormatTerm(identity, options.ShowArgumentValues))
+            PrintNode(
+                root,
+                PrintContext.Top,
+                tokens,
+                identity => tokens.FormatTerm(identity, options.ShowArgumentValues),
+                options.Constants
+            )
         );
     }
 
@@ -76,7 +82,9 @@ internal static class EquationPrinter
             legend.Add(new EquationLegendEntry(variable, terms[index], tokens.FormatTerm(terms[index], true)));
         }
 
-        string equation = tokens.Wrap(PrintNode(root, PrintContext.Top, tokens, identity => variables[identity]));
+        string equation = tokens.Wrap(
+            PrintNode(root, PrintContext.Top, tokens, identity => variables[identity], options.Constants)
+        );
         string legendText = string.Join("\n", legend.Select(e => tokens.Wrap($"{e.Variable} = {e.TermText}")));
         return new EquationWithLegend(equation, legend, legendText);
     }
@@ -110,36 +118,37 @@ internal static class EquationPrinter
         Expression node,
         PrintContext context,
         EquationTokens tokens,
-        Func<TermIdentity, string> formatTerm
+        Func<TermIdentity, string> formatTerm,
+        ConstantFormat constants
     )
     {
         string inner = node switch
         {
-            ConstantExpression c => tokens.FormatConstant(c.Value),
+            ConstantExpression c => tokens.FormatConstant(c.Value, constants),
             TermExpression t => formatTerm(t.Identity),
-            NotExpression n => tokens.Not + PrintNode(n.Operand, PrintContext.Operand, tokens, formatTerm),
-            AndExpression => JoinInfix(node, tokens.And, tokens, formatTerm),
-            OrExpression => JoinInfix(node, tokens.Or, tokens, formatTerm),
-            XorExpression => JoinInfix(node, tokens.Xor, tokens, formatTerm),
-            EquivalentExpression => JoinInfix(node, tokens.Equivalent, tokens, formatTerm),
-            ImpliesExpression => JoinInfix(node, tokens.Implies, tokens, formatTerm),
-            NandExpression => JoinInfix(node, tokens.Nand, tokens, formatTerm),
-            NorExpression => JoinInfix(node, tokens.Nor, tokens, formatTerm),
-            ParityExpression => FunctionCall("PARITY", [], node, tokens, formatTerm),
-            AnyExpression => FunctionCall("ANY", [], node, tokens, formatTerm),
-            AllExpression => FunctionCall("ALL", [], node, tokens, formatTerm),
-            NoneExpression => FunctionCall("NONE", [], node, tokens, formatTerm),
-            ExactlyOneExpression => FunctionCall("ExactlyOne", [], node, tokens, formatTerm),
-            InspectionExpression ins => FunctionCall(ins.Kind.ToString(), [], node, tokens, formatTerm),
+            NotExpression n => tokens.Not + PrintNode(n.Operand, PrintContext.Operand, tokens, formatTerm, constants),
+            AndExpression => JoinInfix(node, tokens.And, tokens, formatTerm, constants),
+            OrExpression => JoinInfix(node, tokens.Or, tokens, formatTerm, constants),
+            XorExpression => JoinInfix(node, tokens.Xor, tokens, formatTerm, constants),
+            EquivalentExpression => JoinInfix(node, tokens.Equivalent, tokens, formatTerm, constants),
+            ImpliesExpression => JoinInfix(node, tokens.Implies, tokens, formatTerm, constants),
+            NandExpression => JoinInfix(node, tokens.Nand, tokens, formatTerm, constants),
+            NorExpression => JoinInfix(node, tokens.Nor, tokens, formatTerm, constants),
+            ParityExpression => FunctionCall("PARITY", [], node, tokens, formatTerm, constants),
+            AnyExpression => FunctionCall("ANY", [], node, tokens, formatTerm, constants),
+            AllExpression => FunctionCall("ALL", [], node, tokens, formatTerm, constants),
+            NoneExpression => FunctionCall("NONE", [], node, tokens, formatTerm, constants),
+            ExactlyOneExpression => FunctionCall("ExactlyOne", [], node, tokens, formatTerm, constants),
+            InspectionExpression ins => FunctionCall(ins.Kind.ToString(), [], node, tokens, formatTerm, constants),
             IfExpression iff when tokens.FormatIf is { } formatIf => formatIf(
-                PrintNode(iff.Condition, PrintContext.Operand, tokens, formatTerm),
-                PrintNode(iff.WhenTrue, PrintContext.Operand, tokens, formatTerm),
-                PrintNode(iff.WhenFalse, PrintContext.Operand, tokens, formatTerm)
+                PrintNode(iff.Condition, PrintContext.Operand, tokens, formatTerm, constants),
+                PrintNode(iff.WhenTrue, PrintContext.Operand, tokens, formatTerm, constants),
+                PrintNode(iff.WhenFalse, PrintContext.Operand, tokens, formatTerm, constants)
             ),
-            IfExpression => FunctionCall("If", [], node, tokens, formatTerm),
-            CoalesceExpression => FunctionCall("COALESCE", [], node, tokens, formatTerm),
-            BetweenExpression bt => FunctionCall("BETWEEN", [bt.Min, bt.Max], node, tokens, formatTerm),
-            ThresholdExpression th => FunctionCall(th.Comparison.ToString(), [th.K], node, tokens, formatTerm),
+            IfExpression => FunctionCall("If", [], node, tokens, formatTerm, constants),
+            CoalesceExpression => FunctionCall("COALESCE", [], node, tokens, formatTerm, constants),
+            BetweenExpression bt => FunctionCall("BETWEEN", [bt.Min, bt.Max], node, tokens, formatTerm, constants),
+            ThresholdExpression th => FunctionCall(th.Comparison.ToString(), [th.K], node, tokens, formatTerm, constants),
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -170,11 +179,17 @@ internal static class EquationPrinter
             || (node is IfExpression && tokens.FormatIf is not null);
     }
 
-    private static string JoinInfix(Expression node, string token, EquationTokens tokens, Func<TermIdentity, string> formatTerm)
+    private static string JoinInfix(
+        Expression node,
+        string token,
+        EquationTokens tokens,
+        Func<TermIdentity, string> formatTerm,
+        ConstantFormat constants
+    )
     {
         return string.Join(
             $" {token} ",
-            ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, PrintContext.Operand, tokens, formatTerm))
+            ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, PrintContext.Operand, tokens, formatTerm, constants))
         );
     }
 
@@ -187,12 +202,15 @@ internal static class EquationPrinter
         IReadOnlyList<int> counts,
         Expression node,
         EquationTokens tokens,
-        Func<TermIdentity, string> formatTerm
+        Func<TermIdentity, string> formatTerm,
+        ConstantFormat constants
     )
     {
         IEnumerable<string> arguments = counts
             .Select(count => count.ToString(CultureInfo.InvariantCulture))
-            .Concat(ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, PrintContext.Top, tokens, formatTerm)));
+            .Concat(
+                ExpressionShape.Of(node).Operands.Select(o => PrintNode(o, PrintContext.Top, tokens, formatTerm, constants))
+            );
         return $"{tokens.FormatFunctionName(name)}({string.Join(", ", arguments)})";
     }
 }

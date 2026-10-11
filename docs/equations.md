@@ -34,6 +34,57 @@ Parentheses appear only around a connective that is an operand of another connec
 
 A term prints as its full call by default, for example `hasCrust(crust: "thin")`. Set `ShowArgumentValues` to `false` to print the predicate name only, for example `hasCrust`.
 
+## Constants
+
+`EquationOptions.Constants` takes a `ConstantFormat`. It sets how the constants `True`, `False` and `Unknown` print. It has a `Style` and an optional override string for each constant: `TrueText`, `FalseText` and `UnknownText`.
+
+| Style | `True` | `False` | `Unknown` |
+| --- | --- | --- | --- |
+| `Word` (default) | `True` | `False` | `Unknown` |
+| `Letters` | `T` | `F` | `U` |
+| `LogicSymbols` | `⊤` | `⊥` | `U` |
+
+An override wins over the style for its own constant. An override is literal text. The dialect escapes it as it escapes a term, so `yes_1` is safe in LaTeX. An override cannot be empty or hold a line break.
+
+The `LogicSymbols` style writes `⊤` and `⊥` in Unicode and in `CStyle`. LaTeX gets the commands `\top` and `\bot`. AsciiMath gets the keywords `top` and `bot`. `Unknown` has no standard symbol, so it prints `U` in every dialect (in a `\text` group in LaTeX, and in quotes in AsciiMath).
+
+```text
+isDineIn AND (False OR Unknown)
+```
+
+```text
+isDineIn ∧ (False ∨ Unknown)
+```
+
+```text
+isDineIn ∧ (F ∨ U)
+```
+
+```text
+isDineIn ∧ (⊥ ∨ U)
+```
+
+```text
+\text{isDineIn} \land (\bot \lor \text{U})
+```
+
+```text
+`"isDineIn" ^^ ("F" vv "U")`
+```
+
+```csharp
+EquationOptions options = new() { Constants = new ConstantFormat { Style = ConstantStyle.Letters } };
+string equation = rule.PrintEquation(options);   // isDineIn ∧ (F ∨ U)
+```
+
+Use `Letters` for strict-logic output. The `Word` style stays the default, so existing output does not change.
+
+### Why letters, and why not `⊥`
+
+In classical logic, `⊥` means false. In partial logic and in domain theory, `⊥` often means "no information", and that is the meaning of `Unknown` here. A reader who knows that convention can read `⊥` as `Unknown`, and then read `A ∧ ⊥` the wrong way. The `LogicSymbols` style keeps `⊥` for `False`, as classical logic does, but the symbol is not safe for a mixed audience. The letters `T`, `F` and `U` have one meaning each, so `Letters` is the recommended style.
+
+There is no `1`, `0` or `½` style. The order `False < Unknown < True` is an aid for the connectives. It is not a number scale, and a numeric form invites arithmetic on it. See [Truth order](glossary.md).
+
 ## Dialects
 
 Set `EquationOptions.Dialect` to choose the notation.

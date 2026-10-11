@@ -220,6 +220,30 @@ public sealed class DocExampleTests
         Assert.Single(failing);
     }
 
+    /// <summary>The words <c>letters</c> and <c>logic-symbols</c> select the constant style, so a block with that style's text passes and a stale one fails.</summary>
+    [Fact]
+    public async Task CheckAsync_ConstantStyleWords_SelectTheConstantStyleOfTheOutput_Test()
+    {
+        const string rule = "<!-- doctest:rule r -->\n```text\nTrue AND Unknown\n```\n";
+
+        IReadOnlyList<string> letters = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:equation r letters -->\n```text\nT ∧ U\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> symbols = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:tree r logic-symbols -->\n```text\nAND\n├─ ⊤\n└─ U\n```\n",
+            "sample.md"
+        );
+        IReadOnlyList<string> stale = await DocExampleChecker.CheckAsync(
+            rule + "<!-- doctest:equation r letters -->\n```text\nTrue ∧ Unknown\n```\n",
+            "sample.md"
+        );
+
+        Assert.Empty(letters);
+        Assert.Empty(symbols);
+        Assert.Single(stale);
+    }
+
     /// <summary>A documented operator-style tree that uses the word spelling where the marker asks for C-style is reported.</summary>
     [Fact]
     public async Task CheckAsync_TreeInTheWrongOperatorStyle_ReportsAFailure_Test()

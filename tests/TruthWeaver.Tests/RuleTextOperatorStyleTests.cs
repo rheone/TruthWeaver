@@ -8,7 +8,7 @@ using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
 /// Ticket 06: the <see cref="OperatorStyle"/> parameter of <see cref="CompiledRule{TContext}.PrintRuleText"/> and its
-/// <see cref="CompiledRule{TContext}.TryPrintRuleText"/> Try-first sibling.
+/// <see cref="CompiledRule{TContext}.TryPrintRuleText(GroupingStyle, OperatorStyle, out string)"/> Try-first sibling.
 /// </summary>
 public sealed class RuleTextOperatorStyleTests
 {
@@ -106,7 +106,7 @@ public sealed class RuleTextOperatorStyleTests
         Assert.Throws<ArgumentException>(() => rule.PrintRuleText(operatorStyle: OperatorStyle.CStyle));
     }
 
-    /// <summary><see cref="CompiledRule{TContext}.TryPrintRuleText"/> reports <see cref="OperatorStyle.CStyle"/> as a failure instead of throwing.</summary>
+    /// <summary><see cref="CompiledRule{TContext}.TryPrintRuleText(GroupingStyle, OperatorStyle, out string)"/> reports <see cref="OperatorStyle.CStyle"/> as a failure instead of throwing.</summary>
     [Fact]
     public void TryPrintRuleText_CStyle_ReturnsFalseWithNoText_Test()
     {
@@ -118,7 +118,7 @@ public sealed class RuleTextOperatorStyleTests
         Assert.Null(text);
     }
 
-    /// <summary><see cref="CompiledRule{TContext}.TryPrintRuleText"/> succeeds for <see cref="OperatorStyle.Word"/> and <see cref="OperatorStyle.Symbolic"/>.</summary>
+    /// <summary><see cref="CompiledRule{TContext}.TryPrintRuleText(GroupingStyle, OperatorStyle, out string)"/> succeeds for <see cref="OperatorStyle.Word"/> and <see cref="OperatorStyle.Symbolic"/>.</summary>
     [Theory]
     [InlineData(OperatorStyle.Word, "isManager AND isDepartmentHead")]
     [InlineData(OperatorStyle.Symbolic, "isManager ∧ isDepartmentHead")]

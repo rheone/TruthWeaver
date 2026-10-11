@@ -144,6 +144,31 @@ rule.PrintRuleText(operatorStyle: OperatorStyle.CStyle);       // throws Argumen
 bool ok = rule.TryPrintRuleText(GroupingStyle.Parentheses, OperatorStyle.CStyle, out string? text);  // false, text is null
 ```
 
+## Constant style
+
+`PrintRuleText` and `TryPrintRuleText` take an optional `ConstantFormat` to choose how `True`, `False` and `Unknown` are spelled. The parser reads a constant only as the word, in any letter case. So rule text accepts only a format that the parser reads back to the same constants:
+
+- `ConstantStyle.Word` (the default) writes `True`, `False` and `Unknown`.
+- An override is accepted when it is a letter-case variant of the constant's own word, for example `TrueText = "TRUE"`.
+- `Letters` is rejected. The parser reads a bare `T` as the name of a term, not as `True`.
+- `LogicSymbols` is rejected. The parser does not read `⊤` or `⊥`.
+- Any other override is rejected, for example `"1"` or `"Unknown"` for `True`.
+
+`PrintRuleText` throws `ArgumentException` with a message that names the style or the override. `TryPrintRuleText` returns `false` and sets its `out` text to `null` instead.
+
+```csharp
+rule.PrintRuleText(constants: new ConstantFormat { TrueText = "TRUE" });                   // TRUE AND Unknown
+rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.Letters });       // throws ArgumentException
+
+bool ok = rule.TryPrintRuleText(
+    GroupingStyle.Parentheses,
+    OperatorStyle.Word,
+    new ConstantFormat { Style = ConstantStyle.LogicSymbols },
+    out string? text);                                                                     // false, text is null
+```
+
+To print `T`, `F` and `U`, or `⊤` and `⊥`, use [`PrintEquation`](equations.md#constants) or a tree printer. They are read views, not rule text. See [tree printers](rulebuilder.md#rendering-a-rule-as-a-diagram).
+
 ## Whitespace
 
 Whitespace between tokens never matters, so you can lay out rule text freely. `CanonicalText` prints one space around each infix operator and after each comma, with no leading or trailing whitespace, whatever spacing the rule had when you wrote it.

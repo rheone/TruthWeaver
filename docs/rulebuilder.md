@@ -140,6 +140,7 @@ Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to chang
 | `Direction` | `TopDown`, `LeftRight`, `BottomTop`, `RightLeft` | `TopDown` |
 | `NodeShapes` | `true` gives an operator a hexagon, a term a rounded box and a constant a circle. `false` gives every node a rectangle. | `false` |
 | `OperatorStyle` | `Word`, `Symbolic`, `CStyle` | `Word` |
+| `Constants` | A `ConstantFormat`: a `ConstantStyle` (`Word`, `Letters`, `LogicSymbols`) and an optional override string for each constant. See [Equations](equations.md#constants). | `ConstantFormat.Default` |
 | `ShowArgumentValues` | `true`, `false` | `true` |
 | `TwoLineTermLabels` | `true` shows a term as a bold label and a plain argument line. `false` shows one line. | `false` |
 | `Palette` | A `MermaidPalette`: `Light`, `ColorblindSafe`, `Monochrome`, `Dark` or your own. | `MermaidPalette.Light` |
@@ -224,6 +225,8 @@ string c = rule.PrintMermaid(
 ```
 
 The optional parameters are `direction`, `nodeShapes`, `twoLineTermLabels`, `palette`, `nodeStyle` and `compactChainThreshold`. They follow `showArgumentValues` on `PrintMermaid` and `MermaidTreePrinter.Print`. `MermaidTreePrinter.Print` also takes `style` for the operator style. `PrintMermaid` with optional parameters always uses `OperatorStyle.Word`. To choose another operator style, pass a `MermaidOptions` with `OperatorStyle` set.
+
+`PrintPlainText` and `PlainTextTreePrinter.Print` take the same `ConstantFormat` as `constants`. The format changes only the constant nodes. The trace suffixes, such as `[unknown]`, and the node colors do not change.
 
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 

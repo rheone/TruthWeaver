@@ -23,7 +23,7 @@ internal sealed record EquationTokens
             Nand = "↑",
             Nor = "↓",
             FormatTerm = (identity, showArgumentValues) => showArgumentValues ? identity.ToString() : identity.PredicateName,
-            FormatConstant = TruthValueText.Canonical,
+            FormatConstant = (value, constants) => constants.Text(value),
             FormatFunctionName = name => name,
             FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : letter + ToSubscriptDigits(subscript),
             Wrap = equation => equation,
@@ -43,7 +43,10 @@ internal sealed record EquationTokens
             Nor = "darr",
             FormatTerm = (identity, showArgumentValues) =>
                 AsciiMathText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
-            FormatConstant = value => AsciiMathText.Quote(TruthValueText.Canonical(value)),
+            FormatConstant = (value, constants) =>
+                constants.IsLogicSymbol(value)
+                    ? ConstantFormat.SymbolCommand(value, "top", "bot")
+                    : AsciiMathText.Quote(constants.Text(value)),
             FormatFunctionName = AsciiMathText.Quote,
             FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{subscript}",
             Wrap = equation => $"`{equation}`",
@@ -89,8 +92,12 @@ internal sealed record EquationTokens
     /// </summary>
     public required Func<TermIdentity, bool, string> FormatTerm { get; init; }
 
-    /// <summary>Gets the constant formatter, which returns the dialect's text for <c>True</c>, <c>False</c> or <c>Unknown</c>.</summary>
-    public required Func<TruthValue, string> FormatConstant { get; init; }
+    /// <summary>
+    /// Gets the constant formatter. It takes the value and the <see cref="ConstantFormat"/> and returns the dialect's text
+    /// for the constant, escaped for the dialect. A dialect writes its own command for <c>⊤</c> and <c>⊥</c>
+    /// (<see cref="ConstantFormat.IsLogicSymbol"/>) and escapes every other text as a literal.
+    /// </summary>
+    public required Func<TruthValue, ConstantFormat, string> FormatConstant { get; init; }
 
     /// <summary>
     /// Gets the formatter for the name of an operator that prints in function-call form, for example <c>AtLeast</c>.
@@ -129,7 +136,7 @@ internal sealed record EquationTokens
             Nor = "NOR",
             FormatIf = (condition, whenTrue, whenFalse) => $"{condition} ? {whenTrue} : {whenFalse}",
             FormatTerm = (identity, showArgumentValues) => showArgumentValues ? identity.ToString() : identity.PredicateName,
-            FormatConstant = TruthValueText.Canonical,
+            FormatConstant = (value, constants) => constants.Text(value),
             FormatFunctionName = name => name,
             FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : letter + ToSubscriptDigits(subscript),
             Wrap = equation => equation,
@@ -156,7 +163,10 @@ internal sealed record EquationTokens
             Nor = @"\downarrow",
             FormatTerm = (identity, showArgumentValues) =>
                 LatexText.Text(showArgumentValues ? identity.ToString() : identity.PredicateName, mathJaxSafe),
-            FormatConstant = value => LatexText.Text(TruthValueText.Canonical(value), mathJaxSafe),
+            FormatConstant = (value, constants) =>
+                constants.IsLogicSymbol(value)
+                    ? ConstantFormat.SymbolCommand(value, @"\top", @"\bot")
+                    : LatexText.Text(constants.Text(value), mathJaxSafe),
             FormatFunctionName = name => LatexText.Text(name, mathJaxSafe),
             FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : $"{letter}_{{{subscript}}}",
             Wrap = wrap switch
