@@ -51,13 +51,42 @@ public sealed class ConstantStyleTests
         Assert.Equal(expected, equation);
     }
 
-    /// <summary>With no constant format set, the equation keeps the word style.</summary>
+    /// <summary>With no constant format set, the equation writes the letters T, F and U.</summary>
     [Fact]
-    public void PrintEquation_DefaultOptions_KeepsTheWordStyle_Test()
+    public void PrintEquation_DefaultOptions_WritesTheLetterStyle_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(AllConstants);
 
-        Assert.Equal("True ∧ False ∧ Unknown", rule.PrintEquation());
+        Assert.Equal("T ∧ F ∧ U", rule.PrintEquation());
+    }
+
+    /// <summary>An explicit word style writes True, False and Unknown in every dialect that defaults to letters.</summary>
+    [Theory]
+    [InlineData(EquationDialect.Unicode, "True ∧ False ∧ Unknown")]
+    [InlineData(EquationDialect.CStyle, "True && False && Unknown")]
+    [InlineData(EquationDialect.Ascii, "True /\\ False /\\ Unknown")]
+    public void PrintEquation_ExplicitWordStyle_WritesTheWords_Test(EquationDialect dialect, string expected)
+    {
+        CompiledRule<RuleTestContext> rule = Compile(AllConstants);
+
+        string equation = rule.PrintEquation(
+            new EquationOptions
+            {
+                Dialect = dialect,
+                Constants = new ConstantFormat { Style = ConstantStyle.Word },
+            }
+        );
+
+        Assert.Equal(expected, equation);
+    }
+
+    /// <summary>The legend variant of the equation printer also writes letters by default.</summary>
+    [Fact]
+    public void PrintEquationWithLegend_DefaultOptions_WritesTheLetterStyle_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(AllConstants);
+
+        Assert.Equal("T ∧ F ∧ U", rule.PrintEquationWithLegend().Equation);
     }
 
     /// <summary>The C-style dialect writes the style text as plain text.</summary>
@@ -170,7 +199,11 @@ public sealed class ConstantStyleTests
         ConstantFormat letters = new() { Style = ConstantStyle.Letters };
         ConstantFormat symbols = new() { Style = ConstantStyle.LogicSymbols };
 
-        Assert.Equal("isDineIn ∧ (False ∨ Unknown)", rule.PrintEquation());
+        Assert.Equal("isDineIn ∧ (F ∨ U)", rule.PrintEquation());
+        Assert.Equal(
+            "isDineIn ∧ (False ∨ Unknown)",
+            rule.PrintEquation(new EquationOptions { Constants = new ConstantFormat { Style = ConstantStyle.Word } })
+        );
         Assert.Equal("isDineIn ∧ (F ∨ U)", rule.PrintEquation(new EquationOptions { Constants = letters }));
         Assert.Equal("isDineIn ∧ (⊥ ∨ U)", rule.PrintEquation(new EquationOptions { Constants = symbols }));
         Assert.Equal(

@@ -3,7 +3,7 @@ namespace TruthWeaver.Printing;
 /// <summary>The options for <see cref="Evaluation.CompiledRule{TContext}.PrintEquation(EquationOptions?)"/>.</summary>
 public sealed record EquationOptions
 {
-    /// <summary>Gets the default options: the <see cref="EquationDialect.Unicode"/> dialect with argument values shown.</summary>
+    /// <summary>Gets the default options: the <see cref="EquationDialect.Unicode"/> dialect with argument values shown and the constants written as letters.</summary>
     public static EquationOptions Default { get; } = new();
 
     /// <summary>Gets the notation to write the equation in. The default is <see cref="EquationDialect.Unicode"/>.</summary>
@@ -34,8 +34,8 @@ public sealed record EquationOptions
 
     /// <summary>
     /// Gets how the constants <c>True</c>, <c>False</c> and <c>Unknown</c> are written. The default is
-    /// <see cref="ConstantFormat.Default"/>, the <see cref="ConstantStyle.Word"/> style. For strict-logic output, the
-    /// recommended setting is <see cref="ConstantStyle.Letters"/>.
+    /// <see cref="ConstantStyle.Letters"/> (<c>T</c>, <c>F</c>, <c>U</c>) in every dialect. To write the words, set
+    /// <see cref="ConstantFormat.Style"/> to <see cref="ConstantStyle.Word"/>.
     /// </summary>
-    public ConstantFormat Constants { get; init; } = ConstantFormat.Default;
+    public ConstantFormat Constants { get; init; } = new() { Style = ConstantStyle.Letters };
 }

@@ -54,7 +54,7 @@ public sealed class EquationAsciiMathTests
         Assert.Equal("`not \"a\"`", equation);
     }
 
-    /// <summary>A constant prints as its canonical spelling in quotes.</summary>
+    /// <summary>A constant prints as its letter in quotes.</summary>
     [Fact]
     public void PrintEquation_AsciiMathConstant_PrintsTheSpellingInQuotes_Test()
     {
@@ -62,7 +62,7 @@ public sealed class EquationAsciiMathTests
 
         string equation = rule.PrintEquation(Ascii);
 
-        Assert.Equal("`\"a\" ^^ \"Unknown\"`", equation);
+        Assert.Equal("`\"a\" ^^ \"U\"`", equation);
     }
 
     /// <summary>An operator with no AsciiMath symbol prints as a function call with a quoted name.</summary>

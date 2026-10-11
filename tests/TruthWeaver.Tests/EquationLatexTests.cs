@@ -56,7 +56,7 @@ public sealed class EquationLatexTests
         Assert.Equal(@"\lnot \text{a}", equation);
     }
 
-    /// <summary>A constant prints as its canonical spelling in a text group.</summary>
+    /// <summary>A constant prints as its letter in a text group.</summary>
     [Fact]
     public void PrintEquation_LatexConstant_PrintsTheSpellingInATextGroup_Test()
     {
@@ -64,7 +64,7 @@ public sealed class EquationLatexTests
 
         string equation = rule.PrintEquation(Raw);
 
-        Assert.Equal(@"\text{a} \land \text{Unknown}", equation);
+        Assert.Equal(@"\text{a} \land \text{U}", equation);
     }
 
     /// <summary>

@@ -66,7 +66,7 @@ public sealed class EquationSimpleVariableTests
 
         string equation = rule.PrintEquation(Simple);
 
-        Assert.Equal("AtLeast(2, p, q, Unknown)", equation);
+        Assert.Equal("AtLeast(2, p, q, U)", equation);
     }
 
     /// <summary>Two terms of one predicate with different argument values are different terms and get different letters.</summary>

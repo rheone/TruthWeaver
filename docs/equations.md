@@ -51,8 +51,8 @@ A term prints as its full call by default, for example `hasCrust(crust: "thin")`
 
 | Style | `True` | `False` | `Unknown` |
 | --- | --- | --- | --- |
-| `Word` (default) | `True` | `False` | `Unknown` |
-| `Letters` | `T` | `F` | `U` |
+| `Word` | `True` | `False` | `Unknown` |
+| `Letters` (default) | `T` | `F` | `U` |
 | `LogicSymbols` | `⊤` | `⊥` | `U` |
 
 An override wins over the style for its own constant. An override is literal text. The dialect escapes it as it escapes a term, so `yes_1` is safe in LaTeX, and a non-ASCII override is safe in the `Ascii` dialect. An override cannot be empty or hold a line break.
@@ -64,11 +64,11 @@ isDineIn AND (False OR Unknown)
 ```
 
 ```text
-isDineIn ∧ (False ∨ Unknown)
+isDineIn ∧ (F ∨ U)
 ```
 
 ```text
-isDineIn ∧ (F ∨ U)
+isDineIn ∧ (False ∨ Unknown)
 ```
 
 ```text
@@ -84,15 +84,17 @@ isDineIn ∧ (⊥ ∨ U)
 ```
 
 ```csharp
-EquationOptions options = new() { Constants = new ConstantFormat { Style = ConstantStyle.Letters } };
-string equation = rule.PrintEquation(options);   // isDineIn ∧ (F ∨ U)
+string letters = rule.PrintEquation();   // isDineIn ∧ (F ∨ U)
+
+EquationOptions options = new() { Constants = new ConstantFormat { Style = ConstantStyle.Word } };
+string words = rule.PrintEquation(options);   // isDineIn ∧ (False ∨ Unknown)
 ```
 
-Use `Letters` for strict-logic output. The `Word` style stays the default, so existing output does not change.
+`Letters` is the default for every equation dialect and for `PrintEquationWithLegend`. Set `Style` to `Word` to print `True`, `False` and `Unknown`. The rule text, plain text, Mermaid, HTML and DOT printers keep `Word` as their default.
 
 ### Why letters, and why not `⊥`
 
-In classical logic, `⊥` means false. In partial logic and in domain theory, `⊥` often means "no information", and that is the meaning of `Unknown` here. A reader who knows that convention can read `⊥` as `Unknown`, and then read `A ∧ ⊥` the wrong way. The `LogicSymbols` style keeps `⊥` for `False`, as classical logic does, but the symbol is not safe for a mixed audience. The letters `T`, `F` and `U` have one meaning each, so `Letters` is the recommended style.
+In classical logic, `⊥` means false. In partial logic and in domain theory, `⊥` often means "no information", and that is the meaning of `Unknown` here. A reader who knows that convention can read `⊥` as `Unknown`, and then read `A ∧ ⊥` the wrong way. The `LogicSymbols` style keeps `⊥` for `False`, as classical logic does, but the symbol is not safe for a mixed audience. The letters `T`, `F` and `U` have one meaning each, so `Letters` is the default style.
 
 There is no `1`, `0` or `½` style. The order `False < Unknown < True` is an aid for the connectives. It is not a number scale, and a numeric form invites arithmetic on it. See [Truth order](glossary.md).
 

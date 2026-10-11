@@ -26,7 +26,7 @@ using TruthWeaver.Yaml;
 /// <item><c>json ID</c>, <c>yaml ID</c>: a rule that must compile to the same canonical text as the <c>rule ID</c> example.</item>
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
 /// <item><c>html ID</c>, <c>dot ID</c>: documented output (in an <c>html</c> or <c>dot</c> block) that must equal <c>PrintHtml()</c> / <c>PrintDot()</c> of the <c>rule ID</c> example; the option words <c>symbolic</c>, <c>cstyle</c>, <c>letters</c>, <c>logic-symbols</c> and <c>trace</c> follow the ID, <c>simple</c> on an <c>html</c> marker, and <c>plain</c> and <c>left-right</c> on a <c>dot</c> marker.</item>
-/// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c> (AsciiMath), <c>mathml</c>, <c>typst</c>, <c>plain-ascii</c> (the 7-bit <see cref="EquationDialect.Ascii"/> dialect), <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID, and so do the constant-style words <c>letters</c> and <c>logic-symbols</c> (also valid on a <c>tree</c> or <c>mermaid</c> marker).</item>
+/// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c> (AsciiMath), <c>mathml</c>, <c>typst</c>, <c>plain-ascii</c> (the 7-bit <see cref="EquationDialect.Ascii"/> dialect), <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID, and so do the constant-style words <c>letters</c>, <c>words</c> and <c>logic-symbols</c> (also valid on a <c>tree</c> or <c>mermaid</c> marker; an equation or legend marker with none documents the letters default).</item>
 /// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it). A <c>width=N</c> word (ticket 10) checks <c>PrintRuleText(RuleTextOptions)</c> with that width instead of the one-line form.</item>
 /// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
 /// <item>An <c>equation</c> marker can stand above a display-math paragraph (a line that starts with <c>$$</c>) instead of a fence.</item>
@@ -214,7 +214,7 @@ internal static partial class DocExampleChecker
             case "tree" or "mermaid" or "html" or "dot" or "equation" or "legend" or "ruletext" or "rewrite-diagnostics":
                 // A mermaid marker may follow the rule id with option words: "shapes", "two-line", "symbolic", "cstyle" (the operator style of a tree or mermaid block) and "trace" (colors the nodes by an evaluation without data sources).
                 // A ruletext marker takes "symbolic" too (PrintRuleText(OperatorStyle) rejects "cstyle"). An equation or legend marker
-                // takes the dialect words "latex", "ascii" (AsciiMath), "mathml", "typst", "plain-ascii", "cstyle", "double-dollar", "mathjax" and "simple". The words "letters" and "logic-symbols" select the constant style of any of them.
+                // takes the dialect words "latex", "ascii" (AsciiMath), "mathml", "typst", "plain-ascii", "cstyle", "double-dollar", "mathjax" and "simple". The words "letters", "words" and "logic-symbols" select the constant style of any of them; with none, an equation or legend block documents the letters default and the others document the word style.
                 string[] words = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string ruleId = words.Length > 0 ? words[0] : string.Empty;
                 if (!rules.TryGetValue(ruleId, out CompiledRule<RuleTestContext>? rule))
@@ -260,10 +260,12 @@ internal static partial class DocExampleChecker
                     NodeShapes = words.Contains("shapes"),
                     TwoLineTermLabels = words.Contains("two-line"),
                 };
+
+                // An equation or legend block with no constant word documents the equation default (letters).
                 EquationOptions equationOptions = new()
                 {
                     Dialect = EquationDialectOf(words),
-                    Constants = constants,
+                    Constants = HasConstantWord(words) ? constants : EquationOptions.Default.Constants,
                     LatexWrap = LatexWrapOf(words),
                     SimpleVariables = words.Contains("simple"),
                 };
@@ -447,9 +449,20 @@ internal static partial class DocExampleChecker
         return words.Contains("cstyle") ? OperatorStyle.CStyle : OperatorStyle.Word;
     }
 
-    /// <summary>Reads the constant-style words <c>letters</c> and <c>logic-symbols</c>; no word means the word style.</summary>
+    /// <summary>Returns whether the marker names a constant style (<c>letters</c>, <c>words</c> or <c>logic-symbols</c>).</summary>
+    private static bool HasConstantWord(string[] words)
+    {
+        return words.Contains("letters") || words.Contains("words") || words.Contains("logic-symbols");
+    }
+
+    /// <summary>Reads the constant-style words <c>letters</c>, <c>words</c> and <c>logic-symbols</c>; no word means the word style, which is the default of every printer except the equation printers.</summary>
     private static ConstantFormat ConstantFormatOf(string[] words)
     {
+        if (words.Contains("words"))
+        {
+            return new ConstantFormat { Style = ConstantStyle.Word };
+        }
+
         if (words.Contains("letters"))
         {
             return new ConstantFormat { Style = ConstantStyle.Letters };

@@ -104,7 +104,7 @@ public sealed class EquationCStyleTests
         Assert.Equal("COALESCE(a, b)", equation);
     }
 
-    /// <summary>A constant prints with its canonical spelling, unescaped.</summary>
+    /// <summary>A constant prints as its letter by default, unescaped.</summary>
     [Fact]
     public void PrintEquation_CStyleConstant_PrintsCanonicalSpelling_Test()
     {
@@ -112,7 +112,7 @@ public sealed class EquationCStyleTests
 
         string equation = rule.PrintEquation(CStyle);
 
-        Assert.Equal("a && Unknown", equation);
+        Assert.Equal("a && U", equation);
     }
 
     /// <summary>A term prints as its full call, with its argument values, by default.</summary>

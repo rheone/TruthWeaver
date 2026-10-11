@@ -169,16 +169,21 @@ public sealed class EquationMathMlTypstAsciiTests
         Assert.Equal($"{MathOpen}<mtext>hasCrust</mtext></math>", equation);
     }
 
-    /// <summary>MathML writes a constant as <c>mtext</c>, or as an <c>mo</c> symbol for the logic-symbol style.</summary>
+    /// <summary>MathML writes a constant as <c>mtext</c> (letters by default, words on request), or as an <c>mo</c> symbol for the logic-symbol style.</summary>
     [Fact]
     public void PrintEquation_MathMlConstants_PrintTextOrLogicSymbols_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile("True AND False AND Unknown");
         ConstantFormat symbols = new() { Style = ConstantStyle.LogicSymbols };
+        ConstantFormat words = new() { Style = ConstantStyle.Word };
 
         Assert.Equal(
-            $"{MathOpen}<mtext>True</mtext> <mo>∧</mo> <mtext>False</mtext> <mo>∧</mo> <mtext>Unknown</mtext></math>",
+            $"{MathOpen}<mtext>T</mtext> <mo>∧</mo> <mtext>F</mtext> <mo>∧</mo> <mtext>U</mtext></math>",
             rule.PrintEquation(MathMl)
+        );
+        Assert.Equal(
+            $"{MathOpen}<mtext>True</mtext> <mo>∧</mo> <mtext>False</mtext> <mo>∧</mo> <mtext>Unknown</mtext></math>",
+            rule.PrintEquation(MathMl with { Constants = words })
         );
         Assert.Equal(
             $"{MathOpen}<mo>⊤</mo> <mo>∧</mo> <mo>⊥</mo> <mo>∧</mo> <mtext>U</mtext></math>",
@@ -334,14 +339,17 @@ public sealed class EquationMathMlTypstAsciiTests
         Assert.Equal("$\"hasCrust(crust: \\\"thin\\\")\" and \"a\\\\b\\\"c\\td\"$", equation);
     }
 
-    /// <summary>Typst writes a constant as a quoted string, and the logic-symbol style as the Typst symbols <c>top</c> and <c>bot</c>.</summary>
+    /// <summary>Typst writes a constant as a quoted string (letters by default, words on request), and the logic-symbol style as the Typst symbols <c>top</c> and <c>bot</c>.</summary>
     [Fact]
     public void PrintEquation_TypstConstants_PrintQuotedTextOrTypstSymbols_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile("True AND False AND Unknown");
         ConstantFormat symbols = new() { Style = ConstantStyle.LogicSymbols };
 
-        Assert.Equal("$\"True\" and \"False\" and \"Unknown\"$", rule.PrintEquation(Typst));
+        ConstantFormat words = new() { Style = ConstantStyle.Word };
+
+        Assert.Equal("$\"T\" and \"F\" and \"U\"$", rule.PrintEquation(Typst));
+        Assert.Equal("$\"True\" and \"False\" and \"Unknown\"$", rule.PrintEquation(Typst with { Constants = words }));
         Assert.Equal("$top and bot and \"U\"$", rule.PrintEquation(Typst with { Constants = symbols }));
     }
 

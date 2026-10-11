@@ -154,6 +154,13 @@ copyright line reads 2026.
 
 ### Changed
 
+- **Breaking:** `ConstantStyle.Letters` (`T`, `F`, `U`) is the default constant style of `PrintEquation` in every dialect
+  (Unicode, LaTeX, AsciiMath, CStyle, MathML, Typst and Ascii) and of `PrintEquationWithLegend`. `EquationOptions.Default.Constants`
+  is now a `Letters` format, not `ConstantFormat.Default`. `PrintRuleText`, `PrintPlainText`, `PrintMermaid`, `PrintHtml` and
+  `PrintDot` keep `Word`. Migration: to get `True`, `False` and `Unknown` back, pass
+  `Constants = new ConstantFormat { Style = ConstantStyle.Word }` in the `EquationOptions`. [Equations](docs/equations.md#constants)
+  describes it. The doc-example checker takes a new `words` word, and an equation or legend block with no constant word documents
+  the letters default.
 - **Breaking:** predicate factories follow one twin-naming guide ([Predicate conventions](docs/predicate-conventions.md#naming)).
   A state or relation is `IsX` with the twin `IsNotX`. A verb phrase is `Verb` with the twin `NotVerb`. A twin is always the
   Strong Kleene complement of its positive. `Equals`, `Equal`, `NotEquals` and `NotEqual` become `IsEqualTo` and `IsNotEqualTo`.

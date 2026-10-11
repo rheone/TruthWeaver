@@ -505,7 +505,7 @@ Symbolic text and Unicode:
 
 <!-- doctest:equation simp -->
 ```text
-(isBanned ∧ True) ∨ (isContractor ∧ isContractor) ∨ False
+(isBanned ∧ T) ∨ (isContractor ∧ isContractor) ∨ F
 ```
 
 Mermaid:
@@ -534,7 +534,7 @@ flowchart TD
 MathJax:
 
 <!-- doctest:equation simp latex double-dollar -->
-$$(\text{isBanned} \land \text{True}) \lor (\text{isContractor} \land \text{isContractor}) \lor \text{False}$$
+$$(\text{isBanned} \land \text{T}) \lor (\text{isContractor} \land \text{isContractor}) \lor \text{F}$$
 
 `Simplify()` removes the `True`, the repeat and the `False`:
 
