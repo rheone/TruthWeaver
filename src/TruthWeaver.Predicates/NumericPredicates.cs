@@ -54,7 +54,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -65,7 +65,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value the selected value must equal.",
             static r => r == 0
@@ -90,7 +90,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -101,7 +101,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value the selected value must equal.",
             static r => r == 0
@@ -128,7 +128,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -139,7 +139,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value the selected value must not equal.",
             static r => r == 0,
@@ -167,7 +167,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -178,7 +178,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value the selected value must not equal.",
             static r => r == 0,
@@ -204,7 +204,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Less Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -215,7 +215,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r < 0
@@ -240,7 +240,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Less Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -251,7 +251,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r < 0
@@ -276,7 +276,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Greater Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -287,7 +287,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r > 0
@@ -312,7 +312,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Greater Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -323,7 +323,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r > 0
@@ -348,7 +348,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Less Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -359,7 +359,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r <= 0
@@ -384,7 +384,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Less Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -395,7 +395,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r <= 0
@@ -420,7 +420,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Greater Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -431,7 +431,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r >= 0
@@ -456,7 +456,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Greater Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -467,7 +467,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r >= 0
@@ -494,7 +494,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not Less Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -505,7 +505,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r < 0,
@@ -533,7 +533,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not Less Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -544,7 +544,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r < 0,
@@ -572,7 +572,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not Greater Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -583,7 +583,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r > 0,
@@ -611,7 +611,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not Greater Than",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -622,7 +622,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r > 0,
@@ -650,7 +650,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not Less Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -661,7 +661,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r <= 0,
@@ -689,7 +689,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not Less Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -700,7 +700,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r <= 0,
@@ -728,7 +728,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not Greater Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -739,7 +739,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The integer value to compare the selected value against.",
             static r => r >= 0,
@@ -767,7 +767,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not Greater Than Or Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -778,7 +778,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             "The decimal value to compare the selected value against.",
             static r => r >= 0,
@@ -806,7 +806,7 @@ public static class NumericPredicates
         string label = "IsBetween",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -817,7 +817,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             lowerName,
             upperName,
             false
@@ -844,7 +844,7 @@ public static class NumericPredicates
         string label = "IsBetween",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -855,7 +855,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             lowerName,
             upperName,
             false
@@ -884,7 +884,7 @@ public static class NumericPredicates
         string label = "Not IsBetween",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -895,7 +895,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             lowerName,
             upperName,
             true
@@ -924,7 +924,7 @@ public static class NumericPredicates
         string label = "Not IsBetween",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -935,7 +935,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             lowerName,
             upperName,
             true
@@ -960,7 +960,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -971,7 +971,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             false
         );
@@ -995,7 +995,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -1006,7 +1006,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             false
         );
@@ -1032,7 +1032,7 @@ public static class NumericPredicates
         Func<TContext, long?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -1043,7 +1043,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             true
         );
@@ -1069,7 +1069,7 @@ public static class NumericPredicates
         Func<TContext, decimal?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -1080,7 +1080,7 @@ public static class NumericPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
             argumentName,
             true
         );
@@ -1164,12 +1164,19 @@ public static class NumericPredicates
         string name,
         Func<TContext, long?> selector,
         string label = "Is Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected integer value is default(long) (0). A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
+            false
+        );
     }
 
     /// <summary>Creates a predicate that is true when the selected value is <c>default(decimal)</c>. A null selection is a missing value, not a default, so it answers per <paramref name="nullBehavior"/>.</summary>
@@ -1188,12 +1195,19 @@ public static class NumericPredicates
         string name,
         Func<TContext, decimal?> selector,
         string label = "Is Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected decimal value is default(decimal) (0). A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
+            false
+        );
     }
 
     /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
@@ -1214,12 +1228,19 @@ public static class NumericPredicates
         string name,
         Func<TContext, long?> selector,
         string label = "Is Not Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected integer value is not default(long) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
+            true
+        );
     }
 
     /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
@@ -1240,11 +1261,18 @@ public static class NumericPredicates
         string name,
         Func<TContext, decimal?> selector,
         string label = "Is Not Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected decimal value is not default(decimal) (0). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Numeric),
+            true
+        );
     }
 }

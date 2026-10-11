@@ -33,7 +33,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Starts With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -44,7 +44,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The prefix the selected value must start with.",
             static (selected, target) => selected.StartsWith(target, StringComparison.Ordinal)
@@ -70,7 +70,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Ends With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -81,7 +81,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The suffix the selected value must end with.",
             static (selected, target) => selected.EndsWith(target, StringComparison.Ordinal)
@@ -107,7 +107,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -119,7 +119,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The substring the selected value must contain.",
             static (selected, target) => selected.Contains(target, StringComparison.Ordinal)
@@ -166,13 +166,20 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Empty",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected string is the empty string (\"\"). A null selected value is a missing value, "
             + "not an empty one: it answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return CreateNoArgument(name, label, description, selector, nullBehavior, static selected => selected.Length == 0);
+        return CreateNoArgument(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
+            static selected => selected.Length == 0
+        );
     }
 
     /// <summary>
@@ -197,7 +204,7 @@ public static class StringPredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not Empty",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -209,7 +216,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             static selected => selected.Length == 0,
             negate: true
         );
@@ -313,7 +320,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -325,7 +332,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The substring the selected value must not contain.",
             static (selected, target) => selected.Contains(target, StringComparison.Ordinal),
@@ -360,7 +367,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -373,7 +380,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The string the selected value must equal.",
             negate: false
@@ -405,7 +412,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -419,7 +426,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The string the selected value must not equal.",
             negate: true
@@ -450,7 +457,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Starts With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -462,7 +469,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The prefix the selected value must not start with.",
             static (selected, target) => selected.StartsWith(target, StringComparison.Ordinal),
@@ -494,7 +501,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Not Ends With",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -506,7 +513,7 @@ public static class StringPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             argumentName,
             "The suffix the selected value must not end with.",
             static (selected, target) => selected.EndsWith(target, StringComparison.Ordinal),
@@ -530,7 +537,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return CreateMembership(
@@ -538,7 +545,7 @@ public static class StringPredicates
             label,
             "True when the selected string is one of the strings in the argument array (ordinal, case-sensitive). The selector returns one string; for a collection use the ContainsAny, ContainsAll or IsSubsetOf predicates of CollectionPredicates. A null selected string is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             false,
             argumentName,
             "The candidate strings the selected value may equal.",
@@ -566,7 +573,7 @@ public static class StringPredicates
         Func<TContext, string?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return CreateMembership(
@@ -574,7 +581,7 @@ public static class StringPredicates
             label,
             "The Strong Kleene complement of IsIn: True when IsIn is False, False when IsIn is True, and Unknown when IsIn is Unknown. IsIn is true when the selected string is one of the strings in the argument array (ordinal, case-sensitive). The selector returns one string; for a collection use the ContainsAny, ContainsAll or IsSubsetOf predicates of CollectionPredicates. A null selected string is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.String),
             true,
             argumentName,
             "The candidate strings the selected value may equal.",

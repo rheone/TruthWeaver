@@ -283,7 +283,7 @@ Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. Each is 
 catalog members, not for the engine.
 
 - **Null selected value.** Every built-in member with a `nullBehavior` option returns `Unknown` (no
-  fault) for a null selected value by default; a host can pass `NullBehavior.False` at registration to
+  fault) for a null selected value by default; a host can pass `NullBehavior.False` at registration (or set it for every registration with `NullBehaviorScope`) to
   get a definite `False` instead. The null tests themselves (`IsNull`, `IsNullOrEmpty`, ...) return a
   definite `True` or `False`. Rationale: a member cannot evaluate a missing value, `Unknown` is the K3
   reading of it, and it stays fail-closed under `Decision.IsSatisfied`.

@@ -21,12 +21,27 @@ A null selected value is a missing value. It is not a fault.
 | `IsNull` | `True` | `True`. A null test has no option. |
 | `IsNotNull` | `False` | `False`. A null test has no option. |
 
-- The host chooses the behavior once, when it registers the predicate. A rule cannot change it.
+- The host chooses the behavior when it registers the predicate. A rule cannot change it.
+- A host can choose it once for every registration, or for one family, with `NullBehaviorScope`: `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` sets the default for the factory calls made inside the block, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` sets it for one family. A `nullBehavior` argument on a factory call wins over a scope, and a family scope wins over an all-families scope. With no scope the default is `Unknown`.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.
 - A host registers both predicates of a pair with the same `NullBehavior`.
 - A missing value is `Unknown` unless the predicate is a null test. This includes the collection `IsEmpty` and `IsNotEmpty`: a null collection is missing, not empty.
 - A null value is not a default value. `IsDefault` answers per `NullBehavior` for a null selected value.
+
+### When a predicate answers Unknown
+
+`Unknown` is the default for a missing value because it is the only answer that does not guess. `NOT` of it stays `Unknown`, so a rule that depends on a missing value is not satisfied: `Decision.IsSatisfied` is fail-closed. `NullBehavior.False` trades that safety for a definite answer, and `NOT` then turns the missing value into `True`. With a null age, `NOT ageAbove(value: 18)` is `Unknown` by default and `True` when the host chooses `NullBehavior.False`.
+
+| Predicate group | Null selected value | Fault (selector or predicate throws, times out, or an argument value is not valid) | Data-source failure (argument value missing, ambiguous, wrong kind, source error or unsupplied source) |
+| --- | --- | --- | --- |
+| Comparison, range, membership and default tests: numeric, scalar, string, date-time, regex, type | `Unknown`, or `False` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| Collection tests, including `IsEmpty` and `IsNotEmpty` | `Unknown`, or `False` under `NullBehavior.False` (`SetEquals` reads a null collection as the empty set) | `Unknown` plus a fault | `Unknown` plus a fault |
+| Clock and calendar tests: `IsAfterNow`, `IsOnDayOfWeek`, `IsInMonth`, `IsInTimeWindow` | `Unknown`, or `False` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| Null tests: `IsNull`, `IsNotNull`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace` | Never `Unknown`: always `True` or `False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| A `NotX` twin | The complement of its positive predicate: `Unknown`, or `True` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+
+A fault is never changed by `NullBehavior` or by a scope. A data-source failure applies only to a term that takes an argument from a data source.
 
 ## NotX twins
 

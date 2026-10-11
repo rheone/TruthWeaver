@@ -67,7 +67,7 @@ The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsN
 | Value ranges | A range of values is closed. `IsBetween` and `IsNotBetween` treat both bounds as inside the range. |
 | Ordering | An ordering comparison is strict. `IsAfter` and `IsBefore` do not match an equal instant. |
 | Time windows | A window of time is half-open: `[start, end)`. The flags `includeStart` and `includeEnd` move either end. |
-| Null values | A null selected value answers `Unknown`. The host chooses `nullBehavior` at registration. |
+| Null values | A null selected value answers `Unknown`. The host chooses `nullBehavior` for one predicate at registration, or sets a default for every registration, or for one family, with `NullBehaviorScope`. A `nullBehavior` argument on a factory call wins over a scope. |
 | Culture | Culture is invariant. No predicate reads the culture of the host process. |
 
 ## Settings that change a default
@@ -79,9 +79,21 @@ The predicates `IsEmpty`, `IsNotEmpty`, `IsNull`, `IsNotNull`, `IsDefault`, `IsN
 | `IsMatch`, `IsNotMatch` | `flags` | empty (no options) |
 | `IsInTimeWindow`, `IsNotInTimeWindow` | `includeStart` | `true` |
 | `IsInTimeWindow`, `IsNotInTimeWindow` | `includeEnd` | `false` |
-| String, collection, regex, numeric, scalar and date predicates (set at registration) | `nullBehavior` | `Unknown` |
+| String, collection, regex, numeric, scalar, date and type predicates (set at registration) | `nullBehavior` | `Unknown`, or the default that an open `NullBehaviorScope` sets |
 
 A predicate that is not in the table has no setting. Its behavior is fixed.
+
+### When a predicate answers Unknown
+
+A predicate answers `Unknown` in three cases. `Unknown` is the default for a missing value because it is the only answer that does not guess: `NOT` of `Unknown` stays `Unknown`, so a rule that depends on a missing value is not satisfied, and `Decision.IsSatisfied` is fail-closed. A host that wants a missing value to count as `False` sets `NullBehavior.False`. `NOT (age > 18)` with a null age is then `True`.
+
+| Predicate group | Null selected value | Fault | Data-source failure |
+| --- | --- | --- | --- |
+| Comparison, range, membership, default, collection, clock and calendar tests, and type tests | `Unknown`, or `False` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| Null tests (`IsNull`, `IsNotNull`, `IsNullOrEmpty` and the related tests) | Always `True` or `False`, never `Unknown` | `Unknown` plus a fault | `Unknown` plus a fault |
+| A `NotX` twin | The complement of its positive predicate | `Unknown` plus a fault | `Unknown` plus a fault |
+
+`NullBehavior` and `NullBehaviorScope` never change a fault or a data-source failure. See [Null selected values](strong-k3/predicates/README.md#null-selected-values).
 
 ## Fixed behavior
 

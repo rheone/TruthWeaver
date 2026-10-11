@@ -50,13 +50,20 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is On Day Of Week",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant falls on one of the listed days of the week (English names, Monday to Sunday, case ignored)."
             + OffsetNote;
-        return DayOfWeekPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return DayOfWeekPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
@@ -80,13 +87,20 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not On Day Of Week",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsOnDayOfWeek: True when the selected instant falls on none of the listed days of the week, False when it falls on one, Unknown when IsOnDayOfWeek is Unknown."
             + OffsetNote;
-        return DayOfWeekPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return DayOfWeekPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     /// <summary>
@@ -107,13 +121,20 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is In Month",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant falls in one of the listed months (numbers from 1, January, to 12, December)."
             + OffsetNote;
-        return MonthPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return MonthPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
@@ -137,13 +158,20 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not In Month",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsInMonth: True when the selected instant falls in none of the listed months, False when it falls in one, Unknown when IsInMonth is Unknown."
             + OffsetNote;
-        return MonthPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return MonthPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     /// <summary>
@@ -176,14 +204,21 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is In Time Window",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the time of day of the selected instant is inside the window from 'start' to 'end' (or 'start' plus 'duration'). "
             + "By default the start is inside and the end is outside; 'includeStart' and 'includeEnd' change this. A start later than the end crosses midnight."
             + OffsetNote;
-        return TimeWindowPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return TimeWindowPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
@@ -208,13 +243,20 @@ public static partial class DateTimePredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not In Time Window",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsInTimeWindow: True when the time of day of the selected instant is outside the window, False when it is inside, Unknown when IsInTimeWindow is Unknown."
             + OffsetNote;
-        return TimeWindowPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return TimeWindowPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     private static (

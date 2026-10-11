@@ -38,7 +38,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Set Equals",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -49,7 +49,15 @@ public static class CollectionPredicates
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "
             + "collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, "
             + "which reads it as an empty collection.";
-        return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: false);
+        return BuildSetEquals(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
+            argumentName,
+            negate: false
+        );
     }
 
     /// <summary>
@@ -78,7 +86,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Set Equals",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -86,7 +94,15 @@ public static class CollectionPredicates
             + "contain the same elements, ignoring order and duplicates. Comparison is case-sensitive (ordinal). A null "
             + "selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, "
             + "which reads it as an empty collection.";
-        return BuildSetEquals(name, label, description, selector, nullBehavior, argumentName, negate: true);
+        return BuildSetEquals(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
+            argumentName,
+            negate: true
+        );
     }
 
     /// <summary>
@@ -106,7 +122,7 @@ public static class CollectionPredicates
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Is Empty",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return BuildEmptiness(
@@ -114,7 +130,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has no elements. A null collection is a missing value, not an empty one: it answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes it False.",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             negate: false
         );
     }
@@ -141,7 +157,7 @@ public static class CollectionPredicates
         string name,
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Is Not Empty",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return BuildEmptiness(
@@ -149,7 +165,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of IsEmpty: True when the selected collection has at least one element. A null collection is a missing value: it answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes IsEmpty False and this twin True.",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             negate: true
         );
     }
@@ -170,7 +186,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -178,7 +194,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection contains the argument value (ordinal, case-sensitive). A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.String,
@@ -207,7 +223,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Contains",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -215,7 +231,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of Contains: True when Contains is False, False when Contains is True, and Unknown when Contains is Unknown. Contains is true when the selected collection contains the argument value (ordinal, case-sensitive). A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.String,
@@ -240,7 +256,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Contains Any",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -248,7 +264,7 @@ public static class CollectionPredicates
             label,
             "True when at least one element of the selected collection is in the argument array (ordinal, case-sensitive). A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.StringArray,
@@ -278,7 +294,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Contains Any",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -286,7 +302,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of ContainsAny: True when ContainsAny is False, False when ContainsAny is True, and Unknown when ContainsAny is Unknown. ContainsAny is true when at least one element of the selected collection is in the argument array (ordinal, case-sensitive). A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.StringArray,
@@ -312,7 +328,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Contains All",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -320,7 +336,7 @@ public static class CollectionPredicates
             label,
             "True when every string in the argument array is an element of the selected collection (ordinal, case-sensitive); an empty array is vacuously true. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.StringArray,
@@ -350,7 +366,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Contains All",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -358,7 +374,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of ContainsAll: True when ContainsAll is False, False when ContainsAll is True, and Unknown when ContainsAll is Unknown. ContainsAll is true when every string in the argument array is an element of the selected collection (ordinal, case-sensitive); an empty array is vacuously true. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.StringArray,
@@ -384,7 +400,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Is Subset Of",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -392,7 +408,7 @@ public static class CollectionPredicates
             label,
             "True when every element of the selected collection is in the argument array (ordinal, case-sensitive); an empty collection is vacuously true. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.StringArray,
@@ -422,7 +438,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Is Not Subset Of",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -430,7 +446,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of IsSubsetOf: True when IsSubsetOf is False, False when IsSubsetOf is True, and Unknown when IsSubsetOf is Unknown. IsSubsetOf is true when every element of the selected collection is in the argument array (ordinal, case-sensitive); an empty collection is vacuously true. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.StringArray,
@@ -456,7 +472,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Has Count Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -464,7 +480,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.Int64,
@@ -493,7 +509,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Has Count Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -501,7 +517,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of HasCountEqualTo: True when HasCountEqualTo is False, False when HasCountEqualTo is True, and Unknown when HasCountEqualTo is Unknown. HasCountEqualTo is true when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.Int64,
@@ -526,7 +542,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Has Count Less Than",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -534,7 +550,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.Int64,
@@ -563,7 +579,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Has Count Less Than",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -571,7 +587,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of HasCountLessThan: True when HasCountLessThan is False, False when HasCountLessThan is True, and Unknown when HasCountLessThan is Unknown. HasCountLessThan is true when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.Int64,
@@ -596,7 +612,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Has Count Greater Than",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -604,7 +620,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.Int64,
@@ -633,7 +649,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Has Count Greater Than",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -641,7 +657,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of HasCountGreaterThan: True when HasCountGreaterThan is False, False when HasCountGreaterThan is True, and Unknown when HasCountGreaterThan is Unknown. HasCountGreaterThan is true when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.Int64,
@@ -666,7 +682,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Has Count Less Than Or Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -674,7 +690,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.Int64,
@@ -703,7 +719,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Has Count Less Than Or Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -711,7 +727,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of HasCountLessThanOrEqualTo: True when HasCountLessThanOrEqualTo is False, False when HasCountLessThanOrEqualTo is True, and Unknown when HasCountLessThanOrEqualTo is Unknown. HasCountLessThanOrEqualTo is true when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.Int64,
@@ -736,7 +752,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Has Count Greater Than Or Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -744,7 +760,7 @@ public static class CollectionPredicates
             label,
             "True when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
             LiteralKind.Int64,
@@ -773,7 +789,7 @@ public static class CollectionPredicates
         Func<TContext, IReadOnlyCollection<string>?> selector,
         string label = "Not Has Count Greater Than Or Equal To",
         string argumentName = "count",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Build(
@@ -781,7 +797,7 @@ public static class CollectionPredicates
             label,
             "The Strong Kleene complement of HasCountGreaterThanOrEqualTo: True when HasCountGreaterThanOrEqualTo is False, False when HasCountGreaterThanOrEqualTo is True, and Unknown when HasCountGreaterThanOrEqualTo is Unknown. HasCountGreaterThanOrEqualTo is true when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
             LiteralKind.Int64,
@@ -897,7 +913,7 @@ public static class CollectionPredicates
             (context, args, _) =>
             {
                 IReadOnlyCollection<string>? selected = selector(context);
-                if (selected is null && nullBehavior == NullBehavior.Unknown)
+                if (selected is null && nullBehavior != NullBehavior.False)
                 {
                     return PredicateResult.ForNullAsync(nullBehavior, negate);
                 }

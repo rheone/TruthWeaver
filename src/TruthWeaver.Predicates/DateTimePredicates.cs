@@ -48,7 +48,7 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is After",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -59,7 +59,7 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: false,
             argumentName,
             static comparison => comparison > 0
@@ -86,7 +86,7 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not After",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -97,7 +97,7 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: true,
             argumentName,
             static comparison => comparison > 0
@@ -120,7 +120,7 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Before",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -131,7 +131,7 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: false,
             argumentName,
             static comparison => comparison < 0
@@ -158,7 +158,7 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not Before",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -169,7 +169,7 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: true,
             argumentName,
             static comparison => comparison < 0
@@ -200,13 +200,22 @@ public static partial class DateTimePredicates
         string label = "Is Between",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is between the two bounds, inclusive on both ends (lower <= value <= upper). Reversed bounds (lower later than upper) are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
-        return Range(name, label, description, selector, nullBehavior, negate: false, lowerName, upperName);
+        return Range(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            lowerName,
+            upperName
+        );
     }
 
     /// <summary>
@@ -236,13 +245,22 @@ public static partial class DateTimePredicates
         string label = "Is Not Between",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsBetween: True when the selected instant is earlier than the lower bound or later than the upper bound, False when it is within the inclusive range, Unknown when IsBetween is Unknown. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
-        return Range(name, label, description, selector, nullBehavior, negate: true, lowerName, upperName);
+        return Range(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            lowerName,
+            upperName
+        );
     }
 
     /// <summary>
@@ -274,13 +292,22 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
         string label = "Is After Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is strictly later than now, read from the host's TimeProvider; an instant equal to now is False."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: false, after: true);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            after: true
+        );
     }
 
     /// <summary>
@@ -308,13 +335,22 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
         string label = "Is Not After Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsAfterNow: True when the selected instant is equal to or earlier than now (read from the host's TimeProvider), False when it is later, Unknown when IsAfterNow is Unknown."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: true, after: true);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            after: true
+        );
     }
 
     /// <summary>
@@ -338,13 +374,22 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
         string label = "Is Before Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is strictly earlier than now, read from the host's TimeProvider; an instant equal to now is False."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: false, after: false);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            after: false
+        );
     }
 
     /// <summary>
@@ -372,13 +417,22 @@ public static partial class DateTimePredicates
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
         string label = "Is Not Before Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "The Strong Kleene complement of IsBeforeNow: True when the selected instant is equal to or later than now (read from the host's TimeProvider), False when it is earlier, Unknown when IsBeforeNow is Unknown."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: true, after: false);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            after: false
+        );
     }
 
     private static (

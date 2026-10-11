@@ -28,7 +28,7 @@ internal static class PredicateResult
     /// <returns>A completed <see cref="ValueTask{TruthValue}"/>; never a fault.</returns>
     public static ValueTask<TruthValue> ForNullAsync(NullBehavior nullBehavior, bool negate = false)
     {
-        TruthValue positive = nullBehavior == NullBehavior.Unknown ? TruthValue.Unknown : TruthValue.False;
+        TruthValue positive = nullBehavior == NullBehavior.False ? TruthValue.False : TruthValue.Unknown;
         return ValueTask.FromResult(negate ? Not(positive) : positive);
     }
 

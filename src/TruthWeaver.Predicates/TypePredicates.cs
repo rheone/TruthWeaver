@@ -34,7 +34,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Guid",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -43,7 +43,7 @@ public static class TypePredicates
             "True when the selected value is a GUID, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -66,7 +66,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Guid",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -75,7 +75,7 @@ public static class TypePredicates
             "True when the selected value is a GUID, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -98,7 +98,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not Guid",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -107,7 +107,7 @@ public static class TypePredicates
             "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -130,7 +130,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Not Guid",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -139,7 +139,7 @@ public static class TypePredicates
             "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -162,7 +162,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Numeric",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -171,7 +171,7 @@ public static class TypePredicates
             "True when the selected value is numeric, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -194,7 +194,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Numeric",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -203,7 +203,7 @@ public static class TypePredicates
             "True when the selected value is numeric, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -226,7 +226,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not Numeric",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -235,7 +235,7 @@ public static class TypePredicates
             "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -258,7 +258,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Not Numeric",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -267,7 +267,7 @@ public static class TypePredicates
             "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -290,7 +290,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Url",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -299,7 +299,7 @@ public static class TypePredicates
             "True when the selected value is a URL, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -322,7 +322,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Url",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -331,7 +331,7 @@ public static class TypePredicates
             "True when the selected value is a URL, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -354,7 +354,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not Url",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -363,7 +363,7 @@ public static class TypePredicates
             "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -386,7 +386,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Not Url",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -395,7 +395,7 @@ public static class TypePredicates
             "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -418,7 +418,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is String",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -427,7 +427,7 @@ public static class TypePredicates
             "True when the selected value is a string, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             static _ => true,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -450,7 +450,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is String",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -459,7 +459,7 @@ public static class TypePredicates
             "True when the selected value is a string, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             StringTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -482,7 +482,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not String",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -491,7 +491,7 @@ public static class TypePredicates
             "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             static _ => true,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -514,7 +514,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Not String",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -523,7 +523,7 @@ public static class TypePredicates
             "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             StringTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -546,7 +546,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is DateTimeOffset",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -555,7 +555,7 @@ public static class TypePredicates
             "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -578,7 +578,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is DateTimeOffset",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -587,7 +587,7 @@ public static class TypePredicates
             "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
@@ -610,7 +610,7 @@ public static class TypePredicates
         string name,
         Func<TContext, string?> selector,
         string label = "Is Not DateTimeOffset",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -619,7 +619,7 @@ public static class TypePredicates
             "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -642,7 +642,7 @@ public static class TypePredicates
         string name,
         Func<TContext, object?> selector,
         string label = "Is Not DateTimeOffset",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         return Create(
@@ -651,7 +651,7 @@ public static class TypePredicates
             "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }

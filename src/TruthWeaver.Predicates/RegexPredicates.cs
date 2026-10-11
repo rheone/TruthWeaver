@@ -56,7 +56,7 @@ public static class RegexPredicates
         Func<TContext, string?> selector,
         string label = "Is Match",
         string argumentName = "pattern",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -73,7 +73,7 @@ public static class RegexPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Regex),
             argumentName,
             "The regular-expression pattern to match against.",
             negate: false
@@ -108,7 +108,7 @@ public static class RegexPredicates
         Func<TContext, string?> selector,
         string label = "Is Not Match",
         string argumentName = "pattern",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -123,7 +123,7 @@ public static class RegexPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Regex),
             argumentName,
             "The regular-expression pattern the selected value must not match.",
             negate: true

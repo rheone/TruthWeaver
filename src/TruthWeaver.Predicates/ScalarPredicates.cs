@@ -38,7 +38,7 @@ public static class ScalarPredicates
         Func<TContext, bool?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -49,7 +49,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The boolean value the selected value must equal.",
             static r => r == 0
@@ -74,7 +74,7 @@ public static class ScalarPredicates
         Func<TContext, Guid?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -85,7 +85,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The GUID value the selected value must equal.",
             static r => r == 0
@@ -110,7 +110,7 @@ public static class ScalarPredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -121,7 +121,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The date-time value the selected value must equal.",
             static r => r == 0
@@ -148,7 +148,7 @@ public static class ScalarPredicates
         Func<TContext, bool?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -159,7 +159,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The boolean value the selected value must not equal.",
             static r => r == 0,
@@ -187,7 +187,7 @@ public static class ScalarPredicates
         Func<TContext, Guid?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -198,7 +198,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The GUID value the selected value must not equal.",
             static r => r == 0,
@@ -226,7 +226,7 @@ public static class ScalarPredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not Equal To",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -237,7 +237,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             "The date-time value the selected value must not equal.",
             static r => r == 0,
@@ -263,7 +263,7 @@ public static class ScalarPredicates
         Func<TContext, bool?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -274,7 +274,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             false
         );
@@ -298,7 +298,7 @@ public static class ScalarPredicates
         Func<TContext, Guid?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -309,7 +309,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             false
         );
@@ -333,7 +333,7 @@ public static class ScalarPredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -344,7 +344,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             false
         );
@@ -370,7 +370,7 @@ public static class ScalarPredicates
         Func<TContext, bool?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -381,7 +381,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             true
         );
@@ -407,7 +407,7 @@ public static class ScalarPredicates
         Func<TContext, Guid?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -418,7 +418,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             true
         );
@@ -444,7 +444,7 @@ public static class ScalarPredicates
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not In",
         string argumentName = "values",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -455,7 +455,7 @@ public static class ScalarPredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
             argumentName,
             true
         );
@@ -570,12 +570,19 @@ public static class ScalarPredicates
         string name,
         Func<TContext, bool?> selector,
         string label = "Is Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected boolean value is default(bool) (false). A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            false
+        );
     }
 
     /// <summary>Creates a predicate that is true when the selected value is <c>default(Guid)</c>. A null selection is a missing value, not a default, so it answers per <paramref name="nullBehavior"/>.</summary>
@@ -594,12 +601,19 @@ public static class ScalarPredicates
         string name,
         Func<TContext, Guid?> selector,
         string label = "Is Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected GUID value is default(Guid) (Guid.Empty). A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            false
+        );
     }
 
     /// <summary>Creates a predicate that is true when the selected value is <c>default(DateTimeOffset)</c>. A null selection is a missing value, not a default, so it answers per <paramref name="nullBehavior"/>.</summary>
@@ -618,12 +632,19 @@ public static class ScalarPredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected date-time value is default(DateTimeOffset) (0001-01-01T00:00:00+00:00). A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, false);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            false
+        );
     }
 
     /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
@@ -644,12 +665,19 @@ public static class ScalarPredicates
         string name,
         Func<TContext, bool?> selector,
         string label = "Is Not Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected boolean value is not default(bool) (false). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            true
+        );
     }
 
     /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
@@ -670,12 +698,19 @@ public static class ScalarPredicates
         string name,
         Func<TContext, Guid?> selector,
         string label = "Is Not Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected GUID value is not default(Guid) (Guid.Empty). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            true
+        );
     }
 
     /// <summary>Creates the <c>NotX</c> twin of <c>IsDefault</c>: the Strong Kleene complement, so a null selection answers the complement of the positive answer.</summary>
@@ -696,11 +731,18 @@ public static class ScalarPredicates
         string name,
         Func<TContext, DateTimeOffset?> selector,
         string label = "Is Not Default",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected date-time value is not default(DateTimeOffset) (0001-01-01T00:00:00+00:00). The K3 complement of IsDefault. A null selected value answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes the positive predicate False and this twin True.";
-        return ScalarPredicateCore.DefaultTest(name, label, description, selector, nullBehavior, true);
+        return ScalarPredicateCore.DefaultTest(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Scalar),
+            true
+        );
     }
 }
