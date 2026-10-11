@@ -2,6 +2,7 @@ namespace TruthWeaver.Evaluation;
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1275,6 +1276,97 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Prints the truth table of this rule: one row for each assignment of <c>False</c>, <c>Unknown</c> and <c>True</c> to
+    /// its distinct terms (3<sup>n</sup> rows), or of <c>False</c> and <c>True</c> only when
+    /// <see cref="TruthTableOptions.Classical"/> is set (2<sup>n</sup> rows), with the rule's value for the row. The table
+    /// treats each term as a free variable. It calls no predicate and reads no data source, so a rule with variable
+    /// references prints the same way. The first column is the first term to occur, and the first column changes slowest.
+    /// The values run <c>False</c>, <c>Unknown</c>, <c>True</c>, a layout order and not a number. The text has no trailing line
+    /// feed.
+    /// </summary>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <returns>The table text.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The rule has more terms than <see cref="TruthTableOptions.DefaultTermCap"/> and <see cref="TruthTableOptions.AllowLargerTable"/>
+    /// is not set, or it has more terms than <see cref="TruthTableOptions.HardTermLimit"/>. Call
+    /// <see cref="TryPrintTruthTable(TruthTableOptions?, out string?, out IReadOnlyList{Diagnostic})"/> to avoid the exception.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value.</exception>
+    public string PrintTruthTable(TruthTableOptions? options = null)
+    {
+        using StringWriter writer = new(CultureInfo.InvariantCulture);
+        this.PrintTruthTable(writer, options);
+        return writer.ToString();
+    }
+
+    /// <summary>
+    /// Writes the truth table of this rule to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintTruthTable(TruthTableOptions?)"/> returns, without a large string that the caller must hold.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The table is refused, as for <see cref="PrintTruthTable(TruthTableOptions?)"/>. Nothing is written in this case.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintTruthTable(TextWriter writer, TruthTableOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        if (
+            !TruthTablePrinter.TryPrint(
+                this.Root,
+                options ?? TruthTableOptions.Default,
+                writer,
+                out IReadOnlyList<Diagnostic> diagnostics
+            )
+        )
+        {
+            throw new InvalidOperationException(diagnostics[0].Message);
+        }
+    }
+
+    /// <summary>
+    /// Prints the truth table, like <see cref="PrintTruthTable(TruthTableOptions?)"/>, but reports a refused table through
+    /// the return value and the diagnostics instead of throwing.
+    /// </summary>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <param name="text">The table text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <param name="diagnostics">
+    /// A <see cref="DiagnosticCodes.TruthTableCapRaised"/> warning when the table has more terms than the default cap and the
+    /// options allow it, a <see cref="DiagnosticCodes.TruthTableTooLarge"/> error when the table is refused, or empty.
+    /// </param>
+    /// <returns><see langword="true"/> unless the table is refused.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value.</exception>
+    public bool TryPrintTruthTable(
+        TruthTableOptions? options,
+        [NotNullWhen(true)] out string? text,
+        out IReadOnlyList<Diagnostic> diagnostics
+    )
+    {
+        using StringWriter writer = new(CultureInfo.InvariantCulture);
+        bool printed = this.TryPrintTruthTable(writer, options, out diagnostics);
+        text = printed ? writer.ToString() : null;
+        return printed;
+    }
+
+    /// <summary>
+    /// Writes the truth table to <paramref name="writer"/>, like <see cref="PrintTruthTable(TextWriter, TruthTableOptions?)"/>,
+    /// but reports a refused table through the return value and the diagnostics instead of throwing.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it. Nothing is written when the table is refused.</param>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <param name="diagnostics">As for <see cref="TryPrintTruthTable(TruthTableOptions?, out string?, out IReadOnlyList{Diagnostic})"/>.</param>
+    /// <returns><see langword="true"/> unless the table is refused.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public bool TryPrintTruthTable(TextWriter writer, TruthTableOptions? options, out IReadOnlyList<Diagnostic> diagnostics)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        return TruthTablePrinter.TryPrint(this.Root, options ?? TruthTableOptions.Default, writer, out diagnostics);
+    }
+
+    /// <summary>
     /// Evaluates this rule against a context. Every argument after <paramref name="context"/> is optional, so a
     /// caller supplies only what the rule needs. A variable reference (<c>from("source", "query")</c>) resolves from the
     /// matching entry of <paramref name="dataSources"/> (ADR-0006). A reference whose source is not supplied,
@@ -1469,7 +1561,7 @@ public sealed class CompiledRule<TContext>
                 Diagnostic.Warning(
                     DiagnosticCodes.ThresholdKeptAsAtom,
                     string.Create(
-                        System.Globalization.CultureInfo.InvariantCulture,
+                        CultureInfo.InvariantCulture,
                         $"{rewrite} kept {text} as an atom. Expanding it would add about {kept.EstimatedNodes:N0} nodes."
                     ),
                     SourceSpan.None,
@@ -1502,7 +1594,7 @@ public sealed class CompiledRule<TContext>
         Diagnostic warning = Diagnostic.Warning(
             DiagnosticCodes.RewriteNotConverged,
             string.Create(
-                System.Globalization.CultureInfo.InvariantCulture,
+                CultureInfo.InvariantCulture,
                 $"{rewrite} stopped after {maxPasses} passes before the rule stopped changing, so rewriting the result again can still change it."
             ),
             SourceSpan.None,

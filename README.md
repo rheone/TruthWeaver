@@ -158,6 +158,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
 - [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX, AsciiMath, a C-style notation, MathML, Typst or plain ASCII.
 - [HTML and Graphviz DOT](docs/html-and-dot.md): print a rule as an HTML fragment for a web page, or as a DOT graph for Graphviz.
+- [Truth tables](docs/truth-tables.md): print the Strong K3 or classical truth table of a rule in Markdown, CSV, JSON, HTML or LaTeX.
 - [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent. [Which rewrite to use](docs/rewriting-rules.md#which-rewrite-to-use) helps you choose a rewrite, [Simplify](docs/rewriting-rules.md#simplify) describes the simplifier, and [Normal forms](docs/rewriting-rules.md#normal-forms) covers NNF, CNF and DNF. [Rewriting examples](docs/rewriting-examples.md) and [Normal form examples](docs/rewriting-normal-form-examples.md) show each rewrite in four notations.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
 - [Predicate conventions](docs/predicate-conventions.md): how the built-in predicates treat case, whitespace, range ends, null values and culture.

@@ -45,6 +45,8 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0031` | `ThresholdKeptAsAtom` | Warning | Rewrite | On | `ToNnf()`, `ToCnf()` or `ToDnf()` kept a threshold as an atom, because expanding it can grow the rule a lot. The message gives the growth estimate. Pass `NormalFormOptions` with `ExpandThresholds` set to `true` to expand it. |
 | `TRE0032` | `DuplicateArgument` | Error | Validate | On | A term names the same argument more than once, in rule text, JSON, YAML or `RuleBuilder`. No occurrence wins. |
 | `TRE0033` | `RewriteNotConverged` | Warning | Rewrite | On | `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit before the rule stopped changing. The rule is equivalent to the input, but rewriting it again can still change it. |
+| `TRE0034` | `TruthTableCapRaised` | Warning | Print | On | `PrintTruthTable` printed a table with more terms than the default cap of 8, because the options set `AllowLargerTable`. The message gives the row count. |
+| `TRE0035` | `TruthTableTooLarge` | Error | Print | On | `PrintTruthTable` refused to print a table: the rule has more terms than the default cap of 8 and `AllowLargerTable` is not set, or it has more terms than the hard limit of 12. Nothing is written. |
 
 A lint finding carries a suggested replacement.
 

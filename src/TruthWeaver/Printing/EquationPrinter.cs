@@ -19,7 +19,7 @@ internal static class EquationPrinter
     /// <c>p</c> to <c>z</c>, then <c>p₁</c> to <c>z₁</c>, then <c>p₂</c>. The letters stay clear of <c>a</c> to <c>d</c>,
     /// which rule authors often use as short predicate names.
     /// </summary>
-    private const string VariableLetters = "pqrstuvwxyz";
+    internal const string VariableLetters = "pqrstuvwxyz";
 
     /// <summary>The position of a node relative to its parent, which decides whether the node needs parentheses.</summary>
     private enum PrintContext

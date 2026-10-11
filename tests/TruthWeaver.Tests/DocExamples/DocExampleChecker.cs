@@ -33,6 +33,7 @@ using TruthWeaver.Yaml;
 /// <item><c>rewrite-diagnostics ID</c>: documented output that must equal the diagnostics of the rewrite named by the rewrite word; <c>cap=N</c> sets the <c>maxNodeCount</c> of an expanding rewrite.</item>
 /// <item><c>metrics ID</c>: the Markdown table that follows must equal the depth and node count of the <c>rule ID</c> example and of each rewrite word that follows the ID.</item>
 /// <item><c>diagnostics-dsl SOURCE</c>, <c>diagnostics-json SOURCE</c>, <c>diagnostics-yaml SOURCE</c>: documented output that must equal <c>FormatDiagnostics</c> for compiling the rest of the marker line as that format.</item>
+/// <item><c>truthtable ID</c>: documented output that must equal <c>PrintTruthTable()</c> of the <c>rule ID</c> example; the words <c>csv</c>, <c>json</c>, <c>html</c> and <c>latex</c> select the format (Markdown with none), <c>classical</c>, <c>simple</c>, <c>allow-larger</c> and <c>no-arguments</c> set the matching options, and <c>letters</c> (the default), <c>words</c> and <c>logic-symbols</c> select the constant style.</item>
 /// <item><c>skip REASON</c>: the block is not runnable (a pseudo-grammar, a class diagram); the reason is mandatory.</item>
 /// </list>
 /// <para>Failures are returned, not thrown, so the checker can be shown to fail on a deliberately broken example.</para>
@@ -318,6 +319,30 @@ internal static partial class DocExampleChecker
 
                 CompareOutput(actualOutput, body, example, failures);
                 break;
+            case "truthtable":
+                // The words after the rule id: a format ("markdown" by default, "csv", "json", "html", "latex"), "classical",
+                // "simple", "allow-larger", "no-arguments" and a constant style ("letters" by default, "words", "logic-symbols").
+                string[] tableWords = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string tableRuleId = tableWords.Length > 0 ? tableWords[0] : string.Empty;
+                if (!rules.TryGetValue(tableRuleId, out CompiledRule<RuleTestContext>? tableRule))
+                {
+                    failures.Add($"{example}: no earlier doctest:rule {tableRuleId}.");
+                    break;
+                }
+
+                TruthTableOptions tableOptions = new()
+                {
+                    Format = TruthTableFormatOf(tableWords),
+                    Classical = tableWords.Contains("classical"),
+                    SimpleVariables = tableWords.Contains("simple"),
+                    AllowLargerTable = tableWords.Contains("allow-larger"),
+                    ShowArgumentValues = !tableWords.Contains("no-arguments"),
+                    Constants = HasConstantWord(tableWords)
+                        ? ConstantFormatOf(tableWords)
+                        : TruthTableOptions.Default.Constants,
+                };
+                CompareOutput(tableRule.PrintTruthTable(tableOptions), body, example, failures);
+                break;
             case "diagnostics-dsl" or "diagnostics-json" or "diagnostics-yaml":
                 CompilationResult<RuleTestContext> result = kind switch
                 {
@@ -447,6 +472,28 @@ internal static partial class DocExampleChecker
         }
 
         return words.Contains("cstyle") ? OperatorStyle.CStyle : OperatorStyle.Word;
+    }
+
+    /// <summary>Reads the format word of a <c>truthtable</c> marker (<c>csv</c>, <c>json</c>, <c>html</c> or <c>latex</c>); no word means Markdown.</summary>
+    private static TruthTableFormat TruthTableFormatOf(string[] words)
+    {
+        foreach (
+            (string word, TruthTableFormat format) in new[]
+            {
+                ("csv", TruthTableFormat.Csv),
+                ("json", TruthTableFormat.Json),
+                ("html", TruthTableFormat.Html),
+                ("latex", TruthTableFormat.Latex),
+            }
+        )
+        {
+            if (words.Contains(word))
+            {
+                return format;
+            }
+        }
+
+        return TruthTableFormat.Markdown;
     }
 
     /// <summary>Returns whether the marker names a constant style (<c>letters</c>, <c>words</c> or <c>logic-symbols</c>).</summary>

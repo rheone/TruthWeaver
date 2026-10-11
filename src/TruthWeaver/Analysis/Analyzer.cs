@@ -185,6 +185,22 @@ internal static class Analyzer
     }
 
     /// <summary>
+    /// Builds the tree's dual-rail BDD once and returns a reader for its value under any assignment of its terms (used by
+    /// the truth table). The terms are in first-occurrence order, depth first and left to right, which is the order
+    /// of the equation printer's letters.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <returns>The valuation, which is not safe for use from more than one thread.</returns>
+    internal static TermValuation CreateValuation(Expression root)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        DualRail rail = Build(root, bdd, variableIndex, []);
+        TermIdentity[] terms = [.. variableIndex.OrderBy(pair => pair.Value).Select(pair => pair.Key)];
+        return new TermValuation(terms, bdd, rail.Definite, rail.Possible);
+    }
+
+    /// <summary>
     /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
     /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
     /// </summary>

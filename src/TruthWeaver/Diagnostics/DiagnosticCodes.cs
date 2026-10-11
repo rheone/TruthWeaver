@@ -189,4 +189,16 @@ public static class DiagnosticCodes
     /// stopped changing. The rule is equivalent to the input, but rewriting it again can still change it.
     /// </summary>
     public const string RewriteNotConverged = "TRE0033";
+
+    /// <summary>
+    /// Warning: <c>PrintTruthTable</c> printed a table with more terms than the default cap of 8, because the options set
+    /// <c>AllowLargerTable</c>. The message gives the row count.
+    /// </summary>
+    public const string TruthTableCapRaised = "TRE0034";
+
+    /// <summary>
+    /// Error: <c>PrintTruthTable</c> refused to print a table. The rule has more terms than the default cap of 8 and the options
+    /// do not set <c>AllowLargerTable</c>, or it has more terms than the hard limit of 12. Nothing was written.
+    /// </summary>
+    public const string TruthTableTooLarge = "TRE0035";
 }
