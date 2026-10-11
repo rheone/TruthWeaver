@@ -349,10 +349,7 @@ public sealed class JsonDataSourceTests
             );
         }
 
-        RuleCompiler<object?> compiler = new(
-            builder.Build(),
-            new CompilerOptions(DataSources: new DataSourceDeclarations { "doc" })
-        );
+        RuleCompiler<object?> compiler = new(builder.Build(), new CompilerOptions(DataSources: ["doc"]));
         return compiler.Compile(ruleText).CompiledRule ?? throw new InvalidOperationException("Test rule did not compile.");
     }
 

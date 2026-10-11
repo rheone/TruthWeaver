@@ -18,9 +18,9 @@ The value of each Operation depends only on the values of its operands. [semanti
 
 A predicate answers `True`, `False` or `Unknown`. An answer of `Unknown` is a normal answer and records no fault.
 
-A predicate that cannot answer is a fault. A thrown exception, a timeout and a cancellation each give the term the value `Unknown` and record a fault on the `Decision`. The rest of the expression sees `Unknown`. A fault never changes the rules of an Operation. `False` still settles `AND`, and `True` still settles `OR`, whether or not another operand faulted.
+A predicate that cannot answer is a fault. A thrown exception, or a predicate's own timeout or cancellation, gives the term the value `Unknown` and records a fault on the `Decision`. Cancellation of the evaluation itself is not a fault: it throws `OperationCanceledException`. The rest of the expression sees `Unknown`. A fault never changes the rules of an Operation. `False` still settles `AND`, and `True` still settles `OR`, whether or not another operand faulted.
 
-The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. `FaultBudget` stops the evaluation as soon as that many faults are recorded.
+The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. When it expires, the evaluation throws `OperationCanceledException` and does not record a fault. `FaultBudget` stops the evaluation as soon as that many faults are recorded, so a budget of 1 stops at the first fault. `null` means no limit, and a budget below 1 throws `ArgumentOutOfRangeException`.
 
 ## Evaluation modes
 
@@ -67,7 +67,7 @@ A `Decision` offers three ways to read `Result`. None of them changes the `Decis
 flowchart TD
     P["Predicate runs"] --> A{"Answer"}
     A -->|"True, False or Unknown"| T["Value of the term"]
-    A -->|"Exception, timeout or cancellation"| F["Value Unknown, fault recorded"]
+    A -->|"Exception, or the predicate's own timeout or cancellation"| F["Value Unknown, fault recorded"]
     F --> T
     T --> O["Operations combine the values"]
     O --> D["Decision: Result and Faults"]

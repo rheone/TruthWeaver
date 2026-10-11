@@ -11,8 +11,8 @@ using TruthWeaver.Abstractions;
 /// </summary>
 public sealed class FakeDataSource : IDataSource
 {
-    private readonly Dictionary<string, Func<DataQueryResult>> answers = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, DataScopeResult> scopes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<DataQueryResult>> answers = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, DataScopeResult> scopes = [with(StringComparer.Ordinal)];
     private readonly List<string> queries = [];
 
     /// <summary>Gets every query this source has been asked, in order, including repeats.</summary>

@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] A rule with a `Decimal` literal argument round-trips through YAML printing/parsing correctly.
-- [ ] A rule with an `Int64Array` literal argument round-trips correctly.
-- [ ] A rule with a `BooleanArray` literal argument round-trips correctly.
-- [ ] Existing `YamlLiteralRoundTripTests` (Guid, DateTimeOffset, StringArray) continue to pass unchanged.
+- [x] A rule with a `Decimal` literal argument round-trips through YAML printing/parsing correctly.
+- [x] A rule with an `Int64Array` literal argument round-trips correctly.
+- [x] A rule with a `BooleanArray` literal argument round-trips correctly.
+- [x] Existing `YamlLiteralRoundTripTests` (Guid, DateTimeOffset, StringArray) continue to pass unchanged.

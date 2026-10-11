@@ -9,6 +9,9 @@
 - [ ] A consumer need is identified and the owner confirms the scope
 - [ ] `Diagnostic.Properties` (if wanted) is an optional string map, with `Expected` and `Found` unchanged
 - [ ] `ToJsonPointer()` (if wanted) escapes `~` and `/` per RFC 6901 and round-trips for every path the compiler produces
+- [ ] Documentation updated in the same change: `docs/diagnostics.md` documents `Properties` and `ToJsonPointer()` (if built)
 - [ ] The full validation from CLAUDE.md passes
+
+Decision (rule-linting 01): the link from a nested lint finding to its enclosing finding is a dedicated `Diagnostic.EnclosedBy` property, not an entry in `Properties`. `Properties` stays a string map for machine-readable data and does not conflict with it.
 
 Source: [research findings, section 5](../../k3-conformance/research-findings.md#5-api-shape-and-naming).

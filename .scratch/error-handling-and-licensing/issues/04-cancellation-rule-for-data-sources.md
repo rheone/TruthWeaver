@@ -8,9 +8,9 @@
 
 Conflict to resolve first: the project instructions and ADR-0001/0002 say predicate exceptions, timeouts and cancellation become `Unknown` plus a fault, while `Evaluator` rethrows `OperationCanceledException` when the token is cancelled (see the `catch (Exception ex) when (ex is not OperationCanceledException || !this.cancellationToken.IsCancellationRequested)` filters). Read both, decide which is intended for the evaluation-timeout case specifically, and align code and docs. If the documented behaviour changes, amend the ADR in place and mark it.
 
-- [ ] The intended behaviour for caller cancellation, evaluation timeout, and a source's own cancellation/timeout is written once (ADR-0002 amendment or `CONTEXT.md`) and the docs agree
-- [ ] One test per case, for a data source and for a predicate
-- [ ] Faults and messages never contain resolved values
-- [ ] The full validation from CLAUDE.md passes
+- [x] The intended behaviour for caller cancellation, evaluation timeout, and a source's own cancellation/timeout is written once (ADR-0002 amendment or `CONTEXT.md`) and the docs agree
+- [ ] One test per case, for a data source and for a predicate Note 2026-10-10: per-case test coverage was not re-checked.
+- [ ] Faults and messages never contain resolved values Note 2026-10-10: not re-checked; no test was found that asserts it.
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner review, 2026-10-04 (question 4).

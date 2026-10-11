@@ -6,13 +6,13 @@
 
 **Status:** done
 
-- [ ] The failing test run is shown before the implementation
-- [ ] Each of the four operators has an `IEnumerable<RuleBuilder>` overload, documented
-- [ ] Many-item lists build the same tree as the `params` overload
-- [ ] Empty and too-short lists get the same validation outcome as `params`, with no folding
-- [ ] A null sequence throws and the sequence is enumerated once
-- [ ] README documents the overloads and the empty-list warning
-- [ ] The full validation from CLAUDE.md passes
+- [ ] The failing test run is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] Each of the four operators has an `IEnumerable<RuleBuilder>` overload, documented
+- [ ] Many-item lists build the same tree as the `params` overload Note 2026-10-10: documented in docs/rulebuilder.md; the matching tests were not re-checked.
+- [ ] Empty and too-short lists get the same validation outcome as `params`, with no folding Note 2026-10-10: documented in docs/rulebuilder.md; the matching tests were not re-checked.
+- [ ] A null sequence throws and the sequence is enumerated once Note 2026-10-10: documented in docs/rulebuilder.md; the matching tests were not re-checked.
+- [x] README documents the overloads and the empty-list warning
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner decisions 2026-10-03 (Q9, Q10); builds on [ticket 17](17-optional-builder-enumerable-overloads.md).
 

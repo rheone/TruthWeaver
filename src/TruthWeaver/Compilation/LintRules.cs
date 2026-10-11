@@ -48,7 +48,29 @@ public enum LintRules
     /// <summary><c>NOT (NOT x)</c>, which is <c>x</c> in Strong K3 (<c>TRE0023</c>).</summary>
     DoubleNegation = 64,
 
-    /// <summary>Every lint rule.</summary>
+    /// <summary>
+    /// A rule whose depth reaches <see cref="CompilerOptions.DeepNestingFraction"/> of <see cref="CompilerOptions.MaxDepth"/>,
+    /// so it is close to the compile limit (<c>TRE0028</c>).
+    /// </summary>
+    DeepNesting = 128,
+
+    /// <summary>
+    /// An <c>AND</c> or <c>OR</c> chain with more operands than <see cref="CompilerOptions.WideChainOperandLimit"/>
+    /// (<c>TRE0029</c>).
+    /// </summary>
+    WideChain = 256,
+
+    /// <summary>
+    /// The style lints, which say how a rule could be written rather than where it is probably wrong: a rule that
+    /// <c>Canonicalize()</c> would change, with the canonical text as the suggestion (<c>TRE0030</c>). A valid rule written
+    /// in its own operand order gets this finding, so <see cref="All"/> leaves it out. Use <c>All | Style</c> for every lint.
+    /// </summary>
+    Style = 512,
+
+    /// <summary>
+    /// The logic and structure lints: every flag except <see cref="Style"/>. Its findings point at likely mistakes, so a
+    /// first run over a reasonable rule is quiet.
+    /// </summary>
     All =
         RedundantInspection
         | RedundantCoalesce
@@ -56,5 +78,7 @@ public enum LintRules
         | IdenticalIfBranches
         | VacuousCardinality
         | DuplicateOperands
-        | DoubleNegation,
+        | DoubleNegation
+        | DeepNesting
+        | WideChain,
 }

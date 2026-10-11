@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 /// </summary>
 public sealed class DataSources : IEnumerable<KeyValuePair<string, IDataSource>>
 {
-    private readonly Dictionary<string, IDataSource> sources = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IDataSource> sources = [with(StringComparer.Ordinal)];
 
     /// <summary>Gets the number of sources.</summary>
     public int Count => this.sources.Count;

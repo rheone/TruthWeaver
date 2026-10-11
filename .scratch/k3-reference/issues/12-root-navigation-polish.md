@@ -6,11 +6,11 @@
 
 **Status:** done
 
-- [ ] All pending placeholders in indexes are resolved except the predicates hold
-- [ ] The repo README and CONTEXT.md link to docs/strong-k3/
-- [ ] The harness passes and the validation report is current
-- [ ] Every table, formula and canonical form is verified against the independent Strong K3 oracle by the verification harness (ticket 02); relative links resolve
-- [ ] Written with the github-markdown skill conventions; Mermaid diagrams (only where they materially help) use the mermaid-diagram-generator skill and are verified to be semantically identical to the documented formula
+- [x] All pending placeholders in indexes are resolved except the predicates hold
+- [x] The repo README and CONTEXT.md link to docs/strong-k3/
+- [x] The harness passes and the validation report is current
+- [x] Every table, formula and canonical form is verified against the independent Strong K3 oracle by the verification harness (ticket 02); relative links resolve
+- [ ] Written with the github-markdown skill conventions; Mermaid diagrams (only where they materially help) use the mermaid-diagram-generator skill and are verified to be semantically identical to the documented formula Note 2026-10-10: diagram conventions were not re-checked.
 
 Source: Phases 7 and 8 of the brief. See also [spec](../spec.md).
 

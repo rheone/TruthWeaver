@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs the "pre-commit" group of .husky/task-runner.json. It does not source .husky/_/husky.sh: that file is
+# generated and ignored, so a fresh worktree or clone does not have it. HUSKY=0 skips the hook, as for Husky.Net.
+if [ "$HUSKY" = "0" ] || [ "$HUSKY" = "false" ]; then
+  exit 0
+fi
+
+dotnet husky run --group pre-commit

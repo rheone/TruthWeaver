@@ -21,6 +21,9 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 5. Don't trust assumptions when verifiable information exists. Assess confidence before acting:
 6. Do not apologize, just fix it and tell me what changed.
 7. This file is for the LLM, mutate it as necessary while following all of the prescribed rules.
+8. Grilling (`/grill-me`, `/grilling`, `/grill-with-docs` and any equivalent interview or decision-gathering step) asks one question at a time, as a selectable multiple-choice question with a recommended option first. Incorporate each answer before the next question. Do not batch questions or ask them as free text.
+9. Batch work with `/dispatch-tasks`: it is the standard way to run groups of tickets or tasks on sub-agents. Settle open decisions with grilling (rule 8) before the work starts, so a dispatched ticket has no open question.
+10. Use skill /i-have-adhd when for conversations unless otherwise specified
 
 ## Architecture
 
@@ -28,12 +31,12 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 - Pipeline (ADR-0003): Parse → Validate → Analyze → Build. `Compile` never throws for authoring errors; it returns `CompilationResult` (nullable `CompiledRule` plus diagnostics).
 - Rule text (DSL), JSON, YAML and `RuleBuilder` all compile to the same immutable `Expression` tree, so semantics live in one place. Adding or changing an operator touches the parser, `RuleNodeCompiler`, `Evaluator`, `Analyzer`/`BddManager`, `NodeShape`, one `OperatorDefinitions` entry (`src/TruthWeaver/Ast/`: canonical and tree-format names, arity, label, description; `OperatorInfo`, `Evaluator` trace labels, `RuleBuilder` and `TreeFormatOpNames` read it), the printers, JSON/YAML and `rule-tree.schema.json`.
 - Operator set: the Strong Kleene (K3) connectives are `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY` (n-ary parity, formerly `NXOR`), the cardinality operators (`AtLeast`/`AtMost`/`Exactly`/`ExactlyOne`, threshold family, `ANY`/`ALL`/`NONE`/`BETWEEN`) and `If`. `COALESCE` and `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` are external operators (not information-monotone), so the "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to them. `Project` and `Collapse` are `Decision` methods (TruthWeaver terms), not rule operators.
-- Evaluation is Strong Kleene (K3) over `TruthValue` (`True`/`False`/`Unknown`); predicate exceptions, timeouts and cancellation become `Unknown` plus a `Fault` (ADR-0001, ADR-0002). `Decision.IsSatisfied` is fail-closed.
+- Evaluation is Strong Kleene (K3) over `TruthValue` (`True`/`False`/`Unknown`); predicate exceptions and a predicate's own timeouts or cancellations become `Unknown` plus a `Fault` (ADR-0001, ADR-0002). `EvaluationOptions.Timeout` and caller cancellation throw `OperationCanceledException` and are not faults. `FaultBudget = N` aborts when the Nth fault is recorded; `null` is unlimited and a value below 1 is rejected. `Decision.IsSatisfied` is fail-closed.
 - Domain terms are in `CONTEXT.md`; accepted decisions are in `docs/adr/`.
 
 ## In-flight work
 
-The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/`, tickets 01-31) is complete: [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) is the authority for the operator set, notation, boundaries, rewrites and diagnostics, and supersedes the operator-set, alias and `XOR`/`XNOR` decisions in ADR-0003 (marked in place). Open owner questions are summarised at the top of `.scratch/k3-conformance/issues-log.md`. Predicate catalog gaps are in `.scratch/predicate-catalog/k3-gap-list.md` (not implemented). Do not implement from `.scratch/k3-conformance/_superseded/` or `.scratch/engine-v1`. Material in `.tmp/` is reference only and may be subtly wrong; verify it.
+The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/`, tickets 01-31) is complete: [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) is the authority for the operator set, notation, boundaries, rewrites and diagnostics, and supersedes the operator-set, alias and `XOR`/`XNOR` decisions in ADR-0003 (marked in place). Open owner questions are summarised at the top of `.scratch/k3-conformance/issues-log.md`. The predicate catalog gap list (`.scratch/predicate-catalog/k3-gap-list.md`) is closed: every inventory predicate is implemented. Do not implement from `.scratch/k3-conformance/_superseded/` or `.scratch/engine-v1`. Material in `.tmp/` is reference only and may be subtly wrong; verify it.
 
 ## Development rules
 
@@ -54,7 +57,6 @@ The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/
 - Do not suppress analyzers merely to make a build pass.
 - Do not weaken analyzer severity without documenting why.
 - Exception, documented in `src/Directory.Build.props`: S1135 (a `TODO` comment) is a warning in CI, not a failure. Every other warning still fails a `CI=true` build.
-- Do not add preview language features merely because the SDK is an RC.
 
 ## Required validation
 
@@ -66,7 +68,7 @@ dotnet build
 dotnet test
 dotnet csharpier check .
 dotnet format --verify-no-changes --severity info
-dotnet roslynator analyze
+dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 ```
 
 The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
@@ -85,11 +87,14 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 - CSharpier is the authoritative C# formatter.
 - Use: `dotnet csharpier format .`
 - Do not manually fight CSharpier's formatting.
+- Before you push, run `pwsh scripts/format-all.ps1`. It formats, then runs the three CI gates (`csharpier check`, `dotnet format --verify-no-changes --severity info`, Roslynator). `-CheckOnly` skips the apply step. Read the whole output: the info-level findings fail the CI step as well as the errors.
+- The pre-commit hook (`.husky/pre-commit`, installed by the first `dotnet restore`) builds with `-p:CI=true` (so analyzer warnings fail the commit as they fail CI), and runs the same two formatters on the staged C# files, formats once more with CSharpier, and then checks both. It fails the commit when CSharpier and `dotnet format` disagree about some code. Do not suppress the finding or edit `.editorconfig` for it. Change the shape of the code. Known case: a multi-line tuple return type on a property with a `{ get; } =` initializer. Use `=>` or a method instead.
+- `.editorconfig` encodes the code style that `dotnet format --severity info` enforces: explicit types instead of `var` (IDE0008), block bodies for methods (IDE0022), `this.` qualification (SA1101), file-scoped namespaces and `using` directives inside the namespace. Write new code that way.
 
 ## Testing
 
 - Tests follow Arrange / Act / Assert by shape (set up, one action, assertions), not by comment markers; `// Arrange` style comments are optional.
-- Tests should be named in the format "{MemberUnderTest}_{Scenario}_{Expectation}_Test"
+- Tests should be named in the format `{MemberUnderTest}_{Scenario}_{Expectation}_Test`
 - Tests should describe behavior rather than implementation details.
 - New and touched tests carry an XML `<summary>` describing the behavior. Untouched pre-existing tests are not backfilled.
 - Prefer one logical behavior per test.
@@ -97,15 +102,13 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 
 ## Documentation
 
-Reference documents describe the package as it behaves now. They are not a record of how the project got there.
+Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standard.md). It is the project-neutral standard for purpose, content, voice, ASD-STE100 language, normative versus explanatory text, structure, links, diagrams and the code-with-docs workflow. Reference documents describe the package as it behaves now, not how the project got there. The full standard applies to user-facing and developer-facing documentation and to code documentation and comments. Specs, ADRs, PRDs and tickets follow the usual conventions for their type. This section holds only the settings for this repository.
 
-- **Scope.** The standard covers the root `*.md` files, every `README.md` outside `.claude/`, and every file they link to, recursively. Recursion stops at `docs/adr/`, `docs/agents/`, `.scratch/`, `.agents/` and `CHANGELOG.md`, which are history or tool files. `<!-- docs-lint: on -->` or `<!-- docs-lint: off -->` opts a file in or out. `DocumentationLint` enforces the rules below on `dotnet test`; `DocumentationLintBaseline` lists files not yet cleaned and may only shrink.
-- **Content.** Document the resulting behavior or rule. Leave out project history, tickets, ADRs, superseded designs, pending decisions and developer-only detail. Never link a reference document to an ADR, `.scratch` or `CHANGELOG.md` to explain behavior. Developer-only detail goes in code comments.
-- **Voice.** Present tense and direct statements. Use "may", "could" and "should" only when the behavior is optional. No first person, no future tense for defined behavior, and no text about the document itself or its cleanup.
-- **Language.** ASD-STE100 Simplified Technical English (US): short sentences, one meaning per sentence, one term per concept. Keep established project, mathematical and proper-noun terms (see `CONTEXT.md` and `docs/glossary.md`). Run `/humanizer` over prose.
-- **Kinds of statement.** Keep normative statements (what the system does), explanations (why) and examples apart. An example adds no rule. Do not add a rule only to improve prose.
-- **Structure.** Follow `/github-markdown`: sentence-case headings, relative links, tables where they communicate better than prose, LaTeX for formulas. State a fact once and link to it elsewhere. Do not repeat reference content in a README.
-- **Diagrams.** Add a Mermaid diagram (`/mermaid-diagram-generator`) only when it shows something a table or prose does not.
+- **Scope.** The standard covers the root `*.md` files, every `README.md` outside `.claude/`, and every file they link to, recursively. Recursion stops at `docs/adr/`, `docs/agents/`, `.scratch/`, `.agents/` and `CHANGELOG.md`, which are history or tool files. `<!-- docs-lint: on -->` or `<!-- docs-lint: off -->` opts a file in or out; the standard file itself is opted in. `DocumentationLint` enforces the rules on `dotnet test`; `DocumentationLintBaseline` lists files not yet cleaned and may only shrink. Never link a reference document to an ADR, `.scratch` or `CHANGELOG.md` to explain behavior.
+- **Terms.** `CONTEXT.md` and `docs/glossary.md` define the project terms. Keep them when you apply ASD-STE100.
+- **Tools by role.** Plain-language pass: `/humanizer` and `/voice-of-robert`. Markdown dialect: `/github-markdown`. Diagrams: `/mermaid-diagram-generator`, only where a diagram adds something a table or prose does not. Run them while you write, not only at the end.
+- **Docs with code.** Write code and documentation in the same change. A change to observable behavior or a public API (a public member, option, diagnostic code, format, default or operator) edits the page that describes it to the current truth, with no "changed from" text. If no page covers the behavior, write a minimal page in the same change and open a work item under `.scratch/` for the rest. Every ticket that changes behavior or a public API lists the page it updates as an acceptance criterion.
+- **Examples.** Runnable examples are tested: see Testing above and `docs/doc-examples.md`.
 - **K3 reference.** Pages under `docs/strong-k3/` link only to other pages under `docs/strong-k3/`. The root `README.md` and `docs/glossary.md` may link into them.
 - **Reference sync.** Any change that adds, renames or removes a predicate or an operation adds, renames or removes its document under `docs/strong-k3/` in the same change, updates the category index and the root navigation, and re-runs `dotnet test tests/TruthWeaver.Tests --filter-class "*K3Reference*"`. `K3ReferenceSyncChecker` fails otherwise. A predicate may lack a document only while listed in `K3PredicateDocumentationHold` (the list is empty: every predicate has a document).
 

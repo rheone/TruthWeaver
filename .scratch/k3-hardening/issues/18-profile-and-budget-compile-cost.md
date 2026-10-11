@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] The benchmark results record how much of the compile cost each stage accounts for
-- [ ] A budget is written down with the baseline it is measured against
-- [ ] Either the budget is met, or follow-up tickets are filed for each fix that is not small
-- [ ] The full validation from CLAUDE.md passes
+- [ ] The benchmark results record how much of the compile cost each stage accounts for Note 2026-10-10: the benchmark and budget write-up was not located in docs/ or this folder, so it cannot be confirmed.
+- [ ] A budget is written down with the baseline it is measured against Note 2026-10-10: the benchmark and budget write-up was not located in docs/ or this folder, so it cannot be confirmed.
+- [ ] Either the budget is met, or follow-up tickets are filed for each fix that is not small Note 2026-10-10: the benchmark and budget write-up was not located in docs/ or this folder, so it cannot be confirmed.
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

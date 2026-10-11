@@ -1,6 +1,6 @@
 # k3-reference: Strong K3 operation reference library
 
-**Status:** ready-for-agent
+**Status:** done
 
 Create a complete, navigable Markdown reference library for Strong Kleene K3 operations at `docs/strong-k3/`, serving as a human-readable semantic reference and an implementation reference for a Strong K3 parser, AST, evaluator, simplifier, truth-table generator and related tooling. One Markdown file per operation, an index README in every meaningful directory, relative links throughout, and Mermaid only where it materially helps. Use the `github-markdown` and `mermaid-diagram-generator` skills.
 

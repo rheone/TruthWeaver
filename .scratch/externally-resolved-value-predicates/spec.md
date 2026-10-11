@@ -1,6 +1,6 @@
 # Spec: Externally-resolved-value predicates
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Background
 

@@ -1,6 +1,6 @@
 # Improve per-unit test coverage, least-covered first
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

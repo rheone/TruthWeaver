@@ -54,7 +54,7 @@ internal static class RuleFixtures
         RuleBuilder[] groups = new RuleBuilder[groupCount];
         for (int g = 0; g < groupCount; g++)
         {
-            List<RuleBuilder> members = new(groupSize + 1);
+            List<RuleBuilder> members = [with(groupSize + 1)];
             for (int m = 0; m < groupSize; m++)
             {
                 int termIndex = (g * groupSize) + m;

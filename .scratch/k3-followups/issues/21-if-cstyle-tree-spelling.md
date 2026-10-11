@@ -8,12 +8,12 @@ Also pin prefix `!` spacing with tests only (issues-log row 27): input with a sp
 
 **Status:** done
 
-- [ ] The failing test run for the `?:` spelling is shown before the implementation
-- [ ] `CStyle` tree output uses `?:` for `If`; `Symbolic` output is unchanged
-- [ ] JSON/YAML op name `if` and the `MalformedTree` operand-count diagnostic are unchanged
-- [ ] README symbol table and any tree-spelling documentation match
-- [ ] Tests show `! a` is accepted and printed as `!a` by the canonical printer and by `NormalizeWhitespace`
-- [ ] The full validation from CLAUDE.md passes
+- [ ] The failing test run for the `?:` spelling is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] `CStyle` tree output uses `?:` for `If`; `Symbolic` output is unchanged
+- [ ] JSON/YAML op name `if` and the `MalformedTree` operand-count diagnostic are unchanged Note 2026-10-10: JSON/YAML op name and diagnostic were not re-checked.
+- [x] README symbol table and any tree-spelling documentation match
+- [ ] Tests show `! a` is accepted and printed as `!a` by the canonical printer and by `NormalizeWhitespace` Note 2026-10-10: NormalizeWhitespace prints !a, but the canonical printer is word-only (ADR-0005 decision 1) and prints NOT a, so the item as written does not hold.
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner decisions 2026-10-03 (Q4, Q5, Q8). See [issues-log](../../k3-conformance/issues-log.md) rows 19 and 27.
 

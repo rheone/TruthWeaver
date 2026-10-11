@@ -6,6 +6,7 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>Ticket 08: the K3-aware rule equivalence check and the diff's "preserves meaning" verdict.</summary>
@@ -81,11 +82,7 @@ public sealed class RuleEquivalenceTests
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
-        RuleEquivalenceResult result = RuleEquivalence.Compare(
-            Compile(compiler, "a AND b"),
-            Compile(compiler, "b AND a"),
-            new CompilerOptions(MaxAnalysisTerms: 1)
-        );
+        RuleEquivalenceResult result = RuleEquivalence.Compare(Compile(compiler, "a AND b"), Compile(compiler, "b AND a"), 1);
 
         Assert.Equal(RuleEquivalenceOutcome.Undecided, result.Outcome);
         Assert.Null(result.CounterExample);
@@ -98,11 +95,7 @@ public sealed class RuleEquivalenceTests
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
-        RuleEquivalenceResult result = RuleEquivalence.Compare(
-            Compile(compiler, "a AND b"),
-            Compile(compiler, "b AND a"),
-            new CompilerOptions(MaxAnalysisTerms: 2)
-        );
+        RuleEquivalenceResult result = RuleEquivalence.Compare(Compile(compiler, "a AND b"), Compile(compiler, "b AND a"), 2);
 
         Assert.Equal(RuleEquivalenceOutcome.Equivalent, result.Outcome);
     }
@@ -133,8 +126,8 @@ public sealed class RuleEquivalenceTests
 
         for (int i = 0; i < 300; i++)
         {
-            GeneratedRule left = K3RuleGenerator.GenerateRule(random, depth: 3);
-            GeneratedRule other = K3RuleGenerator.GenerateRule(random, depth: 3);
+            GeneratedRule left = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
+            GeneratedRule other = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
             CompiledRule<RuleTestContext>? leftRule = compiler.Compile(left.Text).CompiledRule;
             CompiledRule<RuleTestContext>? otherRule = compiler.Compile(other.Text).CompiledRule;
             if (leftRule is null || otherRule is null)

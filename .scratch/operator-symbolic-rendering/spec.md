@@ -1,6 +1,6 @@
 # Symbolic/C-style operator rendering for tree printers
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

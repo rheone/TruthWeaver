@@ -1,6 +1,6 @@
 # Shared node-shape seam for Expression
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

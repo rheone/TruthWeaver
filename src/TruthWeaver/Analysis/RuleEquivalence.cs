@@ -21,26 +21,26 @@ public static class RuleEquivalence
     /// <typeparam name="TContext">The application context type both rules were compiled for.</typeparam>
     /// <param name="first">The first rule.</param>
     /// <param name="second">The second rule.</param>
-    /// <param name="options">
-    /// The bounds to apply; only <see cref="CompilerOptions.MaxAnalysisTerms"/> is used. Defaults to
-    /// <see cref="CompilerOptions"/> defaults when <see langword="null"/>.
+    /// <param name="maxAnalysisTerms">
+    /// The most distinct terms, counted across both rules, the check decides. It controls only that cap. <see langword="null"/>
+    /// uses the <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
     /// </param>
     /// <returns>
     /// The verdict: <see cref="RuleEquivalenceOutcome.Equivalent"/>, <see cref="RuleEquivalenceOutcome.NotEquivalent"/> with
     /// a counter-example, or <see cref="RuleEquivalenceOutcome.Undecided"/> when the rules have more distinct terms
-    /// (counted across both rules) than <see cref="CompilerOptions.MaxAnalysisTerms"/>. It never throws for a normal rule.
+    /// (counted across both rules) than <paramref name="maxAnalysisTerms"/>. It never throws for a normal rule.
     /// </returns>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     public static RuleEquivalenceResult Compare<TContext>(
         CompiledRule<TContext> first,
         CompiledRule<TContext> second,
-        CompilerOptions? options = null
+        int? maxAnalysisTerms = null
     )
     {
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
 
-        int cap = (options ?? new CompilerOptions()).MaxAnalysisTerms;
+        int cap = maxAnalysisTerms ?? CompilerOptions.Default.MaxAnalysisTerms;
         HashSet<TermIdentity> terms = Analyzer.DistinctTerms(first.Root);
         terms.UnionWith(Analyzer.DistinctTerms(second.Root));
         if (terms.Count > cap)

@@ -8,7 +8,7 @@
 
 This is a breaking change to a public interface. Nothing has been released and the only consumers are in this repository, so record it in the CHANGELOG and amend ADR-0006 in place.
 
-- [ ] Tests first: zero matches, several matches, malformed query and an unsupported type each produce a failure result and never throw
+- [ ] Tests first: zero matches, several matches, malformed query and an unsupported type each produce a failure result and never throw Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
 - [x] A successful scope still roots at a copy of the matched node
 - [x] `FakeDataSource.WithScope` and its failure scripting follow the new shape
 - [x] ADR-0006, `docs/data-sources.md` and the CHANGELOG are updated

@@ -25,6 +25,7 @@ A null selected value is a missing value. It is not a fault.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.
 - A host registers both predicates of a pair with the same `NullBehavior`.
+- A missing value is `Unknown` unless the predicate is a null test. This includes the collection `IsEmpty` and `IsNotEmpty`: a null collection is missing, not empty.
 - A null value is not a default value. `IsDefault` answers per `NullBehavior` for a null selected value.
 
 ## NotX twins
@@ -63,6 +64,9 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `Before` | `NotBefore` |
 | `AfterNow` | `NotAfterNow` |
 | `BeforeNow` | `NotBeforeNow` |
+| `OnDayOfWeek` | `NotOnDayOfWeek` |
+| `InMonth` | `NotInMonth` |
+| `InTimeWindow` | `NotInTimeWindow` |
 | `IsGuid` | `IsNotGuid` |
 | `IsNumeric` | `IsNotNumeric` |
 | `IsUrl` | `IsNotUrl` |
@@ -82,7 +86,7 @@ The selector type fixes the kind of every argument. A rule literal of another ki
 | `String` | A quoted string | `"Active"` |
 | `Boolean` | `true` or `false` | `true` |
 | `Guid` | A quoted string in GUID format | `"3f2504e0-4f89-11d3-9a0c-0305e82c3301"` |
-| `DateTimeOffset` | A quoted ISO 8601 string with an offset | `"2026-01-01T00:00:00Z"` |
+| `DateTimeOffset` | A quoted ISO 8601 string that ends in `Z` or carries an offset such as `+02:00`. Text without an offset is a compile error. | `"2026-01-01T00:00:00Z"` |
 | An array kind | A list of literals of one kind | `[1, 2, 3]` |
 
 - No value is promoted between kinds. A host that compares an integer value with a `Decimal` literal widens the value in the selector. The widening is exact.
@@ -92,7 +96,7 @@ The selector type fixes the kind of every argument. A rule literal of another ki
 
 ## Numeric predicates
 
-The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value.
+The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value. `Between` and `Outside` include both bounds. The order comparisons are strict.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -128,7 +132,9 @@ The `ScalarPredicates` factories select a `Boolean` (`bool?`), a `Guid` (`Guid?`
 
 ## String predicates
 
-The `StringPredicates` factories select a `string?` value. Every comparison is ordinal, so the culture of the host process has no effect. A string argument is a quoted string.
+The `StringPredicates` factories select a `string?` value. Every comparison is ordinal and case-sensitive, and nothing is trimmed unless a predicate has a `trim` argument. The culture of the host process has no effect. A string argument is a quoted string.
+
+The comparison does not normalize Unicode. A precomposed character such as `é` (U+00E9) and the same character written as `e` plus a combining accent (U+0065 U+0301) are different strings, so they compare unequal. The host must normalize the selected value and the rule argument to the same form, NFC or NFKC, before the predicate sees them.
 
 - `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` are null tests. They never answer `Unknown` and have no `nullBehavior` option.
 - Every other string predicate answers per [Null selected values](#null-selected-values). This includes `IsEmpty` and `IsNotEmpty`, because a null string is a missing value and not an empty one.
@@ -156,7 +162,7 @@ The `StringPredicates` factories select a `string?` value. Every comparison is o
 
 ## Regex predicates
 
-The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault.
+The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault. The match uses no regex options and a timeout of one second. A pattern that ignores case starts with `(?i)`.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -167,8 +173,7 @@ The `RegexPredicates` factories select a `string?` value and take a regular expr
 
 The `CollectionPredicates` factories select a collection of strings (`IReadOnlyCollection<string>?`). The element type is `string`. Every comparison is ordinal and case-sensitive. An array argument has the kind `StringArray`. A count argument has the kind `Int64`.
 
-- `IsEmpty` and `IsNotEmpty` read a null collection as an empty one. They never answer `Unknown` and have no `nullBehavior` option.
-- Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
+- Every collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - `In` and `NotIn` select one string, not a collection. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` to test a collection.
 - A repeated element and a `null` element count as elements in the `Count` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
 
@@ -201,10 +206,11 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 
 ## Date-time predicates
 
-The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
+The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. `After` and `Before` are strict. `Between` and `Outside` include both bounds. `InTimeWindow` is half-open by default. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
 
 - `After`, `Before` and their twins compare with one instant. `Between` and `Outside` use a range with inclusive bounds. Reversed literal bounds are a compile error.
 - `AfterNow`, `BeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.
+- `OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins read the selected instant in a fixed offset. See [Fixed offsets](#fixed-offsets).
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -218,6 +224,28 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 | [NotAfterNow](datetime-notafternow.md) | [AfterNow](datetime-afternow.md) | `NotAfterNow` is `True` when the selected instant is equal to now or earlier. |
 | [BeforeNow](datetime-beforenow.md) | [NotBeforeNow](datetime-notbeforenow.md) | `BeforeNow` is `True` when the selected instant is earlier than now. |
 | [NotBeforeNow](datetime-notbeforenow.md) | [BeforeNow](datetime-beforenow.md) | `NotBeforeNow` is `True` when the selected instant is equal to now or later. |
+| [OnDayOfWeek](datetime-ondayofweek.md) | [NotOnDayOfWeek](datetime-notondayofweek.md) | `OnDayOfWeek` is `True` when the selected instant falls on one of the listed days of the week. |
+| [NotOnDayOfWeek](datetime-notondayofweek.md) | [OnDayOfWeek](datetime-ondayofweek.md) | `NotOnDayOfWeek` is `True` when the selected instant falls on none of the listed days of the week. |
+| [InMonth](datetime-inmonth.md) | [NotInMonth](datetime-notinmonth.md) | `InMonth` is `True` when the selected instant falls in one of the listed months. |
+| [NotInMonth](datetime-notinmonth.md) | [InMonth](datetime-inmonth.md) | `NotInMonth` is `True` when the selected instant falls in none of the listed months. |
+| [InTimeWindow](datetime-intimewindow.md) | [NotInTimeWindow](datetime-notintimewindow.md) | `InTimeWindow` is `True` when the time of day of the selected instant is inside a daily window. |
+| [NotInTimeWindow](datetime-notintimewindow.md) | [InTimeWindow](datetime-intimewindow.md) | `NotInTimeWindow` is `True` when the time of day of the selected instant is outside a daily window. |
+
+### Fixed offsets
+
+`OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins convert the selected instant to a fixed offset from UTC before they read the day, the month or the time of day. The `offset` argument gives the offset.
+
+| Offset text | Meaning |
+| --- | --- |
+| `"Z"` | UTC |
+| `"+hh:mm"` | Later than UTC, for example `"+05:30"` |
+| `"-hh:mm"` | Earlier than UTC, for example `"-03:00"` |
+
+- The offset is from `-14:00` to `+14:00`. Two digits are necessary for the hours and for the minutes.
+- Time zone names, such as the IANA name `Europe/Paris`, are not accepted. The diagnostic says that time zone names are not supported.
+- There are no daylight-saving rules. A host that needs local time in a zone with daylight saving selects the instant in the correct offset, or registers one predicate for each offset.
+- The argument names of these predicates are fixed. The host cannot change them.
+- A literal argument that is not valid is a `TRE0026` compile error at the call (see [diagnostics](../specification/diagnostics.md)). A value from a data source is checked at evaluation. A value that is not valid makes the predicate throw an `ArgumentException`. The evaluator records a fault and the term is `Unknown`. The check runs before the selector, so a null selected value does not hide it.
 
 ## Type-test predicates
 
@@ -249,4 +277,4 @@ The `TypePredicates` factories test what a value is. Each has two overloads: a `
 
 ## How a predicate page is organized
 
-A predicate page has these sections, in this order: Name, Classification, Selector and kinds, Arguments, Definition, Answers, Null selected value and Examples. Reversed bounds, Edge cases and Related predicates appear where they apply. A page is named `<family>-<factory>.md` in lower case.
+A predicate page has these sections, in this order: Name, Classification, Selector and kinds, Arguments, Definition, Answers, Null selected value and Examples. Reversed bounds, Argument errors, Edge cases and Related predicates appear where they apply. A page is named `<family>-<factory>.md` in lower case.

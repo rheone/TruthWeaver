@@ -46,4 +46,7 @@ jobs:
         run: dotnet format TruthWeaver.slnx --no-restore --verify-no-changes --severity info
 
       - name: Roslynator
-        run: dotnet roslynator analyze TruthWeaver.slnx
+        # Compiler diagnostics are skipped: the Build step already fails on them, and Roslynator's own workspace cannot
+        # run the TruthWeaver.Generators source generator (it needs a newer Roslyn), so it would report the generated
+        # code as missing in the generator tests.
+        run: dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics

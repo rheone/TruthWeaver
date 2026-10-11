@@ -100,7 +100,7 @@ public sealed class TreeFormatReaderTests
         // Assert
         Assert.Null(node);
         Diagnostic diagnostic = Assert.Single(diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal(DiagnosticCodes.InfixArityViolation, diagnostic.Code);
         Assert.Equal("$.operands", diagnostic.Path);
         Assert.Equal("1 operand", diagnostic.Expected);
         Assert.Equal("2 operands", diagnostic.Found);

@@ -9,13 +9,44 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 11: <see cref="EvaluationOptions"/> — FaultBudget, Exhaustive mode, and timeout.</summary>
 public sealed class EvaluationOptionsTests
 {
+    /// <summary>A budget of 1 aborts as soon as the first fault is recorded, so the later faulting term never runs.</summary>
     [Fact]
-    public async Task Fault_budget_of_one_tolerates_the_first_fault_and_aborts_on_the_second()
+    public async Task EvaluateAsync_FaultBudgetOfOne_AbortsOnTheFirstFault_Test()
     {
-        // Two faulting terms exist; with FaultBudget=1, evaluation aborts on the second.
-        Decision decision = await EvaluateWithFaultBudgetAsync();
+        Decision decision = await EvaluateWithFaultBudgetAsync(1);
+
+        Assert.Single(decision.Faults);
+    }
+
+    /// <summary>A budget of 2 tolerates the first fault and aborts when the second is recorded.</summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetOfTwo_AbortsOnTheSecondFault_Test()
+    {
+        Decision decision = await EvaluateWithFaultBudgetAsync(2);
 
         Assert.Equal(2, decision.Faults.Count);
+        Assert.Contains(decision.Trace!.Entries, e => e.NotEvaluated);
+    }
+
+    /// <summary>A budget below 1 is rejected, because no evaluation could stay within it.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public Task EvaluateAsync_FaultBudgetBelowOne_ThrowsArgumentOutOfRange_Test(int budget)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("a").CompiledRule!;
+
+        return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            rule.EvaluateAsync(
+                new RuleTestContext(),
+                EmptyServiceProvider.Instance,
+                options: new EvaluationOptions(FaultBudget: budget),
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
     }
 
     [Fact]
@@ -122,7 +153,7 @@ public sealed class EvaluationOptionsTests
     public async Task Fault_budget_abort_leaves_the_trace_with_unevaluated_entries()
 #pragma warning restore CA1822
     {
-        Decision decision = await EvaluateWithFaultBudgetAsync();
+        Decision decision = await EvaluateWithFaultBudgetAsync(1);
 
         Assert.Contains(decision.Trace!.Entries, e => e.NotEvaluated);
     }
@@ -179,7 +210,7 @@ public sealed class EvaluationOptionsTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
-    private static Task<Decision> EvaluateWithFaultBudgetAsync()
+    private static Task<Decision> EvaluateWithFaultBudgetAsync(int budget)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("a").AddThrowing("b").AddConstant("c", true).Build()
@@ -189,7 +220,7 @@ public sealed class EvaluationOptionsTests
         return rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            options: new EvaluationOptions(FaultBudget: 1),
+            options: new EvaluationOptions(FaultBudget: budget),
             cancellationToken: TestContext.Current.CancellationToken
         );
     }

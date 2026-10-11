@@ -5,20 +5,53 @@
       "name": "format-staged",
       "group": "pre-commit",
       "command": "pwsh",
-      "args": ["-NoProfile", "-File", "scripts/format-staged.ps1"],
-      "include": ["**/*.cs"]
+      "args": [
+        "-NoProfile",
+        "-File",
+        "scripts/format-staged.ps1"
+      ],
+      "include": [
+        "**/*.cs"
+      ]
     },
     {
       "name": "build",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["build", "--no-restore", "--configuration", "Release"]
+      "args": [
+        "build",
+        "--no-restore",
+        "--configuration",
+        "Release",
+        "-p:CI=true"
+      ],
+      "include": [
+        "**/*.cs",
+        "**/*.csproj",
+        "**/*.props",
+        "**/*.targets",
+        "**/*.slnx",
+        "global.json"
+      ]
     },
     {
       "name": "test",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["test", "--no-build", "--configuration", "Release"]
+      "args": [
+        "test",
+        "--no-build",
+        "--configuration",
+        "Release"
+      ],
+      "include": [
+        "**/*.cs",
+        "**/*.csproj",
+        "**/*.props",
+        "**/*.targets",
+        "**/*.slnx",
+        "global.json"
+      ]
     }
   ]
 }

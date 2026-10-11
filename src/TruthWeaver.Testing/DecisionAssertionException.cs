@@ -1,7 +1,7 @@
 namespace TruthWeaver.Testing;
 
 /// <summary>
-/// Thrown by a <see cref="DecisionAssertions"/> method when the asserted condition does not hold.
+/// Thrown by a <see cref="DecisionAssertions"/> or <see cref="RuleAssertions"/> method when the asserted condition does not hold.
 /// Deliberately framework-agnostic (not an xUnit/FluentAssertions exception type): this package takes
 /// no dependency on any particular test framework's assertion library, so any test runner that treats
 /// an uncaught exception as a test failure — xUnit included — reports it correctly.

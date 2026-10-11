@@ -26,7 +26,7 @@ Derived. `IsFalse` is defined from `COALESCE` (see [Canonical form](#canonical-f
 
 ## Arity
 
-Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
+Exactly one operand. `IsFalse(a, b)` and `IsFalse()` in the DSL, and a JSON or YAML node with another operand count, are the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.IsFalse` takes one argument, so a wrong count cannot be written there.
 
 ## Input domain
 

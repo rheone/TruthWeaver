@@ -81,9 +81,7 @@ public sealed partial class YamlDataSource : IDataSource
     public static YamlDataSource Create(YamlNode root)
     {
         ArgumentNullException.ThrowIfNull(root);
-        return new YamlDataSource(
-            JsonDataSource.Create(ToJson(root, new HashSet<YamlNode>(ReferenceEqualityComparer.Instance)))
-        );
+        return new YamlDataSource(JsonDataSource.Create(ToJson(root, [with(ReferenceEqualityComparer.Instance)])));
     }
 
     /// <inheritdoc />

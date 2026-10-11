@@ -3,6 +3,7 @@ namespace TruthWeaver.Tests.ReferenceDocs;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TruthWeaver.Abstractions;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

@@ -23,7 +23,7 @@ Derived. `If` is defined as the multiplexer plus its consensus term (see [Canoni
 
 ## Arity
 
-Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
+Exactly three operands, in the order condition, `whenTrue`, `whenFalse`. Any other count is the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). This holds for `If(a, b)`, `If(a, b, c, d)` and `If()` in the DSL and for a JSON or YAML node with another operand count; `RuleBuilder.If` takes exactly three arguments, so a wrong count cannot be written there.
 
 ## Input domain
 

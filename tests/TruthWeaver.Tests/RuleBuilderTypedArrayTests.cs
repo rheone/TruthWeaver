@@ -56,12 +56,18 @@ public sealed class RuleBuilderTypedArrayTests
     [Fact]
     public void Predicate_with_a_list_of_each_kind_matches_the_object_array_Test()
     {
-        AssertSameAsObjectArray(new List<long> { 1L, 2L });
-        AssertSameAsObjectArray(new List<decimal> { 1.5m });
-        AssertSameAsObjectArray(new List<bool> { true });
-        AssertSameAsObjectArray(new List<Guid> { G });
-        AssertSameAsObjectArray(new List<DateTimeOffset> { T0 });
-        AssertSameAsObjectArray(new List<string> { "a" });
+        List<long> longs = [1L, 2L];
+        AssertSameAsObjectArray(longs);
+        List<decimal> decimals = [1.5m];
+        AssertSameAsObjectArray(decimals);
+        List<bool> bools = [true];
+        AssertSameAsObjectArray(bools);
+        List<Guid> guids = [G];
+        AssertSameAsObjectArray(guids);
+        List<DateTimeOffset> times = [T0];
+        AssertSameAsObjectArray(times);
+        List<string> strings = ["a"];
+        AssertSameAsObjectArray(strings);
     }
 
     /// <summary>An element of an unsupported type still throws <see cref="ArgumentException"/>.</summary>

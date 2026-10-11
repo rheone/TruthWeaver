@@ -42,6 +42,23 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>
+    /// The comparison is ordinal and does not normalize Unicode, so a precomposed character and its decomposed form
+    /// are different strings.
+    /// </summary>
+    [Fact]
+    public async Task Equals_PrecomposedAndDecomposedForms_ReturnsFalse_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+        const string precomposed = "é";
+        const string decomposed = "é";
+
+        TruthValue result = await evaluate(new TestContext(precomposed), Args("value", decomposed), CancellationToken.None);
+
+        Assert.Equal(TruthValue.False, result);
+    }
+
     [Fact]
     public async Task EqualsIgnoreCase_MatchingDifferentCase_ReturnsTrue()
     {
@@ -210,6 +227,31 @@ public class StringPredicatesTests
         TruthValue result = await evaluate(new TestContext("Alice"), PredicateArguments.Empty, CancellationToken.None);
 
         Assert.Equal(TruthValue.False, result);
+    }
+
+    /// <summary>The <c>ignoreCase</c> argument of <c>EqualsConfigurable</c> defaults to <c>false</c>, matching <c>Equals</c>.</summary>
+    [Fact]
+    public void EqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    {
+        (PredicateSchema schema, _) = StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+
+        PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
+        Assert.False(ignoreCase.Required);
+        Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
+    }
+
+    /// <summary>The <c>ignoreCase</c> argument of <c>NotEqualsConfigurable</c> defaults to <c>false</c>, matching its twin.</summary>
+    [Fact]
+    public void NotEqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    {
+        (PredicateSchema schema, _) = StringPredicates.NotEqualsConfigurable<TestContext>(
+            "notEqualsConfigurable",
+            c => c.Value
+        );
+
+        PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
+        Assert.False(ignoreCase.Required);
+        Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
     }
 
     [Fact]

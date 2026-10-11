@@ -73,15 +73,22 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>
+    /// ADR-0004 (amended 2026-10-09): <c>TruthWeaver.Testing</c> now takes a project reference to
+    /// <c>TruthWeaver</c> (the compiler/analyzer package) so rule-level testing tools (an equivalence
+    /// assertion, a predicate harness, a public rule fuzzer) can live beside <c>DecisionAssertions</c>.
+    /// It still never depends on the YAML package, the ready-made predicates, or the JSON data source
+    /// package, each of which is optional and orthogonal to testing support.
+    /// </summary>
     [Fact]
-    public void Testing_depends_on_abstractions_alone_never_the_parser_compiler_or_analyzer()
+    public void Testing_depends_on_truthweaver_and_abstractions_alone_never_yaml_predicates_or_json_data_sources()
     {
         TestResult result = Types
             .InAssembly(Testing)
             .That()
             .ResideInNamespace("TruthWeaver.Testing")
             .ShouldNot()
-            .HaveDependencyOnAny("TruthWeaver.Ast", "TruthWeaver.Compilation", "TruthWeaver.Evaluation", "TruthWeaver.Analysis")
+            .HaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.DataSources")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
@@ -160,6 +167,29 @@ public sealed class PackageBoundaryTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Generators</c> runs inside the compiler, so it references no TruthWeaver assembly. The code it
+    /// generates names the abstractions and the registry builder in the consuming project instead. No other package
+    /// references the generator.
+    /// </summary>
+    [Fact]
+    public void Generators_references_no_truthweaver_assembly_and_no_package_references_it()
+    {
+        // Loaded by name: the generator types derive from Roslyn types, which this test process does not load.
+        Assembly generators = Assembly.Load("TruthWeaver.Generators");
+
+        string[] referenced = [.. generators.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.DoesNotContain(referenced, name => name.StartsWith("TruthWeaver", StringComparison.Ordinal));
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing })
+        {
+            Assert.DoesNotContain(
+                "TruthWeaver.Generators",
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
     }
 
     private static string Describe(TestResult result)

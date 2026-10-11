@@ -13,6 +13,15 @@ public class NullBehaviorTests
     public static TheoryData<string> FactoryNames =>
         ["Equals", "EqualsIgnoreCase", "StartsWith", "EndsWith", "Contains", "EqualsConfigurable", "Matches", "SetEquals"];
 
+    /// <summary>A defaulted or forgotten <see cref="NullBehavior"/> is the documented default, <see cref="NullBehavior.Unknown"/>.</summary>
+    [Fact]
+    public void NullBehavior_DefaultValue_IsUnknown_Test()
+    {
+        Assert.Equal(NullBehavior.Unknown, default);
+        Assert.Equal(0, (int)NullBehavior.Unknown);
+        Assert.Equal(1, (int)NullBehavior.False);
+    }
+
     /// <summary>A null selected value with no explicit option answers Unknown, because a missing value cannot be evaluated.</summary>
     [Theory]
     [MemberData(nameof(FactoryNames))]

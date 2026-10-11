@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>TruthWeaver.Samples.DataSource.Tests</RootNamespace>
+    <!-- Test names are the documentation, as in the repository test projects. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DataSource/DataSource.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

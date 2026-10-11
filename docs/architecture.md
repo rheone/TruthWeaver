@@ -59,6 +59,7 @@ flowchart TD
     YamlPkg --> Core
     Predicates --> Kernel
     Testing --> Kernel
+    Testing --> Core
 ```
 
 Start with these files for common tasks:

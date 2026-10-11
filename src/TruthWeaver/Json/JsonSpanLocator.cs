@@ -27,7 +27,7 @@ internal sealed class JsonSpanLocator
     {
         byte[] bytes = Encoding.UTF8.GetBytes(json);
         int[]? charOffsets = bytes.Length == json.Length ? null : ByteToCharOffsets(json, bytes.Length);
-        Dictionary<string, SourceSpan> spans = new(StringComparer.Ordinal);
+        Dictionary<string, SourceSpan> spans = [with(StringComparer.Ordinal)];
 
         Utf8JsonReader reader = new(bytes);
         List<Frame> frames = [];

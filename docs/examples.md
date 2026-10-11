@@ -12,7 +12,7 @@ lovesPineapple
 ```csharp
 PredicateRegistry<Customer> registry = PredicateRegistry<Customer>.CreateBuilder().Add<LovesPineapple>().Build();
 RuleCompiler<Customer> compiler = new(registry);
-CompiledRule<Customer> rule = compiler.Compile("lovesPineapple").CompiledRule!;
+CompiledRule<Customer> rule = compiler.Compile("lovesPineapple").GetRuleOrThrow();
 
 Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 ```
@@ -123,7 +123,7 @@ This is the rule text as authored. `CanonicalText` prints the same rule with the
 
 <!-- doctest:rule worked -->
 ```text
-hasTopping(topping: "greenOlives") AND (hasCrust(crust: "thin") OR hasCrust(crust: "stuffed", ignoreCase: false) OR (isDineIn XOR isTakeout))
+hasTopping(topping: "greenOlives") AND (hasCrust(crust: "thin") OR hasCrust(crust: "stuffed", ignoreCase: true) OR (isDineIn XOR isTakeout))
 ```
 
 The same rule as JSON:
@@ -138,7 +138,7 @@ The same rule as JSON:
       "op": "or",
       "operands": [
         { "predicate": "hasCrust", "args": { "crust": "thin" } },
-        { "predicate": "hasCrust", "args": { "crust": "stuffed", "ignoreCase": false } },
+        { "predicate": "hasCrust", "args": { "crust": "stuffed", "ignoreCase": true } },
         {
           "op": "xor",
           "operands": [
@@ -169,7 +169,7 @@ operands:
       - predicate: hasCrust
         args:
           crust: "stuffed"
-          ignoreCase: false
+          ignoreCase: true
       - op: xor
         operands:
           - predicate: isDineIn
@@ -206,7 +206,7 @@ if (!result.Succeeded)
     return;
 }
 
-CompiledRule<PizzaOrder> rule = result.CompiledRule!;
+CompiledRule<PizzaOrder> rule = result.Rule;
 Decision decision = await rule.EvaluateAsync(order, serviceProvider, cancellationToken: cancellationToken);
 
 if (decision.IsSatisfied)
@@ -236,7 +236,7 @@ RuleBuilder rule = RuleBuilder.And(
     RuleBuilder.Predicate("hasTopping", ("topping", "greenOlives")),
     RuleBuilder.Or(
         RuleBuilder.Predicate("hasCrust", ("crust", "thin")),
-        RuleBuilder.Predicate("hasCrust", ("crust", "stuffed"), ("ignoreCase", false)),
+        RuleBuilder.Predicate("hasCrust", ("crust", "stuffed"), ("ignoreCase", true)),
         RuleBuilder.Xor(RuleBuilder.Predicate("isDineIn"), RuleBuilder.Predicate("isTakeout"))));
 
 CompilationResult<PizzaOrder> result = rule.Compile(compiler);
@@ -245,7 +245,7 @@ CompilationResult<PizzaOrder> result = rule.Compile(compiler);
 This code renders the same rule as a Mermaid diagram:
 
 ```csharp
-string mermaid = result.CompiledRule!.PrintMermaid();
+string mermaid = result.GetRuleOrThrow().PrintMermaid();
 ```
 
 <!-- doctest:mermaid worked -->
@@ -256,9 +256,9 @@ flowchart TD
     n1["Has Topping (topping: #quot;greenOlives#quot;)"]
     n0 --> n1
     n2["OR"]
-    n3["Has Crust (crust: #quot;thin#quot;, ignoreCase: true, trim: false)"]
+    n3["Has Crust (crust: #quot;thin#quot;, ignoreCase: false, trim: false)"]
     n2 --> n3
-    n4["Has Crust (crust: #quot;stuffed#quot;, ignoreCase: false, trim: false)"]
+    n4["Has Crust (crust: #quot;stuffed#quot;, ignoreCase: true, trim: false)"]
     n2 --> n4
     n5["XOR"]
     n6["Is Dine In"]
@@ -269,10 +269,40 @@ flowchart TD
     n0 --> n2
 ```
 
+Set `TwoLineTermLabels` to show each term as a bold label with its argument values on a second line (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)):
+
+```csharp
+string twoLine = result.GetRuleOrThrow().PrintMermaid(new MermaidOptions { TwoLineTermLabels = true });
+```
+
+<!-- doctest:mermaid worked two-line -->
+```mermaid
+flowchart TD
+    Start(["Start"]) --> n0
+    n0["AND"]
+    n1["`**Has Topping**
+topping: #quot;greenOlives#quot;`"]
+    n0 --> n1
+    n2["OR"]
+    n3["`**Has Crust**
+crust: #quot;thin#quot;, ignoreCase: false, trim: false`"]
+    n2 --> n3
+    n4["`**Has Crust**
+crust: #quot;stuffed#quot;, ignoreCase: true, trim: false`"]
+    n2 --> n4
+    n5["XOR"]
+    n6["`**Is Dine In**`"]
+    n5 --> n6
+    n7["`**Is Takeout**`"]
+    n5 --> n7
+    n2 --> n5
+    n0 --> n2
+```
+
 This code renders the same rule as a text tree:
 
 ```csharp
-string tree = result.CompiledRule!.PrintPlainText();
+string tree = result.GetRuleOrThrow().PrintPlainText();
 ```
 
 <!-- doctest:tree worked -->
@@ -280,14 +310,14 @@ string tree = result.CompiledRule!.PrintPlainText();
 AND
 ├─ Has Topping (topping: "greenOlives")
 └─ OR
-   ├─ Has Crust (crust: "thin", ignoreCase: true, trim: false)
-   ├─ Has Crust (crust: "stuffed", ignoreCase: false, trim: false)
+   ├─ Has Crust (crust: "thin", ignoreCase: false, trim: false)
+   ├─ Has Crust (crust: "stuffed", ignoreCase: true, trim: false)
    └─ XOR
       ├─ Is Dine In
       └─ Is Takeout
 ```
 
-The second `hasCrust` term sets `ignoreCase: false` in the rule text. `StringPredicates.EqualsConfigurable` (see [Predicate types](predicates.md)) declares three rule-text arguments: `crust`, `ignoreCase` and `trim`. This term shows a rule that sets more than the one required argument that every other predicate in this example takes. Both outputs show the argument values of every term by default. The compiler fills in the `ignoreCase` and `trim` values of the first `hasCrust` term from the schema defaults, although its rule text does not name them. For this reason the two `hasCrust` terms are different in the output, which a predicate label alone does not show. Pass `showArgumentValues: false` to `PrintMermaid` or `PrintPlainText` to render labels that show only the structure (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)).
+The second `hasCrust` term sets `ignoreCase: true` in the rule text. `StringPredicates.EqualsConfigurable` (see [Predicate types](predicates.md)) declares three rule-text arguments: `crust`, `ignoreCase` and `trim`. This term shows a rule that sets more than the one required argument that every other predicate in this example takes. Both outputs show the argument values of every term by default. The compiler fills in the `ignoreCase` and `trim` values of the first `hasCrust` term from the schema defaults, although its rule text does not name them. For this reason the two `hasCrust` terms are different in the output, which a predicate label alone does not show. Pass `showArgumentValues: false` to `PrintMermaid` or `PrintPlainText` to render labels that show only the structure (see [Rendering a rule as a diagram](rulebuilder.md#rendering-a-rule-as-a-diagram)).
 
 `RuleBuilder` is not a fourth parser. Every builder method renders the same flat JSON tree shape as a hand-written JSON rule, and `Compile` gives that JSON to the same `CompileJson` that any other tool uses. A rule from a builder therefore gets every diagnostic that a hand-written rule gets. These include an unknown predicate, a bad argument, an out-of-range threshold, the operand count of `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND` and `NOR`, resource limits, and a structural tautology or contradiction. The builder does not bypass the Validate and Analyze stages of the [compilation pipeline](architecture.md#compilation-pipeline). See [RuleBuilder](rulebuilder.md) for the full API.
 

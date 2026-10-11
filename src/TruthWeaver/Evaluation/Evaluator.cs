@@ -38,6 +38,11 @@ internal sealed class Evaluator<TContext>(
     // Trace text of terms whose variables resolved, with the values shown; filled only when IncludeResolvedValues is set.
     private readonly Dictionary<TermIdentity, string> valueDescriptions = [];
 
+    // Array references of a term that matched no node (ADR-0006 decision 7 keeps this a legal empty array, so it is not
+    // a fault); the trace shows them so a mistyped path does not pass unseen. Filled whatever IncludeResolvedValues says,
+    // because the note names the query and never a value.
+    private readonly Dictionary<TermIdentity, List<VariableReference>> zeroMatchReferences = [];
+
     // What each (source, query) pair answered, queried at most once per evaluation (ADR-0006 decision 11). A failure is
     // stored like a value, so a repeated reference neither re-queries the source nor re-runs a failing call.
     private readonly Dictionary<VariableReference, SourceAnswer> sourceAnswers = [];
@@ -71,99 +76,6 @@ internal sealed class Evaluator<TContext>(
         return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
             ? definition.Label(shape)
             : shape.OpName;
-    }
-
-    /// <summary>Tests the K3 state of <paramref name="value"/>; the answer is always a definite <c>True</c> or <c>False</c>.</summary>
-    private static TruthValue Inspect(InspectionKind kind, TruthValue value)
-    {
-        bool matches = kind switch
-        {
-            InspectionKind.IsTrue => value == TruthValue.True,
-            InspectionKind.IsFalse => value == TruthValue.False,
-            InspectionKind.IsUnknown => value == TruthValue.Unknown,
-            InspectionKind.IsKnown => value != TruthValue.Unknown,
-            _ => throw new InvalidOperationException($"Unhandled inspection kind '{kind}'."),
-        };
-        return matches ? TruthValue.True : TruthValue.False;
-    }
-
-    private static TruthValue KleeneAnd(TruthValue a, TruthValue b)
-    {
-        return (a, b) switch
-        {
-            (TruthValue.False, _) => TruthValue.False,
-            (_, TruthValue.False) => TruthValue.False,
-            (TruthValue.True, TruthValue.True) => TruthValue.True,
-            _ => TruthValue.Unknown,
-        };
-    }
-
-    private static TruthValue KleeneOr(TruthValue a, TruthValue b)
-    {
-        return (a, b) switch
-        {
-            (TruthValue.True, _) => TruthValue.True,
-            (_, TruthValue.True) => TruthValue.True,
-            (TruthValue.False, TruthValue.False) => TruthValue.False,
-            _ => TruthValue.Unknown,
-        };
-    }
-
-    private static TruthValue KleeneNot(TruthValue value)
-    {
-        return value switch
-        {
-            TruthValue.True => TruthValue.False,
-            TruthValue.False => TruthValue.True,
-            _ => TruthValue.Unknown,
-        };
-    }
-
-    private static TruthValue KleeneXor(TruthValue left, TruthValue right)
-    {
-        if (left == TruthValue.Unknown || right == TruthValue.Unknown)
-        {
-            return TruthValue.Unknown;
-        }
-
-        return (left == TruthValue.True) ^ (right == TruthValue.True) ? TruthValue.True : TruthValue.False;
-    }
-
-    private static TruthValue KleeneEquivalent(TruthValue left, TruthValue right)
-    {
-        return KleeneNot(KleeneXor(left, right));
-    }
-
-    /// <summary>Strong Kleene negated conjunction: <c>NOT (left AND right)</c>.</summary>
-    private static TruthValue KleeneNand(TruthValue left, TruthValue right)
-    {
-        return KleeneNot(KleeneAnd(left, right));
-    }
-
-    /// <summary>Strong Kleene negated disjunction: <c>NOT (left OR right)</c>.</summary>
-    private static TruthValue KleeneNor(TruthValue left, TruthValue right)
-    {
-        return KleeneNot(KleeneOr(left, right));
-    }
-
-    /// <summary>Strong Kleene material implication: <c>NOT antecedent OR consequent</c>.</summary>
-    private static TruthValue KleeneImplies(TruthValue antecedent, TruthValue consequent)
-    {
-        return KleeneOr(KleeneNot(antecedent), consequent);
-    }
-
-    /// <summary>
-    /// Strong Kleene n-ary parity: <c>Unknown</c> if any operand is <c>Unknown</c> (the fold of binary XOR, which is
-    /// <c>Unknown</c> whenever either side is), otherwise <c>True</c> for an odd number of <c>True</c> operands.
-    /// </summary>
-    private static TruthValue EvaluateParity(IReadOnlyList<TruthValue> operandValues)
-    {
-        if (operandValues.Any(v => v == TruthValue.Unknown))
-        {
-            return TruthValue.Unknown;
-        }
-
-        return operandValues.Count(v => v == TruthValue.True) % 2 == 1 ? TruthValue.True : TruthValue.False;
     }
 
     /// <summary>
@@ -255,7 +167,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 EvalResult operand = await this.EvalAsync(shape.Operands[0]).ConfigureAwait(false);
-                TruthValue value = KleeneNot(operand.Value);
+                TruthValue value = K3Logic.Not(operand.Value);
                 return new EvalResult(value, new TraceNode("NOT", value, false, [operand.Node]));
             }
 
@@ -266,7 +178,7 @@ internal sealed class Evaluator<TContext>(
                         "AND",
                         shape.Operands,
                         TruthValue.True,
-                        KleeneAnd,
+                        K3Logic.And,
                         stops: value => value == TruthValue.False
                     )
                     .ConfigureAwait(false);
@@ -279,7 +191,7 @@ internal sealed class Evaluator<TContext>(
                         "OR",
                         shape.Operands,
                         TruthValue.False,
-                        KleeneOr,
+                        K3Logic.Or,
                         stops: value => value == TruthValue.True
                     )
                     .ConfigureAwait(false);
@@ -303,7 +215,7 @@ internal sealed class Evaluator<TContext>(
             case InspectionExpression inspection:
             {
                 EvalResult operand = await this.EvalAsync(inspection.Operand).ConfigureAwait(false);
-                TruthValue value = Inspect(inspection.Kind, operand.Value);
+                TruthValue value = K3Logic.Inspect(inspection.Kind, operand.Value);
                 return new EvalResult(value, new TraceNode(inspection.Kind.ToString(), value, false, [operand.Node]));
             }
 
@@ -314,7 +226,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = KleeneXor(results[0].Value, results[1].Value);
+                TruthValue value = K3Logic.Xor(results[0].Value, results[1].Value);
                 return new EvalResult(value, new TraceNode("XOR", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -322,7 +234,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = KleeneEquivalent(results[0].Value, results[1].Value);
+                TruthValue value = K3Logic.Equivalent(results[0].Value, results[1].Value);
                 return new EvalResult(value, new TraceNode("EQUIVALENT", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -330,7 +242,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = KleeneImplies(results[0].Value, results[1].Value);
+                TruthValue value = K3Logic.Implies(results[0].Value, results[1].Value);
                 return new EvalResult(value, new TraceNode("IMPLIES", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -338,7 +250,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = KleeneNand(results[0].Value, results[1].Value);
+                TruthValue value = K3Logic.Nand(results[0].Value, results[1].Value);
                 return new EvalResult(value, new TraceNode("NAND", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -346,7 +258,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = KleeneNor(results[0].Value, results[1].Value);
+                TruthValue value = K3Logic.Nor(results[0].Value, results[1].Value);
                 return new EvalResult(value, new TraceNode("NOR", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -354,7 +266,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
-                TruthValue value = EvaluateParity([.. results.Select(r => r.Value)]);
+                TruthValue value = K3Logic.Parity([.. results.Select(r => r.Value)]);
                 return new EvalResult(value, new TraceNode("PARITY", value, false, [.. results.Select(r => r.Node)]));
             }
 
@@ -405,7 +317,7 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue[] operandValues = [.. results.Select(r => r.Value)];
-                TruthValue value = KleeneAnd(
+                TruthValue value = K3Logic.And(
                     EvaluateThreshold(ThresholdComparison.AtLeast, bt.Min, operandValues),
                     EvaluateThreshold(ThresholdComparison.AtMost, bt.Max, operandValues)
                 );
@@ -484,7 +396,7 @@ internal sealed class Evaluator<TContext>(
     )
     {
         TruthValue accumulator = identity;
-        List<TraceNode> children = new(operands.Count);
+        List<TraceNode> children = [with(operands.Count)];
         bool exhaustive = this.options.Mode == EvaluationMode.Exhaustive;
         bool stop = false;
         foreach (Expression operand in operands)
@@ -511,7 +423,7 @@ internal sealed class Evaluator<TContext>(
 
     private async ValueTask<IReadOnlyList<EvalResult>> EvalAllAsync(IReadOnlyList<Expression> operands)
     {
-        List<EvalResult> values = new(operands.Count);
+        List<EvalResult> values = [with(operands.Count)];
         foreach (Expression operand in operands)
         {
             values.Add(await this.EvalAsync(operand).ConfigureAwait(false));
@@ -532,16 +444,28 @@ internal sealed class Evaluator<TContext>(
         if (this.memo.TryGetValue(term.Identity, out TruthValue cached))
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
-            description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
+            description = this.Annotated(term.Identity, description);
             this.trace.Add(new TraceEntry(description, cached, false));
             return new EvalResult(cached, new TraceNode(description, cached, false, []));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
         this.memo[term.Identity] = result;
-        description = this.valueDescriptions.GetValueOrDefault(term.Identity, description);
+        description = this.Annotated(term.Identity, description);
         this.trace.Add(new TraceEntry(description, result, false));
         return new EvalResult(result, new TraceNode(description, result, false, []));
+    }
+
+    /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by a note for each array reference that matched no node.</summary>
+    private string Annotated(TermIdentity identity, string description)
+    {
+        string text = this.valueDescriptions.GetValueOrDefault(identity, description);
+        if (this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? references))
+        {
+            text += string.Concat(references.Select(r => $" [no match for {r}]"));
+        }
+
+        return text;
     }
 
     private async ValueTask<TruthValue> InvokeAsync(TermIdentity identity)
@@ -586,18 +510,15 @@ internal sealed class Evaluator<TContext>(
         }
     }
 
-    /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault budget is exceeded.</summary>
+    /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
         this.faults.Add(new Fault(identity, ex));
         EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
         TruthWeaverMetrics.FaultRecorded();
 
-        // Ticket 11's acceptance criteria (FaultBudget = 1 tolerates the first fault and aborts
-        // on the second) takes precedence over ADR-0002's own prose example (which reads as
-        // "budget = 1 aborts on the first fault") — the ticket is the more operationally precise
-        // of the two, so a fault count strictly greater than the budget is what triggers an abort.
-        if (this.options.FaultBudget is { } budget && this.faults.Count > budget)
+        // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.
+        if (this.options.FaultBudget is { } budget && this.faults.Count >= budget)
         {
             this.aborted = true;
         }
@@ -646,6 +567,17 @@ internal sealed class Evaluator<TContext>(
             )
             {
                 values[argumentName] = value;
+                if (answer.Matches.Count == 0 && VariableConversion.IsArrayKind(argument.Type))
+                {
+                    // An empty array is a valid argument, so only the trace says the query found nothing.
+                    if (!this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? noted))
+                    {
+                        noted = [];
+                        this.zeroMatchReferences[identity] = noted;
+                    }
+
+                    noted.Add(reference);
+                }
             }
             else
             {

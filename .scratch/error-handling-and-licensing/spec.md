@@ -1,6 +1,6 @@
 # Error handling, JSON Path licensing and API follow-ups
 
-Status: ready-for-agent
+Status: done
 
 Source: owner review of the data-sources and naming-cleanup chain, 2026-10-04.
 

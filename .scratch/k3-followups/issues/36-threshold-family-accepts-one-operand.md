@@ -6,10 +6,10 @@
 
 **Status:** done
 
-- [ ] A test fails first, then passes, showing the table minimum is 1 for the five threshold operators and unchanged for the others
-- [ ] The README no longer claims a minimum of 2 for the threshold family and shows the AND/OR chain in its working infix spelling
-- [ ] The k3-hardening 11 note about the arity mismatch is marked resolved
-- [ ] The reference verification harness still passes
-- [ ] The full validation from CLAUDE.md passes
+- [ ] A test fails first, then passes, showing the table minimum is 1 for the five threshold operators and unchanged for the others Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
+- [x] The README no longer claims a minimum of 2 for the threshold family and shows the AND/OR chain in its working infix spelling
+- [ ] The k3-hardening 11 note about the arity mismatch is marked resolved Note 2026-10-10: the k3-hardening 11 note was not re-checked.
+- [x] The reference verification harness still passes
+- [x] The full validation from CLAUDE.md passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).

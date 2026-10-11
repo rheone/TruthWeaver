@@ -27,6 +27,12 @@ internal sealed class BddManager
         this.nodes = [(int.MinValue, -1, -1), (int.MinValue, -1, -1)];
     }
 
+    /// <summary>
+    /// Gets the number of decision nodes the manager holds, not counting the two terminals. Sub-graphs shared between
+    /// functions are stored once, so this is the size of the whole shared diagram.
+    /// </summary>
+    public int NodeCount => this.nodes.Count - 2;
+
     /// <summary>Creates (or returns the existing) BDD node for a boolean variable.</summary>
     /// <param name="index">The variable's position in the analyzer's chosen ordering.</param>
     /// <returns>The node id.</returns>

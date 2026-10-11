@@ -6,8 +6,8 @@
 
 **Status:** done
 
-- [ ] The ADR sentence states which entry points carry JSON spans and which do not, with the amendment note
-- [ ] No other ADR text changes
-- [ ] README or CONTEXT statements about JSON spans, if any, agree with the ADR
+- [x] The ADR sentence states which entry points carry JSON spans and which do not, with the amendment note
+- [ ] No other ADR text changes Note 2026-10-10: no diff review done; not confirmed.
+- [ ] README or CONTEXT statements about JSON spans, if any, agree with the ADR Note 2026-10-10: README and CONTEXT.md were not re-checked.
 
 See also [spec](../spec.md); source: [review report](../07-review-report.md), finding 2.

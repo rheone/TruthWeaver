@@ -19,6 +19,12 @@ public sealed class PredicateRegistry<TContext>
         this.descriptorsByName = descriptorsByName;
     }
 
+    /// <summary>
+    /// Gets the schema of every registered predicate, in no guaranteed order. Use it to list what a host offers
+    /// (for example in a rule-authoring UI); <see cref="PredicateSchema.Name"/> is the registered casing.
+    /// </summary>
+    public IEnumerable<PredicateSchema> Schemas => this.descriptorsByName.Values.Select(d => d.Schema);
+
     /// <summary>Gets the registered predicate names as they were registered, the candidates for a "did you mean" suggestion.</summary>
     internal IEnumerable<string> Names => this.descriptorsByName.Values.Select(d => d.Schema.Name);
 

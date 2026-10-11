@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>a5088bc9-29e6-4d2f-8569-167278d22fc2</ProjectGuid>
+    <IsTestProject>true</IsTestProject>
+    <!-- CS1591 (missing XML doc comment): test method names are the documentation, the same as the other test projects. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- The AOT and trim gate for generated code. The generator runs over the fixtures in this project, so the trim
+         analyzer (IL2xxx) and the AOT analyzer (IL3xxx) see the generated Register methods. As in src/, a CI build
+         fails on any warning. -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
+    <!-- Referenced twice over: as an analyzer, so the generator runs over the fixtures in this project, and as an
+         assembly, so the driver tests can create the generator directly. -->
+    <ProjectReference
+      Include="../../src/TruthWeaver.Generators/TruthWeaver.Generators.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="true"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

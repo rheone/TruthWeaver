@@ -200,9 +200,8 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 | Input | Diagnostic |
 | --- | --- |
 | `k` below 1 or above n | `InvalidThresholdValue` (`TRE0008`, see [diagnostics](../specification/diagnostics.md)) |
-| No operands | `MalformedTree` (`TRE0014`) |
-| `k` missing or not an integer in the DSL | `SyntaxError` (`TRE0001`) |
-| `k` missing or not a number in JSON or YAML | `MalformedTree` (`TRE0014`) |
+| No operands | `InfixArityViolation` (`TRE0006`) |
+| `k` missing, fractional or outside the `int` range | `InvalidThresholdValue` (`TRE0008`) |
 
 - The valid `k` range. `k` must satisfy 1 <= k <= n. `AtLeast(0, ...)` would always be `True` and `AtLeast(n + 1, ...)` always `False`, so the compiler rejects both instead of folding them.
 - One operand. The compiler accepts `AtLeast(1, a)`, which is `a`. A larger `k` is out of range for one operand.

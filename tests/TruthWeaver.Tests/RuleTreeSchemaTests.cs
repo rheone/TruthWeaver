@@ -42,8 +42,8 @@ public sealed class RuleTreeSchemaTests
 
     public static TheoryData<string> ValidFixtures()
     {
-        return new()
-        {
+        return
+        [
             WorkedExampleJson,
             """{"const": true}""",
             """{"const": false}""",
@@ -82,13 +82,13 @@ public sealed class RuleTreeSchemaTests
             """{"op": "greaterThan", "k": 1, "operands": [{"const": true}, {"const": true}]}""",
             """{"op": "lessThan", "k": 2, "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "exactly", "k": 1, "operands": [{"const": true}, {"const": false}]}""",
-        };
+        ];
     }
 
     public static TheoryData<string> InvalidFixtures()
     {
-        return new()
-        {
+        return
+        [
             """{"op": "bogus", "operands": []}""",
             """{"nothingRecognized": true}""",
             """{"predicate": "isManager", "args": {"x": {"weird": 1}}}""",
@@ -116,7 +116,7 @@ public sealed class RuleTreeSchemaTests
             """{"op": "and", "min": 1, "max": 2, "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "and", "operands": [1, 2]}""",
             """{"op": "and", "operands": [], "extra": "nope"}""",
-        };
+        ];
     }
 
     [Theory]

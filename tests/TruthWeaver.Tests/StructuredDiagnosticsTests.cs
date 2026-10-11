@@ -155,7 +155,7 @@ public sealed class StructuredDiagnosticsTests
     {
         Diagnostic diagnostic = Single("IsTrue(a, b)");
 
-        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal(DiagnosticCodes.InfixArityViolation, diagnostic.Code);
         Assert.Equal("1 operand", diagnostic.Expected);
         Assert.Equal("2 operands", diagnostic.Found);
     }
@@ -262,7 +262,7 @@ public sealed class StructuredDiagnosticsTests
     {
         Diagnostic diagnostic = Single("a AND Collapse(b, UnknownAsFalse)");
 
-        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, diagnostic.Code);
         Assert.Equal("a rule without Collapse", diagnostic.Expected);
         Assert.Equal("Collapse", diagnostic.Found);
         Assert.Equal(DiagnosticSuggestionKind.Hint, diagnostic.Suggestion?.Kind);

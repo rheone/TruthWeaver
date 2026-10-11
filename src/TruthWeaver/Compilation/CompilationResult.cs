@@ -1,5 +1,6 @@
 namespace TruthWeaver.Compilation;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 
@@ -13,8 +14,36 @@ using TruthWeaver.Evaluation;
 /// <param name="Diagnostics">Every diagnostic raised while parsing, validating, and analyzing.</param>
 public sealed record CompilationResult<TContext>(CompiledRule<TContext>? CompiledRule, IReadOnlyList<Diagnostic> Diagnostics)
 {
-    /// <summary>Gets a value indicating whether compilation succeeded (no <see cref="DiagnosticSeverity.Error"/> diagnostics).</summary>
+    /// <summary>
+    /// Gets the compiled rule, or <see langword="null"/> if compilation failed. It is the same value as
+    /// <see cref="CompiledRule"/>, and the compiler knows it is not <see langword="null"/> after a <see cref="Succeeded"/>
+    /// check, so no <c>!</c> is needed.
+    /// </summary>
+    public CompiledRule<TContext>? Rule => this.CompiledRule;
+
+    /// <summary>
+    /// Gets a value indicating whether compilation succeeded (no <see cref="DiagnosticSeverity.Error"/> diagnostics). When
+    /// it is <see langword="true"/>, <see cref="Rule"/> is not <see langword="null"/>.
+    /// </summary>
+    [MemberNotNullWhen(true, nameof(Rule))]
     public bool Succeeded => this.CompiledRule is not null;
+
+    /// <summary>Gets the compiled rule, or throws when compilation failed, for code where a rule that does not compile is a bug (a startup path, a test).</summary>
+    /// <returns>The compiled rule.</returns>
+    /// <exception cref="InvalidOperationException">Compilation produced no rule. The message lists each <see cref="DiagnosticSeverity.Error"/> diagnostic as <see cref="FormatDiagnostics"/> renders it, without rule text.</exception>
+    public CompiledRule<TContext> GetRuleOrThrow()
+    {
+        if (this.CompiledRule is { } rule)
+        {
+            return rule;
+        }
+
+        // Only errors explain a missing rule; warnings and info findings would bury them.
+        IEnumerable<string> errors = this
+            .Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)
+            .Select(d => DiagnosticFormatter.Format(d));
+        throw new InvalidOperationException("Compilation produced no rule:\n" + string.Join("\n", errors));
+    }
 
     /// <summary>
     /// Renders <see cref="Diagnostics"/> as plain text for a log or an editor panel (see <see cref="DiagnosticFormatter"/>).

@@ -28,8 +28,16 @@ function Invoke-Checked {
 }
 
 if ($whole.Count -gt 0) {
+    # Both formatters run, then CSharpier runs again, because dotnet format can move a token that CSharpier then
+    # moves back. The two checks after that are the CI gates. If they still fail, the formatters disagree about
+    # this code and no amount of formatting settles it: the code needs a different shape, not another run.
     Invoke-Checked 'csharpier format' { dotnet csharpier format @whole }
     Invoke-Checked 'dotnet format' { dotnet format --no-restore --severity info --include @whole }
+    Invoke-Checked 'csharpier format (second pass)' { dotnet csharpier format @whole }
+    Invoke-Checked 'csharpier check' { dotnet csharpier check @whole }
+    Invoke-Checked 'dotnet format check (CSharpier and dotnet format disagree on these files; reshape the code, see CLAUDE.md "Formatting")' {
+        dotnet format --no-restore --severity info --verify-no-changes --include @whole
+    }
     Invoke-Checked 'git add' { git add -- @whole }
 }
 

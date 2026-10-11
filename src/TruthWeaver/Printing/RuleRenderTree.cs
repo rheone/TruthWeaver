@@ -66,14 +66,23 @@ internal static class RuleRenderTree
         // there is nothing per-descendant to pass down — "skipped" itself propagates via `skipped`.
         IReadOnlyList<TraceNode>? children = evaluated is { NotEvaluated: false } ? evaluated.Children : null;
 
-        List<RenderNode> renderedChildren = new(description.Operands.Count);
+        List<RenderNode> renderedChildren = [with(description.Operands.Count)];
         for (int i = 0; i < description.Operands.Count; i++)
         {
             TraceNode? childEvaluated = children is { Count: > 0 } ? children[i] : null;
             renderedChildren.Add(Build(description.Operands[i], childEvaluated, skipped, style, showArgumentValues));
         }
 
-        return new RenderNode(StyledLabel(description, style, showArgumentValues), state, renderedChildren);
+        OutlineNodeKind kind = description.Operands.Count > 0 ? OutlineNodeKind.Operator : description.Kind;
+        return new RenderNode(
+            StyledLabel(description, style, showArgumentValues),
+            state,
+            renderedChildren,
+            kind,
+            BaseLabel(description, style),
+            showArgumentValues ? description.ArgumentText : null,
+            description
+        );
     }
 
     /// <summary>

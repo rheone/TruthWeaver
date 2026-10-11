@@ -11,16 +11,15 @@ public sealed class RuleBuilderEnumerableTests
 
     public static TheoryData<string> Operators => ["And", "Or", "Parity", "Any", "All", "None", "ExactlyOne", "Coalesce"];
 
+    public static TheoryData<string> OperatorsWithAnIdentity => ["And", "Or", "Any", "All", "None"];
+
     /// <summary>An empty sequence folds to the operator's identity constant instead of a rejected zero-operand node.</summary>
     [Theory]
     [InlineData("And", "{\"const\":true}")]
     [InlineData("Or", "{\"const\":false}")]
-    [InlineData("Parity", "{\"const\":false}")]
     [InlineData("Any", "{\"const\":false}")]
     [InlineData("All", "{\"const\":true}")]
     [InlineData("None", "{\"const\":true}")]
-    [InlineData("ExactlyOne", "{\"const\":false}")]
-    [InlineData("Coalesce", "{\"const\":\"unknown\"}")]
     public void Enumerable_overload_with_no_items_folds_to_the_identity_constant_Test(string op, string expectedJson)
     {
         RuleBuilder result = Build(op, []);
@@ -30,7 +29,7 @@ public sealed class RuleBuilderEnumerableTests
 
     /// <summary>A single-item sequence folds to that operand, because a one-operand node would be rejected.</summary>
     [Theory]
-    [MemberData(nameof(Operators))]
+    [MemberData(nameof(OperatorsWithAnIdentity))]
     public void Enumerable_overload_with_one_item_returns_that_operand_Test(string op)
     {
         // NONE of one operand is the operand's negation; every other operator is the identity on one operand.
@@ -39,6 +38,17 @@ public sealed class RuleBuilderEnumerableTests
         RuleBuilder result = Build(op, [A]);
 
         Assert.Equal(expected, result.ToJson());
+    }
+
+    /// <summary>An operator with no identity builds the node the params overload builds for fewer than two items, so the compiler rejects it.</summary>
+    [Theory]
+    [InlineData("Parity")]
+    [InlineData("ExactlyOne")]
+    [InlineData("Coalesce")]
+    public void Enumerable_overload_of_an_operator_with_no_identity_does_not_fold_Test(string op)
+    {
+        Assert.Equal(BuildParams(op).ToJson(), Build(op, []).ToJson());
+        Assert.Equal(BuildParams(op, A).ToJson(), Build(op, [A]).ToJson());
     }
 
     /// <summary>Two or more items build exactly the node the params overload builds.</summary>

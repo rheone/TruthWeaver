@@ -18,7 +18,7 @@ internal static class ProjectRejection
         "Replace Project(x, True) with COALESCE(x, True) (or Project(x, False) with COALESCE(x, False)), or call Decision.Project(unknownAs) on the result.";
 
     /// <summary>Creates the diagnostic for a declared <c>Project</c>.</summary>
-    /// <param name="code">The diagnostic code of the front end's error class (<see cref="DiagnosticCodes.SyntaxError"/> for DSL text, <see cref="DiagnosticCodes.MalformedTree"/> for JSON/YAML).</param>
+    /// <param name="code">The diagnostic code to report, <see cref="DiagnosticCodes.UnknownPredicate"/> on every surface.</param>
     /// <param name="span">The source span of the project expression, or <see cref="SourceSpan.None"/> for a tree format.</param>
     /// <param name="path">The JSON/YAML path of the offending node, or <see langword="null"/> for DSL text.</param>
     /// <returns>An error diagnostic whose suggestion points at <c>COALESCE</c> and <c>Decision.Project</c>.</returns>

@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] Calling `AddTruthWeaver` with a non-null `CompilerOptions` results in a resolved `RuleCompiler<TContext>` that uses those options (e.g. observable via lenient-mode behavior or a limits setting).
-- [ ] With an `ILogger` registered in the container, the resolved `RuleCompiler<TContext>` uses it (e.g. observable via a logged compilation event).
-- [ ] With no `ILogger` registered, resolution and compilation still succeed without error.
-- [ ] Existing `ScopedResolutionAndRegistrationTests` continue to pass unchanged.
+- [x] Calling `AddTruthWeaver` with a non-null `CompilerOptions` results in a resolved `RuleCompiler<TContext>` that uses those options (e.g. observable via lenient-mode behavior or a limits setting).
+- [x] With an `ILogger` registered in the container, the resolved `RuleCompiler<TContext>` uses it (e.g. observable via a logged compilation event).
+- [x] With no `ILogger` registered, resolution and compilation still succeed without error.
+- [x] Existing `ScopedResolutionAndRegistrationTests` continue to pass unchanged.

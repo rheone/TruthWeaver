@@ -5,6 +5,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -29,7 +30,7 @@ public sealed class ExpandToPrimitivesTests
 
         for (int i = 0; i < 400; i++)
         {
-            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3);
+            GeneratedRule generated = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]);
             K3Rule? original = K3Rule.TryCreate(generated.Text, 3);
             if (original is null)
             {
@@ -65,7 +66,7 @@ public sealed class ExpandToPrimitivesTests
 
         for (int i = 0; i < 400; i++)
         {
-            string text = K3RuleGenerator.GenerateRule(random, depth: 3).Text;
+            string text = K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]).Text;
             K3Rule? original = K3Rule.TryCreate(text, 3);
             if (original is null)
             {

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using TruthWeaver.Abstractions;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -274,8 +275,8 @@ internal static partial class K3ReferenceChecker
     {
         string[] lines = [.. markdown.Split('\n').Select(line => line.TrimEnd('\r'))];
         bool[] inFence = FenceMap(lines);
-        HashSet<string> anchors = new(StringComparer.Ordinal);
-        Dictionary<string, int> seen = new(StringComparer.Ordinal);
+        HashSet<string> anchors = [with(StringComparer.Ordinal)];
+        Dictionary<string, int> seen = [with(StringComparer.Ordinal)];
         for (int i = 0; i < lines.Length; i++)
         {
             Match heading = inFence[i] ? Match.Empty : HeadingRegex().Match(lines[i]);
@@ -356,7 +357,7 @@ internal static partial class K3ReferenceChecker
 
     private static Dictionary<string, string> ParseOptions(IEnumerable<string> arguments)
     {
-        Dictionary<string, string> options = new(StringComparer.Ordinal);
+        Dictionary<string, string> options = [with(StringComparer.Ordinal)];
         foreach (string argument in arguments)
         {
             int equals = argument.IndexOf('=', StringComparison.Ordinal);
@@ -562,7 +563,7 @@ internal static partial class K3ReferenceChecker
             {
                 foreach (TruthValue[] assignment in K3Oracle.Assignments(n))
                 {
-                    Dictionary<string, K3Expression.Value> environment = new(StringComparer.Ordinal);
+                    Dictionary<string, K3Expression.Value> environment = [with(StringComparer.Ordinal)];
                     for (int v = 0; v < n; v++)
                     {
                         environment[names[v]] = new K3Expression.Value(null, assignment[v]);
@@ -806,7 +807,7 @@ internal static partial class K3ReferenceChecker
     /// <summary>The level-2 sections, by title, as 0-based start (the heading line) and exclusive end indexes.</summary>
     private static Dictionary<string, (int Start, int End)> Sections(string[] lines, bool[] inFence)
     {
-        Dictionary<string, (int, int)> sections = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, (int, int)> sections = [with(StringComparer.OrdinalIgnoreCase)];
         string? current = null;
         int start = 0;
         for (int i = 0; i <= lines.Length; i++)

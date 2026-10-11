@@ -1,0 +1,15 @@
+<Project>
+  <!-- Shared by every sample project. The root Directory.Build.props supplies the target framework,
+       nullable and implicit-usings settings, the analyzer set (Roslynator, StyleCop, Sonar, async and
+       IDisposable analyzers) and the .editorconfig, so the samples follow the repository rules. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- A sample is read and copied, never published as a package. -->
+    <IsPackable>false</IsPackable>
+    <!-- Mirrors src/Directory.Build.props: every warning fails a CI build except S1135 (a TODO comment).
+         The AOT and trim analyzers (IsAotCompatible) stay off: a sample is not a shipping library. -->
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors Condition="'$(CI)' == 'true'">$(WarningsNotAsErrors);S1135</WarningsNotAsErrors>
+  </PropertyGroup>
+</Project>

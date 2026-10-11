@@ -43,6 +43,15 @@ public sealed class DelimiterRenderingTests
         Assert.Equal(rule.CanonicalText, rule.PrintRuleText(GroupingStyle.Parentheses));
     }
 
+    /// <summary>Omitting the grouping argument prints the parentheses style, like the other <c>Print*</c> methods that default their options.</summary>
+    [Fact]
+    public void PrintRuleText_WithoutArgument_EqualsTheParenthesesStyle_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile("a AND [b OR {c AND d}]");
+
+        Assert.Equal(rule.PrintRuleText(GroupingStyle.Parentheses), rule.PrintRuleText());
+    }
+
     /// <summary>Depth cycling uses ( at depth 0, [ at depth 1, { at depth 2, then repeats.</summary>
     [Fact]
     public void PrintText_DepthCyclingStyle_CyclesParenthesesBracketsBracesByDepth_Test()

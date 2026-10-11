@@ -1,6 +1,6 @@
 # DSL round-trip property-based testing
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

@@ -13,6 +13,8 @@ using TruthWeaver.Rewriting;
 /// diagnostics, each with a <see cref="DiagnosticSuggestionKind.Replacement"/> holding the simpler rule text and a message
 /// that states why the replacement means the same. A lint only fires when the replacement is K3-equivalent, never on a
 /// two-valued intuition. Findings carry no source span: expression nodes do not remember where they were written.
+/// A finding whose construct sits inside another finding's construct links to the nearest enclosing finding through
+/// <see cref="Diagnostic.EnclosedBy"/>; no finding is dropped.
 /// </summary>
 internal static class Linter
 {
@@ -23,12 +25,29 @@ internal static class Linter
     public static IReadOnlyList<Diagnostic> Lint(Expression root, CompilerOptions options)
     {
         List<Diagnostic> diagnostics = [];
-        Visit(root, options, diagnostics);
+
+        // Whole-rule findings come first and stand alone: they describe the rule, not a construct inside it.
+        if (options.Lints.HasFlag(LintRules.DeepNesting))
+        {
+            LintDepth(root, options, diagnostics);
+        }
+
+        if (options.Lints.HasFlag(LintRules.Style))
+        {
+            LintCanonical(root, options, diagnostics);
+        }
+
+        Visit(root, options, diagnostics, null);
         return diagnostics;
     }
 
-    private static void Visit(Expression node, CompilerOptions options, List<Diagnostic> diagnostics)
+    /// <summary>
+    /// Runs every node-level lint on <paramref name="node"/>, links the findings to <paramref name="enclosing"/>, then
+    /// visits the children with the first finding of this node (if any) as their enclosing finding.
+    /// </summary>
+    private static void Visit(Expression node, CompilerOptions options, List<Diagnostic> diagnostics, Diagnostic? enclosing)
     {
+        int first = diagnostics.Count;
         if (options.Lints.HasFlag(LintRules.RedundantInspection) && node is InspectionExpression inspection)
         {
             LintInspection(inspection, options, diagnostics);
@@ -87,10 +106,96 @@ internal static class Linter
             );
         }
 
+        if (options.Lints.HasFlag(LintRules.WideChain) && node is AndExpression or OrExpression)
+        {
+            LintWideChain(node, options, diagnostics);
+        }
+
+        // Findings of one node describe the same construct, so they are not enclosed by each other; they are enclosed by
+        // the nearest ancestor that has a finding.
+        for (int i = first; i < diagnostics.Count; i++)
+        {
+            diagnostics[i] = diagnostics[i] with { EnclosedBy = enclosing };
+        }
+
+        Diagnostic? childEnclosing = diagnostics.Count > first ? diagnostics[first] : enclosing;
         foreach (Expression child in ExpressionTools.Children(node))
         {
-            Visit(child, options, diagnostics);
+            Visit(child, options, diagnostics, childEnclosing);
         }
+    }
+
+    /// <summary>
+    /// Reports a rule whose depth reaches <see cref="CompilerOptions.DeepNestingFraction"/> of
+    /// <see cref="CompilerOptions.MaxDepth"/>, so the author hears about it before the hard limit rejects the rule.
+    /// </summary>
+    private static void LintDepth(Expression root, CompilerOptions options, List<Diagnostic> diagnostics)
+    {
+        int depth = ExpressionTools.Depth(root);
+        if (depth < options.MaxDepth * options.DeepNestingFraction)
+        {
+            return;
+        }
+
+        diagnostics.Add(
+            Diagnostic.Info(
+                DiagnosticCodes.DeepNesting,
+                $"Strong K3 lint: the rule is {depth} levels deep, close to the limit of {options.MaxDepth}; consider flattening or splitting it",
+                SourceSpan.None,
+                expected: $"nesting well under {options.MaxDepth} deep",
+                found: $"{depth} levels"
+            )
+        );
+    }
+
+    /// <summary>Reports an <c>AND</c> or <c>OR</c> chain with more operands than <see cref="CompilerOptions.WideChainOperandLimit"/>.</summary>
+    private static void LintWideChain(Expression node, CompilerOptions options, List<Diagnostic> diagnostics)
+    {
+        int count = node is AndExpression conjunction ? conjunction.Operands.Count : ((OrExpression)node).Operands.Count;
+        if (count <= options.WideChainOperandLimit)
+        {
+            return;
+        }
+
+        string name = node is AndExpression ? "AND" : "OR";
+        diagnostics.Add(
+            Diagnostic.Info(
+                DiagnosticCodes.WideChain,
+                $"Strong K3 lint: this {name} chain has {count} operands, more than {options.WideChainOperandLimit}; consider grouping related operands",
+                SourceSpan.None,
+                expected: $"at most {options.WideChainOperandLimit} operands",
+                found: $"{count} operands"
+            )
+        );
+    }
+
+    /// <summary>
+    /// Reports a rule that <c>Canonicalize()</c> would change, with the canonical text as the replacement. Canonicalization
+    /// keeps the value for every input, so the replacement is K3-equivalent. A rule larger than
+    /// <see cref="CompilerOptions.MaxRewriteNodeCount"/> is skipped, as the expanding rewrites refuse such a size.
+    /// </summary>
+    private static void LintCanonical(Expression root, CompilerOptions options, List<Diagnostic> diagnostics)
+    {
+        if (ExpressionTools.Size(root) > options.MaxRewriteNodeCount)
+        {
+            return;
+        }
+
+        Expression canonical = Canonicalizer.Canonicalize(root);
+        if (canonical.Equals(root))
+        {
+            return;
+        }
+
+        diagnostics.Add(
+            Finding(
+                DiagnosticCodes.NotCanonical,
+                "the rule is not in canonical form",
+                "Canonicalize() gives an equivalent rule with one deterministic operand order and shape",
+                root,
+                canonical
+            )
+        );
     }
 
     /// <summary>

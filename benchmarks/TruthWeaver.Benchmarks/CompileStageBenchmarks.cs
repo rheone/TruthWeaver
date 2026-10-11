@@ -51,14 +51,14 @@ public class CompileStageBenchmarks
 
         this.registry = RuleFixtures.BuildRegistry(termCount);
         this.options = new CompilerOptions(MaxAnalysisTerms: Math.Max(20, termCount));
-        this.lintOptions = this.options with { Lints = LintRules.All };
+        this.lintOptions = this.options with { Lints = LintRules.All | LintRules.Style };
 
         RuleBuilder rule = RuleFixtures.BuildGroupedRule(termCount, groupSize);
         this.ruleJson = rule.ToJson();
 
         RuleCompiler<BenchmarkContext> compiler = new(this.registry, this.options);
         CompilationResult<BenchmarkContext> compiled = compiler.CompileJson(this.ruleJson);
-        this.ruleYaml = compiled.CompiledRule!.PrintYaml();
+        this.ruleYaml = compiled.GetRuleOrThrow().PrintYaml();
 
         (RuleNode? parsed, IReadOnlyList<Diagnostic> _) = JsonTreeParser.Parse(this.ruleJson);
         this.parsedRoot = parsed!;

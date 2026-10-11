@@ -21,7 +21,7 @@ Primitive. `AND` has no definition in other Operations. It is one of the three c
 
 ## Arity
 
-Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). See [Edge cases](#edge-cases) for the empty and single-operand conventions.
+Two or more operands. The engine builds one flat node holding all operands, so `a AND b AND c` is a single three-operand `AND`, not two nested ones. Fewer than two operands is a compile error, `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). See [Edge cases](#edge-cases) for the empty and single-operand conventions.
 
 ## Input domain
 
@@ -261,7 +261,7 @@ An `Unknown` result is not satisfied: `Decision.IsSatisfied` is `True` only for 
 | `boom AND isOff` | `False` | 1 |
 | `isOff AND boom` | `False` | 0, because `boom` is never run |
 
-- Empty and single-operand conventions. Mathematically the empty conjunction is `True`, the identity of the minimum, and the conjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.And(params RuleBuilder[])` with fewer than two operands compile to `MalformedTree`. Only `RuleBuilder.And(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
+- Empty and single-operand conventions. Mathematically the empty conjunction is `True`, the identity of the minimum, and the conjunction of one operand is that operand. The rule languages accept neither: the DSL has no one-operand chain (`(a)` is just `a`), and JSON, YAML and `RuleBuilder.And(params RuleBuilder[])` with fewer than two operands compile to `InfixArityViolation`. Only `RuleBuilder.And(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. Two or more operands build the same node as the `params` overload.
 
 ## Evaluation behavior
 

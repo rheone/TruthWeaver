@@ -5,6 +5,7 @@ using TruthWeaver.Analysis;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -33,7 +34,9 @@ public sealed class EvaluatorAnalyzerPinningTests
 
         for (int i = 0; i < 150; i++)
         {
-            foreach (GeneratedRule node in K3RuleGenerator.Subtrees(K3RuleGenerator.GenerateRule(random, depth: 3)))
+            foreach (
+                GeneratedRule node in K3RuleGenerator.Subtrees(K3RuleGenerator.GenerateRule(random, depth: 3, ["a", "b", "c"]))
+            )
             {
                 TruthValue[] state = new TruthValue[3];
                 RuleCompiler<RuleTestContext> compiler = new(

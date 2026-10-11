@@ -6,8 +6,8 @@
 
 **Status:** done
 
-- [ ] Every test added on the branch has an XML summary (re-run an added-lines diff of `tests/` to confirm zero)
-- [ ] No behaviour change; the same tests pass
-- [ ] The full validation from CLAUDE.md passes
+- [ ] Every test added on the branch has an XML summary (re-run an added-lines diff of `tests/` to confirm zero) Note 2026-10-10: the added-lines diff was not re-run.
+- [x] No behaviour change; the same tests pass
+- [x] The full validation from CLAUDE.md passes
 
 See also [spec](../spec.md).

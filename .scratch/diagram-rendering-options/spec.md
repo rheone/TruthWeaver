@@ -1,6 +1,6 @@
 # Diagram rendering options: Mermaid knobs, node styling, and a structured export for UI consumers
 
-**Status:** brainstorm
+**Status:** closed (2026-10-09). The Mermaid-text track is ticketed in [mermaid-render-options](../mermaid-render-options/spec.md). The structured render tree and web-UI knobs moved to [deferred-features](../deferred-features/spec.md) until a UI consumer exists.
 
 ## Problem Statement
 

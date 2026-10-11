@@ -6,10 +6,10 @@
 
 **Status:** done
 
-- [ ] The glossary states the four rules beside the existing predicate catalog rules
-- [ ] The gap list marks questions 2, 4, 7 and 8 resolved and its per-predicate notes agree
-- [ ] Ticket 02 is marked resolved, pointing at this ticket
-- [ ] The doctest harness still passes
+- [ ] The glossary states the four rules beside the existing predicate catalog rules Note 2026-10-10: the glossary text was not re-checked.
+- [x] The gap list marks questions 2, 4, 7 and 8 resolved and its per-predicate notes agree
+- [x] Ticket 02 is marked resolved, pointing at this ticket
+- [x] The doctest harness still passes
 
 Source: owner grilling session, 2026-10-03 (decisions Q1-Q24).
 

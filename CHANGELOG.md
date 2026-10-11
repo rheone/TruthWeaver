@@ -34,6 +34,12 @@ copyright line reads 2026.
 
 ### Added
 
+- `docs/contributing.md`: what the pre-commit hook and `scripts/format-all.ps1` do, linked from the README.
+- `FakePredicates` factories label a predicate with its name when no `label` is given, instead of the constant `"Fake"`, so
+  rendered diagrams show a distinct label for each fake. `PredicateHarness` and `docs/predicate-harness.md` state that the
+  harness calls the predicate twice for each argument set and once for the cancellation check.
+- `MermaidOptions.Default` and `RuleFuzzerOptions.Default`, as `EquationOptions.Default` and `PredicateHarnessOptions.Default`
+  already exist. The optional-parameter `CompiledRule.PrintMermaid` overloads document that they fix `OperatorStyle.Word`.
 - Reversed literal bounds on `Between` and `Outside` (`NumericPredicates` for `Int64` and `Decimal`, and
   `DateTimePredicates`) are now a compile-time error, the new `DiagnosticCodes.InvalidArgumentValue` (`TRE0026`), at the
   predicate call in rule text, JSON, YAML and `RuleBuilder` rules, with a suggestion to swap the bounds. `Compile` returns
@@ -68,7 +74,10 @@ copyright line reads 2026.
   spans), `DiagnosticFormatter`.
 - `RuleEquivalence.Compare` (equivalent, not equivalent with a counter-example, or undecided) and
   `RuleDiffResult.PreservesMeaning`.
-- Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`).
+- Opt-in lint rules through `CompilerOptions.Lints` (`TRE0017` to `TRE0023`, `TRE0028` to `TRE0030`), `Diagnostic.EnclosedBy`, and the `CompilerOptions` values `DeepNestingFraction` and `WideChainOperandLimit`.
+- Rewrite tooling: `CompiledRule.ToNnf`, `ToCnf` and `ToDnf` with `NormalFormOptions` (diagnostic `TRE0031` when a
+  threshold stays an atom), `CompiledRule.SimplifyWithSteps` (`RewriteStep`, `RewriteLaw`), and
+  `RewriteAssertions.AssertSound` with `RewriteExpectations` in `TruthWeaver.Testing`.
 - `CompilerOptions.MaxRewriteNodeCount` (default 100,000) and diagnostic `TRE0016` for oversized expansions.
 - Predicate catalog additions: the string members `IsEmpty`, `IsNotEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`,
   `IsNotNullOrWhiteSpace`, `NotEqual`, `NotContains` and `RegexPredicates.NotMatches`; `NumericPredicates` (`Int64` and
@@ -123,6 +132,106 @@ copyright line reads 2026.
 
 ### Changed
 
+- `RewriteAssertions.AssertSound` gains an overload for a rewrite that returns a `CompilationResult<TContext>`, so
+  `r => r.ToCnf()` and the other capped rewrites need no `.CompiledRule!`. A result with no rule or an error
+  diagnostic fails the assertion with a `'compiles'` check that shows the diagnostics. A call that passes a bare `null`
+  as the rewrite is now ambiguous: cast it to the delegate type. `docs/diagnostics.md` holds one table of the compile
+  and evaluation limits, and `docs/rewriting-rules.md` states what each rewrite returns.
+- The XML documentation of the expanding rewrites and the normal forms, and `docs/rewriting-rules.md`, state that a
+  rewrite result over `CompilerOptions.MaxNodeCount` (512 by default) compiles back from its text only when
+  `MaxNodeCount` is raised. The two caps stay independent. No behavior changed.
+- Breaking: `NullBehavior.Unknown` is the zero value (`0`) and `NullBehavior.False` is `1`. They were `1` and `0`, so
+  `default(NullBehavior)` was `False` while the documented default is `Unknown`. A forgotten or defaulted value now means
+  `Unknown`. Migration: nothing changes when you name the members. Replace any stored or cast numeric value (a
+  `(NullBehavior)0` that meant `False` is now `Unknown`) with the member name, and re-read a persisted `NullBehavior` as
+  its name rather than its number.
+- Breaking: the collection `IsEmpty` and `IsNotEmpty` take a `NullBehavior` that defaults to `Unknown`, as the string
+  `IsEmpty` and the count predicates do. A null collection answered `True` for `IsEmpty` and `False` for `IsNotEmpty`
+  before; it is now `Unknown` for both, with no fault. A missing value is `Unknown` unless the predicate is a null test.
+  Migration: register the predicates with `nullBehavior: NullBehavior.False` to read a null collection as "not empty"
+  (`IsEmpty` `False`, `IsNotEmpty` `True`). To treat a null collection as empty, have the selector return an empty
+  collection (`c => c.Tags ?? []`).
+- Breaking: `EvaluationOptions.FaultBudget = N` aborts evaluation when the Nth fault is recorded, as ADR-0002 and the
+  XML docs state. It aborted on the (N+1)th before, so `FaultBudget: 1` tolerated one fault. A budget below 1 now makes
+  `CompiledRule.EvaluateAsync` throw `ArgumentOutOfRangeException`; `0` used to abort on the first fault. `null` is still
+  unlimited. The `Timeout` docs now say that an expired timeout throws `OperationCanceledException` and is not a fault.
+  Migration: add 1 to a budget you set to tolerate N faults (`FaultBudget: 1` becomes `2`), and replace `0` with `1`.
+- Breaking: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `ToNnf`, `ToCnf` and `ToDnf` cap their result at the
+  rule's own `CompilerOptions.MaxRewriteNodeCount`, so a rule compiled with a raised cap expands past 100,000 nodes with
+  no argument. Their `CompilerOptions? options` parameter is now `int? maxNodeCount`, the cap for that one call.
+  `RuleEquivalence.Compare`, `RuleDiff.Compare`, `RuleAssertions.AssertEquivalent` and `RewriteAssertions.AssertSound`
+  take `int? maxAnalysisTerms` instead of `CompilerOptions? options`; they read nothing else. Migration: replace
+  `rule.ExpandToNand(new CompilerOptions(MaxRewriteNodeCount: n))` with `rule.ExpandToNand(n)` or compile the rule with
+  that option, and replace `new CompilerOptions(MaxAnalysisTerms: n)` with `n`.
+- Breaking: the `RuleBuilder` array (`params`) and sequence (`IEnumerable<RuleBuilder>`) overloads of an operator give
+  the same rule. `And`, `Or`, `Any`, `All` and `None` fold in both: an empty list is the identity constant (`None` of
+  one operand is its negation, the others are the operand itself). `Parity`, `ExactlyOne` and `Coalesce` no longer fold
+  a short sequence: they build the node and the compiler reports `MalformedTree`, as the array form does. `GreaterThan`
+  and `LessThan` gain the `IEnumerable<RuleBuilder>` overload. An argument value of an unsupported type, including
+  `null`, is an `ArgumentTypeMismatch` diagnostic from `Compile` and no longer an `ArgumentException`. Migration: check
+  the count before you build a `Parity`, `ExactlyOne` or `Coalesce` from a list that can have fewer than two items, and
+  expect a one-operand array under `And`, `Or`, `Any`, `All` or `None` to fold to the operand.
+- Breaking: a JSON or YAML rule node that has a key its kind does not define is a `MalformedTree` (`TRE0014`) compile
+  error at that key, as `rule-tree.schema.json` already states. This covers an unknown key, a misspelt `args`, a
+  `predicate` next to an `op`, and a stray `k`, `min` or `max` on an operator that takes none. The key was ignored
+  before. Migration: delete the key, or correct its spelling (the diagnostic suggests the nearest valid key).
+- Breaking: a predicate argument that is named twice is the new error `DuplicateArgument` (`TRE0032`), in rule text,
+  JSON, YAML and `RuleBuilder`. The last value won before. `RuleBuilder.ToJson()` throws `InvalidOperationException`
+  for a duplicate, because JSON cannot hold both; `Compile` returns the diagnostic. Migration: keep one occurrence of
+  each argument.
+- Breaking: a date-time literal must end in `Z` or carry an offset such as `+02:00`. Text with no offset, such as
+  `"2026-01-01"` or `"2026-01-01T09:00"`, is an `ArgumentTypeMismatch` compile error that names the fix, in the DSL,
+  JSON, YAML and `RuleBuilder`. The same rule applies to a string a data source resolves for a date-time argument
+  (the variable faults to `Unknown`). It was read in the host time zone, so one stored rule could mean different
+  instants on different hosts. Migration: append `Z` (UTC) or the offset you meant to each date-time literal and each
+  stored date-time value.
+- Breaking: in the rule text, a threshold `k` that is not a whole number in the `int` range, such as `AtLeast(1.5, a, b)`
+  or `AtLeast(99999999999, a, b)`, is an `InvalidThresholdValue` (`TRE0008`), the same as a bad `BETWEEN` bound. It used to
+  compile as `k = 0`. `k`, `min` and `max` share one integer parser that uses the invariant culture. Migration: write `k` as an
+  integer literal.
+- Breaking: one authoring mistake has one diagnostic code in rule text, JSON, YAML and `RuleBuilder`. A wrong operand
+  count for any operator is `InfixArityViolation` (`TRE0006`); it was `MalformedTree` (`TRE0014`) for every operator
+  except the binary ones. A threshold `k` or `BETWEEN` bound that is missing or not a whole number is
+  `InvalidThresholdValue` (`TRE0008`); it was `SyntaxError` (`TRE0001`) in rule text and `MalformedTree` in JSON and
+  YAML. A JSON or YAML `op` that does not exist, and a declared `Collapse`, `Project` or `NXOR` in any format, is
+  `UnknownPredicate` (`TRE0002`); they were `TRE0001` in rule text and `TRE0014` in JSON and YAML. A repeated argument in
+  a YAML `args` mapping is `DuplicateArgument` (`TRE0032`) like the other formats; it was a `TRE0014` YAML syntax error.
+  `MalformedTree` (`TRE0014`) is now only for the shape of a JSON or YAML tree. No code was renumbered. Migration: match
+  on the new code where you matched on the old one. The code table in `docs/strong-k3/specification/diagnostics.md` lists
+  every code with its severity, phase and default, and a test fails when a code in `DiagnosticCodes` is missing from it.
+- Breaking: a predicate argument name matches its schema argument ignoring case, as predicate and operator names
+  already do. `hasCrust(Crust: "thin")` now compiles to the term `hasCrust(crust: "thin")`, in rule text, JSON, YAML and
+  `RuleBuilder`; the canonical text keeps the schema's spelling. It was an `UnknownArgument` (`TRE0005`) error before.
+  The same argument written twice in two cases is `DuplicateArgument` (`TRE0032`). A schema that declares two
+  argument names that differ only in case now fails at registration with an `ArgumentException`. Migration: rename one of
+  the two arguments in such a schema, and remove any rule text that relied on `Crust:` being a different name from
+  `crust:`. Argument values stay case-sensitive.
+- Breaking: `LintRules.All` no longer includes the not-canonical lint (`TRE0030`), so a first run reports likely mistakes
+  only. The lint moved to a new `LintRules.Style` flag, which replaces `LintRules.NotCanonical`. Migration: write
+  `LintRules.All | LintRules.Style` where you relied on `All` to report `NotCanonical`, and rename any use of
+  `LintRules.NotCanonical` to `LintRules.Style`. The diagnostic code and the `DiagnosticCodes.NotCanonical` constant are
+  unchanged.
+- Breaking: an unquoted `null`, `Null`, `NULL`, `~` or empty value as a predicate argument in YAML is rejected like JSON `null`: the compile
+  diagnostic says the argument is not a string, number, boolean or array, at the argument's path. It was read as the string
+  "null" (or an empty string). Migration: quote the value (`role: "null"`) where you meant the text, and remove the
+  argument where you meant none. A quoted value is unchanged.
+- Breaking: registering a predicate named like a DSL keyword (`any`, `all`, `none`, `between`, `if`, `exactly` and the rest of the
+  reserved words, in any case) now throws an `ArgumentException` that names the word from `PredicateRegistryBuilder<TContext>`,
+  and the source generator reports the new build error `TWG007` for a `[Predicate]` method with such a name. Rule text could
+  never call these names, because the parser read the word as the keyword. Migration: rename the predicate. Rules that called
+  the old name need the same rename.
+- An array argument given as `from(...)` that matches no node still resolves to an empty array and records no fault, and the
+  term's trace text now ends with `[no match for from("source", "query")]`. A mistyped path is visible in the `Decision`.
+- `CompilationResult<TContext>` has a `Rule` property, which is the compiled rule (or `null`) and is known to be not `null` after a
+  `Succeeded` check, and a `GetRuleOrThrow()` method, which returns the rule or throws an `InvalidOperationException` that lists
+  each error diagnostic. The docs and samples use them in place of `CompiledRule!`. `CompiledRule` is unchanged.
+- `CompiledRule.PrintRuleText` takes its `GroupingStyle` as an optional argument that defaults to `Parentheses`, so `PrintRuleText()`
+  equals `CanonicalText`. The XML docs of the `Decision` overloads of `PrintMermaid` and `PrintPlainText` list the exceptions for a
+  decision with no trace tree (`ArgumentException`) and for one that does not match the rule (`InvalidOperationException`).
+- Breaking: `EqualsConfigurable` and `NotEqualsConfigurable` in `StringPredicates` are case-sensitive by default. The
+  `ignoreCase` argument defaults to `false` (it was `true`), so every string comparison in the catalog is ordinal and
+  case-sensitive unless the rule opts in. Migration: add `ignoreCase: true` to each `EqualsConfigurable` or
+  `NotEqualsConfigurable` call that relied on the old default.
 - Every `NotX` twin in `TruthWeaver.Predicates` is the strict Strong Kleene complement of its positive predicate for a null
   selected value too. Under `NullBehavior.False` the positive predicate answers `False` and its twin now answers `True`
   (the `StringPredicates`, `RegexPredicates`, `NumericPredicates` and `ScalarPredicates` twins answered `False` before).
@@ -292,7 +401,7 @@ form and the migration step.
 ### 7. `EqualsConfigurable` lost its `culture` argument
 
 - **Old:** `EqualsConfigurable(value, ignoreCase, culture, trim)` honoured a `culture` string.
-- **New:** comparison is ordinal; the arguments are `value`, `ignoreCase` (default `true`) and `trim` (default `false`).
+- **New:** comparison is ordinal; the arguments are `value`, `ignoreCase` (default `false`) and `trim` (default `false`).
   A rule that passes `culture` is rejected with an unknown-argument diagnostic that advises removing it. (Between the
   two it briefly required `culture` to be empty; that interim form never shipped.)
 - **Migrate:** delete `culture:` from the rule. If you relied on culture-sensitive matching (for example the Turkish

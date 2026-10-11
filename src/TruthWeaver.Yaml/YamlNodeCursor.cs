@@ -24,7 +24,7 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
             KeyNoun: "key",
             ConstMessage: "'const' must be a YAML boolean or one of true, false, unknown.",
             ConstExpected: "a YAML boolean or one of true, false, unknown",
-            LiteralExpected: "a scalar or a sequence"
+            LiteralExpected: "a string, number, boolean or array"
         );
 
     /// <inheritdoc />
@@ -53,13 +53,17 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     public IEnumerable<TreeMember> Members => node is YamlMappingNode mapping ? MembersOf(mapping) : [];
 
     /// <inheritdoc />
-    public string UnsupportedLiteralMessage => $"Unsupported YAML node type '{node.NodeType}' for a literal value.";
+    public string UnsupportedLiteralMessage =>
+        IsNull(node)
+            ? "Unsupported literal YAML value kind 'Null'."
+            : $"Unsupported YAML node type '{node.NodeType}' for a literal value.";
 
     /// <inheritdoc />
     public string Describe()
     {
         return node switch
         {
+            YamlScalarNode scalar when IsNull(scalar) => "null",
             YamlScalarNode => "a scalar",
             YamlSequenceNode => "a sequence",
             YamlMappingNode => "a mapping",
@@ -116,6 +120,13 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
             return null;
         }
 
+        // An unquoted null has no literal form. Returning nothing makes the reader report it as JSON's null is reported,
+        // instead of silently turning it into the text "null".
+        if (IsNull(scalar))
+        {
+            return null;
+        }
+
         string text = scalar.Value ?? string.Empty;
         SourceSpan span = this.Span;
 
@@ -132,6 +143,21 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
         }
 
         return IsNumber(text) ? RawLiteral.OfNumber(text, span) : RawLiteral.OfString(text, span);
+    }
+
+    /// <summary>
+    /// Tests for a YAML null: an unquoted <c>null</c> (any case), <c>~</c> or empty value. A quoted, block or
+    /// <c>!!str</c>-tagged scalar is the author's explicit string, so <c>"null"</c> is not a null.
+    /// </summary>
+    private static bool IsNull(YamlNode node)
+    {
+        if (node is not YamlScalarNode scalar || scalar.Style is not ScalarStyle.Plain || scalar.Tag == "tag:yaml.org,2002:str")
+        {
+            return false;
+        }
+
+        string text = scalar.Value ?? string.Empty;
+        return text.Length == 0 || text == "~" || text.Equals("null", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Gets the source range YamlDotNet recorded for a node, as a span an editor can underline.</summary>

@@ -18,6 +18,21 @@
     <ProjectReference Include="../../src/TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Generators/TruthWeaver.Generators.csproj" />
+  </ItemGroup>
+
+  <!-- Every test project, referenced so TestNamingTests can reflect over their test methods. -->
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Tests/TruthWeaver.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Abstractions.Tests/TruthWeaver.Abstractions.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.DataSources.Json.Tests/TruthWeaver.DataSources.Json.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Generators.Tests/TruthWeaver.Generators.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Predicates.Tests/TruthWeaver.Predicates.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Testing.Tests/TruthWeaver.Testing.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Yaml.Tests/TruthWeaver.Yaml.Tests.csproj" />
+    <ProjectReference Include="../../samples/Consumer.Tests/Consumer.Tests.csproj" />
+    <ProjectReference Include="../../samples/DataSource.Tests/DataSource.Tests.csproj" />
+    <ProjectReference Include="../../samples/PredicateLibrary.Tests/PredicateLibrary.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

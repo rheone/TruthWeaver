@@ -49,6 +49,15 @@ public sealed record PredicateSchema(
     /// </remarks>
     public Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>>? ArgumentValidator { get; init; }
 
+    /// <summary>
+    /// Gets the deprecation marker, or <see langword="null"/> (the default) when the predicate is not deprecated.
+    /// </summary>
+    /// <remarks>
+    /// The compiler reports one <c>TRE0027</c> warning per use of a deprecated predicate, at the call. The rule still
+    /// compiles and evaluates as before.
+    /// </remarks>
+    public PredicateDeprecation? Deprecation { get; init; }
+
     /// <summary>Creates a schema for a zero-argument predicate.</summary>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>

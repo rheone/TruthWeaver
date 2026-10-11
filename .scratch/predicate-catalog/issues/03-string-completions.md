@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] The failing test run is shown before the implementation
+- [ ] The failing test run is shown before the implementation Note 2026-10-10: the failing-first run is not recorded in the repo, so it cannot be confirmed.
 - [x] Each of the seven members is registerable and returns the documented value for a null, empty, whitespace and ordinary string
 - [x] Negated members agree with the K3 complement of their positive form, including for `Unknown`
 - [x] `NotMatches` with an invalid pattern yields `Unknown` plus a `Fault`

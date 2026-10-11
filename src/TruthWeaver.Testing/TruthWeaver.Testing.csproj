@@ -3,15 +3,17 @@
     <ProjectGuid>1b835dee-d2e9-4053-b189-ac042e6c60e0</ProjectGuid>
     <RootNamespace>TruthWeaver.Testing</RootNamespace>
     <Description>
-      Test-support helpers for TruthWeaver consumers: fluent assertions over a Decision, and
-      fake/scripted predicate factories for registering a stubbed answer or a simulated fault without
-      a hand-written IPredicate&lt;TContext&gt; class. References only TruthWeaver.Abstractions,
-      so a consumer's test project never acquires the parser, compiler, or analyzer transitively just
-      to assert on evaluation results.
+      Test-support helpers for TruthWeaver consumers: fluent assertions over a Decision, rule-level
+      testing tools (equivalence assertions, a predicate harness, a public rule fuzzer) built on the
+      compiler and analyzer, and fake/scripted predicate factories for registering a stubbed answer or
+      a simulated fault without a hand-written IPredicate&lt;TContext&gt; class. References
+      TruthWeaver.Abstractions and TruthWeaver, but never the YAML, Predicates, or JSON data source
+      packages.
     </Description>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
   </ItemGroup>
 </Project>

@@ -221,7 +221,7 @@ public sealed class YamlLiteralRoundTripTests
     private static string ReadRoleScalar(string yaml)
     {
         using StringReader reader = new(yaml);
-        YamlStream stream = new();
+        YamlStream stream = [];
         stream.Load(reader);
         YamlMappingNode root = (YamlMappingNode)stream.Documents[0].RootNode;
         YamlMappingNode args = (YamlMappingNode)root.Children[new YamlScalarNode("args")];

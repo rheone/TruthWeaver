@@ -6,7 +6,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 
 | Term | Meaning |
 | --- | --- |
-| **BDD analyzer** | The compiler pass that finds sub-expressions that are `True` for every assignment of `True`, `False` and `Unknown` to their terms, or `False` for every assignment. `a OR NOT a` is not reported, because it is `Unknown` when `a` is. See [diagnostics](strong-k3/specification/diagnostics.md#analysis-findings). |
+| **BDD analyzer** | The compiler pass that finds sub-expressions that are `True` for every assignment of `True`, `False` and `Unknown` to their terms, or `False` for every assignment. `a OR NOT a` is not reported, because it is `Unknown` when `a` is. See [diagnostics](strong-k3/specification/diagnostics.md#code-table). |
 | **Canonical form** | For a derived Operation, its definition in terms of primitives, such as `OR(NOT(a), b)` for `IMPLIES`. It is not canonical text. See [terminology](strong-k3/specification/terminology.md#forms-of-an-operation). |
 | **Canonical text** | The one spelling of a compiled rule that the printer writes. It is the form to store. It is not a canonical form. |
 | **Category** | The one group that an Operation belongs to in the K3 reference, such as Gates / Operators or Cardinality Functions. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |

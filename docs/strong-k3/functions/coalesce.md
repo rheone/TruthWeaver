@@ -26,7 +26,7 @@ Primitive. `COALESCE` is the one primitive that can observe `Unknown`, and the f
 
 ## Arity
 
-Two or more operands. `COALESCE(a)` and `COALESCE()` in the DSL, and a JSON or YAML node with fewer than two operands, are the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.Coalesce(params RuleBuilder[])` rejects the same counts when it builds. The overload `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` is for lists whose length is known only at run time: an empty list builds the constant `Unknown` and a single operand builds that operand unchanged.
+Two or more operands. `COALESCE(a)` and `COALESCE()` in the DSL, and a JSON or YAML node with fewer than two operands, are the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.Coalesce(params RuleBuilder[])` rejects the same counts when it builds. The overload `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` is for lists whose length is known only at run time: an empty list builds the constant `Unknown` and a single operand builds that operand unchanged.
 
 ## Input domain
 

@@ -6,6 +6,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -160,7 +161,7 @@ public sealed class ProjectTests
             result.Diagnostics,
             d => d.Message.Contains("Decision.Project", StringComparison.Ordinal)
         );
-        Assert.Equal(DiagnosticCodes.SyntaxError, outermost.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, outermost.Code);
         Assert.Contains("COALESCE", outermost.Message, StringComparison.Ordinal);
         Assert.Equal(call, text.Substring(outermost.Span.Start, outermost.Span.Length));
     }
@@ -207,7 +208,7 @@ public sealed class ProjectTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains("Decision.Project", error.Message, StringComparison.Ordinal);
     }
 
@@ -221,7 +222,7 @@ public sealed class ProjectTests
 
         Assert.False(result.Succeeded);
         Diagnostic error = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticCodes.MalformedTree, error.Code);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains("Decision.Project", error.Message, StringComparison.Ordinal);
         Assert.NotNull(error.Path);
     }

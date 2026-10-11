@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>TruthWeaver.Samples.DataSource</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
+  </ItemGroup>
+</Project>

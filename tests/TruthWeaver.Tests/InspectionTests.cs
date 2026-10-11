@@ -8,6 +8,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -173,12 +174,12 @@ public sealed class InspectionTests
     [InlineData("IsFalse(a, b)")]
     [InlineData("IsUnknown(a, b, c)")]
     [InlineData("IsKnown()")]
-    public void Compile_WithWrongOperandCount_ReportsMalformedTree_Test(string text)
+    public void Compile_WithWrongOperandCount_ReportsInfixArityViolation_Test(string text)
     {
         CompilationResult<RuleTestContext> result = Compiler.Compile(text);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>A bare keyword without a call is not an expression.</summary>
@@ -233,14 +234,14 @@ public sealed class InspectionTests
 
     /// <summary>A JSON inspection node with the wrong operand count is rejected by the compiler.</summary>
     [Fact]
-    public void CompileJson_InspectionWithTwoOperands_ReportsMalformedTree_Test()
+    public void CompileJson_InspectionWithTwoOperands_ReportsInfixArityViolation_Test()
     {
         CompilationResult<RuleTestContext> result = Compiler.CompileJson(
             """{"op": "isTrue", "operands": [{"predicate": "a"}, {"predicate": "b"}]}"""
         );
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
     /// <summary>The builder produces the same rule as the DSL for every inspection.</summary>

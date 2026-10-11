@@ -1,6 +1,6 @@
 # Executable documentation examples
 
-The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/predicates.md`, `docs/examples.md`, `docs/diagnostics.md` and `docs/benchmarks.md` are checked on every `dotnet test` by
+The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/predicates.md`, `docs/predicate-conventions.md`, `docs/examples.md`, `docs/diagnostics.md` and `docs/benchmarks.md` are checked on every `dotnet test` by
 `tests/TruthWeaver.Tests/DocExamples/DocExampleChecker.cs` (run by `DocExampleTests`). A change that breaks a documented
 rule, or changes documented output, fails the build. C# fragments are not checked.
 
@@ -14,7 +14,7 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 | --- | --- | --- |
 | `<!-- doctest:rule ID -->` | `text` | The DSL text compiles; its canonical text is remembered as `ID`. |
 | `<!-- doctest:json ID -->`, `<!-- doctest:yaml ID -->` | `json`, `yaml` | The rule compiles to the same canonical text as `rule ID`. |
-| `<!-- doctest:tree ID -->`, `<!-- doctest:mermaid ID -->` | `text`, `mermaid` | The block equals `PrintPlainText()` or `PrintMermaid()` of `rule ID` (the `rule` block must come earlier in the file). |
+| `<!-- doctest:tree ID -->`, `<!-- doctest:mermaid ID -->` | `text`, `mermaid` | The block equals `PrintPlainText()` or `PrintMermaid()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the mermaid marker accepts the words `shapes` and `two-line`, which switch on `MermaidOptions.NodeShapes` and `MermaidOptions.TwoLineTermLabels`. |
 | `<!-- doctest:diagnostics-dsl SOURCE -->` (also `-json`, `-yaml`) | `text` | The block equals `FormatDiagnostics(SOURCE)`; `SOURCE` is the rest of the marker line, verbatim. |
 | `<!-- doctest:skip REASON -->` | any | Not runnable (pseudo-grammar, class diagram). The reason is mandatory. |
 

@@ -6,11 +6,11 @@
 
 **Status:** done
 
-- [ ] Candidate predicates are listed per existing category (string, collection, regex) plus any new category proposed (e.g. numeric comparison, date/time comparison), each with: proposed name, argument schema, one-sentence semantics, and why it's general-use rather than host-specific.
-- [ ] Candidate `LiteralKind` additions (if any) are listed with justification — note that `LiteralKind` is a closed set per ADR-0003/CONTEXT.md, so any addition is flagged as a deliberate extension of that closed set, not a casual one.
-- [ ] Each candidate is checked against `CONTEXT.md`'s existing rules (case-sensitivity default, no culture-sensitive comparison, null-selected-value-is-false-not-fault convention used by `StringPredicates`/`CollectionPredicates`/`RegexPredicates`) for consistency.
-- [ ] The proposal explicitly calls out any candidate that would duplicate something better solved by [[context-bound-term-arguments]] instead of a new predicate, so the two efforts don't converge on overlapping solutions independently.
-- [ ] No production code is changed by this ticket — output is the written proposal, to be turned into follow-on implementation tickets after review.
+- [x] Candidate predicates are listed per existing category (string, collection, regex) plus any new category proposed (e.g. numeric comparison, date/time comparison), each with: proposed name, argument schema, one-sentence semantics, and why it's general-use rather than host-specific.
+- [x] Candidate `LiteralKind` additions (if any) are listed with justification — note that `LiteralKind` is a closed set per ADR-0003/CONTEXT.md, so any addition is flagged as a deliberate extension of that closed set, not a casual one.
+- [x] Each candidate is checked against `CONTEXT.md`'s existing rules (case-sensitivity default, no culture-sensitive comparison, null-selected-value-is-false-not-fault convention used by `StringPredicates`/`CollectionPredicates`/`RegexPredicates`) for consistency.
+- [x] The proposal explicitly calls out any candidate that would duplicate something better solved by [[context-bound-term-arguments]] instead of a new predicate, so the two efforts don't converge on overlapping solutions independently.
+- [ ] No production code is changed by this ticket — output is the written proposal, to be turned into follow-on implementation tickets after review. Note 2026-10-10: the ticket's only commit (c50e641) also touched src/, so this cannot be confirmed.
 
 ## Comments
 

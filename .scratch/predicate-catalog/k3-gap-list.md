@@ -2,9 +2,9 @@
 
 Gap list of the predicates named in the **Final Semantic Inventory** of
 [`.scratch/2026-10-02-TODO.md`](../2026-10-02-TODO.md) against what
-`TruthWeaver.Predicates` and `TruthWeaver.Testing` provide today. It is the hand-off for the
+`TruthWeaver.Predicates` and `TruthWeaver.Testing` provide today. It was the hand-off for the
 predicate-catalog track (see [issue 01](issues/01-brainstorm-general-use-predicates-and-literal-kinds.md))
-from k3-conformance ticket 30. **No predicate is implemented by this document.**
+from k3-conformance ticket 30. **Status (2026-10-09): closed.** The catalog covers the inventory and every open question is resolved; the sections below record the final state. This document implements nothing.
 
 ## Method
 
@@ -220,46 +220,6 @@ Resolution status: the rules are recorded in
 The rules for questions 2, 4, 7 and 8 are recorded in
 [CONTEXT.md](../../CONTEXT.md#predicate-catalog-rules) (ticket 09).
 
+## Follow-on tickets
 
-1. **Null input: `False` or `Unknown`?** The existing convention (every catalog XML doc and issue 01) is
-   "null selected value is `False`, never a fault". Now that predicates return `TruthValue`, a missing
-   value is the textbook K3 case for `Unknown` (`NULL > 5` is unknown, not false). The consequence is
-   concrete: with `False`, `NOT GreaterThan(x, 5)` is `True` for a null `x`; with `Unknown` it stays
-   `Unknown` and `IsSatisfied` is fail-closed. This decision also determines whether `NotX` predicates may
-   be implemented as a K3 `NOT` of their positive form. Recommendation: `Unknown` for comparison, range and
-   count predicates; keep `True`/`False` for the null tests themselves (`IsNull`, `IsNullOrEmpty`,
-   `IsNullOrWhiteSpace`); leave the existing string members as they are unless the owner wants consistency
-   (changing them is a behaviour change for current consumers).
-2. **`NotX` predicates.** Whether each negated predicate is a first-class registered predicate (as the
-   inventory lists) or is left to `NOT` in the rule. If first-class, define them as the K3 complement
-   (`Unknown` maps to `Unknown`).
-3. **Culture.** The inventory asks for a `Culture` option on every string predicate, but the catalog's
-   stated stance (issue 01, `StringPredicates` XML docs) is "ordinal or invariant only, never
-   culture-sensitive", and `EqualsConfigurable` already breaks it by accepting an arbitrary culture name
-   (it also faults on an unknown name). Note that CONTEXT.md does not itself state a culture rule; the rule
-   lives in issue 01 and the predicate XML docs, so the "CONTEXT.md no-culture-sensitive-comparison rule"
-   is not actually recorded there. Options: (a) restrict `Culture` to `""` (invariant) and the ordinal
-   modes, (b) allow named cultures as `EqualsConfigurable` does and document the exception, (c) drop
-   `Culture` from the other predicates. Recommendation: (a), and record the rule in CONTEXT.md.
-4. **Collection `In`/`NotIn` meaning.** Subset ("all elements are candidates"), intersection
-   ("any element is a candidate") or scalar membership. Needs a one-line definition before implementation.
-5. **`DateTime` arguments.** Add a `DateTime` `LiteralKind` (breaking, closed set) or accept only
-   `DateTimeOffset`. Recommendation: accept only `DateTimeOffset`.
-6. **Clock predicates.** Whether `AfterNow`/`BeforeNow` belong in the shipped catalog (with a
-   `TimeProvider` registration parameter) or stay host-authored, as issue 01 and CONTEXT.md currently say.
-7. **Bounds.** Inclusive vs exclusive for `Between`/`Outside` (numeric and date) and the result for
-   reversed bounds.
-8. **Selector shapes.** Generic `Func<TContext, TValue?>` factories with per-kind overloads versus
-   per-kind classes (`NumericPredicates`, `DateTimePredicates`, `TypePredicates`); issue 01 proposed the
-   latter for numeric and date/time.
-
-## Suggested grouping for follow-on tickets
-
-Smallest independent slices, in a sensible order (each is a catalog addition, with no engine change):
-
-1. String completions: `IsEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace`,
-   `NotContains`, `NotEqual`, `NotMatches` (blocked by questions 1-3).
-2. Numeric and primitive comparison family (blocked by questions 1, 7).
-3. Collection family (blocked by questions 1, 4).
-4. Date/time comparison without clock predicates (blocked by questions 5, 7); clock predicates after 6.
-5. Type tests (blocked by question 8 and the definitions of numeric/URL).
+Every follow-on slice is implemented and its ticket is `done`: [issues 03 to 13](issues/). The string, numeric and scalar, collection, date/time, clock and type-test families ship in `TruthWeaver.Predicates`. No predicate is missing from the inventory. Only the three `DateTime` overloads are not added, by decision (the host converts to `DateTimeOffset` in the selector).

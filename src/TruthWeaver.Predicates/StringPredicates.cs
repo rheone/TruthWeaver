@@ -8,7 +8,10 @@ using TruthWeaver.Abstractions;
 /// <c>Func&lt;TContext, string?&gt;</c> value selector supplied at registration and a single
 /// <c>string</c> comparison-target argument supplied in rule text. Every predicate here uses
 /// ordinal comparison only — never culture-sensitive comparison — so rule behavior never depends on
-/// the host process's current culture.
+/// the host process's current culture. Ordinal comparison also does not normalize Unicode: a precomposed character
+/// (for example U+00E9) and its decomposed form (<c>e</c> plus U+0301) are different strings. Callers must
+/// normalize the selected value and the rule argument to the same form, such as NFC or NFKC, before comparison
+/// (see <see cref="string.Normalize()"/>).
 /// </summary>
 public static class StringPredicates
 {
@@ -484,7 +487,7 @@ public static class StringPredicates
     {
         const string description =
             "True when the selected string equals the argument, under configurable comparison rules: "
-            + "ordinal and case-insensitive by default (ignoreCase), with optional "
+            + "ordinal and case-sensitive by default (set ignoreCase to ignore case), with optional "
             + "leading/trailing-whitespace trimming. A null selected value is Unknown, "
             + "never a fault, unless the host registers it with NullBehavior.False, which makes it False.";
         return CreateConfigurable(
@@ -529,7 +532,7 @@ public static class StringPredicates
     {
         const string description =
             "True when the selected string differs from the argument, under configurable comparison rules: "
-            + "ordinal and case-insensitive by default (ignoreCase), with optional leading/trailing-whitespace "
+            + "ordinal and case-sensitive by default (set ignoreCase to ignore case), with optional leading/trailing-whitespace "
             + "trimming. The K3 complement of EqualsConfigurable: a null selected value answers Unknown (never a fault), "
             + "unless the host registers both with NullBehavior.False, which makes EqualsConfigurable False "
             + "and this predicate True.";
@@ -703,10 +706,10 @@ public static class StringPredicates
                 new PredicateArgumentSchema(argumentName, argumentDescription, LiteralKind.String),
                 new PredicateArgumentSchema(
                     "ignoreCase",
-                    "Whether the comparison ignores case. Defaults to true.",
+                    "Whether the comparison ignores case. Defaults to false.",
                     LiteralKind.Boolean,
                     Required: false,
-                    Default: LiteralValue.OfBoolean(true)
+                    Default: LiteralValue.OfBoolean(false)
                 ),
                 new PredicateArgumentSchema(
                     "trim",

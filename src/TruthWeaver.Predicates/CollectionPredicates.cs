@@ -92,49 +92,67 @@ public static class CollectionPredicates
     }
 
     /// <summary>
-    /// Creates a predicate that is true when the selected collection has no elements. A
-    /// <see langword="null"/> collection counts as empty, so the answer is always definite and there is no <see cref="NullBehavior"/> option.
+    /// Creates a predicate that is true when the selected collection has no elements. A <see langword="null"/> collection
+    /// is a missing value, not an empty one, so it follows <paramref name="nullBehavior"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
-    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is an empty collection.</param>
+    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsEmpty<TContext>(string name, Func<TContext, IReadOnlyCollection<string>?> selector, string label = "Is Empty")
+    ) IsEmpty<TContext>(
+        string name,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        string label = "Is Empty",
+        NullBehavior nullBehavior = NullBehavior.Unknown
+    )
     {
         return BuildEmptiness(
             name,
             label,
-            "True when the selected collection has no elements. A null collection counts as empty, so the answer is always definite.",
+            "True when the selected collection has no elements. A null collection is a missing value, not an empty one: it answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes it False.",
             selector,
-            expectEmpty: true
+            nullBehavior,
+            negate: false
         );
     }
 
     /// <summary>
     /// Creates the <c>IsNotEmpty</c> twin of <see cref="IsEmpty{TContext}"/>: true when the selected collection
-    /// has at least one element. A <see langword="null"/> collection counts as empty, so it is
-    /// <see cref="TruthValue.False"/>; the answer is always definite and there is no <see cref="NullBehavior"/> option.
+    /// has at least one element. It is the Strong Kleene complement of <see cref="IsEmpty{TContext}"/>, so a
+    /// <see langword="null"/> collection follows <paramref name="nullBehavior"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
-    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is an empty collection.</param>
+    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected collection answers for <c>IsEmpty</c>: <see cref="NullBehavior.Unknown"/> (the
+    /// default) or <see cref="NullBehavior.False"/>. This twin answers the complement: <see cref="TruthValue.Unknown"/> or
+    /// <see cref="TruthValue.True"/>. Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotEmpty<TContext>(string name, Func<TContext, IReadOnlyCollection<string>?> selector, string label = "Is Not Empty")
+    ) IsNotEmpty<TContext>(
+        string name,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        string label = "Is Not Empty",
+        NullBehavior nullBehavior = NullBehavior.Unknown
+    )
     {
         return BuildEmptiness(
             name,
             label,
-            "The Strong Kleene complement of IsEmpty: True when the selected collection has at least one element. A null collection counts as empty, so it is False; the answer is always definite.",
+            "The Strong Kleene complement of IsEmpty: True when the selected collection has at least one element. A null collection is a missing value: it answers Unknown (never a fault) unless the host registers it with NullBehavior.False, which makes IsEmpty False and this twin True.",
             selector,
-            expectEmpty: false
+            nullBehavior,
+            negate: true
         );
     }
 
@@ -845,8 +863,9 @@ public static class CollectionPredicates
     }
 
     /// <summary>
-    /// Builds the emptiness predicates. A null collection is an empty one, so neither answer is ever
-    /// <see cref="TruthValue.Unknown"/>.
+    /// Builds the emptiness predicates. A null collection yields the host's <see cref="NullBehavior"/> answer;
+    /// <paramref name="negate"/> then applies the Strong Kleene complement, so <see cref="TruthValue.Unknown"/> stays
+    /// Unknown and a definite answer inverts.
     /// </summary>
     private static (
         PredicateSchema Schema,
@@ -856,15 +875,21 @@ public static class CollectionPredicates
         string label,
         string description,
         Func<TContext, IReadOnlyCollection<string>?> selector,
-        bool expectEmpty
+        NullBehavior nullBehavior,
+        bool negate
     )
     {
         return (
             PredicateSchema.NoArguments(name, label, description),
             (context, _, _) =>
             {
-                bool isEmpty = selector(context) is not { Count: > 0 };
-                return PredicateResult.FromBoolAsync(isEmpty == expectEmpty);
+                IReadOnlyCollection<string>? selected = selector(context);
+                if (selected is null)
+                {
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
+                }
+
+                return PredicateResult.FromBoolAsync((selected.Count == 0) != negate);
             }
         );
     }

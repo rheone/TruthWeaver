@@ -1,6 +1,6 @@
 # Operator equivalency rules documentation
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

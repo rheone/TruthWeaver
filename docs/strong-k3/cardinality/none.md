@@ -21,7 +21,7 @@ Derived. `NONE(...)` is defined as `AtMost(0, ...)` (see [Canonical form](#canon
 
 ## Arity
 
-Two or more operands, and no parameter. Fewer is the compile error `MalformedTree` (`TRE0014`, see [diagnostics](../specification/diagnostics.md)).
+Two or more operands, and no parameter. Fewer is the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)).
 
 > [!NOTE]
 > Unlike the threshold family ([AtLeast](atleast.md), [AtMost](atmost.md), [Exactly](exactly.md)), which the compiler accepts with a single operand, `NONE` rejects fewer than two operands: a one-operand `NONE` would only be the negation of that operand. `OperatorDefinitions` and the compiler agree on this minimum.
@@ -192,8 +192,8 @@ LESSTHAN(1, ...)
 
 | Input | Diagnostic |
 | --- | --- |
-| One operand, `NONE(a)` | `MalformedTree` (`TRE0014`) |
-| JSON or YAML node with fewer than two operands | The same `MalformedTree` (`TRE0014`) diagnostic. |
+| One operand, `NONE(a)` | `InfixArityViolation` (`TRE0006`) |
+| JSON or YAML node with fewer than two operands | The same `InfixArityViolation` (`TRE0006`) diagnostic. |
 
 - Two or more operands in the rule languages. A single operand is not "none of one" in the DSL, JSON or YAML; write `NOT` of the operand.
 - `Unknown` is not absorbed. Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.

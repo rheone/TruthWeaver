@@ -9,13 +9,12 @@ using TruthWeaver.Abstractions;
 /// </summary>
 public class CollectionFamilyPredicatesTests
 {
-    /// <summary>The emptiness tests are definite for every collection shape; a null collection counts as empty.</summary>
+    /// <summary>The emptiness tests are definite for every non-null collection shape.</summary>
     [Theory]
-    [InlineData(null, true)]
     [InlineData(0, true)]
     [InlineData(1, false)]
     [InlineData(3, false)]
-    public async Task IsEmpty_CollectionShape_ReturnsDefiniteAnswer_Test(int? shape, bool expectedEmpty)
+    public async Task IsEmpty_NonNullCollectionShape_ReturnsDefiniteAnswer_Test(int shape, bool expectedEmpty)
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isEmpty) =
             CollectionPredicates.IsEmpty<TestContext>("isEmpty", c => c.Values);
@@ -25,6 +24,34 @@ public class CollectionFamilyPredicatesTests
 
         Assert.Equal(expectedEmpty ? TruthValue.True : TruthValue.False, await RunAsync(isEmpty, context));
         Assert.Equal(expectedEmpty ? TruthValue.False : TruthValue.True, await RunAsync(isNotEmpty, context));
+    }
+
+    /// <summary>A null collection is a missing value: by default both emptiness tests answer Unknown, never a fault.</summary>
+    [Fact]
+    public async Task IsEmpty_NullCollectionByDefault_AnswersUnknownForBothTwins_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isEmpty) =
+            CollectionPredicates.IsEmpty<TestContext>("isEmpty", c => c.Values);
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isNotEmpty) =
+            CollectionPredicates.IsNotEmpty<TestContext>("isNotEmpty", c => c.Values);
+        TestContext context = new(null, null);
+
+        Assert.Equal(TruthValue.Unknown, await RunAsync(isEmpty, context));
+        Assert.Equal(TruthValue.Unknown, await RunAsync(isNotEmpty, context));
+    }
+
+    /// <summary>Under NullBehavior.False a null collection makes IsEmpty False and its twin IsNotEmpty True.</summary>
+    [Fact]
+    public async Task IsEmpty_NullCollectionWithNullBehaviorFalse_AnswersFalseAndTwinTrue_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isEmpty) =
+            CollectionPredicates.IsEmpty<TestContext>("isEmpty", c => c.Values, nullBehavior: NullBehavior.False);
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isNotEmpty) =
+            CollectionPredicates.IsNotEmpty<TestContext>("isNotEmpty", c => c.Values, nullBehavior: NullBehavior.False);
+        TestContext context = new(null, null);
+
+        Assert.Equal(TruthValue.False, await RunAsync(isEmpty, context));
+        Assert.Equal(TruthValue.True, await RunAsync(isNotEmpty, context));
     }
 
     /// <summary>Contains tests membership of one literal value, case-sensitively, and its twin complements it.</summary>
