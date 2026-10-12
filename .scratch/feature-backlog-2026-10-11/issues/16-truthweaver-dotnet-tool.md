@@ -8,7 +8,7 @@ Scope decisions (owner, 2026-10-11): see [tool-platform](../../tool-platform/spe
 
 **Blocked by:** C1, C2, C3 (tool-platform)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Scope above is confirmed by the owner (done 2026-10-11); the worker adds nothing beyond it without asking
 - [ ] Every command has in-process tests against the sample rules, including `--json` output and exit codes

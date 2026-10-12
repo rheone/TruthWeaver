@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A public API returns minimal change sets, ranked and capped (a documented limit on the number returned)
 - [ ] Fixed terms are respected; a rule that cannot become `True` with the allowed changes returns an explicit "none possible"

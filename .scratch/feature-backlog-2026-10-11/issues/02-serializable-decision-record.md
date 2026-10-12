@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Round trip: write then read gives an equal `Decision` (using `EquatableArray` equality)
 - [ ] Redaction defaults are tested; an opt-in includes values

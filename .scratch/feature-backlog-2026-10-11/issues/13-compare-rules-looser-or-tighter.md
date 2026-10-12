@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The five relations are decided correctly under K3 (property tests against `K3Oracle`)
 - [ ] Counter-examples are given as term assignments over the union of terms
