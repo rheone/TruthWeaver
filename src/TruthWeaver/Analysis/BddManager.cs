@@ -172,6 +172,39 @@ internal sealed class BddManager
         return node == True;
     }
 
+    /// <summary>Gets the variable that <paramref name="node"/> tests, or <see cref="int.MaxValue"/> for a terminal.</summary>
+    /// <param name="node">The node id.</param>
+    /// <returns>The variable index.</returns>
+    public int VariableOf(int node)
+    {
+        return node <= True ? int.MaxValue : this.nodes[node].Var;
+    }
+
+    /// <summary>
+    /// Fixes <paramref name="var"/> to <paramref name="value"/> in the function <paramref name="node"/>, for a
+    /// variable at or above the node's own variable in the ordering. A node that tests that variable gives the matching
+    /// branch; any other node does not depend on it and is returned unchanged. A deeper variable is not restricted.
+    /// </summary>
+    /// <param name="node">The function's node id.</param>
+    /// <param name="var">The variable, which must not come after <see cref="VariableOf"/> of <paramref name="node"/>.</param>
+    /// <param name="value">The value to fix.</param>
+    /// <returns>The node id of the restricted function.</returns>
+    public int Restrict(int node, int var, bool value)
+    {
+        if (node <= True)
+        {
+            return node;
+        }
+
+        (int nodeVar, int low, int high) = this.nodes[node];
+        if (nodeVar != var)
+        {
+            return node;
+        }
+
+        return value ? high : low;
+    }
+
     private int TopVariable(int i, int t, int e)
     {
         int min = int.MaxValue;
@@ -191,22 +224,6 @@ internal sealed class BddManager
         }
 
         return min;
-    }
-
-    private int Restrict(int node, int var, bool value)
-    {
-        if (node <= True)
-        {
-            return node;
-        }
-
-        (int nodeVar, int low, int high) = this.nodes[node];
-        if (nodeVar != var)
-        {
-            return node;
-        }
-
-        return value ? high : low;
     }
 
     private int MakeNode(int var, int low, int high)
