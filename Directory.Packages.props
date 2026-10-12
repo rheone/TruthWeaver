@@ -52,6 +52,13 @@
   <ItemGroup>
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <!-- System.CommandLine - the truthweaver command line (TruthWeaver.Tool) only: option parsing, help and shell completion.
+       2.0.x is the stable line (MIT, a net8.0 build with no dependencies, marked IsTrimmable and free of
+       RequiresUnreferencedCode/RequiresDynamicCode). No other project may reference it; an architecture test checks the
+       tool core. -->
+  <ItemGroup>
+    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+  </ItemGroup>
   <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
        invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->

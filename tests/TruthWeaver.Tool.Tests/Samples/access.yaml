@@ -1,0 +1,7 @@
+op: and
+note: Editors who are active.
+operands:
+  - predicate: isActive
+  - predicate: hasRole
+    args:
+      role: editor

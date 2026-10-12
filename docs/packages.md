@@ -65,3 +65,5 @@ A service that only implements domain predicates references `TruthWeaver.Abstrac
 ## Tool libraries
 
 `TruthWeaver.Tool.Core` is a project of the repository, not a package. It is the UI-free library under the `truthweaver` command line and the terminal UI, and it references `TruthWeaver`, `TruthWeaver.Yaml` and `TruthWeaver.DataSources.Json`. No package references it. `dotnet pack` makes no package for it, and the CI build and tests include it. See [Tool core](tool-core.md).
+
+`TruthWeaver.Tool` is the `truthweaver` command line, a .NET tool package (`PackAsTool`). It references the tool core, the packages that the tool core uses, and `System.CommandLine`. No other project references it. The tool package carries the tool core and its references in its own `tools` folder. CI packs and checks it, and does not publish it. See [Command line](cli.md).

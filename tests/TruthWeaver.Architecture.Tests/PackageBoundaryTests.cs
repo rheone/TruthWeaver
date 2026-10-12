@@ -212,6 +212,28 @@ public sealed class PackageBoundaryTests
         Assert.DoesNotContain(referenced, name => forbidden.Contains(name, StringComparer.Ordinal));
     }
 
+    /// <summary>
+    /// The command line is the only project with <c>System.CommandLine</c>, and it builds on the tool core. No package and
+    /// not the tool core references the command line.
+    /// </summary>
+    [Fact]
+    public void Tool_References_ToolCoreAndCommandLineOnlyThere_Test()
+    {
+        // Loaded by name: the command line is an executable, and its types are internal.
+        Assembly tool = Assembly.Load("TruthWeaver.Tool");
+
+        string[] referenced = [.. tool.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Tool.Core", referenced);
+        Assert.Contains("System.CommandLine", referenced);
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain("TruthWeaver.Tool", names);
+            Assert.DoesNotContain("System.CommandLine", names);
+        }
+    }
+
     /// <summary>No shipping package depends on the tool core: the tools build on the packages, never the reverse.</summary>
     [Fact]
     public void ShippedPackages_References_ExcludeToolCore_Test()
