@@ -416,3 +416,40 @@ Limits to know:
 - **Strong K3 is not two-valued logic.** `a OR NOT a` is not equivalent to `TRUE`, because it is `Unknown` when `a` is.
 
 `RuleDiff.Compare` uses this check. `RuleDiffResult.PreservesMeaning` is `true` when the rules are equivalent (including when they are structurally identical), `false` when they are not, and `null` when the term cap makes the question undecidable (default 20). To use a larger cap, call `RuleEquivalence.Compare` directly, or pass the term cap as the optional third argument of `RuleDiff.Compare(before, after, maxAnalysisTerms)`.
+
+## Looser or tighter
+
+`RuleImplication` answers the question "does the new version accept more or fewer assignments than the old one?" An assignment of `True`, `False` or `Unknown` to the terms satisfies a rule when the rule is `True` for it. This is the same reading as `Decision.IsSatisfied`: `False` and `Unknown` do not satisfy a rule. The checks use the same dual-rail BDD as `RuleEquivalence`, so they are exact.
+
+`RuleImplication.Implies(first, second)` decides whether every assignment that satisfies `first` also satisfies `second`. The `Outcome` of the `RuleImplicationResult` is `Holds`, `DoesNotHold` or `Undecided`. For `DoesNotHold`, `CounterExample` is an assignment that satisfies `first` and does not satisfy `second`.
+
+`RuleImplication.Compare(before, after)` gives the `RuleRelation` of `after` to `before` in a `RuleRelationResult`:
+
+| `Relation` | Meaning | Examples given |
+| --- | --- | --- |
+| `Equivalent` | The same assignments satisfy both rules. | None. |
+| `Tighter` | Every assignment that satisfies `after` satisfies `before`. Some assignment satisfies only `before`. | `SatisfiesOnlyBefore` |
+| `Looser` | Every assignment that satisfies `before` satisfies `after`. Some assignment satisfies only `after`. | `SatisfiesOnlyAfter` |
+| `Overlapping` | Some assignment satisfies both rules, and each rule has an assignment that satisfies only it. | Both |
+| `Disjoint` | No assignment satisfies both rules, and each rule is satisfied by some assignment. | Both |
+| `Undecided` | The rules have more distinct terms between them than the term cap. `Reason` says so. | None. |
+
+The term cap is the optional `maxAnalysisTerms` argument of `Implies` and `Compare`. When it is `null`, the cap is `CompilerOptions.Default.MaxAnalysisTerms` (20). The options of the compiler that compiled the rules do not apply.
+
+Each example maps every distinct term in either rule, keyed by its printed form, to the value it takes. Terms that the example does not depend on are `False`.
+
+```csharp
+RuleRelationResult result = RuleImplication.Compare(
+    compiler.Compile("isManager").GetRuleOrThrow(),
+    compiler.Compile("isManager AND isDepartmentHead").GetRuleOrThrow());
+// result.Relation == RuleRelation.Tighter
+// result.SatisfiesOnlyBefore["isManager"] == TruthValue.True, and isDepartmentHead is not True
+```
+
+Limits to know:
+
+- **Only `True` counts.** `a` and `IsTrue(a)` are `True` for the same assignments, so they are `Equivalent` here. They are not equivalent for `RuleEquivalence.Compare`, because `a` is `Unknown` where `IsTrue(a)` is `False`.
+- **Subsets come first.** A rule that is never `True` is `Tighter` than any rule that is sometimes `True`, not `Disjoint`. Two rules that are never `True` are `Equivalent`.
+- **The other limits are the same as for rule equivalence.** Terms are opaque and independent, the cap is on distinct terms across both rules, and the check does not compare evaluation order, short-circuiting or faults.
+
+`RuleDiff.Compare` also reports the relation. `RuleDiffResult.Relation` is `Equivalent` when the rules are structurally identical, and otherwise the `Relation` of `RuleImplication.Compare(before, after, maxAnalysisTerms)`. It is `Undecided` when the term cap stops the check. Because only `True` counts, `Relation` can be `Equivalent` while `PreservesMeaning` is `false`: `a` and `IsTrue(a)` are an example.

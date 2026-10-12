@@ -78,6 +78,7 @@ Start with these files for common tasks:
 | Print or diagram a compiled rule | [`CanonicalPrinter`](../src/TruthWeaver/Printing/CanonicalPrinter.cs), [`MermaidTreePrinter`](../src/TruthWeaver/Printing/MermaidTreePrinter.cs) |
 | Diff two compiled rules | [`RuleDiff`](../src/TruthWeaver/Diffing/RuleDiff.cs) |
 | Check two rules for Strong K3 equivalence | [`RuleEquivalence`](../src/TruthWeaver/Analysis/RuleEquivalence.cs) |
+| Check whether one rule is looser or tighter than another | [`RuleImplication`](../src/TruthWeaver/Analysis/RuleImplication.cs) |
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](../src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](../src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](../src/TruthWeaver.Yaml/YamlTreeParser.cs) |
 | Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/FakePredicates.cs) |

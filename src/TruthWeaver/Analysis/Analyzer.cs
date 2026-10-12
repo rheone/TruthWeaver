@@ -71,27 +71,38 @@ internal static class Analyzer
 
         // The values differ exactly when either rail differs.
         int difference = bdd.Or(bdd.Xor(leftRail.Definite, rightRail.Definite), bdd.Xor(leftRail.Possible, rightRail.Possible));
-        IReadOnlyDictionary<int, bool>? path = bdd.FindSatisfyingAssignment(difference);
-        if (path is null)
-        {
-            return null;
-        }
+        return Witness(bdd, difference, variableIndex);
+    }
 
-        Dictionary<TermIdentity, TruthValue> assignment = [];
-        foreach ((TermIdentity term, int index) in variableIndex)
-        {
-            // Each term is two BDD variables: "is True" (2i) and "is Unknown" (2i + 1); unmentioned ones read as false.
-            if (path.GetValueOrDefault(2 * index))
-            {
-                assignment[term] = TruthValue.True;
-            }
-            else
-            {
-                assignment[term] = path.GetValueOrDefault((2 * index) + 1) ? TruthValue.Unknown : TruthValue.False;
-            }
-        }
+    /// <summary>
+    /// Compares the satisfying assignments of two trees (those where a tree is <c>True</c>) over every
+    /// <c>{True, False, Unknown}</c> assignment of their terms, from the definitely-true rail of each tree built on one
+    /// shared BDD.
+    /// </summary>
+    /// <param name="left">The first tree.</param>
+    /// <param name="right">The second tree.</param>
+    /// <returns>
+    /// An assignment where only <paramref name="left"/> is <c>True</c> and one where only <paramref name="right"/> is
+    /// <c>True</c> (each <see langword="null"/> when none exists), and whether some assignment makes both <c>True</c>. Each
+    /// assignment covers every term in either tree; terms the witness does not depend on are <c>False</c>.
+    /// </returns>
+    public static (
+        IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyLeft,
+        IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyRight,
+        bool Shared
+    ) CompareSatisfaction(Expression left, Expression right)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        List<Diagnostic> ignored = [];
+        int leftTrue = Build(left, bdd, variableIndex, ignored).Definite;
+        int rightTrue = Build(right, bdd, variableIndex, ignored).Definite;
 
-        return assignment;
+        return (
+            Witness(bdd, bdd.And(leftTrue, bdd.Not(rightTrue)), variableIndex),
+            Witness(bdd, bdd.And(rightTrue, bdd.Not(leftTrue)), variableIndex),
+            bdd.And(leftTrue, rightTrue) != BddManager.False
+        );
     }
 
     /// <summary>
@@ -222,6 +233,40 @@ internal static class Analyzer
         {
             CollectTerms(operand, terms);
         }
+    }
+
+    /// <summary>Reads one satisfying assignment of <paramref name="node"/> back as a K3 value for every term.</summary>
+    /// <param name="bdd">The manager that holds <paramref name="node"/>.</param>
+    /// <param name="node">The function to satisfy.</param>
+    /// <param name="variableIndex">The terms and their indexes in the ordering used to build <paramref name="node"/>.</param>
+    /// <returns>The assignment, or <see langword="null"/> when <paramref name="node"/> is constantly false.</returns>
+    private static Dictionary<TermIdentity, TruthValue>? Witness(
+        BddManager bdd,
+        int node,
+        Dictionary<TermIdentity, int> variableIndex
+    )
+    {
+        IReadOnlyDictionary<int, bool>? path = bdd.FindSatisfyingAssignment(node);
+        if (path is null)
+        {
+            return null;
+        }
+
+        Dictionary<TermIdentity, TruthValue> assignment = [];
+        foreach ((TermIdentity term, int index) in variableIndex)
+        {
+            // Each term is two BDD variables: "is True" (2i) and "is Unknown" (2i + 1); unmentioned ones read as false.
+            if (path.GetValueOrDefault(2 * index))
+            {
+                assignment[term] = TruthValue.True;
+            }
+            else
+            {
+                assignment[term] = path.GetValueOrDefault((2 * index) + 1) ? TruthValue.Unknown : TruthValue.False;
+            }
+        }
+
+        return assignment;
     }
 
     /// <summary>
