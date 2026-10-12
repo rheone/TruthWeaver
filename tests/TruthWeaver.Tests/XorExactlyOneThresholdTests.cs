@@ -37,9 +37,10 @@ public sealed class XorExactlyOneThresholdTests
             { null, null, TruthValue.Unknown },
         };
 
+    /// <summary>XOR matches the Kleene truth table.</summary>
     [Theory]
     [MemberData(nameof(XorTruthTable))]
-    public async Task Xor_matches_the_kleene_truth_table(bool? left, bool? right, TruthValue expected)
+    public async Task Xor_TruthTable_MatchesKleeneTable_Test(bool? left, bool? right, TruthValue expected)
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
         builder = left is { } l ? builder.AddConstant("a", l) : builder.AddThrowing("a");
@@ -57,10 +58,11 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>XOR or XNOR with three operands, given through the JSON op, is a compile error.</summary>
     [Theory]
     [InlineData("xor")]
     [InlineData("xnor")]
-    public void Xor_or_xnor_with_three_operands_via_json_op_is_a_compile_error(string op)
+    public void Xor_ThreeOperandsViaJsonOp_IsCompileError_Test(string op)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -79,6 +81,7 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
     }
 
+    /// <summary>Mixing XOR or XNOR with AND or OR without parentheses is a compile error.</summary>
     [Theory]
     [InlineData("a AND b XOR c")]
     [InlineData("a XOR b AND c")]
@@ -87,7 +90,7 @@ public sealed class XorExactlyOneThresholdTests
     [InlineData("a XNOR b AND c")]
     [InlineData("a OR b XNOR c")]
     [InlineData("a XOR b XNOR c")]
-    public void Mixing_xor_or_xnor_with_and_or_each_other_without_parentheses_is_a_compile_error(string dsl)
+    public void Mixing_XorXnorWithAndOr_IsCompileError_Test(string dsl)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -104,8 +107,9 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.AmbiguousOperatorMixing);
     }
 
+    /// <summary>XOR inside parentheses, combined with AND, compiles successfully.</summary>
     [Fact]
-    public void Xor_inside_parentheses_combined_with_and_compiles_successfully()
+    public void Xor_InsideParentheses_CompilesWithAnd_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -121,9 +125,10 @@ public sealed class XorExactlyOneThresholdTests
         Assert.True(result.Succeeded);
     }
 
+    /// <summary>XNOR matches the negated XOR truth table.</summary>
     [Theory]
     [MemberData(nameof(XnorTruthTable))]
-    public async Task Xnor_matches_the_negated_xor_truth_table(bool? left, bool? right, TruthValue expected)
+    public async Task Xnor_TruthTable_MatchesNegatedXor_Test(bool? left, bool? right, TruthValue expected)
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
         builder = left is { } l ? builder.AddConstant("a", l) : builder.AddThrowing("a");
@@ -141,8 +146,9 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>XNOR inside parentheses, combined with AND, compiles successfully.</summary>
     [Fact]
-    public void Xnor_inside_parentheses_combined_with_and_compiles_successfully()
+    public void Xnor_InsideParentheses_CompilesWithAnd_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -158,8 +164,9 @@ public sealed class XorExactlyOneThresholdTests
         Assert.True(result.Succeeded);
     }
 
+    /// <summary>XNOR round trips through JSON.</summary>
     [Fact]
-    public void Xnor_round_trips_through_json()
+    public void Xnor_RoundTrip_ThroughJson_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -175,11 +182,12 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal("(a EQUIVALENT b)", reparsed.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>ExactlyOne evaluates to true if and only if exactly one operand is true.</summary>
     [Theory]
     [InlineData(true, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
     [InlineData(false, false, false, TruthValue.False)]
-    public async Task ExactlyOne_evaluates_to_true_iff_exactly_one_operand_is_true(bool a, bool b, bool c, TruthValue expected)
+    public async Task ExactlyOne_Evaluation_TrueIffExactlyOneTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -201,8 +209,9 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>ExactlyOne with two unknowns and the rest false is unknown.</summary>
     [Fact]
-    public async Task ExactlyOne_with_two_unknowns_and_rest_false_is_unknown()
+    public async Task ExactlyOne_TwoUnknownsRestFalse_IsUnknown_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("a").AddThrowing("b").AddConstant("c", false).Build()
@@ -219,18 +228,20 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>AtLeast evaluates to true if and only if at least k operands are true.</summary>
     [Theory]
     [InlineData(true, true, false, TruthValue.True)]
     [InlineData(true, false, false, TruthValue.False)]
-    public async Task AtLeast_evaluates_to_true_iff_at_least_k_operands_are_true(bool a, bool b, bool c, TruthValue expected)
+    public async Task AtLeast_Evaluation_TrueIffAtLeastKTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         Decision decision = await EvaluateThresholdAsync("AtLeast(2, a, b, c)", a, b, c);
 
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>AtLeast with unsettled confirmed counts is unknown.</summary>
     [Fact]
-    public async Task AtLeast_with_unsettled_confirmed_counts_is_unknown()
+    public async Task AtLeast_UnsettledCounts_IsUnknown_Test()
     {
         // One true, one unknown ("b" faults), one false: confirmed true count (1) < k (2), but
         // true+unknown (2) >= k -> Unknown.
@@ -243,26 +254,29 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>AtLeast with k out of range is a compile error.</summary>
     [Theory]
     [InlineData(0)]
     [InlineData(4)]
-    public void AtLeast_with_k_out_of_range_is_a_compile_error(int k)
+    public void AtLeast_KOutOfRange_IsCompileError_Test(int k)
     {
         AssertThresholdOutOfRange($"AtLeast({k}, a, b, c)");
     }
 
+    /// <summary>AtMost evaluates to true if and only if at most k operands are true.</summary>
     [Theory]
     [InlineData(true, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
-    public async Task AtMost_evaluates_to_true_iff_at_most_k_operands_are_true(bool a, bool b, bool c, TruthValue expected)
+    public async Task AtMost_Evaluation_TrueIffAtMostKTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         Decision decision = await EvaluateThresholdAsync("AtMost(1, a, b, c)", a, b, c);
 
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>AtMost with unsettled confirmed counts is unknown.</summary>
     [Fact]
-    public async Task AtMost_with_unsettled_confirmed_counts_is_unknown()
+    public async Task AtMost_UnsettledCounts_IsUnknown_Test()
     {
         // Zero confirmed true, one unknown ("b" faults), one false: at-most-0 could still hold
         // (unknown resolves false) or fail (unknown resolves true) -> Unknown.
@@ -275,72 +289,69 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>AtMost with k out of range is a compile error.</summary>
     [Theory]
     [InlineData(-1)]
     [InlineData(3)]
-    public void AtMost_with_k_out_of_range_is_a_compile_error(int k)
+    public void AtMost_KOutOfRange_IsCompileError_Test(int k)
     {
         AssertThresholdOutOfRange($"AtMost({k}, a, b, c)");
     }
 
+    /// <summary>GreaterThan evaluates to true if and only if more than k operands are true.</summary>
     [Theory]
     [InlineData(true, true, false, TruthValue.True)]
     [InlineData(true, false, false, TruthValue.False)]
-    public async Task GreaterThan_evaluates_to_true_iff_more_than_k_operands_are_true(
-        bool a,
-        bool b,
-        bool c,
-        TruthValue expected
-    )
+    public async Task GreaterThan_Evaluation_TrueIffMoreThanKTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         Decision decision = await EvaluateThresholdAsync("GreaterThan(1, a, b, c)", a, b, c);
 
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>GreaterThan with k out of range is a compile error.</summary>
     [Theory]
     [InlineData(-1)]
     [InlineData(3)]
-    public void GreaterThan_with_k_out_of_range_is_a_compile_error(int k)
+    public void GreaterThan_KOutOfRange_IsCompileError_Test(int k)
     {
         AssertThresholdOutOfRange($"GreaterThan({k}, a, b, c)");
     }
 
+    /// <summary>LessThan evaluates to true if and only if fewer than k operands are true.</summary>
     [Theory]
     [InlineData(true, false, false, TruthValue.True)]
     [InlineData(true, true, false, TruthValue.False)]
-    public async Task LessThan_evaluates_to_true_iff_fewer_than_k_operands_are_true(bool a, bool b, bool c, TruthValue expected)
+    public async Task LessThan_Evaluation_TrueIffFewerThanKTrue_Test(bool a, bool b, bool c, TruthValue expected)
     {
         Decision decision = await EvaluateThresholdAsync("LessThan(2, a, b, c)", a, b, c);
 
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>LessThan with k out of range is a compile error.</summary>
     [Theory]
     [InlineData(0)]
     [InlineData(4)]
-    public void LessThan_with_k_out_of_range_is_a_compile_error(int k)
+    public void LessThan_KOutOfRange_IsCompileError_Test(int k)
     {
         AssertThresholdOutOfRange($"LessThan({k}, a, b, c)");
     }
 
+    /// <summary>Exactly evaluates to true if and only if the true count matches k exactly.</summary>
     [Theory]
     [InlineData(true, true, false, TruthValue.True)]
     [InlineData(true, false, false, TruthValue.False)]
-    public async Task Exactly_evaluates_to_true_iff_the_true_count_matches_k_exactly(
-        bool a,
-        bool b,
-        bool c,
-        TruthValue expected
-    )
+    public async Task Exactly_Evaluation_TrueIffCountMatchesK_Test(bool a, bool b, bool c, TruthValue expected)
     {
         Decision decision = await EvaluateThresholdAsync("Exactly(2, a, b, c)", a, b, c);
 
         Assert.Equal(expected, decision.Result);
     }
 
+    /// <summary>Exactly with k reachable but not certain is unknown.</summary>
     [Fact]
-    public async Task Exactly_with_k_reachable_but_not_certain_is_unknown()
+    public async Task Exactly_KReachableNotCertain_IsUnknown_Test()
     {
         // Zero confirmed true, two unknowns, one false: k=1 is reachable (one unknown resolves true)
         // but not certain (both could resolve false, or both true) -> Unknown.
@@ -359,10 +370,11 @@ public sealed class XorExactlyOneThresholdTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>Exactly with k out of range is a compile error.</summary>
     [Theory]
     [InlineData(-1)]
     [InlineData(4)]
-    public void Exactly_with_k_out_of_range_is_a_compile_error(int k)
+    public void Exactly_KOutOfRange_IsCompileError_Test(int k)
     {
         AssertThresholdOutOfRange($"Exactly({k}, a, b, c)");
     }

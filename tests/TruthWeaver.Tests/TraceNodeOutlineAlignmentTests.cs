@@ -16,6 +16,7 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class TraceNodeOutlineAlignmentTests
 {
+    /// <summary>The evaluated tree and the description tree agree on operand order at every level.</summary>
     [Theory]
     [InlineData("d AND a AND c")]
     [InlineData("d OR a OR c")]
@@ -43,7 +44,7 @@ public sealed class TraceNodeOutlineAlignmentTests
     [InlineData("ExactlyOne(d, a, c)")]
     [InlineData("AtLeast(2, d, a, c)")]
     [InlineData("(d AND a) OR (ExactlyOne(c, d, a) XOR (NOT c))")]
-    public async Task Evaluated_tree_and_description_tree_agree_on_operand_order_at_every_level(string dsl)
+    public async Task Alignment_EvaluatedAndDescriptionTrees_AgreeOnOperandOrder_Test(string dsl)
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()

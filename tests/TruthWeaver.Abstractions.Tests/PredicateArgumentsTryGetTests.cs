@@ -79,7 +79,7 @@ public sealed class PredicateArgumentsTryGetTests
 
     /// <summary>The raw literal is returned when the name exists; a missing name returns false.</summary>
     [Fact]
-    public void TryGetRaw_ReturnsTrueOnlyForAPresentName_Test()
+    public void TryGetRaw_PresentName_ReturnsTrueOnly_Test()
     {
         PredicateArguments args = Sample();
 

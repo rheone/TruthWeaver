@@ -31,7 +31,8 @@ public static class RuleText
     /// becomes one space, the ends are trimmed, each operator has one space on each side (the ternary's <c>?</c> and
     /// <c>:</c> included), a comma or an argument's colon is followed by one space and not preceded by one, and nothing
     /// pads the inside of a delimiter pair. Prefix negation (<c>!</c>, <c>¬</c>) hugs its operand and a call or term
-    /// argument list hugs its name (<c>ANY(a, b)</c>).
+    /// argument list hugs its name (<c>ANY(a, b)</c>). A comment is kept as written, spaced like a token, and a
+    /// <c>//</c> comment is followed by a line feed instead of a space, because it runs to the end of its line.
     /// </summary>
     /// <remarks>
     /// Only whitespace changes: the tokens, their order, letter case, operator spelling (<c>AND</c> vs <c>&amp;&amp;</c>)
@@ -83,7 +84,12 @@ public static class RuleText
                     break;
             }
 
-            if (previous is { } before && NeedsSpace(before, piece, isArgumentColon))
+            if (previous is { IsLineComment: true })
+            {
+                // A line comment ends at the line feed, so the next piece must start on a new line.
+                builder.Append('\n');
+            }
+            else if (previous is { } before && NeedsSpace(before, piece, isArgumentColon))
             {
                 builder.Append(' ');
             }
@@ -119,16 +125,29 @@ public static class RuleText
     }
 
     /// <summary>
-    /// Splits the text into tokens plus any characters the lexer skipped (kept as pieces with no token kind), in source
-    /// order. Token text is taken from the source, not the token, because a string token holds the decoded value.
+    /// Splits the text into tokens, comments and any characters the lexer skipped (kept as pieces with no token kind), in
+    /// source order. Token text is taken from the source, not the token, because a string token holds the decoded value.
+    /// A comment is one piece, copied as written, so the whitespace inside it is kept.
     /// </summary>
     private static List<Piece> Split(string ruleText)
     {
-        IReadOnlyList<Token> tokens = new Lexer(ruleText).Tokenize();
+        Lexer lexer = new(ruleText);
+        IReadOnlyList<Token> tokens = lexer.Tokenize();
         List<Piece> pieces = [];
         int cursor = 0;
+        int commentIndex = 0;
         foreach (Token token in tokens)
         {
+            // The comments in the gap before this token, each with the unrecognised characters around it.
+            while (commentIndex < lexer.Comments.Count && lexer.Comments[commentIndex].Span.Start < token.Span.Start)
+            {
+                Comment comment = lexer.Comments[commentIndex++];
+                AddUnrecognised(ruleText[cursor..comment.Span.Start], pieces);
+                string text = ruleText.Substring(comment.Span.Start, comment.Span.Length);
+                pieces.Add(new Piece(null, comment.IsLine ? text.TrimEnd() : text, comment.IsLine));
+                cursor = comment.Span.End;
+            }
+
             AddUnrecognised(ruleText[cursor..token.Span.Start], pieces);
             if (token.Kind != TokenKind.Eof)
             {
@@ -149,5 +168,9 @@ public static class RuleText
         }
     }
 
-    private readonly record struct Piece(TokenKind? Kind, string Text);
+    /// <summary>One piece of the normalised text: a token, a comment, or characters the lexer did not recognise.</summary>
+    /// <param name="Kind">The token kind, or <see langword="null"/> for a comment or unrecognised characters.</param>
+    /// <param name="Text">The piece as written.</param>
+    /// <param name="IsLineComment">Whether the piece is a <c>//</c> comment, which must be followed by a line feed.</param>
+    private readonly record struct Piece(TokenKind? Kind, string Text, bool IsLineComment = false);
 }

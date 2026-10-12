@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Analysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
@@ -46,6 +45,18 @@ public sealed class RuleCompiler<TContext>(
         return this.CompileNode(root, parseDiagnostics);
     }
 
+    /// <summary>
+    /// Compiles canonical DSL rule text. The same method as <see cref="Compile(string)"/>, named to match
+    /// <see cref="CompileJson(string)"/> and <c>CompileYaml</c> (<c>TruthWeaver.Yaml</c>): each entry point names
+    /// the format it reads, rather than leaving the DSL as the unnamed default.
+    /// </summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <returns>The compilation result.</returns>
+    public CompilationResult<TContext> CompileText(string dslText)
+    {
+        return this.Compile(dslText);
+    }
+
     /// <summary>Compiles the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
     /// <param name="json">The JSON tree text.</param>
     /// <returns>The compilation result.</returns>
@@ -67,6 +78,62 @@ public sealed class RuleCompiler<TContext>(
     {
         (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(element);
         return this.CompileFromParsedJson(root, parseDiagnostics);
+    }
+
+    /// <summary>Compiles canonical DSL rule text without a result object: the <c>Try</c> form of <see cref="Compile(string)"/>.</summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompile(
+        string dslText,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Compile(dslText).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles canonical DSL rule text without a result object: the <c>Try</c> form of <see cref="CompileText(string)"/>.</summary>
+    /// <param name="dslText">The rule text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileText(
+        string dslText,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileText(dslText).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles the JSON tree shape without a result object: the <c>Try</c> form of <see cref="CompileJson(string)"/>.</summary>
+    /// <param name="json">The JSON tree text.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileJson(
+        [StringSyntax(StringSyntaxAttribute.Json)] string json,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileJson(json).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>Compiles the JSON tree shape from a <see cref="JsonElement"/> without a result object: the <c>Try</c> form of <see cref="CompileJson(JsonElement)"/>.</summary>
+    /// <param name="element">The JSON tree node.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompileJson(
+        JsonElement element,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompileJson(element).TryGetRule(out rule, out diagnostics);
     }
 
     /// <summary>
@@ -128,7 +195,7 @@ public sealed class RuleCompiler<TContext>(
         {
             List<Diagnostic> located = LocateInJson(parseDiagnostics, jsonText);
             this.LogDiagnostics(located);
-            return new CompilationResult<TContext>(null, located);
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(located));
         }
 
         return this.CompileNode(root, parseDiagnostics, jsonText);
@@ -145,7 +212,7 @@ public sealed class RuleCompiler<TContext>(
         {
             diagnostics = LocateInJson(diagnostics, jsonText);
             this.LogDiagnostics(diagnostics);
-            return new CompilationResult<TContext>(null, diagnostics);
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
         (Expression? tree, IReadOnlyList<Diagnostic> validationDiagnostics) = RuleNodeCompiler<TContext>.Compile(
@@ -169,8 +236,10 @@ public sealed class RuleCompiler<TContext>(
 
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         CompiledRule<TContext>? compiled =
-            !hasErrors && tree is not null ? new CompiledRule<TContext>(tree, this.registry, this.logger, this.options) : null;
-        return new CompilationResult<TContext>(compiled, diagnostics);
+            !hasErrors && tree is not null
+                ? new CompiledRule<TContext>(tree, this.registry, this.logger, this.options, NoteCollector.Collect(root, tree))
+                : null;
+        return new CompilationResult<TContext>(compiled, new EquatableArray<Diagnostic>(diagnostics));
     }
 
     private void LogDiagnostics(IReadOnlyList<Diagnostic> diagnostics)

@@ -259,6 +259,51 @@ public class TypePredicatesTests
         }
     }
 
+    /// <summary>Registered with NullBehavior.False, a null selected value is False for each positive test and True for its twin, for both selector shapes.</summary>
+    [Fact]
+    public async Task EveryTypeTest_NullSelectedValueWithNullBehaviorFalse_ReturnsFalseOrItsComplement_Test()
+    {
+        TestContext none = new(null);
+        ObjectContext noneObject = new(null);
+        const NullBehavior f = NullBehavior.False;
+        (StringTest Test, TruthValue Expected)[] stringTests =
+        [
+            (TypePredicates.IsGuid<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotGuid<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsNumeric<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotNumeric<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsUrl<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotUrl<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsString<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotString<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsDateTimeOffset<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotDateTimeOffset<TestContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+        ];
+        (ObjectTest Test, TruthValue Expected)[] objectTests =
+        [
+            (TypePredicates.IsGuid<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotGuid<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsNumeric<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotNumeric<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsUrl<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotUrl<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsString<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotString<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+            (TypePredicates.IsDateTimeOffset<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.False),
+            (TypePredicates.IsNotDateTimeOffset<ObjectContext>("a", c => c.Value, nullBehavior: f), TruthValue.True),
+        ];
+
+        foreach ((StringTest test, TruthValue expected) in stringTests)
+        {
+            Assert.Equal(expected, await test.Evaluate(none, NoArgs, CancellationToken.None));
+        }
+
+        foreach ((ObjectTest test, TruthValue expected) in objectTests)
+        {
+            Assert.Equal(expected, await test.Evaluate(noneObject, NoArgs, CancellationToken.None));
+        }
+    }
+
     /// <summary>Each NotX twin is the K3 complement of its positive test over accepted, rejected and null inputs.</summary>
     [Theory]
     [InlineData(null)]

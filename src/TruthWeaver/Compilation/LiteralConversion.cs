@@ -1,6 +1,5 @@
 namespace TruthWeaver.Compilation;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Parsing;
 

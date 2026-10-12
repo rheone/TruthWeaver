@@ -14,7 +14,7 @@ public sealed class K3ReferenceSyncTests
 
     private static readonly string[] Transformations = ["project", "collapse"];
 
-    private static readonly string[] Predicates = ["string-equals", "regex-matches"];
+    private static readonly string[] Predicates = ["string-isequalto", "regex-ismatch"];
 
     private static readonly string[] CompleteDocuments =
     [
@@ -24,7 +24,7 @@ public sealed class K3ReferenceSyncTests
         "docs/strong-k3/cardinality/atleast.md",
         "docs/strong-k3/result-transformations/project.md",
         "docs/strong-k3/result-transformations/collapse.md",
-        "docs/strong-k3/predicates/string-equals.md",
+        "docs/strong-k3/predicates/string-isequalto.md",
         "docs/strong-k3/predicates/README.md",
     ];
 
@@ -77,7 +77,7 @@ public sealed class K3ReferenceSyncTests
     {
         string failure = Assert.Single(Check(CompleteDocuments, hold: []));
 
-        Assert.Contains("'regex-matches'", failure, StringComparison.Ordinal);
+        Assert.Contains("'regex-ismatch'", failure, StringComparison.Ordinal);
         Assert.Contains(nameof(K3PredicateDocumentationHold), failure, StringComparison.Ordinal);
     }
 
@@ -85,16 +85,16 @@ public sealed class K3ReferenceSyncTests
     [Fact]
     public void Check_HeldPredicateWithDocument_ReportsTheStaleHold_Test()
     {
-        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-matches", "string-equals"]));
+        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-ismatch", "string-isequalto"]));
 
-        Assert.Contains("'string-equals'", failure, StringComparison.Ordinal);
+        Assert.Contains("'string-isequalto'", failure, StringComparison.Ordinal);
     }
 
     /// <summary>A hold entry for a predicate the engine lacks is reported.</summary>
     [Fact]
     public void Check_HoldEntryForUnknownPredicate_ReportsTheEntry_Test()
     {
-        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-matches", "string-nothing"]));
+        string failure = Assert.Single(Check(CompleteDocuments, hold: ["regex-ismatch", "string-nothing"]));
 
         Assert.Contains("'string-nothing'", failure, StringComparison.Ordinal);
     }
@@ -118,7 +118,7 @@ public sealed class K3ReferenceSyncTests
             Operators,
             Transformations,
             predicates ?? Predicates,
-            hold ?? ["regex-matches"],
+            hold ?? ["regex-ismatch"],
             [.. documents]
         );
     }

@@ -37,11 +37,11 @@ public sealed class TwinNullComplementTests
     private static Dictionary<string, Pair> Pairs { get; } =
         new(StringComparer.Ordinal)
         {
-            ["String.Equals/NotEqual"] = new(
-                nb => StringPredicates.Equals<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => StringPredicates.NotEqual<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => StringPredicates.Equals<Selections>("p", c => c.Text),
-                () => StringPredicates.NotEqual<Selections>("t", c => c.Text),
+            ["String.IsEqualTo/IsNotEqualTo"] = new(
+                nb => StringPredicates.IsEqualTo<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.IsNotEqualTo<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => StringPredicates.IsEqualTo<Selections>("p", c => c.Text),
+                () => StringPredicates.IsNotEqualTo<Selections>("t", c => c.Text),
                 Args(("value", LiteralValue.OfString("a")))
             ),
             ["String.Contains/NotContains"] = new(
@@ -49,13 +49,6 @@ public sealed class TwinNullComplementTests
                 nb => StringPredicates.NotContains<Selections>("t", c => c.Text, nullBehavior: nb),
                 () => StringPredicates.Contains<Selections>("p", c => c.Text),
                 () => StringPredicates.NotContains<Selections>("t", c => c.Text),
-                Args(("value", LiteralValue.OfString("a")))
-            ),
-            ["String.EqualsIgnoreCase/NotEqualsIgnoreCase"] = new(
-                nb => StringPredicates.EqualsIgnoreCase<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => StringPredicates.NotEqualsIgnoreCase<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => StringPredicates.EqualsIgnoreCase<Selections>("p", c => c.Text),
-                () => StringPredicates.NotEqualsIgnoreCase<Selections>("t", c => c.Text),
                 Args(("value", LiteralValue.OfString("a")))
             ),
             ["String.StartsWith/NotStartsWith"] = new(
@@ -72,11 +65,11 @@ public sealed class TwinNullComplementTests
                 () => StringPredicates.NotEndsWith<Selections>("t", c => c.Text),
                 Args(("value", LiteralValue.OfString("a")))
             ),
-            ["String.EqualsConfigurable/NotEqualsConfigurable"] = new(
-                nb => StringPredicates.EqualsConfigurable<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => StringPredicates.NotEqualsConfigurable<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => StringPredicates.EqualsConfigurable<Selections>("p", c => c.Text),
-                () => StringPredicates.NotEqualsConfigurable<Selections>("t", c => c.Text),
+            ["String.IsEqualTo(ignoreCase)/IsNotEqualTo(ignoreCase)"] = new(
+                nb => StringPredicates.IsEqualTo<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.IsNotEqualTo<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => StringPredicates.IsEqualTo<Selections>("p", c => c.Text),
+                () => StringPredicates.IsNotEqualTo<Selections>("t", c => c.Text),
                 Args(
                     ("value", LiteralValue.OfString("a")),
                     ("ignoreCase", LiteralValue.OfBoolean(true)),
@@ -104,12 +97,19 @@ public sealed class TwinNullComplementTests
                 () => StringPredicates.IsNotEmpty<Selections>("t", c => c.Text),
                 PredicateArguments.Empty
             ),
-            ["Regex.Matches/NotMatches"] = new(
-                nb => RegexPredicates.Matches<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => RegexPredicates.NotMatches<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => RegexPredicates.Matches<Selections>("p", c => c.Text),
-                () => RegexPredicates.NotMatches<Selections>("t", c => c.Text),
+            ["Regex.IsMatch/IsNotMatch"] = new(
+                nb => RegexPredicates.IsMatch<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => RegexPredicates.IsMatch<Selections>("p", c => c.Text),
+                () => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text),
                 Args(("pattern", LiteralValue.OfString("^a")))
+            ),
+            ["Regex.IsMatch/IsNotMatch with flags"] = new(
+                nb => RegexPredicates.IsMatch<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => RegexPredicates.IsMatch<Selections>("p", c => c.Text),
+                () => RegexPredicates.IsNotMatch<Selections>("t", c => c.Text),
+                Args(("pattern", LiteralValue.OfString("^a")), ("flags", LiteralValue.OfString("i")))
             ),
             ["Collection.Contains/NotContains"] = new(
                 nb => CollectionPredicates.Contains<Selections>("p", c => c.Items, nullBehavior: nb),
@@ -139,116 +139,130 @@ public sealed class TwinNullComplementTests
                 () => CollectionPredicates.IsNotSubsetOf<Selections>("t", c => c.Items),
                 Args(("values", Strings("a")))
             ),
-            ["Collection.In/NotIn"] = new(
-                nb => CollectionPredicates.In<Selections>("p", c => c.Text, nullBehavior: nb),
-                nb => CollectionPredicates.NotIn<Selections>("t", c => c.Text, nullBehavior: nb),
-                () => CollectionPredicates.In<Selections>("p", c => c.Text),
-                () => CollectionPredicates.NotIn<Selections>("t", c => c.Text),
+            ["Collection.IsIn/IsNotIn"] = new(
+                nb => StringPredicates.IsIn<Selections>("p", c => c.Text, nullBehavior: nb),
+                nb => StringPredicates.IsNotIn<Selections>("t", c => c.Text, nullBehavior: nb),
+                () => StringPredicates.IsIn<Selections>("p", c => c.Text),
+                () => StringPredicates.IsNotIn<Selections>("t", c => c.Text),
                 Args(("values", Strings("a")))
             ),
-            ["Collection.CountEqual/NotCountEqual"] = new(
-                nb => CollectionPredicates.CountEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountEqualTo/NotHasCountEqualTo"] = new(
+                nb => CollectionPredicates.HasCountEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountLessThan/NotCountLessThan"] = new(
-                nb => CollectionPredicates.CountLessThan<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountLessThan<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountLessThan<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountLessThan<Selections>("t", c => c.Items),
+            ["Collection.HasCountLessThan/NotHasCountLessThan"] = new(
+                nb => CollectionPredicates.HasCountLessThan<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountLessThan<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountLessThan<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountLessThan<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountGreaterThan/NotCountGreaterThan"] = new(
-                nb => CollectionPredicates.CountGreaterThan<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountGreaterThan<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountGreaterThan<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountGreaterThan<Selections>("t", c => c.Items),
+            ["Collection.HasCountGreaterThan/NotHasCountGreaterThan"] = new(
+                nb => CollectionPredicates.HasCountGreaterThan<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountGreaterThan<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountGreaterThan<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountGreaterThan<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountLessThanOrEqual/NotCountLessThanOrEqual"] = new(
-                nb => CollectionPredicates.CountLessThanOrEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountLessThanOrEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountLessThanOrEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountLessThanOrEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountLessThanOrEqualTo/NotHasCountLessThanOrEqualTo"] = new(
+                nb => CollectionPredicates.HasCountLessThanOrEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountLessThanOrEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountLessThanOrEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountLessThanOrEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["Collection.CountGreaterThanOrEqual/NotCountGreaterThanOrEqual"] = new(
-                nb => CollectionPredicates.CountGreaterThanOrEqual<Selections>("p", c => c.Items, nullBehavior: nb),
-                nb => CollectionPredicates.NotCountGreaterThanOrEqual<Selections>("t", c => c.Items, nullBehavior: nb),
-                () => CollectionPredicates.CountGreaterThanOrEqual<Selections>("p", c => c.Items),
-                () => CollectionPredicates.NotCountGreaterThanOrEqual<Selections>("t", c => c.Items),
+            ["Collection.HasCountGreaterThanOrEqualTo/NotHasCountGreaterThanOrEqualTo"] = new(
+                nb => CollectionPredicates.HasCountGreaterThanOrEqualTo<Selections>("p", c => c.Items, nullBehavior: nb),
+                nb => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<Selections>("t", c => c.Items, nullBehavior: nb),
+                () => CollectionPredicates.HasCountGreaterThanOrEqualTo<Selections>("p", c => c.Items),
+                () => CollectionPredicates.NotHasCountGreaterThanOrEqualTo<Selections>("t", c => c.Items),
                 Args(("count", LiteralValue.OfInt64(1)))
             ),
-            ["DateTime.After/NotAfter"] = new(
-                nb => DateTimePredicates.After<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => DateTimePredicates.NotAfter<Selections>("t", c => c.At, nullBehavior: nb),
-                () => DateTimePredicates.After<Selections>("p", c => c.At),
-                () => DateTimePredicates.NotAfter<Selections>("t", c => c.At),
+            ["DateTime.IsAfter/IsNotAfter"] = new(
+                nb => DateTimePredicates.IsAfter<Selections>("p", c => c.At, nullBehavior: nb),
+                nb => DateTimePredicates.IsNotAfter<Selections>("t", c => c.At, nullBehavior: nb),
+                () => DateTimePredicates.IsAfter<Selections>("p", c => c.At),
+                () => DateTimePredicates.IsNotAfter<Selections>("t", c => c.At),
                 Args(("value", LiteralValue.OfDateTimeOffset(T0)))
             ),
-            ["DateTime.Before/NotBefore"] = new(
-                nb => DateTimePredicates.Before<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => DateTimePredicates.NotBefore<Selections>("t", c => c.At, nullBehavior: nb),
-                () => DateTimePredicates.Before<Selections>("p", c => c.At),
-                () => DateTimePredicates.NotBefore<Selections>("t", c => c.At),
+            ["DateTime.IsBefore/IsNotBefore"] = new(
+                nb => DateTimePredicates.IsBefore<Selections>("p", c => c.At, nullBehavior: nb),
+                nb => DateTimePredicates.IsNotBefore<Selections>("t", c => c.At, nullBehavior: nb),
+                () => DateTimePredicates.IsBefore<Selections>("p", c => c.At),
+                () => DateTimePredicates.IsNotBefore<Selections>("t", c => c.At),
                 Args(("value", LiteralValue.OfDateTimeOffset(T0)))
             ),
-            ["DateTime.Between/Outside"] = new(
-                nb => DateTimePredicates.Between<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => DateTimePredicates.Outside<Selections>("t", c => c.At, nullBehavior: nb),
-                () => DateTimePredicates.Between<Selections>("p", c => c.At),
-                () => DateTimePredicates.Outside<Selections>("t", c => c.At),
+            ["DateTime.IsBetween/IsNotBetween"] = new(
+                nb => DateTimePredicates.IsBetween<Selections>("p", c => c.At, nullBehavior: nb),
+                nb => DateTimePredicates.IsNotBetween<Selections>("t", c => c.At, nullBehavior: nb),
+                () => DateTimePredicates.IsBetween<Selections>("p", c => c.At),
+                () => DateTimePredicates.IsNotBetween<Selections>("t", c => c.At),
                 Args(("lower", LiteralValue.OfDateTimeOffset(T0)), ("upper", LiteralValue.OfDateTimeOffset(T0.AddDays(1))))
             ),
-            ["DateTime.AfterNow/NotAfterNow"] = new(
-                nb => DateTimePredicates.AfterNow<Selections>("p", c => c.At, Clock, nullBehavior: nb),
-                nb => DateTimePredicates.NotAfterNow<Selections>("t", c => c.At, Clock, nullBehavior: nb),
-                () => DateTimePredicates.AfterNow<Selections>("p", c => c.At, Clock),
-                () => DateTimePredicates.NotAfterNow<Selections>("t", c => c.At, Clock),
+            ["DateTime.IsAfterNow/IsNotAfterNow"] = new(
+                nb => DateTimePredicates.IsAfterNow<Selections>("p", c => c.At, Clock, nullBehavior: nb),
+                nb => DateTimePredicates.IsNotAfterNow<Selections>("t", c => c.At, Clock, nullBehavior: nb),
+                () => DateTimePredicates.IsAfterNow<Selections>("p", c => c.At, Clock),
+                () => DateTimePredicates.IsNotAfterNow<Selections>("t", c => c.At, Clock),
                 PredicateArguments.Empty
             ),
-            ["DateTime.BeforeNow/NotBeforeNow"] = new(
-                nb => DateTimePredicates.BeforeNow<Selections>("p", c => c.At, Clock, nullBehavior: nb),
-                nb => DateTimePredicates.NotBeforeNow<Selections>("t", c => c.At, Clock, nullBehavior: nb),
-                () => DateTimePredicates.BeforeNow<Selections>("p", c => c.At, Clock),
-                () => DateTimePredicates.NotBeforeNow<Selections>("t", c => c.At, Clock),
+            ["DateTime.IsBeforeNow/IsNotBeforeNow"] = new(
+                nb => DateTimePredicates.IsBeforeNow<Selections>("p", c => c.At, Clock, nullBehavior: nb),
+                nb => DateTimePredicates.IsNotBeforeNow<Selections>("t", c => c.At, Clock, nullBehavior: nb),
+                () => DateTimePredicates.IsBeforeNow<Selections>("p", c => c.At, Clock),
+                () => DateTimePredicates.IsNotBeforeNow<Selections>("t", c => c.At, Clock),
                 PredicateArguments.Empty
             ),
-            ["Int64.Equal/NotEqual"] = new(
-                nb => NumericPredicates.Equal<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.NotEqual<Selections>("t", c => c.Int64, nullBehavior: nb),
-                () => NumericPredicates.Equal<Selections>("p", c => c.Int64),
-                () => NumericPredicates.NotEqual<Selections>("t", c => c.Int64),
+            ["Int64.IsEqualTo/IsNotEqualTo"] = new(
+                nb => NumericPredicates.IsEqualTo<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotEqualTo<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsEqualTo<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotEqualTo<Selections>("t", c => c.Int64),
                 Args(("value", LiteralValue.OfInt64(5)))
             ),
-            ["Int64.LessThan/GreaterThanOrEqual"] = new(
-                nb => NumericPredicates.LessThan<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.GreaterThanOrEqual<Selections>("t", c => c.Int64, nullBehavior: nb),
-                () => NumericPredicates.LessThan<Selections>("p", c => c.Int64),
-                () => NumericPredicates.GreaterThanOrEqual<Selections>("t", c => c.Int64),
+            ["Int64.IsLessThan/IsNotLessThan"] = new(
+                nb => NumericPredicates.IsLessThan<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotLessThan<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsLessThan<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotLessThan<Selections>("t", c => c.Int64),
                 Args(("value", LiteralValue.OfInt64(5)))
             ),
-            ["Int64.GreaterThan/LessThanOrEqual"] = new(
-                nb => NumericPredicates.GreaterThan<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Int64, nullBehavior: nb),
-                () => NumericPredicates.GreaterThan<Selections>("p", c => c.Int64),
-                () => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Int64),
+            ["Int64.IsGreaterThan/IsNotGreaterThan"] = new(
+                nb => NumericPredicates.IsGreaterThan<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotGreaterThan<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsGreaterThan<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotGreaterThan<Selections>("t", c => c.Int64),
                 Args(("value", LiteralValue.OfInt64(5)))
             ),
-            ["Int64.Between/Outside"] = new(
-                nb => NumericPredicates.Between<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.Outside<Selections>("t", c => c.Int64, nullBehavior: nb),
-                () => NumericPredicates.Between<Selections>("p", c => c.Int64),
-                () => NumericPredicates.Outside<Selections>("t", c => c.Int64),
+            ["Int64.IsLessThanOrEqualTo/IsNotLessThanOrEqualTo"] = new(
+                nb => NumericPredicates.IsLessThanOrEqualTo<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotLessThanOrEqualTo<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsLessThanOrEqualTo<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotLessThanOrEqualTo<Selections>("t", c => c.Int64),
+                Args(("value", LiteralValue.OfInt64(5)))
+            ),
+            ["Int64.IsGreaterThanOrEqualTo/IsNotGreaterThanOrEqualTo"] = new(
+                nb => NumericPredicates.IsGreaterThanOrEqualTo<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotGreaterThanOrEqualTo<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsGreaterThanOrEqualTo<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotGreaterThanOrEqualTo<Selections>("t", c => c.Int64),
+                Args(("value", LiteralValue.OfInt64(5)))
+            ),
+            ["Int64.IsBetween/IsNotBetween"] = new(
+                nb => NumericPredicates.IsBetween<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotBetween<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsBetween<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotBetween<Selections>("t", c => c.Int64),
                 Args(("lower", LiteralValue.OfInt64(1)), ("upper", LiteralValue.OfInt64(5)))
             ),
-            ["Int64.In/NotIn"] = new(
-                nb => NumericPredicates.In<Selections>("p", c => c.Int64, nullBehavior: nb),
-                nb => NumericPredicates.NotIn<Selections>("t", c => c.Int64, nullBehavior: nb),
-                () => NumericPredicates.In<Selections>("p", c => c.Int64),
-                () => NumericPredicates.NotIn<Selections>("t", c => c.Int64),
+            ["Int64.IsIn/IsNotIn"] = new(
+                nb => NumericPredicates.IsIn<Selections>("p", c => c.Int64, nullBehavior: nb),
+                nb => NumericPredicates.IsNotIn<Selections>("t", c => c.Int64, nullBehavior: nb),
+                () => NumericPredicates.IsIn<Selections>("p", c => c.Int64),
+                () => NumericPredicates.IsNotIn<Selections>("t", c => c.Int64),
                 Args(("values", LiteralValue.OfArray(LiteralKind.Int64, [LiteralValue.OfInt64(1)])))
             ),
             ["Int64.IsDefault/IsNotDefault"] = new(
@@ -258,39 +272,53 @@ public sealed class TwinNullComplementTests
                 () => NumericPredicates.IsNotDefault<Selections>("t", c => c.Int64),
                 PredicateArguments.Empty
             ),
-            ["Decimal.Equal/NotEqual"] = new(
-                nb => NumericPredicates.Equal<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.NotEqual<Selections>("t", c => c.Decimal, nullBehavior: nb),
-                () => NumericPredicates.Equal<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.NotEqual<Selections>("t", c => c.Decimal),
+            ["Decimal.IsEqualTo/IsNotEqualTo"] = new(
+                nb => NumericPredicates.IsEqualTo<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotEqualTo<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsEqualTo<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotEqualTo<Selections>("t", c => c.Decimal),
                 Args(("value", LiteralValue.OfDecimal(5.5m)))
             ),
-            ["Decimal.LessThan/GreaterThanOrEqual"] = new(
-                nb => NumericPredicates.LessThan<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.GreaterThanOrEqual<Selections>("t", c => c.Decimal, nullBehavior: nb),
-                () => NumericPredicates.LessThan<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.GreaterThanOrEqual<Selections>("t", c => c.Decimal),
+            ["Decimal.IsLessThan/IsNotLessThan"] = new(
+                nb => NumericPredicates.IsLessThan<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotLessThan<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsLessThan<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotLessThan<Selections>("t", c => c.Decimal),
                 Args(("value", LiteralValue.OfDecimal(5.5m)))
             ),
-            ["Decimal.GreaterThan/LessThanOrEqual"] = new(
-                nb => NumericPredicates.GreaterThan<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Decimal, nullBehavior: nb),
-                () => NumericPredicates.GreaterThan<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.LessThanOrEqual<Selections>("t", c => c.Decimal),
+            ["Decimal.IsGreaterThan/IsNotGreaterThan"] = new(
+                nb => NumericPredicates.IsGreaterThan<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotGreaterThan<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsGreaterThan<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotGreaterThan<Selections>("t", c => c.Decimal),
                 Args(("value", LiteralValue.OfDecimal(5.5m)))
             ),
-            ["Decimal.Between/Outside"] = new(
-                nb => NumericPredicates.Between<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.Outside<Selections>("t", c => c.Decimal, nullBehavior: nb),
-                () => NumericPredicates.Between<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.Outside<Selections>("t", c => c.Decimal),
+            ["Decimal.IsLessThanOrEqualTo/IsNotLessThanOrEqualTo"] = new(
+                nb => NumericPredicates.IsLessThanOrEqualTo<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotLessThanOrEqualTo<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsLessThanOrEqualTo<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotLessThanOrEqualTo<Selections>("t", c => c.Decimal),
+                Args(("value", LiteralValue.OfDecimal(5.5m)))
+            ),
+            ["Decimal.IsGreaterThanOrEqualTo/IsNotGreaterThanOrEqualTo"] = new(
+                nb => NumericPredicates.IsGreaterThanOrEqualTo<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotGreaterThanOrEqualTo<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsGreaterThanOrEqualTo<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotGreaterThanOrEqualTo<Selections>("t", c => c.Decimal),
+                Args(("value", LiteralValue.OfDecimal(5.5m)))
+            ),
+            ["Decimal.IsBetween/IsNotBetween"] = new(
+                nb => NumericPredicates.IsBetween<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotBetween<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsBetween<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotBetween<Selections>("t", c => c.Decimal),
                 Args(("lower", LiteralValue.OfDecimal(1.5m)), ("upper", LiteralValue.OfDecimal(5.5m)))
             ),
-            ["Decimal.In/NotIn"] = new(
-                nb => NumericPredicates.In<Selections>("p", c => c.Decimal, nullBehavior: nb),
-                nb => NumericPredicates.NotIn<Selections>("t", c => c.Decimal, nullBehavior: nb),
-                () => NumericPredicates.In<Selections>("p", c => c.Decimal),
-                () => NumericPredicates.NotIn<Selections>("t", c => c.Decimal),
+            ["Decimal.IsIn/IsNotIn"] = new(
+                nb => NumericPredicates.IsIn<Selections>("p", c => c.Decimal, nullBehavior: nb),
+                nb => NumericPredicates.IsNotIn<Selections>("t", c => c.Decimal, nullBehavior: nb),
+                () => NumericPredicates.IsIn<Selections>("p", c => c.Decimal),
+                () => NumericPredicates.IsNotIn<Selections>("t", c => c.Decimal),
                 Args(("values", LiteralValue.OfArray(LiteralKind.Decimal, [LiteralValue.OfDecimal(1.5m)])))
             ),
             ["Decimal.IsDefault/IsNotDefault"] = new(
@@ -300,18 +328,18 @@ public sealed class TwinNullComplementTests
                 () => NumericPredicates.IsNotDefault<Selections>("t", c => c.Decimal),
                 PredicateArguments.Empty
             ),
-            ["Boolean.Equal/NotEqual"] = new(
-                nb => ScalarPredicates.Equal<Selections>("p", c => c.Flag, nullBehavior: nb),
-                nb => ScalarPredicates.NotEqual<Selections>("t", c => c.Flag, nullBehavior: nb),
-                () => ScalarPredicates.Equal<Selections>("p", c => c.Flag),
-                () => ScalarPredicates.NotEqual<Selections>("t", c => c.Flag),
+            ["Boolean.IsEqualTo/IsNotEqualTo"] = new(
+                nb => ScalarPredicates.IsEqualTo<Selections>("p", c => c.Flag, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.Flag, nullBehavior: nb),
+                () => ScalarPredicates.IsEqualTo<Selections>("p", c => c.Flag),
+                () => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.Flag),
                 Args(("value", LiteralValue.OfBoolean(true)))
             ),
-            ["Boolean.In/NotIn"] = new(
-                nb => ScalarPredicates.In<Selections>("p", c => c.Flag, nullBehavior: nb),
-                nb => ScalarPredicates.NotIn<Selections>("t", c => c.Flag, nullBehavior: nb),
-                () => ScalarPredicates.In<Selections>("p", c => c.Flag),
-                () => ScalarPredicates.NotIn<Selections>("t", c => c.Flag),
+            ["Boolean.IsIn/IsNotIn"] = new(
+                nb => ScalarPredicates.IsIn<Selections>("p", c => c.Flag, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotIn<Selections>("t", c => c.Flag, nullBehavior: nb),
+                () => ScalarPredicates.IsIn<Selections>("p", c => c.Flag),
+                () => ScalarPredicates.IsNotIn<Selections>("t", c => c.Flag),
                 Args(("values", LiteralValue.OfArray(LiteralKind.Boolean, [LiteralValue.OfBoolean(true)])))
             ),
             ["Boolean.IsDefault/IsNotDefault"] = new(
@@ -321,18 +349,18 @@ public sealed class TwinNullComplementTests
                 () => ScalarPredicates.IsNotDefault<Selections>("t", c => c.Flag),
                 PredicateArguments.Empty
             ),
-            ["Guid.Equal/NotEqual"] = new(
-                nb => ScalarPredicates.Equal<Selections>("p", c => c.Id, nullBehavior: nb),
-                nb => ScalarPredicates.NotEqual<Selections>("t", c => c.Id, nullBehavior: nb),
-                () => ScalarPredicates.Equal<Selections>("p", c => c.Id),
-                () => ScalarPredicates.NotEqual<Selections>("t", c => c.Id),
+            ["Guid.IsEqualTo/IsNotEqualTo"] = new(
+                nb => ScalarPredicates.IsEqualTo<Selections>("p", c => c.Id, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.Id, nullBehavior: nb),
+                () => ScalarPredicates.IsEqualTo<Selections>("p", c => c.Id),
+                () => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.Id),
                 Args(("value", LiteralValue.OfGuid(Guid.Empty)))
             ),
-            ["Guid.In/NotIn"] = new(
-                nb => ScalarPredicates.In<Selections>("p", c => c.Id, nullBehavior: nb),
-                nb => ScalarPredicates.NotIn<Selections>("t", c => c.Id, nullBehavior: nb),
-                () => ScalarPredicates.In<Selections>("p", c => c.Id),
-                () => ScalarPredicates.NotIn<Selections>("t", c => c.Id),
+            ["Guid.IsIn/IsNotIn"] = new(
+                nb => ScalarPredicates.IsIn<Selections>("p", c => c.Id, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotIn<Selections>("t", c => c.Id, nullBehavior: nb),
+                () => ScalarPredicates.IsIn<Selections>("p", c => c.Id),
+                () => ScalarPredicates.IsNotIn<Selections>("t", c => c.Id),
                 Args(("values", LiteralValue.OfArray(LiteralKind.Guid, [LiteralValue.OfGuid(Guid.Empty)])))
             ),
             ["Guid.IsDefault/IsNotDefault"] = new(
@@ -342,18 +370,18 @@ public sealed class TwinNullComplementTests
                 () => ScalarPredicates.IsNotDefault<Selections>("t", c => c.Id),
                 PredicateArguments.Empty
             ),
-            ["DateTimeOffset.Equal/NotEqual"] = new(
-                nb => ScalarPredicates.Equal<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => ScalarPredicates.NotEqual<Selections>("t", c => c.At, nullBehavior: nb),
-                () => ScalarPredicates.Equal<Selections>("p", c => c.At),
-                () => ScalarPredicates.NotEqual<Selections>("t", c => c.At),
+            ["DateTimeOffset.IsEqualTo/IsNotEqualTo"] = new(
+                nb => ScalarPredicates.IsEqualTo<Selections>("p", c => c.At, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.At, nullBehavior: nb),
+                () => ScalarPredicates.IsEqualTo<Selections>("p", c => c.At),
+                () => ScalarPredicates.IsNotEqualTo<Selections>("t", c => c.At),
                 Args(("value", LiteralValue.OfDateTimeOffset(T0)))
             ),
-            ["DateTimeOffset.In/NotIn"] = new(
-                nb => ScalarPredicates.In<Selections>("p", c => c.At, nullBehavior: nb),
-                nb => ScalarPredicates.NotIn<Selections>("t", c => c.At, nullBehavior: nb),
-                () => ScalarPredicates.In<Selections>("p", c => c.At),
-                () => ScalarPredicates.NotIn<Selections>("t", c => c.At),
+            ["DateTimeOffset.IsIn/IsNotIn"] = new(
+                nb => ScalarPredicates.IsIn<Selections>("p", c => c.At, nullBehavior: nb),
+                nb => ScalarPredicates.IsNotIn<Selections>("t", c => c.At, nullBehavior: nb),
+                () => ScalarPredicates.IsIn<Selections>("p", c => c.At),
+                () => ScalarPredicates.IsNotIn<Selections>("t", c => c.At),
                 Args(("values", LiteralValue.OfArray(LiteralKind.DateTimeOffset, [LiteralValue.OfDateTimeOffset(T0)])))
             ),
             ["DateTimeOffset.IsDefault/IsNotDefault"] = new(

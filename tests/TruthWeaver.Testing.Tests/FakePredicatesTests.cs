@@ -28,8 +28,9 @@ public sealed class FakePredicatesTests
         Assert.Equal("Is admin", schema.Label);
     }
 
+    /// <summary>Returning true always returns true.</summary>
     [Fact]
-    public async Task Returning_Bool_True_AlwaysReturnsTrue()
+    public async Task Returning_BoolTrue_AlwaysReturnsTrue_Test()
     {
         (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Returning<object?>("hasRole", true);
@@ -40,8 +41,9 @@ public sealed class FakePredicatesTests
         Assert.Equal("hasRole", schema.Name);
     }
 
+    /// <summary>Returning false always returns false.</summary>
     [Fact]
-    public async Task Returning_Bool_False_AlwaysReturnsFalse()
+    public async Task Returning_BoolFalse_AlwaysReturnsFalse_Test()
     {
         (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Returning<object?>("hasRole", false);
@@ -66,8 +68,9 @@ public sealed class FakePredicatesTests
         Assert.Equal(value, result);
     }
 
+    /// <summary>Faulting always throws the given exception.</summary>
     [Fact]
-    public async Task Faulting_AlwaysThrowsGivenException()
+    public async Task Faulting_Call_AlwaysThrowsGivenException_Test()
     {
         InvalidOperationException exception = new("boom");
         (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
@@ -79,14 +82,16 @@ public sealed class FakePredicatesTests
         Assert.Same(exception, thrown);
     }
 
+    /// <summary>Faulting throws for a null exception.</summary>
     [Fact]
-    public void Faulting_NullException_Throws()
+    public void Faulting_NullException_Throws_Test()
     {
         Assert.Throws<ArgumentNullException>(() => FakePredicates.Faulting<object?>("hasRole", null!));
     }
 
+    /// <summary>Scripted returns successive answers in order.</summary>
     [Fact]
-    public async Task Scripted_ReturnsSuccessiveAnswersInOrder()
+    public async Task Scripted_Calls_ReturnSuccessiveAnswersInOrder_Test()
     {
         (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Scripted<object?>("flapping", [TruthValue.True, TruthValue.False, TruthValue.Unknown]);
@@ -100,8 +105,9 @@ public sealed class FakePredicatesTests
         Assert.Equal(TruthValue.Unknown, third);
     }
 
+    /// <summary>Scripted throws when called more often than it has answers.</summary>
     [Fact]
-    public async Task Scripted_MoreCallsThanScriptedAnswers_Throws()
+    public async Task Scripted_MoreCallsThanScriptedAnswers_Throws_Test()
     {
         (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             FakePredicates.Scripted<object?>("flapping", [TruthValue.True]);
@@ -113,8 +119,9 @@ public sealed class FakePredicatesTests
         );
     }
 
+    /// <summary>Scripted throws for an empty script.</summary>
     [Fact]
-    public void Scripted_EmptyScript_Throws()
+    public void Scripted_EmptyScript_Throws_Test()
     {
         Assert.Throws<ArgumentException>(() => FakePredicates.Scripted<object?>("flapping", []));
     }

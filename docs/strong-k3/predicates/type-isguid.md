@@ -1,6 +1,6 @@
 # Type IsGuid
 
-`IsGuid` is `True` when the selected value is a GUID. A null selected value answers `Unknown`. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
+`IsGuid` is `True` when the selected value is a GUID. A null selected value answers `Unknown` by default. Back to the [Predicates index](README.md); shared rules are in the [specification](../specification/README.md).
 
 ## Name
 
@@ -55,7 +55,7 @@ The table shows the rule `idIsGuid`.
 
 ## Null selected value
 
-A null selected value answers `Unknown`. It records no fault. This predicate has no `nullBehavior` option, because the type of a missing value is not known. The twin answers `Unknown` for a null selected value too. See [Null selected values](README.md#null-selected-values).
+A null selected value answers `Unknown` by default, because the type of a missing value is not known. It records no fault. A host can register the predicate with `NullBehavior.False`. A null selected value then answers `False`. The twin answers the complement in both cases. See [Null selected values](README.md#null-selected-values).
 
 ## Examples
 
@@ -74,5 +74,5 @@ A null selected value answers `Unknown`. It records no fault. This predicate has
 ## Related predicates
 
 - [IsNotGuid](type-isnotguid.md) is the exact complement of this predicate.
-- [Equal](scalar-equal.md) tests a `Guid` selector for equality with a `Guid` literal.
+- [IsEqualTo](scalar-isequalto.md) tests a `Guid` selector for equality with a `Guid` literal.
 - [IsString](type-isstring.md) tests for a string.

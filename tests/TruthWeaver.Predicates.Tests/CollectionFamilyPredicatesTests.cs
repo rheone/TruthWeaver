@@ -4,7 +4,7 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Pins the collection family of <see cref="CollectionPredicates"/>: emptiness, membership, the
-/// containment predicates, scalar <c>In</c>/<c>NotIn</c> and the count comparisons, each with its
+/// containment predicates, scalar <c>IsIn</c>/<c>IsNotIn</c> and the count comparisons, each with its
 /// Strong Kleene <c>NotX</c> twin, for a null, empty, one-item and many-item collection.
 /// </summary>
 public class CollectionFamilyPredicatesTests
@@ -137,19 +137,19 @@ public class CollectionFamilyPredicatesTests
     }
 
     /// <summary>
-    /// In and NotIn read a scalar string selector, so a collection selector does not compile: that is
+    /// IsIn and IsNotIn read a scalar string selector, so a collection selector does not compile: that is
     /// how a collection selector is rejected. The scalar is tested against the candidate array.
     /// </summary>
     [Theory]
     [InlineData("a", TruthValue.True)]
     [InlineData("A", TruthValue.False)]
     [InlineData("z", TruthValue.False)]
-    public async Task In_ScalarSelector_ReturnsMembership_Test(string value, TruthValue expected)
+    public async Task IsIn_ScalarSelector_ReturnsMembership_Test(string value, TruthValue expected)
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            CollectionPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.IsIn<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            CollectionPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.IsNotIn<TestContext>("notIn", c => c.Value);
         TestContext context = new(value);
 
         Assert.Equal(expected, await RunAsync(isIn, context, Array("values", "a", "b")));
@@ -200,10 +200,10 @@ public class CollectionFamilyPredicatesTests
             CollectionPredicates.NotContainsAll<TestContext>("p", c => c.Values).Evaluate,
             CollectionPredicates.IsSubsetOf<TestContext>("p", c => c.Values).Evaluate,
             CollectionPredicates.IsNotSubsetOf<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountEqual<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.NotCountEqual<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountLessThan<TestContext>("p", c => c.Values).Evaluate,
-            CollectionPredicates.CountGreaterThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.NotHasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountLessThan<TestContext>("p", c => c.Values).Evaluate,
+            CollectionPredicates.HasCountGreaterThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
         ];
         PredicateArguments args = new(
             new Dictionary<string, LiteralValue>
@@ -220,14 +220,14 @@ public class CollectionFamilyPredicatesTests
         }
     }
 
-    /// <summary>A null scalar is Unknown for In and NotIn by default.</summary>
+    /// <summary>A null scalar is Unknown for IsIn and IsNotIn by default.</summary>
     [Fact]
-    public async Task In_NullScalarByDefault_ReturnsUnknown_Test()
+    public async Task IsIn_NullScalarByDefault_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> isIn) =
-            CollectionPredicates.In<TestContext>("in", c => c.Value);
+            StringPredicates.IsIn<TestContext>("in", c => c.Value);
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notIn) =
-            CollectionPredicates.NotIn<TestContext>("notIn", c => c.Value);
+            StringPredicates.IsNotIn<TestContext>("notIn", c => c.Value);
 
         Assert.Equal(TruthValue.Unknown, await RunAsync(isIn, new TestContext(null), Array("values", "a")));
         Assert.Equal(TruthValue.Unknown, await RunAsync(notIn, new TestContext(null), Array("values", "a")));
@@ -238,7 +238,7 @@ public class CollectionFamilyPredicatesTests
     public async Task Count_NullCollectionWithFalseOption_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> equal) =
-            CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values, nullBehavior: NullBehavior.False);
+            CollectionPredicates.HasCountEqualTo<TestContext>("countEqual", c => c.Values, nullBehavior: NullBehavior.False);
 
         TruthValue result = await RunAsync(equal, new TestContext(null, null), Scalar("count", 0L));
 
@@ -249,10 +249,10 @@ public class CollectionFamilyPredicatesTests
     [Fact]
     public void Schema_CountContainsAnyContainsAndIn_DeclareLiteralKindsAndDescription_Test()
     {
-        (PredicateSchema count, _) = CollectionPredicates.CountEqual<TestContext>("countEqual", c => c.Values);
+        (PredicateSchema count, _) = CollectionPredicates.HasCountEqualTo<TestContext>("countEqual", c => c.Values);
         (PredicateSchema any, _) = CollectionPredicates.ContainsAny<TestContext>("any", c => c.Values);
         (PredicateSchema contains, _) = CollectionPredicates.Contains<TestContext>("contains", c => c.Values);
-        (PredicateSchema isIn, _) = CollectionPredicates.In<TestContext>("in", c => c.Value);
+        (PredicateSchema isIn, _) = StringPredicates.IsIn<TestContext>("in", c => c.Value);
 
         Assert.Equal(LiteralKind.Int64, Assert.Single(count.Arguments).Type);
         Assert.Equal(LiteralKind.StringArray, Assert.Single(any.Arguments).Type);
@@ -269,24 +269,24 @@ public class CollectionFamilyPredicatesTests
         return kind switch
         {
             "Equal" => (
-                CollectionPredicates.CountEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
             "LessThan" => (
-                CollectionPredicates.CountLessThan<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountLessThan<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountLessThan<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountLessThan<TestContext>("t", c => c.Values).Evaluate
             ),
             "GreaterThan" => (
-                CollectionPredicates.CountGreaterThan<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountGreaterThan<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountGreaterThan<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountGreaterThan<TestContext>("t", c => c.Values).Evaluate
             ),
             "LessThanOrEqual" => (
-                CollectionPredicates.CountLessThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountLessThanOrEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountLessThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountLessThanOrEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
             _ => (
-                CollectionPredicates.CountGreaterThanOrEqual<TestContext>("p", c => c.Values).Evaluate,
-                CollectionPredicates.NotCountGreaterThanOrEqual<TestContext>("t", c => c.Values).Evaluate
+                CollectionPredicates.HasCountGreaterThanOrEqualTo<TestContext>("p", c => c.Values).Evaluate,
+                CollectionPredicates.NotHasCountGreaterThanOrEqualTo<TestContext>("t", c => c.Values).Evaluate
             ),
         };
     }

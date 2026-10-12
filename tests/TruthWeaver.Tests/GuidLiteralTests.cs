@@ -13,8 +13,9 @@ public sealed class GuidLiteralTests
 {
     private static readonly Guid MatchId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
+    /// <summary>A Guid argument matching the schema evaluates to true.</summary>
     [Fact]
-    public async Task Guid_argument_matching_the_schema_evaluates_to_true()
+    public async Task Evaluate_GuidArgumentMatchingSchema_ReturnsTrue_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddGuidArgPredicate("hasId", "id", MatchId).Build()
@@ -31,8 +32,9 @@ public sealed class GuidLiteralTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A Guid argument not matching the schema evaluates to false.</summary>
     [Fact]
-    public async Task Guid_argument_not_matching_the_schema_evaluates_to_false()
+    public async Task Evaluate_GuidArgumentNotMatchingSchema_ReturnsFalse_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddGuidArgPredicate("hasId", "id", MatchId).Build()
@@ -49,8 +51,9 @@ public sealed class GuidLiteralTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>A malformed Guid literal is a compile error, not an exception.</summary>
     [Fact]
-    public void A_malformed_guid_literal_is_a_compile_error_not_an_exception()
+    public void Literal_MalformedGuid_IsCompileError_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddGuidArgPredicate("hasId", "id", MatchId).Build()
@@ -62,8 +65,9 @@ public sealed class GuidLiteralTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.ArgumentTypeMismatch);
     }
 
+    /// <summary>A Guid argument round trips through DSL, JSON and YAML.</summary>
     [Fact]
-    public void Guid_argument_round_trips_through_dsl_json_and_yaml()
+    public void Literal_GuidArgument_RoundTripsThroughDslJsonAndYaml_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddGuidArgPredicate("hasId", "id", MatchId).Build()
@@ -77,8 +81,9 @@ public sealed class GuidLiteralTests
         Assert.Equal(original.CanonicalText, fromYaml.CanonicalText);
     }
 
+    /// <summary>Guid array arguments with a different element order are distinct terms.</summary>
     [Fact]
-    public void Guid_array_arguments_with_different_element_order_are_distinct_terms()
+    public void Identity_GuidArrayElementOrder_ProducesDistinctTerms_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>

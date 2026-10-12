@@ -19,6 +19,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly JsonDataSources = typeof(TruthWeaver.DataSources.Json.JsonDataSource).Assembly;
     private static readonly Assembly Predicates = typeof(TruthWeaver.Predicates.StringPredicates).Assembly;
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
+    private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
     // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) —
@@ -41,8 +42,9 @@ public sealed class PackageBoundaryTests
         "TruthWeaver.Registry",
     ];
 
+    /// <summary>Abstractions has no dependency on any other TruthWeaver assembly.</summary>
     [Fact]
-    public void Abstractions_has_no_dependency_on_any_other_truthweaver_assembly()
+    public void Abstractions_Dependencies_ExcludeOtherTruthWeaverAssemblies_Test()
     {
         TestResult result = Types
             .InAssembly(Abstractions)
@@ -59,8 +61,9 @@ public sealed class PackageBoundaryTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>Predicates depends on Abstractions alone.</summary>
     [Fact]
-    public void Predicates_depends_on_abstractions_alone_never_the_parser_compiler_or_analyzer()
+    public void Predicates_Dependencies_AreAbstractionsOnly_Test()
     {
         TestResult result = Types
             .InAssembly(Predicates)
@@ -74,28 +77,43 @@ public sealed class PackageBoundaryTests
     }
 
     /// <summary>
-    /// ADR-0004 (amended 2026-10-09): <c>TruthWeaver.Testing</c> now takes a project reference to
-    /// <c>TruthWeaver</c> (the compiler/analyzer package) so rule-level testing tools (an equivalence
-    /// assertion, a predicate harness, a public rule fuzzer) can live beside <c>DecisionAssertions</c>.
-    /// It still never depends on the YAML package, the ready-made predicates, or the JSON data source
-    /// package, each of which is optional and orthogonal to testing support.
+    /// ADR-0004 (amended 2026-10-09 and 2026-10-11):
+    /// <c>TruthWeaver.Testing</c> references <c>TruthWeaver</c> (the compiler and analyzer) for the rule-level testing
+    /// tools, and <c>TruthWeaver.Yaml</c> for the declarative rule tests: the test file is YAML, a rule can be YAML, and
+    /// case data is a YAML or JSON data source. It never depends on the ready-made predicates, which are orthogonal to
+    /// testing support.
     /// </summary>
     [Fact]
-    public void Testing_depends_on_truthweaver_and_abstractions_alone_never_yaml_predicates_or_json_data_sources()
+    public void Testing_Dependencies_ExcludePredicates_Test()
     {
         TestResult result = Types
             .InAssembly(Testing)
             .That()
             .ResideInNamespace("TruthWeaver.Testing")
             .ShouldNot()
-            .HaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.DataSources")
+            .HaveDependencyOnAny("TruthWeaver.Predicates")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    /// <summary>
+    /// The declarative rule tests read YAML through <c>TruthWeaver.Yaml</c>, so <c>TruthWeaver.Testing</c> references that
+    /// package, which brings YamlDotNet and the JSON data source package. Testing adds no package reference of its own.
+    /// </summary>
     [Fact]
-    public void Core_has_no_dependency_on_yaml_predicates_or_testing()
+    public void Testing_References_YamlPackage_Test()
+    {
+        string[] referenced = [.. Testing.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Yaml", referenced);
+        Assert.Contains("TruthWeaver", referenced);
+        Assert.DoesNotContain("TruthWeaver.Predicates", referenced);
+    }
+
+    /// <summary>Core has no dependency on the Yaml, Predicates or Testing packages.</summary>
+    [Fact]
+    public void Core_Dependencies_ExcludeYamlPredicatesAndTesting_Test()
     {
         TestResult result = Types
             .InAssembly(Core)
@@ -116,7 +134,7 @@ public sealed class PackageBoundaryTests
     /// <c>TruthWeaver.DataSources.Json</c> does.
     /// </summary>
     [Fact]
-    public void Core_and_abstractions_reference_no_jsonpath_assembly()
+    public void Core_Dependencies_ExcludeJsonPathAssembly_Test()
     {
         string[] jsonAssemblies = ["Meziantou.Framework.JsonPath", "JsonPath.Net", "Json.More"];
 
@@ -129,7 +147,7 @@ public sealed class PackageBoundaryTests
 
     /// <summary>The JSON data source package depends on the abstractions alone: never the core compiler, the YAML package or the predicates.</summary>
     [Fact]
-    public void JsonDataSources_depends_on_abstractions_alone()
+    public void JsonDataSources_Dependencies_AreAbstractionsOnly_Test()
     {
         TestResult result = Types
             .InAssembly(JsonDataSources)
@@ -147,7 +165,7 @@ public sealed class PackageBoundaryTests
     /// package and takes no JSONPath library of its own.
     /// </summary>
     [Fact]
-    public void Yaml_references_the_json_data_source_package_but_not_the_jsonpath_library_directly()
+    public void Yaml_References_JsonDataSourcePackageOnly_Test()
     {
         string[] referenced = [.. Yaml.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
 
@@ -157,8 +175,9 @@ public sealed class PackageBoundaryTests
         Assert.DoesNotContain("Json.More", referenced);
     }
 
+    /// <summary>Yaml has no dependency on the Predicates or Testing packages.</summary>
     [Fact]
-    public void Yaml_has_no_dependency_on_predicates_or_testing()
+    public void Yaml_Dependencies_ExcludePredicatesAndTesting_Test()
     {
         TestResult result = Types
             .InAssembly(Yaml)
@@ -175,7 +194,7 @@ public sealed class PackageBoundaryTests
     /// references the generator.
     /// </summary>
     [Fact]
-    public void Generators_references_no_truthweaver_assembly_and_no_package_references_it()
+    public void Generators_Dependencies_ExcludeTruthWeaverAssemblies_Test()
     {
         // Loaded by name: the generator types derive from Roslyn types, which this test process does not load.
         Assembly generators = Assembly.Load("TruthWeaver.Generators");
@@ -187,6 +206,56 @@ public sealed class PackageBoundaryTests
         {
             Assert.DoesNotContain(
                 "TruthWeaver.Generators",
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Tool.Core</c> is the UI-free core of the command line and terminal UI. It references only TruthWeaver
+    /// assemblies and the libraries they bring, never a command-line or terminal UI library, and no test support.
+    /// </summary>
+    [Fact]
+    public void ToolCore_References_ExcludeUiCommandLineAndTestingAssemblies_Test()
+    {
+        string[] forbidden = ["System.CommandLine", "Terminal.Gui", "TruthWeaver.Testing", "TruthWeaver.Predicates"];
+
+        string[] referenced = [.. ToolCore.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver", referenced);
+        Assert.DoesNotContain(referenced, name => forbidden.Contains(name, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// The command line is the only project with <c>System.CommandLine</c>, and it builds on the tool core. No package and
+    /// not the tool core references the command line.
+    /// </summary>
+    [Fact]
+    public void Tool_References_ToolCoreAndCommandLineOnlyThere_Test()
+    {
+        // Loaded by name: the command line is an executable, and its types are internal.
+        Assembly tool = Assembly.Load("TruthWeaver.Tool");
+
+        string[] referenced = [.. tool.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Tool.Core", referenced);
+        Assert.Contains("System.CommandLine", referenced);
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain("TruthWeaver.Tool", names);
+            Assert.DoesNotContain("System.CommandLine", names);
+        }
+    }
+
+    /// <summary>No shipping package depends on the tool core: the tools build on the packages, never the reverse.</summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludeToolCore_Test()
+    {
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing })
+        {
+            Assert.DoesNotContain(
+                ToolCore.GetName().Name,
                 assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
             );
         }

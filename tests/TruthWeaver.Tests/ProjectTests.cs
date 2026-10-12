@@ -6,7 +6,6 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -32,12 +31,12 @@ public sealed class ProjectTests
     /// <c>Unknown</c>, and the decision's own result is the raw value whatever was projected.
     /// </summary>
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Project_OverAllInputs_MatchesOracleAndLeavesTheResultRaw_Test(bool unknownAs)
+    [InlineData(TruthValue.True)]
+    [InlineData(TruthValue.False)]
+    public async Task Project_OverAllInputs_MatchesOracleAndLeavesTheResultRaw_Test(TruthValue unknownAs)
     {
         K3Rule rule = K3Rule.TryCreate("a", 1)!;
-        TruthValue replacement = unknownAs ? TruthValue.True : TruthValue.False;
+        TruthValue replacement = unknownAs;
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(1))
         {
@@ -52,12 +51,12 @@ public sealed class ProjectTests
 
     /// <summary>The projection applies to a composed expression's K3 result, not to its parts.</summary>
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Project_OverAComposedExpression_ProjectsItsK3Result_Test(bool unknownAs)
+    [InlineData(TruthValue.True)]
+    [InlineData(TruthValue.False)]
+    public async Task Project_OverAComposedExpression_ProjectsItsK3Result_Test(TruthValue unknownAs)
     {
         K3Rule rule = K3Rule.TryCreate("a AND (b OR NOT c)", 3)!;
-        TruthValue replacement = unknownAs ? TruthValue.True : TruthValue.False;
+        TruthValue replacement = unknownAs;
 
         foreach (TruthValue[] assignment in K3Oracle.Assignments(3))
         {
@@ -74,9 +73,9 @@ public sealed class ProjectTests
     /// which is why the in-rule form needs no operator of its own.
     /// </summary>
     [Theory]
-    [InlineData(true, "True")]
-    [InlineData(false, "False")]
-    public async Task Project_OverAllInputs_AgreesWithACoalesceInsideTheRule_Test(bool unknownAs, string value)
+    [InlineData(TruthValue.True, "True")]
+    [InlineData(TruthValue.False, "False")]
+    public async Task Project_OverAllInputs_AgreesWithACoalesceInsideTheRule_Test(TruthValue unknownAs, string value)
     {
         K3Rule raw = K3Rule.TryCreate("a AND b", 2)!;
         K3Rule coalesced = K3Rule.TryCreate($"COALESCE(a AND b, {value})", 2)!;
@@ -96,9 +95,12 @@ public sealed class ProjectTests
     /// from "broke".
     /// </summary>
     [Theory]
-    [InlineData(true, TruthValue.True)]
-    [InlineData(false, TruthValue.False)]
-    public async Task Project_OverAFaultingPredicate_KeepsTheFaultAndTheUnknownResult_Test(bool unknownAs, TruthValue expected)
+    [InlineData(TruthValue.True, TruthValue.True)]
+    [InlineData(TruthValue.False, TruthValue.False)]
+    public async Task Project_OverAFaultingPredicate_KeepsTheFaultAndTheUnknownResult_Test(
+        TruthValue unknownAs,
+        TruthValue expected
+    )
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("boom").Build()
@@ -119,6 +121,35 @@ public sealed class ProjectTests
     }
 
     /// <summary>
+    /// <c>Project</c> accepts only <c>True</c> or <c>False</c>: <c>Unknown</c> or an undefined value throws
+    /// <see cref="ArgumentOutOfRangeException"/> for every result, the same rule <c>Collapse</c> applies to an undefined policy.
+    /// </summary>
+    [Theory]
+    [InlineData(TruthValue.True, TruthValue.Unknown)]
+    [InlineData(TruthValue.False, TruthValue.Unknown)]
+    [InlineData(TruthValue.Unknown, TruthValue.Unknown)]
+    [InlineData(TruthValue.True, (TruthValue)99)]
+    [InlineData(TruthValue.Unknown, (TruthValue)99)]
+    public void Project_UnknownOrUndefinedArgument_ThrowsForEveryResult_Test(TruthValue result, TruthValue unknownAs)
+    {
+        Decision decision = new(result, []);
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(unknownAs), () => decision.Project(unknownAs));
+    }
+
+    /// <summary>
+    /// <c>Collapse</c> applies the same up-front rule to an undefined policy: it throws
+    /// <see cref="ArgumentOutOfRangeException"/> even when the result is definite.
+    /// </summary>
+    [Fact]
+    public void Collapse_UndefinedPolicy_ThrowsForADefiniteResult_Test()
+    {
+        Decision decision = new(TruthValue.True, []);
+
+        Assert.Throws<ArgumentOutOfRangeException>("policy", () => decision.Collapse((CollapsePolicy)99));
+    }
+
+    /// <summary>
     /// <c>Decision.IsSatisfied</c> stays fail-closed: true only for a <c>True</c> result. Projecting <c>Unknown</c> to
     /// <c>True</c> does not change that.
     /// </summary>
@@ -126,12 +157,12 @@ public sealed class ProjectTests
     [InlineData(TruthValue.True, true)]
     [InlineData(TruthValue.False, false)]
     [InlineData(TruthValue.Unknown, false)]
-    public async Task IsSatisfied_IsTrueOnlyForTrueWhateverProjectionIsApplied_Test(TruthValue input, bool expected)
+    public async Task IsSatisfied_TrueOnly_WhateverProjectionIsApplied_Test(TruthValue input, bool expected)
     {
         K3Rule rule = K3Rule.TryCreate("a", 1)!;
 
         Decision decision = await rule.EvaluateAsync([input], TestContext.Current.CancellationToken);
-        TruthValue lenient = decision.Project(unknownAs: true);
+        TruthValue lenient = decision.Project(unknownAs: TruthValue.True);
 
         Assert.Equal(expected, decision.IsSatisfied);
         Assert.Equal(input == TruthValue.False ? TruthValue.False : TruthValue.True, lenient);

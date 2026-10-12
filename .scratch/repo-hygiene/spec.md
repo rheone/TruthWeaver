@@ -11,7 +11,7 @@ Tickets are in `issues/`.
 
 ## Follow-up: convention enforcement (2026-10-10)
 
-**Status:** ready for implementation (tickets 03 to 07). Tickets 01 and 02 stay done.
+**Status:** tickets 03 to 08 done. Tickets 01 and 02 stay done.
 
 A scan on branch `roadmap-tickets` found five places where a written rule has no check, or a disabled check has no review date.
 The scan used grep only. Each ticket starts by confirming its numbers.

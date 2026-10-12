@@ -1,7 +1,6 @@
 namespace TruthWeaver.Registry;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Where predicate implementations are registered under a name, with their argument schema

@@ -57,8 +57,9 @@ public sealed class RuleNodeCompilerDiagnosticsTests
         );
     }
 
+    /// <summary>A term argument name that the predicate schema does not declare produces an unknown argument diagnostic.</summary>
     [Fact]
-    public void A_term_argument_name_the_predicate_schema_does_not_declare_produces_an_unknown_argument_diagnostic()
+    public void Arguments_UndeclaredName_ProducesUnknownArgumentDiagnostic_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
@@ -77,8 +78,9 @@ public sealed class RuleNodeCompilerDiagnosticsTests
         );
     }
 
+    /// <summary>An omitted optional argument with a declared default resolves to that default when evaluated.</summary>
     [Fact]
-    public async Task An_omitted_optional_argument_with_a_declared_default_resolves_to_that_default_when_evaluated()
+    public async Task Arguments_OmittedOptionalWithDefault_ResolvesToDefault_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>

@@ -1,6 +1,5 @@
 namespace TruthWeaver.Rewriting;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
@@ -19,8 +18,11 @@ using TruthWeaver.Printing;
 /// </remarks>
 internal static class Canonicalizer
 {
-    /// <summary>A safety bound on the repeat-until-stable loop; one bottom-up pass is already a fixed point in practice.</summary>
-    private const int MaxPasses = 8;
+    /// <summary>
+    /// The pass limit of the repeat-until-stable loop; one bottom-up pass is already a fixed point in practice. A rewrite that
+    /// reaches the limit reports <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/>.
+    /// </summary>
+    internal const int MaxPasses = 8;
 
     /// <summary>Canonicalises <paramref name="root"/> and everything below it.</summary>
     /// <param name="root">The tree to canonicalise.</param>
@@ -28,19 +30,29 @@ internal static class Canonicalizer
     /// <returns>The canonical tree, which evaluates identically and is never larger.</returns>
     public static Expression Canonicalize(Expression root, RewriteTrace? trace = null)
     {
+        return CanonicalizeChecked(root, trace).Tree;
+    }
+
+    /// <summary>Canonicalises <paramref name="root"/> and says whether the repeat-until-stable loop reached a fixed point.</summary>
+    /// <param name="root">The tree to canonicalise.</param>
+    /// <param name="trace">Receives each change, or <see langword="null"/> to report nothing.</param>
+    /// <param name="maxPasses">The most passes to run. A test lowers it to force non-convergence.</param>
+    /// <returns>The canonical tree and whether the loop converged within <paramref name="maxPasses"/>.</returns>
+    public static RewriteOutcome CanonicalizeChecked(Expression root, RewriteTrace? trace = null, int maxPasses = MaxPasses)
+    {
         Expression current = root;
-        for (int pass = 0; pass < MaxPasses; pass++)
+        for (int pass = 0; pass < maxPasses; pass++)
         {
             Expression next = new Pass(trace).Visit(current);
             if (next.Equals(current))
             {
-                return current;
+                return new RewriteOutcome(current, Converged: true);
             }
 
             current = next;
         }
 
-        return current;
+        return new RewriteOutcome(current, Converged: false);
     }
 
     /// <summary>

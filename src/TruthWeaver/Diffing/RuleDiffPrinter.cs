@@ -29,6 +29,38 @@ public static class RuleDiffPrinter
         return diff.HasChanges ? string.Join('\n', diff.Entries.Select(PrintEntry)) : "No changes.";
     }
 
+    /// <summary>
+    /// Writes a diff as human-readable text to <paramref name="writer"/>, one entry at a time. The output is exactly the text
+    /// that <see cref="Print(RuleDiffResult)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="diff">The diff to render.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="diff"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public static void Print(TextWriter writer, RuleDiffResult diff)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(diff);
+
+        if (!diff.HasChanges)
+        {
+            writer.Write("No changes.");
+            return;
+        }
+
+        bool first = true;
+        foreach (RuleDiffEntry entry in diff.Entries)
+        {
+            if (!first)
+            {
+                writer.Write('\n');
+            }
+
+            first = false;
+            writer.Write(PrintEntry(entry));
+        }
+    }
+
     private static string PrintEntry(RuleDiffEntry entry)
     {
         string path = PrintPath(entry.Path);

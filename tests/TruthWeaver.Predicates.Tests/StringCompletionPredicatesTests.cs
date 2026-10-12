@@ -80,9 +80,9 @@ public class StringCompletionPredicatesTests
 
     /// <summary>Comparison twins agree with the K3 complement of the positive form for null, match and non-match.</summary>
     [Theory]
-    [InlineData("Equals", "NotEqual", "value", "abc")]
+    [InlineData("IsEqualTo", "IsNotEqualTo", "value", "abc")]
     [InlineData("Contains", "NotContains", "value", "b")]
-    [InlineData("Matches", "NotMatches", "pattern", "^a")]
+    [InlineData("IsMatch", "IsNotMatch", "pattern", "^a")]
     public async Task ComparisonTwin_AnySelection_IsK3ComplementOfPositive_Test(
         string positive,
         string twin,
@@ -101,9 +101,9 @@ public class StringCompletionPredicatesTests
 
     /// <summary>The comparison twins use ordinal, case-sensitive comparison.</summary>
     [Fact]
-    public async Task NotEqual_DifferentCase_ReturnsTrue_Test()
+    public async Task IsNotEqualTo_DifferentCase_ReturnsTrue_Test()
     {
-        Evaluate evaluate = Comparison("NotEqual");
+        Evaluate evaluate = Comparison("IsNotEqualTo");
 
         TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "alice"), CancellationToken.None);
 
@@ -126,14 +126,14 @@ public class StringCompletionPredicatesTests
     }
 
     /// <summary>
-    /// Under <c>NullBehavior.False</c>, <c>Equals</c> answers False for a null selection, so its twin answers the
+    /// Under <c>NullBehavior.False</c>, <c>IsEqualTo</c> answers False for a null selection, so its twin answers the
     /// complement, True.
     /// </summary>
     [Fact]
-    public async Task NotEqual_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
+    public async Task IsNotEqualTo_NullSelectionWithFalseBehavior_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.NotEqual<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
+            StringPredicates.IsNotEqualTo<TestContext>("ne", c => c.Value, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "x"), CancellationToken.None);
 
@@ -142,9 +142,9 @@ public class StringCompletionPredicatesTests
 
     /// <summary>An invalid pattern throws at evaluation time, which the evaluator turns into Unknown plus a Fault.</summary>
     [Fact]
-    public Task NotMatches_InvalidPattern_ThrowsSoTheEvaluatorRecordsAFault_Test()
+    public Task IsNotMatch_InvalidPattern_ThrowsSoTheEvaluatorRecordsAFault_Test()
     {
-        Evaluate evaluate = Comparison("NotMatches");
+        Evaluate evaluate = Comparison("IsNotMatch");
 
         return Assert.ThrowsAsync<RegexParseException>(async () =>
             await evaluate(new TestContext("anything"), Args("pattern", "("), CancellationToken.None)
@@ -163,16 +163,19 @@ public class StringCompletionPredicatesTests
             StringPredicates.IsNullOrWhiteSpace<TestContext>("a", c => c.Value).Schema,
             StringPredicates.IsNotNullOrWhiteSpace<TestContext>("a", c => c.Value).Schema,
         ];
-        PredicateSchema[] oneArg =
-        [
-            StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema,
-            StringPredicates.NotEqual<TestContext>("a", c => c.Value).Schema,
-            RegexPredicates.NotMatches<TestContext>("a", c => c.Value).Schema,
-        ];
+        PredicateSchema[] oneArg = [StringPredicates.NotContains<TestContext>("a", c => c.Value).Schema];
+        PredicateSchema isNotMatch = RegexPredicates.IsNotMatch<TestContext>("a", c => c.Value).Schema;
 
         Assert.All(noArgs, s => Assert.Empty(s.Arguments));
         Assert.All(oneArg, s => Assert.Equal(LiteralKind.String, Assert.Single(s.Arguments).Type));
-        Assert.All(noArgs.Concat(oneArg), s => Assert.False(string.IsNullOrWhiteSpace(s.Description)));
+        PredicateSchema notEqualTo = StringPredicates.IsNotEqualTo<TestContext>("a", c => c.Value).Schema;
+        Assert.Equal(LiteralKind.String, notEqualTo.Arguments[0].Type);
+        Assert.Equal(["value", "ignoreCase", "trim"], notEqualTo.Arguments.Select(a => a.Name));
+        Assert.Equal(["pattern", "flags"], isNotMatch.Arguments.Select(a => a.Name));
+        Assert.All(
+            noArgs.Concat(oneArg).Append(notEqualTo).Append(isNotMatch),
+            s => Assert.False(string.IsNullOrWhiteSpace(s.Description))
+        );
     }
 
     private static TruthValue Complement(TruthValue value)
@@ -204,9 +207,11 @@ public class StringCompletionPredicatesTests
     {
         Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
-            "Equals" => StringPredicates.Equals<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotEqual" => StringPredicates
-                .NotEqual<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+            "IsEqualTo" => StringPredicates
+                .IsEqualTo<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+                .Evaluate,
+            "IsNotEqualTo" => StringPredicates
+                .IsNotEqualTo<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
             "Contains" => StringPredicates
                 .Contains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
@@ -214,9 +219,9 @@ public class StringCompletionPredicatesTests
             "NotContains" => StringPredicates
                 .NotContains<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
-            "Matches" => RegexPredicates.Matches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
-            "NotMatches" => RegexPredicates
-                .NotMatches<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
+            "IsMatch" => RegexPredicates.IsMatch<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown).Evaluate,
+            "IsNotMatch" => RegexPredicates
+                .IsNotMatch<TestContext>("p", c => c.Value, nullBehavior: NullBehavior.Unknown)
                 .Evaluate,
             _ => throw new ArgumentException(member),
         };

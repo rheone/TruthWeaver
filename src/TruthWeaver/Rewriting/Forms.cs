@@ -1,6 +1,5 @@
 namespace TruthWeaver.Rewriting;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
 /// <summary>Node constructors shared by the derived-operator form types, so each form reads as its formula.</summary>

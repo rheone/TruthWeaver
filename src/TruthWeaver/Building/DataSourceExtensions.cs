@@ -1,6 +1,5 @@
 namespace TruthWeaver.Building;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 
 /// <summary>Build-time access to an <see cref="IDataSource"/> for <see cref="RuleBuilder"/> (ADR-0006 decision 12).</summary>

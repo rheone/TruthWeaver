@@ -9,77 +9,77 @@ using Evaluator = System.Func<
 >;
 
 /// <summary>
-/// Pins the clock members of <see cref="DateTimePredicates"/>: <c>AfterNow</c> and <c>BeforeNow</c> with their
-/// <c>NotAfterNow</c> and <c>NotBeforeNow</c> Strong Kleene twins, driven by a host-supplied
+/// Pins the clock members of <see cref="DateTimePredicates"/>: <c>IsAfterNow</c> and <c>IsBeforeNow</c> with their
+/// <c>IsNotAfterNow</c> and <c>IsNotBeforeNow</c> Strong Kleene twins, driven by a host-supplied
 /// <see cref="TimeProvider"/>.
 /// </summary>
 public class ClockPredicatesTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 4, 10, 0, 0, TimeSpan.Zero);
 
-    /// <summary>AfterNow is a strict greater-than against the provider's now; the twin complements it, also at the boundary instant.</summary>
+    /// <summary>IsAfterNow is a strict greater-than against the provider's now; the twin complements it, also at the boundary instant.</summary>
     [Theory]
     [InlineData(-1, TruthValue.False)]
     [InlineData(0, TruthValue.False)]
     [InlineData(1, TruthValue.True)]
-    public async Task AfterNow_TicksAroundNow_IsStrict_Test(long offsetTicks, TruthValue expected)
+    public async Task IsAfterNow_TicksAroundNow_IsStrict_Test(long offsetTicks, TruthValue expected)
     {
         ManualClock clock = new(Now);
-        Evaluator after = DateTimePredicates.AfterNow<DateContext>("after", c => c.When, clock).Evaluate;
-        Evaluator notAfter = DateTimePredicates.NotAfterNow<DateContext>("notAfter", c => c.When, clock).Evaluate;
+        Evaluator after = DateTimePredicates.IsAfterNow<DateContext>("after", c => c.When, clock).Evaluate;
+        Evaluator notAfter = DateTimePredicates.IsNotAfterNow<DateContext>("notAfter", c => c.When, clock).Evaluate;
         DateContext context = new(Now.AddTicks(offsetTicks));
 
         Assert.Equal(expected, await RunAsync(after, context));
         Assert.Equal(Complement(expected), await RunAsync(notAfter, context));
     }
 
-    /// <summary>BeforeNow is a strict less-than against the provider's now; the twin complements it, also at the boundary instant.</summary>
+    /// <summary>IsBeforeNow is a strict less-than against the provider's now; the twin complements it, also at the boundary instant.</summary>
     [Theory]
     [InlineData(-1, TruthValue.True)]
     [InlineData(0, TruthValue.False)]
     [InlineData(1, TruthValue.False)]
-    public async Task BeforeNow_TicksAroundNow_IsStrict_Test(long offsetTicks, TruthValue expected)
+    public async Task IsBeforeNow_TicksAroundNow_IsStrict_Test(long offsetTicks, TruthValue expected)
     {
         ManualClock clock = new(Now);
-        Evaluator before = DateTimePredicates.BeforeNow<DateContext>("before", c => c.When, clock).Evaluate;
-        Evaluator notBefore = DateTimePredicates.NotBeforeNow<DateContext>("notBefore", c => c.When, clock).Evaluate;
+        Evaluator before = DateTimePredicates.IsBeforeNow<DateContext>("before", c => c.When, clock).Evaluate;
+        Evaluator notBefore = DateTimePredicates.IsNotBeforeNow<DateContext>("notBefore", c => c.When, clock).Evaluate;
         DateContext context = new(Now.AddTicks(offsetTicks));
 
         Assert.Equal(expected, await RunAsync(before, context));
         Assert.Equal(Complement(expected), await RunAsync(notBefore, context));
     }
 
-    /// <summary>At the exact now instant AfterNow and BeforeNow are both False, so neither is the complement of the other and each needs its own twin.</summary>
+    /// <summary>At the exact now instant IsAfterNow and IsBeforeNow are both False, so neither is the complement of the other and each needs its own twin.</summary>
     [Fact]
-    public async Task AfterNowAndBeforeNow_AtNowInstant_AreBothFalseAndTwinsBothTrue_Test()
+    public async Task IsAfterNowAndIsBeforeNow_AtNowInstant_AreBothFalseAndTwinsBothTrue_Test()
     {
         ManualClock clock = new(Now);
         DateContext context = new(Now);
 
         Assert.Equal(
             TruthValue.False,
-            await RunAsync(DateTimePredicates.AfterNow<DateContext>("a", c => c.When, clock).Evaluate, context)
+            await RunAsync(DateTimePredicates.IsAfterNow<DateContext>("a", c => c.When, clock).Evaluate, context)
         );
         Assert.Equal(
             TruthValue.False,
-            await RunAsync(DateTimePredicates.BeforeNow<DateContext>("b", c => c.When, clock).Evaluate, context)
+            await RunAsync(DateTimePredicates.IsBeforeNow<DateContext>("b", c => c.When, clock).Evaluate, context)
         );
         Assert.Equal(
             TruthValue.True,
-            await RunAsync(DateTimePredicates.NotAfterNow<DateContext>("na", c => c.When, clock).Evaluate, context)
+            await RunAsync(DateTimePredicates.IsNotAfterNow<DateContext>("na", c => c.When, clock).Evaluate, context)
         );
         Assert.Equal(
             TruthValue.True,
-            await RunAsync(DateTimePredicates.NotBeforeNow<DateContext>("nb", c => c.When, clock).Evaluate, context)
+            await RunAsync(DateTimePredicates.IsNotBeforeNow<DateContext>("nb", c => c.When, clock).Evaluate, context)
         );
     }
 
     /// <summary>The provider is read on every evaluation, so advancing the clock changes the answer; nothing is cached across calls.</summary>
     [Fact]
-    public async Task AfterNow_ClockAdvances_AnswerFollowsTheClock_Test()
+    public async Task IsAfterNow_ClockAdvances_AnswerFollowsTheClock_Test()
     {
         ManualClock clock = new(Now);
-        Evaluator after = DateTimePredicates.AfterNow<DateContext>("after", c => c.When, clock).Evaluate;
+        Evaluator after = DateTimePredicates.IsAfterNow<DateContext>("after", c => c.When, clock).Evaluate;
         DateContext context = new(Now.AddMinutes(5));
 
         Assert.Equal(TruthValue.True, await RunAsync(after, context));
@@ -91,10 +91,10 @@ public class ClockPredicatesTests
 
     /// <summary>Each evaluation of a predicate reads the clock once, and the read happens at call time, not at registration.</summary>
     [Fact]
-    public async Task AfterNow_OneEvaluation_ReadsTheClockOnceAtCallTime_Test()
+    public async Task IsAfterNow_OneEvaluation_ReadsTheClockOnceAtCallTime_Test()
     {
         ManualClock clock = new(Now);
-        Evaluator after = DateTimePredicates.AfterNow<DateContext>("after", c => c.When, clock).Evaluate;
+        Evaluator after = DateTimePredicates.IsAfterNow<DateContext>("after", c => c.When, clock).Evaluate;
 
         Assert.Equal(0, clock.Reads);
 
@@ -112,10 +112,10 @@ public class ClockPredicatesTests
 
         List<Evaluator> unknown =
         [
-            DateTimePredicates.AfterNow<DateContext>("p", c => c.When, clock).Evaluate,
-            DateTimePredicates.NotAfterNow<DateContext>("p", c => c.When, clock).Evaluate,
-            DateTimePredicates.BeforeNow<DateContext>("p", c => c.When, clock).Evaluate,
-            DateTimePredicates.NotBeforeNow<DateContext>("p", c => c.When, clock).Evaluate,
+            DateTimePredicates.IsAfterNow<DateContext>("p", c => c.When, clock).Evaluate,
+            DateTimePredicates.IsNotAfterNow<DateContext>("p", c => c.When, clock).Evaluate,
+            DateTimePredicates.IsBeforeNow<DateContext>("p", c => c.When, clock).Evaluate,
+            DateTimePredicates.IsNotBeforeNow<DateContext>("p", c => c.When, clock).Evaluate,
         ];
         foreach (Evaluator evaluator in unknown)
         {
@@ -123,10 +123,10 @@ public class ClockPredicatesTests
         }
 
         Evaluator afterFalse = DateTimePredicates
-            .AfterNow<DateContext>("p", c => c.When, clock, nullBehavior: NullBehavior.False)
+            .IsAfterNow<DateContext>("p", c => c.When, clock, nullBehavior: NullBehavior.False)
             .Evaluate;
         Evaluator notBeforeFalse = DateTimePredicates
-            .NotBeforeNow<DateContext>("p", c => c.When, clock, nullBehavior: NullBehavior.False)
+            .IsNotBeforeNow<DateContext>("p", c => c.When, clock, nullBehavior: NullBehavior.False)
             .Evaluate;
 
         Assert.Equal(TruthValue.False, await RunAsync(afterFalse, context));
@@ -135,17 +135,17 @@ public class ClockPredicatesTests
 
     /// <summary>The factories require a non-null TimeProvider; there is no ambient default.</summary>
     [Fact]
-    public void AfterNow_NullTimeProvider_Throws_Test()
+    public void IsAfterNow_NullTimeProvider_Throws_Test()
     {
-        Assert.Throws<ArgumentNullException>(() => DateTimePredicates.AfterNow<DateContext>("p", c => c.When, null!));
-        Assert.Throws<ArgumentNullException>(() => DateTimePredicates.NotBeforeNow<DateContext>("p", c => c.When, null!));
+        Assert.Throws<ArgumentNullException>(() => DateTimePredicates.IsAfterNow<DateContext>("p", c => c.When, null!));
+        Assert.Throws<ArgumentNullException>(() => DateTimePredicates.IsNotBeforeNow<DateContext>("p", c => c.When, null!));
     }
 
     /// <summary>The clock predicates take no rule-text arguments and their schema says the instant comes from the host clock.</summary>
     [Fact]
     public void Schema_AfterNow_HasNoArgumentsAndDescribesTheClock_Test()
     {
-        (PredicateSchema schema, _) = DateTimePredicates.AfterNow<DateContext>("p", c => c.When, new ManualClock(Now));
+        (PredicateSchema schema, _) = DateTimePredicates.IsAfterNow<DateContext>("p", c => c.When, new ManualClock(Now));
 
         Assert.Empty(schema.Arguments);
         Assert.Contains("TimeProvider", schema.Description, StringComparison.Ordinal);

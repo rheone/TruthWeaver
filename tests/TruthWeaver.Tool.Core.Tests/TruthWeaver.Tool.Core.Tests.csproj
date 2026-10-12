@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>d287668a-70fb-4c37-a710-6d6a255accbf</ProjectGuid>
+    <IsTestProject>true</IsTestProject>
+    <!-- CS1591 (missing XML doc comment) still fires here even though Directory.Build.targets sets
+         GenerateDocumentationFile=false for .Tests projects; test method names are the documentation
+         (standard xUnit convention - CLAUDE.md's own SA1600/SA1633 suppression applies the same logic
+         to production code), so this is suppressed explicitly rather than chased further. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Tool.Core/TruthWeaver.Tool.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <!-- Validates the truthweaver.json fixtures against truthweaver.schema.json, as RuleTreeSchemaTests does for the rule tree. -->
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The SARIF 2.1.0 schema (the draft-07 copy from SchemaStore, https://json.schemastore.org/sarif-2.1.0.json), so the
+         SARIF test validates without the network. -->
+    <None Include="TestSupport/sarif-schema-2.1.0.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

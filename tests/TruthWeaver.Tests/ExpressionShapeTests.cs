@@ -13,8 +13,9 @@ public sealed class ExpressionShapeTests
     private static readonly TermExpression TermA = new(new TermIdentity("a", []));
     private static readonly TermExpression TermB = new(new TermIdentity("b", []));
 
+    /// <summary>The NOT shape has a single operand and no k.</summary>
     [Fact]
-    public void Not_shape_has_a_single_operand_and_no_k()
+    public void Shape_Not_HasSingleOperandAndNoK_Test()
     {
         NotExpression node = new(TermA);
 
@@ -25,8 +26,9 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA], shape.Operands);
     }
 
+    /// <summary>The AND shape carries its operands in order.</summary>
     [Fact]
-    public void And_shape_carries_its_operands_in_order()
+    public void Shape_And_CarriesOperandsInOrder_Test()
     {
         AndExpression node = new(new([TermA, TermB]));
 
@@ -37,8 +39,9 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The OR shape carries its operands in order.</summary>
     [Fact]
-    public void Or_shape_carries_its_operands_in_order()
+    public void Shape_Or_CarriesOperandsInOrder_Test()
     {
         OrExpression node = new(new([TermA, TermB]));
 
@@ -48,8 +51,9 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The XOR shape exposes left then right as operands.</summary>
     [Fact]
-    public void Xor_shape_exposes_left_then_right_as_operands()
+    public void Shape_Xor_ExposesLeftThenRightAsOperands_Test()
     {
         XorExpression node = new(TermA, TermB);
 
@@ -220,8 +224,9 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The ExactlyOne shape carries its operands in order.</summary>
     [Fact]
-    public void ExactlyOne_shape_carries_its_operands_in_order()
+    public void Shape_ExactlyOne_CarriesOperandsInOrder_Test()
     {
         ExactlyOneExpression node = new(new([TermA, TermB]));
 
@@ -232,13 +237,14 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>The threshold shape op name matches its comparison and carries k.</summary>
     [Theory]
     [InlineData(ThresholdComparison.AtLeast)]
     [InlineData(ThresholdComparison.AtMost)]
     [InlineData(ThresholdComparison.GreaterThan)]
     [InlineData(ThresholdComparison.LessThan)]
     [InlineData(ThresholdComparison.Exactly)]
-    public void Threshold_shape_op_name_matches_its_comparison_and_carries_k(ThresholdComparison comparison)
+    public void Shape_Threshold_OpNameMatchesComparisonAndCarriesK_Test(ThresholdComparison comparison)
     {
         ThresholdExpression node = new(comparison, 2, new([TermA, TermB]));
 
@@ -249,16 +255,18 @@ public sealed class ExpressionShapeTests
         Assert.Equal([TermA, TermB], shape.Operands);
     }
 
+    /// <summary>Constant nodes have no operand shape.</summary>
     [Fact]
-    public void Constant_nodes_have_no_operand_shape()
+    public void Shape_Constant_HasNoOperandShape_Test()
     {
         ConstantExpression node = new(TruthValue.True);
 
         Assert.Throws<ArgumentException>(() => ExpressionShape.Of(node));
     }
 
+    /// <summary>Term nodes have no operand shape.</summary>
     [Fact]
-    public void Term_nodes_have_no_operand_shape()
+    public void Shape_Term_HasNoOperandShape_Test()
     {
         Assert.Throws<ArgumentException>(() => ExpressionShape.Of(TermA));
     }

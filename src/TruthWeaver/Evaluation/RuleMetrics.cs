@@ -12,7 +12,7 @@ using TruthWeaver.Rewriting;
 /// The number of nodes in the expression tree, counted as a tree: a sub-expression that appears twice in the printed
 /// rule counts twice.
 /// </param>
-/// <param name="MaxDepth">
+/// <param name="Depth">
 /// The number of nodes on the longest root-to-leaf path. A rule that is a single term or constant has depth 1. This is
 /// the measure <see cref="Compilation.CompilerOptions.MaxDepth"/> limits.
 /// </param>
@@ -26,7 +26,7 @@ using TruthWeaver.Rewriting;
 /// the rule has more than <see cref="Compilation.CompilerOptions.MaxAnalysisTerms"/> distinct terms, because the analysis
 /// is skipped there.
 /// </param>
-public sealed record RuleMetrics(long NodeCount, int MaxDepth, int DistinctTermCount, int? BddNodeCount)
+public sealed record RuleMetrics(long NodeCount, int Depth, int DistinctTermCount, int? BddNodeCount)
 {
     /// <summary>Measures a tree.</summary>
     /// <param name="root">The tree.</param>

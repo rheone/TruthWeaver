@@ -6,6 +6,7 @@ using TruthWeaver.Parsing;
 /// <summary>Ticket 03: direct unit tests for the DSL tokenizer.</summary>
 public sealed class LexerTests
 {
+    /// <summary>Every punctuation token has the correct kind and a one character span.</summary>
     [Theory]
     [InlineData("(", nameof(TokenKind.LParen))]
     [InlineData(")", nameof(TokenKind.RParen))]
@@ -15,10 +16,7 @@ public sealed class LexerTests
     [InlineData("}", nameof(TokenKind.RBrace))]
     [InlineData(",", nameof(TokenKind.Comma))]
     [InlineData(":", nameof(TokenKind.Colon))]
-    public void Every_punctuation_token_produces_the_correct_kind_and_a_one_character_span(
-        string source,
-        string expectedKindName
-    )
+    public void Punctuation_EveryToken_HasCorrectKindAndSpan_Test(string source, string expectedKindName)
     {
         Lexer lexer = new(source);
 
@@ -30,8 +28,9 @@ public sealed class LexerTests
         Assert.Equal(TokenKind.Eof, tokens[1].Kind);
     }
 
+    /// <summary>A negative integer is read as a single number literal token.</summary>
     [Fact]
-    public void A_negative_integer_is_read_as_a_single_number_literal_token()
+    public void Number_NegativeInteger_ReadsAsOneToken_Test()
     {
         Lexer lexer = new("-5");
 
@@ -42,8 +41,9 @@ public sealed class LexerTests
         Assert.Empty(lexer.Diagnostics);
     }
 
+    /// <summary>A bare minus not followed by a digit raises an unexpected character diagnostic.</summary>
     [Fact]
-    public void A_bare_minus_not_followed_by_a_digit_raises_an_unexpected_character_diagnostic()
+    public void Minus_NotFollowedByDigit_RaisesUnexpectedCharacter_Test()
     {
         Lexer lexer = new("-");
 
@@ -53,8 +53,9 @@ public sealed class LexerTests
         Assert.Contains(lexer.Diagnostics, d => d.Message.Contains("Unexpected character"));
     }
 
+    /// <summary>A decimal number is read as one number literal token.</summary>
     [Fact]
-    public void A_decimal_number_is_read_as_one_number_literal_token()
+    public void Number_Decimal_ReadsAsOneToken_Test()
     {
         Lexer lexer = new("1.5");
 
@@ -64,8 +65,9 @@ public sealed class LexerTests
         Assert.Equal("1.5", tokens[0].Text);
     }
 
+    /// <summary>A trailing dot with no following digit is not consumed into the number.</summary>
     [Fact]
-    public void A_trailing_dot_with_no_following_digit_is_not_consumed_into_the_number()
+    public void Number_TrailingDot_IsNotConsumed_Test()
     {
         Lexer lexer = new("1.");
 
@@ -76,12 +78,13 @@ public sealed class LexerTests
         Assert.Contains(lexer.Diagnostics, d => d.Message.Contains("Unexpected character"));
     }
 
+    /// <summary>Each supported escape decodes to the correct character.</summary>
     [Theory]
     [InlineData("\"a\\\"b\"", "a\"b")]
     [InlineData("\"a\\\\b\"", "a\\b")]
     [InlineData("\"a\\nb\"", "a\nb")]
     [InlineData("\"a\\tb\"", "a\tb")]
-    public void Each_supported_escape_decodes_to_the_correct_character(string source, string expected)
+    public void Escape_Supported_DecodesToCorrectCharacter_Test(string source, string expected)
     {
         Lexer lexer = new(source);
 
@@ -92,12 +95,13 @@ public sealed class LexerTests
         Assert.Empty(lexer.Diagnostics);
     }
 
+    /// <summary>Each supported escape raises no invalid escape diagnostic.</summary>
     [Theory]
     [InlineData("\"a\\\"b\"")]
     [InlineData("\"a\\\\b\"")]
     [InlineData("\"a\\nb\"")]
     [InlineData("\"a\\tb\"")]
-    public void Each_supported_escape_does_not_raise_the_invalid_escape_diagnostic(string source)
+    public void Escape_Supported_RaisesNoDiagnostic_Test(string source)
     {
         Lexer lexer = new(source);
 
@@ -106,8 +110,9 @@ public sealed class LexerTests
         Assert.DoesNotContain(lexer.Diagnostics, d => d.Code == DiagnosticCodes.InvalidEscapeSequence);
     }
 
+    /// <summary>An unrecognized escape sequence raises a diagnostic that covers the backslash and the following character.</summary>
     [Fact]
-    public void An_unrecognized_escape_sequence_raises_a_diagnostic_covering_the_backslash_and_following_character()
+    public void Escape_Unrecognized_RaisesDiagnosticCoveringBackslashAndCharacter_Test()
     {
         Lexer lexer = new("\"a\\pb\"");
 
@@ -120,8 +125,9 @@ public sealed class LexerTests
         Assert.Equal(new SourceSpan(2, 2), diagnostic.Span);
     }
 
+    /// <summary>An unrecognized escape sequence still produces a string token, so lexing recovers.</summary>
     [Fact]
-    public void An_unrecognized_escape_sequence_still_produces_a_string_token_so_lexing_recovers()
+    public void Escape_Unrecognized_StillProducesStringToken_Test()
     {
         Lexer lexer = new("\"a\\pb\" (");
 
@@ -132,8 +138,9 @@ public sealed class LexerTests
         Assert.Equal(TokenKind.Eof, tokens[2].Kind);
     }
 
+    /// <summary>An unterminated string raises a diagnostic and still returns a string token.</summary>
     [Fact]
-    public void An_unterminated_string_raises_a_diagnostic_and_still_returns_a_string_token()
+    public void String_Unterminated_RaisesDiagnosticAndReturnsToken_Test()
     {
         Lexer lexer = new("\"abc");
 
@@ -144,8 +151,9 @@ public sealed class LexerTests
         Assert.Contains(lexer.Diagnostics, d => d.Message.Contains("Unterminated string literal"));
     }
 
+    /// <summary>An unrecognized character raises a diagnostic and tokenization continues past it.</summary>
     [Fact]
-    public void An_unrecognized_character_raises_a_diagnostic_and_tokenization_continues_past_it()
+    public void Character_Unrecognized_RaisesDiagnosticAndContinues_Test()
     {
         Lexer lexer = new("a # b");
 
@@ -159,8 +167,9 @@ public sealed class LexerTests
         Assert.Equal(TokenKind.Eof, tokens[^1].Kind);
     }
 
+    /// <summary>Tokenizing empty source returns only the end of file token.</summary>
     [Fact]
-    public void Tokenizing_empty_source_returns_only_the_eof_token()
+    public void Tokenize_EmptySource_ReturnsOnlyEof_Test()
     {
         Lexer lexer = new(string.Empty);
 
@@ -170,8 +179,9 @@ public sealed class LexerTests
         Assert.Equal(TokenKind.Eof, token.Kind);
     }
 
+    /// <summary>Tokenizing whitespace only source returns only the end of file token.</summary>
     [Fact]
-    public void Tokenizing_whitespace_only_source_returns_only_the_eof_token()
+    public void Tokenize_WhitespaceOnlySource_ReturnsOnlyEof_Test()
     {
         Lexer lexer = new("   \t\n  ");
 
@@ -181,8 +191,9 @@ public sealed class LexerTests
         Assert.Equal(TokenKind.Eof, token.Kind);
     }
 
+    /// <summary>An identifier is read up to the first non identifier character.</summary>
     [Fact]
-    public void An_identifier_is_read_up_to_the_first_non_identifier_character()
+    public void Identifier_Reading_ReadsUpToNonIdentifierCharacter_Test()
     {
         Lexer lexer = new("abc_123(x)");
 

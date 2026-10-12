@@ -172,11 +172,11 @@ public sealed class MermaidNodeStyleTests
             "AND",
             TruthValue.False,
             false,
-            [
-                new("t1", TruthValue.True, false, []),
-                new("t2", TruthValue.False, false, []),
-                new("t3", TruthValue.True, true, []),
-            ]
+            new EquatableArray<TraceNode>([
+                new("t1", TruthValue.True, false, EquatableArray<TraceNode>.Empty),
+                new("t2", TruthValue.False, false, EquatableArray<TraceNode>.Empty),
+                new("t3", TruthValue.True, true, EquatableArray<TraceNode>.Empty),
+            ])
         );
 
         string mermaid = MermaidTreePrinter.Print(Chain("AND", 3), trace, new MermaidOptions { CompactChainThreshold = 2 });

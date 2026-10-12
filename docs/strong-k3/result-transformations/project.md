@@ -8,7 +8,7 @@ Replaces `Unknown` with a chosen definite value and passes `True` and `False` th
 ## Name
 
 - Canonical name: `Project`
-- C# API: `Decision.Project(bool unknownAs)`, returning a `TruthValue`
+- C# API: `Decision.Project(TruthValue unknownAs)`, returning a `TruthValue`
 - DSL, JSON, YAML and `RuleBuilder`: none. `Project` is not part of the rule language ([Syntax](#syntax))
 
 ## Classification
@@ -24,11 +24,11 @@ Derived. `Project` is `COALESCE(rule, unknownAs)` applied to the result instead 
 
 ## Arity
 
-One evaluated result (the `Decision` the method is called on) and one `bool` parameter, `unknownAs`. The parameter is a `bool`, not a `TruthValue`, so a request to project `Unknown` to `Unknown` cannot be written. There is no operand list and so no operand-count error.
+One evaluated result (the `Decision` the method is called on) and one `TruthValue` parameter, `unknownAs`. Only `True` and `False` are valid. `Unknown` or an undefined value throws `ArgumentOutOfRangeException` for every result, the same up-front rule that `Decision.Collapse` applies to an undefined policy. There is no operand list and so no operand-count error.
 
 ## Input domain
 
-The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{true, false}`.
+The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{T, F}`.
 
 ## Output domain
 
@@ -36,16 +36,16 @@ The decision's `Result`, a value in `{T, F, U}`, and `unknownAs` in `{true, fals
 
 ## Definition
 
-`Project(unknownAs)` returns `True` and `False` unchanged and returns `True` for an `Unknown` result when `unknownAs` is `true`, `False` when it is `false`. The original three-valued result is not changed: `Decision.Result`, `Decision.Faults` and `Decision.IsSatisfied` are exactly what they were, and the decision stays available after the call.
+`Project(unknownAs)` returns `True` and `False` unchanged and returns `unknownAs` for an `Unknown` result. The original three-valued result is not changed: `Decision.Result`, `Decision.Faults` and `Decision.IsSatisfied` are exactly what they were, and the decision stays available after the call.
 
 ## Syntax
 
 | Form | Spelling |
 | --- | --- |
-| C# | `decision.Project(unknownAs: true)` or `decision.Project(unknownAs: false)` |
+| C# | `decision.Project(TruthValue.True)` or `decision.Project(TruthValue.False)` |
 | DSL, JSON, YAML, `RuleBuilder` | none |
 
-`Project` is not part of the rule language. A rule that spells `Project(...)` is the compile error `TRE0002`: "Project is not part of the rule language. To replace Unknown inside a rule write COALESCE(x, True) or COALESCE(x, False); to make the final result definite call Decision.Project(unknownAs) on the Decision." The call is pure, never throws and never records a `Fault`.
+`Project` is not part of the rule language. A rule that spells `Project(...)` is the compile error `TRE0002`: "Project is not part of the rule language. To replace Unknown inside a rule write COALESCE(x, True) or COALESCE(x, False); to make the final result definite call Decision.Project(unknownAs) on the Decision." The call is pure and never records a `Fault`. It throws only for an invalid `unknownAs` (see [Arity](#arity)).
 
 ## Aliases
 
@@ -92,9 +92,9 @@ So `COALESCE(rule, False)` makes a rule fail closed from inside the rule text, a
 
 ## Equivalent forms
 
-With the parameter fixed, `Project(false)` has the same table as the inspection [IsTrue](../functions/istrue.md), and `Project(true)` the same table as `NOT IsFalse(x)`. The difference is where it runs: an inspection is a rule node whose value is used inside the rule, while `Project` is applied once to the final result.
+With the parameter fixed, `Project(TruthValue.False)` has the same table as the inspection [IsTrue](../functions/istrue.md), and `Project(TruthValue.True)` the same table as `NOT IsFalse(x)`. The difference is where it runs: an inspection is a rule node whose value is used inside the rule, while `Project` is applied once to the final result.
 
-The SQL counterparts are `x IS TRUE` for `Project(false)` and `x IS NOT FALSE` for `Project(true)` ([PostgreSQL, comparison functions](https://www.postgresql.org/docs/current/functions-comparison.html)).
+The SQL counterparts are `x IS TRUE` for `Project(TruthValue.False)` and `x IS NOT FALSE` for `Project(TruthValue.True)` ([PostgreSQL, comparison functions](https://www.postgresql.org/docs/current/functions-comparison.html)).
 
 ## Mermaid diagram
 
@@ -102,8 +102,8 @@ The SQL counterparts are `x IS TRUE` for `Project(false)` and `x IS NOT FALSE` f
 flowchart LR
     T["T"] --> PT["T"]
     F["F"] --> PF["F"]
-    U["U"] -->|"unknownAs = true"| PT
-    U -->|"unknownAs = false"| PF
+    U["U"] -->|"unknownAs = True"| PT
+    U -->|"unknownAs = False"| PF
 ```
 
 `True` and `False` map to themselves. `Unknown` maps to the chosen value, so only two definite outputs are possible.
@@ -112,17 +112,17 @@ flowchart LR
 
 | Result of the rule | Call | Returned value | Why |
 | --- | --- | --- | --- |
-| `True` | `Project(false)` | `True` | A definite value passes through. |
-| `False` | `Project(true)` | `False` | A definite value passes through, whatever `unknownAs` is. |
-| `Unknown` | `Project(false)` | `False` | `Unknown` becomes the chosen value, `False`. |
-| `Unknown` | `Project(true)` | `True` | `Unknown` becomes the chosen value, `True`. |
+| `True` | `Project(TruthValue.False)` | `True` | A definite value passes through. |
+| `False` | `Project(TruthValue.True)` | `False` | A definite value passes through, whatever `unknownAs` is. |
+| `Unknown` | `Project(TruthValue.False)` | `False` | `Unknown` becomes the chosen value, `False`. |
+| `Unknown` | `Project(TruthValue.True)` | `True` | `Unknown` becomes the chosen value, `True`. |
 
 ## Edge cases
 
 - The original result is kept. `Project` returns a new `TruthValue`; the `Decision` still holds `Unknown`, so a caller can project the same decision both ways or inspect it afterwards.
-- `IsSatisfied` stays fail-closed. `Decision.IsSatisfied` is `True` only when `Result` is `True`, so an `Unknown` decision is not satisfied whatever `Project` returned. `Project(true)` does not make an `Unknown` decision satisfied.
-- A faulting predicate. A predicate that throws, times out or is cancelled contributes `Unknown` and a `Fault`. `Project` sees only the `Unknown`: `Project(true)` of such a decision is `True` while `Faults` still lists the fault. Check `Faults` before trusting a fail-open projection ([Collapse](collapse.md#edge-cases) has the same hazard).
-- SQL precedents. SQL `WHERE` keeps a row only on `true`, which is `Project(false)`; a `CHECK` constraint passes on `true` or null, which is `Project(true)` ([PostgreSQL, table expressions](https://www.postgresql.org/docs/current/queries-table-expressions.html), [PostgreSQL, constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)). In each system the consumer applies the two-valued policy; the three-valued value itself is not rewritten.
+- `IsSatisfied` stays fail-closed. `Decision.IsSatisfied` is `True` only when `Result` is `True`, so an `Unknown` decision is not satisfied whatever `Project` returned. `Project(TruthValue.True)` does not make an `Unknown` decision satisfied.
+- A faulting predicate. A predicate that throws, times out or is cancelled contributes `Unknown` and a `Fault`. `Project` sees only the `Unknown`: `Project(TruthValue.True)` of such a decision is `True` while `Faults` still lists the fault. Check `Faults` before trusting a fail-open projection ([Collapse](collapse.md#edge-cases) has the same hazard).
+- SQL precedents. SQL `WHERE` keeps a row only on `true`, which is `Project(TruthValue.False)`; a `CHECK` constraint passes on `true` or null, which is `Project(TruthValue.True)` ([PostgreSQL, table expressions](https://www.postgresql.org/docs/current/queries-table-expressions.html), [PostgreSQL, constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)). In each system the consumer applies the two-valued policy; the three-valued value itself is not rewritten.
 
 ## Evaluation behavior
 

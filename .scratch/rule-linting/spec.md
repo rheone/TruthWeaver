@@ -1,6 +1,6 @@
 # Rule linting: follow-ups
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** done (tickets 01 to 03); ticket 04 deferred
 
 Source: [library-roadmap](../library-roadmap/spec.md) ("Rule linting" residual and "Lint follow-ups"), and the "Not done" notes in
 [k3-hardening 09](../k3-hardening/issues/09-analyzer-lint-rules-for-new-operators.md).
@@ -20,9 +20,9 @@ Four tickets, in this order. Tickets 01 to 03 need no change to `Expression`. Ti
 
 | Ticket | Change | Status |
 | --- | --- | --- |
-| [01](issues/01-relate-nested-findings.md) | Mark a nested finding as related to the finding that encloses it. | ready |
-| [02](issues/02-depth-and-wide-chain-lints.md) | Two new lint rules: depth near `MaxDepth`, and a wide `AND`/`OR` chain. | ready |
-| [03](issues/03-not-canonical-lint.md) | A lint that fires when `Canonicalize()` would change the rule. | ready |
+| [01](issues/01-relate-nested-findings.md) | Mark a nested finding as related to the finding that encloses it. | done |
+| [02](issues/02-depth-and-wide-chain-lints.md) | Two new lint rules: depth near `MaxDepth`, and a wide `AND`/`OR` chain. | done |
+| [03](issues/03-not-canonical-lint.md) | A lint that fires when `Canonicalize()` would change the rule. | done |
 | [04](issues/04-finding-spans-and-paths.md) | A location on every finding. | deferred |
 
 ## Decisions

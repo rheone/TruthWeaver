@@ -106,7 +106,7 @@ public sealed class EquationPrinterTests
         Assert.Equal(expected, equation);
     }
 
-    /// <summary>A constant prints with its canonical spelling.</summary>
+    /// <summary>A constant prints as its letter by default.</summary>
     [Fact]
     public void PrintEquation_Constant_PrintsCanonicalSpelling_Test()
     {
@@ -114,7 +114,7 @@ public sealed class EquationPrinterTests
 
         string equation = rule.PrintEquation();
 
-        Assert.Equal("a ∧ Unknown", equation);
+        Assert.Equal("a ∧ U", equation);
     }
 
     /// <summary>A term prints as its full call, with its argument values, by default.</summary>

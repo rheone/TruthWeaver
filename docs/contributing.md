@@ -59,3 +59,59 @@ pwsh scripts/format-all.ps1 -CheckOnly
 
 The hook builds and tests only the files that you stage, and it does not run Roslynator. Run `format-all.ps1`, then
 `dotnet test`, before you push. The full list of checks is in the Required validation section of `CLAUDE.md`.
+
+## API conventions
+
+- **Try first.** Every public member named `XOrThrow` has a public sibling named `TryX` that returns `bool` and reports the
+  failure through an `out` parameter. For example, `CompilationResult<TContext>.GetRuleOrThrow` has `TryGetRule`.
+  `TruthWeaver.Architecture.Tests` fails when a sibling is missing.
+- **Docs show the `Try` form first.** An example in a documentation page uses the `Try` form. It uses the `OrThrow` form
+  only where a failure is a bug, such as at startup or in a test, and says so.
+
+## How a package version is made
+
+[MinVer](https://github.com/adamralph/minver) derives the version of every package from the Git tags. No project sets a
+`Version`. All packages share one version. The settings are in `Directory.Build.props` and the MinVer package reference
+is in `Directory.Packages.props`. Only projects that pack get MinVer.
+
+| Commit | Version |
+| --- | --- |
+| A commit with the tag `v1.2.3` | `1.2.3` |
+| The 4th commit after the tag `v1.2.3` | `1.2.4-preview.0.4` |
+| Any commit, when the repository has no `v` tag | `1.0.0-preview.0.N` (`N` is the commit height) |
+| Any commit, with a tag below `v1.0` | `1.0.0-preview.0.N` (`MinVerMinimumMajorMinor` is `1.0`) |
+
+To make a release version, put a tag with the prefix `v` on the commit, for example `v1.0.0`. A tag without the prefix
+is ignored. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
+
+MinVer needs the tags and the commit history. CI checks out with `fetch-depth: 0` for this reason. In a shallow clone
+the version is wrong. After `git clone --depth`, run `git fetch --unshallow --tags`.
+
+To see the version without packing, run `dotnet msbuild src/TruthWeaver -t:MinVer -getProperty:PackageVersion`.
+
+## The pack check
+
+The `pack` job in `.github/workflows/ci.yml` packs every package and checks the result. It never pushes or publishes a
+package. It has no NuGet API key and the job permission is `contents: read`. The job runs these steps:
+
+1. `dotnet pack TruthWeaver.slnx --configuration Release -warnaserror`. A pack warning fails the job. Package validation
+   (`EnablePackageValidation` in `src/Directory.Build.props`) runs in this step. It checks the package layout and the
+   public API across target frameworks.
+2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the seven packages the script checks that
+   the `.nupkg` exists, contains `README.md` and contains only the expected files. It also checks that the symbol package
+   (`.snupkg`) contains the `.pdb` file. `TruthWeaver.Generators` is an analyzer-only package and has no symbol package.
+   The script fails when it finds a symbol package for it.
+
+To run the same checks on your machine, pack into a directory outside the repository, then run the script on it:
+
+```powershell
+dotnet pack TruthWeaver.slnx --configuration Release -warnaserror --output $env:TEMP/tw-packages
+pwsh scripts/check-packages.ps1 -PackageDirectory $env:TEMP/tw-packages
+```
+
+`PackageValidationBaselineVersion` is not set, because no version has been released. After the first release, set it to
+that version so that pack fails on a breaking API change.
+
+## Releasing
+
+[Releasing](releasing.md) lists the steps to publish a version and the checks to make afterwards.

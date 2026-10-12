@@ -81,7 +81,7 @@ public sealed class JsonQueryValidatorTests
 
     /// <summary>The validator needs no document, so the same shared instance serves every query.</summary>
     [Fact]
-    public void Instance_IsShared_Test()
+    public void Instance_Access_ReturnsSharedInstance_Test()
     {
         Assert.Same(JsonQueryValidator.Instance, JsonQueryValidator.Instance);
     }

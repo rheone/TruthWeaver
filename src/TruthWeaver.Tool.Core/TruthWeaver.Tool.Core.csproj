@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>75b3d6df-ce47-42d4-ade3-42f028a0091c</ProjectGuid>
+    <RootNamespace>TruthWeaver.Tool.Core</RootNamespace>
+    <Description>The UI-free core of the TruthWeaver command line and terminal UI: load, detect, extract and convert rules, read the truthweaver.json configuration, load stub values and data files, and write deterministic output.</Description>
+    <!-- Not a package: the command line and terminal UI tools carry this assembly inside their own tool packages.
+         The CI build and test jobs still build and test it, because it is in TruthWeaver.slnx. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Only TruthWeaver packages. YamlDotNet (navigating a YAML document to an embedded rule) comes through
+       TruthWeaver.Yaml, so this project adds no package of its own and takes no UI or command-line dependency. -->
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+    <ProjectReference Include="../TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
+    <ProjectReference Include="../TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
+  </ItemGroup>
+
+  <!-- The JSON schema of truthweaver.json, copied next to the assembly so a front end can ship it with the tool. -->
+  <ItemGroup>
+    <None Include="truthweaver.schema.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The JSON schema of the rule tree, embedded from the TruthWeaver package's own file (one source, no copy), for the
+       tree schema level of the validation. -->
+  <ItemGroup>
+    <EmbeddedResource
+      Include="../TruthWeaver/Json/rule-tree.schema.json"
+      LogicalName="TruthWeaver.Tool.Core.rule-tree.schema.json"
+      Link="rule-tree.schema.json"
+    />
+  </ItemGroup>
+
+  <!-- The tests reach the conversion self-check's printer seam, which is not public API. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="TruthWeaver.Tool.Core.Tests" />
+  </ItemGroup>
+</Project>

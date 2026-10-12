@@ -2,7 +2,6 @@ namespace TruthWeaver.Testing;
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// The argument dictionary behind a harness <see cref="PredicateArguments"/>. It records every name the predicate looks

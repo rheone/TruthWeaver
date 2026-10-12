@@ -1,6 +1,5 @@
 namespace TruthWeaver.Compilation;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
@@ -584,10 +583,14 @@ internal sealed class RuleNodeCompiler<TContext>
                 return new TermExpression(BuildUnknownIdentity(node), IsUnknownPredicate: true);
             }
 
+            // A reserved word can never be registered, so say that instead of suggesting a registration.
+            string message = DslParser.IsReservedWord(node.PredicateName)
+                ? $"'{node.PredicateName}' is a reserved word and cannot be a predicate name."
+                : $"No predicate named '{node.PredicateName}' is registered.";
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.UnknownPredicate,
-                    $"No predicate named '{node.PredicateName}' is registered.",
+                    message,
                     node.Span,
                     expected: "a registered predicate name or an operator",
                     found: $"'{node.PredicateName}'",
@@ -636,7 +639,7 @@ internal sealed class RuleNodeCompiler<TContext>
                 string expectedArguments = declared.Length == 0 ? "no arguments" : $"one of {string.Join(", ", declared)}";
 
                 // A near-miss gets a "did you mean"; anything else (typically an argument the predicate has
-                // retired, such as EqualsConfigurable's former culture) gets advice naming it, so the author
+                // retired, such as a former culture argument) gets advice naming it, so the author
                 // knows deleting it is the fix rather than renaming it.
                 DiagnosticSuggestion suggestion =
                     NameSuggester.Suggest(arg.Name, declared)
@@ -726,7 +729,7 @@ internal sealed class RuleNodeCompiler<TContext>
         // never reports on top of (or because of) an argument error already raised for this call.
         if (schema.ArgumentValidator is { } validator && this.diagnostics.Count == diagnosticsBefore)
         {
-            this.CheckArgumentValues(node, schema, validator, resolvedArgs);
+            this.CheckArgumentValues(node, schema, validator, resolvedArgs, resolvedVariables.Keys);
         }
 
         // Reported after the argument checks so the warning never trips the "no new diagnostics" gate above.
@@ -770,16 +773,19 @@ internal sealed class RuleNodeCompiler<TContext>
     /// <summary>
     /// Reports <c>TRE0026</c>, one error per problem, at the predicate call when the schema's
     /// <see cref="PredicateSchema.ArgumentValidator"/> rejects the call's literal arguments. Variable arguments are not in
-    /// <paramref name="literalArgs"/>, so the validator sees only values known at compile time.
+    /// <paramref name="literalArgs"/>, so the validator sees only values known at compile time. Their names are in
+    /// <paramref name="variableNames"/>, so it can tell them from an argument the call omitted.
     /// </summary>
     private void CheckArgumentValues(
         TermNode node,
         PredicateSchema schema,
         Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>> validator,
-        Dictionary<string, LiteralValue> literalArgs
+        Dictionary<string, LiteralValue> literalArgs,
+        IEnumerable<string> variableNames
     )
     {
-        foreach (PredicateArgumentProblem problem in validator(new PredicateArguments(literalArgs)))
+        IReadOnlySet<string> deferred = new HashSet<string>(variableNames, StringComparer.Ordinal);
+        foreach (PredicateArgumentProblem problem in validator(new PredicateArguments(literalArgs, deferred)))
         {
             DiagnosticSuggestion? suggestion = problem.Suggestion is null
                 ? null

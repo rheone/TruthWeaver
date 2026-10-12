@@ -12,7 +12,7 @@ For the meaning, cause and fix of each code, see the [diagnostic code catalog](s
 | `Severity`           | `Error` blocks compilation. `Warning` and `Info` do not.                                                      |
 | `Message`            | A plain-language explanation of the problem.                                                                  |
 | `Span`               | Where the problem is in the rule text (0-based offset and length). `Span.GetLocation(source)` gives line and column. |
-| `Path`               | Where the problem is in a JSON or YAML rule, for example `$.operands[1].op`. It is `null` for rule text.      |
+| `Path`               | Where the problem is in a JSON or YAML rule, or in a `RuleBuilder` tree, for example `$.operands[1].op`. It is `null` for rule text. A `RuleBuilder` diagnostic carries a path but `Span.None`: see [Compiling a builder](rulebuilder.md#compiling-a-builder). |
 | `Expected` / `Found` | What the compiler needed and what it saw (`')'` and `']'`, `2 operands` and `3 operands`), when that applies. |
 | `Suggestion`         | A `DiagnosticSuggestion`: a `Replacement` ("did you mean `AND`?") or a `Hint` (advice such as adding parentheses). |
 
@@ -45,8 +45,21 @@ TRE0001 error at line 1, column 3: Unexpected token 'ANDD' after end of expressi
 
 ## Getting the rule out of a result
 
-`CompilationResult<TContext>` holds the compiled rule only when compilation succeeded. After a `Succeeded` check, `Rule` is not
-`null` for the compiler, so no `!` is needed:
+Every method that returns a `CompilationResult<TContext>` has a `Try` form with the same inputs plus two `out` parameters:
+`TryCompile`, `TryCompileText`, `TryCompileJson`, `TryCompileYaml`, `RuleBuilder.TryCompile`, `TrySimplify`, `TryCanonicalize`,
+`TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`.
+The method returns `true` exactly when `rule` is not `null`, so no `!` is needed. A result that has only warnings returns
+`true`, and `diagnostics` holds the warnings. `diagnostics` is set in both cases.
+
+```csharp
+if (!compiler.TryCompile(source, out CompiledRule<MyContext>? rule, out EquatableArray<Diagnostic> diagnostics))
+{
+    return;
+}
+```
+
+`CompilationResult<TContext>.TryGetRule` does the same for a result you already hold. `CompilationResult<TContext>` itself
+holds the compiled rule only when compilation succeeded. After a `Succeeded` check, `Rule` is not `null`:
 
 ```csharp
 CompilationResult<MyContext> result = compiler.Compile(source);
@@ -140,6 +153,8 @@ Each limit has one setting and one outcome. The compile limits are `CompilerOpti
 | `CompilerOptions.MaxNodeCount` | 512 | `Compile` returns a `TRE0010` error and no rule. |
 | `CompilerOptions.MaxAnalysisTerms` | 20 | The analysis is skipped and `Compile` adds a `TRE0011` info diagnostic. The rule compiles. The semantic lints skip the sub-expression. `RuleEquivalence.Compare` and `RuleDiff.Compare` return an undecided result. `AssertEquivalent` and `AssertSound` fail as inconclusive. |
 | `CompilerOptions.MaxRewriteNodeCount` | 100,000 | An expanding rewrite or normal form returns a failed `CompilationResult` with a `TRE0016` error and no rule. A result under this cap can still be over `MaxNodeCount`, so its text compiles back only when `MaxNodeCount` is raised. See [A large result may not recompile](rewriting-rules.md#a-large-result-may-not-recompile). |
+| Rewrite pass limit (16 for `CompressToDerived()`, 8 for `Canonicalize()`, 16 for `Simplify()`) | fixed | The rewrite returns its equivalent rule and a `TRE0033` warning. See [Pass limits](rewriting-rules.md#pass-limits). |
+| `TruthTableOptions.DefaultTermCap` and `TruthTableOptions.HardTermLimit` | 8 and 12 | `PrintTruthTable` refuses a table over the cap with a `TRE0035` error, unless `AllowLargerTable` is set, and then it adds a `TRE0034` warning. Over the hard limit it always refuses. See [Size limits](truth-tables.md#size-limits). |
 | `EvaluationOptions.FaultBudget` | none | The evaluation stops when the faults reach the budget. The terms not yet run are `Unknown` in the trace, so the result is usually `Unknown`. |
 | `EvaluationOptions.Timeout` | none | `EvaluateAsync` throws `OperationCanceledException`. It records no fault and gives no `Unknown`. |
 
@@ -149,7 +164,7 @@ The two caps on rewrites are independent: `MaxRewriteNodeCount` limits what a re
 
 A malformed JSON or YAML rule is located by `Path` instead of by line and column. The path is the route from the document root to the offending key. It is written the same way for both formats: `$` is the root, `.name` is a key and `[n]` is a 0-based sequence item.
 
-A YAML diagnostic also carries the `Span` of the offending node, so `FormatDiagnostics(yaml)` adds the line, the column and the source line. A JSON diagnostic carries the span of the offending node in the same way. The compiler finds it by reading the text again, because `System.Text.Json` keeps no positions. Invalid JSON syntax carries the position that the parser reports.
+A YAML diagnostic also carries the `Span` of the offending node, so `FormatDiagnostics(yaml)` adds the line, the column and the source line. `CompileJson(string)` carries the span of the offending node in the same way; the compiler finds it by reading the text again, because `System.Text.Json` keeps no positions. `CompileJson(JsonElement)` carries no span, because its caller already holds the parsed element and the text it came from, if there ever was text, may be gone. `RuleBuilder.Compile` compiles through this element overload, so a builder diagnostic carries only its `Path` into the tree you built. Invalid JSON syntax carries the position that the parser reports.
 
 ```csharp
 const string json = """{"op":"and","operands":[{"const":true},{"op":"orr","operands":[]}]}""";
@@ -202,6 +217,9 @@ This table shows how each class of malformed rule text is reported.
 | JSON or YAML key that the node does not define, a `predicate` next to an `op`, or a value of the wrong kind | `TRE0014` | only the keys of that node kind / the key written                                      | nearest valid key, or a hint to split the node                  |
 | Variable reference that names an undeclared data source    | `TRE0024`                                  | a declared data source name / the name written                                         | nearest declared source name, or a hint to declare it           |
 | Variable reference whose query fails the validator of its source | `TRE0025`                            | a query valid for the data source / the query written                                  | none                                                            |
-| Literal argument values that the predicate's argument validator rejects, such as reversed `Between` or `Outside` bounds | `TRE0026` | the rule the values break / the values written | the fix the validator gives, such as swapping the bounds |
+| Literal argument values that the predicate's argument validator rejects, such as reversed `IsBetween` or `IsNotBetween` bounds | `TRE0026` | the rule the values break / the values written | the fix the validator gives, such as swapping the bounds |
 | Use of a predicate whose schema is marked deprecated (a warning, one per use; the rule still compiles) | `TRE0027` | none / the predicate name | the replacement predicate, when the schema names one |
+| `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit (a warning on the result) | `TRE0033` | none / the rewrite and its pass limit | hint to call the rewrite on the result again |
+| `PrintTruthTable` printed a table over the default cap of 8 terms (a warning on the result) | `TRE0034` | none / the term count and the row count | none |
+| `PrintTruthTable` refused a table: over the cap without `AllowLargerTable`, or over the hard limit of 12 terms | `TRE0035` | none / the term count and the limit | hint to set `AllowLargerTable`, when the table is under the hard limit |
 | A normal-form rewrite kept a threshold as an atom (a warning on the result of `ToNnf()`, `ToCnf()` or `ToDnf()`) | `TRE0031` | none / the threshold and the estimated node count of its expansion | hint to pass `NormalFormOptions` with `ExpandThresholds` set to `true` |

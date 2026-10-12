@@ -1,7 +1,6 @@
 namespace TruthWeaver.Printing;
 
 using System.Text;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 
 /// <summary>
@@ -17,10 +16,16 @@ public static class PlainTextTreePrinter
     /// <param name="root">The rule's outline.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
-    public static string Print(OutlineNode root, OperatorStyle style = OperatorStyle.Word, bool showArgumentValues = true)
+    public static string Print(
+        OutlineNode root,
+        OperatorStyle style = OperatorStyle.Word,
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
+    )
     {
-        return Print(RuleRenderTree.Build(root, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, style, showArgumentValues, constants));
     }
 
     /// <summary>Prints a rule's structure, annotated by one evaluation's result and short-circuit path.</summary>
@@ -28,15 +33,17 @@ public static class PlainTextTreePrinter
     /// <param name="traceTree">The matching <see cref="Decision.TraceTree"/> from that evaluation.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels. Defaults to <see cref="OperatorStyle.Word"/>.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
     public static string Print(
         OutlineNode root,
         TraceNode traceTree,
         OperatorStyle style = OperatorStyle.Word,
-        bool showArgumentValues = true
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
     )
     {
-        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues));
+        return Print(RuleRenderTree.Build(root, traceTree, style, showArgumentValues, constants));
     }
 
     private static string Print(RenderNode root)

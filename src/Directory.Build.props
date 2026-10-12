@@ -14,6 +14,14 @@
        Test and benchmark projects live outside this src/ subtree and are not covered: they are
        never published as libraries, and benchmark/test tooling (reflection-heavy by nature) has
        no need to be trim/AOT-safe. -->
+  <!-- Package validation runs during dotnet pack. It checks the package layout and the public API across target
+       frameworks. PackageValidationBaselineVersion is deliberately not set: no release exists yet, so there is nothing
+       to compare against. After the first release, set it to that version (for example 1.0.0) so that pack fails on a
+       breaking API change. -->
+  <PropertyGroup>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
@@ -21,4 +29,14 @@
          Every other warning, including IL2xxx/IL3xxx, still fails CI. Documented here and in CLAUDE.md because analyzer severity may not be weakened without a reason. -->
     <WarningsNotAsErrors Condition="'$(CI)' == 'true'">$(WarningsNotAsErrors);S1135</WarningsNotAsErrors>
   </PropertyGroup>
+
+  <!-- Global usings for the shipping packages (a using here is a compile-time convenience, not a package
+       dependency; each project keeps only its own ProjectReference set).
+       - TruthWeaver.Abstractions: 88 of the 150 src files with usings import it, and every src project that
+         references it uses its types (TruthValue, Decision, IPredicate). Not added to TruthWeaver.Abstractions
+         itself (it is the namespace's own project) or to TruthWeaver.Generators (netstandard2.0, no reference to
+         Abstractions, and ADR-0004 keeps it independent). -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'TruthWeaver.Abstractions' and '$(MSBuildProjectName)' != 'TruthWeaver.Generators'">
+    <Using Include="TruthWeaver.Abstractions" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,22 @@
+# Rule tests for access.rule: every case passes.
+name: access
+ruleFile: access.rule
+cases:
+  - name: an active editor is let in
+    given:
+      isActive: True
+      'hasRole(role: "editor")': True
+    expect:
+      result: True
+      faults: 0
+  - name: an inactive editor is kept out
+    given:
+      isActive: False
+      'hasRole(role: "editor")': True
+    expect:
+      result: False
+  - name: an unknown role is undecided
+    given:
+      isActive: T
+    expect:
+      result: Unknown

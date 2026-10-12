@@ -10,6 +10,7 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary><see cref="CompiledRule{TContext}.Outline"/>: every operator's and predicate's label/description, recursively.</summary>
 public sealed class OperatorInfoTests
 {
+    /// <summary>Every operator node has a non empty label and description.</summary>
     [Theory]
     [InlineData("true", "True")]
     [InlineData("false", "False")]
@@ -38,7 +39,7 @@ public sealed class OperatorInfoTests
     [InlineData("GreaterThan(0, a, b)", "GreaterThan(0)")]
     [InlineData("LessThan(2, a, b)", "LessThan(2)")]
     [InlineData("Exactly(1, a, b)", "Exactly(1)")]
-    public void Every_operator_node_has_a_non_empty_label_and_description(string dsl, string expectedLabel)
+    public void Describe_EveryOperatorNode_HasLabelAndDescription_Test(string dsl, string expectedLabel)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -50,8 +51,9 @@ public sealed class OperatorInfoTests
         Assert.False(string.IsNullOrWhiteSpace(description.Description));
     }
 
+    /// <summary>A term node is described from its registered predicate schema.</summary>
     [Fact]
-    public void A_term_node_is_described_from_its_registered_predicate_schema()
+    public void Describe_TermNode_UsesRegisteredPredicateSchema_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
@@ -64,8 +66,9 @@ public sealed class OperatorInfoTests
         Assert.Empty(description.Operands);
     }
 
+    /// <summary>An operator node's operands are described recursively.</summary>
     [Fact]
-    public void An_operator_nodes_operands_are_described_recursively()
+    public void Describe_OperatorNode_DescribesOperandsRecursively_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -79,8 +82,9 @@ public sealed class OperatorInfoTests
         Assert.Equal("b", description.Operands[1].Label);
     }
 
+    /// <summary>The registry resolves a predicate's label and description by name.</summary>
     [Fact]
-    public void Registry_resolves_a_predicates_label_and_description_by_name()
+    public void Lookup_Registry_ResolvesLabelAndDescriptionByName_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -94,8 +98,9 @@ public sealed class OperatorInfoTests
         Assert.False(string.IsNullOrWhiteSpace(schema.Description));
     }
 
+    /// <summary>Registry lookup is case insensitive and reports not found for an unregistered name.</summary>
     [Fact]
-    public void Registry_lookup_is_case_insensitive_and_reports_not_found_for_an_unregistered_name()
+    public void Lookup_Registry_IsCaseInsensitiveAndReportsNotFound_Test()
     {
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
@@ -108,8 +113,9 @@ public sealed class OperatorInfoTests
         Assert.Null(notFound);
     }
 
+    /// <summary>Outline throws for a term expression and points callers at the predicate schema.</summary>
     [Fact]
-    public void Outline_throws_for_a_term_expression_pointing_callers_at_the_predicate_schema_instead()
+    public void Outline_TermExpression_ThrowsPointingAtPredicateSchema_Test()
     {
         TermExpression term = new(new TermIdentity("isManager", []));
 

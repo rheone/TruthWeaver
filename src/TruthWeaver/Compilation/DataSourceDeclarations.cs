@@ -1,7 +1,6 @@
 namespace TruthWeaver.Compilation;
 
 using System.Collections;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// The data source names a rule may use in <c>from("name", "query")</c>, declared to the compiler (ADR-0006

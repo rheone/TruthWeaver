@@ -2,11 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>71d9435f-9909-4c6e-8703-6760a73f684b</ProjectGuid>
     <RootNamespace>TruthWeaver.Generators</RootNamespace>
-    <Description>
-      A Roslyn source generator for TruthWeaver. Mark a static predicate method with [Predicate] and the
-      generator emits a Register method that adds the method to a PredicateRegistryBuilder, with a
-      PredicateSchema built from the method signature. No reflection runs at run time.
-    </Description>
+    <PackageId>TruthWeaver.Generators</PackageId>
+    <Description>Roslyn source generator for TruthWeaver: mark a static method with [Predicate] and the generator emits the registration code and predicate schema at compile time, with no reflection.</Description>
+    <PackageTags>rules engine;kleene;k3;source generator;roslyn;analyzer;predicate;truthweaver</PackageTags>
     <!-- The compiler loads a generator into its own process, so the generator must target netstandard2.0
          whatever the consuming project targets. This replaces net11.0 from the root Directory.Build.props. A single
          TargetFramework, not TargetFrameworks, puts the TFM in OutputPath, which the analyzer pack item below needs. -->

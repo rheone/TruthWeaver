@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>The result of one check, or of one case of a check, in a <see cref="PredicateHarnessReport"/>.</summary>
 /// <param name="Check">The check that produced this outcome.</param>
 /// <param name="Status">Whether the check passed, failed, met an expected fault or was only observed.</param>

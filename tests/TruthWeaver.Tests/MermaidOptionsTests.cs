@@ -196,7 +196,12 @@ public sealed class MermaidOptionsTests
     public void Print_TwoLineTermLabelsWithShapesAndTrace_ComposesAllThree_Test()
     {
         OutlineNode root = WithArguments();
-        TraceNode trace = new("AND", TruthValue.True, false, [new("Has Crust", TruthValue.True, false, [])]);
+        TraceNode trace = new(
+            "AND",
+            TruthValue.True,
+            false,
+            new EquatableArray<TraceNode>([new("Has Crust", TruthValue.True, false, EquatableArray<TraceNode>.Empty)])
+        );
 
         string mermaid = MermaidTreePrinter.Print(
             root,
@@ -242,7 +247,7 @@ public sealed class MermaidOptionsTests
 
     /// <summary>The monochrome preset separates the states by stroke style, so no two states share one.</summary>
     [Fact]
-    public void Monochrome_StatesDifferInStrokeStyle_Test()
+    public void Monochrome_States_DifferInStrokeStyle_Test()
     {
         MermaidPalette p = MermaidPalette.Monochrome;
         string[] states = [p.True, p.False, p.Unknown, p.Skipped];
@@ -266,7 +271,7 @@ public sealed class MermaidOptionsTests
 
     /// <summary>Every preset defines all six classes.</summary>
     [Fact]
-    public void Presets_DefineAllSixClasses_Test()
+    public void Presets_Definitions_DefineAllSixClasses_Test()
     {
         foreach (
             MermaidPalette p in new[]

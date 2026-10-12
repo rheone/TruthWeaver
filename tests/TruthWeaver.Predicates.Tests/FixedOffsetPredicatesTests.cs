@@ -4,8 +4,8 @@ using System.Globalization;
 using TruthWeaver.Abstractions;
 
 /// <summary>
-/// Pins the fixed-offset calendar predicates of <see cref="DateTimePredicates"/>: <c>OnDayOfWeek</c>, <c>InMonth</c> and
-/// <c>InTimeWindow</c>, with their <c>NotX</c> Strong Kleene twins. Each reads the selected instant in the fixed offset
+/// Pins the fixed-offset calendar predicates of <see cref="DateTimePredicates"/>: <c>IsOnDayOfWeek</c>, <c>IsInMonth</c> and
+/// <c>IsInTimeWindow</c>, with their <c>NotX</c> Strong Kleene twins. Each reads the selected instant in the fixed offset
 /// that the rule gives.
 /// </summary>
 public class FixedOffsetPredicatesTests
@@ -19,16 +19,16 @@ public class FixedOffsetPredicatesTests
     [InlineData("+05:30", "Friday", TruthValue.False)]
     [InlineData("+05:30", "Saturday", TruthValue.True)]
     [InlineData("-02:00", "friday", TruthValue.True)]
-    public async Task OnDayOfWeek_OffsetShiftsTheDate_ReadsTheDayInTheOffset_Test(
+    public async Task IsOnDayOfWeek_OffsetShiftsTheDate_ReadsTheDayInTheOffset_Test(
         string offset,
         string day,
         TruthValue expected
     )
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> on) =
-            DateTimePredicates.OnDayOfWeek<DateContext>("on", c => c.When);
+            DateTimePredicates.IsOnDayOfWeek<DateContext>("on", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notOn) =
-            DateTimePredicates.NotOnDayOfWeek<DateContext>("notOn", c => c.When);
+            DateTimePredicates.IsNotOnDayOfWeek<DateContext>("notOn", c => c.When);
         PredicateArguments args = Args(("days", Strings(day)), ("offset", LiteralValue.OfString(offset)));
         DateContext context = new(LateFridayUtc);
 
@@ -47,7 +47,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("2026-02-01T02:00:00Z", "-05:00", 1, TruthValue.True)]
     [InlineData("2026-12-31T23:00:00Z", "+01:00", 1, TruthValue.True)]
     [InlineData("2026-12-31T23:00:00Z", "+01:00", 12, TruthValue.False)]
-    public async Task InMonth_OffsetCrossesAMonthEnd_ReadsTheMonthInTheOffset_Test(
+    public async Task IsInMonth_OffsetCrossesAMonthEnd_ReadsTheMonthInTheOffset_Test(
         string instant,
         string offset,
         long month,
@@ -55,9 +55,9 @@ public class FixedOffsetPredicatesTests
     )
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inMonth) =
-            DateTimePredicates.InMonth<DateContext>("inMonth", c => c.When);
+            DateTimePredicates.IsInMonth<DateContext>("inMonth", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInMonth) =
-            DateTimePredicates.NotInMonth<DateContext>("notInMonth", c => c.When);
+            DateTimePredicates.IsNotInMonth<DateContext>("notInMonth", c => c.When);
         PredicateArguments args = Args(("months", Longs(month)), ("offset", LiteralValue.OfString(offset)));
         DateContext context = new(DateTimeOffset.Parse(instant, CultureInfo.InvariantCulture));
 
@@ -75,7 +75,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("12:00:00", TruthValue.True)]
     [InlineData("16:59:59", TruthValue.True)]
     [InlineData("17:00:00", TruthValue.False)]
-    public Task InTimeWindow_DefaultEdges_IncludesStartAndExcludesEnd_Test(string localTime, TruthValue expected)
+    public Task IsInTimeWindow_DefaultEdges_IncludesStartAndExcludesEnd_Test(string localTime, TruthValue expected)
     {
         PredicateArguments args = Window(("start", "09:00"), ("end", "17:00"), ("offset", "+02:00"));
 
@@ -90,7 +90,7 @@ public class FixedOffsetPredicatesTests
     [InlineData(true, true, "17:00:00", TruthValue.True)]
     [InlineData(false, true, "09:00:00", TruthValue.False)]
     [InlineData(false, true, "17:00:00", TruthValue.True)]
-    public Task InTimeWindow_EdgeFlags_SetInclusiveOrExclusiveEdges_Test(
+    public Task IsInTimeWindow_EdgeFlags_SetInclusiveOrExclusiveEdges_Test(
         bool includeStart,
         bool includeEnd,
         string localTime,
@@ -100,7 +100,6 @@ public class FixedOffsetPredicatesTests
         PredicateArguments args = Args(
             ("start", LiteralValue.OfString("09:00")),
             ("end", LiteralValue.OfString("17:00")),
-            ("duration", LiteralValue.OfString(string.Empty)),
             ("includeStart", LiteralValue.OfBoolean(includeStart)),
             ("includeEnd", LiteralValue.OfBoolean(includeEnd)),
             ("offset", LiteralValue.OfString("Z"))
@@ -118,7 +117,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("05:59:59", TruthValue.True)]
     [InlineData("06:00:00", TruthValue.False)]
     [InlineData("12:00:00", TruthValue.False)]
-    public Task InTimeWindow_StartLaterThanEnd_CrossesMidnight_Test(string localTime, TruthValue expected)
+    public Task IsInTimeWindow_StartLaterThanEnd_CrossesMidnight_Test(string localTime, TruthValue expected)
     {
         PredicateArguments args = Window(("start", "22:00"), ("end", "06:00"), ("offset", "Z"));
 
@@ -131,7 +130,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("22:00:00", TruthValue.True)]
     [InlineData("03:00:00", TruthValue.True)]
     [InlineData("06:00:00", TruthValue.False)]
-    public Task InTimeWindow_DurationForm_EndsAfterTheDuration_Test(string localTime, TruthValue expected)
+    public Task IsInTimeWindow_DurationForm_EndsAfterTheDuration_Test(string localTime, TruthValue expected)
     {
         PredicateArguments args = Window(("start", "22:00"), ("duration", "PT8H"), ("offset", "Z"));
 
@@ -142,7 +141,7 @@ public class FixedOffsetPredicatesTests
     [Theory]
     [InlineData("Z", TruthValue.False)]
     [InlineData("+05:30", TruthValue.True)]
-    public Task InTimeWindow_Offset_ReadsTheTimeOfDayInTheOffset_Test(string offset, TruthValue expected)
+    public Task IsInTimeWindow_Offset_ReadsTheTimeOfDayInTheOffset_Test(string offset, TruthValue expected)
     {
         PredicateArguments args = Window(("start", "09:00"), ("end", "17:00"), ("offset", offset));
 
@@ -161,7 +160,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("", true)]
     public void ArgumentValidator_Offset_ReportsOnlyAnInvalidOffset_Test(string offset, bool invalid)
     {
-        PredicateSchema schema = DateTimePredicates.OnDayOfWeek<DateContext>("on", c => c.When).Schema;
+        PredicateSchema schema = DateTimePredicates.IsOnDayOfWeek<DateContext>("on", c => c.When).Schema;
 
         IReadOnlyList<PredicateArgumentProblem> problems = schema.ArgumentValidator!(
             Args(("days", Strings("Monday")), ("offset", LiteralValue.OfString(offset)))
@@ -177,7 +176,7 @@ public class FixedOffsetPredicatesTests
     [InlineData("UTC")]
     public void ArgumentValidator_TimeZoneName_SaysNamesAreNotSupported_Test(string offset)
     {
-        PredicateSchema schema = DateTimePredicates.InMonth<DateContext>("inMonth", c => c.When).Schema;
+        PredicateSchema schema = DateTimePredicates.IsInMonth<DateContext>("inMonth", c => c.When).Schema;
 
         PredicateArgumentProblem problem = Assert.Single(
             schema.ArgumentValidator!(Args(("months", Longs(1)), ("offset", LiteralValue.OfString(offset))))
@@ -192,10 +191,10 @@ public class FixedOffsetPredicatesTests
     public void ArgumentValidator_BadDaysOrMonths_ReportsOneProblemEach_Test()
     {
         Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>> days = DateTimePredicates
-            .OnDayOfWeek<DateContext>("on", c => c.When)
+            .IsOnDayOfWeek<DateContext>("on", c => c.When)
             .Schema.ArgumentValidator!;
         Func<PredicateArguments, IReadOnlyList<PredicateArgumentProblem>> months = DateTimePredicates
-            .InMonth<DateContext>("inMonth", c => c.When)
+            .IsInMonth<DateContext>("inMonth", c => c.When)
             .Schema.ArgumentValidator!;
         LiteralValue utc = LiteralValue.OfString("Z");
 
@@ -209,21 +208,25 @@ public class FixedOffsetPredicatesTests
     }
 
     /// <summary>
-    /// The window rules are checked at compile time: equal start and end, both or neither of end and duration, a duration
-    /// out of range and a bad time of day are each a problem.
+    /// The window rules are checked at compile time: equal start and end, both or neither of end and duration, an empty
+    /// end or duration, a duration out of range and a bad time of day are each a problem. A <see langword="null"/> argument
+    /// is omitted.
     /// </summary>
     [Theory]
-    [InlineData("09:00", "09:00", "")]
+    [InlineData("09:00", "09:00", null)]
     [InlineData("09:00", "17:00", "PT8H")]
+    [InlineData("09:00", null, null)]
+    [InlineData("09:00", "", null)]
+    [InlineData("09:00", null, "")]
     [InlineData("09:00", "", "")]
-    [InlineData("09:00", "", "PT24H")]
-    [InlineData("09:00", "", "PT0S")]
-    [InlineData("09:00", "", "P1D")]
-    [InlineData("25:00", "17:00", "")]
-    [InlineData("09:00", "9:00", "")]
-    public void ArgumentValidator_InvalidWindow_ReportsAProblem_Test(string start, string end, string duration)
+    [InlineData("09:00", null, "PT24H")]
+    [InlineData("09:00", null, "PT0S")]
+    [InlineData("09:00", null, "P1D")]
+    [InlineData("25:00", "17:00", null)]
+    [InlineData("09:00", "9:00", null)]
+    public void ArgumentValidator_InvalidWindow_ReportsAProblem_Test(string start, string? end, string? duration)
     {
-        PredicateSchema schema = DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+        PredicateSchema schema = DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When).Schema;
 
         IReadOnlyList<PredicateArgumentProblem> problems = schema.ArgumentValidator!(
             Window(("start", start), ("end", end), ("duration", duration), ("offset", "Z"))
@@ -233,21 +236,56 @@ public class FixedOffsetPredicatesTests
     }
 
     /// <summary>
-    /// An end that comes from a data source is absent at compile time, so the validator does not report "neither end nor
-    /// duration"; a valid literal window has no problem.
+    /// An end that comes from a data source is absent at compile time, but the compiler names it as deferred, so the
+    /// validator does not report "neither end nor duration". An end or duration that the call omits is reported.
     /// </summary>
     [Fact]
     public void ArgumentValidator_EndFromADataSource_IsNotReportedMissing_Test()
     {
-        PredicateSchema schema = DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When).Schema;
-        PredicateArguments fromSource = Args(
-            ("start", LiteralValue.OfString("09:00")),
-            ("duration", LiteralValue.OfString(string.Empty)),
-            ("offset", LiteralValue.OfString("Z"))
-        );
+        PredicateSchema schema = DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+        PredicateArguments fromSource = Window(["end"], ("start", "09:00"), ("offset", "Z"));
+        PredicateArguments durationFromSource = Window(["duration"], ("start", "09:00"), ("offset", "Z"));
+        PredicateArguments omitted = Window(("start", "09:00"), ("offset", "Z"));
 
         Assert.Empty(schema.ArgumentValidator!(fromSource));
+        Assert.Empty(schema.ArgumentValidator(durationFromSource));
         Assert.Empty(schema.ArgumentValidator(Window(("start", "09:00"), ("duration", "PT1H30M"), ("offset", "Z"))));
+        Assert.Single(schema.ArgumentValidator(omitted));
+    }
+
+    /// <summary>
+    /// At evaluation a data-source value is present, so an absent end or duration was omitted. A call that gives neither
+    /// throws, and so does an empty end or duration, because an empty text is a value and not "not given".
+    /// </summary>
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData(null, "")]
+    public async Task Evaluate_EmptyOrMissingEndAndDuration_ThrowsArgumentException_Test(string? end, string? duration)
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inWindow) =
+            DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When);
+        PredicateArguments args = Window(("start", "09:00"), ("end", end), ("duration", duration), ("offset", "Z"));
+
+        _ = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await RunAsync(inWindow, new DateContext(DateTimeOffset.UnixEpoch), args)
+        );
+    }
+
+    /// <summary>The schema leaves end and duration optional with no default, so an omitted one stays absent.</summary>
+    [Fact]
+    public void Schema_EndAndDuration_AreOptionalWithoutADefault_Test()
+    {
+        PredicateSchema schema = DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+
+        Assert.All(
+            schema.Arguments.Where(a => a.Name is "end" or "duration"),
+            a =>
+            {
+                Assert.False(a.Required);
+                Assert.Null(a.Default);
+            }
+        );
     }
 
     /// <summary>
@@ -258,7 +296,7 @@ public class FixedOffsetPredicatesTests
     public async Task Evaluate_InvalidOffsetAtEvaluation_ThrowsArgumentException_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> on) =
-            DateTimePredicates.OnDayOfWeek<DateContext>("on", c => c.When);
+            DateTimePredicates.IsOnDayOfWeek<DateContext>("on", c => c.When);
         PredicateArguments args = Args(("days", Strings("Monday")), ("offset", LiteralValue.OfString("Europe/Paris")));
 
         ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -279,22 +317,22 @@ public class FixedOffsetPredicatesTests
 
         const NullBehavior asFalse = NullBehavior.False;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> onDay = DateTimePredicates
-            .OnDayOfWeek<DateContext>("p", c => c.When)
+            .IsOnDayOfWeek<DateContext>("p", c => c.When)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notOnDay = DateTimePredicates
-            .NotOnDayOfWeek<DateContext>("t", c => c.When)
+            .IsNotOnDayOfWeek<DateContext>("t", c => c.When)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inMonth = DateTimePredicates
-            .InMonth<DateContext>("p", c => c.When, nullBehavior: asFalse)
+            .IsInMonth<DateContext>("p", c => c.When, nullBehavior: asFalse)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInMonth = DateTimePredicates
-            .NotInMonth<DateContext>("t", c => c.When, nullBehavior: asFalse)
+            .IsNotInMonth<DateContext>("t", c => c.When, nullBehavior: asFalse)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inWindow = DateTimePredicates
-            .InTimeWindow<DateContext>("p", c => c.When)
+            .IsInTimeWindow<DateContext>("p", c => c.When)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInWindow = DateTimePredicates
-            .NotInTimeWindow<DateContext>("t", c => c.When, nullBehavior: asFalse)
+            .IsNotInTimeWindow<DateContext>("t", c => c.When, nullBehavior: asFalse)
             .Evaluate;
 
         Assert.Equal(TruthValue.Unknown, await RunAsync(onDay, missing, days));
@@ -308,31 +346,41 @@ public class FixedOffsetPredicatesTests
     private static async Task AssertWindowAsync(DateTimeOffset instant, PredicateArguments args, TruthValue expected)
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inWindow) =
-            DateTimePredicates.InTimeWindow<DateContext>("inWindow", c => c.When);
+            DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInWindow) =
-            DateTimePredicates.NotInTimeWindow<DateContext>("notInWindow", c => c.When);
+            DateTimePredicates.IsNotInTimeWindow<DateContext>("notInWindow", c => c.When);
         DateContext context = new(instant);
 
         Assert.Equal(expected, await RunAsync(inWindow, context, args));
         Assert.Equal(Complement(expected), await RunAsync(notInWindow, context, args));
     }
 
-    /// <summary>Builds window arguments the way the compiler does: omitted end or duration is empty text, and the edge flags take their defaults.</summary>
-    private static PredicateArguments Window(params (string Name, string Value)[] values)
+    /// <summary>
+    /// Builds window arguments the way the compiler does: an omitted end or duration is absent (a <see langword="null"/>
+    /// value is omitted), and the edge flags take their defaults.
+    /// </summary>
+    private static PredicateArguments Window(params (string Name, string? Value)[] values)
+    {
+        return Window([], values);
+    }
+
+    /// <summary>Builds window arguments as above, naming the arguments that a data source supplies as deferred.</summary>
+    private static PredicateArguments Window(string[] deferred, params (string Name, string? Value)[] values)
     {
         Dictionary<string, LiteralValue> args = new(StringComparer.Ordinal)
         {
-            ["end"] = LiteralValue.OfString(string.Empty),
-            ["duration"] = LiteralValue.OfString(string.Empty),
             ["includeStart"] = LiteralValue.OfBoolean(true),
             ["includeEnd"] = LiteralValue.OfBoolean(false),
         };
-        foreach ((string name, string value) in values)
+        foreach ((string name, string? value) in values)
         {
-            args[name] = LiteralValue.OfString(value);
+            if (value is not null)
+            {
+                args[name] = LiteralValue.OfString(value);
+            }
         }
 
-        return new PredicateArguments(args);
+        return new PredicateArguments(args, new HashSet<string>(deferred, StringComparer.Ordinal));
     }
 
     private static DateTimeOffset At(string date, string localTime, string offset)

@@ -1,6 +1,5 @@
 namespace TruthWeaver.Parsing;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 
@@ -32,6 +31,10 @@ internal sealed class DslParser
     private readonly string source;
     private readonly IReadOnlyList<Token> tokens;
     private readonly List<Diagnostic> diagnostics;
+
+    // The extent, delimiters included, of each node written inside a group: a comment before the opener is that node's
+    // note, so the note attacher needs to know where the group began. Keyed by reference, as two equal nodes are distinct.
+    private readonly Dictionary<RuleNode, (int Start, int End)> groups = [with(ReferenceEqualityComparer.Instance)];
     private int position;
 
     private DslParser(string source, IReadOnlyList<Token> tokens, List<Diagnostic> diagnostics)
@@ -88,6 +91,7 @@ internal sealed class DslParser
             );
         }
 
+        NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
         return (root, diagnostics);
     }
 
@@ -472,6 +476,9 @@ internal sealed class DslParser
             this.position++;
             RuleNode inner = this.ParseExpression();
             this.ExpectClose(opener);
+
+            // An outer group is recorded after an inner one around the same node, so the widest extent wins.
+            this.groups[inner] = (opener.Span.Start, this.tokens[this.position - 1].Span.End);
             return inner;
         }
 
@@ -489,6 +496,26 @@ internal sealed class DslParser
         if (this.IsKeyword("UNKNOWN"))
         {
             return this.ConsumeConstant(TruthValue.Unknown);
+        }
+
+        // T, F and U are the short spellings of the constants (ConstantStyle.Letters). A letter followed by '(' is a call
+        // to a predicate with a reserved name, so it stays a term and the compiler reports the reserved name.
+        if (this.Current.Kind == TokenKind.Identifier && this.tokens[this.position + 1].Kind != TokenKind.LParen)
+        {
+            if (this.IsKeyword("T"))
+            {
+                return this.ConsumeConstant(TruthValue.True);
+            }
+
+            if (this.IsKeyword("F"))
+            {
+                return this.ConsumeConstant(TruthValue.False);
+            }
+
+            if (this.IsKeyword("U"))
+            {
+                return this.ConsumeConstant(TruthValue.Unknown);
+            }
         }
 
         if (this.IsKeyword("EXACTLYONE"))

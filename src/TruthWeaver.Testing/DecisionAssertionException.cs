@@ -6,7 +6,7 @@ namespace TruthWeaver.Testing;
 /// no dependency on any particular test framework's assertion library, so any test runner that treats
 /// an uncaught exception as a test failure — xUnit included — reports it correctly.
 /// </summary>
-public sealed class DecisionAssertionException : Exception
+public sealed class DecisionAssertionException : TruthWeaverAssertionException
 {
     /// <summary>Initializes a new instance of the <see cref="DecisionAssertionException"/> class.</summary>
     public DecisionAssertionException() { }

@@ -1,6 +1,5 @@
 namespace TruthWeaver.Rewriting;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Evaluation;
 
@@ -23,36 +22,50 @@ using TruthWeaver.Evaluation;
 /// </remarks>
 internal static class Simplifier
 {
-    /// <summary>A safety bound on the repeat-until-stable loop; each productive round shrinks the tree.</summary>
-    private const int MaxPasses = 16;
+    /// <summary>
+    /// The pass limit of the repeat-until-stable loop; each productive round shrinks the tree. A rewrite that reaches the
+    /// limit reports <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/>.
+    /// </summary>
+    internal const int MaxPasses = 16;
 
     /// <summary>Simplifies <paramref name="root"/> and everything below it.</summary>
     /// <param name="root">The tree to simplify.</param>
     /// <param name="trace">Receives each change in the order it is made, or <see langword="null"/> to report nothing.</param>
-    /// <returns>An equivalent tree that is never larger than <paramref name="root"/>.</returns>
-    public static Expression Simplify(Expression root, RewriteTrace? trace = null)
+    /// <param name="maxPasses">The most passes to run. A test lowers it to force non-convergence.</param>
+    /// <returns>
+    /// An equivalent tree that is never larger than <paramref name="root"/>, and whether the loop, and every
+    /// canonicalisation inside it, reached a fixed point within its pass limit.
+    /// </returns>
+    public static RewriteOutcome Simplify(Expression root, RewriteTrace? trace = null, int maxPasses = MaxPasses)
     {
-        Expression current = Canonicalizer.Canonicalize(root, trace);
-        for (int pass = 0; pass < MaxPasses; pass++)
+        RewriteOutcome start = Canonicalizer.CanonicalizeChecked(root, trace);
+        Expression current = start.Tree;
+        bool converged = start.Converged;
+        bool settled = false;
+        for (int pass = 0; pass < maxPasses; pass++)
         {
-            Expression next = Canonicalizer.Canonicalize(new Pass(trace).Visit(current), trace);
-            if (next.Equals(current))
+            RewriteOutcome canonical = Canonicalizer.CanonicalizeChecked(new Pass(trace).Visit(current), trace);
+            converged &= canonical.Converged;
+            if (canonical.Tree.Equals(current))
             {
+                settled = true;
                 break;
             }
 
-            current = next;
+            current = canonical.Tree;
         }
+
+        converged &= settled;
 
         // Every rewrite is size-guarded, so this only protects against a future rule that is not.
         if (ExpressionTools.Size(current) <= ExpressionTools.Size(root))
         {
-            return current;
+            return new RewriteOutcome(current, converged);
         }
 
         // The rule is returned unchanged, so no step describes it.
         trace?.Clear();
-        return root;
+        return new RewriteOutcome(root, converged);
     }
 
     /// <summary>The result of one rewrite and the law it applied.</summary>

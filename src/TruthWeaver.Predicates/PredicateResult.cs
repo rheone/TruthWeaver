@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Adapts the built-in predicates' internally boolean comparisons to the Kleene
 /// <see cref="TruthValue"/> a predicate delegate returns. Built-in predicates always reach a definite
@@ -30,7 +28,7 @@ internal static class PredicateResult
     /// <returns>A completed <see cref="ValueTask{TruthValue}"/>; never a fault.</returns>
     public static ValueTask<TruthValue> ForNullAsync(NullBehavior nullBehavior, bool negate = false)
     {
-        TruthValue positive = nullBehavior == NullBehavior.Unknown ? TruthValue.Unknown : TruthValue.False;
+        TruthValue positive = nullBehavior == NullBehavior.False ? TruthValue.False : TruthValue.Unknown;
         return ValueTask.FromResult(negate ? Not(positive) : positive);
     }
 

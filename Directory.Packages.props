@@ -2,31 +2,36 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <!-- The analyzer packages and Source Link below are GlobalPackageReference items, not PackageVersion items.
+       A global reference applies to every project in the repository (src, tests, samples, benchmarks and the
+       netstandard2.0 generator) from this one file, so a new project gets the same analyzers without a
+       PackageReference in Directory.Build.props. PrivateAssets="all" keeps them out of the packages we ship.
+       NSubstitute.Analyzers.CSharp stays a PackageReference in the test projects that use NSubstitute. -->
   <!-- Roslynator. (Roslynator.CodeFixes/Roslynator.Refactorings are IDE-extension-only packages,
        not referenced by any PackageReference here, so they are deliberately not pinned.) -->
   <ItemGroup>
-    <PackageVersion Include="Roslynator.Analyzers" Version="5.0.0" />
-    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.0" />
-    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.0" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.1" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.1" PrivateAssets="all" />
+    <GlobalPackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.1" PrivateAssets="all" />
   </ItemGroup>
   <!-- StyleCop -->
   <ItemGroup>
     <!-- 1.2.0-beta is required for record support: 1.1.x SA1313 flags PascalCase positional-record
          parameters, which are correct (they become public properties). -->
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
+    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
   </ItemGroup>
   <!-- SonarAnalyzer -->
   <ItemGroup>
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" PrivateAssets="all" />
   </ItemGroup>
   <!-- Async/await usage analyzers -->
   <ItemGroup>
-    <PackageVersion Include="AsyncFixer" Version="2.1.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
+    <GlobalPackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
+    <GlobalPackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" PrivateAssets="all" />
   </ItemGroup>
   <!-- IDisposable usage analyzer -->
   <ItemGroup>
-    <PackageVersion Include="IDisposableAnalyzers" Version="4.0.8" />
+    <GlobalPackageReference Include="IDisposableAnalyzers" Version="4.0.8" PrivateAssets="all" />
   </ItemGroup>
   <!-- Microsoft extensions (ship with .NET 11). Abstractions packages are what TruthWeaver
        itself depends on (ADR-0004); the non-Abstractions packages are test-only, wiring a real DI
@@ -47,6 +52,13 @@
   <ItemGroup>
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <!-- System.CommandLine - the truthweaver command line (TruthWeaver.Tool) only: option parsing, help and shell completion.
+       2.0.x is the stable line (MIT, a net8.0 build with no dependencies, marked IsTrimmable and free of
+       RequiresUnreferencedCode/RequiresDynamicCode). No other project may reference it; an architecture test checks the
+       tool core. -->
+  <ItemGroup>
+    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+  </ItemGroup>
   <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
        invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->
@@ -56,8 +68,8 @@
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
-    <PackageVersion Include="xunit.v3" Version="4.0.1" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.4.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <!-- coverlet.MTP, not coverlet.collector (a VSTest data collector, which the
@@ -85,10 +97,15 @@
   <ItemGroup>
     <PackageVersion Include="CsCheck" Version="4.9.1" />
   </ItemGroup>
-  <!-- Source Link -->
+  <!-- MinVer derives every package version from the Git tags. It is a build-only reference, and only for projects that
+       pack, so test, sample and benchmark projects carry no MinVer version logic. -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="11.0.100-rc.1.26425.128" />
+    <GlobalPackageReference Include="MinVer" Version="8.0.0" PrivateAssets="all" Condition="'$(IsPackable)' != 'false'" />
   </ItemGroup>
+  <!-- Source Link comes from the .NET SDK, which bundles Microsoft.SourceLink.GitHub, so no package reference is needed.
+       Do not add the Microsoft.SourceLink.GitHub package as a GlobalPackageReference: it sets SuppressImplicitGitSourceLink,
+       which switches off the SDK Source Link. In this repository no Source Link target then ran, so the packed
+       assemblies had no sourcelink.json and the symbol packages had no source link (found by the check in docs/releasing.md). -->
   <!-- NetArchTest - architecture-test-project-only, asserting the ADR-0004 package-boundary rules
        (e.g. TruthWeaver.Abstractions has zero dependencies on the other TruthWeaver.* assemblies,
        TruthWeaver.Predicates/Testing depend on Abstractions alone) as a build-time check rather than
@@ -101,6 +118,6 @@
        throwaway console app that measures RuleCompiler/CompiledRule performance from outside the
        library. -->
   <ItemGroup>
-    <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
 </Project>

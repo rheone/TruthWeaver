@@ -6,7 +6,6 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>Ticket 08: the K3-aware rule equivalence check and the diff's "preserves meaning" verdict.</summary>
@@ -139,7 +138,7 @@ public sealed class RuleEquivalenceTests
             (CompiledRule<RuleTestContext> Rule, Func<IReadOnlyList<TruthValue>, TruthValue> Eval)[] candidates =
             [
                 (leftRule, left.Eval),
-                (leftRule.Canonicalize(), left.Eval),
+                (leftRule.Canonicalize().GetRuleOrThrow(), left.Eval),
                 (otherRule, other.Eval),
             ];
 

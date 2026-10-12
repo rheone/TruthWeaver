@@ -87,8 +87,7 @@ Raised by the K3 work, scored on the same scale. None is scheduled.
 
 ### Open owner decisions that touch this roadmap
 
-- k3-followups 28 (AAA and NSubstitute rules), 31 (ternary precedence wording) and 33 (`params` versus enumerable
-  overload guidance) are `needs-owner-decision`; none changes a verdict above.
+- None. k3-followups 28, 31 and 33 are resolved. The least-surprise-normalization decisions (tickets 22 to 30) were made 2026-10-10 and none changes a verdict above.
 - The predicate-catalog open questions (2, 4, 7, 8) gate the catalog item and its null-behaviour defaults.
 
 ## At a glance (original 2026-09 scoring, superseded by the re-score above)

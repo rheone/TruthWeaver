@@ -21,12 +21,27 @@ A null selected value is a missing value. It is not a fault.
 | `IsNull` | `True` | `True`. A null test has no option. |
 | `IsNotNull` | `False` | `False`. A null test has no option. |
 
-- The host chooses the behavior once, when it registers the predicate. A rule cannot change it.
+- The host chooses the behavior when it registers the predicate. A rule cannot change it.
+- A host can choose it once for every registration, or for one family, with `NullBehaviorScope`: `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` sets the default for the factory calls made inside the block, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` sets it for one family. A `nullBehavior` argument on a factory call wins over a scope, and a family scope wins over an all-families scope. With no scope the default is `Unknown`.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.
 - A host registers both predicates of a pair with the same `NullBehavior`.
 - A missing value is `Unknown` unless the predicate is a null test. This includes the collection `IsEmpty` and `IsNotEmpty`: a null collection is missing, not empty.
 - A null value is not a default value. `IsDefault` answers per `NullBehavior` for a null selected value.
+
+### When a predicate answers Unknown
+
+`Unknown` is the default for a missing value because it is the only answer that does not guess. `NOT` of it stays `Unknown`, so a rule that depends on a missing value is not satisfied: `Decision.IsSatisfied` is fail-closed. `NullBehavior.False` trades that safety for a definite answer, and `NOT` then turns the missing value into `True`. With a null age, `NOT ageAbove(value: 18)` is `Unknown` by default and `True` when the host chooses `NullBehavior.False`.
+
+| Predicate group | Null selected value | Fault (selector or predicate throws, times out, or an argument value is not valid) | Data-source failure (argument value missing, ambiguous, wrong kind, source error or unsupplied source) |
+| --- | --- | --- | --- |
+| Comparison, range, membership and default tests: numeric, scalar, string, date-time, regex, type | `Unknown`, or `False` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| Collection tests, including `IsEmpty` and `IsNotEmpty` | `Unknown`, or `False` under `NullBehavior.False` (`SetEquals` reads a null collection as the empty set) | `Unknown` plus a fault | `Unknown` plus a fault |
+| Clock and calendar tests: `IsAfterNow`, `IsOnDayOfWeek`, `IsInMonth`, `IsInTimeWindow` | `Unknown`, or `False` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| Null tests: `IsNull`, `IsNotNull`, `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace`, `IsNotNullOrWhiteSpace` | Never `Unknown`: always `True` or `False` | `Unknown` plus a fault | `Unknown` plus a fault |
+| A `NotX` twin | The complement of its positive predicate: `Unknown`, or `True` under `NullBehavior.False` | `Unknown` plus a fault | `Unknown` plus a fault |
+
+A fault is never changed by `NullBehavior` or by a scope. A data-source failure applies only to a term that takes an argument from a data source.
 
 ## NotX twins
 
@@ -34,39 +49,38 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 
 | Predicate | Twin |
 | --- | --- |
-| `Equal` | `NotEqual` |
-| `LessThan` | `GreaterThanOrEqual` |
-| `GreaterThan` | `LessThanOrEqual` |
-| `Between` | `Outside` |
-| `In` | `NotIn` |
+| `IsEqualTo` | `IsNotEqualTo` |
+| `IsLessThan` | `IsNotLessThan` |
+| `IsGreaterThan` | `IsNotGreaterThan` |
+| `IsLessThanOrEqualTo` | `IsNotLessThanOrEqualTo` |
+| `IsGreaterThanOrEqualTo` | `IsNotGreaterThanOrEqualTo` |
+| `IsBetween` | `IsNotBetween` |
+| `IsIn` | `IsNotIn` |
 | `IsNull` | `IsNotNull` |
 | `IsDefault` | `IsNotDefault` |
-| `Equals` | `NotEqual` |
-| `EqualsIgnoreCase` | `NotEqualsIgnoreCase` |
-| `EqualsConfigurable` | `NotEqualsConfigurable` |
 | `StartsWith` | `NotStartsWith` |
 | `EndsWith` | `NotEndsWith` |
 | `Contains` | `NotContains` |
 | `IsEmpty` | `IsNotEmpty` |
 | `IsNullOrEmpty` | `IsNotNullOrEmpty` |
 | `IsNullOrWhiteSpace` | `IsNotNullOrWhiteSpace` |
-| `Matches` | `NotMatches` |
+| `IsMatch` | `IsNotMatch` |
 | `ContainsAny` | `NotContainsAny` |
 | `ContainsAll` | `NotContainsAll` |
 | `IsSubsetOf` | `IsNotSubsetOf` |
 | `SetEquals` | `NotSetEquals` |
-| `CountEqual` | `NotCountEqual` |
-| `CountLessThan` | `NotCountLessThan` |
-| `CountGreaterThan` | `NotCountGreaterThan` |
-| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` |
-| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` |
-| `After` | `NotAfter` |
-| `Before` | `NotBefore` |
-| `AfterNow` | `NotAfterNow` |
-| `BeforeNow` | `NotBeforeNow` |
-| `OnDayOfWeek` | `NotOnDayOfWeek` |
-| `InMonth` | `NotInMonth` |
-| `InTimeWindow` | `NotInTimeWindow` |
+| `HasCountEqualTo` | `NotHasCountEqualTo` |
+| `HasCountLessThan` | `NotHasCountLessThan` |
+| `HasCountGreaterThan` | `NotHasCountGreaterThan` |
+| `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` |
+| `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` |
+| `IsAfter` | `IsNotAfter` |
+| `IsBefore` | `IsNotBefore` |
+| `IsAfterNow` | `IsNotAfterNow` |
+| `IsBeforeNow` | `IsNotBeforeNow` |
+| `IsOnDayOfWeek` | `IsNotOnDayOfWeek` |
+| `IsInMonth` | `IsNotInMonth` |
+| `IsInTimeWindow` | `IsNotInTimeWindow` |
 | `IsGuid` | `IsNotGuid` |
 | `IsNumeric` | `IsNotNumeric` |
 | `IsUrl` | `IsNotUrl` |
@@ -96,20 +110,24 @@ The selector type fixes the kind of every argument. A rule literal of another ki
 
 ## Numeric predicates
 
-The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value. `Between` and `Outside` include both bounds. The order comparisons are strict.
+The `NumericPredicates` factories select an `Int64` (`long?`) or a `Decimal` (`decimal?`) value. `IsBetween` and `IsNotBetween` include both bounds. `IsLessThan` and `IsGreaterThan` are strict.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [Equal](numeric-equal.md) | [NotEqual](numeric-notequal.md) | `Equal` is `True` when the selected number equals the argument. |
-| [NotEqual](numeric-notequal.md) | [Equal](numeric-equal.md) | `NotEqual` is `True` when the selected number differs from the argument. |
-| [LessThan](numeric-lessthan.md) | [GreaterThanOrEqual](numeric-greaterthanorequal.md) | `LessThan` is `True` when the selected number is less than the argument. |
-| [GreaterThanOrEqual](numeric-greaterthanorequal.md) | [LessThan](numeric-lessthan.md) | `GreaterThanOrEqual` is `True` when the selected number is greater than or equal to the argument. |
-| [GreaterThan](numeric-greaterthan.md) | [LessThanOrEqual](numeric-lessthanorequal.md) | `GreaterThan` is `True` when the selected number is greater than the argument. |
-| [LessThanOrEqual](numeric-lessthanorequal.md) | [GreaterThan](numeric-greaterthan.md) | `LessThanOrEqual` is `True` when the selected number is less than or equal to the argument. |
-| [Between](numeric-between.md) | [Outside](numeric-outside.md) | `Between` is `True` when the selected number lies in a range. |
-| [Outside](numeric-outside.md) | [Between](numeric-between.md) | `Outside` is `True` when the selected number lies outside a range. |
-| [In](numeric-in.md) | [NotIn](numeric-notin.md) | `In` is `True` when the selected number is one of the candidates. |
-| [NotIn](numeric-notin.md) | [In](numeric-in.md) | `NotIn` is `True` when the selected number is none of the candidates. |
+| [IsEqualTo](numeric-isequalto.md) | [IsNotEqualTo](numeric-isnotequalto.md) | `IsEqualTo` is `True` when the selected number equals the argument. |
+| [IsNotEqualTo](numeric-isnotequalto.md) | [IsEqualTo](numeric-isequalto.md) | `IsNotEqualTo` is `True` when the selected number differs from the argument. |
+| [IsLessThan](numeric-islessthan.md) | [IsNotLessThan](numeric-isnotlessthan.md) | `IsLessThan` is `True` when the selected number is less than the argument. |
+| [IsNotLessThan](numeric-isnotlessthan.md) | [IsLessThan](numeric-islessthan.md) | `IsNotLessThan` is `True` when the selected number is not less than the argument. |
+| [IsGreaterThan](numeric-isgreaterthan.md) | [IsNotGreaterThan](numeric-isnotgreaterthan.md) | `IsGreaterThan` is `True` when the selected number is greater than the argument. |
+| [IsNotGreaterThan](numeric-isnotgreaterthan.md) | [IsGreaterThan](numeric-isgreaterthan.md) | `IsNotGreaterThan` is `True` when the selected number is not greater than the argument. |
+| [IsLessThanOrEqualTo](numeric-islessthanorequalto.md) | [IsNotLessThanOrEqualTo](numeric-isnotlessthanorequalto.md) | `IsLessThanOrEqualTo` is `True` when the selected number is less than or equal to the argument. |
+| [IsNotLessThanOrEqualTo](numeric-isnotlessthanorequalto.md) | [IsLessThanOrEqualTo](numeric-islessthanorequalto.md) | `IsNotLessThanOrEqualTo` is `True` when the selected number is not less than or equal to the argument. |
+| [IsGreaterThanOrEqualTo](numeric-isgreaterthanorequalto.md) | [IsNotGreaterThanOrEqualTo](numeric-isnotgreaterthanorequalto.md) | `IsGreaterThanOrEqualTo` is `True` when the selected number is greater than or equal to the argument. |
+| [IsNotGreaterThanOrEqualTo](numeric-isnotgreaterthanorequalto.md) | [IsGreaterThanOrEqualTo](numeric-isgreaterthanorequalto.md) | `IsNotGreaterThanOrEqualTo` is `True` when the selected number is not greater than or equal to the argument. |
+| [IsBetween](numeric-isbetween.md) | [IsNotBetween](numeric-isnotbetween.md) | `IsBetween` is `True` when the selected number lies in a range. |
+| [IsNotBetween](numeric-isnotbetween.md) | [IsBetween](numeric-isbetween.md) | `IsNotBetween` is `True` when the selected number lies outside a range. |
+| [IsIn](numeric-isin.md) | [IsNotIn](numeric-isnotin.md) | `IsIn` is `True` when the selected number is one of the candidates. |
+| [IsNotIn](numeric-isnotin.md) | [IsIn](numeric-isin.md) | `IsNotIn` is `True` when the selected number is none of the candidates. |
 | [IsNull](numeric-isnull.md) | [IsNotNull](numeric-isnotnull.md) | `IsNull` is `True` when the selector returns `null`. |
 | [IsNotNull](numeric-isnotnull.md) | [IsNull](numeric-isnull.md) | `IsNotNull` is `True` when the selector returns a number. |
 | [IsDefault](numeric-isdefault.md) | [IsNotDefault](numeric-isnotdefault.md) | `IsDefault` is `True` when the selected number is zero, the default value of the number type. |
@@ -121,10 +139,10 @@ The `ScalarPredicates` factories select a `Boolean` (`bool?`), a `Guid` (`Guid?`
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [Equal](scalar-equal.md) | [NotEqual](scalar-notequal.md) | `Equal` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` equals the argument. |
-| [NotEqual](scalar-notequal.md) | [Equal](scalar-equal.md) | `NotEqual` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` differs from the argument. |
-| [In](scalar-in.md) | [NotIn](scalar-notin.md) | `In` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` is one of the candidates. |
-| [NotIn](scalar-notin.md) | [In](scalar-in.md) | `NotIn` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` is none of the candidates. |
+| [IsEqualTo](scalar-isequalto.md) | [IsNotEqualTo](scalar-isnotequalto.md) | `IsEqualTo` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` equals the argument. |
+| [IsNotEqualTo](scalar-isnotequalto.md) | [IsEqualTo](scalar-isequalto.md) | `IsNotEqualTo` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` differs from the argument. |
+| [IsIn](scalar-isin.md) | [IsNotIn](scalar-isnotin.md) | `IsIn` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` is one of the candidates. |
+| [IsNotIn](scalar-isnotin.md) | [IsIn](scalar-isin.md) | `IsNotIn` is `True` when the selected `Boolean`, `Guid` or `DateTimeOffset` is none of the candidates. |
 | [IsNull](scalar-isnull.md) | [IsNotNull](scalar-isnotnull.md) | `IsNull` is `True` when the selector returns `null`. |
 | [IsNotNull](scalar-isnotnull.md) | [IsNull](scalar-isnull.md) | `IsNotNull` is `True` when the selector returns a value. |
 | [IsDefault](scalar-isdefault.md) | [IsNotDefault](scalar-isnotdefault.md) | `IsDefault` is `True` when the selected value is the default value of its type. |
@@ -132,7 +150,7 @@ The `ScalarPredicates` factories select a `Boolean` (`bool?`), a `Guid` (`Guid?`
 
 ## String predicates
 
-The `StringPredicates` factories select a `string?` value. Every comparison is ordinal and case-sensitive, and nothing is trimmed unless a predicate has a `trim` argument. The culture of the host process has no effect. A string argument is a quoted string.
+The `StringPredicates` factories select a `string?` value. Every comparison is ordinal. It is case-sensitive, and nothing is trimmed, unless the rule sets `ignoreCase` or `trim` on `IsEqualTo` or `IsNotEqualTo`. The culture of the host process has no effect. A string argument is a quoted string.
 
 The comparison does not normalize Unicode. A precomposed character such as `é` (U+00E9) and the same character written as `e` plus a combining accent (U+0065 U+0301) are different strings, so they compare unequal. The host must normalize the selected value and the rule argument to the same form, NFC or NFKC, before the predicate sees them.
 
@@ -141,18 +159,16 @@ The comparison does not normalize Unicode. A precomposed character such as `é` 
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [Equals](string-equals.md) | [NotEqual](string-notequal.md) | `Equals` is `True` when the selected string equals the argument. |
-| [NotEqual](string-notequal.md) | [Equals](string-equals.md) | `NotEqual` is `True` when the selected string differs from the argument. |
-| [EqualsIgnoreCase](string-equalsignorecase.md) | [NotEqualsIgnoreCase](string-notequalsignorecase.md) | `EqualsIgnoreCase` is `True` when the selected string equals the argument, ignoring case. |
-| [NotEqualsIgnoreCase](string-notequalsignorecase.md) | [EqualsIgnoreCase](string-equalsignorecase.md) | `NotEqualsIgnoreCase` is `True` when the selected string differs from the argument, ignoring case. |
-| [EqualsConfigurable](string-equalsconfigurable.md) | [NotEqualsConfigurable](string-notequalsconfigurable.md) | `EqualsConfigurable` is `True` when the selected string equals the argument. The rule chooses case handling and trimming. |
-| [NotEqualsConfigurable](string-notequalsconfigurable.md) | [EqualsConfigurable](string-equalsconfigurable.md) | `NotEqualsConfigurable` is `True` when the selected string differs from the argument. The rule chooses case handling and trimming. |
+| [IsEqualTo](string-isequalto.md) | [IsNotEqualTo](string-isnotequalto.md) | `IsEqualTo` is `True` when the selected string equals the argument. The optional arguments `ignoreCase` and `trim` (both `false` by default) change the comparison. |
+| [IsNotEqualTo](string-isnotequalto.md) | [IsEqualTo](string-isequalto.md) | `IsNotEqualTo` is `True` when the selected string differs from the argument. It takes the same optional arguments. |
 | [StartsWith](string-startswith.md) | [NotStartsWith](string-notstartswith.md) | `StartsWith` is `True` when the selected string starts with the argument. |
 | [NotStartsWith](string-notstartswith.md) | [StartsWith](string-startswith.md) | `NotStartsWith` is `True` when the selected string does not start with the argument. |
 | [EndsWith](string-endswith.md) | [NotEndsWith](string-notendswith.md) | `EndsWith` is `True` when the selected string ends with the argument. |
 | [NotEndsWith](string-notendswith.md) | [EndsWith](string-endswith.md) | `NotEndsWith` is `True` when the selected string does not end with the argument. |
 | [Contains](string-contains.md) | [NotContains](string-notcontains.md) | `Contains` is `True` when the selected string contains the argument as a substring. |
 | [NotContains](string-notcontains.md) | [Contains](string-contains.md) | `NotContains` is `True` when the selected string does not contain the argument as a substring. |
+| [IsIn](string-isin.md) | [IsNotIn](string-isnotin.md) | `IsIn` is `True` when the selected string is one of the candidates. |
+| [IsNotIn](string-isnotin.md) | [IsIn](string-isin.md) | `IsNotIn` is `True` when the selected string is none of the candidates. |
 | [IsEmpty](string-isempty.md) | [IsNotEmpty](string-isnotempty.md) | `IsEmpty` is `True` when the selected string is the empty string. |
 | [IsNotEmpty](string-isnotempty.md) | [IsEmpty](string-isempty.md) | `IsNotEmpty` is `True` when the selected string has at least one character. |
 | [IsNullOrEmpty](string-isnullorempty.md) | [IsNotNullOrEmpty](string-isnotnullorempty.md) | `IsNullOrEmpty` is `True` when the selected string is `null` or empty. |
@@ -162,20 +178,20 @@ The comparison does not normalize Unicode. A precomposed character such as `é` 
 
 ## Regex predicates
 
-The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). An invalid pattern is a fault. The match uses no regex options and a timeout of one second. A pattern that ignores case starts with `(?i)`.
+The `RegexPredicates` factories select a `string?` value and take a regular expression as the argument. A null selected value answers per [Null selected values](#null-selected-values). A pattern or flags string that is a literal in the rule is checked when the rule compiles: an invalid pattern, an unknown flag letter and a repeated flag letter are each a `TRE0026` error. An invalid pattern or flags string from a data source is a fault. The optional argument `flags` holds the letters `i` (ignore case, with the invariant culture), `m` (multiline), `s` (single line), `n` (explicit capture) and `x` (ignore pattern white space). Both predicates use a timeout of one second. The cache keeps at most 256 compiled pairs of pattern and options.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [Matches](regex-matches.md) | [NotMatches](regex-notmatches.md) | `Matches` is `True` when the selected string matches the regular expression. |
-| [NotMatches](regex-notmatches.md) | [Matches](regex-matches.md) | `NotMatches` is `True` when the selected string does not match the regular expression. |
+| [IsMatch](regex-ismatch.md) | [IsNotMatch](regex-isnotmatch.md) | `IsMatch` is `True` when the selected string matches the regular expression. The optional argument `flags` sets regular expression options. |
+| [IsNotMatch](regex-isnotmatch.md) | [IsMatch](regex-ismatch.md) | `IsNotMatch` is `True` when the selected string does not match the regular expression. It takes the same optional argument `flags`. |
 
 ## Collection predicates
 
 The `CollectionPredicates` factories select a collection of strings (`IReadOnlyCollection<string>?`). The element type is `string`. Every comparison is ordinal and case-sensitive. An array argument has the kind `StringArray`. A count argument has the kind `Int64`.
 
 - Every collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
-- `In` and `NotIn` select one string, not a collection. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` to test a collection.
-- A repeated element and a `null` element count as elements in the `Count` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
+- To test a single string against several candidates, use `IsIn` and `IsNotIn` in the [string predicates](#string-predicates).
+- A repeated element and a `null` element count as elements in the `HasCount` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -191,49 +207,47 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 | [IsNotSubsetOf](collection-isnotsubsetof.md) | [IsSubsetOf](collection-issubsetof.md) | `IsNotSubsetOf` is `True` when an element is not in the argument array. |
 | [SetEquals](collection-setequals.md) | [NotSetEquals](collection-notsetequals.md) | `SetEquals` is `True` when the collection and the argument array have the same distinct elements. |
 | [NotSetEquals](collection-notsetequals.md) | [SetEquals](collection-setequals.md) | `NotSetEquals` is `True` when the collection and the argument array have different distinct elements. |
-| [In](collection-in.md) | [NotIn](collection-notin.md) | `In` is `True` when the selected string is one of the candidates. |
-| [NotIn](collection-notin.md) | [In](collection-in.md) | `NotIn` is `True` when the selected string is none of the candidates. |
-| [CountEqual](collection-countequal.md) | [NotCountEqual](collection-notcountequal.md) | `CountEqual` is `True` when the number of elements equals the argument. |
-| [NotCountEqual](collection-notcountequal.md) | [CountEqual](collection-countequal.md) | `NotCountEqual` is `True` when the number of elements differs from the argument. |
-| [CountLessThan](collection-countlessthan.md) | [NotCountLessThan](collection-notcountlessthan.md) | `CountLessThan` is `True` when the number of elements is less than the argument. |
-| [NotCountLessThan](collection-notcountlessthan.md) | [CountLessThan](collection-countlessthan.md) | `NotCountLessThan` is `True` when the number of elements is not less than the argument. |
-| [CountGreaterThan](collection-countgreaterthan.md) | [NotCountGreaterThan](collection-notcountgreaterthan.md) | `CountGreaterThan` is `True` when the number of elements is greater than the argument. |
-| [NotCountGreaterThan](collection-notcountgreaterthan.md) | [CountGreaterThan](collection-countgreaterthan.md) | `NotCountGreaterThan` is `True` when the number of elements is not greater than the argument. |
-| [CountLessThanOrEqual](collection-countlessthanorequal.md) | [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | `CountLessThanOrEqual` is `True` when the number of elements is at most the argument. |
-| [NotCountLessThanOrEqual](collection-notcountlessthanorequal.md) | [CountLessThanOrEqual](collection-countlessthanorequal.md) | `NotCountLessThanOrEqual` is `True` when the number of elements is more than the argument. |
-| [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | `CountGreaterThanOrEqual` is `True` when the number of elements is at least the argument. |
-| [NotCountGreaterThanOrEqual](collection-notcountgreaterthanorequal.md) | [CountGreaterThanOrEqual](collection-countgreaterthanorequal.md) | `NotCountGreaterThanOrEqual` is `True` when the number of elements is less than the argument. |
+| [HasCountEqualTo](collection-hascountequalto.md) | [NotHasCountEqualTo](collection-nothascountequalto.md) | `HasCountEqualTo` is `True` when the number of elements equals the argument. |
+| [NotHasCountEqualTo](collection-nothascountequalto.md) | [HasCountEqualTo](collection-hascountequalto.md) | `NotHasCountEqualTo` is `True` when the number of elements differs from the argument. |
+| [HasCountLessThan](collection-hascountlessthan.md) | [NotHasCountLessThan](collection-nothascountlessthan.md) | `HasCountLessThan` is `True` when the number of elements is less than the argument. |
+| [NotHasCountLessThan](collection-nothascountlessthan.md) | [HasCountLessThan](collection-hascountlessthan.md) | `NotHasCountLessThan` is `True` when the number of elements is not less than the argument. |
+| [HasCountGreaterThan](collection-hascountgreaterthan.md) | [NotHasCountGreaterThan](collection-nothascountgreaterthan.md) | `HasCountGreaterThan` is `True` when the number of elements is greater than the argument. |
+| [NotHasCountGreaterThan](collection-nothascountgreaterthan.md) | [HasCountGreaterThan](collection-hascountgreaterthan.md) | `NotHasCountGreaterThan` is `True` when the number of elements is not greater than the argument. |
+| [HasCountLessThanOrEqualTo](collection-hascountlessthanorequalto.md) | [NotHasCountLessThanOrEqualTo](collection-nothascountlessthanorequalto.md) | `HasCountLessThanOrEqualTo` is `True` when the number of elements is at most the argument. |
+| [NotHasCountLessThanOrEqualTo](collection-nothascountlessthanorequalto.md) | [HasCountLessThanOrEqualTo](collection-hascountlessthanorequalto.md) | `NotHasCountLessThanOrEqualTo` is `True` when the number of elements is more than the argument. |
+| [HasCountGreaterThanOrEqualTo](collection-hascountgreaterthanorequalto.md) | [NotHasCountGreaterThanOrEqualTo](collection-nothascountgreaterthanorequalto.md) | `HasCountGreaterThanOrEqualTo` is `True` when the number of elements is at least the argument. |
+| [NotHasCountGreaterThanOrEqualTo](collection-nothascountgreaterthanorequalto.md) | [HasCountGreaterThanOrEqualTo](collection-hascountgreaterthanorequalto.md) | `NotHasCountGreaterThanOrEqualTo` is `True` when the number of elements is less than the argument. |
 
 ## Date-time predicates
 
-The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. `After` and `Before` are strict. `Between` and `Outside` include both bounds. `InTimeWindow` is half-open by default. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
+The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`) value. Values compare by instant. `IsAfter` and `IsBefore` are strict. `IsBetween` and `IsNotBetween` include both bounds. `IsInTimeWindow` is half-open by default. A `DateTime` is not accepted: the host converts it to a `DateTimeOffset` in the selector. Every bound is a quoted ISO 8601 string with an offset. A null selected value answers per [Null selected values](#null-selected-values).
 
-- `After`, `Before` and their twins compare with one instant. `Between` and `Outside` use a range with inclusive bounds. Reversed literal bounds are a compile error.
-- `AfterNow`, `BeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.
-- `OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins read the selected instant in a fixed offset. See [Fixed offsets](#fixed-offsets).
+- `IsAfter`, `IsBefore` and their twins compare with one instant. `IsBetween` and `IsNotBetween` use a range with inclusive bounds. Reversed literal bounds are a compile error.
+- `IsAfterNow`, `IsBeforeNow` and their twins take no rule argument. They compare with `TimeProvider.GetUtcNow()` of the `TimeProvider` that the host passes when it registers the predicate.
+- `IsOnDayOfWeek`, `IsInMonth`, `IsInTimeWindow` and their twins read the selected instant in a fixed offset. See [Fixed offsets](#fixed-offsets).
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
-| [After](datetime-after.md) | [NotAfter](datetime-notafter.md) | `After` is `True` when the selected instant is later than the argument. |
-| [NotAfter](datetime-notafter.md) | [After](datetime-after.md) | `NotAfter` is `True` when the selected instant is equal to or earlier than the argument. |
-| [Before](datetime-before.md) | [NotBefore](datetime-notbefore.md) | `Before` is `True` when the selected instant is earlier than the argument. |
-| [NotBefore](datetime-notbefore.md) | [Before](datetime-before.md) | `NotBefore` is `True` when the selected instant is equal to or later than the argument. |
-| [Between](datetime-between.md) | [Outside](datetime-outside.md) | `Between` is `True` when the selected instant lies in a range. |
-| [Outside](datetime-outside.md) | [Between](datetime-between.md) | `Outside` is `True` when the selected instant lies outside a range. |
-| [AfterNow](datetime-afternow.md) | [NotAfterNow](datetime-notafternow.md) | `AfterNow` is `True` when the selected instant is later than now. |
-| [NotAfterNow](datetime-notafternow.md) | [AfterNow](datetime-afternow.md) | `NotAfterNow` is `True` when the selected instant is equal to now or earlier. |
-| [BeforeNow](datetime-beforenow.md) | [NotBeforeNow](datetime-notbeforenow.md) | `BeforeNow` is `True` when the selected instant is earlier than now. |
-| [NotBeforeNow](datetime-notbeforenow.md) | [BeforeNow](datetime-beforenow.md) | `NotBeforeNow` is `True` when the selected instant is equal to now or later. |
-| [OnDayOfWeek](datetime-ondayofweek.md) | [NotOnDayOfWeek](datetime-notondayofweek.md) | `OnDayOfWeek` is `True` when the selected instant falls on one of the listed days of the week. |
-| [NotOnDayOfWeek](datetime-notondayofweek.md) | [OnDayOfWeek](datetime-ondayofweek.md) | `NotOnDayOfWeek` is `True` when the selected instant falls on none of the listed days of the week. |
-| [InMonth](datetime-inmonth.md) | [NotInMonth](datetime-notinmonth.md) | `InMonth` is `True` when the selected instant falls in one of the listed months. |
-| [NotInMonth](datetime-notinmonth.md) | [InMonth](datetime-inmonth.md) | `NotInMonth` is `True` when the selected instant falls in none of the listed months. |
-| [InTimeWindow](datetime-intimewindow.md) | [NotInTimeWindow](datetime-notintimewindow.md) | `InTimeWindow` is `True` when the time of day of the selected instant is inside a daily window. |
-| [NotInTimeWindow](datetime-notintimewindow.md) | [InTimeWindow](datetime-intimewindow.md) | `NotInTimeWindow` is `True` when the time of day of the selected instant is outside a daily window. |
+| [IsAfter](datetime-isafter.md) | [IsNotAfter](datetime-isnotafter.md) | `IsAfter` is `True` when the selected instant is later than the argument. |
+| [IsNotAfter](datetime-isnotafter.md) | [IsAfter](datetime-isafter.md) | `IsNotAfter` is `True` when the selected instant is equal to or earlier than the argument. |
+| [IsBefore](datetime-isbefore.md) | [IsNotBefore](datetime-isnotbefore.md) | `IsBefore` is `True` when the selected instant is earlier than the argument. |
+| [IsNotBefore](datetime-isnotbefore.md) | [IsBefore](datetime-isbefore.md) | `IsNotBefore` is `True` when the selected instant is equal to or later than the argument. |
+| [IsBetween](datetime-isbetween.md) | [IsNotBetween](datetime-isnotbetween.md) | `IsBetween` is `True` when the selected instant lies in a range. |
+| [IsNotBetween](datetime-isnotbetween.md) | [IsBetween](datetime-isbetween.md) | `IsNotBetween` is `True` when the selected instant lies outside a range. |
+| [IsAfterNow](datetime-isafternow.md) | [IsNotAfterNow](datetime-isnotafternow.md) | `IsAfterNow` is `True` when the selected instant is later than now. |
+| [IsNotAfterNow](datetime-isnotafternow.md) | [IsAfterNow](datetime-isafternow.md) | `IsNotAfterNow` is `True` when the selected instant is equal to now or earlier. |
+| [IsBeforeNow](datetime-isbeforenow.md) | [IsNotBeforeNow](datetime-isnotbeforenow.md) | `IsBeforeNow` is `True` when the selected instant is earlier than now. |
+| [IsNotBeforeNow](datetime-isnotbeforenow.md) | [IsBeforeNow](datetime-isbeforenow.md) | `IsNotBeforeNow` is `True` when the selected instant is equal to now or later. |
+| [IsOnDayOfWeek](datetime-isondayofweek.md) | [IsNotOnDayOfWeek](datetime-isnotondayofweek.md) | `IsOnDayOfWeek` is `True` when the selected instant falls on one of the listed days of the week. |
+| [IsNotOnDayOfWeek](datetime-isnotondayofweek.md) | [IsOnDayOfWeek](datetime-isondayofweek.md) | `IsNotOnDayOfWeek` is `True` when the selected instant falls on none of the listed days of the week. |
+| [IsInMonth](datetime-isinmonth.md) | [IsNotInMonth](datetime-isnotinmonth.md) | `IsInMonth` is `True` when the selected instant falls in one of the listed months. |
+| [IsNotInMonth](datetime-isnotinmonth.md) | [IsInMonth](datetime-isinmonth.md) | `IsNotInMonth` is `True` when the selected instant falls in none of the listed months. |
+| [IsInTimeWindow](datetime-isintimewindow.md) | [IsNotInTimeWindow](datetime-isnotintimewindow.md) | `IsInTimeWindow` is `True` when the time of day of the selected instant is inside a daily window. |
+| [IsNotInTimeWindow](datetime-isnotintimewindow.md) | [IsInTimeWindow](datetime-isintimewindow.md) | `IsNotInTimeWindow` is `True` when the time of day of the selected instant is outside a daily window. |
 
 ### Fixed offsets
 
-`OnDayOfWeek`, `InMonth`, `InTimeWindow` and their twins convert the selected instant to a fixed offset from UTC before they read the day, the month or the time of day. The `offset` argument gives the offset.
+`IsOnDayOfWeek`, `IsInMonth`, `IsInTimeWindow` and their twins convert the selected instant to a fixed offset from UTC before they read the day, the month or the time of day. The `offset` argument gives the offset.
 
 | Offset text | Meaning |
 | --- | --- |
@@ -251,7 +265,7 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 
 The `TypePredicates` factories test what a value is. Each has two overloads: a `string?` selector, which parses the text, and an `object?` selector, which tests the runtime type and also reads text. They take no rule argument. Parsing uses the invariant culture.
 
-- A null selected value always answers `Unknown`. A type test has no `nullBehavior` option, because the type of a missing value is not known.
+- A null selected value answers `Unknown` by default, because the type of a missing value is not known. A host can register a type test with `NullBehavior.False`: the positive test then answers `False` and its `IsNotX` twin answers `True`. See [Null selected values](#null-selected-values).
 - A twin answers `Unknown` for a null selected value too.
 
 | Predicate | Twin | Summary |

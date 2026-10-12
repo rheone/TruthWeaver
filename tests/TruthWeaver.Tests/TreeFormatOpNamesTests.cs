@@ -9,6 +9,7 @@ using TruthWeaver.Ast;
 /// </summary>
 public sealed class TreeFormatOpNamesTests
 {
+    /// <summary>ToTreeFormat maps every canonical op name to its tree format string.</summary>
     [Theory]
     [InlineData("Not", "not")]
     [InlineData("And", "and")]
@@ -35,17 +36,19 @@ public sealed class TreeFormatOpNamesTests
     [InlineData("GreaterThan", "greaterThan")]
     [InlineData("LessThan", "lessThan")]
     [InlineData("Exactly", "exactly")]
-    public void ToTreeFormat_maps_every_canonical_op_name_to_its_tree_format_string(string opName, string expected)
+    public void ToTreeFormat_EveryCanonicalName_MapsToTreeFormat_Test(string opName, string expected)
     {
         Assert.Equal(expected, TreeFormatOpNames.ToTreeFormat(opName));
     }
 
+    /// <summary>ToTreeFormat throws for an unrecognized op name.</summary>
     [Fact]
-    public void ToTreeFormat_throws_for_an_unrecognized_op_name()
+    public void ToTreeFormat_UnrecognizedName_Throws_Test()
     {
         Assert.Throws<InvalidOperationException>(() => TreeFormatOpNames.ToTreeFormat("Bogus"));
     }
 
+    /// <summary>TryFromTreeFormat resolves every tree format string back to its canonical op name.</summary>
     [Theory]
     [InlineData("not", "Not")]
     [InlineData("and", "And")]
@@ -77,10 +80,7 @@ public sealed class TreeFormatOpNamesTests
     [InlineData("greaterThan", "GreaterThan")]
     [InlineData("lessThan", "LessThan")]
     [InlineData("exactly", "Exactly")]
-    public void TryFromTreeFormat_resolves_every_tree_format_string_back_to_its_canonical_op_name(
-        string formatName,
-        string expectedOpName
-    )
+    public void TryFromTreeFormat_EveryString_ResolvesToCanonicalName_Test(string formatName, string expectedOpName)
     {
         bool resolved = TreeFormatOpNames.TryFromTreeFormat(formatName, out string? opName);
 
@@ -88,13 +88,14 @@ public sealed class TreeFormatOpNamesTests
         Assert.Equal(expectedOpName, opName);
     }
 
+    /// <summary>TryFromTreeFormat is case insensitive.</summary>
     [Theory]
     [InlineData("AND")]
     [InlineData("And")]
     [InlineData("aNd")]
     [InlineData("ATLEAST")]
     [InlineData("AtLeast")]
-    public void TryFromTreeFormat_is_case_insensitive(string formatName)
+    public void TryFromTreeFormat_Input_IsCaseInsensitive_Test(string formatName)
     {
         bool resolved = TreeFormatOpNames.TryFromTreeFormat(formatName, out string? opName);
 
@@ -102,8 +103,9 @@ public sealed class TreeFormatOpNamesTests
         Assert.NotNull(opName);
     }
 
+    /// <summary>TryFromTreeFormat returns false for an unrecognized format string.</summary>
     [Fact]
-    public void TryFromTreeFormat_returns_false_for_an_unrecognized_format_string()
+    public void TryFromTreeFormat_UnrecognizedString_ReturnsFalse_Test()
     {
         bool resolved = TreeFormatOpNames.TryFromTreeFormat("bogus", out string? opName);
 

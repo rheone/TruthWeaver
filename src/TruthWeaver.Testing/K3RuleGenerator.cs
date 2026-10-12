@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Generates random rule text over a list of terms and the three constants. Each rule carries an expected evaluation that
 /// <see cref="K3Oracle"/> builds, so the expectation shares no code with the engine. The generator covers every rule

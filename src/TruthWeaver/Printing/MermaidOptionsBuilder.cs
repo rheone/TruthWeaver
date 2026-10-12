@@ -46,6 +46,17 @@ public sealed class MermaidOptionsBuilder
         return this;
     }
 
+    /// <summary>Sets <see cref="MermaidOptions.Constants"/>.</summary>
+    /// <param name="constants">How the constant nodes are written.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="constants"/> is <see langword="null"/>.</exception>
+    public MermaidOptionsBuilder WithConstants(ConstantFormat constants)
+    {
+        ArgumentNullException.ThrowIfNull(constants);
+        this.options = this.options with { Constants = constants };
+        return this;
+    }
+
     /// <summary>Sets <see cref="MermaidOptions.ShowArgumentValues"/>.</summary>
     /// <param name="enabled">Whether a term's argument values appear in its label. Defaults to <see langword="true"/>.</param>
     /// <returns>This builder.</returns>

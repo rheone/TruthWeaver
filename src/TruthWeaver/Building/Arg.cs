@@ -1,7 +1,6 @@
 namespace TruthWeaver.Building;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Argument values for <see cref="RuleBuilder"/> that are not plain .NET values (ADR-0006 decision 12). Pass the result

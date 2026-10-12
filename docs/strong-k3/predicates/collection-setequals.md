@@ -77,4 +77,4 @@ A null selected collection answers `Unknown` by default. It records no fault. A 
 - [NotSetEquals](collection-notsetequals.md) is the exact complement of this predicate.
 - [ContainsAll](collection-containsall.md) needs only one direction.
 - [IsSubsetOf](collection-issubsetof.md) needs only the other direction.
-- [CountEqual](collection-countequal.md) compares only the number of elements.
+- [HasCountEqualTo](collection-hascountequalto.md) compares only the number of elements.

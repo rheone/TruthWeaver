@@ -1,13 +1,15 @@
 namespace TruthWeaver.Tests;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
 
 /// <summary>Ticket 04: direct unit tests for the DSL recursive-descent parser.</summary>
 public sealed class DslParserTests
 {
+    /// <summary>Trailing text after a complete expression raises a diagnostic and keeps the valid prefix.</summary>
     [Fact]
-    public void Trailing_garbage_after_a_complete_expression_raises_a_diagnostic_and_still_parses_the_valid_prefix()
+    public void Parse_TrailingGarbage_RaisesDiagnosticAndKeepsValidPrefix_Test()
     {
         (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("a AND b c");
 
@@ -18,44 +20,49 @@ public sealed class DslParserTests
         );
     }
 
+    /// <summary>Mixing XOR with AND or OR without parentheses raises ambiguous operator mixing.</summary>
     [Fact]
-    public void Mixing_xor_with_and_or_without_parentheses_raises_ambiguous_operator_mixing()
+    public void Mixing_XorWithAndOr_RaisesAmbiguousOperatorMixing_Test()
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("a XOR b AND c");
 
         Assert.Contains(diagnostics, d => d.Code == DiagnosticCodes.AmbiguousOperatorMixing);
     }
 
+    /// <summary>A parenthesized XOR chain avoids ambiguous operator mixing.</summary>
     [Fact]
-    public void Parenthesizing_the_xor_chain_avoids_ambiguous_operator_mixing()
+    public void Mixing_ParenthesizedXorChain_AvoidsAmbiguity_Test()
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("(a XOR b) AND c");
 
         Assert.DoesNotContain(diagnostics, d => d.Code == DiagnosticCodes.AmbiguousOperatorMixing);
     }
 
+    /// <summary>Mixing XOR and XNOR at the same chain level raises the specific message.</summary>
     [Fact]
-    public void Mixing_xor_and_xnor_at_the_same_chain_level_raises_the_specific_message()
+    public void Mixing_XorAndXnorAtSameLevel_RaisesSpecificMessage_Test()
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("a XOR b XNOR c");
 
         Assert.Contains(diagnostics, d => d.Message.Contains("Mixing XOR with EQUIVALENT"));
     }
 
+    /// <summary>A chain of only XOR or only XNOR does not raise the mixing message.</summary>
     [Theory]
     [InlineData("a XOR b XOR c")]
     [InlineData("a XNOR b XNOR c")]
-    public void A_chain_using_only_xor_or_only_xnor_does_not_raise_the_mixing_message(string source)
+    public void Mixing_ChainOfOnlyXor_DoesNotRaiseMixingMessage_Test(string source)
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(source);
 
         Assert.DoesNotContain(diagnostics, d => d.Message.Contains("Mixing XOR with EQUIVALENT"));
     }
 
+    /// <summary>Input that starts with neither a term, a constant nor an open parenthesis raises the expected-term diagnostic.</summary>
     [Theory]
     [InlineData(",")]
     [InlineData(")")]
-    public void An_input_starting_with_neither_a_term_constant_nor_open_paren_raises_the_expected_term_diagnostic(string source)
+    public void Parse_InvalidStart_RaisesExpectedTermDiagnostic_Test(string source)
     {
         (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(source);
 
@@ -67,8 +74,9 @@ public sealed class DslParserTests
         Assert.Contains("Expected a term, constant, or '('", diagnostic.Message);
     }
 
+    /// <summary>A threshold that omits its integer first argument raises a diagnostic and defaults k to zero.</summary>
     [Fact]
-    public void Threshold_omitting_the_integer_first_argument_raises_a_diagnostic_and_defaults_k_to_zero()
+    public void Threshold_OmittedInteger_RaisesDiagnosticAndDefaultsKToZero_Test()
     {
         (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("AtLeast(a, b)");
 
@@ -77,16 +85,18 @@ public sealed class DslParserTests
         Assert.Contains(diagnostics, d => d.Message.Contains("Expected an integer threshold as AtLeast's first argument"));
     }
 
+    /// <summary>A term argument with a missing colon raises an expected-colon diagnostic.</summary>
     [Fact]
-    public void A_term_argument_with_a_missing_colon_raises_expected_colon()
+    public void Argument_MissingColon_RaisesExpectedColon_Test()
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("f(x 1)");
 
         Assert.Contains(diagnostics, d => d.Message.Contains("Expected ':'"));
     }
 
+    /// <summary>A literal position holding a bare identifier raises expected-literal-value and recovers with false.</summary>
     [Fact]
-    public void A_literal_position_holding_a_bare_identifier_raises_expected_a_literal_value_and_recovers_with_false()
+    public void Literal_BareIdentifier_RaisesExpectedLiteralAndRecoversWithFalse_Test()
     {
         (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("f(x: y)");
 
@@ -97,8 +107,9 @@ public sealed class DslParserTests
         Assert.Contains(diagnostics, d => d.Message.Contains("Expected a literal value"));
     }
 
+    /// <summary>An empty array literal parses to a zero element array.</summary>
     [Fact]
-    public void An_empty_array_literal_parses_to_a_zero_element_array()
+    public void ArrayLiteral_Empty_ParsesToZeroElementArray_Test()
     {
         (RuleNode root, IReadOnlyList<Diagnostic> _) = DslParser.Parse("f(x: [])");
 
@@ -108,27 +119,68 @@ public sealed class DslParserTests
         Assert.Empty(value.Elements!);
     }
 
+    /// <summary>An array literal missing its closing bracket raises an expected-bracket diagnostic.</summary>
     [Fact]
-    public void An_array_literal_missing_the_closing_bracket_raises_expected_bracket()
+    public void ArrayLiteral_MissingClosingBracket_RaisesExpectedBracket_Test()
     {
         (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("f(x: [1, 2)");
 
         Assert.Contains(diagnostics, d => d.Message.Contains("Expected ']'"));
     }
 
+    /// <summary>IsReservedWord returns true for every keyword, case insensitively.</summary>
     [Theory]
     [InlineData("and")]
     [InlineData("And")]
     [InlineData("AND")]
     [InlineData("xnor")]
     [InlineData("EXACTLYONE")]
-    public void IsReservedWord_returns_true_for_every_keyword_case_insensitively(string keyword)
+    public void IsReservedWord_EveryKeyword_ReturnsTrueCaseInsensitively_Test(string keyword)
     {
         Assert.True(DslParser.IsReservedWord(keyword));
     }
 
+    /// <summary>The constant letters T, F and U are reserved words, in either case.</summary>
+    [Theory]
+    [InlineData("T")]
+    [InlineData("f")]
+    [InlineData("U")]
+    public void IsReservedWord_ConstantLetter_ReturnsTrueCaseInsensitively_Test(string letter)
+    {
+        Assert.True(DslParser.IsReservedWord(letter));
+    }
+
+    /// <summary>The bare letters T, F and U, in any case, parse as the constants True, False and Unknown.</summary>
+    [Theory]
+    [InlineData("T", TruthValue.True)]
+    [InlineData("t", TruthValue.True)]
+    [InlineData("F", TruthValue.False)]
+    [InlineData("f", TruthValue.False)]
+    [InlineData("U", TruthValue.Unknown)]
+    [InlineData("u", TruthValue.Unknown)]
+    public void Parse_ConstantLetter_YieldsTheConstant_Test(string text, TruthValue expected)
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(text);
+
+        Assert.Empty(diagnostics);
+        ConstantNode constant = Assert.IsType<ConstantNode>(root);
+        Assert.Equal(expected, constant.Value);
+    }
+
+    /// <summary>A longer identifier that starts with a constant letter is still a term name.</summary>
     [Fact]
-    public void IsReservedWord_returns_false_for_an_arbitrary_predicate_name()
+    public void Parse_IdentifierStartingWithAConstantLetter_IsATerm_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("Total AND farm");
+
+        Assert.Empty(diagnostics);
+        AndNode and = Assert.IsType<AndNode>(root);
+        Assert.All(and.Operands, operand => Assert.IsType<TermNode>(operand));
+    }
+
+    /// <summary>IsReservedWord returns false for an arbitrary predicate name.</summary>
+    [Fact]
+    public void IsReservedWord_ArbitraryName_ReturnsFalse_Test()
     {
         Assert.False(DslParser.IsReservedWord("hasRole"));
     }

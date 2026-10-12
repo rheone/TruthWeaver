@@ -5,11 +5,12 @@ using TruthWeaver.Abstractions;
 
 public class StringPredicatesTests
 {
+    /// <summary>IsEqualTo with default arguments returns true for a match in the same case.</summary>
     [Fact]
-    public async Task Equals_MatchingCase_ReturnsTrue()
+    public async Task IsEqualTo_DefaultArgumentsAndMatchingCase_ReturnsTrue_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsName", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "Alice"), CancellationToken.None);
 
@@ -19,23 +20,24 @@ public class StringPredicatesTests
         Assert.NotEmpty(schema.Description);
     }
 
+    /// <summary>IsEqualTo with default arguments returns false for a match in a different case.</summary>
     [Fact]
-    public async Task Equals_NonMatchingCase_ReturnsFalse()
+    public async Task IsEqualTo_DefaultArgumentsAndDifferentCase_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsName", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "alice"), CancellationToken.None);
 
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>Registered with no <c>NullBehavior</c>, <c>Equals</c> answers Unknown for a null selected value.</summary>
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>IsEqualTo</c> with default arguments answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task Equals_NullSelectedValue_ReturnsUnknown_Test()
+    public async Task IsEqualTo_DefaultArgumentsAndNullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsName", c => c.Value);
 
         TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
 
@@ -47,10 +49,10 @@ public class StringPredicatesTests
     /// are different strings.
     /// </summary>
     [Fact]
-    public async Task Equals_PrecomposedAndDecomposedForms_ReturnsFalse_Test()
+    public async Task IsEqualTo_PrecomposedAndDecomposedForms_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.Equals<TestContext>("equalsName", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsName", c => c.Value);
         const string precomposed = "é";
         const string decomposed = "é";
 
@@ -59,42 +61,57 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>IsEqualTo with <c>ignoreCase</c> true returns true for a match in a different case.</summary>
     [Fact]
-    public async Task EqualsIgnoreCase_MatchingDifferentCase_ReturnsTrue()
+    public async Task IsEqualTo_IgnoreCaseTrueAndDifferentCase_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsIgnoreCase<TestContext>("equalsIgnoreCase", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsIgnoreCase", c => c.Value);
 
-        TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "ALICE"), CancellationToken.None);
+        TruthValue result = await evaluate(
+            new TestContext("Alice"),
+            ConfigurableArgs("ALICE", ignoreCase: true, trim: false),
+            CancellationToken.None
+        );
 
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>IsEqualTo with <c>ignoreCase</c> true returns false for a non matching string.</summary>
     [Fact]
-    public async Task EqualsIgnoreCase_NonMatching_ReturnsFalse()
+    public async Task IsEqualTo_IgnoreCaseTrueAndNonMatching_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsIgnoreCase<TestContext>("equalsIgnoreCase", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsIgnoreCase", c => c.Value);
 
-        TruthValue result = await evaluate(new TestContext("Alice"), Args("value", "Bob"), CancellationToken.None);
+        TruthValue result = await evaluate(
+            new TestContext("Alice"),
+            ConfigurableArgs("Bob", ignoreCase: true, trim: false),
+            CancellationToken.None
+        );
 
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>Registered with no <c>NullBehavior</c>, <c>EqualsIgnoreCase</c> answers Unknown for a null selected value.</summary>
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>IsEqualTo</c> with <c>ignoreCase</c> true answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task EqualsIgnoreCase_NullSelectedValue_ReturnsUnknown_Test()
+    public async Task IsEqualTo_IgnoreCaseTrueAndNullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsIgnoreCase<TestContext>("equalsIgnoreCase", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsIgnoreCase", c => c.Value);
 
-        TruthValue result = await evaluate(new TestContext(null), Args("value", "Alice"), CancellationToken.None);
+        TruthValue result = await evaluate(
+            new TestContext(null),
+            ConfigurableArgs("Alice", ignoreCase: true, trim: false),
+            CancellationToken.None
+        );
 
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>StartsWith returns true for a matching prefix.</summary>
     [Fact]
-    public async Task StartsWith_MatchingPrefix_ReturnsTrue()
+    public async Task StartsWith_MatchingPrefix_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.StartsWith<TestContext>("startsWith", c => c.Value);
@@ -104,8 +121,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>StartsWith returns false for a non matching prefix.</summary>
     [Fact]
-    public async Task StartsWith_NonMatchingPrefix_ReturnsFalse()
+    public async Task StartsWith_NonMatchingPrefix_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.StartsWith<TestContext>("startsWith", c => c.Value);
@@ -127,8 +145,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>EndsWith returns true for a matching suffix.</summary>
     [Fact]
-    public async Task EndsWith_MatchingSuffix_ReturnsTrue()
+    public async Task EndsWith_MatchingSuffix_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EndsWith<TestContext>("endsWith", c => c.Value);
@@ -138,8 +157,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>EndsWith returns false for a non matching suffix.</summary>
     [Fact]
-    public async Task EndsWith_NonMatchingSuffix_ReturnsFalse()
+    public async Task EndsWith_NonMatchingSuffix_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.EndsWith<TestContext>("endsWith", c => c.Value);
@@ -161,8 +181,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>Contains returns true for a matching substring.</summary>
     [Fact]
-    public async Task Contains_MatchingSubstring_ReturnsTrue()
+    public async Task Contains_MatchingSubstring_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.Contains<TestContext>("contains", c => c.Value);
@@ -172,8 +193,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>Contains returns false for a non matching substring.</summary>
     [Fact]
-    public async Task Contains_NonMatchingSubstring_ReturnsFalse()
+    public async Task Contains_NonMatchingSubstring_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.Contains<TestContext>("contains", c => c.Value);
@@ -195,8 +217,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.Unknown, result);
     }
 
+    /// <summary>IsNullOrEmpty returns true for a null value.</summary>
     [Fact]
-    public async Task IsNullOrEmpty_NullValue_ReturnsTrue()
+    public async Task IsNullOrEmpty_NullValue_ReturnsTrue_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.IsNullOrEmpty<TestContext>("isNullOrEmpty", c => c.Value);
@@ -207,8 +230,9 @@ public class StringPredicatesTests
         Assert.Empty(schema.Arguments);
     }
 
+    /// <summary>IsNullOrEmpty returns true for an empty value.</summary>
     [Fact]
-    public async Task IsNullOrEmpty_EmptyValue_ReturnsTrue()
+    public async Task IsNullOrEmpty_EmptyValue_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.IsNullOrEmpty<TestContext>("isNullOrEmpty", c => c.Value);
@@ -218,8 +242,9 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>IsNullOrEmpty returns false for a non empty value.</summary>
     [Fact]
-    public async Task IsNullOrEmpty_NonEmptyValue_ReturnsFalse()
+    public async Task IsNullOrEmpty_NonEmptyValue_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             StringPredicates.IsNullOrEmpty<TestContext>("isNullOrEmpty", c => c.Value);
@@ -229,36 +254,34 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>The <c>ignoreCase</c> argument of <c>EqualsConfigurable</c> defaults to <c>false</c>, matching <c>Equals</c>.</summary>
+    /// <summary>The <c>ignoreCase</c> argument of <c>IsEqualTo</c> defaults to <c>false</c>, so the default comparison is case sensitive.</summary>
     [Fact]
-    public void EqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    public void IsEqualTo_Schema_IgnoreCaseDefaultsToFalse_Test()
     {
-        (PredicateSchema schema, _) = StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+        (PredicateSchema schema, _) = StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
         Assert.False(ignoreCase.Required);
         Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
     }
 
-    /// <summary>The <c>ignoreCase</c> argument of <c>NotEqualsConfigurable</c> defaults to <c>false</c>, matching its twin.</summary>
+    /// <summary>The <c>ignoreCase</c> argument of <c>IsNotEqualTo</c> defaults to <c>false</c>, matching its twin.</summary>
     [Fact]
-    public void NotEqualsConfigurable_Schema_IgnoreCaseDefaultsToFalse_Test()
+    public void IsNotEqualTo_Schema_IgnoreCaseDefaultsToFalse_Test()
     {
-        (PredicateSchema schema, _) = StringPredicates.NotEqualsConfigurable<TestContext>(
-            "notEqualsConfigurable",
-            c => c.Value
-        );
+        (PredicateSchema schema, _) = StringPredicates.IsNotEqualTo<TestContext>("isNotEqualTo", c => c.Value);
 
         PredicateArgumentSchema ignoreCase = Assert.Single(schema.Arguments, a => a.Name == "ignoreCase");
         Assert.False(ignoreCase.Required);
         Assert.Equal(LiteralValue.OfBoolean(false), ignoreCase.Default);
     }
 
+    /// <summary>IsEqualTo with default shaped arguments is case insensitive under the invariant culture.</summary>
     [Fact]
-    public async Task EqualsConfigurable_DefaultShapedArguments_IsCaseInsensitiveUnderInvariantCulture()
+    public async Task IsEqualTo_DefaultShapedArguments_IsCaseInsensitiveUnderInvariantCulture_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue result = await evaluate(
             new TestContext("Alice"),
@@ -270,11 +293,12 @@ public class StringPredicatesTests
         Assert.Equal("equalsConfigurable", schema.Name);
     }
 
+    /// <summary>IsEqualTo with ignore case false is case sensitive.</summary>
     [Fact]
-    public async Task EqualsConfigurable_IgnoreCaseFalse_IsCaseSensitive()
+    public async Task IsEqualTo_IgnoreCaseFalse_IsCaseSensitive_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue result = await evaluate(
             new TestContext("Alice"),
@@ -290,10 +314,10 @@ public class StringPredicatesTests
     /// one does not, so the result never depends on culture tables.
     /// </summary>
     [Fact]
-    public async Task EqualsConfigurable_LinguisticallyEquivalentStrings_AreNotEqualBecauseComparisonIsOrdinal_Test()
+    public async Task IsEqualTo_LinguisticallyEquivalentStrings_AreNotEqualBecauseComparisonIsOrdinal_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue result = await evaluate(
             new TestContext("straße"),
@@ -309,10 +333,10 @@ public class StringPredicatesTests
     /// uppercase of "i", whatever the host culture is.
     /// </summary>
     [Fact]
-    public async Task EqualsConfigurable_IgnoreCaseWithDottedCapitalI_DoesNotMatchPlainI_Test()
+    public async Task IsEqualTo_IgnoreCaseWithDottedCapitalI_DoesNotMatchPlainI_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue result = await evaluate(
             new TestContext("i"),
@@ -328,18 +352,19 @@ public class StringPredicatesTests
     /// for a rule author to configure (k3-followups 20).
     /// </summary>
     [Fact]
-    public void EqualsConfigurable_Schema_DeclaresNoCultureArgument_Test()
+    public void IsEqualTo_Schema_DeclaresNoCultureArgument_Test()
     {
-        (PredicateSchema schema, _) = StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+        (PredicateSchema schema, _) = StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         Assert.Equal(["value", "ignoreCase", "trim"], schema.Arguments.Select(a => a.Name));
     }
 
+    /// <summary>IsEqualTo with trim true ignores leading and trailing whitespace.</summary>
     [Fact]
-    public async Task EqualsConfigurable_TrimTrue_IgnoresLeadingAndTrailingWhitespace()
+    public async Task IsEqualTo_TrimTrue_IgnoresLeadingAndTrailingWhitespace_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue trimmedResult = await evaluate(
             new TestContext(" Alice "),
@@ -356,12 +381,12 @@ public class StringPredicatesTests
         Assert.Equal(TruthValue.False, untrimmedResult);
     }
 
-    /// <summary>Registered with no <c>NullBehavior</c>, <c>EqualsConfigurable</c> answers Unknown for a null selected value.</summary>
+    /// <summary>Registered with no <c>NullBehavior</c>, <c>IsEqualTo</c> answers Unknown for a null selected value.</summary>
     [Fact]
-    public async Task EqualsConfigurable_NullSelectedValue_ReturnsUnknown_Test()
+    public async Task IsEqualTo_NullSelectedValue_ReturnsUnknown_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            StringPredicates.EqualsConfigurable<TestContext>("equalsConfigurable", c => c.Value);
+            StringPredicates.IsEqualTo<TestContext>("equalsConfigurable", c => c.Value);
 
         TruthValue result = await evaluate(
             new TestContext(null),

@@ -16,8 +16,9 @@ using TruthWeaver.Tests.TestSupport;
 /// </summary>
 public sealed class MetricsTests
 {
+    /// <summary>Evaluating a rule increments the evaluations counter.</summary>
     [Fact]
-    public async Task Evaluating_a_rule_increments_the_evaluations_counter()
+    public async Task Evaluate_Rule_IncrementsEvaluationsCounter_Test()
     {
         using MeasurementCollector collector = new("truthweaver.evaluations");
         RuleCompiler<RuleTestContext> compiler = new(
@@ -34,8 +35,9 @@ public sealed class MetricsTests
         Assert.Contains(1L, collector.Measurements);
     }
 
+    /// <summary>A faulting predicate increments the faults counter.</summary>
     [Fact]
-    public async Task A_faulting_predicate_increments_the_faults_counter()
+    public async Task Evaluate_FaultingPredicate_IncrementsFaultsCounter_Test()
     {
         using MeasurementCollector collector = new("truthweaver.faults");
         RuleCompiler<RuleTestContext> compiler = new(
@@ -52,8 +54,9 @@ public sealed class MetricsTests
         Assert.Contains(1L, collector.Measurements);
     }
 
+    /// <summary>Compiling a rule with a diagnostic increments the compile diagnostics counter, tagged by severity.</summary>
     [Fact]
-    public void Compiling_a_rule_with_a_diagnostic_increments_the_compile_diagnostics_counter_tagged_by_severity()
+    public void Compile_DiagnosticRule_IncrementsCounterTaggedBySeverity_Test()
     {
         using MeasurementCollector collector = new("truthweaver.compile_diagnostics");
         RuleCompiler<RuleTestContext> compiler = new(PredicateRegistry<RuleTestContext>.CreateBuilder().Build());

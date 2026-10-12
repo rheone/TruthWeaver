@@ -8,8 +8,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 06: canonical DSL printer and round-trip.</summary>
 public sealed class CanonicalPrinterTests
 {
+    /// <summary>The printer reproduces the ADR 0003 worked example verbatim.</summary>
     [Fact]
-    public void Prints_the_adr_0003_worked_example_verbatim()
+    public void Print_Adr0003WorkedExample_IsVerbatim_Test()
     {
         const string source =
             "hasRole(role: \"Y\") AND (hasTraining(training: \"Q\") OR hasTraining(training: \"Z\") OR (isManager XOR isDepartmentHead))";
@@ -20,8 +21,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(source, rule.CanonicalText);
     }
 
+    /// <summary>An XOR operand is always parenthesized, even when precedence makes it unnecessary.</summary>
     [Fact]
-    public void Xor_operand_is_always_parenthesized_even_when_unnecessary_for_precedence()
+    public void Print_XorOperand_IsAlwaysParenthesized_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -64,8 +66,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("(isManager EQUIVALENT isDepartmentHead)", rule.CanonicalText);
     }
 
+    /// <summary>An AND operand of OR is parenthesized, although precedence makes it unambiguous.</summary>
     [Fact]
-    public void And_operand_of_or_is_parenthesized_for_clarity_even_though_precedence_makes_it_unambiguous()
+    public void Print_AndOperandOfOr_IsParenthesized_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -76,6 +79,7 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("(isManager AND isDepartmentHead) OR hasRole(role: \"Y\")", rule.CanonicalText);
     }
 
+    /// <summary>Parsing then printing round trips to a structurally equal tree.</summary>
     [Theory]
     [InlineData("isManager AND isDepartmentHead")]
     [InlineData("isManager OR isDepartmentHead")]
@@ -106,7 +110,7 @@ public sealed class CanonicalPrinterTests
     [InlineData("false")]
     [InlineData("isManager AND (isDepartmentHead OR hasRole(role: \"Y\"))")]
     [InlineData("(isManager AND isDepartmentHead) OR hasRole(role: \"Y\")")]
-    public void Parse_print_round_trips_to_a_structurally_equal_tree(string source)
+    public void Print_ParseThenPrint_RoundTripsToEqualTree_Test(string source)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -116,8 +120,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A string argument with a quote prints the quote escaped.</summary>
     [Fact]
-    public void A_string_argument_with_an_embedded_quote_prints_with_the_quote_escaped()
+    public void Print_StringWithQuote_EscapesQuote_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -126,8 +131,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("hasRole(role: \"a\\\"b\")", rule.CanonicalText);
     }
 
+    /// <summary>A string argument with a backslash prints the backslash escaped.</summary>
     [Fact]
-    public void A_string_argument_with_an_embedded_backslash_prints_with_the_backslash_escaped()
+    public void Print_StringWithBackslash_EscapesBackslash_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -136,8 +142,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal("hasRole(role: \"a\\\\b\")", rule.CanonicalText);
     }
 
+    /// <summary>A string argument with a quote and a backslash round trips.</summary>
     [Fact]
-    public void A_string_argument_with_both_a_quote_and_a_backslash_round_trips_to_a_structurally_equal_tree()
+    public void Print_StringWithQuoteAndBackslash_RoundTrips_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -147,8 +154,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>A DateTimeOffset argument prints as a quoted string and round trips.</summary>
     [Fact]
-    public void A_datetimeoffset_argument_prints_as_a_quoted_string_and_round_trips_to_a_structurally_equal_tree()
+    public void Print_DateTimeOffsetArgument_IsQuotedAndRoundTrips_Test()
     {
         DateTimeOffset matchValue = new(2024, 3, 17, 9, 30, 0, TimeSpan.FromHours(-5));
         RuleCompiler<RuleTestContext> compiler = new(
@@ -166,8 +174,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>Printing the same tree twice gives byte identical text.</summary>
     [Fact]
-    public void Printing_the_same_tree_twice_is_byte_identical()
+    public void Print_SameTreeTwice_IsByteIdentical_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> rule = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;
@@ -175,8 +184,9 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(rule.CanonicalText, rule.CanonicalText);
     }
 
+    /// <summary>ToString returns the same text as the canonical text.</summary>
     [Fact]
-    public void ToString_returns_the_same_text_as_canonical_text()
+    public void ToString_Default_MatchesCanonicalText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> rule = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;

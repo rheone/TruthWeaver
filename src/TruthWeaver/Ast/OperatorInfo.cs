@@ -1,7 +1,5 @@
 namespace TruthWeaver.Ast;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Looks up the <see cref="OperatorDescriptor"/> (label + description) for any operator node in a
 /// compiled expression tree. Every operator in the closed set (ADR-0004) has one; a

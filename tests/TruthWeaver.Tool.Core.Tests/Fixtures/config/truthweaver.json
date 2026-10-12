@@ -1,0 +1,13 @@
+{
+  "$schema": "./truthweaver.schema.json",
+  "operatorStyle": "symbolic",
+  "constantStyle": "letters",
+  "dialect": "latex",
+  "limits": {
+    "maxDepth": 16,
+    "maxNodeCount": 256,
+    "maxAnalysisTerms": 12,
+    "maxRewriteNodeCount": 5000
+  },
+  "schemaFile": "predicates.yaml"
+}

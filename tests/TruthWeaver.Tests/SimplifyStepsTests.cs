@@ -1,7 +1,6 @@
 namespace TruthWeaver.Tests;
 
 using TruthWeaver.Evaluation;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -22,7 +21,7 @@ public sealed class SimplifyStepsTests
         SimplifyResult<RuleTestContext> result = rule.SimplifyWithSteps();
 
         Assert.Empty(result.Steps);
-        Assert.Equal(rule.Simplify().CanonicalText, result.Rule.CanonicalText);
+        Assert.Equal(rule.Simplify().GetRuleOrThrow().CanonicalText, result.Rule.CanonicalText);
     }
 
     /// <summary>Each step names its law and shows the changed subtree before and after.</summary>
@@ -84,7 +83,7 @@ public sealed class SimplifyStepsTests
             }
 
             SimplifyResult<RuleTestContext> result = original.Compiled.SimplifyWithSteps();
-            string expected = original.Compiled.Simplify().CanonicalText;
+            string expected = original.Compiled.Simplify().GetRuleOrThrow().CanonicalText;
             if (result.Rule.CanonicalText != expected)
             {
                 failures.Add($"{generated.Text}: result {result.Rule.CanonicalText} but Simplify gives {expected}");

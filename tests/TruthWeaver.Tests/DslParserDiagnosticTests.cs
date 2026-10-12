@@ -380,14 +380,14 @@ public sealed class DslParserDiagnosticTests
 
     /// <summary>The infix words offered as suggestions are the documented spellings.</summary>
     [Fact]
-    public void InfixWords_ListsTheDocumentedWordOperators_Test()
+    public void InfixWords_Documented_ListsWordOperators_Test()
     {
         Assert.Equal(["AND", "OR", "XOR", "EQUIVALENT", "IFF", "XNOR", "IMPLIES", "NAND", "NOR"], DslVocabulary.InfixWords);
     }
 
     /// <summary>The keywords offered as suggestions add the prefix operators, calls and constants in documented spelling.</summary>
     [Fact]
-    public void Keywords_ListsEveryKeywordInDocumentedSpelling_Test()
+    public void Keywords_Documented_ListsEveryKeywordSpelling_Test()
     {
         Assert.Equal(
             [

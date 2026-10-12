@@ -1,7 +1,8 @@
 namespace TruthWeaver.Building;
 
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -14,10 +15,11 @@ using TruthWeaver.Parsing;
 /// useful when a rule's shape comes from application logic (e.g. a dynamically built list of
 /// conditions) rather than from an author typing it directly. A builder tree renders to the exact
 /// flat, key-discriminated JSON tree shape ADR-0003 defines and compiles through
-/// <see cref="RuleCompiler{TContext}.CompileJson(string)"/>, so a builder-assembled rule receives
-/// every diagnostic a hand-written one would (unknown predicate, bad argument, invalid threshold,
+/// <see cref="RuleCompiler{TContext}.CompileJson(System.Text.Json.JsonElement)"/>, so a builder-assembled rule
+/// receives every diagnostic a hand-written one would (unknown predicate, bad argument, invalid threshold,
 /// XOR/EQUIVALENT arity, resource limits, structural tautology/contradiction) — nothing here bypasses the
-/// Validate/Analyze stages of the compilation pipeline.
+/// Validate/Analyze stages of the compilation pipeline. A diagnostic located in the tree carries a path into
+/// this builder's tree, never a span into the generated JSON (see <see cref="Compile{TContext}(RuleCompiler{TContext})"/>).
 /// </summary>
 public abstract class RuleBuilder
 {
@@ -44,8 +46,9 @@ public abstract class RuleBuilder
     /// operator without a JSON round trip.
     /// </summary>
     /// <remarks>
-    /// The source rule may come from another registry, so the join is not trusted. Compiling the joined builder
-    /// validates every term again against the destination registry. A predicate missing there, or with a different
+    /// The builder keeps the rule's notes (<see cref="CompiledRule{TContext}.Notes"/>) on their nodes, so they come out of
+    /// the joined rule under their new paths. The source rule may come from another registry, so the join is not trusted.
+    /// Compiling the joined builder validates every term again against the destination registry. A predicate missing there, or with a different
     /// schema, gives the normal compile diagnostics. Data-source declarations (<c>TRE0024</c>) and the destination
     /// <c>CompilerOptions</c> limits apply to the joined tree. A term that appears in both source rules is one term in
     /// the joined rule, so its predicate runs once per evaluation.
@@ -65,7 +68,7 @@ public abstract class RuleBuilder
     {
         ArgumentNullException.ThrowIfNull(rule);
 
-        return new CompiledBuilder(rule.Root);
+        return new CompiledBuilder(rule.Root, rule.NoteLookup);
     }
 
     /// <summary>Creates a builder for a zero-argument predicate reference.</summary>
@@ -592,6 +595,27 @@ public abstract class RuleBuilder
         return Exactly(k, Materialize(operands));
     }
 
+    /// <summary>
+    /// Puts a note on this builder's node: free text for the people who read the rule, kept beside the compiled tree as
+    /// one of <see cref="CompiledRule{TContext}.Notes"/> and written by the text, JSON and YAML printers. A note never
+    /// changes the compiled tree or how the rule evaluates.
+    /// </summary>
+    /// <remarks>
+    /// The note is normalized when the rule compiles: line endings become a line feed, each line loses its trailing
+    /// whitespace and the whole note is trimmed, so a note of only whitespace is no note. Calling this method on a builder
+    /// that already has a note replaces that note. An operator that folds (<c>And()</c> with one operand is that operand)
+    /// has no node of its own, so put the note on the operand.
+    /// </remarks>
+    /// <param name="note">The note text.</param>
+    /// <returns>A builder for the same node, with the note.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="note"/> is <see langword="null"/>.</exception>
+    public RuleBuilder WithNote(string note)
+    {
+        ArgumentNullException.ThrowIfNull(note);
+
+        return new NotedBuilder(this, note);
+    }
+
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
@@ -615,6 +639,15 @@ public abstract class RuleBuilder
     /// Compiles this builder's tree through the exact same Validate → Analyze → Build pipeline any
     /// other rule source (DSL/JSON/YAML text) uses.
     /// </summary>
+    /// <remarks>
+    /// A diagnostic located in this tree (an unknown predicate, a bad argument, an arity violation, and the
+    /// rest) carries a path into this builder's tree — the same <c>$.operands[1].op</c> shape a hand-written
+    /// JSON or YAML rule gets — but never a <see cref="Diagnostic.Span"/> into generated text: this method
+    /// compiles through <see cref="RuleCompiler{TContext}.CompileJson(JsonElement)"/>, which, unlike
+    /// <see cref="RuleCompiler{TContext}.CompileJson(string)"/>, never re-reads rendered JSON to locate a path
+    /// as a span (ADR-0005 decision 11), because the caller never sees that JSON and a span into it would not
+    /// mean anything in the builder tree the caller wrote.
+    /// </remarks>
     /// <typeparam name="TContext">The application context type the compiler's registry evaluates against.</typeparam>
     /// <param name="compiler">The compiler to validate and build this tree with.</param>
     /// <returns>The compilation result.</returns>
@@ -623,7 +656,30 @@ public abstract class RuleBuilder
         // A mistake that the JSON shape cannot carry (a repeated argument name) is reported here, before rendering.
         List<Diagnostic> problems = [];
         this.CollectProblems(TreePath.Root, problems);
-        return problems.Count > 0 ? new CompilationResult<TContext>(null, problems) : compiler.CompileJson(this.ToJson());
+        if (problems.Count > 0)
+        {
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(problems));
+        }
+
+        // CompileJson(JsonElement), not CompileJson(string): the element overload never re-reads generated text
+        // for a diagnostic's span, so every diagnostic here carries only its builder path and Diagnostic.Span.None.
+        using JsonDocument document = JsonDocument.Parse(this.ToJson());
+        return compiler.CompileJson(document.RootElement);
+    }
+
+    /// <summary>Compiles this builder's tree without a result object: the <c>Try</c> form of <see cref="Compile{TContext}(RuleCompiler{TContext})"/>.</summary>
+    /// <typeparam name="TContext">The application context type the compiler's registry evaluates against.</typeparam>
+    /// <param name="compiler">The compiler to validate and build this tree with.</param>
+    /// <param name="rule">The compiled rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompile<TContext>(
+        RuleCompiler<TContext> compiler,
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Compile(compiler).TryGetRule(out rule, out diagnostics);
     }
 
     private protected abstract JsonNode ToNode();
@@ -698,14 +754,35 @@ public abstract class RuleBuilder
         return array;
     }
 
-    private sealed class CompiledBuilder(Expression root) : RuleBuilder
+    private sealed class CompiledBuilder(Expression root, NoteLookup? notes) : RuleBuilder
     {
         private readonly Expression root = root;
+        private readonly NoteLookup? notes = notes;
 
         private protected override JsonNode ToNode()
         {
-            // Same printer as CompiledRule.PrintJson, so the tree re-enters the pipeline in the JSON shape.
-            return JsonTreePrinter.ToNode(this.root);
+            // Same printer as CompiledRule.PrintJson, so the tree and its notes re-enter the pipeline in the JSON shape.
+            return JsonTreePrinter.ToNode(this.root, this.notes);
+        }
+    }
+
+    /// <summary>A node with a note: the inner builder's node with a <c>note</c> property added (or replaced).</summary>
+    private sealed class NotedBuilder(RuleBuilder inner, string note) : RuleBuilder
+    {
+        private readonly RuleBuilder inner = inner;
+        private readonly string note = note;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            // The note does not move the node, so the inner node keeps its path.
+            this.inner.CollectProblems(path, problems);
+        }
+
+        private protected override JsonNode ToNode()
+        {
+            JsonNode node = this.inner.ToNode();
+            node["note"] = this.note;
+            return node;
         }
     }
 
