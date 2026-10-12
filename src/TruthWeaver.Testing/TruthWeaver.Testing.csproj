@@ -3,12 +3,20 @@
     <ProjectGuid>1b835dee-d2e9-4053-b189-ac042e6c60e0</ProjectGuid>
     <RootNamespace>TruthWeaver.Testing</RootNamespace>
     <PackageId>TruthWeaver.Testing</PackageId>
-    <Description>Test support for TruthWeaver: Decision assertions, rule equivalence and rewrite assertions, a predicate harness, a rule fuzzer and fake predicates.</Description>
-    <PackageTags>rules engine;kleene;k3;testing;assertions;fuzzing;fakes;truthweaver</PackageTags>
+    <Description>Test support for TruthWeaver: Decision assertions, rule equivalence and rewrite assertions, a predicate harness, a rule fuzzer, fake predicates, and declarative YAML rule tests with stub values.</Description>
+    <PackageTags>rules engine;kleene;k3;testing;assertions;fuzzing;fakes;yaml;junit;truthweaver</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
     <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+    <!-- Declarative rule tests: the test file is YAML, a rule can be rule text, JSON or YAML, and case variables are YAML or
+         JSON data sources. TruthWeaver.Yaml brings YamlDotNet and TruthWeaver.DataSources.Json. -->
+    <ProjectReference Include="../TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
+  </ItemGroup>
+
+  <!-- The JSON schema of a rule test file, published as content so an editor or CI step can validate test files. -->
+  <ItemGroup>
+    <None Include="rule-test.schema.json" Pack="true" PackagePath="content\rule-test.schema.json" Visible="true" />
   </ItemGroup>
 </Project>

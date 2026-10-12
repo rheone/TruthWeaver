@@ -1,6 +1,6 @@
 # Command line
 
-`truthweaver` is the command line of TruthWeaver. It validates, converts, formats, prints, exports, reports, compares and evaluates rules in rule text, JSON or YAML. Back to the [README](../README.md).
+`truthweaver` is the command line of TruthWeaver. It validates, converts, formats, prints, exports, reports, compares, evaluates and tests rules in rule text, JSON or YAML. Back to the [README](../README.md).
 
 The commands are a thin front end over the [tool core](tool-core.md), so the command line and the terminal UI behave the same way. The tool has no host registry: it compiles every rule permissively, and it evaluates a rule with stub values in place of the predicates.
 
@@ -27,12 +27,13 @@ The command is `truthweaver`. `truthweaver --help` lists the commands, and `trut
 | [`report`](#report) | Writes the Markdown report of a rule. |
 | [`diff`](#diff) | Compares two rules. |
 | [`evaluate`](#evaluate) | Evaluates a rule with stub values and data files. |
+| [`test`](#test) | Runs the cases of a rule test file and lists each case as passed or failed. |
 
 ## Input
 
-Each command reads one rule. The argument is a file path, or `-` for standard input. When you leave out the argument, the command reads standard input. `diff` reads two rules, and only one of them can be `-`.
+Each command reads one rule. The argument is a file path, or `-` for standard input. When you leave out the argument, the command reads standard input. `diff` reads two rules, and only one of them can be `-`. `test` reads a rule test file, and takes only the options that its section lists.
 
-These options apply to every command:
+These options apply to every command except `test`:
 
 | Option | Meaning |
 | --- | --- |
@@ -103,7 +104,7 @@ The text output of a check is one line: the file and `identical`, `missing` or `
 | --- | --- |
 | 0 | Success. |
 | 1 | The command failed: an error in the rule, a warning with `validate --strict`, a `--check` that found a difference, or `diff` found that the rules are not equivalent. |
-| 2 | The tool could not do its work: a usage error (an unknown option, a missing value, options that cannot go together), or a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id or an image renderer. |
+| 2 | The tool could not do its work: a usage error (an unknown option, a missing value, options that cannot go together), or a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer or a rule test file. |
 
 Code 2 wins over code 1. [Exit codes](tool-core.md#exit-codes) lists the `TWT` codes that give code 2.
 
@@ -210,6 +211,25 @@ The JSON result has `equivalent` (`true`, `false` or `null`), `relation`, `chang
 Each predicate has a stand-in that gives the stub value of its term. A term with a `from(...)` argument takes the stub value of the term with the value that the data file gives. For example, with `{"region": "EU"}` as `user`, the term `inRegion(region: from("user", "$.region"))` takes the stub value of `inRegion(region: "EU")`. A reference that does not resolve is a fault, and its term is `Unknown`. [Stub evaluation](tool-core.md#stub-evaluation) describes the rules.
 
 The exit code is 0 when the rule was evaluated, whatever the result is. The JSON result has `result` and `decision`: the [decision record](decision-records.md) with the literal argument values.
+
+## test
+
+`truthweaver test <file>` runs each case of a [rule test file](rule-tests.md) and prints one line for each case, `PASS` or `FAIL` and the case name, with the reasons for a failure below it. The last line counts the cases that passed and failed. The rule runs over stand-in predicates with the stub values of each case, as `evaluate` does.
+
+| Option | Meaning |
+| --- | --- |
+| `--junit <file>` | Also writes the results as JUnit XML to the file, and creates its directory. See [JUnit report](rule-tests.md#junit-report). |
+| `--config <file>` | The configuration file. The default is the nearest `truthweaver.json` in the directory of the test file or a parent directory. |
+| `--max-depth <n>`, `--max-node-count <n>` | The limits of the compiler, each a whole number from 1. |
+| `--json` | Writes one JSON object. See [Output](#output). |
+
+| Exit code | When |
+| --- | --- |
+| 0 | Each case passed. |
+| 1 | A case failed, or the rule does not compile. The compile errors are diagnostics. For an inline rule, each has the `rulePath` `$.rule`, and its line and column count in the rule text. |
+| 2 | The test file is not usable: a `TWT0022` error for each problem, with its line and column. No case runs, and `--junit` writes no file. |
+
+The JSON result has `name`, `passed` and `failed` (the counts), `cases` (each with `name`, `passed`, `expected`, `result`, `faults` and `failures`) and `junit` (the path of the JUnit file, with `--junit`).
 
 ## Shell completion
 

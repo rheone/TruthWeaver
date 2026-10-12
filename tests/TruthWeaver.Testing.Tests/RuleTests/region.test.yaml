@@ -1,0 +1,26 @@
+# The from(...) reference reads the region from the user data.
+rule: |
+  isActive AND inRegion(region: from("user", "$.region"))
+cases:
+  - name: inline data
+    given:
+      isActive: true
+      'inRegion(region: "EU")': true
+    variables:
+      user: { region: EU }
+    expect:
+      result: True
+  - name: data file
+    given:
+      isActive: True
+      'inRegion(region: "EU")': True
+    variableFiles:
+      user: user.json
+    expect:
+      result: True
+  - name: no data is a fault
+    given:
+      isActive: True
+    expect:
+      result: Unknown
+      faults: 1

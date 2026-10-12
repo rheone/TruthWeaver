@@ -321,7 +321,7 @@ For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AN
 | --- | --- | --- |
 | `Success` | 0 | No error, and no warning in strict mode. |
 | `Failed` | 1 | An error, or a warning in strict mode. |
-| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer or a write-back. This code wins over `Failed`. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a write-back or a rule test file. This code wins over `Failed`. |
 
 ## Diagnostics output
 
@@ -461,6 +461,7 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0019` | `RuleRewritten` | Warning | A patch wrote one rule again in full; comments and layout inside the rule are not kept. |
 | `TWT0020` | `RoundTripWriteBack` | Warning | A round-trip write-back serialized the whole document again; YAML comments and layout can be lost. |
 | `TWT0021` | `WriteBackFailed` | Error | An edited rule cannot be written back into its document. |
+| `TWT0022` | `InvalidRuleTestFile` | Error | A rule test file is not usable. |
 
 ## Packaging
 

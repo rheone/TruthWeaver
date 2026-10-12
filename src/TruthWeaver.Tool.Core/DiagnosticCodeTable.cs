@@ -274,6 +274,11 @@ public static class DiagnosticCodeTable
             nameof(ToolDiagnosticCodes.WriteBackFailed),
             "An edited rule cannot be written back into its document."
         ),
+        Error(
+            ToolDiagnosticCodes.InvalidRuleTestFile,
+            nameof(ToolDiagnosticCodes.InvalidRuleTestFile),
+            "A rule test file is not usable."
+        ),
     ];
 
     private static readonly FrozenDictionary<string, DiagnosticCodeInfo> ByCode = Rows.ToFrozenDictionary(

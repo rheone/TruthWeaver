@@ -9,7 +9,7 @@ TruthWeaver ships as seven packages. Each package has one purpose, so a consumer
 | `TruthWeaver.Yaml` | `TruthWeaver`, `TruthWeaver.DataSources.Json`, YamlDotNet | YAML tree support (`CompileYaml`/`PrintYaml`), the conversion helpers between all three formats (`Convert`, `CompileAs`, `PrintAs`, which take a `RuleFormat`) and `YamlDataSource` (a YAML document as a data source, queried with the JSON package's JSONPath engine), isolated so a consumer with no interest in YAML never pulls in YamlDotNet. |
 | `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, Meziantou.Framework.JsonPath | `JsonDataSource` (a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath, RFC 9535) and `JsonQueryValidator` (compile-time syntax check of those queries). Isolated so the core package takes no JSONPath dependency. |
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories for string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client. A consumer uses them for common checks without writing a class and without the parser, compiler or analyzer. |
-| `TruthWeaver.Testing` | `TruthWeaver.Abstractions`, `TruthWeaver` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. Also builds rule-level testing tools (an equivalence assertion, a predicate harness, a public rule fuzzer) on the compiler and analyzer. See [Testing assertions](testing-assertions.md), [Predicate harness](predicate-harness.md) and [Rule fuzzer](rule-fuzzer.md). |
+| `TruthWeaver.Testing` | `TruthWeaver.Abstractions`, `TruthWeaver`, `TruthWeaver.Yaml` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. Also builds rule-level testing tools (an equivalence assertion, a predicate harness, a public rule fuzzer) on the compiler and analyzer, and runs declarative YAML rule tests with stub values (`RuleTestFile`, `StubRuleCompiler`). The rule tests read YAML, so this package references `TruthWeaver.Yaml`, which brings YamlDotNet and `TruthWeaver.DataSources.Json`. See [Testing assertions](testing-assertions.md), [Predicate harness](predicate-harness.md), [Rule fuzzer](rule-fuzzer.md) and [Rule tests](rule-tests.md). |
 | `TruthWeaver.Generators` | *(no TruthWeaver assembly; analyzer only)* | A Roslyn source generator and its `[Predicate]` attribute. It writes a `Register` method for each type with `[Predicate]` methods, at compile time. The generated code uses `TruthWeaver.Abstractions` and `TruthWeaver` in the consuming project. See [Predicate source generator](predicate-source-generator.md). |
 
 <!-- doctest:skip class diagram, structure only -->
@@ -39,7 +39,7 @@ flowchart LR
     end
 
     subgraph TestingPkg["TruthWeaver.Testing"]
-        Assertions["Decision assertions + fake predicates"]
+        Assertions["Decision assertions + fake predicates + rule tests"]
     end
 
     subgraph GeneratorsPkg["TruthWeaver.Generators<br/>(analyzer, compile time)"]
@@ -51,6 +51,7 @@ flowchart LR
     PredicatesPkg --> Abstractions
     TestingPkg --> Core
     TestingPkg --> Abstractions
+    TestingPkg --> YamlPkg
 
     App["Predicate-implementing service"] -.->|"references only"| Abstractions
     Host["Rule-authoring / evaluation host"] -->|"references"| Core
@@ -66,4 +67,4 @@ A service that only implements domain predicates references `TruthWeaver.Abstrac
 
 `TruthWeaver.Tool.Core` is a project of the repository, not a package. It is the UI-free library under the `truthweaver` command line and the terminal UI, and it references `TruthWeaver`, `TruthWeaver.Yaml` and `TruthWeaver.DataSources.Json`. No package references it. `dotnet pack` makes no package for it, and the CI build and tests include it. See [Tool core](tool-core.md).
 
-`TruthWeaver.Tool` is the `truthweaver` command line, a .NET tool package (`PackAsTool`). It references the tool core, the packages that the tool core uses, and `System.CommandLine`. No other project references it. The tool package carries the tool core and its references in its own `tools` folder. CI packs and checks it, and does not publish it. See [Command line](cli.md).
+`TruthWeaver.Tool` is the `truthweaver` command line, a .NET tool package (`PackAsTool`). It references the tool core, the packages that the tool core uses, `TruthWeaver.Testing` (for the rule test runner of `truthweaver test`), and `System.CommandLine`. No other project references it. The tool package carries the tool core and its references in its own `tools` folder. CI packs and checks it, and does not publish it. See [Command line](cli.md).

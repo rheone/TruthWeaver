@@ -74,6 +74,8 @@ foreach ($id in $packages) {
         $allowed = $commonEntries + @("$id.nuspec", "lib/net11.0/$id.dll", "lib/net11.0/$id.xml")
         # The compiler package ships the rule-tree and decision-record JSON schemas as content.
         if ($id -eq 'TruthWeaver') { $allowed += 'content/rule-tree.schema.json', 'content/decision-record.schema.json' }
+        # The testing package ships the JSON schema of a rule test file as content.
+        if ($id -eq 'TruthWeaver.Testing') { $allowed += 'content/rule-test.schema.json' }
         if ($snupkg.Count -ne 1) {
             Add-Failure "$id : expected one .snupkg, found $($snupkg.Count)."
         }

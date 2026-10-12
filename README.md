@@ -123,7 +123,7 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.Yaml` | Read and write rules and data sources as YAML. |
 | `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
-| `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests. |
+| `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests, and run YAML rule tests. |
 | `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
@@ -166,12 +166,13 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
 - [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent, that a rewrite is sound, and check a `Decision` in a test.
+- [Rule tests](docs/rule-tests.md): write test cases for a rule in YAML, with a value for each term, and run them with `truthweaver test` or from C#, with a JUnit report for CI.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
 - [Batch evaluation](docs/batch-evaluation.md): evaluate one rule against many contexts, in order, with bounded parallelism.
 - [Rule coverage](docs/rule-coverage.md): find the terms and branches of a rule that never decide, are always `Unknown` or fault, over many decisions.
 - [What would change a decision](docs/counterfactuals.md): the smallest sets of term changes that would make a rule `True` (or `False`), for a "what to fix" list.
 - [Decision records](docs/decision-records.md): store a decision as JSON for an audit log, with the rule identity and the evaluation options, and read it back for replay.
-- [Command line](docs/cli.md): the `truthweaver` .NET tool: validate, convert, format, print, export, report, diff and evaluate rules from the shell, with JSON output, SARIF and documented exit codes.
+- [Command line](docs/cli.md): the `truthweaver` .NET tool: validate, convert, format, print, export, report, diff, evaluate and test rules from the shell, with JSON output, SARIF and documented exit codes.
 - [Tool core](docs/tool-core.md): the library under the command line and the terminal UI: load, detect, extract and convert rules, validate them in levels with statistics, write diagnostics as text, JSON or SARIF, export every artifact with a manifest, write a Markdown report, render images with Graphviz or the Mermaid CLI, the `truthweaver.json` file, stub values, data files and deterministic output.
 - [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.

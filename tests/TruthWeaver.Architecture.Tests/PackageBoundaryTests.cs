@@ -77,24 +77,38 @@ public sealed class PackageBoundaryTests
     }
 
     /// <summary>
-    /// ADR-0004 (amended 2026-10-09): <c>TruthWeaver.Testing</c> now takes a project reference to
-    /// <c>TruthWeaver</c> (the compiler/analyzer package) so rule-level testing tools (an equivalence
-    /// assertion, a predicate harness, a public rule fuzzer) can live beside <c>DecisionAssertions</c>.
-    /// It still never depends on the YAML package, the ready-made predicates, or the JSON data source
-    /// package, each of which is optional and orthogonal to testing support.
+    /// ADR-0004 (amended 2026-10-09 and 2026-10-11):
+    /// <c>TruthWeaver.Testing</c> references <c>TruthWeaver</c> (the compiler and analyzer) for the rule-level testing
+    /// tools, and <c>TruthWeaver.Yaml</c> for the declarative rule tests: the test file is YAML, a rule can be YAML, and
+    /// case data is a YAML or JSON data source. It never depends on the ready-made predicates, which are orthogonal to
+    /// testing support.
     /// </summary>
     [Fact]
-    public void Testing_Dependencies_ExcludeYamlPredicatesAndJsonDataSources_Test()
+    public void Testing_Dependencies_ExcludePredicates_Test()
     {
         TestResult result = Types
             .InAssembly(Testing)
             .That()
             .ResideInNamespace("TruthWeaver.Testing")
             .ShouldNot()
-            .HaveDependencyOnAny("TruthWeaver.Yaml", "TruthWeaver.Predicates", "TruthWeaver.DataSources")
+            .HaveDependencyOnAny("TruthWeaver.Predicates")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    /// <summary>
+    /// The declarative rule tests read YAML through <c>TruthWeaver.Yaml</c>, so <c>TruthWeaver.Testing</c> references that
+    /// package, which brings YamlDotNet and the JSON data source package. Testing adds no package reference of its own.
+    /// </summary>
+    [Fact]
+    public void Testing_References_YamlPackage_Test()
+    {
+        string[] referenced = [.. Testing.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Yaml", referenced);
+        Assert.Contains("TruthWeaver", referenced);
+        Assert.DoesNotContain("TruthWeaver.Predicates", referenced);
     }
 
     /// <summary>Core has no dependency on the Yaml, Predicates or Testing packages.</summary>

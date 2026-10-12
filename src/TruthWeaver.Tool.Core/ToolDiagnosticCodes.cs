@@ -98,4 +98,10 @@ public static class ToolDiagnosticCodes
     /// or the rule is shared through a YAML anchor or alias. The document is not changed.
     /// </summary>
     public const string WriteBackFailed = "TWT0021";
+
+    /// <summary>
+    /// A rule test file is not usable: it is not well-formed YAML, a key is missing or not known, a value has the wrong
+    /// type, or a rule file or data file cannot be read.
+    /// </summary>
+    public const string InvalidRuleTestFile = "TWT0022";
 }

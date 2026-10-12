@@ -26,6 +26,7 @@ public static class SeverityPolicy
         ToolDiagnosticCodes.RenderFailed,
         ToolDiagnosticCodes.UnknownArtifact,
         ToolDiagnosticCodes.WriteBackFailed,
+        ToolDiagnosticCodes.InvalidRuleTestFile,
     ];
 
     /// <summary>Tells whether a diagnostic fails a command.</summary>

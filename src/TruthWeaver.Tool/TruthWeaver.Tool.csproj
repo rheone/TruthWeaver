@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>TruthWeaver.Tool</RootNamespace>
     <PackageId>TruthWeaver.Tool</PackageId>
-    <Description>The truthweaver command line: validate, convert, format, print, export, report, diff and evaluate TruthWeaver rules in rule text, JSON or YAML, with stub values for the predicates.</Description>
+    <Description>The truthweaver command line: validate, convert, format, print, export, report, diff, evaluate and test TruthWeaver rules in rule text, JSON or YAML, with stub values for the predicates.</Description>
     <PackageTags>rules engine;kleene;k3;cli;dotnet tool;truthweaver</PackageTags>
     <!-- A .NET tool package: `dotnet tool install TruthWeaver.Tool` gives the `truthweaver` command. CI packs and checks
          it with the other packages and never publishes it (docs/releasing.md). -->
@@ -17,6 +17,8 @@
     <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
     <ProjectReference Include="../TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
     <ProjectReference Include="../TruthWeaver.Tool.Core/TruthWeaver.Tool.Core.csproj" />
+    <!-- The rule test runner of `truthweaver test` (RuleTestFile), the same runner that C# tests use. -->
+    <ProjectReference Include="../TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
   </ItemGroup>
 
   <!-- The command-line library is used here and nowhere else: the tool core stays UI-free (an architecture test). -->

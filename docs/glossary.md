@@ -64,11 +64,14 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | --- | --- |
 | **Rewrite** | An opt-in transform of a compiled rule that returns a new rule with the same value: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize` or `Simplify`. |
 | **Rule** | A named unit of persistence: metadata and one expression. Compiling it gives a `CompiledRule`. |
+| **Rule test file** | A YAML file with one rule and named cases. Each case gives stub values to the terms and states the expected result. `truthweaver test` and `RuleTestFile` run it. See [Rule tests](rule-tests.md). |
 | **RuleBuilder** | A fluent API that assembles a rule tree from application logic. It compiles through the same pipeline as JSON. |
 | **RuleDiff** | A structural diff between two compiled rules: the nodes that were added, removed or changed. |
 | **Short-circuit** | `AND` stops at the first `False`, `OR` at the first `True` and `COALESCE` at the first operand that is not `Unknown`. Skipped operands are recorded as `NotEvaluated`. See [evaluation](strong-k3/specification/evaluation.md#evaluation-modes). |
+| **Stand-in predicate** | A predicate that the rule test runner and the command line register in place of the predicates of a host. It gives the stub value of its term. See [Rule tests](rule-tests.md). |
 | **Strong Kleene connective** | An Operation that is monotone in the information order. Every rule operator of the K3 reference is one, except `COALESCE` and the four inspections. See [semantics](strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators). |
 | **Strongest extension** | The three-valued function that is definite exactly when every classical resolution of the `Unknown` inputs agrees. See [semantics](strong-k3/specification/semantics.md#truth-functional-evaluation-and-the-strongest-extension). |
+| **Stub value** | The truth value that a test case or `truthweaver evaluate` gives to one term, keyed by the canonical text of the term. A term with no stub value is `Unknown`. In `TruthWeaver.Testing`, `StubValues` holds them. See [Rule tests](rule-tests.md). |
 | **Term** | A predicate bound to concrete arguments, such as `hasTopping(topping: "greenOlives")`. A term is a leaf of the tree and the unit of memoization. |
 | **Term identity** | What makes two term references the same variable: the registered predicate name and the arguments sorted by name and compared by exact, case-sensitive value. |
 | **Threshold family** | `AtLeast`, `AtMost`, `Exactly`, `GreaterThan` and `LessThan`. Each compares the count of true operands with an integer `k`. See [Cardinality Functions](strong-k3/cardinality/README.md). |

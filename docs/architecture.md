@@ -52,7 +52,7 @@ flowchart TD
 
     subgraph Extras["Optional add-ons"]
         Predicates["TruthWeaver.Predicates<br/>ready-made IPredicate implementations"]
-        Testing["TruthWeaver.Testing<br/>Decision assertions, fake predicates"]
+        Testing["TruthWeaver.Testing<br/>Decision assertions, fake predicates, rule tests"]
     end
 
     Core --> Kernel
@@ -60,6 +60,7 @@ flowchart TD
     Predicates --> Kernel
     Testing --> Kernel
     Testing --> Core
+    Testing --> YamlPkg
 ```
 
 Start with these files for common tasks:
@@ -83,6 +84,7 @@ Start with these files for common tasks:
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](../src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](../src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](../src/TruthWeaver.Yaml/YamlTreeParser.cs) |
 | Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/FakePredicates.cs) |
+| Run declarative YAML rule tests with stub values | [`RuleTestFile`](../src/TruthWeaver.Testing/RuleTestFile.cs), [`StubRuleCompiler`](../src/TruthWeaver.Testing/StubRuleCompiler.cs) |
 
 Beyond `src`, the repository holds these projects:
 
