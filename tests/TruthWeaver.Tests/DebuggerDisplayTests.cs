@@ -26,6 +26,20 @@ public sealed class DebuggerDisplayTests
         Assert.DoesNotContain(" at ", display, StringComparison.Ordinal);
     }
 
+    /// <summary>A fault read back from a decision record shows the recorded exception type, not <see cref="RecordedFaultException"/>.</summary>
+    [Fact]
+    public void DebuggerDisplay_RecordedFault_ShowsTheRecordedExceptionType_Test()
+    {
+        Fault fault = new(
+            new TermIdentity("IsAdmin", []),
+            new RecordedFaultException("boom") { ExceptionType = "System.InvalidOperationException" }
+        );
+
+        string display = DisplayOf(fault);
+
+        Assert.EndsWith("System.InvalidOperationException: boom", display, StringComparison.Ordinal);
+    }
+
     /// <summary>A decision shows its result and the number of faults.</summary>
     [Fact]
     public void DebuggerDisplay_Decision_ShowsResultAndFaultCount_Test()

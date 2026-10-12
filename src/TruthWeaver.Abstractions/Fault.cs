@@ -28,7 +28,8 @@ public sealed record Fault(TermIdentity Term, Exception Exception)
             : this.Exception.GetType().FullName ?? this.Exception.GetType().Name;
 
     // The default record ToString embeds Exception.ToString(), stack trace included, which buries the term and the cause.
-    private string DebuggerDisplay => $"{this.Term}: {this.Exception.GetType().Name}: {this.Exception.Message}";
+    // ExceptionType names the recorded type for a fault read back from a decision record, not RecordedFaultException.
+    private string DebuggerDisplay => $"{this.Term}: {this.ExceptionType}: {this.Exception.Message}";
 
     /// <inheritdoc />
     public bool Equals(Fault? other)

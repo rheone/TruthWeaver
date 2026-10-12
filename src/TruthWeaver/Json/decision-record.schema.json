@@ -12,7 +12,7 @@
     "rule": { "$ref": "#/$defs/rule" },
     "options": { "$ref": "#/$defs/options" },
     "argumentValues": {
-      "description": "Whether the literal argument values of faulting terms are in the record. 'omitted' (the default) writes each argument's name and kind without its value.",
+      "description": "Whether the literal argument values of the rule are in the record. 'omitted' (the default) writes each fault argument's name and kind without its value, and writes <omitted> in place of each literal argument value in the trace and trace tree texts.",
       "enum": ["included", "omitted"]
     },
     "result": {
@@ -166,7 +166,7 @@
       "additionalProperties": false
     },
     "traceEntry": {
-      "description": "One trace entry. 'result' is null exactly when 'notEvaluated' is true.",
+      "description": "One trace entry. 'result' is null exactly when 'notEvaluated' is true. When argumentValues is 'omitted', a term text shows <omitted> in place of each literal argument value.",
       "type": "object",
       "properties": {
         "text": { "type": "string" },
@@ -177,7 +177,7 @@
       "additionalProperties": false
     },
     "traceNode": {
-      "description": "One trace tree node with its operands. A node that was not evaluated has a null result and no children.",
+      "description": "One trace tree node with its operands. A node that was not evaluated has a null result and no children. When argumentValues is 'omitted', a term text shows <omitted> in place of each literal argument value.",
       "type": "object",
       "properties": {
         "text": { "type": "string" },

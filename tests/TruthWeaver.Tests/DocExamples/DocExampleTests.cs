@@ -31,6 +31,7 @@ public sealed class DocExampleTests
     [InlineData("docs/diagnostics.md")]
     [InlineData("docs/benchmarks.md")]
     [InlineData("docs/tool-core.md")]
+    [InlineData("docs/decision-records.md")]
     public async Task CheckAsync_DocumentationFile_ReportsNoFailures_Test(string fileName)
     {
         string markdown = await File.ReadAllTextAsync(
@@ -52,6 +53,19 @@ public sealed class DocExampleTests
         IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
 
         Assert.Single(failures);
+    }
+
+    /// <summary>A documented decision record that is not the record the rule gives is reported, so the record sample on a page is really checked.</summary>
+    [Fact]
+    public async Task CheckAsync_DecisionRecordThatIsStale_ReportsAFailure_Test()
+    {
+        const string markdown =
+            "<!-- doctest:rule r -->\n```text\nlookup(id: 42)\n```\n\n<!-- doctest:decision-record r -->\n```json\n{\n  \"formatVersion\": 1\n}\n```\n";
+
+        IReadOnlyList<string> failures = await DocExampleChecker.CheckAsync(markdown, "sample.md");
+
+        string failure = Assert.Single(failures);
+        Assert.Contains("doctest:decision-record r", failure, StringComparison.Ordinal);
     }
 
     /// <summary>A tagged rule example whose text no longer compiles is reported, naming the example.</summary>

@@ -28,15 +28,37 @@ public sealed class FaultTests
         Assert.Equal(first.GetHashCode(), second.GetHashCode());
     }
 
-    /// <summary>A different message, exception type or term makes two faults unequal.</summary>
+    /// <summary>Two faults whose exceptions have different messages are not equal.</summary>
     [Fact]
-    public void Equals_DifferentMessageTypeOrTerm_IsNotEqual_Test()
+    public void Equals_DifferentMessage_IsNotEqual_Test()
     {
         Fault fault = new(new TermIdentity("hasRole", []), new InvalidOperationException("boom"));
 
-        Assert.NotEqual(fault, new Fault(new TermIdentity("hasRole", []), new InvalidOperationException("other")));
-        Assert.NotEqual(fault, new Fault(new TermIdentity("hasRole", []), new ArgumentException("boom")));
-        Assert.NotEqual(fault, new Fault(new TermIdentity("isManager", []), new InvalidOperationException("boom")));
+        bool equal = fault.Equals(new Fault(new TermIdentity("hasRole", []), new InvalidOperationException("other")));
+
+        Assert.False(equal);
+    }
+
+    /// <summary>Two faults whose exceptions have the same message but different types are not equal.</summary>
+    [Fact]
+    public void Equals_DifferentExceptionType_IsNotEqual_Test()
+    {
+        Fault fault = new(new TermIdentity("hasRole", []), new InvalidOperationException("boom"));
+
+        bool equal = fault.Equals(new Fault(new TermIdentity("hasRole", []), new ArgumentException("boom")));
+
+        Assert.False(equal);
+    }
+
+    /// <summary>Two faults with the same exception type and message but different terms are not equal.</summary>
+    [Fact]
+    public void Equals_DifferentTerm_IsNotEqual_Test()
+    {
+        Fault fault = new(new TermIdentity("hasRole", []), new InvalidOperationException("boom"));
+
+        bool equal = fault.Equals(new Fault(new TermIdentity("isManager", []), new InvalidOperationException("boom")));
+
+        Assert.False(equal);
     }
 
     /// <summary>A recorded exception stands for the type it recorded, so its fault equals the fault of the original exception.</summary>
@@ -46,7 +68,7 @@ public sealed class FaultTests
         Fault original = new(new TermIdentity("hasRole", []), new InvalidOperationException("boom"));
         Fault recorded = new(
             new TermIdentity("hasRole", []),
-            new RecordedFaultException("System.InvalidOperationException", "boom")
+            new RecordedFaultException("boom") { ExceptionType = "System.InvalidOperationException" }
         );
 
         Assert.Equal(original, recorded);

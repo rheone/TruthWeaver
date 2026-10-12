@@ -96,14 +96,23 @@ internal sealed class DecisionJsonReader
             !this.CheckObject(
                 root,
                 "$",
-                ["formatVersion", "rule", "options", "argumentValues", "result", "faults", "trace", "traceTree"]
+                [
+                    DecisionJsonNames.FormatVersion,
+                    DecisionJsonNames.Rule,
+                    DecisionJsonNames.Options,
+                    DecisionJsonNames.ArgumentValues,
+                    DecisionJsonNames.Result,
+                    DecisionJsonNames.Faults,
+                    DecisionJsonNames.Trace,
+                    DecisionJsonNames.TraceTree,
+                ]
             )
         )
         {
             return null;
         }
 
-        if (!this.TryGetRequired(root, "$", "formatVersion", out JsonElement version))
+        if (!this.TryGetRequired(root, "$", DecisionJsonNames.FormatVersion, out JsonElement version))
         {
             return null;
         }
@@ -122,7 +131,7 @@ internal sealed class DecisionJsonReader
         }
 
         RuleIdentity? rule = null;
-        if (root.TryGetProperty("rule", out JsonElement ruleElement))
+        if (root.TryGetProperty(DecisionJsonNames.Rule, out JsonElement ruleElement))
         {
             rule = this.ReadRule(ruleElement);
             if (rule is null)
@@ -132,7 +141,7 @@ internal sealed class DecisionJsonReader
         }
 
         EvaluationOptions? options = null;
-        if (root.TryGetProperty("options", out JsonElement optionsElement))
+        if (root.TryGetProperty(DecisionJsonNames.Options, out JsonElement optionsElement))
         {
             options = this.ReadOptions(optionsElement);
             if (options is null)
@@ -141,37 +150,37 @@ internal sealed class DecisionJsonReader
             }
         }
 
-        if (!this.TryGetRequiredString(root, "$", "argumentValues", out string? argumentValues))
+        if (!this.TryGetRequiredString(root, "$", DecisionJsonNames.ArgumentValues, out string? argumentValues))
         {
             return null;
         }
 
-        if (argumentValues is not ("included" or "omitted"))
+        if (argumentValues is not (DecisionJsonNames.Included or DecisionJsonNames.Omitted))
         {
             return this.Fail<DecisionRecord>("$.argumentValues", "expected \"included\" or \"omitted\".");
         }
 
         if (
-            !this.TryGetRequiredString(root, "$", "result", out string? resultText)
+            !this.TryGetRequiredString(root, "$", DecisionJsonNames.Result, out string? resultText)
             || !this.TryTruthValue(resultText, "$.result", out TruthValue result)
         )
         {
             return null;
         }
 
-        if (!this.TryGetRequired(root, "$", "faults", out JsonElement faultsElement))
+        if (!this.TryGetRequired(root, "$", DecisionJsonNames.Faults, out JsonElement faultsElement))
         {
             return null;
         }
 
-        List<Fault>? faults = this.ReadFaults(faultsElement, argumentValues == "included");
+        List<Fault>? faults = this.ReadFaults(faultsElement, argumentValues == DecisionJsonNames.Included);
         if (faults is null)
         {
             return null;
         }
 
         Trace? trace = null;
-        if (root.TryGetProperty("trace", out JsonElement traceElement))
+        if (root.TryGetProperty(DecisionJsonNames.Trace, out JsonElement traceElement))
         {
             trace = this.ReadTrace(traceElement);
             if (trace is null)
@@ -181,7 +190,7 @@ internal sealed class DecisionJsonReader
         }
 
         TraceNode? tree = null;
-        if (root.TryGetProperty("traceTree", out JsonElement treeElement))
+        if (root.TryGetProperty(DecisionJsonNames.TraceTree, out JsonElement treeElement))
         {
             tree = this.ReadTraceNode(treeElement, "$.traceTree");
             if (tree is null)
@@ -197,10 +206,14 @@ internal sealed class DecisionJsonReader
     {
         const string Path = "$.rule";
         if (
-            !this.CheckObject(element, Path, ["canonicalTextSha256", "name", "version"])
-            || !this.TryGetRequiredString(element, Path, "canonicalTextSha256", out string? hash)
-            || !this.TryGetOptionalString(element, Path, "name", out string? name)
-            || !this.TryGetOptionalString(element, Path, "version", out string? ruleVersion)
+            !this.CheckObject(
+                element,
+                Path,
+                [DecisionJsonNames.CanonicalTextSha256, DecisionJsonNames.Name, DecisionJsonNames.Version]
+            )
+            || !this.TryGetRequiredString(element, Path, DecisionJsonNames.CanonicalTextSha256, out string? hash)
+            || !this.TryGetOptionalString(element, Path, DecisionJsonNames.Name, out string? name)
+            || !this.TryGetOptionalString(element, Path, DecisionJsonNames.Version, out string? ruleVersion)
         )
         {
             return null;
@@ -214,12 +227,23 @@ internal sealed class DecisionJsonReader
     private EvaluationOptions? ReadOptions(JsonElement element)
     {
         const string Path = "$.options";
-        if (!this.CheckObject(element, Path, ["faultBudget", "mode", "timeout", "includeResolvedValues"]))
+        if (
+            !this.CheckObject(
+                element,
+                Path,
+                [
+                    DecisionJsonNames.FaultBudget,
+                    DecisionJsonNames.Mode,
+                    DecisionJsonNames.Timeout,
+                    DecisionJsonNames.IncludeResolvedValues,
+                ]
+            )
+        )
         {
             return null;
         }
 
-        if (!this.TryGetRequired(element, Path, "faultBudget", out JsonElement budgetElement))
+        if (!this.TryGetRequired(element, Path, DecisionJsonNames.FaultBudget, out JsonElement budgetElement))
         {
             return null;
         }
@@ -235,7 +259,7 @@ internal sealed class DecisionJsonReader
             faultBudget = budget;
         }
 
-        if (!this.TryGetRequiredString(element, Path, "mode", out string? modeText))
+        if (!this.TryGetRequiredString(element, Path, DecisionJsonNames.Mode, out string? modeText))
         {
             return null;
         }
@@ -245,7 +269,7 @@ internal sealed class DecisionJsonReader
             return this.Fail<EvaluationOptions>($"{Path}.mode", "expected \"ShortCircuit\" or \"Exhaustive\".");
         }
 
-        if (!this.TryGetRequired(element, Path, "timeout", out JsonElement timeoutElement))
+        if (!this.TryGetRequired(element, Path, DecisionJsonNames.Timeout, out JsonElement timeoutElement))
         {
             return null;
         }
@@ -267,7 +291,7 @@ internal sealed class DecisionJsonReader
             timeout = parsed;
         }
 
-        if (!this.TryGetRequired(element, Path, "includeResolvedValues", out JsonElement includeElement))
+        if (!this.TryGetRequired(element, Path, DecisionJsonNames.IncludeResolvedValues, out JsonElement includeElement))
         {
             return null;
         }
@@ -293,9 +317,9 @@ internal sealed class DecisionJsonReader
         {
             string path = $"$.faults[{index}]";
             if (
-                !this.CheckObject(faultElement, path, ["term", "exception"])
-                || !this.TryGetRequired(faultElement, path, "term", out JsonElement termElement)
-                || !this.TryGetRequired(faultElement, path, "exception", out JsonElement exceptionElement)
+                !this.CheckObject(faultElement, path, [DecisionJsonNames.Term, DecisionJsonNames.Exception])
+                || !this.TryGetRequired(faultElement, path, DecisionJsonNames.Term, out JsonElement termElement)
+                || !this.TryGetRequired(faultElement, path, DecisionJsonNames.Exception, out JsonElement exceptionElement)
             )
             {
                 return null;
@@ -318,10 +342,14 @@ internal sealed class DecisionJsonReader
     private TermIdentity? ReadTerm(JsonElement element, string path, bool valuesIncluded)
     {
         if (
-            !this.CheckObject(element, path, ["predicate", "arguments", "variables"])
-            || !this.TryGetRequiredString(element, path, "predicate", out string? predicate)
-            || !this.TryGetRequired(element, path, "arguments", out JsonElement argumentsElement)
-            || !this.TryGetRequired(element, path, "variables", out JsonElement variablesElement)
+            !this.CheckObject(
+                element,
+                path,
+                [DecisionJsonNames.Predicate, DecisionJsonNames.Arguments, DecisionJsonNames.Variables]
+            )
+            || !this.TryGetRequiredString(element, path, DecisionJsonNames.Predicate, out string? predicate)
+            || !this.TryGetRequired(element, path, DecisionJsonNames.Arguments, out JsonElement argumentsElement)
+            || !this.TryGetRequired(element, path, DecisionJsonNames.Variables, out JsonElement variablesElement)
         )
         {
             return null;
@@ -338,9 +366,13 @@ internal sealed class DecisionJsonReader
         {
             string argumentPath = $"{path}.arguments[{index}]";
             if (
-                !this.CheckObject(argument, argumentPath, ["name", "kind", "value"])
-                || !this.TryGetRequiredString(argument, argumentPath, "name", out string? name)
-                || !this.TryGetRequiredString(argument, argumentPath, "kind", out string? kindText)
+                !this.CheckObject(
+                    argument,
+                    argumentPath,
+                    [DecisionJsonNames.Name, DecisionJsonNames.Kind, DecisionJsonNames.Value]
+                )
+                || !this.TryGetRequiredString(argument, argumentPath, DecisionJsonNames.Name, out string? name)
+                || !this.TryGetRequiredString(argument, argumentPath, DecisionJsonNames.Kind, out string? kindText)
             )
             {
                 return null;
@@ -352,7 +384,7 @@ internal sealed class DecisionJsonReader
             }
 
             // The record says whether values were written; a value that contradicts it means the record was edited.
-            bool hasValue = argument.TryGetProperty("value", out JsonElement valueElement);
+            bool hasValue = argument.TryGetProperty(DecisionJsonNames.Value, out JsonElement valueElement);
             if (hasValue != valuesIncluded)
             {
                 string mismatch = valuesIncluded
@@ -385,10 +417,14 @@ internal sealed class DecisionJsonReader
         {
             string variablePath = $"{path}.variables[{index}]";
             if (
-                !this.CheckObject(variable, variablePath, ["name", "source", "query"])
-                || !this.TryGetRequiredString(variable, variablePath, "name", out string? name)
-                || !this.TryGetRequiredString(variable, variablePath, "source", out string? source)
-                || !this.TryGetRequiredString(variable, variablePath, "query", out string? query)
+                !this.CheckObject(
+                    variable,
+                    variablePath,
+                    [DecisionJsonNames.Name, DecisionJsonNames.Source, DecisionJsonNames.Query]
+                )
+                || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Name, out string? name)
+                || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Source, out string? source)
+                || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Query, out string? query)
             )
             {
                 return null;
@@ -404,16 +440,16 @@ internal sealed class DecisionJsonReader
     private Exception? ReadException(JsonElement element, string path)
     {
         if (
-            !this.CheckObject(element, path, ["type", "message", "variable"])
-            || !this.TryGetRequiredString(element, path, "type", out string? type)
-            || !this.TryGetRequiredString(element, path, "message", out string? message)
+            !this.CheckObject(element, path, [DecisionJsonNames.Type, DecisionJsonNames.Message, DecisionJsonNames.Variable])
+            || !this.TryGetRequiredString(element, path, DecisionJsonNames.Type, out string? type)
+            || !this.TryGetRequiredString(element, path, DecisionJsonNames.Message, out string? message)
         )
         {
             return null;
         }
 
         bool isVariableFailure = string.Equals(type, VariableExceptionType, StringComparison.Ordinal);
-        bool hasVariable = element.TryGetProperty("variable", out JsonElement variable);
+        bool hasVariable = element.TryGetProperty(DecisionJsonNames.Variable, out JsonElement variable);
         if (isVariableFailure != hasVariable)
         {
             string mismatch = hasVariable
@@ -424,16 +460,20 @@ internal sealed class DecisionJsonReader
 
         if (!hasVariable)
         {
-            return new RecordedFaultException(type, message);
+            return new RecordedFaultException(message) { ExceptionType = type };
         }
 
         // A variable failure is rebuilt as the real exception type, so its reference and kind stay inspectable.
         string variablePath = $"{path}.variable";
         if (
-            !this.CheckObject(variable, variablePath, ["source", "query", "failure"])
-            || !this.TryGetRequiredString(variable, variablePath, "source", out string? source)
-            || !this.TryGetRequiredString(variable, variablePath, "query", out string? query)
-            || !this.TryGetRequiredString(variable, variablePath, "failure", out string? failureText)
+            !this.CheckObject(
+                variable,
+                variablePath,
+                [DecisionJsonNames.Source, DecisionJsonNames.Query, DecisionJsonNames.Failure]
+            )
+            || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Source, out string? source)
+            || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Query, out string? query)
+            || !this.TryGetRequiredString(variable, variablePath, DecisionJsonNames.Failure, out string? failureText)
         )
         {
             return null;
@@ -528,8 +568,11 @@ internal sealed class DecisionJsonReader
         {
             string path = $"$.trace[{index}]";
             if (
-                !this.CheckObject(entry, path, ["text", "result", "notEvaluated"])
-                || !this.TryReadOutcome(entry, path, out string? text, out TruthValue? result, out bool notEvaluated)
+                !this.CheckObject(
+                    entry,
+                    path,
+                    [DecisionJsonNames.Text, DecisionJsonNames.Result, DecisionJsonNames.NotEvaluated]
+                ) || !this.TryReadOutcome(entry, path, out string? text, out TruthValue? result, out bool notEvaluated)
             )
             {
                 return null;
@@ -545,9 +588,13 @@ internal sealed class DecisionJsonReader
     private TraceNode? ReadTraceNode(JsonElement element, string path)
     {
         if (
-            !this.CheckObject(element, path, ["text", "result", "notEvaluated", "children"])
+            !this.CheckObject(
+                element,
+                path,
+                [DecisionJsonNames.Text, DecisionJsonNames.Result, DecisionJsonNames.NotEvaluated, DecisionJsonNames.Children]
+            )
             || !this.TryReadOutcome(element, path, out string? text, out TruthValue? result, out bool notEvaluated)
-            || !this.TryGetRequired(element, path, "children", out JsonElement childrenElement)
+            || !this.TryGetRequired(element, path, DecisionJsonNames.Children, out JsonElement childrenElement)
         )
         {
             return null;
@@ -591,9 +638,9 @@ internal sealed class DecisionJsonReader
         result = null;
         notEvaluated = false;
         if (
-            !this.TryGetRequiredString(element, path, "text", out text)
-            || !this.TryGetRequired(element, path, "result", out JsonElement resultElement)
-            || !this.TryGetRequired(element, path, "notEvaluated", out JsonElement notEvaluatedElement)
+            !this.TryGetRequiredString(element, path, DecisionJsonNames.Text, out text)
+            || !this.TryGetRequired(element, path, DecisionJsonNames.Result, out JsonElement resultElement)
+            || !this.TryGetRequired(element, path, DecisionJsonNames.NotEvaluated, out JsonElement notEvaluatedElement)
         )
         {
             return false;

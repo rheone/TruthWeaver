@@ -7,7 +7,9 @@ using TruthWeaver.Evaluation;
 /// <summary>
 /// Writes a <see cref="DecisionRecord"/> as JSON with <see cref="Utf8JsonWriter"/>, member by member, so no reflection
 /// serializer is involved and the code stays trim and AOT safe. <see cref="DecisionJsonReader"/> reads the same shape back;
-/// <c>decision-record.schema.json</c> describes it.
+/// <c>decision-record.schema.json</c> describes it. Without <see cref="DecisionJsonOptions.IncludeArgumentValues"/> no
+/// literal argument value of the rule is written: a fault argument has only its name and kind, and each trace text goes
+/// through <see cref="TraceTextRedaction"/>.
 /// </summary>
 internal static class DecisionJsonWriter
 {
@@ -41,7 +43,7 @@ internal static class DecisionJsonWriter
         )
         {
             json.WriteStartObject();
-            json.WriteNumber("formatVersion", FormatVersion);
+            json.WriteNumber(DecisionJsonNames.FormatVersion, FormatVersion);
             if (record.Rule is { } rule)
             {
                 WriteRule(json, rule);
@@ -52,10 +54,13 @@ internal static class DecisionJsonWriter
                 WriteOptions(json, evaluationOptions);
             }
 
-            json.WriteString("argumentValues", options.IncludeArgumentValues ? "included" : "omitted");
-            json.WriteString("result", record.Decision.Result.ToString());
+            json.WriteString(
+                DecisionJsonNames.ArgumentValues,
+                options.IncludeArgumentValues ? DecisionJsonNames.Included : DecisionJsonNames.Omitted
+            );
+            json.WriteString(DecisionJsonNames.Result, record.Decision.Result.ToString());
 
-            json.WriteStartArray("faults");
+            json.WriteStartArray(DecisionJsonNames.Faults);
             foreach (Fault fault in record.Decision.Faults)
             {
                 WriteFault(json, fault, options.IncludeArgumentValues);
@@ -65,11 +70,11 @@ internal static class DecisionJsonWriter
 
             if (record.Decision.Trace is { } trace)
             {
-                json.WriteStartArray("trace");
+                json.WriteStartArray(DecisionJsonNames.Trace);
                 foreach (TraceEntry entry in trace.Entries)
                 {
                     json.WriteStartObject();
-                    WriteOutcome(json, entry.Text, entry.Result, entry.NotEvaluated);
+                    WriteOutcome(json, entry.Text, entry.Result, entry.NotEvaluated, options.IncludeArgumentValues);
                     json.WriteEndObject();
                 }
 
@@ -78,8 +83,8 @@ internal static class DecisionJsonWriter
 
             if (record.Decision.TraceTree is { } tree)
             {
-                json.WritePropertyName("traceTree");
-                WriteTraceNode(json, tree);
+                json.WritePropertyName(DecisionJsonNames.TraceTree);
+                WriteTraceNode(json, tree, options.IncludeArgumentValues);
             }
 
             json.WriteEndObject();
@@ -91,16 +96,16 @@ internal static class DecisionJsonWriter
 
     private static void WriteRule(Utf8JsonWriter json, RuleIdentity rule)
     {
-        json.WriteStartObject("rule");
-        json.WriteString("canonicalTextSha256", rule.CanonicalTextSha256);
+        json.WriteStartObject(DecisionJsonNames.Rule);
+        json.WriteString(DecisionJsonNames.CanonicalTextSha256, rule.CanonicalTextSha256);
         if (rule.Name is not null)
         {
-            json.WriteString("name", rule.Name);
+            json.WriteString(DecisionJsonNames.Name, rule.Name);
         }
 
         if (rule.Version is not null)
         {
-            json.WriteString("version", rule.Version);
+            json.WriteString(DecisionJsonNames.Version, rule.Version);
         }
 
         json.WriteEndObject();
@@ -108,46 +113,46 @@ internal static class DecisionJsonWriter
 
     private static void WriteOptions(Utf8JsonWriter json, EvaluationOptions options)
     {
-        json.WriteStartObject("options");
+        json.WriteStartObject(DecisionJsonNames.Options);
         if (options.FaultBudget is { } budget)
         {
-            json.WriteNumber("faultBudget", budget);
+            json.WriteNumber(DecisionJsonNames.FaultBudget, budget);
         }
         else
         {
-            json.WriteNull("faultBudget");
+            json.WriteNull(DecisionJsonNames.FaultBudget);
         }
 
-        json.WriteString("mode", options.Mode.ToString());
+        json.WriteString(DecisionJsonNames.Mode, options.Mode.ToString());
 
         // The constant ("c") format round-trips every TimeSpan exactly and does not depend on the culture.
         if (options.Timeout is { } timeout)
         {
-            json.WriteString("timeout", timeout.ToString("c", CultureInfo.InvariantCulture));
+            json.WriteString(DecisionJsonNames.Timeout, timeout.ToString("c", CultureInfo.InvariantCulture));
         }
         else
         {
-            json.WriteNull("timeout");
+            json.WriteNull(DecisionJsonNames.Timeout);
         }
 
-        json.WriteBoolean("includeResolvedValues", options.IncludeResolvedValues);
+        json.WriteBoolean(DecisionJsonNames.IncludeResolvedValues, options.IncludeResolvedValues);
         json.WriteEndObject();
     }
 
     private static void WriteFault(Utf8JsonWriter json, Fault fault, bool includeArgumentValues)
     {
         json.WriteStartObject();
-        json.WriteStartObject("term");
-        json.WriteString("predicate", fault.Term.PredicateName);
-        json.WriteStartArray("arguments");
+        json.WriteStartObject(DecisionJsonNames.Term);
+        json.WriteString(DecisionJsonNames.Predicate, fault.Term.PredicateName);
+        json.WriteStartArray(DecisionJsonNames.Arguments);
         foreach (KeyValuePair<string, LiteralValue> argument in fault.Term.Arguments)
         {
             json.WriteStartObject();
-            json.WriteString("name", argument.Key);
-            json.WriteString("kind", argument.Value.Kind.ToString());
+            json.WriteString(DecisionJsonNames.Name, argument.Key);
+            json.WriteString(DecisionJsonNames.Kind, argument.Value.Kind.ToString());
             if (includeArgumentValues)
             {
-                json.WritePropertyName("value");
+                json.WritePropertyName(DecisionJsonNames.Value);
                 WriteLiteral(json, argument.Value);
             }
 
@@ -157,28 +162,28 @@ internal static class DecisionJsonWriter
         json.WriteEndArray();
 
         // A variable reference names a source and a query, which are rule text, not data, so it is always written.
-        json.WriteStartArray("variables");
+        json.WriteStartArray(DecisionJsonNames.Variables);
         foreach (KeyValuePair<string, VariableReference> variable in fault.Term.Variables)
         {
             json.WriteStartObject();
-            json.WriteString("name", variable.Key);
-            json.WriteString("source", variable.Value.Source);
-            json.WriteString("query", variable.Value.Query);
+            json.WriteString(DecisionJsonNames.Name, variable.Key);
+            json.WriteString(DecisionJsonNames.Source, variable.Value.Source);
+            json.WriteString(DecisionJsonNames.Query, variable.Value.Query);
             json.WriteEndObject();
         }
 
         json.WriteEndArray();
         json.WriteEndObject();
 
-        json.WriteStartObject("exception");
-        json.WriteString("type", fault.ExceptionType);
-        json.WriteString("message", fault.Exception.Message);
+        json.WriteStartObject(DecisionJsonNames.Exception);
+        json.WriteString(DecisionJsonNames.Type, fault.ExceptionType);
+        json.WriteString(DecisionJsonNames.Message, fault.Exception.Message);
         if (fault.Exception is VariableResolutionException variableFailure)
         {
-            json.WriteStartObject("variable");
-            json.WriteString("source", variableFailure.Reference.Source);
-            json.WriteString("query", variableFailure.Reference.Query);
-            json.WriteString("failure", variableFailure.Kind.ToString());
+            json.WriteStartObject(DecisionJsonNames.Variable);
+            json.WriteString(DecisionJsonNames.Source, variableFailure.Reference.Source);
+            json.WriteString(DecisionJsonNames.Query, variableFailure.Reference.Query);
+            json.WriteString(DecisionJsonNames.Failure, variableFailure.Kind.ToString());
             json.WriteEndObject();
         }
 
@@ -221,32 +226,39 @@ internal static class DecisionJsonWriter
         }
     }
 
-    private static void WriteTraceNode(Utf8JsonWriter json, TraceNode node)
+    private static void WriteTraceNode(Utf8JsonWriter json, TraceNode node, bool includeArgumentValues)
     {
         json.WriteStartObject();
-        WriteOutcome(json, node.Text, node.Result, node.NotEvaluated);
-        json.WriteStartArray("children");
+        WriteOutcome(json, node.Text, node.Result, node.NotEvaluated, includeArgumentValues);
+        json.WriteStartArray(DecisionJsonNames.Children);
         foreach (TraceNode child in node.Children)
         {
-            WriteTraceNode(json, child);
+            WriteTraceNode(json, child, includeArgumentValues);
         }
 
         json.WriteEndArray();
         json.WriteEndObject();
     }
 
-    private static void WriteOutcome(Utf8JsonWriter json, string text, TruthValue? result, bool notEvaluated)
+    private static void WriteOutcome(
+        Utf8JsonWriter json,
+        string text,
+        TruthValue? result,
+        bool notEvaluated,
+        bool includeArgumentValues
+    )
     {
-        json.WriteString("text", text);
+        // A term text is rule text with the literal argument values in it, so it is redacted like a fault term.
+        json.WriteString(DecisionJsonNames.Text, includeArgumentValues ? text : TraceTextRedaction.Redact(text));
         if (result is { } value)
         {
-            json.WriteString("result", value.ToString());
+            json.WriteString(DecisionJsonNames.Result, value.ToString());
         }
         else
         {
-            json.WriteNull("result");
+            json.WriteNull(DecisionJsonNames.Result);
         }
 
-        json.WriteBoolean("notEvaluated", notEvaluated);
+        json.WriteBoolean(DecisionJsonNames.NotEvaluated, notEvaluated);
     }
 }

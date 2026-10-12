@@ -1,6 +1,6 @@
 # Executable documentation examples
 
-The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/html-and-dot.md`, `docs/truth-tables.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/rewriting-examples.md`, `docs/rewriting-normal-form-examples.md`, `docs/predicates.md`, `docs/predicate-conventions.md`, `docs/examples.md`, `docs/diagnostics.md`, `docs/benchmarks.md` and `docs/tool-core.md` are checked on every `dotnet test` by
+The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/html-and-dot.md`, `docs/truth-tables.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/rewriting-examples.md`, `docs/rewriting-normal-form-examples.md`, `docs/predicates.md`, `docs/predicate-conventions.md`, `docs/examples.md`, `docs/diagnostics.md`, `docs/benchmarks.md`, `docs/tool-core.md` and `docs/decision-records.md` are checked on every `dotnet test` by
 `tests/TruthWeaver.Tests/DocExamples/DocExampleChecker.cs` (run by `DocExampleTests`). A change that breaks a documented
 rule, or changes documented output, fails the build. C# fragments are not checked.
 
@@ -22,6 +22,7 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 | `<!-- doctest:rewrite-diagnostics ID -->` | `text` | The block equals the diagnostics of the rewrite that the rewrite words name. The word `cap=N` sets the `maxNodeCount` argument of `ToNnf`, `ToCnf`, `ToDnf` and `ExpandToPrimitives`, so a block can show a refusal at a small cap. |
 | `<!-- doctest:metrics ID -->` | A Markdown table, not a fence | The table that follows equals the depth and node count (`RuleMetrics`) of `rule ID` and of each rewrite word after the ID. The rows are `Original`, then one row for each word. |
 | `<!-- doctest:diagnostics-dsl SOURCE -->` (also `-json`, `-yaml`) | `text` | The block equals `FormatDiagnostics(SOURCE)`; `SOURCE` is the rest of the marker line, verbatim. |
+| `<!-- doctest:decision-record ID -->` | `json` | The block equals `DecisionRecord.PrintJson()` of `rule ID` (the `rule` block must come earlier in the file). The rule is evaluated with no service provider, no data sources and the default `EvaluationOptions`, which the record holds. After the ID, the words `name=NAME` and `version=VERSION` set the `RuleIdentity`, and the word `values` sets `DecisionJsonOptions.IncludeArgumentValues`. |
 | `<!-- doctest:skip REASON -->` | any | Not runnable (pseudo-grammar, class diagram). The reason is mandatory. |
 
 3. Predicates the examples use come from `BuildRegistry` in `DocExampleChecker.cs`. Add a predicate there (same name,

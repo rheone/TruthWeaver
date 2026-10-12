@@ -36,7 +36,7 @@ else
 
 The reader is strict. A member that is not in the schema, a duplicate member, a `formatVersion` other than 1 or a value of the wrong type is an error.
 
-When the record holds the argument values, the record that you read back is equal to the record that you wrote: `Decision`, `Trace`, `TraceNode` and `Fault` compare by value, and the lists are `EquatableArray<T>`.
+What you read back depends on whether the record holds the literal argument values. See [Read back equality](#read-back-equality).
 
 ## Rule identity
 
@@ -54,14 +54,24 @@ To check that a stored record came from a rule, compare `record.Rule.CanonicalTe
 
 | Data | In the record |
 | --- | --- |
-| The literal argument values of a faulting term | Only with `new DecisionJsonOptions(IncludeArgumentValues: true)`. By default each argument has its name and kind, and no value. `argumentValues` says which. |
-| The variable references of a faulting term | Always. A reference is a source name and a query, which are rule text, not data. |
+| The literal argument values of the rule | Only with `new DecisionJsonOptions(IncludeArgumentValues: true)`. By default a faulting term has the name and kind of each argument and no value, and each trace text and trace tree text has `<omitted>` in place of each literal argument value: `lookup(id: 42)` becomes `lookup(id: <omitted>)`. `argumentValues` says which. |
+| The variable references | Always, in the fault terms and in the trace texts. A reference is a source name and a query, which are rule text, not data. |
+| A value that a data source resolved | In the trace only when the evaluation set `EvaluationOptions.IncludeResolvedValues` (`v: from("user", "$.age") = 18`). `DecisionJsonOptions` does not change it. |
 | The exception of a fault | Its full type name and message. A `VariableResolutionException` also has its reference and failure kind. The stack trace and inner exceptions are not written. |
-| The trace and the trace tree | As the decision holds them. A trace text is the rule text of its node, so a term text shows the literal arguments of the rule. A value that a data source resolved is in the trace only when the evaluation set `EvaluationOptions.IncludeResolvedValues`. |
+| The trace and the trace tree | Every entry and node, with its result and `notEvaluated` flag. An operator label, such as `AND` or `Exactly(2)`, is written as it is. |
 
-A predicate writes its own exception message, and the record keeps the message as it is. To keep the literal arguments of the rule out of the record, write the decision without its trace: `decision with { Trace = null, TraceTree = null }`.
+A predicate writes its own exception message, and the record keeps the message as it is. If a message can hold a value that the audit log must not keep, the predicate must leave the value out of the message.
 
-A record written without the argument values reads back with fault terms that have no literal arguments, so those faults are not equal to the faults that were written.
+## Read back equality
+
+`Decision`, `Trace`, `TraceNode` and `Fault` compare by value, and the lists are `EquatableArray<T>`.
+
+| Written with | The record that you read back |
+| --- | --- |
+| `IncludeArgumentValues: true` | Equal to the record that you wrote. |
+| The default options | Equal to the record that you wrote, with two differences. Each fault term has its predicate and its variables, but no literal arguments. Each trace text and trace tree text is the redacted text that was written. The result, the rule identity, the options, the order of the faults, the exception of each fault, and the result and `notEvaluated` flag of each trace entry and node are equal. |
+
+When you write a record that you read back from the default output again with the default options, you get the same JSON, except that each fault term has an empty `arguments` array. The argument names and kinds are not kept, because a `TermIdentity` holds no argument without a value.
 
 ## Faults that you read back
 
@@ -73,8 +83,16 @@ The original exception object is not stored. A fault reads back with a `Recorded
 
 The schema is `src/TruthWeaver/Json/decision-record.schema.json`. The `TruthWeaver` package carries it as `content/decision-record.schema.json`.
 
-The rule `lookup(id: 42) OR hasRole(role: "admin")`, with `lookup` faulting, the default options and the default `DecisionJsonOptions`, gives this record:
+This rule has a `lookup` predicate that faults:
 
+<!-- doctest:rule record -->
+```text
+lookup(id: 42) OR hasRole(role: "admin")
+```
+
+With the default options, the default `DecisionJsonOptions` and `RuleIdentity.Of(rule, "access", "3")`, it gives this record:
+
+<!-- doctest:decision-record record name=access version=3 -->
 ```json
 {
   "formatVersion": 1,
@@ -111,12 +129,12 @@ The rule `lookup(id: 42) OR hasRole(role: "admin")`, with `lookup` faulting, the
   ],
   "trace": [
     {
-      "text": "lookup(id: 42)",
+      "text": "lookup(id: <omitted>)",
       "result": "Unknown",
       "notEvaluated": false
     },
     {
-      "text": "hasRole(role: \"admin\")",
+      "text": "hasRole(role: <omitted>)",
       "result": "True",
       "notEvaluated": false
     }
@@ -127,13 +145,13 @@ The rule `lookup(id: 42) OR hasRole(role: "admin")`, with `lookup` faulting, the
     "notEvaluated": false,
     "children": [
       {
-        "text": "lookup(id: 42)",
+        "text": "lookup(id: <omitted>)",
         "result": "Unknown",
         "notEvaluated": false,
         "children": []
       },
       {
-        "text": "hasRole(role: \"admin\")",
+        "text": "hasRole(role: <omitted>)",
         "result": "True",
         "notEvaluated": false,
         "children": []
@@ -148,10 +166,10 @@ The rule `lookup(id: 42) OR hasRole(role: "admin")`, with `lookup` faulting, the
 | `formatVersion` | Always 1. |
 | `rule` | `canonicalTextSha256`, and `name` and `version` when they are not `null`. Absent when the record has no rule identity. |
 | `options` | `faultBudget` (a number or `null`), `mode` (`ShortCircuit` or `Exhaustive`), `timeout` (a .NET constant-format time span such as `00:00:02.5000000`, or `null`) and `includeResolvedValues`. Absent when the record has no options. |
-| `argumentValues` | `included` or `omitted`. |
+| `argumentValues` | `included` or `omitted`. With `omitted`, no literal argument value of the rule is in the record. |
 | `result` | `True`, `False` or `Unknown`. |
 | `faults` | One object for each fault, in the order of the faults. `term` has `predicate`, `arguments` (each with `name`, `kind` and, when included, `value`) and `variables` (each with `name`, `source` and `query`), sorted by name. `exception` has `type`, `message` and, for a variable failure, `variable` with `source`, `query` and `failure`. |
-| `trace` | One object for each trace entry, with `text`, `result` (`null` when not evaluated) and `notEvaluated`. Absent when the decision has no trace. |
-| `traceTree` | The root node, with `text`, `result`, `notEvaluated` and `children`. A node that was not evaluated has a `null` result and no children. Absent when the decision has no trace tree. |
+| `trace` | One object for each trace entry, with `text`, `result` (`null` when not evaluated) and `notEvaluated`. With `argumentValues` set to `omitted`, a term text has `<omitted>` in place of each literal argument value. Absent when the decision has no trace. |
+| `traceTree` | The root node, with `text`, `result`, `notEvaluated` and `children`. A node that was not evaluated has a `null` result and no children. A term text is redacted as in `trace`. Absent when the decision has no trace tree. |
 
 An argument value has the JSON form of its kind. A `String` is a string, an `Int64` or `Decimal` is a number (a decimal keeps its scale, so `1.50` stays `1.50`), and a `Boolean` is `true` or `false`. A `DateTimeOffset` is a round-trip string (`2025-01-02T03:04:05.0000000+02:00`), a `Guid` is a string in the `D` format, and an array kind is an array of its element kind.

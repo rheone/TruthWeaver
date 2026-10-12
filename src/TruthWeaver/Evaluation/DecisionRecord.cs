@@ -14,9 +14,9 @@ using TruthWeaver.Json;
 public sealed record DecisionRecord(Decision Decision, RuleIdentity? Rule = null, EvaluationOptions? Options = null)
 {
     /// <summary>
-    /// Prints this record as indented JSON with line feeds. Literal argument values of faulting terms are omitted unless
-    /// <paramref name="options"/> includes them. The trace is written as the decision holds it: it shows a value from a data
-    /// source only when the evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>.
+    /// Prints this record as indented JSON with line feeds. The literal argument values of the rule, in the fault terms and
+    /// in the trace texts, are omitted unless <paramref name="options"/> includes them. A value from a data source is in the
+    /// trace only when the evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>.
     /// </summary>
     /// <param name="options">What to include, or <see langword="null"/> for <see cref="DecisionJsonOptions.Default"/>.</param>
     /// <returns>The JSON text, ending with a line feed.</returns>
@@ -41,7 +41,8 @@ public sealed record DecisionRecord(Decision Decision, RuleIdentity? Rule = null
     /// Reads a record that <see cref="PrintJson(DecisionJsonOptions?)"/> wrote. A fault reads back with a
     /// <see cref="RecordedFaultException"/> (or a <see cref="VariableResolutionException"/> for a variable failure) that
     /// keeps the type name and message, so the read decision equals the written one when the argument values were included.
-    /// Never throws for bad input.
+    /// Without them, the fault terms have no literal arguments and the trace texts are the redacted texts that were written;
+    /// everything else is equal. Never throws for bad input.
     /// </summary>
     /// <param name="json">The JSON text.</param>
     /// <param name="record">The record when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>

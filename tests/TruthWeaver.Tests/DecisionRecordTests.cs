@@ -6,9 +6,9 @@ using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Json;
 using TruthWeaver.Registry;
 using TruthWeaver.Testing;
-using TruthWeaver.Tests.DocExamples;
 using TruthWeaver.Tests.TestSupport;
 using EvaluationResults = global::Json.Schema.EvaluationResults;
 using JsonSchema = global::Json.Schema.JsonSchema;
@@ -54,7 +54,7 @@ public sealed class DecisionRecordTests
         );
         DecisionRecord written = new(await EvaluateAsync(rule, EvaluationOptions.Default));
 
-        DecisionRecord record = Read(written.PrintJson());
+        DecisionRecord record = Read(written.PrintJson(new DecisionJsonOptions(IncludeArgumentValues: true)));
 
         Assert.Equal(written, record);
         Assert.Contains(record.Decision.Trace!.Entries, entry => entry.NotEvaluated && entry.Result is null);
@@ -93,21 +93,86 @@ public sealed class DecisionRecordTests
         );
     }
 
-    /// <summary>A record written without the values reads back with fault terms that keep their predicate and variables but have no literal arguments.</summary>
+    /// <summary>
+    /// A record written with the defaults reads back equal to the written record in everything except the literal
+    /// argument values: the fault terms keep their predicate and variables but have no literal arguments, and each trace
+    /// text and trace tree text is the redacted text that was written.
+    /// </summary>
     [Fact]
-    public async Task TryParseJson_RecordWrittenWithoutArgumentValues_ReadsFaultTermsWithoutLiteralArguments_Test()
+    public async Task TryParseJson_RecordWrittenWithDefaults_DiffersOnlyInTheLiteralArgumentValues_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(FaultingRule);
+        EvaluationOptions options = new(Mode: EvaluationMode.Exhaustive);
+        DecisionRecord written = new(await EvaluateAsync(rule, options), RuleIdentity.Of(rule, "access"), options);
+
+        DecisionRecord record = Read(written.PrintJson());
+
+        Decision expected = written.Decision with
+        {
+            Faults = new EquatableArray<Fault>(
+                written.Decision.Faults.Select(fault =>
+                    fault with
+                    {
+                        Term = new TermIdentity(fault.Term.PredicateName, [], fault.Term.Variables),
+                    }
+                )
+            ),
+            Trace = new Trace(
+                new EquatableArray<TraceEntry>(
+                    written.Decision.Trace!.Entries.Select(entry => entry with { Text = TraceTextRedaction.Redact(entry.Text) })
+                )
+            ),
+            TraceTree = Redacted(written.Decision.TraceTree!),
+        };
+        Assert.Equal(written with { Decision = expected }, record);
+    }
+
+    /// <summary>A record read back from the default output prints the same JSON again, except for the fault arguments, which the read record no longer holds.</summary>
+    [Fact]
+    public async Task PrintJson_RecordReadBackFromDefaultOutput_PrintsTheSameJsonExceptTheFaultArguments_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(FaultingRule);
+        EvaluationOptions options = new(Mode: EvaluationMode.Exhaustive);
+        string json = new DecisionRecord(await EvaluateAsync(rule, options), RuleIdentity.Of(rule), options).PrintJson();
+
+        string again = Read(json).PrintJson();
+
+        Assert.Equal(WithoutFaultArguments(json), WithoutFaultArguments(again));
+    }
+
+    /// <summary>By default no literal argument value of the rule is in the record, in the faults or in the trace; with the opt-in each one is.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrintJson_LiteralArgumentValues_AreInTheRecordOnlyWithTheOptIn_Test(bool includeArgumentValues)
+    {
+        CompiledRule<RuleTestContext> rule = Compile(FaultingRule);
+        DecisionRecord written = new(await EvaluateAsync(rule, new EvaluationOptions(Mode: EvaluationMode.Exhaustive)));
+
+        string json = written.PrintJson(new DecisionJsonOptions(includeArgumentValues));
+
+        // Each literal of the rule as a trace text spells it inside the JSON string (so "x" is escaped).
+        string[] literals = ["admin", "n: 5", "1.50", "b: true", "2025-01-02", "3fa85f64", "[1, 2]", "\\\"x\\\""];
+        Assert.All(literals, literal => Assert.Equal(includeArgumentValues, json.Contains(literal, StringComparison.Ordinal)));
+    }
+
+    /// <summary>By default a trace text keeps a variable reference, which is rule text, and shows the placeholder for each literal value.</summary>
+    [Fact]
+    public async Task PrintJson_DefaultOptions_TraceKeepsVariableReferencesAndRedactsLiterals_Test()
     {
         CompiledRule<RuleTestContext> rule = Compile(FaultingRule);
         DecisionRecord written = new(await EvaluateAsync(rule, new EvaluationOptions(Mode: EvaluationMode.Exhaustive)));
 
         DecisionRecord record = Read(written.PrintJson());
 
-        Assert.Equal(written.Decision.Result, record.Decision.Result);
-        Assert.Equal(written.Decision.Trace, record.Decision.Trace);
-        TermIdentity check = record.Decision.Faults[0].Term;
-        Assert.Equal("check", check.PredicateName);
-        Assert.Empty(check.Arguments);
-        Assert.Equal(written.Decision.Faults[1], record.Decision.Faults[1]);
+        Assert.Equal(
+            [
+                "hasRole(role: <omitted>)",
+                "check(at: <omitted>, b: <omitted>, d: <omitted>, id: <omitted>, list: <omitted>, n: <omitted>, names: <omitted>)",
+                "takesInt64(v: from(\"user\", \"$.age\"))",
+            ],
+            record.Decision.Trace!.Entries.Select(entry => entry.Text)
+        );
     }
 
     /// <summary>With the opt-in each literal argument value is written in its JSON form: numbers, booleans, strings and arrays.</summary>
@@ -142,13 +207,16 @@ public sealed class DecisionRecordTests
 
     /// <summary>
     /// The trace keeps the redaction of the evaluation: a value that a data source resolved is not in the record unless the
-    /// evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>.
+    /// evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>, whatever <see cref="DecisionJsonOptions.IncludeArgumentValues"/> says.
     /// </summary>
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
     public async Task PrintJson_ResolvedVariableValue_IsInTheTraceOnlyWhenTheEvaluationIncludedIt_Test(
         bool includeResolvedValues,
+        bool includeArgumentValues,
         bool expected
     )
     {
@@ -161,9 +229,7 @@ public sealed class DecisionRecordTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        string json = new DecisionRecord(decision, Options: options).PrintJson(
-            new DecisionJsonOptions(IncludeArgumentValues: true)
-        );
+        string json = new DecisionRecord(decision, Options: options).PrintJson(new DecisionJsonOptions(includeArgumentValues));
 
         Assert.Equal(expected, json.Contains("4242", StringComparison.Ordinal));
     }
@@ -293,31 +359,31 @@ public sealed class DecisionRecordTests
         Assert.False(Schema.Evaluate(document.RootElement).IsValid);
     }
 
-    /// <summary>The JSON sample in <c>docs/decision-records.md</c> is the exact output of <see cref="DecisionRecord.PrintJson(DecisionJsonOptions?)"/> for the rule the page names.</summary>
-    [Fact]
-    public async Task PrintJson_DocumentationSample_MatchesThePage_Test()
-    {
-        CompiledRule<RuleTestContext> rule = Compile("lookup(id: 42) OR hasRole(role: \"admin\")");
-        DecisionRecord written = new(
-            await EvaluateAsync(rule, EvaluationOptions.Default),
-            RuleIdentity.Of(rule, "access", "3"),
-            EvaluationOptions.Default
-        );
-        string page = await File.ReadAllTextAsync(
-            Path.Combine(DocExampleChecker.FindRepositoryRoot(), "docs", "decision-records.md"),
-            TestContext.Current.CancellationToken
-        );
-        const string Fence = "```json\n";
-        int start = page.IndexOf(Fence, StringComparison.Ordinal) + Fence.Length;
-        string sample = page[start..page.IndexOf("```", start, StringComparison.Ordinal)];
-
-        Assert.Equal(written.PrintJson(), sample);
-    }
-
     private static DecisionRecord Read(string json)
     {
         Assert.True(DecisionRecord.TryParseJson(json, out DecisionRecord? record, out string? error), error);
         return record;
+    }
+
+    private static TraceNode Redacted(TraceNode node)
+    {
+        return node with
+        {
+            Text = TraceTextRedaction.Redact(node.Text),
+            Children = new EquatableArray<TraceNode>(node.Children.Select(Redacted)),
+        };
+    }
+
+    // The fault arguments are the one part of a default record that does not survive a read: the values were never written.
+    private static string WithoutFaultArguments(string json)
+    {
+        JsonObject root = JsonNode.Parse(json)!.AsObject();
+        foreach (JsonNode? fault in root["faults"]!.AsArray())
+        {
+            _ = fault!["term"]!.AsObject().Remove("arguments");
+        }
+
+        return root.ToJsonString();
     }
 
     // The record is indented; none of the sample values holds a space, so dropping white space compacts the JSON.

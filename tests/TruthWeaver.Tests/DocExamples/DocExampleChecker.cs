@@ -34,6 +34,7 @@ using TruthWeaver.Yaml;
 /// <item><c>metrics ID</c>: the Markdown table that follows must equal the depth and node count of the <c>rule ID</c> example and of each rewrite word that follows the ID.</item>
 /// <item><c>diagnostics-dsl SOURCE</c>, <c>diagnostics-json SOURCE</c>, <c>diagnostics-yaml SOURCE</c>: documented output that must equal <c>FormatDiagnostics</c> for compiling the rest of the marker line as that format.</item>
 /// <item><c>truthtable ID</c>: documented output that must equal <c>PrintTruthTable()</c> of the <c>rule ID</c> example; the words <c>csv</c>, <c>json</c>, <c>html</c> and <c>latex</c> select the format (Markdown with none), <c>classical</c>, <c>simple</c>, <c>allow-larger</c> and <c>no-arguments</c> set the matching options, and <c>letters</c> (the default), <c>words</c> and <c>logic-symbols</c> select the constant style.</item>
+/// <item><c>decision-record ID</c>: documented output that must equal <c>DecisionRecord.PrintJson()</c> for an evaluation of the <c>rule ID</c> example without data sources and with the default options; the words <c>name=NAME</c> and <c>version=VERSION</c> set the rule identity and <c>values</c> sets <c>IncludeArgumentValues</c>.</item>
 /// <item><c>skip REASON</c>: the block is not runnable (a pseudo-grammar, a class diagram); the reason is mandatory.</item>
 /// </list>
 /// <para>Failures are returned, not thrown, so the checker can be shown to fail on a deliberately broken example.</para>
@@ -343,6 +344,29 @@ internal static partial class DocExampleChecker
                 };
                 CompareOutput(tableRule.PrintTruthTable(tableOptions), body, example, failures);
                 break;
+            case "decision-record":
+                // The words after the rule id: "name=NAME" and "version=VERSION" for the rule identity, and "values" for
+                // DecisionJsonOptions.IncludeArgumentValues. The rule is evaluated with the default options, which the record holds.
+                string[] recordWords = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string recordRuleId = recordWords.Length > 0 ? recordWords[0] : string.Empty;
+                if (!rules.TryGetValue(recordRuleId, out CompiledRule<RuleTestContext>? recordRule))
+                {
+                    failures.Add($"{example}: no earlier doctest:rule {recordRuleId}.");
+                    break;
+                }
+
+                DecisionRecord record = new(
+                    await EvaluateWithoutDataSourcesAsync(recordRule),
+                    RuleIdentity.Of(recordRule, WordValue(recordWords, "name="), WordValue(recordWords, "version=")),
+                    EvaluationOptions.Default
+                );
+                CompareOutput(
+                    record.PrintJson(new DecisionJsonOptions(IncludeArgumentValues: recordWords.Contains("values"))),
+                    body,
+                    example,
+                    failures
+                );
+                break;
             case "diagnostics-dsl" or "diagnostics-json" or "diagnostics-yaml":
                 CompilationResult<RuleTestContext> result = kind switch
                 {
@@ -365,6 +389,13 @@ internal static partial class DocExampleChecker
     private static Task<Decision> EvaluateWithoutDataSourcesAsync(CompiledRule<RuleTestContext> rule)
     {
         return rule.EvaluateAsync(new RuleTestContext());
+    }
+
+    /// <summary>Gets the text after <paramref name="prefix"/> of the first marker word that starts with it, or <see langword="null"/> when no word does.</summary>
+    private static string? WordValue(string[] words, string prefix)
+    {
+        string? word = words.FirstOrDefault(w => w.StartsWith(prefix, StringComparison.Ordinal));
+        return word?[prefix.Length..];
     }
 
     /// <summary>Gets the <c>width=N</c> word's value on a <c>ruletext</c> marker (ticket 10), or <see langword="null"/> when no such word is present.</summary>
@@ -701,6 +732,15 @@ internal static partial class DocExampleChecker
                 [new PredicateArgumentSchema("min", "The minimum age.", LiteralKind.Int64)]
             ),
             ConstantAsync
+        );
+        builder.Add(
+            new PredicateSchema(
+                "lookup",
+                "Lookup",
+                "Looks the identifier up in a directory that is not available, so it always faults.",
+                [new PredicateArgumentSchema("id", "The identifier to look up.", LiteralKind.Int64)]
+            ),
+            (_, _, _) => throw new InvalidOperationException("Directory unavailable.")
         );
         builder.Add(
             new PredicateSchema(
