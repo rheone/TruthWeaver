@@ -25,6 +25,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `RuleReport` | Writes the Markdown report of a rule. |
 | `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
 | `RulePatcher` | Writes an edited rule back into its document, and keeps the comments and layout of the document. |
+| `StubEvaluator` | Evaluates a rule with stub values in place of the predicates, and with data files. |
 
 Each operation returns a `ToolResult<T>`: the value, or no value, and every diagnostic. An operation does not throw for an expected failure, such as a missing file, a malformed document or a rule that does not compile. It throws `ArgumentNullException` for a `null` argument and `ArgumentOutOfRangeException` for an undefined `RuleFormat`, because those are programming errors. `ToolResult<T>.Succeeded` is `true` when the value is present and no diagnostic is an error. `TryGetValue` gives the value and the diagnostics without the result object.
 
@@ -205,6 +206,26 @@ isActive: True
 - A value is `True`, `False` or `Unknown`, or `T`, `F` or `U`, with any case. A JSON `true` or `false` is a value too.
 - `ValueOf` gives `Unknown` for a term with no entry.
 - A key that is not exactly one term, a value that is not a truth value, and two keys for one term are `TWT0009` errors.
+
+## Stub evaluation
+
+`StubEvaluator.EvaluateAsync(rule, options)` compiles a loaded rule over stand-in predicates and evaluates it. The result is a `StubEvaluation`: the compiled rule, the `Decision` and the `EvaluationOptions` that were used. A rule that does not compile gives no evaluation and the compile diagnostics.
+
+| Member of `StubEvaluationOptions` | Meaning | Default |
+| --- | --- | --- |
+| `Stubs` | The [stub values](#stub-values). | `StubAssignment.Empty`: every term is `Unknown`. |
+| `DataSources` | The [data files](#data-files) for the `from("source", "query")` references. | None. |
+| `Evaluation` | The mode, the fault budget, the timeout and the resolved values in the trace. | `EvaluationOptions.Default` |
+| `Settings` | The compile limits and the schema file. | `ToolSettings.Default` |
+| `PredicateSchema` | A [predicate schema file](#predicate-schema-file) that is already read. Otherwise the evaluator reads the file of `Settings.SchemaFile`, when one is set. | None. |
+
+The evaluator registers one stand-in for each predicate of the rule:
+
+- The stand-in declares every argument that the rule gives the predicate, each one optional, so one predicate can have different arguments in different terms.
+- The kind of an argument comes from the predicate schema file when the file declares it. Otherwise it comes from the literal in the rule: a string, a whole number, a decimal number, a Boolean, or a list of one of them. A whole number and a decimal number for one argument make it a decimal. An argument that only `from(...)` references give, and that the schema file does not declare, is a string.
+- The stand-in gives the stub value of its term, found by the canonical text of the term with the values that the predicate receives. A term with no stub value is `Unknown`, and it is not a fault.
+
+For a term with a `from(...)` argument, the values are the values that the data source gives. With `{"region": "EU"}` as `user`, the term `inRegion(region: from("user", "$.region"))` takes the stub value of `inRegion(region: "EU")`. A reference that does not resolve, or a value that does not fit the kind of the argument, is a fault, and the term is `Unknown`.
 
 ## Data files
 
