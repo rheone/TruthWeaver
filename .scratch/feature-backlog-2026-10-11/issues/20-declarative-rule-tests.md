@@ -10,7 +10,7 @@
 
 **Blocked by:** 16
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Scope above is confirmed by the owner (done 2026-10-11); the architecture rules and `docs/packages.md` reflect the new reference
 - [ ] The format is documented with the schema; cases for all three expected values pass and fail correctly in tests
