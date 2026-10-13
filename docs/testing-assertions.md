@@ -1,6 +1,6 @@
 # Testing assertions
 
-The `TruthWeaver.Testing` package has three groups of assertions. `RuleAssertions` checks that compiled rules keep their meaning. `RewriteAssertions` checks that a rewrite of a rule keeps its meaning. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework.
+The `TruthWeaver.Testing` package has three groups of assertions. `RuleAssertions` checks that compiled rules keep their meaning. `RewriteAssertions` checks that a rewrite of a rule keeps its meaning. `DecisionAssertions` checks the `Decision` that an evaluation returns. Each failed assertion throws a `DecisionAssertionException`, so the test fails in any test framework. `DecisionAssertionException`, `PredicateHarnessException` and `RuleFuzzException` all derive from the abstract `TruthWeaverAssertionException`. Catch that one type to handle every failure from the package.
 
 For tools that check a predicate or the engine, see [Predicate harness](predicate-harness.md) and [Rule fuzzer](rule-fuzzer.md).
 
@@ -45,7 +45,7 @@ RuleAssertions.AssertEquivalent(before, after, 24);
 
 ## Assert that a rewrite is sound
 
-`RewriteAssertions.AssertSound(rule, rewrite, expectations, maxAnalysisTerms)` applies `rewrite` to `rule` and checks the result. The rewrite is a `Func<CompiledRule<TContext>, CompiledRule<TContext>>`, so the assertion works for the built-in rewrites and for your own.
+`RewriteAssertions.AssertSound(rule, rewrite, expectations, maxAnalysisTerms)` applies `rewrite` to `rule` and checks the result. The rewrite is a `Func` from a `CompiledRule<TContext>` to a `CompilationResult<TContext>` or to a `CompiledRule<TContext>`, so the assertion works for the built-in rewrites and for your own.
 
 ```csharp
 RewriteAssertions.AssertSound(rule, r => r.Simplify(), RewriteExpectations.All);
@@ -62,7 +62,7 @@ The assertion always checks K3 equivalence of the original and the rewritten rul
 
 The failure message names the failed check. For equivalence it shows the counter-example. For `NeverLarger` it shows the two node counts. For `Idempotent` it shows both canonical texts.
 
-A rewrite that returns a `CompilationResult<TContext>` (`ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()` and `ToDnf()`) goes into the same method with no unwrap. The assertion fails when the result has no rule or has an error diagnostic, such as a `TRE0016` refusal at the size cap. A warning does not fail it. The message starts with `Rewrite check 'compiles' failed` and shows the diagnostics. See [What a rewrite returns](rewriting-rules.md#what-a-rewrite-returns).
+A rewrite that returns a `CompilationResult<TContext>` (every built-in rewrite) goes into the same method with no unwrap. The assertion fails when the result has no rule or has an error diagnostic, such as a `TRE0016` refusal at the size cap. A warning, such as `TRE0031` or `TRE0033`, does not fail it. The message starts with `Rewrite check 'compiles' failed` and shows the diagnostics. See [What a rewrite returns](rewriting-rules.md#what-a-rewrite-returns).
 
 ```csharp
 RewriteAssertions.AssertSound(rule, r => r.ToCnf(), RewriteExpectations.Idempotent);
@@ -88,14 +88,14 @@ decision.Should().BeSatisfied().HaveNoFaults();
 | `HaveNoFaults()` | `Decision.Faults` is empty. |
 | `HaveFault()` | `Decision.Faults` has at least one entry. |
 | `HaveFaultCount(expected)` | `Decision.Faults` has exactly `expected` entries. |
-| `HaveFaultForTerm(predicateName)` | A fault exists for a term with that predicate name. The comparison is ordinal. |
+| `HaveFaultForPredicate(predicateName)` | A fault exists for a term with that predicate name. The comparison is ordinal. |
 
-`IsSatisfied` is fail-closed: an `Unknown` result is not satisfied. Use `HaveResult(TruthValue.Unknown)` to assert an unknown result, and `HaveFaultForTerm` to assert which predicate caused it.
+`IsSatisfied` is fail-closed: an `Unknown` result is not satisfied. Use `HaveResult(TruthValue.Unknown)` to assert an unknown result, and `HaveFaultForPredicate` to assert which predicate caused it.
 
 ```csharp
 Decision decision = await rule.EvaluateAsync(order);
 
-decision.Should().HaveResult(TruthValue.Unknown).HaveFaultForTerm("isPaid");
+decision.Should().HaveResult(TruthValue.Unknown).HaveFaultForPredicate("isPaid");
 ```
 
 The `Subject` property of `DecisionAssertions` returns the decision under test, for checks that these assertions do not cover.

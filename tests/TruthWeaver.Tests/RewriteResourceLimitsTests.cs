@@ -68,7 +68,7 @@ public sealed class RewriteResourceLimitsTests
     public void Expand_WideThresholdInGateForm_IsRefusedAtTheDefaultCap_Test(string gate)
     {
         // Arrange: C(14, 7) = 3432 subsets of 7 operands is far beyond the default cap.
-        CompiledRule<RuleTestContext> rule = Compile("AtLeast(7, a, b, c, d, e, f, g, h, i, j, k, l, m, n)", 14);
+        CompiledRule<RuleTestContext> rule = Compile("AtLeast(7, a, b, c, d, e, g, h, i, j, k, l, m, n, o)", 14);
 
         // Act
         CompilationResult<RuleTestContext> result = Expand(rule, gate, maxNodeCount: null);

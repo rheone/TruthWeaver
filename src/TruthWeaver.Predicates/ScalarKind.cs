@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Describes one scalar value kind to the shared predicate builders: the literal kinds of its single
 /// and array arguments, how to read them from <see cref="PredicateArguments"/>, and the noun used in schema text.

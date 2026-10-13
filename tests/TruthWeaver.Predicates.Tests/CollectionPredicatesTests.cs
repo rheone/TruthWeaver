@@ -4,8 +4,9 @@ using TruthWeaver.Abstractions;
 
 public class CollectionPredicatesTests
 {
+    /// <summary>SetEquals returns true for the same elements in a different order.</summary>
     [Fact]
-    public async Task SetEquals_SameElementsDifferentOrder_ReturnsTrue()
+    public async Task SetEquals_SameElementsDifferentOrder_ReturnsTrue_Test()
     {
         (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
@@ -20,8 +21,9 @@ public class CollectionPredicatesTests
         Assert.Equal("setEquals", schema.Name);
     }
 
+    /// <summary>SetEquals ignores duplicate elements and returns true.</summary>
     [Fact]
-    public async Task SetEquals_DuplicatesIgnored_ReturnsTrue()
+    public async Task SetEquals_DuplicatesIgnored_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
@@ -35,8 +37,9 @@ public class CollectionPredicatesTests
         Assert.Equal(TruthValue.True, result);
     }
 
+    /// <summary>SetEquals returns false when the elements differ.</summary>
     [Fact]
-    public async Task SetEquals_DifferingElements_ReturnsFalse()
+    public async Task SetEquals_DifferingElements_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
@@ -46,8 +49,9 @@ public class CollectionPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>SetEquals returns false when the elements differ only in case.</summary>
     [Fact]
-    public async Task SetEquals_DifferingCase_ReturnsFalse()
+    public async Task SetEquals_DifferingCase_ReturnsFalse_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);
@@ -57,8 +61,9 @@ public class CollectionPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>SetEquals returns true when both the selected and literal sets are empty.</summary>
     [Fact]
-    public async Task SetEquals_EmptySelectedAndEmptyLiteral_ReturnsTrue()
+    public async Task SetEquals_EmptySelectedAndEmptyLiteral_ReturnsTrue_Test()
     {
         (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
             CollectionPredicates.SetEquals<TestContext>("setEquals", c => c.Values);

@@ -1,7 +1,6 @@
 namespace TruthWeaver.Samples.DataSource.Tests;
 
 using TruthWeaver.Abstractions;
-using TruthWeaver.Testing;
 
 public sealed class AgePolicyRulesTests
 {

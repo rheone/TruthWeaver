@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** done
 
-- [ ] The owner picks the mechanism
-- [ ] The window pages and tests are updated
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+**Decision (owner, 2026-10-10):** An omitted argument means "not given"; `""` becomes an error. The validator tells "omitted" from "from a data source" another way.
+
+- [x] The owner picked the mechanism
+- [x] The window pages and tests are updated
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

@@ -19,9 +19,10 @@ public static class RuleDiff
     /// <param name="before">The rule to diff from.</param>
     /// <param name="after">The rule to diff to.</param>
     /// <param name="maxAnalysisTerms">
-    /// The most distinct terms, counted across both rules, the equivalence check behind
-    /// <see cref="RuleDiffResult.PreservesMeaning"/> decides. It controls only that cap. Raise it so a large pair is decided
-    /// instead of <see langword="null"/>. <see langword="null"/> uses the <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
+    /// The most distinct terms, counted across both rules, the checks behind <see cref="RuleDiffResult.PreservesMeaning"/>
+    /// and <see cref="RuleDiffResult.Relation"/> decide. It controls only that cap. Raise it so a large pair is decided
+    /// instead of <see langword="null"/> or <see cref="RuleRelation.Undecided"/>. <see langword="null"/> uses the
+    /// <see cref="CompilerOptions.MaxAnalysisTerms"/> default.
     /// </param>
     /// <returns>
     /// The structural diff, in tree order. Empty (<see cref="RuleDiffResult.HasChanges"/> is
@@ -50,7 +51,11 @@ public static class RuleDiff
                     RuleEquivalenceOutcome.NotEquivalent => false,
                     _ => null,
                 };
-        return new RuleDiffResult(entries, preservesMeaning);
+
+        // Likewise for the satisfying assignments: identical structure is equivalent without building the BDD.
+        RuleRelation relation =
+            entries.Count == 0 ? RuleRelation.Equivalent : RuleImplication.Compare(before, after, maxAnalysisTerms).Relation;
+        return new RuleDiffResult(entries, preservesMeaning) { Relation = relation };
     }
 
     private static void DiffNode(

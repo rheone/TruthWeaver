@@ -3,7 +3,6 @@ namespace TruthWeaver.Yaml;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.DataSources.Json;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;

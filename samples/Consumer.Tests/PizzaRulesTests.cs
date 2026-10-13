@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Testing;
 
 public sealed class PizzaRulesTests
 {

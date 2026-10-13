@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** done
 
-- [ ] The owner picks the rule
-- [ ] Renames update reference pages under `docs/strong-k3/` in the same change and `K3ReferenceSyncChecker` passes
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+**Decision (owner, 2026-10-10):** Every negated twin gets a `Not` prefix; string `In`/`NotIn` move to `StringPredicates`; type tests take a `NullBehavior` parameter. Update `docs/strong-k3/` in the same change.
+
+- [x] The owner picked the rule
+- [x] Renames update reference pages under `docs/strong-k3/` in the same change and `K3ReferenceSyncChecker` passes
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

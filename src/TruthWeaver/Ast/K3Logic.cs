@@ -1,7 +1,5 @@
 namespace TruthWeaver.Ast;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// The Strong Kleene (K3) scalar truth functions over <see cref="TruthValue"/>. This is the one place the connective
 /// truth tables live: <c>Evaluator</c> applies them to evaluated operands, and the rewriters (<c>Simplifier</c>,
@@ -112,5 +110,49 @@ internal static class K3Logic
             _ => throw new InvalidOperationException($"Unhandled inspection kind '{kind}'."),
         };
         return matches ? TruthValue.True : TruthValue.False;
+    }
+
+    /// <summary>
+    /// Evaluates any count-threshold comparison against the range of true-operand counts still
+    /// reachable given how many operands remain <see cref="TruthValue.Unknown"/> — determinate only
+    /// when the comparison agrees at both the lowest and highest possible count (monotonic
+    /// comparisons) or when there is no remaining ambiguity at all (<see cref="ThresholdComparison.Exactly"/>,
+    /// which is not monotonic in the count).
+    /// </summary>
+    internal static TruthValue Threshold(ThresholdComparison comparison, int k, IReadOnlyList<TruthValue> operandValues)
+    {
+        int trueCount = operandValues.Count(v => v == TruthValue.True);
+        int unknownCount = operandValues.Count(v => v == TruthValue.Unknown);
+        int minCount = trueCount;
+        int maxCount = trueCount + unknownCount;
+
+        if (comparison == ThresholdComparison.Exactly)
+        {
+            if (k < minCount || k > maxCount)
+            {
+                return TruthValue.False;
+            }
+
+            return unknownCount == 0 ? TruthValue.True : TruthValue.Unknown;
+        }
+
+        bool SatisfiesAt(int count) =>
+            comparison switch
+            {
+                ThresholdComparison.AtLeast => count >= k,
+                ThresholdComparison.AtMost => count <= k,
+                ThresholdComparison.GreaterThan => count > k,
+                ThresholdComparison.LessThan => count < k,
+                _ => throw new InvalidOperationException($"Unhandled threshold comparison '{comparison}'."),
+            };
+
+        bool satisfiesMin = SatisfiesAt(minCount);
+        bool satisfiesMax = SatisfiesAt(maxCount);
+        if (satisfiesMin && satisfiesMax)
+        {
+            return TruthValue.True;
+        }
+
+        return !satisfiesMin && !satisfiesMax ? TruthValue.False : TruthValue.Unknown;
     }
 }

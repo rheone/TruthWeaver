@@ -23,7 +23,7 @@ using System.Diagnostics;
 /// that shows the whole rule, the path actually taken, and the parts left out.
 /// </param>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
+public sealed record Decision(TruthValue Result, EquatableArray<Fault> Faults, Trace? Trace = null, TraceNode? TraceTree = null)
 {
     /// <summary>
     /// Gets a value indicating whether this decision is satisfied. <see langword="true"/> only when
@@ -38,7 +38,7 @@ public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Tr
     /// <summary>
     /// Collapses <see cref="Result"/> to a final answer under <paramref name="policy"/>. <see cref="TruthValue.True"/> and
     /// <see cref="TruthValue.False"/> always map to the matching <see cref="CollapseOutcome"/>; only
-    /// <see cref="TruthValue.Unknown"/> depends on the policy, but an undefined policy is rejected for every result. Pure: it does not change this decision, its
+    /// <see cref="TruthValue.Unknown"/> depends on the policy, but an undefined policy is rejected for every result (the same rule as <see cref="Project(TruthValue)"/>). Pure: it does not change this decision, its
     /// <see cref="Faults"/> or <see cref="IsSatisfied"/> (which stays fail-closed regardless of any policy applied here).
     /// </summary>
     /// <param name="policy">How an <see cref="TruthValue.Unknown"/> result is resolved.</param>
@@ -72,13 +72,24 @@ public sealed record Decision(TruthValue Result, IReadOnlyList<Fault> Faults, Tr
     /// rule. Pure: it does not change this decision, its <see cref="Faults"/> or <see cref="Result"/>, and
     /// <see cref="IsSatisfied"/> stays fail-closed regardless of the value chosen here.
     /// </summary>
-    /// <param name="unknownAs">The definite value an <see cref="TruthValue.Unknown"/> result becomes: <see langword="true"/> for <see cref="TruthValue.True"/>, <see langword="false"/> for <see cref="TruthValue.False"/>. A <see cref="bool"/> so that an <see cref="TruthValue.Unknown"/> replacement cannot be requested.</param>
+    /// <param name="unknownAs">The definite value an <see cref="TruthValue.Unknown"/> result becomes: <see cref="TruthValue.True"/> or <see cref="TruthValue.False"/>.</param>
     /// <returns><see cref="TruthValue.True"/> or <see cref="TruthValue.False"/>, never <see cref="TruthValue.Unknown"/>.</returns>
-    public TruthValue Project(bool unknownAs)
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="unknownAs"/> is <see cref="TruthValue.Unknown"/> or not a defined <see cref="TruthValue"/>. As in
+    /// <see cref="Collapse(CollapsePolicy)"/>, the argument is checked first, so an invalid value is rejected for every result,
+    /// not only for an <see cref="TruthValue.Unknown"/> one.
+    /// </exception>
+    public TruthValue Project(TruthValue unknownAs)
     {
+        // Checked up front so a bad argument is rejected for every result, not only the Unknown one that consults it.
+        if (unknownAs is not (TruthValue.True or TruthValue.False))
+        {
+            throw new ArgumentOutOfRangeException(nameof(unknownAs), unknownAs, "Project accepts only True or False.");
+        }
+
         return this.Result switch
         {
-            TruthValue.Unknown => unknownAs ? TruthValue.True : TruthValue.False,
+            TruthValue.Unknown => unknownAs,
             _ => this.Result,
         };
     }

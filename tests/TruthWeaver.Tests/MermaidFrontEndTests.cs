@@ -67,7 +67,11 @@ public sealed class MermaidFrontEndTests
     public void Print_TraceWithOptionalParameters_MatchesTheOptionsRecordOutput_Test()
     {
         OutlineNode root = Chain();
-        TraceNode[] operands = [.. Enumerable.Range(0, 6).Select(i => new TraceNode($"Term {i}", TruthValue.True, false, []))];
+        EquatableArray<TraceNode> operands = new(
+            Enumerable
+                .Range(0, 6)
+                .Select(i => new TraceNode($"Term {i}", TruthValue.True, false, EquatableArray<TraceNode>.Empty))
+        );
         TraceNode trace = new("OR", TruthValue.True, false, operands);
 
         string viaParameters = MermaidTreePrinter.Print(

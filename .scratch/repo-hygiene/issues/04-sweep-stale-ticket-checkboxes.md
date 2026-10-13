@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready
+**Status:** done
 
 - [x] A script in `scripts/` lists tickets with `Status: done` and at least one `- [ ]` item, excluding `engine-v1` and `_superseded` Script: `scripts/list-open-done-tickets.ps1`.
 - [x] For each listed item, check the evidence (code, tests, commit) and tick it, or write a one-line note on why it stays open

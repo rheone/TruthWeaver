@@ -37,13 +37,16 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0023` | `DoubleNegation` | Info | Lint | Opt-in (`LintRules.DoubleNegation`) | `NOT (NOT x)`, which is `x`. |
 | `TRE0024` | `UndeclaredDataSource` | Error | Validate | On | A variable reference names a data source that is not declared in the compiler options. |
 | `TRE0025` | `MalformedDataQuery` | Error | Validate | On | The query of a variable reference is not valid for the dialect of its data source. |
-| `TRE0026` | `InvalidArgumentValue` | Error | Validate | On | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `Between` or `Outside`. |
+| `TRE0026` | `InvalidArgumentValue` | Error | Validate | On | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `IsBetween` or `IsNotBetween`. |
 | `TRE0027` | `DeprecatedPredicate` | Warning | Validate | On | A rule uses a predicate whose schema is marked deprecated. This is a warning, one per use, and the rule still compiles. |
 | `TRE0028` | `DeepNesting` | Info | Lint | Opt-in (`LintRules.DeepNesting`) | The rule is at least `DeepNestingFraction` of `MaxDepth` levels deep. This finding has no suggestion. |
 | `TRE0029` | `WideChain` | Info | Lint | Opt-in (`LintRules.WideChain`) | An `AND` or `OR` has more operands than `WideChainOperandLimit`. This finding has no suggestion. |
 | `TRE0030` | `NotCanonical` | Info | Lint | Opt-in (`LintRules.Style`) | `Canonicalize()` would change the rule. The suggestion is the canonical rule text. |
 | `TRE0031` | `ThresholdKeptAsAtom` | Warning | Rewrite | On | `ToNnf()`, `ToCnf()` or `ToDnf()` kept a threshold as an atom, because expanding it can grow the rule a lot. The message gives the growth estimate. Pass `NormalFormOptions` with `ExpandThresholds` set to `true` to expand it. |
 | `TRE0032` | `DuplicateArgument` | Error | Validate | On | A term names the same argument more than once, in rule text, JSON, YAML or `RuleBuilder`. No occurrence wins. |
+| `TRE0033` | `RewriteNotConverged` | Warning | Rewrite | On | `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit before the rule stopped changing. The rule is equivalent to the input, but rewriting it again can still change it. |
+| `TRE0034` | `TruthTableCapRaised` | Warning | Print | On | `PrintTruthTable` printed a table with more terms than the default cap of 8, because the options set `AllowLargerTable`. The message gives the row count. |
+| `TRE0035` | `TruthTableTooLarge` | Error | Print | On | `PrintTruthTable` refused to print a table: the rule has more terms than the default cap of 8 and `AllowLargerTable` is not set, or it has more terms than the hard limit of 12. Nothing is written. |
 
 A lint finding carries a suggested replacement.
 

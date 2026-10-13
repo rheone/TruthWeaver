@@ -69,4 +69,4 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 - [NotStartsWith](string-notstartswith.md) is the exact complement of this predicate.
 - [EndsWith](string-endswith.md) tests the end of the string.
 - [Contains](string-contains.md) tests any position in the string.
-- [Matches](regex-matches.md) tests a regular expression.
+- [IsMatch](regex-ismatch.md) tests a regular expression.

@@ -13,8 +13,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 12: scoped DI predicate resolution and DI registration extensions.</summary>
 public sealed class ScopedResolutionAndRegistrationTests
 {
+    /// <summary>A class based predicate registered by type evaluates correctly.</summary>
     [Fact]
-    public async Task Class_based_predicate_registered_by_type_evaluates_correctly()
+    public async Task ClassPredicate_RegisteredByType_EvaluatesCorrectly_Test()
     {
         IScopedFlag flag = Substitute.For<IScopedFlag>();
         flag.Value.Returns(true);
@@ -35,8 +36,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A class based predicate is resolved fresh from the service provider on every evaluation.</summary>
     [Fact]
-    public async Task Class_based_predicate_is_resolved_fresh_from_the_service_provider_on_every_evaluation()
+    public async Task ClassPredicate_Resolution_IsFreshOnEveryEvaluation_Test()
     {
         List<ScopedFlagPredicate> resolvedInstances = [];
         IServiceProvider services = Substitute.For<IServiceProvider>();
@@ -63,8 +65,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.NotSame(resolvedInstances[0], resolvedInstances[1]);
     }
 
+    /// <summary>A class based predicate with no service registration is absorbed as a fault naming the unresolved type.</summary>
     [Fact]
-    public async Task Class_based_predicate_with_no_service_registration_is_absorbed_as_a_fault_naming_the_unresolved_type()
+    public async Task ClassPredicate_UnresolvedService_IsAbsorbedAsFaultNamingType_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Add<ScopedFlagPredicate>().Build()
@@ -127,8 +130,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.IsType<InvalidOperationException>(fault.Exception);
     }
 
+    /// <summary>The service collection extension wires a compiler and rule using only container resolved services.</summary>
     [Fact]
-    public async Task Service_collection_extension_wires_a_compiler_and_rule_using_only_container_resolved_services()
+    public async Task ServiceCollection_Extension_WiresCompilerFromContainer_Test()
     {
         ServiceCollection services = new();
         services.AddScoped<IScopedFlag>(_ => new StubScopedFlag(true));
@@ -153,8 +157,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>The service collection extension threads supplied compiler options through to the resolved compiler.</summary>
     [Fact]
-    public void Service_collection_extension_threads_supplied_compiler_options_through_to_the_resolved_compiler()
+    public void ServiceCollection_Extension_ThreadsCompilerOptions_Test()
     {
         ServiceCollection services = new();
         services.AddTruthWeaver<RuleTestContext>(_ => { }, new CompilerOptions(Mode: CompilationMode.Lenient));
@@ -171,8 +176,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.Empty(result.Diagnostics);
     }
 
+    /// <summary>The service collection extension resolves a registered logger and the compiler uses it.</summary>
     [Fact]
-    public void Service_collection_extension_resolves_a_registered_logger_and_the_compiler_uses_it()
+    public void ServiceCollection_Extension_ResolvesRegisteredLogger_Test()
     {
         ILogger<RuleCompiler<RuleTestContext>> logger = Substitute.For<ILogger<RuleCompiler<RuleTestContext>>>();
         logger.IsEnabled(Arg.Any<LogLevel>()).Returns(true);
@@ -190,8 +196,9 @@ public sealed class ScopedResolutionAndRegistrationTests
         Assert.Equal(LogLevel.Error, call.Level);
     }
 
+    /// <summary>The service collection extension resolves and compiles without error when no logger is registered.</summary>
     [Fact]
-    public void Service_collection_extension_resolves_and_compiles_without_error_when_no_logger_is_registered()
+    public void ServiceCollection_Extension_CompilesWithoutRegisteredLogger_Test()
     {
         ServiceCollection services = new();
         services.AddTruthWeaver<RuleTestContext>(builder => builder.Add<ScopedFlagPredicate>());

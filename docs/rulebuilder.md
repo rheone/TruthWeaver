@@ -6,6 +6,8 @@ How to assemble a rule in code, describe a compiled rule as a tree of labels, an
 
 `RuleBuilder` assembles a rule from C# calls instead of text. Every `RuleBuilder` method renders to the same flat JSON tree that `CompileJson` reads, and `Compile` passes that JSON to `CompileJson`. A rule from a builder therefore gets every diagnostic that a hand-written rule gets: an unknown predicate, a bad argument, an out-of-range threshold, a wrong operand count, a resource limit and a structural tautology or contradiction. No builder call skips the Validate and Analyze stages of the [compilation pipeline](architecture.md#compilation-pipeline). To convert a rule between the text formats, see [Rule formats](rule-formats.md#converting-between-dsl-json-and-yaml).
 
+Each diagnostic is located by `Diagnostic.Path`, a path into the builder tree you wrote (such as `$.operands[1].predicate`), the same shape a hand-written JSON rule gets. It never carries a `Diagnostic.Span` into generated JSON text, because the builder never shows that text to you.
+
 [Example 6](examples.md#6-the-same-rule-assembled-with-rulebuilder-instead-of-text) shows `RuleBuilder` from start to finish.
 
 ## RuleBuilder reference
@@ -64,9 +66,25 @@ Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumera
 
 A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it.
 
+### Notes
+
+`WithNote(string note)` puts a [note](rule-formats.md#notes) on the node of a builder. The note is in `Notes` of the compiled rule, and the text, JSON and YAML printers write it. It does not change the compiled tree.
+
+```csharp
+CompiledRule<PizzaOrder> rule = RuleBuilder
+    .And(RuleBuilder.Predicate("isDineIn"), RuleBuilder.Not(RuleBuilder.Predicate("isBanned")).WithNote("banned customers cannot order"))
+    .WithNote("Dine-in orders only")
+    .Compile(compiler)
+    .GetRuleOrThrow();
+
+rule.Notes["$.operands[1]"];                    // "banned customers cannot order"
+```
+
+A second `WithNote` on the same builder replaces the note. An operator that folds has no node of its own: `RuleBuilder.And(x)` is `x`, so its note is the note of `x`.
+
 ### Compiling a builder
 
-`RuleBuilder.Compile(compiler)` is a thin wrapper around `compiler.CompileJson(builder.ToJson())`. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once.
+`RuleBuilder.Compile(compiler)` renders the tree and compiles it through `compiler.CompileJson(JsonElement)` (not the `string` overload), so a diagnostic carries only its builder path and no span into the rendered JSON. `ToJson()` alone is also useful, for example to log or store the tree that a builder assembled without compiling it at once; it still produces the same JSON text `CompileJson(string)` would read.
 
 ### Joining compiled rules
 
@@ -78,7 +96,7 @@ CompilationResult<Customer> joined = RuleBuilder
     .Compile(compiler);
 ```
 
-The joined rule compiles against the registry of `compiler`. The compiler validates every term again, because the two source rules may come from other registries. A predicate that is missing from that registry, or that has a different schema there, gives the normal compile diagnostics. Data-source declarations and the compiler options (depth and node limits) apply to the whole joined tree. A term that appears in both rules is one term in the joined rule, so its predicate runs once for each evaluation.
+The joined builder keeps the notes of each source rule, under their new paths. The joined rule compiles against the registry of `compiler`. The compiler validates every term again, because the two source rules may come from other registries. A predicate that is missing from that registry, or that has a different schema there, gives the normal compile diagnostics. Data-source declarations and the compiler options (depth and node limits) apply to the whole joined tree. A term that appears in both rules is one term in the joined rule, so its predicate runs once for each evaluation.
 
 ## Outlining a compiled rule
 
@@ -138,6 +156,7 @@ Pass a `MermaidOptions` to `MermaidTreePrinter.Print` or `PrintMermaid` to chang
 | `Direction` | `TopDown`, `LeftRight`, `BottomTop`, `RightLeft` | `TopDown` |
 | `NodeShapes` | `true` gives an operator a hexagon, a term a rounded box and a constant a circle. `false` gives every node a rectangle. | `false` |
 | `OperatorStyle` | `Word`, `Symbolic`, `CStyle` | `Word` |
+| `Constants` | A `ConstantFormat`: a `ConstantStyle` (`Word`, `Letters`, `LogicSymbols`) and an optional override string for each constant. See [Equations](equations.md#constants). | `ConstantFormat.Default` |
 | `ShowArgumentValues` | `true`, `false` | `true` |
 | `TwoLineTermLabels` | `true` shows a term as a bold label and a plain argument line. `false` shows one line. | `false` |
 | `Palette` | A `MermaidPalette`: `Light`, `ColorblindSafe`, `Monochrome`, `Dark` or your own. | `MermaidPalette.Light` |
@@ -222,6 +241,8 @@ string c = rule.PrintMermaid(
 ```
 
 The optional parameters are `direction`, `nodeShapes`, `twoLineTermLabels`, `palette`, `nodeStyle` and `compactChainThreshold`. They follow `showArgumentValues` on `PrintMermaid` and `MermaidTreePrinter.Print`. `MermaidTreePrinter.Print` also takes `style` for the operator style. `PrintMermaid` with optional parameters always uses `OperatorStyle.Word`. To choose another operator style, pass a `MermaidOptions` with `OperatorStyle` set.
+
+`PrintPlainText` and `PlainTextTreePrinter.Print` take the same `ConstantFormat` as `constants`. The format changes only the constant nodes. The trace suffixes, such as `[unknown]`, and the node colors do not change.
 
 The result of `PlainTextTreePrinter` needs no renderer. It holds the same information as an indented tree, and it suits a log line or a terminal.
 

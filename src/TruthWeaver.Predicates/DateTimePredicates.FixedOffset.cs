@@ -1,7 +1,6 @@
 namespace TruthWeaver.Predicates;
 
 using System.Globalization;
-using TruthWeaver.Abstractions;
 
 /// <content>
 /// The calendar predicates. Each reads the selected instant in a fixed offset from UTC (<c>Z</c> or <c>±hh:mm</c>) that
@@ -47,21 +46,28 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) OnDayOfWeek<TContext>(
+    ) IsOnDayOfWeek<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "On Day Of Week",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is On Day Of Week",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant falls on one of the listed days of the week (English names, Monday to Sunday, case ignored)."
             + OffsetNote;
-        return DayOfWeekPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return DayOfWeekPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
-    /// Creates the <c>NotOnDayOfWeek</c> twin of <see cref="OnDayOfWeek{TContext}"/>: its Strong Kleene complement (true
+    /// Creates the <c>IsNotOnDayOfWeek</c> twin of <see cref="IsOnDayOfWeek{TContext}"/>: its Strong Kleene complement (true
     /// when the instant, read in the offset, falls on none of the listed days; Unknown stays Unknown).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -77,17 +83,24 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotOnDayOfWeek<TContext>(
+    ) IsNotOnDayOfWeek<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not On Day Of Week",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Not On Day Of Week",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of OnDayOfWeek: True when the selected instant falls on none of the listed days of the week, False when it falls on one, Unknown when OnDayOfWeek is Unknown."
+            "The Strong Kleene complement of IsOnDayOfWeek: True when the selected instant falls on none of the listed days of the week, False when it falls on one, Unknown when IsOnDayOfWeek is Unknown."
             + OffsetNote;
-        return DayOfWeekPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return DayOfWeekPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     /// <summary>
@@ -104,21 +117,28 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) InMonth<TContext>(
+    ) IsInMonth<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "In Month",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is In Month",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant falls in one of the listed months (numbers from 1, January, to 12, December)."
             + OffsetNote;
-        return MonthPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return MonthPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
-    /// Creates the <c>NotInMonth</c> twin of <see cref="InMonth{TContext}"/>: its Strong Kleene complement (true when the
+    /// Creates the <c>IsNotInMonth</c> twin of <see cref="IsInMonth{TContext}"/>: its Strong Kleene complement (true when the
     /// instant, read in the offset, falls in none of the listed months; Unknown stays Unknown).
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
@@ -134,17 +154,24 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotInMonth<TContext>(
+    ) IsNotInMonth<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not In Month",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Not In Month",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of InMonth: True when the selected instant falls in none of the listed months, False when it falls in one, Unknown when InMonth is Unknown."
+            "The Strong Kleene complement of IsInMonth: True when the selected instant falls in none of the listed months, False when it falls in one, Unknown when IsInMonth is Unknown."
             + OffsetNote;
-        return MonthPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return MonthPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     /// <summary>
@@ -157,7 +184,7 @@ public static partial class DateTimePredicates
     /// <para>
     /// <c>start</c> and <c>end</c> are times of day written <c>hh:mm</c> or <c>hh:mm:ss</c>. <c>duration</c> is an ISO 8601
     /// time duration (<c>PTnHnMnS</c>), longer than zero and shorter than 24 hours. A call gives exactly one of
-    /// <c>end</c> and <c>duration</c>. An omitted one defaults to empty text, which means "not given".
+    /// <c>end</c> and <c>duration</c>. An omitted argument means "not given"; an empty text is a value, and an invalid one.
     /// </para>
     /// <para>
     /// A start later than the end makes a window that crosses midnight, for example 22:00 to 06:00. A start equal to the
@@ -173,24 +200,31 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) InTimeWindow<TContext>(
+    ) IsInTimeWindow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "In Time Window",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is In Time Window",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the time of day of the selected instant is inside the window from 'start' to 'end' (or 'start' plus 'duration'). "
             + "By default the start is inside and the end is outside; 'includeStart' and 'includeEnd' change this. A start later than the end crosses midnight."
             + OffsetNote;
-        return TimeWindowPredicate(name, label, description, selector, nullBehavior, negate: false);
+        return TimeWindowPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false
+        );
     }
 
     /// <summary>
-    /// Creates the <c>NotInTimeWindow</c> twin of <see cref="InTimeWindow{TContext}"/>: its Strong Kleene complement (true
+    /// Creates the <c>IsNotInTimeWindow</c> twin of <see cref="IsInTimeWindow{TContext}"/>: its Strong Kleene complement (true
     /// when the time of day, read in the offset, is outside the window; Unknown stays Unknown). The arguments and their
-    /// rules are those of <see cref="InTimeWindow{TContext}"/>.
+    /// rules are those of <see cref="IsInTimeWindow{TContext}"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -205,17 +239,24 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotInTimeWindow<TContext>(
+    ) IsNotInTimeWindow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not In Time Window",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Not In Time Window",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of InTimeWindow: True when the time of day of the selected instant is outside the window, False when it is inside, Unknown when InTimeWindow is Unknown."
+            "The Strong Kleene complement of IsInTimeWindow: True when the time of day of the selected instant is outside the window, False when it is inside, Unknown when IsInTimeWindow is Unknown."
             + OffsetNote;
-        return TimeWindowPredicate(name, label, description, selector, nullBehavior, negate: true);
+        return TimeWindowPredicate(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true
+        );
     }
 
     private static (
@@ -230,25 +271,22 @@ public static partial class DateTimePredicates
         bool negate
     )
     {
-        // end and duration default to empty text so the validator can tell "omitted" (empty) from "from a data source"
-        // (absent) and report a call that gives neither at compile time.
-        LiteralValue notGiven = LiteralValue.OfString(string.Empty);
+        // end and duration have no default: an omitted one is absent. The validator tells it from a data-source argument,
+        // which is also absent, by PredicateArguments.IsDeferred, and reports a call that gives neither at compile time.
         PredicateArgumentSchema[] arguments =
         [
             new(StartArgument, "The time of day the window starts: 'hh:mm' or 'hh:mm:ss'.", LiteralKind.String),
             new(
                 EndArgument,
-                "The time of day the window ends: 'hh:mm' or 'hh:mm:ss'. Give this or 'duration', not both. Empty means not given.",
+                "The time of day the window ends: 'hh:mm' or 'hh:mm:ss'. Give this or 'duration', not both.",
                 LiteralKind.String,
-                Required: false,
-                Default: notGiven
+                Required: false
             ),
             new(
                 DurationArgument,
-                "The length of the window as an ISO 8601 time duration, for example 'PT8H' or 'PT1H30M'. Longer than zero and shorter than 24 hours. Give this or 'end', not both. Empty means not given.",
+                "The length of the window as an ISO 8601 time duration, for example 'PT8H' or 'PT1H30M'. Longer than zero and shorter than 24 hours. Give this or 'end', not both.",
                 LiteralKind.String,
-                Required: false,
-                Default: notGiven
+                Required: false
             ),
             new(
                 IncludeStartArgument,
@@ -314,7 +352,9 @@ public static partial class DateTimePredicates
 
     /// <summary>
     /// Reads the end of the window from <c>end</c> or <c>start</c> plus <c>duration</c>. Returns <see langword="null"/> when
-    /// the end is not known: an argument from a data source at compile time, or a problem.
+    /// the end is not known: an argument from a data source at compile time, or a problem. An argument that is absent
+    /// and not deferred was omitted, which means "not given". At evaluation nothing is deferred, so an absent argument
+    /// is an omitted one.
     /// </summary>
     private static TimeSpan? ReadWindowEnd(
         PredicateArguments args,
@@ -323,12 +363,15 @@ public static partial class DateTimePredicates
         bool startRead
     )
     {
-        bool endKnown = args.TryGetString(EndArgument, out string? endText);
-        bool durationKnown = args.TryGetString(DurationArgument, out string? durationText);
-        bool endGiven = endKnown && endText!.Length > 0;
-        bool durationGiven = durationKnown && durationText!.Length > 0;
+        bool endGiven = args.TryGetString(EndArgument, out _);
+        bool durationGiven = args.TryGetString(DurationArgument, out string? durationText);
 
-        if (endKnown && durationKnown && endGiven == durationGiven)
+        // A data-source argument has no value yet, so the call may still give it. Only an argument that is neither given
+        // nor deferred is known to be omitted.
+        bool endOmitted = !endGiven && !args.IsDeferred(EndArgument);
+        bool durationOmitted = !durationGiven && !args.IsDeferred(DurationArgument);
+
+        if ((endGiven && durationGiven) || (endOmitted && durationOmitted))
         {
             problems.Add(
                 new PredicateArgumentProblem(

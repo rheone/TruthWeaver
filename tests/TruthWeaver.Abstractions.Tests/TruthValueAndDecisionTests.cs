@@ -4,8 +4,13 @@ using TruthWeaver.Abstractions;
 
 public sealed class TruthValueAndDecisionTests
 {
+    // Fault.Exception compares by reference (the default for Exception); Decision_TwoInstancesWithEqualFaultsAndTrace_AreEqual_Test
+    // reuses this one instance for both decisions' faults so the test is about the list members' equality, not the exception's.
+    private static readonly InvalidOperationException SharedException = new("boom");
+
+    /// <summary>A decision is satisfied only when its result is true.</summary>
     [Fact]
-    public void Decision_is_satisfied_only_when_result_is_true()
+    public void Decision_IsSatisfied_OnlyWhenResultIsTrue_Test()
     {
         Decision trueDecision = new(TruthValue.True, []);
         Decision falseDecision = new(TruthValue.False, []);
@@ -16,19 +21,21 @@ public sealed class TruthValueAndDecisionTests
         Assert.False(unknownDecision.IsSatisfied);
     }
 
+    /// <summary>A decision carries its faults in recorded order.</summary>
     [Fact]
-    public void Decision_carries_faults_in_recorded_order()
+    public void Decision_Faults_CarryInRecordedOrder_Test()
     {
         Fault first = new(new TermIdentity("a", []), new InvalidOperationException("first"));
         Fault second = new(new TermIdentity("b", []), new InvalidOperationException("second"));
 
-        Decision decision = new(TruthValue.Unknown, [first, second]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([first, second]));
 
         Assert.Equal([first, second], decision.Faults);
     }
 
+    /// <summary>A decision trace and evaluated tree default to null.</summary>
     [Fact]
-    public void Decision_trace_and_evaluated_tree_default_to_null()
+    public void Decision_Defaults_TraceAndEvaluatedTreeAreNull_Test()
     {
         Decision decision = new(TruthValue.True, []);
 
@@ -68,7 +75,7 @@ public sealed class TruthValueAndDecisionTests
     public void Collapse_AnyPolicy_LeavesDecisionAndFailClosedSatisfactionUnchanged_Test()
     {
         Fault fault = new(new TermIdentity("a", []), new InvalidOperationException("boom"));
-        Decision decision = new(TruthValue.Unknown, [fault]);
+        Decision decision = new(TruthValue.Unknown, new EquatableArray<Fault>([fault]));
 
         CollapseOutcome outcome = decision.Collapse(CollapsePolicy.UnknownAsTrue);
 
@@ -88,5 +95,37 @@ public sealed class TruthValueAndDecisionTests
 
         Assert.Equal(CollapseOutcome.RejectedUnresolved, outcome);
         Assert.Empty(decision.Faults);
+    }
+
+    /// <summary>
+    /// <see cref="Decision.Faults"/> is an <see cref="EquatableArray{T}"/> (ticket 28), so two decisions built from
+    /// separately-allocated but element-wise equal fault lists (and equal trace members) compare equal and share a
+    /// hash code, instead of the reference equality a plain <see cref="IReadOnlyList{T}"/> member would give two
+    /// different lists.
+    /// </summary>
+    [Fact]
+    public void Decision_TwoInstancesWithEqualFaultsAndTrace_AreEqual_Test()
+    {
+        TermIdentity term = new("isManager", []);
+        Fault firstFault = new(term, SharedException);
+        Fault secondFault = new(term, SharedException);
+        TraceEntry entry = new("isManager", TruthValue.True, false);
+        TraceNode node = new("isManager", TruthValue.True, false, EquatableArray<TraceNode>.Empty);
+
+        Decision first = new(
+            TruthValue.Unknown,
+            new EquatableArray<Fault>([firstFault]),
+            new Trace(new EquatableArray<TraceEntry>([entry])),
+            node
+        );
+        Decision second = new(
+            TruthValue.Unknown,
+            new EquatableArray<Fault>([secondFault]),
+            new Trace(new EquatableArray<TraceEntry>([entry])),
+            node
+        );
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
     }
 }

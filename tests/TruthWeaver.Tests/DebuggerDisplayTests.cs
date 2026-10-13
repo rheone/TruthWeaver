@@ -26,11 +26,28 @@ public sealed class DebuggerDisplayTests
         Assert.DoesNotContain(" at ", display, StringComparison.Ordinal);
     }
 
+    /// <summary>A fault read back from a decision record shows the recorded exception type, not <see cref="RecordedFaultException"/>.</summary>
+    [Fact]
+    public void DebuggerDisplay_RecordedFault_ShowsTheRecordedExceptionType_Test()
+    {
+        Fault fault = new(
+            new TermIdentity("IsAdmin", []),
+            new RecordedFaultException("boom") { ExceptionType = "System.InvalidOperationException" }
+        );
+
+        string display = DisplayOf(fault);
+
+        Assert.EndsWith("System.InvalidOperationException: boom", display, StringComparison.Ordinal);
+    }
+
     /// <summary>A decision shows its result and the number of faults.</summary>
     [Fact]
     public void DebuggerDisplay_Decision_ShowsResultAndFaultCount_Test()
     {
-        Decision decision = new(TruthValue.Unknown, [new Fault(new TermIdentity("IsAdmin", []), ThrownException())]);
+        Decision decision = new(
+            TruthValue.Unknown,
+            new EquatableArray<Fault>([new Fault(new TermIdentity("IsAdmin", []), ThrownException())])
+        );
 
         Assert.Equal("Unknown (1 faults)", DisplayOf(decision));
     }
@@ -40,7 +57,7 @@ public sealed class DebuggerDisplayTests
     public void DebuggerDisplay_EvaluatedTraceNode_ShowsTextResultAndChildCount_Test()
     {
         TraceNode leaf = new("IsAdmin()", TruthValue.True, false, []);
-        TraceNode node = new("AND", TruthValue.False, false, [leaf, leaf]);
+        TraceNode node = new("AND", TruthValue.False, false, new EquatableArray<TraceNode>([leaf, leaf]));
 
         Assert.Equal("AND => False (2 children)", DisplayOf(node));
     }

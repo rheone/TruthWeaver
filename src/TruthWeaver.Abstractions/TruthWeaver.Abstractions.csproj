@@ -2,10 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>c3f1a2b4-5d6e-4f7a-8b9c-0d1e2f3a4b5c</ProjectGuid>
     <RootNamespace>TruthWeaver.Abstractions</RootNamespace>
-    <Description>
-      Zero-third-party-dependency kernel for TruthWeaver: IPredicate&lt;TContext&gt;,
-      PredicateSchema, PredicateArguments, TruthValue, Decision, and Fault. Reference this
-      package alone from a service that only implements and registers predicates.
-    </Description>
+    <PackageId>TruthWeaver.Abstractions</PackageId>
+    <Description>Dependency-free contracts for TruthWeaver: TruthValue, Decision, Fault, IPredicate and the predicate schema types, for a project that only implements predicates.</Description>
+    <PackageTags>rules engine;kleene;k3;three-valued logic;predicate;abstractions;truthweaver</PackageTags>
   </PropertyGroup>
 </Project>

@@ -2,10 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>d4a2b3c5-6e7f-4a8b-9c0d-1e2f3a4b5c6d</ProjectGuid>
     <RootNamespace>TruthWeaver.Yaml</RootNamespace>
-    <Description>
-      YAML tree support for TruthWeaver, isolated in its own package so a consumer with
-      no interest in YAML never acquires the YamlDotNet dependency transitively.
-    </Description>
+    <PackageId>TruthWeaver.Yaml</PackageId>
+    <Description>YAML support for TruthWeaver: read and write rule trees and query YAML documents as a data source, isolated in its own package so only consumers of YAML take the YamlDotNet dependency.</Description>
+    <PackageTags>rules engine;kleene;k3;yaml;data source;truthweaver</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

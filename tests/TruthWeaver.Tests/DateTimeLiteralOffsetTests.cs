@@ -156,7 +156,7 @@ public sealed class DateTimeLiteralOffsetTests
     {
         PredicateRegistryBuilder<Window> builder = PredicateRegistry<Window>.CreateBuilder();
         (PredicateSchema schema, Func<Window, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            DateTimePredicates.Between<Window>("atBetween", w => w.At);
+            DateTimePredicates.IsBetween<Window>("atBetween", w => w.At);
         builder.Add(schema, evaluate);
         PredicateSchema anyOf = new(
             "atAnyOf",

@@ -128,7 +128,7 @@ public sealed class DocumentationLintTests
 
     /// <summary>The in-scope set follows links recursively, stops at the stop list and honors the opt markers.</summary>
     [Fact]
-    public void InScope_FollowsLinksStopsAtStopListAndHonorsMarkers_Test()
+    public void InScope_Recursion_FollowsLinksStopsAtStopListAndHonorsMarkers_Test()
     {
         string root = Path.Combine(Path.GetTempPath(), "tw-lint-" + Guid.NewGuid().ToString("N"));
         try

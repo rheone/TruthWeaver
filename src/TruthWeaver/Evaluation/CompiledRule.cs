@@ -1,9 +1,11 @@
 namespace TruthWeaver.Evaluation;
 
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -26,21 +28,34 @@ public sealed class CompiledRule<TContext>
     private readonly Lazy<IReadOnlySet<string>> predicateNames;
     private readonly Lazy<RuleMetrics> metrics;
     private readonly CompilerOptions options;
+    private readonly Lazy<NoteLookup?> noteLookup;
 
+    /// <summary>Initializes a new instance of the <see cref="CompiledRule{TContext}"/> class.</summary>
+    /// <param name="root">The compiled tree.</param>
+    /// <param name="registry">The registry the tree's terms were resolved against.</param>
+    /// <param name="logger">The logger for evaluation, or <see langword="null"/> to log nowhere.</param>
+    /// <param name="options">The options the tree was compiled with, or <see langword="null"/> for the defaults.</param>
+    /// <param name="notes">
+    /// The notes by tree path, or <see langword="null"/> for none. Only the compiler passes notes: a rewrite builds a new
+    /// tree whose paths no longer name the nodes the notes were written on, so its result has none.
+    /// </param>
     internal CompiledRule(
         Expression root,
         PredicateRegistry<TContext> registry,
         ILogger? logger = null,
-        CompilerOptions? options = null
+        CompilerOptions? options = null,
+        IReadOnlyDictionary<string, string>? notes = null
     )
     {
         this.options = options ?? CompilerOptions.Default;
         this.Root = root;
         this.registry = registry;
         this.logger = logger ?? NullLogger.Instance;
+        this.Notes = notes is { Count: > 0 } ? notes.ToFrozenDictionary(StringComparer.Ordinal) : [];
         this.canonicalText = new Lazy<string>(() => CanonicalPrinter.Print(this.Root));
         this.predicateNames = new Lazy<IReadOnlySet<string>>(() => CollectPredicateNames(this.Root));
         this.metrics = new Lazy<RuleMetrics>(() => RuleMetrics.Measure(this.Root, this.options.MaxAnalysisTerms));
+        this.noteLookup = new Lazy<NoteLookup?>(() => NoteLookup.Create(this.Root, this.Notes));
     }
 
     /// <summary>Gets this rule's canonical printed DSL text — the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
@@ -61,11 +76,34 @@ public sealed class CompiledRule<TContext>
     public RuleMetrics Metrics => this.metrics.Value;
 
     /// <summary>
+    /// Gets the notes written on this rule's nodes, keyed by each node's tree path: <c>$</c> for the root,
+    /// <c>$.operands[1]</c> for its second operand, and so on, the same paths JSON and YAML diagnostics use. A note is a
+    /// <c>//</c> or <c>/* */</c> comment in rule text, a <c>note</c> property in JSON or YAML, or
+    /// <c>RuleBuilder.WithNote</c>. The dictionary is empty for a rule with no notes.
+    /// </summary>
+    /// <remarks>
+    /// Notes sit beside the tree, not in it: a rule with notes compiles to the same tree, the same
+    /// <see cref="CanonicalText"/> and the same diagnostics as the rule without them, and evaluates the same way.
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>, <see cref="PrintJson()"/> and
+    /// <c>PrintYaml</c> write them by default, so a conversion between the formats keeps them; <see cref="CanonicalText"/>
+    /// never does. A rewrite (<see cref="Simplify"/>, <see cref="Canonicalize"/>, <see cref="ExpandToPrimitives"/>, the
+    /// normal forms, <see cref="OptimizeOrder"/> and the rest) returns a rule with no notes, because the rewritten tree's
+    /// paths no longer name the nodes the notes were written on.
+    /// </remarks>
+    public IReadOnlyDictionary<string, string> Notes { get; }
+
+    /// <summary>
     /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
     /// <c>InternalsVisibleTo</c>, so its YAML printer can render the same tree <see cref="CanonicalText"/>
-    /// and <see cref="PrintJson"/> render, without this package needing to know YAML exists.
+    /// and <see cref="PrintJson()"/> render, without this package needing to know YAML exists.
     /// </summary>
     internal Expression Root { get; }
+
+    /// <summary>
+    /// Gets the notes looked up by node for the printers, or <see langword="null"/> when this rule has none. Internal and
+    /// visible to <c>TruthWeaver.Yaml</c>, whose printer writes the notes the same way the JSON printer does.
+    /// </summary>
+    internal NoteLookup? NoteLookup => this.noteLookup.Value;
 
     /// <summary>
     /// Prints this rule as DSL text with the chosen grouping delimiters. <see cref="GroupingStyle.Parentheses"/> returns
@@ -74,10 +112,195 @@ public sealed class CompiledRule<TContext>
     /// and <c>{}</c> as the same grouping.
     /// </summary>
     /// <param name="grouping">The grouping delimiters to print with. Defaults to <see cref="GroupingStyle.Parentheses"/>.</param>
+    /// <param name="operatorStyle">
+    /// How to spell <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>.
+    /// <see cref="OperatorStyle.Word"/> (the default, and the only form <see cref="CanonicalText"/> ever uses) writes
+    /// the word form. <see cref="OperatorStyle.Symbolic"/> writes the mathematical symbols the DSL parser itself
+    /// reads (<c>∧ ∨ ¬ ⊕ ↔ → ↑ ↓</c>), so the result still re-parses to a tree equal to this one.
+    /// <see cref="OperatorStyle.CStyle"/> is rejected: the parser does not read <c>^</c> or <c>==</c>, so there is no
+    /// round-trippable C-style rule text. <c>COALESCE</c> and <c>If</c> always keep their word/function-call spelling
+    /// here, in every style, because the DSL reads <c>??</c> only infix and has no call syntax for it. Call
+    /// <see cref="TryPrintRuleText(GroupingStyle, OperatorStyle, out string?)"/> to avoid the exception.
+    /// </param>
+    /// <param name="constants">
+    /// How to spell <c>True</c>, <c>False</c> and <c>Unknown</c>, or <see langword="null"/> (the default) for the word form.
+    /// Only a format that the parser reads back is accepted: <see cref="ConstantStyle.Word"/> or
+    /// <see cref="ConstantStyle.Letters"/> (<c>T</c>, <c>F</c>, <c>U</c>), with no override, or with an override that is a
+    /// letter-case variant of the constant's own word or letter (for example <c>TRUE</c> or <c>t</c>).
+    /// <see cref="ConstantStyle.LogicSymbols"/> is rejected, because the parser does not read <c>⊤</c> or <c>⊥</c> at all.
+    /// </param>
     /// <returns>The DSL text.</returns>
-    public string PrintRuleText(GroupingStyle grouping = GroupingStyle.Parentheses)
+    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or <paramref name="constants"/> is a format that the parser does not read back.</exception>
+    public string PrintRuleText(
+        GroupingStyle grouping = GroupingStyle.Parentheses,
+        OperatorStyle operatorStyle = OperatorStyle.Word,
+        ConstantFormat? constants = null
+    )
     {
-        return grouping == GroupingStyle.Parentheses ? this.CanonicalText : CanonicalPrinter.Print(this.Root, grouping);
+        if (operatorStyle == OperatorStyle.CStyle)
+        {
+            throw new ArgumentException(
+                "OperatorStyle.CStyle has no round-trippable rule text: the DSL parser does not read '^' or '=='. "
+                    + "Use Word or Symbolic, or call TryPrintRuleText.",
+                nameof(operatorStyle)
+            );
+        }
+
+        if (constants is not null && !constants.IsRuleTextSafe(out string? reason))
+        {
+            throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(constants));
+        }
+
+        return
+            grouping == GroupingStyle.Parentheses
+            && operatorStyle == OperatorStyle.Word
+            && constants is null
+            && this.NoteLookup is null
+            ? this.CanonicalText
+            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants, this.NoteLookup);
+    }
+
+    /// <summary>
+    /// Writes this rule as DSL text to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> returns, without a large string
+    /// that the caller must hold.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="grouping">The grouping delimiters to print with. Defaults to <see cref="GroupingStyle.Parentheses"/>.</param>
+    /// <param name="operatorStyle">How to spell the connectives, as for the string overload. Defaults to <see cref="OperatorStyle.Word"/>.</param>
+    /// <param name="constants">How to spell the constants, as for the string overload, or <see langword="null"/> for the word form.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or <paramref name="constants"/> is a format that the parser does not read back. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintRuleText(
+        TextWriter writer,
+        GroupingStyle grouping = GroupingStyle.Parentheses,
+        OperatorStyle operatorStyle = OperatorStyle.Word,
+        ConstantFormat? constants = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintRuleText(grouping, operatorStyle, constants));
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text using <paramref name="options"/> (ticket 10). This is the same text as
+    /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> for an equivalent grouping, operator
+    /// style and constants, with one addition: when <see cref="RuleTextOptions.Width"/> is set, a group that does not
+    /// fit the width breaks across lines, indented by <see cref="RuleTextOptions.IndentSize"/> per nesting level. The
+    /// breaking rule is documented in <c>docs/rule-text.md</c>. The result still compiles to a tree equal to
+    /// <see cref="Root"/>.
+    /// </summary>
+    /// <param name="options">The printing options.</param>
+    /// <returns>The DSL text, one line when <see cref="RuleTextOptions.Width"/> is <see langword="null"/>, otherwise possibly many.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/>'s <see cref="RuleTextOptions.OperatorStyle"/> is <see cref="OperatorStyle.CStyle"/>, or its <see cref="RuleTextOptions.Constants"/> is a format the parser does not read back.</exception>
+    public string PrintRuleText(RuleTextOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.OperatorStyle == OperatorStyle.CStyle)
+        {
+            throw new ArgumentException(
+                "OperatorStyle.CStyle has no round-trippable rule text: the DSL parser does not read '^' or '=='. "
+                    + "Use Word or Symbolic, or call TryPrintRuleText.",
+                nameof(options)
+            );
+        }
+
+        if (options.Constants is not null && !options.Constants.IsRuleTextSafe(out string? reason))
+        {
+            throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(options));
+        }
+
+        NoteLookup? notes = options.IncludeNotes ? this.NoteLookup : null;
+        return
+            options.Width is null
+            && options.Grouping == GroupingStyle.Parentheses
+            && options.OperatorStyle == OperatorStyle.Word
+            && options.Constants is null
+            && notes is null
+            ? this.CanonicalText
+            : CanonicalPrinter.Print(this.Root, options, notes);
+    }
+
+    /// <summary>
+    /// Writes this rule as DSL text to <paramref name="writer"/> using <paramref name="options"/>. The output is exactly the
+    /// text that <see cref="PrintRuleText(RuleTextOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The printing options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> has an operator style or constants that the parser does not read back. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintRuleText(TextWriter writer, RuleTextOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintRuleText(options));
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>,
+    /// but reports an unsupported <paramref name="operatorStyle"/> through the return value instead of throwing.
+    /// </summary>
+    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is the only value this rejects.</param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/>.</returns>
+    public bool TryPrintRuleText(GroupingStyle grouping, OperatorStyle operatorStyle, [NotNullWhen(true)] out string? text)
+    {
+        return this.TryPrintRuleText(grouping, operatorStyle, constants: null, out text);
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>,
+    /// but reports an unsupported <paramref name="operatorStyle"/> or <paramref name="constants"/> through the return
+    /// value instead of throwing.
+    /// </summary>
+    /// <param name="grouping">The grouping delimiters to print with.</param>
+    /// <param name="operatorStyle">The operator style. <see cref="OperatorStyle.CStyle"/> is rejected.</param>
+    /// <param name="constants">
+    /// The constant format, or <see langword="null"/> for the word form. A format that the parser does not read back
+    /// is rejected (see <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/>).
+    /// </param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="operatorStyle"/> is <see cref="OperatorStyle.CStyle"/> or <paramref name="constants"/> is not read back.</returns>
+    public bool TryPrintRuleText(
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle,
+        ConstantFormat? constants,
+        [NotNullWhen(true)] out string? text
+    )
+    {
+        if (operatorStyle == OperatorStyle.CStyle || constants?.IsRuleTextSafe(out _) == false)
+        {
+            text = null;
+            return false;
+        }
+
+        text = this.PrintRuleText(grouping, operatorStyle, constants);
+        return true;
+    }
+
+    /// <summary>
+    /// Renders this rule as DSL text, like <see cref="PrintRuleText(RuleTextOptions)"/>, but reports an unsupported
+    /// <see cref="RuleTextOptions.OperatorStyle"/> or <see cref="RuleTextOptions.Constants"/> through the return value
+    /// instead of throwing.
+    /// </summary>
+    /// <param name="options">The printing options. Rejected the same way as <see cref="PrintRuleText(RuleTextOptions)"/>.</param>
+    /// <param name="text">The DSL text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> unless <paramref name="options"/> is rejected.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    public bool TryPrintRuleText(RuleTextOptions options, [NotNullWhen(true)] out string? text)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.OperatorStyle == OperatorStyle.CStyle || options.Constants?.IsRuleTextSafe(out _) == false)
+        {
+            text = null;
+            return false;
+        }
+
+        text = this.PrintRuleText(options);
+        return true;
     }
 
     /// <summary>
@@ -176,10 +399,14 @@ public sealed class CompiledRule<TContext>
     /// <c>OR</c>/<c>AND</c> pattern may change, so the order predicates are invoked in may differ; results do not.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates, with derived operators where patterns matched.</returns>
-    public CompiledRule<TContext> CompressToDerived()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates, with derived operators where patterns matched. It carries
+    /// a <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit
+    /// before the rule stopped changing; the rule is then still equivalent, but compressing it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> CompressToDerived()
     {
-        return new CompiledRule<TContext>(Compressor.Compress(this.Root), this.registry, this.logger, this.options);
+        return this.CompressToDerivedWithPassLimit(Compressor.MaxPasses);
     }
 
     /// <summary>
@@ -208,10 +435,14 @@ public sealed class CompiledRule<TContext>
     /// text-based, a canonical rule is for comparison and storage keys, not for performance tuning.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates in canonical form.</returns>
-    public CompiledRule<TContext> Canonicalize()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates in canonical form. It carries a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit before
+    /// the rule stopped changing; the rule is then still equivalent, but canonicalising it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> Canonicalize()
     {
-        return new CompiledRule<TContext>(Canonicalizer.Canonicalize(this.Root), this.registry, this.logger, this.options);
+        return this.CanonicalizeWithPassLimit(Canonicalizer.MaxPasses);
     }
 
     /// <summary>
@@ -239,10 +470,72 @@ public sealed class CompiledRule<TContext>
     /// the value never changes.
     /// </para>
     /// </remarks>
-    /// <returns>A new rule over the same predicates, simplified.</returns>
-    public CompiledRule<TContext> Simplify()
+    /// <returns>
+    /// A result that holds the new rule over the same predicates, simplified. It carries a
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning when the rewrite reached its pass limit before
+    /// the rule stopped changing; the rule is then still equivalent, but simplifying it again can change it.
+    /// </returns>
+    public CompilationResult<TContext> Simplify()
     {
-        return new CompiledRule<TContext>(Simplifier.Simplify(this.Root), this.registry, this.logger, this.options);
+        return this.SimplifyWithPassLimit(Simplifier.MaxPasses);
+    }
+
+    /// <summary>
+    /// Replaces this rule with an equivalent, same-size one whose <c>AND</c>/<c>OR</c> operands are reordered cheapest
+    /// first, and returns it as a new rule. Lets a rule author rely on the evaluator's left-to-right short-circuit
+    /// (<see cref="EvaluationMode.ShortCircuit"/>) to skip an expensive predicate once a cheap one already decides the
+    /// <c>AND</c> or <c>OR</c> it is part of.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every <c>AND</c> and <c>OR</c> node's operands are stable-sorted by subtree cost, cheapest first: the cost of an
+    /// operand is the sum of <see cref="Abstractions.PredicateSchema.Cost"/> over the distinct terms it reaches - a term
+    /// reached through two paths inside the same operand counts once, matching the evaluator's per-evaluation term
+    /// memoization (ADR-0002). A predicate with no <see cref="Abstractions.PredicateSchema.Cost"/> hint sits at the
+    /// neutral baseline of <c>0</c>; a rule whose predicates all leave it unset sorts every tie in original order
+    /// (<see cref="Enumerable.OrderBy{TSource,TKey}(IEnumerable{TSource},Func{TSource,TKey})"/> is a stable sort), so this
+    /// method changes nothing for it. <c>COALESCE</c>'s priority order, <c>IMPLIES</c>'s antecedent-first evaluation and
+    /// <c>If</c>'s condition-first evaluation all carry meaning beyond cost, so none of their operands is reordered.
+    /// </para>
+    /// <para>
+    /// The result evaluates to the same value as this rule for every <c>True</c>/<c>False</c>/<c>Unknown</c> assignment
+    /// and has exactly the same node count. <b>Evaluation order and side effects are not preserved.</b> A predicate the
+    /// original would have invoked, and any fault it would have reported, may no longer run (or may run earlier) once a
+    /// short-circuit applies in the new order; the value never changes. This is the same trade <see cref="Simplify"/>
+    /// already makes for operands it drops entirely.
+    /// </para>
+    /// <para>
+    /// Same inputs (this rule's tree, the registry's <c>Cost</c> hints and <paramref name="options"/>) give the same
+    /// order on every call - there is no randomness and no hidden state. Passing <see cref="OrderOptimizationOptions.MeasuredCosts"/>
+    /// is the only way to change the order for a fixed rule and registry.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">
+    /// The measured-cost override, or <see langword="null"/> (the default) to use only the registry's static
+    /// <see cref="Abstractions.PredicateSchema.Cost"/> hints.
+    /// </param>
+    /// <returns>A result that holds the new rule over the same predicates, with its <c>AND</c>/<c>OR</c> operands reordered.</returns>
+    public CompilationResult<TContext> OptimizeOrder(OrderOptimizationOptions? options = null)
+    {
+        Dictionary<string, double>? measuredCosts = (options ?? OrderOptimizationOptions.Default).MeasuredCosts is { } measured
+            ? new Dictionary<string, double>(measured, StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        double CostOf(TermIdentity identity)
+        {
+            if (measuredCosts is not null && measuredCosts.TryGetValue(identity.PredicateName, out double measuredCost))
+            {
+                return measuredCost;
+            }
+
+            return this.registry.TryGetSchema(identity.PredicateName, out PredicateSchema? schema) ? schema.Cost ?? 0.0 : 0.0;
+        }
+
+        Expression optimized = OrderOptimizer.Optimize(this.Root, CostOf);
+        return new CompilationResult<TContext>(
+            new CompiledRule<TContext>(optimized, this.registry, this.logger, this.options),
+            EquatableArray<Diagnostic>.Empty
+        );
     }
 
     /// <summary>
@@ -256,15 +549,13 @@ public sealed class CompiledRule<TContext>
     /// changed its operands. <see cref="Diffing.RuleDiff"/> compares two finished rules and does not say which law fired; the step
     /// list does.
     /// </remarks>
-    /// <returns>The same rule as <see cref="Simplify"/> and the list of steps.</returns>
+    /// <returns>The same rule as <see cref="Simplify"/>, the list of steps, and the same non-convergence warning.</returns>
     public SimplifyResult<TContext> SimplifyWithSteps()
     {
         List<RewriteStep> steps = [];
-        Expression simplified = Simplifier.Simplify(this.Root, new RewriteTrace(steps));
-        return new SimplifyResult<TContext>(
-            new CompiledRule<TContext>(simplified, this.registry, this.logger, this.options),
-            steps
-        );
+        RewriteOutcome outcome = Simplifier.Simplify(this.Root, new RewriteTrace(steps));
+        CompilationResult<TContext> result = this.ConvergedResult(outcome, nameof(this.Simplify), Simplifier.MaxPasses);
+        return new SimplifyResult<TContext>(result.Rule!, steps, result.Diagnostics);
     }
 
     /// <summary>
@@ -334,11 +625,182 @@ public sealed class CompiledRule<TContext>
         return this.NormalFormResult(NormalForms.Form.Dnf, nameof(this.ToDnf), normalForm, maxNodeCount);
     }
 
-    /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003).</summary>
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToPrimitives"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToPrimitives"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToPrimitives(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToPrimitives(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToNand"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToNand"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToNand(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToNand(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ExpandToNor"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ExpandToNor"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryExpandToNor(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ExpandToNor(maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="CompressToDerived"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCompressToDerived(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.CompressToDerived().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="Canonicalize"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryCanonicalize(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics
+    )
+    {
+        return this.Canonicalize().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="Simplify"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including a non-convergence warning on success.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TrySimplify([NotNullWhen(true)] out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)
+    {
+        return this.Simplify().TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="OptimizeOrder"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised by this call.</param>
+    /// <param name="options">The measured-cost override, as for <see cref="OptimizeOrder"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced; otherwise <see langword="false"/>.</returns>
+    public bool TryOptimizeOrder(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        OrderOptimizationOptions? options = null
+    )
+    {
+        return this.OptimizeOrder(options).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToNnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToNnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToNnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToNnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToCnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToCnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToCnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToCnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>The <c>Try</c> form of <see cref="ToDnf"/>.</summary>
+    /// <param name="rule">The rewritten rule when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
+    /// <param name="diagnostics">Every diagnostic raised, including warnings on success.</param>
+    /// <param name="normalForm">The form options, or <see langword="null"/> for <see cref="NormalFormOptions.Default"/>.</param>
+    /// <param name="maxNodeCount">The node cap, as for <see cref="ToDnf"/>.</param>
+    /// <returns><see langword="true"/> when a rule was produced (warnings alone do not fail it); otherwise <see langword="false"/>.</returns>
+    public bool TryToDnf(
+        [NotNullWhen(true)] out CompiledRule<TContext>? rule,
+        out EquatableArray<Diagnostic> diagnostics,
+        NormalFormOptions? normalForm = null,
+        int? maxNodeCount = null
+    )
+    {
+        return this.ToDnf(normalForm, maxNodeCount).TryGetRule(out rule, out diagnostics);
+    }
+
+    /// <summary>
+    /// Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003), with each of its <see cref="Notes"/> as
+    /// a <c>note</c> property on its node, so the JSON compiles back to the same tree and the same notes.
+    /// </summary>
     /// <returns>The JSON text.</returns>
     public string PrintJson()
     {
-        return JsonTreePrinter.Print(this.Root);
+        return this.PrintJson(includeNotes: true);
+    }
+
+    /// <summary>Prints this rule to the flat, key-discriminated JSON tree shape (ADR-0003), with or without its notes.</summary>
+    /// <param name="includeNotes">
+    /// <see langword="true"/> to write each of <see cref="Notes"/> as a <c>note</c> property (the lossless form that
+    /// <see cref="PrintJson()"/> gives); <see langword="false"/> for the tree alone, for example to compare two rules.
+    /// </param>
+    /// <returns>The JSON text.</returns>
+    public string PrintJson(bool includeNotes)
+    {
+        return JsonTreePrinter.Print(this.Root, includeNotes ? this.NoteLookup : null);
+    }
+
+    /// <summary>Writes this rule to <paramref name="writer"/> as the JSON that <see cref="PrintJson()"/> returns.</summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintJson(TextWriter writer)
+    {
+        this.PrintJson(writer, includeNotes: true);
+    }
+
+    /// <summary>Writes this rule to <paramref name="writer"/> as the JSON that <see cref="PrintJson(bool)"/> returns.</summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="includeNotes"><see langword="true"/> to write the notes, as for <see cref="PrintJson(bool)"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintJson(TextWriter writer, bool includeNotes)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintJson(includeNotes));
     }
 
     /// <summary>
@@ -398,6 +860,60 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text to <paramref name="writer"/>, with the operator labels in
+    /// <see cref="OperatorStyle.Word"/>. The output is exactly the text that
+    /// <see cref="PrintMermaid(bool, MermaidDirection, bool, bool, MermaidPalette?, Func{OutlineNode, NodeStyle?}?, int?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors, or <see langword="null"/> for <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> for no compaction.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(
+        TextWriter writer,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(
+            this.PrintMermaid(
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
+    }
+
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text to <paramref name="writer"/> using <paramref name="options"/>. The
+    /// output is exactly the text that <see cref="PrintMermaid(MermaidOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The diagram options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(TextWriter writer, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintMermaid(options));
+    }
+
+    /// <summary>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
     /// result and short-circuit path.
     /// </summary>
@@ -452,12 +968,205 @@ public sealed class CompiledRule<TContext>
         return MermaidTreePrinter.Print(this.Outline(), RequireTraceTree(decision), options);
     }
 
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text, colored by one evaluation, to <paramref name="writer"/>, with the
+    /// operator labels in <see cref="OperatorStyle.Word"/>. The output is exactly the text that
+    /// <see cref="PrintMermaid(Decision, bool, MermaidDirection, bool, bool, MermaidPalette?, Func{OutlineNode, NodeStyle?}?, int?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
+    /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
+    /// <param name="twoLineTermLabels">Whether a term renders as a bold label and a plain argument line. Defaults to <see langword="false"/>.</param>
+    /// <param name="palette">The state, highlight and mute colors, or <see langword="null"/> for <see cref="MermaidPalette.Light"/>.</param>
+    /// <param name="nodeStyle">A callback that picks a style for any node, or <see langword="null"/> for none.</param>
+    /// <param name="compactChainThreshold">The operand count above which a flat <c>AND</c> or <c>OR</c> chain is boxed, or <see langword="null"/> for no compaction.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(
+        TextWriter writer,
+        Decision decision,
+        bool showArgumentValues = true,
+        MermaidDirection direction = MermaidDirection.TopDown,
+        bool nodeShapes = false,
+        bool twoLineTermLabels = false,
+        MermaidPalette? palette = null,
+        Func<OutlineNode, NodeStyle?>? nodeStyle = null,
+        int? compactChainThreshold = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(
+            this.PrintMermaid(
+                decision,
+                showArgumentValues,
+                direction,
+                nodeShapes,
+                twoLineTermLabels,
+                palette,
+                nodeStyle,
+                compactChainThreshold
+            )
+        );
+    }
+
+    /// <summary>
+    /// Writes this rule's Mermaid <c>flowchart</c> text, colored by one evaluation, to <paramref name="writer"/> using
+    /// <paramref name="options"/>. The output is exactly the text that <see cref="PrintMermaid(Decision, MermaidOptions)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The diagram options.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintMermaid(TextWriter writer, Decision decision, MermaidOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintMermaid(decision, options));
+    }
+
+    /// <summary>
+    /// Renders this rule as an HTML fragment: one infix formula in nested <c>span</c> elements with the classes
+    /// <c>tw-operator</c>, <c>tw-term</c> and <c>tw-constant</c>, HTML entities for the logic symbols and a <c>sub</c> element for
+    /// the subscript of a simple variable. The fragment has no <c>script</c> element and no <c>style</c> attribute, and every
+    /// term, argument and constant is escaped, so it is safe to put in a page.
+    /// </summary>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <returns>The HTML fragment.</returns>
+    public string PrintHtml(HtmlOptions? options = null)
+    {
+        return HtmlPrinter.Print(this.Outline(), options ?? HtmlOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as an HTML fragment to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintHtml(HtmlOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintHtml(TextWriter writer, HtmlOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintHtml(options));
+    }
+
+    /// <summary>
+    /// Renders this rule as an HTML fragment, with the state class <c>tw-true</c>, <c>tw-false</c>, <c>tw-unknown</c> or
+    /// <c>tw-skipped</c> added to each node of one evaluation.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <returns>The HTML fragment.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
+    public string PrintHtml(Decision decision, HtmlOptions? options = null)
+    {
+        return HtmlPrinter.Print(this.Outline(), RequireTraceTree(decision), options ?? HtmlOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as an HTML fragment, with a state class on each node of one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintHtml(Decision, HtmlOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintHtml(TextWriter writer, Decision decision, HtmlOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintHtml(decision, options));
+    }
+
+    /// <summary>
+    /// Renders this rule as a Graphviz DOT <c>digraph</c>: a hexagon for each operator, a rounded box for each term and a circle
+    /// for each constant, with one edge from each operator to each operand. The node ids are <c>n0</c>, <c>n1</c> and so on
+    /// in depth-first order, and the labels are escaped for DOT.
+    /// </summary>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <returns>The DOT text.</returns>
+    public string PrintDot(DotOptions? options = null)
+    {
+        return DotPrinter.Print(this.Outline(), options ?? DotOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as a Graphviz DOT <c>digraph</c> to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintDot(DotOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintDot(TextWriter writer, DotOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintDot(options));
+    }
+
+    /// <summary>
+    /// Renders this rule as a Graphviz DOT <c>digraph</c>, with a fill color on each node of one evaluation: green for
+    /// <c>True</c>, red for <c>False</c>, yellow for <c>Unknown</c> and gray for a node that short-circuiting skipped.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <returns>The DOT text.</returns>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
+    public string PrintDot(Decision decision, DotOptions? options = null)
+    {
+        return DotPrinter.Print(this.Outline(), RequireTraceTree(decision), options ?? DotOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as a Graphviz DOT <c>digraph</c>, with a fill color on each node of one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintDot(Decision, DotOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintDot(TextWriter writer, Decision decision, DotOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintDot(decision, options));
+    }
+
     /// <summary>Renders this rule's structure as an indented plain-text tree.</summary>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
-    public string PrintPlainText(bool showArgumentValues = true)
+    public string PrintPlainText(bool showArgumentValues = true, ConstantFormat? constants = null)
     {
-        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(this.Outline(), showArgumentValues: showArgumentValues, constants: constants);
+    }
+
+    /// <summary>
+    /// Writes this rule's structure as an indented plain-text tree to <paramref name="writer"/>. The output is exactly the
+    /// text that <see cref="PrintPlainText(bool, ConstantFormat?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintPlainText(TextWriter writer, bool showArgumentValues = true, ConstantFormat? constants = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintPlainText(showArgumentValues, constants));
     }
 
     /// <summary>
@@ -466,12 +1175,41 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
     /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule, as happens with a decision from a different rule.</exception>
-    public string PrintPlainText(Decision decision, bool showArgumentValues = true)
+    public string PrintPlainText(Decision decision, bool showArgumentValues = true, ConstantFormat? constants = null)
     {
-        return PlainTextTreePrinter.Print(this.Outline(), RequireTraceTree(decision), showArgumentValues: showArgumentValues);
+        return PlainTextTreePrinter.Print(
+            this.Outline(),
+            RequireTraceTree(decision),
+            showArgumentValues: showArgumentValues,
+            constants: constants
+        );
+    }
+
+    /// <summary>
+    /// Writes this rule's structure as an indented plain-text tree, annotated by one evaluation, to
+    /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintPlainText(Decision, bool, ConstantFormat?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
+    /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="Decision.TraceTree"/> of <paramref name="decision"/> does not match the shape of this rule. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintPlainText(
+        TextWriter writer,
+        Decision decision,
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintPlainText(decision, showArgumentValues, constants));
     }
 
     /// <summary>
@@ -489,6 +1227,20 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Writes this rule as a flat, single-line infix equation to <paramref name="writer"/>. The output is exactly the text
+    /// that <see cref="PrintEquation(EquationOptions?)"/> returns.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The dialect and term options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintEquation(TextWriter writer, EquationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(this.PrintEquation(options));
+    }
+
+    /// <summary>
     /// Renders this rule as an equation with a letter for each term, and returns the legend that maps each letter back to
     /// its term. The call always uses simple-variable mode, so <see cref="EquationOptions.SimpleVariables"/> has no
     /// effect here. The legend shows each term as its full call, whatever <see cref="EquationOptions.ShowArgumentValues"/>
@@ -499,6 +1251,119 @@ public sealed class CompiledRule<TContext>
     public EquationWithLegend PrintEquationWithLegend(EquationOptions? options = null)
     {
         return EquationPrinter.PrintWithLegend(this.Root, options ?? EquationOptions.Default);
+    }
+
+    /// <summary>
+    /// Writes this rule as an equation with a letter for each term, followed by its legend, to <paramref name="writer"/>.
+    /// The output is the <see cref="EquationWithLegend.Equation"/> of <see cref="PrintEquationWithLegend(EquationOptions?)"/>.
+    /// When the rule has at least one term, a <c>\n</c> and the <see cref="EquationWithLegend.LegendText"/> follow. The text
+    /// has no trailing newline. For a rule with no term, only the equation is written.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The dialect options, or <see langword="null"/> for <see cref="EquationOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintEquationWithLegend(TextWriter writer, EquationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        EquationWithLegend result = this.PrintEquationWithLegend(options);
+        writer.Write(result.Equation);
+        if (result.LegendText.Length > 0)
+        {
+            writer.Write('\n');
+            writer.Write(result.LegendText);
+        }
+    }
+
+    /// <summary>
+    /// Prints the truth table of this rule: one row for each assignment of <c>False</c>, <c>Unknown</c> and <c>True</c> to
+    /// its distinct terms (3<sup>n</sup> rows), or of <c>False</c> and <c>True</c> only when
+    /// <see cref="TruthTableOptions.Classical"/> is set (2<sup>n</sup> rows), with the rule's value for the row. The table
+    /// treats each term as a free variable. It calls no predicate and reads no data source, so a rule with variable
+    /// references prints the same way. The first column is the first term to occur, and the first column changes slowest.
+    /// The values run <c>False</c>, <c>Unknown</c>, <c>True</c>, a layout order and not a number. The text has no trailing line
+    /// feed.
+    /// </summary>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <returns>The table text.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The rule has more terms than <see cref="TruthTableOptions.DefaultTermCap"/> and <see cref="TruthTableOptions.AllowLargerTable"/>
+    /// is not set, or it has more terms than <see cref="TruthTableOptions.HardTermLimit"/>. Call
+    /// <see cref="TryPrintTruthTable(TruthTableOptions?, out string?, out IReadOnlyList{Diagnostic})"/> to avoid the exception.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value.</exception>
+    public string PrintTruthTable(TruthTableOptions? options = null)
+    {
+        using StringWriter writer = new(CultureInfo.InvariantCulture);
+        this.PrintTruthTable(writer, options);
+        return writer.ToString();
+    }
+
+    /// <summary>
+    /// Writes the truth table of this rule to <paramref name="writer"/>. The output is exactly the text that
+    /// <see cref="PrintTruthTable(TruthTableOptions?)"/> returns, without a large string that the caller must hold.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The table is refused, as for <see cref="PrintTruthTable(TruthTableOptions?)"/>. Nothing is written in this case.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public void PrintTruthTable(TextWriter writer, TruthTableOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        if (
+            !TruthTablePrinter.TryPrint(
+                this.Root,
+                options ?? TruthTableOptions.Default,
+                writer,
+                out IReadOnlyList<Diagnostic> diagnostics
+            )
+        )
+        {
+            throw new InvalidOperationException(diagnostics[0].Message);
+        }
+    }
+
+    /// <summary>
+    /// Prints the truth table, like <see cref="PrintTruthTable(TruthTableOptions?)"/>, but reports a refused table through
+    /// the return value and the diagnostics instead of throwing.
+    /// </summary>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <param name="text">The table text, or <see langword="null"/> when this method returns <see langword="false"/>.</param>
+    /// <param name="diagnostics">
+    /// A <see cref="DiagnosticCodes.TruthTableCapRaised"/> warning when the table has more terms than the default cap and the
+    /// options allow it, a <see cref="DiagnosticCodes.TruthTableTooLarge"/> error when the table is refused, or empty.
+    /// </param>
+    /// <returns><see langword="true"/> unless the table is refused.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value.</exception>
+    public bool TryPrintTruthTable(
+        TruthTableOptions? options,
+        [NotNullWhen(true)] out string? text,
+        out IReadOnlyList<Diagnostic> diagnostics
+    )
+    {
+        using StringWriter writer = new(CultureInfo.InvariantCulture);
+        bool printed = this.TryPrintTruthTable(writer, options, out diagnostics);
+        text = printed ? writer.ToString() : null;
+        return printed;
+    }
+
+    /// <summary>
+    /// Writes the truth table to <paramref name="writer"/>, like <see cref="PrintTruthTable(TextWriter, TruthTableOptions?)"/>,
+    /// but reports a refused table through the return value and the diagnostics instead of throwing.
+    /// </summary>
+    /// <param name="writer">The writer to write to. This method does not flush or dispose it. Nothing is written when the table is refused.</param>
+    /// <param name="options">The format and term options, or <see langword="null"/> for <see cref="TruthTableOptions.Default"/>.</param>
+    /// <param name="diagnostics">As for <see cref="TryPrintTruthTable(TruthTableOptions?, out string?, out IReadOnlyList{Diagnostic})"/>.</param>
+    /// <returns><see langword="true"/> unless the table is refused.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value. Nothing is written in this case.</exception>
+    /// <exception cref="IOException">The writer failed. The exception reaches the caller unchanged.</exception>
+    public bool TryPrintTruthTable(TextWriter writer, TruthTableOptions? options, out IReadOnlyList<Diagnostic> diagnostics)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        return TruthTablePrinter.TryPrint(this.Root, options ?? TruthTableOptions.Default, writer, out diagnostics);
     }
 
     /// <summary>
@@ -564,10 +1429,133 @@ public sealed class CompiledRule<TContext>
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Evaluates this rule against each context of a sequence and yields one <see cref="Decision"/> per context, in the
+    /// order of the contexts. Each context is one <see cref="EvaluateAsync"/> call with the same
+    /// <paramref name="services"/>, <paramref name="dataSources"/> and <paramref name="options"/>, so
+    /// <see cref="EvaluationOptions.Timeout"/> and <see cref="EvaluationOptions.FaultBudget"/> apply to each context
+    /// separately. A predicate fault in one context makes only that decision <see cref="TruthValue.Unknown"/>; the
+    /// other contexts are evaluated as usual.
+    /// </summary>
+    /// <remarks>
+    /// At most <paramref name="maxDegreeOfParallelism"/> evaluations are in flight at one time, and a decision that
+    /// finishes early waits for the decisions before it, so the output order never depends on timing. The sequence is
+    /// read lazily, one context per free slot. The default of 1 evaluates one context at a time; use a higher value
+    /// only when the predicates and <paramref name="services"/> are safe to call from several threads at once. When the
+    /// consumer stops reading, or an evaluation throws, the evaluations still in flight are cancelled and awaited
+    /// before the enumeration ends. Collect every decision with <c>ToArrayAsync</c> from <c>System.Linq</c>.
+    /// </remarks>
+    /// <param name="contexts">The contexts to evaluate, read lazily.</param>
+    /// <param name="services">The service provider for every evaluation, as for <see cref="EvaluateAsync"/>. With a parallelism above 1 it is used from several threads.</param>
+    /// <param name="dataSources">The data sources for every evaluation, or <see langword="null"/> when the rule has no variables. They are only read.</param>
+    /// <param name="options">The options for every evaluation, or <see langword="null"/> for the defaults.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of evaluations in flight at one time. The default is 1.</param>
+    /// <param name="cancellationToken">A token that stops the batch. It reaches every evaluation in flight.</param>
+    /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
+    public IAsyncEnumerable<Decision> EvaluateManyAsync(
+        IEnumerable<TContext> contexts,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
+        EvaluationOptions? options = null,
+        int maxDegreeOfParallelism = 1,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(contexts);
+        return this.EvaluateManyAsync(
+            contexts.ToAsyncEnumerable(),
+            services,
+            dataSources,
+            options,
+            maxDegreeOfParallelism,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Evaluates this rule against each context of an asynchronous stream and yields one <see cref="Decision"/> per
+    /// context, in the order the stream produces them. The behavior is the same as for the
+    /// <see cref="IEnumerable{T}"/> overload of <c>EvaluateManyAsync</c>: options per context, bounded parallelism,
+    /// stable order and cancellation of the evaluations in flight when the enumeration stops.
+    /// </summary>
+    /// <param name="contexts">The contexts to evaluate, read lazily with <paramref name="cancellationToken"/>.</param>
+    /// <param name="services">The service provider for every evaluation, as for <see cref="EvaluateAsync"/>. With a parallelism above 1 it is used from several threads.</param>
+    /// <param name="dataSources">The data sources for every evaluation, or <see langword="null"/> when the rule has no variables. They are only read.</param>
+    /// <param name="options">The options for every evaluation, or <see langword="null"/> for the defaults.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of evaluations in flight at one time. The default is 1.</param>
+    /// <param name="cancellationToken">A token that stops the batch. It reaches the stream and every evaluation in flight.</param>
+    /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
+    public IAsyncEnumerable<Decision> EvaluateManyAsync(
+        IAsyncEnumerable<TContext> contexts,
+        IServiceProvider? services = null,
+        DataSources? dataSources = null,
+        EvaluationOptions? options = null,
+        int maxDegreeOfParallelism = 1,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(contexts);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, 1);
+
+        // Checked here, not in the iterator, so a bad option fails at the call rather than at the first read.
+        if (options is { FaultBudget: < 1 })
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.FaultBudget, "The fault budget must be 1 or more.");
+        }
+
+        return BatchEvaluator.EvaluateAsync(
+            this,
+            contexts,
+            services,
+            dataSources,
+            options,
+            maxDegreeOfParallelism,
+            cancellationToken
+        );
+    }
+
     /// <inheritdoc />
     public override string ToString()
     {
         return this.CanonicalText;
+    }
+
+    /// <summary>Compresses with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes to run.</param>
+    /// <returns>The compression result.</returns>
+    internal CompilationResult<TContext> CompressToDerivedWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(
+            Compressor.CompressChecked(this.Root, maxPasses),
+            nameof(this.CompressToDerived),
+            maxPasses
+        );
+    }
+
+    /// <summary>Canonicalises with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes to run.</param>
+    /// <returns>The canonicalisation result.</returns>
+    internal CompilationResult<TContext> CanonicalizeWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(
+            Canonicalizer.CanonicalizeChecked(this.Root, maxPasses: maxPasses),
+            nameof(this.Canonicalize),
+            maxPasses
+        );
+    }
+
+    /// <summary>Simplifies with a given pass limit, so a test can force non-convergence.</summary>
+    /// <param name="maxPasses">The most passes of the simplification loop.</param>
+    /// <returns>The simplification result.</returns>
+    internal CompilationResult<TContext> SimplifyWithPassLimit(int maxPasses)
+    {
+        return this.ConvergedResult(Simplifier.Simplify(this.Root, maxPasses: maxPasses), nameof(this.Simplify), maxPasses);
     }
 
     private static HashSet<string> CollectPredicateNames(Expression root)
@@ -664,7 +1652,7 @@ public sealed class CompiledRule<TContext>
                 Diagnostic.Warning(
                     DiagnosticCodes.ThresholdKeptAsAtom,
                     string.Create(
-                        System.Globalization.CultureInfo.InvariantCulture,
+                        CultureInfo.InvariantCulture,
                         $"{rewrite} kept {text} as an atom. Expanding it would add about {kept.EstimatedNodes:N0} nodes."
                     ),
                     SourceSpan.None,
@@ -678,8 +1666,35 @@ public sealed class CompiledRule<TContext>
 
         return result with
         {
-            Diagnostics = warnings,
+            Diagnostics = new EquatableArray<Diagnostic>(warnings),
         };
+    }
+
+    /// <summary>
+    /// Wraps the output of a repeat-until-stable rewrite as a new rule. A rewrite that stopped at its pass limit adds the
+    /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning; the rule is still equivalent.
+    /// </summary>
+    private CompilationResult<TContext> ConvergedResult(RewriteOutcome outcome, string rewrite, int maxPasses)
+    {
+        CompiledRule<TContext> rule = new(outcome.Tree, this.registry, this.logger, this.options);
+        if (outcome.Converged)
+        {
+            return new CompilationResult<TContext>(rule, EquatableArray<Diagnostic>.Empty);
+        }
+
+        Diagnostic warning = Diagnostic.Warning(
+            DiagnosticCodes.RewriteNotConverged,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"{rewrite} stopped after {maxPasses} passes before the rule stopped changing, so rewriting the result again can still change it."
+            ),
+            SourceSpan.None,
+            suggestion: new DiagnosticSuggestion(
+                DiagnosticSuggestionKind.Hint,
+                $"Call {rewrite} on the result again until it no longer changes."
+            )
+        );
+        return new CompilationResult<TContext>(rule, new EquatableArray<Diagnostic>([warning]));
     }
 
     /// <summary>
@@ -692,7 +1707,7 @@ public sealed class CompiledRule<TContext>
         {
             return new CompilationResult<TContext>(
                 new CompiledRule<TContext>(tree, this.registry, this.logger, this.options),
-                []
+                EquatableArray<Diagnostic>.Empty
             );
         }
 
@@ -707,6 +1722,6 @@ public sealed class CompiledRule<TContext>
                 "Raise the maxNodeCount argument or CompilerOptions.MaxRewriteNodeCount, or simplify the rule first."
             )
         );
-        return new CompilationResult<TContext>(null, [diagnostic]);
+        return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>([diagnostic]));
     }
 }

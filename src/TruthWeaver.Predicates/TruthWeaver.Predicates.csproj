@@ -2,12 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>030258ff-378a-4466-8223-8cf49fe95c6f</ProjectGuid>
     <RootNamespace>TruthWeaver.Predicates</RootNamespace>
-    <Description>
-      A convenience library of ready-made, generic IPredicate&lt;TContext&gt; implementations (string
-      comparison, null/empty, set equality, regex matching) for TruthWeaver, referencing only
-      TruthWeaver.Abstractions so a predicate-only consumer never acquires the parser, compiler,
-      or analyzer transitively.
-    </Description>
+    <PackageId>TruthWeaver.Predicates</PackageId>
+    <Description>Ready-made predicates for TruthWeaver covering strings, numbers, dates, collections, regular expressions and types, built on TruthWeaver.Abstractions alone.</Description>
+    <PackageTags>rules engine;kleene;k3;predicates;validation;regex;truthweaver</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

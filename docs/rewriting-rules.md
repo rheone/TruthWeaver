@@ -15,23 +15,48 @@ Each rewrite is verified per operator. The K3 laws hold for connectives only. `S
 | [`CompressToDerived()`](#compress-to-derived-operators) | Primitive shapes written as derived operators. |
 | [`Canonicalize()`](#canonical-form) | One deterministic representation. |
 | [`Simplify()`](#simplify) | An equivalent, cheaper rule. |
+| [`OptimizeOrder()`](#optimize-evaluation-order) | The same rule, with `AND`/`OR` operands reordered cheapest first. |
 | [`ToNnf()`](#normal-forms) | Negation normal form: `NOT` only above a term or an atom. |
 | [`ToCnf()`](#normal-forms) / [`ToDnf()`](#normal-forms) | An `AND` of `OR`s (CNF), or an `OR` of `AND`s (DNF). |
 | [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | The same rule, and the list of laws applied. |
 
+### Which rewrite to use
+
+| You want | Use | Why |
+| --- | --- | --- |
+| A smaller or cheaper rule with the same value | [`Simplify()`](#simplify) | It removes constants, repeats and absorbed terms. It never makes a rule larger. |
+| To compare, cache or de-duplicate rules by their text | [`Canonicalize()`](#canonical-form) | Equivalent rules that differ only in operand order, aliases or nesting get the same `CanonicalText`. |
+| A rule that is easier to read after an expansion | [`CompressToDerived()`](#compress-to-derived-operators) | It writes primitive shapes as `IMPLIES`, `XOR`, `NAND`, `ANY` and the other derived operators. |
+| A rule that uses only `NOT`, `AND`, `OR`, the thresholds and `COALESCE` | [`ExpandToPrimitives()`](#expand-to-primitives) | A tool needs to know only the kernel. |
+| A rule that uses one logical operator | [`ExpandToNand()` or `ExpandToNor()`](#nand-only-and-nor-only) | `NAND` and `NOR` are each enough for the connectives. |
+| `NOT` only at the terms | [`ToNnf()`](#normal-forms) | Each condition appears in its positive or negative form. |
+| A list of conditions that must all hold, each an `OR` | [`ToCnf()`](#normal-forms) | The result can be much larger than the rule. |
+| A list of alternative ways to be `True`, each an `AND` | [`ToDnf()`](#normal-forms) | The result can be much larger than the rule. |
+| To know why a rule changed | [`SimplifyWithSteps()`](#see-which-laws-simplify-applied) | It lists each law the rewrite applied. |
+| To let a cheap predicate's short-circuit skip an expensive one | [`OptimizeOrder()`](#optimize-evaluation-order) | It reorders `AND`/`OR` operands cheapest first, by a `Cost` hint. |
+
+Expanding and normalizing rewrites can make a rule larger. `CompressToDerived()`, `Canonicalize()`, `Simplify()` and `OptimizeOrder()` never do; `OptimizeOrder()` never changes the node count at all.
+
 ### What a rewrite returns
 
-A rewrite returns one of three shapes. The rule for which shape is: a rewrite that can make the rule larger returns a `CompilationResult<TContext>`, because it can be refused at its size cap. A rewrite that never makes the rule larger returns a `CompiledRule<TContext>`. A rewrite that also reports its steps returns a `SimplifyResult<TContext>`.
+A rewrite returns one of two shapes. A rewrite that can be refused at its size cap, or that can report a warning, returns a `CompilationResult<TContext>`. A rewrite that also reports its steps returns a `SimplifyResult<TContext>`.
 
 | Shape | Rewrites | How to read the result |
 | --- | --- | --- |
-| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()` | Check `Succeeded`, then use `Rule` (or call `GetRuleOrThrow()`). A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. |
-| `CompiledRule<TContext>` | `CompressToDerived()`, `Canonicalize()`, `Simplify()` | Use the rule. It is never larger than the original. |
-| `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule` and `Steps`. |
+| `CompilationResult<TContext>` | `ExpandToPrimitives()`, `ExpandToNand()`, `ExpandToNor()`, `ToNnf()`, `ToCnf()`, `ToDnf()`, `CompressToDerived()`, `Canonicalize()`, `Simplify()`, `OptimizeOrder()` | Call the `Try` form (`TrySimplify`, `TryToNnf`, `TryOptimizeOrder` and so on), or check `Succeeded` and use `Rule`. `GetRuleOrThrow()` throws instead. A result over the cap has no rule and a `TRE0016` error. `ToNnf()`, `ToCnf()` and `ToDnf()` can also return a `TRE0031` warning with a rule. `CompressToDerived()`, `Canonicalize()` and `Simplify()` always return a rule, never larger than the original, and can return a `TRE0033` warning (see [Pass limits](#pass-limits)). `OptimizeOrder()` always returns a rule with no diagnostics: it only reorders operands, so it has no size cap and no pass limit. |
+| `SimplifyResult<TContext>` | `SimplifyWithSteps()` | Use `Rule`, `Steps` and `Diagnostics`. `Diagnostics` holds the same `TRE0033` warning as `Simplify()`. |
 
-To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It has an overload for each of the first two shapes.
+To assert that any of these is sound in a test, use [`RewriteAssertions.AssertSound`](testing-assertions.md#assert-that-a-rewrite-is-sound). It accepts a rewrite that returns a `CompilationResult<TContext>` or a `CompiledRule<TContext>`.
+
+### Pass limits
+
+`CompressToDerived()`, `Canonicalize()` and `Simplify()` repeat a pass until the rule stops changing, so rewriting the result again changes nothing. Each has a fixed pass limit: 16, 8 and 16. If a rewrite reaches its limit before the rule stops changing, it returns the equivalent rule it has and one `TRE0033` (`RewriteNotConverged`) warning. In that case, rewriting the result again can still change it. Call the rewrite on the result again until it no longer changes. The limit is not a setting. No known rule reaches it.
 
 The Evaluation behavior section of each Operation page states how the rewrites treat that operator. For example, [NAND](strong-k3/derived/nand.md#evaluation-behavior) states what `CompressToDerived` and `ExpandToNand` do with it.
+
+### Worked examples
+
+[Rewriting examples](rewriting-examples.md) shows the output of each rewrite in four notations. [Normal form examples](rewriting-normal-form-examples.md) does the same for NNF, CNF and DNF.
 
 ### Expand to primitives
 
@@ -39,7 +64,10 @@ The Evaluation behavior section of each Operation page states how the rewrites t
 
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("a IMPLIES ANY(b, c)").GetRuleOrThrow();
-CompiledRule<MyContext> kernel = rule.ExpandToPrimitives().GetRuleOrThrow();
+if (!rule.TryExpandToPrimitives(out CompiledRule<MyContext>? kernel, out EquatableArray<Diagnostic> diagnostics))
+{
+    return;
+}
 
 Console.WriteLine(kernel.CanonicalText);   // only primitive operators
 Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
@@ -64,10 +92,12 @@ Console.WriteLine(rule.CanonicalText);     // unchanged: (a IMPLIES ANY(b, c))
 
 Every row is checked against an independent truth-table oracle for all `True`/`False`/`Unknown` inputs. Classical shortcuts fail in Strong Kleene logic, so the `If` row keeps its third term. The [consensus term](strong-k3/specification/semantics.md#the-invalid-consensus-removal) explains why. Nothing stays unexpanded: the inspections are expressible with `COALESCE`, the primitive that can see `Unknown`.
 
-For `ExpandToPrimitives()`, note two points:
+Two points apply to `ExpandToPrimitives()`:
 
-- **Size.** An operator whose definition mentions an operand twice (`XOR`, `EQUIVALENT`, `If`, the inspections) repeats the text of that operand, so a deeply nested rule can grow a lot. The printed text of the expanded rule compiles back to the same rule only when it fits `CompilerOptions.MaxNodeCount` (512 by default). See [A large result may not recompile](#a-large-result-may-not-recompile). `CompilerOptions.MaxRewriteNodeCount` caps the result itself (see [Size cap](#size-cap)).
-- **Faults.** A predicate that throws is `Unknown` plus a `Fault` in the expanded rule, exactly as in the original. Terms are still memoized by identity.
+- An operator whose definition mentions an operand twice (`XOR`, `EQUIVALENT`, `If`, the inspections) repeats the text of that operand, so a deeply nested rule can grow a lot. The printed text of the expanded rule compiles back to the same rule only when it fits `CompilerOptions.MaxNodeCount` (512 by default). See [A large result may not recompile](#a-large-result-may-not-recompile). `CompilerOptions.MaxRewriteNodeCount` caps the result itself (see [Size cap](#size-cap)).
+- A predicate that throws is `Unknown` plus a `Fault` in the expanded rule, as in the original. Terms are still memoized by identity.
+
+For a before and after, see [Example: expand to primitives](rewriting-examples.md#example-expand-to-primitives).
 
 ### Size cap
 
@@ -88,7 +118,7 @@ The code is in [Diagnostics](strong-k3/specification/diagnostics.md). This table
 | `ExpandToPrimitives()` | Linear for most operators. `XOR`, `EQUIVALENT`, `If` and the inspections repeat an operand, so nesting them multiplies the printed size by about two per level (exponential in nesting depth). |
 | `ExpandToNand()` / `ExpandToNor()` | The primitive size, times a small constant for the NAND or NOR rewrite, plus `C(n, k)` operand subsets for each `AtLeast(k, ...)` over `n` operands (`AtMost(k)` costs `C(n, k + 1)`, `Exactly(k)` both). Each subset is rebuilt as a NAND or NOR conjunction, so a wide threshold is refused quickly. A rewrite is also refused when its primitive form alone is over the cap. |
 
-`CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and have no cap.
+`CompressToDerived()`, `Canonicalize()` and `Simplify()` never make a rule larger and have no size cap. Each has a [pass limit](#pass-limits) instead.
 
 ### A large result may not recompile
 
@@ -111,11 +141,11 @@ The expanding rewrites and the normal forms (`ExpandToPrimitives()`, `ExpandToNa
 
 Longer `AND`/`OR` chains fold left, because both are associative in K3. The threshold rewrite is monotone, so it is exact for `Unknown` operands too. It has `C(n, k)` subsets, so very wide thresholds produce very large trees.
 
-**`COALESCE` is the one boundary.** A circuit of `NAND` or `NOR` is monotone in the information order, and `COALESCE` and the inspections are not. See [NAND](strong-k3/derived/nand.md#evaluation-behavior) and [COALESCE](strong-k3/functions/coalesce.md#evaluation-behavior). So `COALESCE`, and the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) that expand to it, stay as `COALESCE` nodes with their operands rewritten. A rule without them is purely `NAND` (or `NOR`). The same guarantees hold as for every rewrite: a new rule, the original untouched, identical results and faults.
+`COALESCE` is the one boundary. A circuit of `NAND` or `NOR` is monotone in the information order, and `COALESCE` and the inspections are not. See [NAND](strong-k3/derived/nand.md#evaluation-behavior) and [COALESCE](strong-k3/functions/coalesce.md#evaluation-behavior). So `COALESCE`, and the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) that expand to it, stay as `COALESCE` nodes with their operands rewritten. A rule without them is purely `NAND` (or `NOR`). The same guarantees hold as for every rewrite: a new rule, the original untouched, identical results and faults.
 
 ### Compress to derived operators
 
-`CompressToDerived()` goes the other way. It recognizes primitive shapes and writes them as readable derived operators. The usual input is an expanded rule, but it accepts any rule. It does not promise to recover the exact rule that was expanded. It returns an equivalent rule that is **never larger** (counted in nodes) and that compresses to itself.
+`CompressToDerived()` goes the other way. It recognizes primitive shapes and writes them as readable derived operators. The usual input is an expanded rule, but it accepts any rule. It does not promise to recover the exact rule that was expanded. It returns an equivalent rule that is never larger (counted in nodes) and that compresses to itself. For a before and after, see [Example: compress to derived operators](rewriting-examples.md#example-compress-to-derived-operators).
 
 | Primitive shape | Becomes |
 | --- | --- |
@@ -137,17 +167,19 @@ Every row is an identity of Strong Kleene logic, checked against the truth-table
 
 ### Canonical form
 
-`Canonicalize()` gives rules that are equivalent under a fixed set of Strong Kleene-sound rewrites one deterministic representation. You can then compare, cache and de-duplicate rules by their `CanonicalText`. It is deterministic and idempotent (`Canonicalize()` of a canonical rule is the same rule). It evaluates like the original for every `True`/`False`/`Unknown` assignment, and it is never larger than the original. To find rules that are not yet canonical, switch on the `NotCanonical` lint (`TRE0030`, see [lint rules](diagnostics.md#lint-rules-opt-in)).
+`Canonicalize()` applies a fixed set of Strong Kleene-sound rewrites, so equivalent rules get one representation. You can then compare, cache and de-duplicate rules by their `CanonicalText`. The result is deterministic and idempotent: `Canonicalize()` of a canonical rule is the same rule. It evaluates like the original for every `True`/`False`/`Unknown` assignment and is never larger. To find rules that are not yet canonical, switch on the `NotCanonical` lint (`TRE0030`, see [lint rules](diagnostics.md#lint-rules-opt-in)).
 
 The rewrites, in the order they are applied (bottom-up, repeated until stable):
 
-1. **Aliases collapse.** `ANY(...)` and `AtLeast(1, ...)` become `OR`. `ALL(...)` and `AtLeast(n, ...)` become `AND`. `GreaterThan(k)` becomes `AtLeast(k + 1)`. `LessThan(k)` becomes `AtMost(k - 1)`. `ExactlyOne(...)` becomes `Exactly(1, ...)`.
-2. **Double negation.** `NOT NOT x` becomes `x` (this holds in K3).
-3. **Flatten.** `AND` inside `AND`, `OR` inside `OR` and `COALESCE` inside `COALESCE` are spliced into the parent. All three are associative.
-4. **Sort.** The operands of the commutative operators (`AND`, `OR`, `XOR`, `EQUIVALENT`, `NAND`, `NOR`, `PARITY`, `ExactlyOne`, the threshold family, `BETWEEN`) are sorted by their canonical text, ordinally.
-5. **Deduplicate.** Repeated operands of `AND` and `OR` are removed (`a AND a` is `a`, because idempotence holds in K3). Counting operators keep repeats, because they count.
+1. Aliases collapse. `ANY(...)` and `AtLeast(1, ...)` become `OR`. `ALL(...)` and `AtLeast(n, ...)` become `AND`. `GreaterThan(k)` becomes `AtLeast(k + 1)`. `LessThan(k)` becomes `AtMost(k - 1)`. `ExactlyOne(...)` becomes `Exactly(1, ...)`.
+2. Double negation. `NOT NOT x` becomes `x` (this holds in K3).
+3. Flatten. `AND` inside `AND`, `OR` inside `OR` and `COALESCE` inside `COALESCE` are spliced into the parent. All three are associative.
+4. Sort. The operands of the commutative operators (`AND`, `OR`, `XOR`, `EQUIVALENT`, `NAND`, `NOR`, `PARITY`, `ExactlyOne`, the threshold family, `BETWEEN`) are sorted by their canonical text, ordinally.
+5. Deduplicate. Repeated operands of `AND` and `OR` are removed (`a AND a` is `a`, because idempotence holds in K3). Counting operators keep repeats, because they count.
 
-`COALESCE`, `IMPLIES` and `If` keep their operand order because it carries meaning. **Nothing is folded and no complement law is used.** `a OR NOT a` is not `True` in Strong Kleene logic (it is `Unknown` when `a` is), so it stays as a two-operand `OR`. Constant folding and the other cost-reducing rewrites belong to `Simplify()`.
+`COALESCE`, `IMPLIES` and `If` keep their operand order because it carries meaning. Nothing is folded and no complement law is used. `a OR NOT a` is `Unknown` when `a` is, so it stays as a two-operand `OR`. Constant folding and the other cost-reducing rewrites belong to `Simplify()`.
+
+For a before and after, see [Example: canonical form](rewriting-examples.md#example-canonical-form).
 
 > [!IMPORTANT]
 > The canonical rule has the same *value* as the original but not the same *evaluation order*. Reordering, flattening and removing duplicates can change which predicate runs first, which predicates run at all once a short-circuit applies, and so which faults are reported. Use a canonical rule as a comparison or storage key. Keep evaluating the rule as written if invocation order matters.
@@ -173,7 +205,7 @@ The rewrites, in the order they are applied (bottom-up, repeated until stable):
 
 "Never `Unknown`" operands (constants, the inspections, a `COALESCE` with such an operand, and operators over only those) also let `COALESCE` and the inspections be removed.
 
-**Classical rules that deliberately do not apply.** Each of these is valid in two-valued logic and false in Strong Kleene logic, because it fails when `a` is `Unknown`. `Simplify()` never uses them, so the rule keeps its value:
+`Simplify()` never uses the following classical rules. Each holds in two-valued logic and fails in Strong Kleene logic when `a` is `Unknown`:
 
 - Excluded middle (`a OR NOT a` is `True`) and non-contradiction (`a AND NOT a` is `False`).
 - `a IMPLIES a` and `a EQUIVALENT a` as `True`, and `a XOR a` as `False`.
@@ -185,7 +217,40 @@ The rewrites, in the order they are applied (bottom-up, repeated until stable):
 > [!IMPORTANT]
 > Like `Canonicalize()`, simplification keeps the *value* but not the evaluation order or side effects. Operands can be reordered, merged or dropped. An annihilated `AND` never evaluates its other operands, so a predicate that the original would have invoked (and any fault it would have reported) may not run.
 
-The rewrite does not use the dual-rail findings of the analyzer. The analyzer reports those as diagnostics (`StructuralTautology`, `StructuralContradiction`) for authors. Every simplification here is a local, structural rule that is easy to check.
+The rewrite does not use the dual-rail findings of the analyzer. The analyzer reports those as diagnostics (`StructuralTautology`, `StructuralContradiction`) for authors. Every simplification here is a local, structural rule.
+
+For a before and after, see [Example: simplify](rewriting-examples.md#example-simplify).
+
+### Optimize evaluation order
+
+`OptimizeOrder()` stable-sorts the operands of every `AND` and `OR`, cheapest subtree first, so the evaluator's left-to-right short-circuit (`EvaluationMode.ShortCircuit`, the default) reaches a deciding cheap predicate before an expensive one it can then skip. It never changes the rule's value, and never changes its node count: it only reorders operands.
+
+A predicate's cost comes from its [`PredicateSchema.Cost`](predicates.md#cost-hint) hint - an optional, relative number set at registration. A term with no hint sits at the neutral baseline of `0`. The cost of an `AND`/`OR` operand is the sum of `Cost` over the *distinct* terms it reaches; a term the operand reaches through two paths counts once, because the evaluator invokes a given term at most once per evaluation regardless of how many places reference it. Sorting is stable, so operands of equal cost - including the all-neutral case, where no predicate in the rule sets a `Cost` hint - keep their original relative order. **A rule whose predicates never set `Cost` is unchanged by `OptimizeOrder()`.**
+
+```csharp
+CompiledRule<MyContext> rule = compiler.Compile("fraudCheck AND accountActive AND notLocked").GetRuleOrThrow();
+// fraudCheck is registered with a high Cost; accountActive and notLocked are registered with none (neutral).
+
+CompiledRule<MyContext> optimized = rule.OptimizeOrder().GetRuleOrThrow();
+Console.WriteLine(optimized.CanonicalText);   // accountActive AND notLocked AND fraudCheck
+```
+
+`COALESCE`'s priority order, `IMPLIES`'s antecedent-first evaluation and `If`'s condition-first evaluation all carry meaning beyond cost, so none of their operands is ever reordered - only `AND` and `OR` are touched, at every depth of the rule.
+
+An opt-in measured-cost override replaces the schema's static hint for one call, for the predicates it names:
+
+```csharp
+CompilationResult<MyContext> optimized = rule.OptimizeOrder(
+    new OrderOptimizationOptions(MeasuredCosts: new Dictionary<string, double>
+    {
+        ["fraudCheck"] = 0.4,      // measured cheaper than its static hint suggested
+    }));
+```
+
+A predicate not named in `MeasuredCosts` falls back to its schema's `Cost` hint (or the neutral baseline when that is also unset). Without an override, the same rule and registry give the same order on every call - there is no randomness and no hidden state.
+
+> [!IMPORTANT]
+> Like `Canonicalize()` and `Simplify()`, `OptimizeOrder()` keeps the *value* but not the evaluation order or side effects. A predicate the original would have invoked, and any fault it would have reported, may no longer run (or may run earlier) once a short-circuit applies in the new order; the value never changes.
 
 ### See which laws Simplify applied
 
@@ -200,7 +265,7 @@ foreach (RewriteStep step in result.Steps)
     Console.WriteLine($"{step.Law}: {step.Before} => {step.After}");
 }
 
-// result.Rule has the same canonical text as rule.Simplify().
+// result.Rule has the same canonical text as rule.Simplify().GetRuleOrThrow().
 ```
 
 Each `RewriteStep` has three members:
@@ -213,22 +278,33 @@ Each `RewriteStep` has three members:
 
 - **Order.** The steps are in the order the rewrite applied them. The canonical-form laws come first: aliases, double negation, flattening, ordering and repeated operands. The simplification laws follow. The canonical-form laws run again between passes.
 - **Subtree text.** A step shows the subtree as it stood when the rewrite reached it. An earlier step can already have changed its operands, so `Before` is not always a substring of the original rule text.
-- **Reorder.** Sorting the operands of a commutative operator is a step. The value does not change, but the text does.
+- **Reorder.** Sorting the operands of a commutative operator is a step. The value stays the same and the text changes.
 - **One step for an expansion.** A derived operator with a constant operand (`a XOR True`) is one `DerivedWithConstant` step. The expansion inside it is not listed.
 - **Already simple.** A rule that `Simplify()` leaves as written returns an empty list.
 
-**Relation to `RuleDiff`.** `RuleDiff.Compare(before, after)` compares two finished rules. It reports what differs and whether the meaning is preserved. It does not report why the rules differ. The step list reports why: each step names a law. To show a rewrite, print the steps. For the net difference, call `RuleDiff.Compare(rule, result.Rule)`. The diff and the step list always agree on whether the rule changed.
+`RuleDiff.Compare(before, after)` compares two finished rules. It reports what differs and whether the meaning is preserved. It does not report why the rules differ. The step list reports why: each step names a law. To show a rewrite, print the steps. For the net difference, call `RuleDiff.Compare(rule, result.Rule)`. The diff and the step list always agree on whether the rule changed.
 
 ### Normal forms
 
-`ToNnf()`, `ToCnf()` and `ToDnf()` rewrite a rule into negation, conjunctive or disjunctive normal form. Each returns a `CompilationResult<TContext>` like the other size-capped rewrites, and each result has the same value as the original for every `True`/`False`/`Unknown` assignment.
+`ToNnf()`, `ToCnf()` and `ToDnf()` rewrite a rule into negation, conjunctive or disjunctive normal form. Each returns a `CompilationResult<TContext>`, like the other size-capped rewrites. Each result has the same value as the original for every `True`/`False`/`Unknown` assignment. For a before and after, see [Normal form examples](rewriting-normal-form-examples.md).
 
 ```csharp
 CompiledRule<MyContext> rule = compiler.Compile("NOT (a AND (b OR c))").GetRuleOrThrow();
 
-Console.WriteLine(rule.ToNnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToDnf().GetRuleOrThrow().CanonicalText);   // NOT a OR (NOT b AND NOT c)
-Console.WriteLine(rule.ToCnf().GetRuleOrThrow().CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+if (rule.TryToNnf(out CompiledRule<MyContext>? nnf, out _))
+{
+    Console.WriteLine(nnf.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+}
+
+if (rule.TryToDnf(out CompiledRule<MyContext>? dnf, out _))
+{
+    Console.WriteLine(dnf.CanonicalText);   // NOT a OR (NOT b AND NOT c)
+}
+
+if (rule.TryToCnf(out CompiledRule<MyContext>? cnf, out _))
+{
+    Console.WriteLine(cnf.CanonicalText);   // (NOT a OR NOT b) AND (NOT a OR NOT c)
+}
 ```
 
 | Form | Shape | How |
@@ -237,11 +313,11 @@ Console.WriteLine(rule.ToCnf().GetRuleOrThrow().CanonicalText);   // (NOT a OR N
 | CNF | An `AND` of `OR`s of literals and atoms | NNF, then `OR` is distributed over `AND`. |
 | DNF | An `OR` of `AND`s of literals and atoms | NNF, then `AND` is distributed over `OR`. |
 
-A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a distributive lattice with De Morgan negation, so distribution is an identity. No classical complement law is used: `a AND NOT a` and `a OR NOT a` stay as written. A repeated literal in a clause and a repeated clause are dropped, because idempotence holds. Each form is idempotent: rewriting a rewritten rule changes nothing.
+A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a distributive lattice with De Morgan negation, so distribution is an identity. No classical complement law is used, so `a AND NOT a` and `a OR NOT a` stay as written. Idempotence holds, so a repeated literal in a clause and a repeated clause are dropped. Rewriting a rewritten rule changes nothing.
 
-- **Atoms.** `COALESCE`, the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and `If` are not information-monotone. Each is an atom: no `NOT` is pushed into it. The operands inside it are normalized.
-- **Size.** A normal form can be larger than the rule. CNF and DNF can grow exponentially. Each form is capped by `CompilerOptions.MaxRewriteNodeCount` (see [Size cap](#size-cap)). A larger result is not built: `CompiledRule` is `null` and one `TRE0016` error is returned.
-- **Value, not order.** Distribution and de-duplication can change which predicates run and which faults appear. The value never changes.
+- `COALESCE`, the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and `If` are not information-monotone, so each is an atom. No `NOT` is pushed into it. The operands inside it are normalized.
+- A normal form can be larger than the rule, and CNF and DNF can grow exponentially. `CompilerOptions.MaxRewriteNodeCount` caps each form (see [Size cap](#size-cap)). A larger result is not built: `CompiledRule` is `null` and one `TRE0016` error is returned. [Size of each form](rewriting-normal-form-examples.md#size-of-each-form) has measured numbers.
+- Distribution and de-duplication can change which predicates run and which faults appear. The value never changes.
 
 #### Thresholds and `ExpandThresholds`
 
@@ -264,6 +340,50 @@ CompilationResult<MyContext> expanded = rule.ToDnf(new NormalFormOptions(ExpandT
 | `true` | A threshold expands to `AND`, `OR` and `NOT` over its operands. A result over `MaxRewriteNodeCount` returns `TRE0016` and no rule. |
 
 A threshold that is only an `OR` or an `AND` (`AtLeast(1, ...)`, `AtLeast(n, ...)`, `AtMost(0, ...)` or `AtMost(n - 1, ...)`) always expands, with no warning. So do `ANY`, `ALL` and `NONE`. The warning code is in [Diagnostics](strong-k3/specification/diagnostics.md).
+
+#### Strong K3 differences
+
+Two classical laws that a normal form often uses do not hold in Strong Kleene logic, so the rewrites never use them:
+
+- Excluded middle: `a OR NOT a` is `True` in two-valued logic. In Strong K3 it is `Unknown` when `a` is `Unknown`.
+- Non-contradiction: `a AND NOT a` is `False` in two-valued logic. In Strong K3 it is `Unknown` when `a` is `Unknown`.
+
+| `a` | `NOT a` | `a OR NOT a` | `a AND NOT a` |
+| --- | --- | --- | --- |
+| `True` | `False` | `True` | `False` |
+| `False` | `True` | `True` | `False` |
+| `Unknown` | `Unknown` | `Unknown` | `Unknown` |
+
+A classical CNF drops a clause such as `isDineIn OR NOT isDineIn`, because the clause is always true. In Strong K3 the clause is `Unknown` when `isDineIn` is `Unknown`, so it can change the value of the `AND` it belongs to. The normal forms keep the clause:
+
+<!-- doctest:rule excl -->
+```text
+isDineIn OR NOT isDineIn
+```
+
+<!-- doctest:ruletext excl cnf -->
+```text
+isDineIn OR NOT isDineIn
+```
+
+Four more points follow from the same logic:
+
+- Distribution is exact. `AND` and `OR` form a distributive lattice, so CNF and DNF have the same value as the rule for all three values of every term.
+- Idempotence holds, so a repeated literal in a clause and a repeated clause are dropped.
+- Atoms stay whole. A `NOT` is not pushed into `COALESCE`, an inspection or `If`.
+- A normal form keeps the value, not the evaluation order. It can run the predicates in a different order and report different faults.
+
+In this rule, the `NOT` of the `AND` splits into two `NOT`s. Neither enters `IsTrue(isDineIn)`:
+
+<!-- doctest:rule atom -->
+```text
+NOT (IsTrue(isDineIn) AND isTakeout)
+```
+
+<!-- doctest:ruletext atom nnf -->
+```text
+NOT IsTrue(isDineIn) OR NOT isTakeout
+```
 
 ## Rule equivalence
 
@@ -296,3 +416,40 @@ Limits to know:
 - **Strong K3 is not two-valued logic.** `a OR NOT a` is not equivalent to `TRUE`, because it is `Unknown` when `a` is.
 
 `RuleDiff.Compare` uses this check. `RuleDiffResult.PreservesMeaning` is `true` when the rules are equivalent (including when they are structurally identical), `false` when they are not, and `null` when the term cap makes the question undecidable (default 20). To use a larger cap, call `RuleEquivalence.Compare` directly, or pass the term cap as the optional third argument of `RuleDiff.Compare(before, after, maxAnalysisTerms)`.
+
+## Looser or tighter
+
+`RuleImplication` answers the question "does the new version accept more or fewer assignments than the old one?" An assignment of `True`, `False` or `Unknown` to the terms satisfies a rule when the rule is `True` for it. This is the same reading as `Decision.IsSatisfied`: `False` and `Unknown` do not satisfy a rule. The checks use the same dual-rail BDD as `RuleEquivalence`, so they are exact.
+
+`RuleImplication.Implies(first, second)` decides whether every assignment that satisfies `first` also satisfies `second`. The `Outcome` of the `RuleImplicationResult` is `Holds`, `DoesNotHold` or `Undecided`. For `DoesNotHold`, `CounterExample` is an assignment that satisfies `first` and does not satisfy `second`.
+
+`RuleImplication.Compare(before, after)` gives the `RuleRelation` of `after` to `before` in a `RuleRelationResult`:
+
+| `Relation` | Meaning | Examples given |
+| --- | --- | --- |
+| `Equivalent` | The same assignments satisfy both rules. | None. |
+| `Tighter` | Every assignment that satisfies `after` satisfies `before`. Some assignment satisfies only `before`. | `SatisfiesOnlyBefore` |
+| `Looser` | Every assignment that satisfies `before` satisfies `after`. Some assignment satisfies only `after`. | `SatisfiesOnlyAfter` |
+| `Overlapping` | Some assignment satisfies both rules, and each rule has an assignment that satisfies only it. | Both |
+| `Disjoint` | No assignment satisfies both rules, and each rule is satisfied by some assignment. | Both |
+| `Undecided` | The rules have more distinct terms between them than the term cap. `Reason` says so. | None. |
+
+The term cap is the optional `maxAnalysisTerms` argument of `Implies` and `Compare`. When it is `null`, the cap is `CompilerOptions.Default.MaxAnalysisTerms` (20). The options of the compiler that compiled the rules do not apply.
+
+Each example maps every distinct term in either rule, keyed by its printed form, to the value it takes. Terms that the example does not depend on are `False`.
+
+```csharp
+RuleRelationResult result = RuleImplication.Compare(
+    compiler.Compile("isManager").GetRuleOrThrow(),
+    compiler.Compile("isManager AND isDepartmentHead").GetRuleOrThrow());
+// result.Relation == RuleRelation.Tighter
+// result.SatisfiesOnlyBefore["isManager"] == TruthValue.True, and isDepartmentHead is not True
+```
+
+Limits to know:
+
+- **Only `True` counts.** `a` and `IsTrue(a)` are `True` for the same assignments, so they are `Equivalent` here. They are not equivalent for `RuleEquivalence.Compare`, because `a` is `Unknown` where `IsTrue(a)` is `False`.
+- **Subsets come first.** A rule that is never `True` is `Tighter` than any rule that is sometimes `True`, not `Disjoint`. Two rules that are never `True` are `Equivalent`.
+- **The other limits are the same as for rule equivalence.** Terms are opaque and independent, the cap is on distinct terms across both rules, and the check does not compare evaluation order, short-circuiting or faults.
+
+`RuleDiff.Compare` also reports the relation. `RuleDiffResult.Relation` is `Equivalent` when the rules are structurally identical, and otherwise the `Relation` of `RuleImplication.Compare(before, after, maxAnalysisTerms)`. It is `Undecided` when the term cap stops the check. Because only `True` counts, `Relation` can be `Equivalent` while `PreservesMeaning` is `false`: `a` and `IsTrue(a)` are an example.

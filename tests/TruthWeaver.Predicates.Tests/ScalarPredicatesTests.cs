@@ -8,19 +8,21 @@ public class ScalarPredicatesTests
     private static readonly Guid A = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid B = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
-    /// <summary>Boolean Equal and NotEqual are complements for true, false and null (Unknown).</summary>
+    /// <summary>Boolean IsEqualTo and IsNotEqualTo are complements for true, false and null (Unknown).</summary>
     [Theory]
     [InlineData(true, TruthValue.True, TruthValue.False)]
     [InlineData(false, TruthValue.False, TruthValue.True)]
     [InlineData(null, TruthValue.Unknown, TruthValue.Unknown)]
-    public async Task EqualAndNotEqual_Boolean_AreK3Complements_Test(bool? selected, TruthValue equal, TruthValue notEqual)
+    public async Task IsEqualToAndIsNotEqualTo_Boolean_AreK3Complements_Test(
+        bool? selected,
+        TruthValue equal,
+        TruthValue notEqual
+    )
     {
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) = ScalarPredicates.Equal<Scalars>(
-            "e",
-            c => c.Flag
-        );
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) =
+            ScalarPredicates.IsEqualTo<Scalars>("e", c => c.Flag);
         (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> ne) =
-            ScalarPredicates.NotEqual<Scalars>("n", c => c.Flag);
+            ScalarPredicates.IsNotEqualTo<Scalars>("n", c => c.Flag);
         PredicateArguments args = new(new Dictionary<string, LiteralValue> { ["value"] = LiteralValue.OfBoolean(true) });
 
         Assert.Equal(equal, await eq(new Scalars(selected, null, null), args, CancellationToken.None));
@@ -29,12 +31,10 @@ public class ScalarPredicatesTests
 
     /// <summary>Guid Equal matches only the same value.</summary>
     [Fact]
-    public async Task Equal_Guid_MatchesOnlyTheSameValue_Test()
+    public async Task IsEqualTo_Guid_MatchesOnlyTheSameValue_Test()
     {
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) = ScalarPredicates.Equal<Scalars>(
-            "e",
-            c => c.Id
-        );
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) =
+            ScalarPredicates.IsEqualTo<Scalars>("e", c => c.Id);
         PredicateArguments args = new(new Dictionary<string, LiteralValue> { ["value"] = LiteralValue.OfGuid(A) });
 
         Assert.Equal(TruthValue.True, await eq(new Scalars(null, A, null), args, CancellationToken.None));
@@ -44,14 +44,12 @@ public class ScalarPredicatesTests
 
     /// <summary>DateTimeOffset Equal compares the instant, so the same instant in another offset is equal.</summary>
     [Fact]
-    public async Task Equal_DateTimeOffset_ComparesTheInstantAcrossOffsets_Test()
+    public async Task IsEqualTo_DateTimeOffset_ComparesTheInstantAcrossOffsets_Test()
     {
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) = ScalarPredicates.Equal<Scalars>(
-            "e",
-            c => c.At
-        );
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> eq) =
+            ScalarPredicates.IsEqualTo<Scalars>("e", c => c.At);
         (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> ne) =
-            ScalarPredicates.NotEqual<Scalars>("n", c => c.At);
+            ScalarPredicates.IsNotEqualTo<Scalars>("n", c => c.At);
         DateTimeOffset utc = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
         DateTimeOffset plusTwo = new(2026, 1, 1, 14, 0, 0, TimeSpan.FromHours(2));
         PredicateArguments args = new(new Dictionary<string, LiteralValue> { ["value"] = LiteralValue.OfDateTimeOffset(utc) });
@@ -61,16 +59,14 @@ public class ScalarPredicatesTests
         Assert.Equal(TruthValue.True, await ne(new Scalars(null, null, utc.AddTicks(1)), args, CancellationToken.None));
     }
 
-    /// <summary>In and NotIn over Guid candidates are complements and Unknown for null.</summary>
+    /// <summary>IsIn and IsNotIn over Guid candidates are complements and Unknown for null.</summary>
     [Fact]
-    public async Task InAndNotIn_Guid_AreComplementsAndUnknownForNull_Test()
+    public async Task IsInAndIsNotIn_Guid_AreComplementsAndUnknownForNull_Test()
     {
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inEval) = ScalarPredicates.In<Scalars>(
-            "i",
-            c => c.Id
-        );
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inEval) =
+            ScalarPredicates.IsIn<Scalars>("i", c => c.Id);
         (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInEval) =
-            ScalarPredicates.NotIn<Scalars>("n", c => c.Id);
+            ScalarPredicates.IsNotIn<Scalars>("n", c => c.Id);
         PredicateArguments args = new(
             new Dictionary<string, LiteralValue>
             {
@@ -88,16 +84,12 @@ public class ScalarPredicatesTests
 
     /// <summary>In over booleans and date-times is registerable and tests membership.</summary>
     [Fact]
-    public async Task In_BooleanAndDateTimeOffset_TestMembership_Test()
+    public async Task IsIn_BooleanAndDateTimeOffset_TestMembership_Test()
     {
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> boolIn) = ScalarPredicates.In<Scalars>(
-            "b",
-            c => c.Flag
-        );
-        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> dateIn) = ScalarPredicates.In<Scalars>(
-            "d",
-            c => c.At
-        );
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> boolIn) =
+            ScalarPredicates.IsIn<Scalars>("b", c => c.Flag);
+        (_, Func<Scalars, PredicateArguments, CancellationToken, ValueTask<TruthValue>> dateIn) =
+            ScalarPredicates.IsIn<Scalars>("d", c => c.At);
         DateTimeOffset at = new(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
         PredicateArguments boolArgs = new(
             new Dictionary<string, LiteralValue>
@@ -194,18 +186,24 @@ public class ScalarPredicatesTests
 
     /// <summary>Each overload declares an argument of its own kind.</summary>
     [Fact]
-    public void Equal_EachKind_DeclaresMatchingArgumentKind_Test()
+    public void IsEqualTo_EachKind_DeclaresMatchingArgumentKind_Test()
     {
         Assert.Equal(
             LiteralKind.Boolean,
-            Assert.Single(ScalarPredicates.Equal<Scalars>("a", c => c.Flag).Schema.Arguments).Type
+            Assert.Single(ScalarPredicates.IsEqualTo<Scalars>("a", c => c.Flag).Schema.Arguments).Type
         );
-        Assert.Equal(LiteralKind.Guid, Assert.Single(ScalarPredicates.Equal<Scalars>("a", c => c.Id).Schema.Arguments).Type);
+        Assert.Equal(
+            LiteralKind.Guid,
+            Assert.Single(ScalarPredicates.IsEqualTo<Scalars>("a", c => c.Id).Schema.Arguments).Type
+        );
         Assert.Equal(
             LiteralKind.DateTimeOffset,
-            Assert.Single(ScalarPredicates.Equal<Scalars>("a", c => c.At).Schema.Arguments).Type
+            Assert.Single(ScalarPredicates.IsEqualTo<Scalars>("a", c => c.At).Schema.Arguments).Type
         );
-        Assert.Equal(LiteralKind.GuidArray, Assert.Single(ScalarPredicates.In<Scalars>("a", c => c.Id).Schema.Arguments).Type);
+        Assert.Equal(
+            LiteralKind.GuidArray,
+            Assert.Single(ScalarPredicates.IsIn<Scalars>("a", c => c.Id).Schema.Arguments).Type
+        );
     }
 
     private sealed record Scalars(bool? Flag, Guid? Id, DateTimeOffset? At);

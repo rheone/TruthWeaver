@@ -1,6 +1,6 @@
 namespace TruthWeaver.Printing;
 
-using TruthWeaver.Abstractions;
+using TruthWeaver.Ast;
 using TruthWeaver.Evaluation;
 
 /// <summary>
@@ -23,14 +23,16 @@ internal static class RuleRenderTree
     /// <param name="description">The rule's outline.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels.</param>
     /// <param name="showArgumentValues">Whether to include a term's <see cref="OutlineNode.ArgumentText"/> in its rendered label.</param>
+    /// <param name="constants">How to write a constant leaf, or <see langword="null"/> for the outline's own label.</param>
     /// <returns>The render tree.</returns>
     public static RenderNode Build(
         OutlineNode description,
         OperatorStyle style = OperatorStyle.Word,
-        bool showArgumentValues = true
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
     )
     {
-        return Build(description, evaluated: null, ancestorSkipped: false, style, showArgumentValues);
+        return Build(description, evaluated: null, ancestorSkipped: false, style, showArgumentValues, constants);
     }
 
     /// <summary>Builds a render tree colored by one evaluation's result tree.</summary>
@@ -38,15 +40,17 @@ internal static class RuleRenderTree
     /// <param name="evaluated">The root of the matching <see cref="Decision.TraceTree"/>.</param>
     /// <param name="style">How to render the AND/OR/NOT/XOR/EQUIVALENT operator labels.</param>
     /// <param name="showArgumentValues">Whether to include a term's <see cref="OutlineNode.ArgumentText"/> in its rendered label.</param>
+    /// <param name="constants">How to write a constant leaf, or <see langword="null"/> for the outline's own label.</param>
     /// <returns>The render tree.</returns>
     public static RenderNode Build(
         OutlineNode description,
         TraceNode evaluated,
         OperatorStyle style = OperatorStyle.Word,
-        bool showArgumentValues = true
+        bool showArgumentValues = true,
+        ConstantFormat? constants = null
     )
     {
-        return Build(description, evaluated, ancestorSkipped: false, style, showArgumentValues);
+        return Build(description, evaluated, ancestorSkipped: false, style, showArgumentValues, constants);
     }
 
     private static RenderNode Build(
@@ -54,7 +58,8 @@ internal static class RuleRenderTree
         TraceNode? evaluated,
         bool ancestorSkipped,
         OperatorStyle style,
-        bool showArgumentValues
+        bool showArgumentValues,
+        ConstantFormat? constants
     )
     {
         AssertOperandCountsAligned(description, evaluated);
@@ -70,16 +75,16 @@ internal static class RuleRenderTree
         for (int i = 0; i < description.Operands.Count; i++)
         {
             TraceNode? childEvaluated = children is { Count: > 0 } ? children[i] : null;
-            renderedChildren.Add(Build(description.Operands[i], childEvaluated, skipped, style, showArgumentValues));
+            renderedChildren.Add(Build(description.Operands[i], childEvaluated, skipped, style, showArgumentValues, constants));
         }
 
         OutlineNodeKind kind = description.Operands.Count > 0 ? OutlineNodeKind.Operator : description.Kind;
         return new RenderNode(
-            StyledLabel(description, style, showArgumentValues),
+            StyledLabel(description, style, showArgumentValues, constants),
             state,
             renderedChildren,
             kind,
-            BaseLabel(description, style),
+            BaseLabel(description, style, constants),
             showArgumentValues ? description.ArgumentText : null,
             description
         );
@@ -98,14 +103,29 @@ internal static class RuleRenderTree
     /// symbolic and the C-style form. <c>IMPLIES</c> has a symbolic spelling
     /// (<c>→</c>) but no C-family one, so it keeps its word form in <see cref="OperatorStyle.CStyle"/>; <c>NAND</c>/<c>NOR</c> behave the same way (<c>↑</c>/<c>↓</c>).
     /// </summary>
-    private static string StyledLabel(OutlineNode description, OperatorStyle style, bool showArgumentValues)
+    private static string StyledLabel(
+        OutlineNode description,
+        OperatorStyle style,
+        bool showArgumentValues,
+        ConstantFormat? constants
+    )
     {
-        string label = BaseLabel(description, style);
+        string label = BaseLabel(description, style, constants);
         return showArgumentValues && description.ArgumentText is { } argumentText ? $"{label} ({argumentText})" : label;
     }
 
-    private static string BaseLabel(OutlineNode description, OperatorStyle style)
+    private static string BaseLabel(OutlineNode description, OperatorStyle style, ConstantFormat? constants)
     {
+        // A constant leaf takes the constant format. Its outline label is always the canonical word, so the word tells the value.
+        if (
+            constants is not null
+            && description.Kind == OutlineNodeKind.Constant
+            && TruthValueText.TryParse(description.Label, out TruthValue value)
+        )
+        {
+            return constants.Text(value);
+        }
+
         if (style == OperatorStyle.Word || description.Operands.Count == 0)
         {
             return description.Label;

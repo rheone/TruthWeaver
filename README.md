@@ -14,13 +14,14 @@ or anything else.
 <details>
 <summary><strong>Table of contents</strong></summary>
 
-- [What it is (and isn't)](#what-it-is-and-isnt)
-- [Requirements](#requirements)
-- [Getting started](#getting-started)
-- [Packages](#packages)
-- [Features](#features)
-- [Documentation](#documentation)
-- [License](#license)
+- [TruthWeaver](#truthweaver)
+  - [What it is (and isn't)](#what-it-is-and-isnt)
+  - [Requirements](#requirements)
+  - [Getting started](#getting-started)
+  - [Packages](#packages)
+  - [Features](#features)
+  - [Documentation](#documentation)
+  - [License](#license)
 
 </details>
 
@@ -87,11 +88,10 @@ or RC included. The file does not pin that exact patch.
    ```csharp
    PredicateRegistry<Customer> registry = PredicateRegistry<Customer>.CreateBuilder().Add<LovesPineapple>().Build();
    RuleCompiler<Customer> compiler = new(registry);
-   CompilationResult<Customer> result = compiler.Compile("lovesPineapple");
 
-   if (!result.Succeeded)
+   if (!compiler.TryCompile("lovesPineapple", out CompiledRule<Customer>? rule, out EquatableArray<Diagnostic> diagnostics))
    {
-       // result.Diagnostics explains why - surface it to whoever authored the rule.
+       // diagnostics explains why - surface it to whoever authored the rule.
        return;
    }
    ```
@@ -99,7 +99,7 @@ or RC included. The file does not pin that exact patch.
 4. **Evaluate it against a context:**
 
    ```csharp
-   Decision decision = await result.Rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
+   Decision decision = await rule.EvaluateAsync(customer, serviceProvider, cancellationToken: ct);
 
    if (decision.IsSatisfied)
    {
@@ -123,7 +123,7 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.Yaml` | Read and write rules and data sources as YAML. |
 | `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
-| `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests. |
+| `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests, and run YAML rule tests. |
 | `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
@@ -142,7 +142,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
   evaluation timeout.
 - Scoped dependency injection for class-based predicates, structured logging and
   a `"TruthWeaver"` `Meter` for metrics.
-- Mermaid and plain-text rendering of a compiled rule, optionally colored by one
+- Mermaid, HTML, Graphviz DOT and plain-text rendering of a compiled rule, optionally colored by one
   evaluation.
 - Ready-made predicates and test support in `TruthWeaver.Predicates` and
   `TruthWeaver.Testing`.
@@ -156,20 +156,29 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule text](docs/rule-text.md): the grammar, grouping delimiters, whitespace and case.
 - [Rule formats](docs/rule-formats.md): how to choose between rule text, JSON and YAML, and how to convert between them.
 - [RuleBuilder, outlines and diagrams](docs/rulebuilder.md): assemble a rule in code, describe it and draw it.
-- [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX or AsciiMath.
-- [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule and check that two rules are equivalent.
+- [Equations](docs/equations.md): print a rule as a flat infix equation in Unicode, LaTeX, AsciiMath, a C-style notation, MathML, Typst or plain ASCII.
+- [HTML and Graphviz DOT](docs/html-and-dot.md): print a rule as an HTML fragment for a web page, or as a DOT graph for Graphviz.
+- [Truth tables](docs/truth-tables.md): print the Strong K3 or classical truth table of a rule in Markdown, CSV, JSON, HTML or LaTeX.
+- [Rewriting rules and rule equivalence](docs/rewriting-rules.md): transform a rule, check that two rules are equivalent, and find whether a new version is [looser or tighter](docs/rewriting-rules.md#looser-or-tighter). [Which rewrite to use](docs/rewriting-rules.md#which-rewrite-to-use) helps you choose a rewrite, [Simplify](docs/rewriting-rules.md#simplify) describes the simplifier, and [Normal forms](docs/rewriting-rules.md#normal-forms) covers NNF, CNF and DNF. [Rewriting examples](docs/rewriting-examples.md) and [Normal form examples](docs/rewriting-normal-form-examples.md) show each rewrite in four notations.
 - [Predicate types](docs/predicates.md): the four registration shapes and the ready-made predicates.
 - [Predicate conventions](docs/predicate-conventions.md): how the built-in predicates treat case, whitespace, range ends, null values and culture.
 - [Predicate source generator](docs/predicate-source-generator.md): register `[Predicate]` methods with generated code, and compare it with hand-written registration.
 - [Predicate harness](docs/predicate-harness.md): check a predicate for determinism, boundary values, schema conformance and cancellation.
 - [Rule fuzzer](docs/rule-fuzzer.md): check random rules over the predicates of a registry against a Strong Kleene oracle.
 - [Testing assertions](docs/testing-assertions.md): assert that two rules are equivalent, that a rewrite is sound, and check a `Decision` in a test.
+- [Rule tests](docs/rule-tests.md): write test cases for a rule in YAML, with a value for each term, and run them with `truthweaver test` or from C#, with a JUnit report for CI.
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
-- [Examples](docs/examples.md): seven worked examples, from one predicate to a full rule.
+- [Batch evaluation](docs/batch-evaluation.md): evaluate one rule against many contexts, in order, with bounded parallelism.
+- [Rule coverage](docs/rule-coverage.md): find the terms and branches of a rule that never decide, are always `Unknown` or fault, over many decisions.
+- [What would change a decision](docs/counterfactuals.md): the smallest sets of term changes that would make a rule `True` (or `False`), for a "what to fix" list.
+- [Decision records](docs/decision-records.md): store a decision as JSON for an audit log, with the rule identity and the evaluation options, and read it back for replay.
+- [Command line](docs/cli.md): the `truthweaver` .NET tool: validate, convert, format, print, export, report, diff, evaluate and test rules from the shell, with JSON output, SARIF and documented exit codes.
+- [Tool core](docs/tool-core.md): the library under the command line and the terminal UI: load, detect, extract and convert rules, validate them in levels with statistics, write diagnostics as text, JSON or SARIF, export every artifact with a manifest, write a Markdown report, render images with Graphviz or the Mermaid CLI, the `truthweaver.json` file, stub values, data files and deterministic output.
+- [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
 - [Benchmarks](docs/benchmarks.md): the benchmark commands and the committed baseline.
 - [Documentation examples](docs/doc-examples.md): how the examples in the documentation are tested.
-- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.ps1` do.
+- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.ps1` do, and how a package version is made.
 - [CONTEXT.md](CONTEXT.md): the domain vocabulary and the predicate-author contract.
 
 ## License

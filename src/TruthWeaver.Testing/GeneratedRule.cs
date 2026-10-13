@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>A rule from <see cref="K3RuleGenerator"/>: its rule text, its expected evaluation, and its operands.</summary>
 /// <param name="Text">The rule text. Each compound node is in parentheses.</param>
 /// <param name="Eval">

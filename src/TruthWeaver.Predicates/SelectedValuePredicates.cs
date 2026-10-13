@@ -1,7 +1,5 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// A generic factory for the externally-selected-value predicate pattern (see
 /// <c>docs/predicates.md</c>'s "n arguments, class-based, externally-selected value" section): a rule-text

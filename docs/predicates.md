@@ -13,22 +13,34 @@ Every predicate is one of four registration shapes. The shapes mix freely in one
 | Class-based (DI), 0 args | none | `IPredicate<TContext>` | Needs a scoped or injected dependency but no rule-authored parameter. |
 | Class-based (DI), n args | several | `IPredicate<TContext>` with a multi-argument schema | Needs rule-authored parameters and one or more injected dependencies. |
 
+## Cost hint
+
+`PredicateSchema.Cost` is an optional `double?`, set with `init` on any of the four shapes above. It is a relative number, not a unit of time: unset (the default) means "neutral", the same baseline as every other predicate that also leaves it unset. A predicate that is cheaper than typical (an in-memory check) can use a negative value; a predicate that is expensive (a network call, a database lookup, heavy computation) can use a positive one.
+
+```csharp
+builder.Add(
+    PredicateSchema.NoArguments("fraudCheck", "Fraud Check", "Calls the fraud-scoring service.") with { Cost = 10.0 },
+    FraudCheckPredicate.EvaluateAsync);
+```
+
+The only consumer is [`CompiledRule<TContext>.OptimizeOrder()`](rewriting-rules.md#optimize-evaluation-order): it stable-sorts the operands of `AND` and `OR`, cheapest first, so the evaluator's short-circuit reaches a deciding cheap predicate before an expensive one. Setting `Cost` on no predicate in a registry is exactly today's behavior - `OptimizeOrder()` then changes nothing, because every operand ties at the neutral baseline and a stable sort keeps ties in their written order. A host that has measured actual per-predicate cost can pass those values to `OptimizeOrder(OrderOptimizationOptions)` for one call instead of changing the registered hint.
+
 ## Ready-made predicates
 
 Before you write a predicate by hand, check [`TruthWeaver.Predicates`](../src/TruthWeaver.Predicates). It ships generic factories that take a value selector:
 
-- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates` has no case option: a pattern that ignores case starts with `(?i)`.
+- `StringPredicates`, `CollectionPredicates` and `RegexPredicates` cover string comparison, null, empty and white-space checks, set equality and regex matching. `RegexPredicates.IsMatch` and `IsNotMatch` take the optional rule argument `flags`, a string of the letters `i` (ignore case), `m`, `s`, `n` and `x`. A pattern can also start with an inline option such as `(?i)`.
 - `NumericPredicates` covers `Int64` and `Decimal` selections. `ScalarPredicates` covers `Boolean`, `Guid` and `DateTimeOffset` selections. See [Scalar and numeric predicates](#scalar-and-numeric-predicates).
 - `TypePredicates` covers the type tests `IsGuid`, `IsNumeric`, `IsUrl`, `IsString` and `IsDateTimeOffset`. Each has an `IsNot...` twin that is its Strong Kleene complement. See [Type tests](#type-tests).
 - `SelectedValuePredicates` covers the externally selected value pattern (see [below](#n-arguments-class-based-externally-selected-value)) for a lookup client that is safe to share.
 
-Every method on `StringPredicates` except one is ordinal-only and has a fixed behavior. A case-insensitive variant is a separate predicate (`EqualsIgnoreCase`), never a rule-text flag on `Equals`. The exception is `StringPredicates.EqualsConfigurable`. It is one predicate whose `ignoreCase` and `trim` arguments the rule sets. It is case-sensitive by default; a rule sets `ignoreCase: true` to ignore case. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `EqualsConfigurable` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
+Every method on `StringPredicates` except two is ordinal-only and has a fixed behavior. The exceptions are `StringPredicates.IsEqualTo` and its twin `IsNotEqualTo`. Each is one predicate whose `ignoreCase` and `trim` arguments the rule sets. Both are `false` by default, so the comparison is case-sensitive and untrimmed; a rule sets `ignoreCase: true` to ignore case and `trim: true` to trim both sides. The comparison is always ordinal, so the predicate has no `culture` argument. A rule that passes a `culture` argument (even `culture: ""`) fails to compile with an `UnknownArgument` diagnostic that tells the author to remove it. Use `IsEqualTo` or `IsNotEqualTo` when a rule author needs this flexibility. Otherwise register one fixed-behavior predicate for each name.
 
 ### Null selected values
 
 A null selected value never faults. A member cannot evaluate a missing value, so every member with an optional `nullBehavior` parameter answers a null selected value with `Unknown` by default (`NullBehavior.Unknown`). `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust, and `Decision.IsSatisfied` stays fail-closed.
 
-The host can choose `NullBehavior.False` for each predicate at registration. A positive member then answers `False` for a null selected value. The exception is `CollectionPredicates.SetEquals`. Under `NullBehavior.False` it reads a null collection as an empty collection, so it answers `True` when the argument array is empty.
+The host can choose `NullBehavior.False` for each predicate at registration, or set a default once with `NullBehaviorScope`. Every factory call made inside `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` that passes no `nullBehavior` follows the scope, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` does the same for one family. A `nullBehavior` argument on the call wins over a scope, and a family scope wins over an all-families scope. A positive member then answers `False` for a null selected value. The exception is `CollectionPredicates.SetEquals`. Under `NullBehavior.False` it reads a null collection as an empty collection, so it answers `True` when the argument array is empty.
 
 A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. A twin has the same default as its positive member, so both members of a pair registered with the defaults answer `Unknown` for a null selected value. Under `NullBehavior.False` a twin answers `True` for a null selected value, and `NotSetEquals` answers the complement of `SetEquals`. Register both members of a pair with the same setting.
 
@@ -36,20 +48,21 @@ The `StringPredicates` and `RegexPredicates` twins are:
 
 | Member | Class | Meaning |
 | --- | --- | --- |
-| `NotEqual` | `StringPredicates` | Twin of `Equals` (ordinal, case-sensitive) |
-| `NotEqualsIgnoreCase` | `StringPredicates` | Twin of `EqualsIgnoreCase` |
+| `IsNotEqualTo` | `StringPredicates` | Twin of `IsEqualTo`. It takes the same optional `ignoreCase` and `trim` arguments. |
 | `NotStartsWith` | `StringPredicates` | Twin of `StartsWith` |
 | `NotEndsWith` | `StringPredicates` | Twin of `EndsWith` |
-| `NotEqualsConfigurable` | `StringPredicates` | Twin of `EqualsConfigurable`. It takes the same `ignoreCase` and `trim` arguments. |
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
-| `NotMatches` | `RegexPredicates` | Twin of `Matches`. An invalid pattern faults to `Unknown` with a `Fault`. |
+| `IsIn` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
+| `IsNotIn` | `StringPredicates` | Twin of `IsIn` |
+| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`), `m`, `s`, `n` and `x`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
+| `IsNotMatch` | `RegexPredicates` | Twin of `IsMatch`. It takes the same optional `flags` argument. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
 
 `IsNullOrEmpty`, `IsNotNullOrEmpty`, `IsNullOrWhiteSpace` and `IsNotNullOrWhiteSpace` (all in `StringPredicates`) have no option. They are null tests and always return a definite answer: a null selected value is `True` for `IsNullOrEmpty` and `IsNullOrWhiteSpace`, and `False` for their complements. White space follows `char.IsWhiteSpace`.
 
 ```csharp
-StringPredicates.Equals<PizzaOrder>(
+StringPredicates.IsEqualTo<PizzaOrder>(
     "hasCrust", order => order.Crust, "Has Crust", argumentName: "crust",
     nullBehavior: NullBehavior.False);
 ```
@@ -60,25 +73,27 @@ StringPredicates.Equals<PizzaOrder>(
 
 | Member | Twin | `NumericPredicates` (`Int64`, `Decimal`) | `ScalarPredicates` (`Boolean`, `Guid`, `DateTimeOffset`) |
 | --- | --- | --- | --- |
-| `Equal` | `NotEqual` | yes | yes |
-| `LessThan` | `GreaterThanOrEqual` | yes | not defined |
-| `GreaterThan` | `LessThanOrEqual` | yes | not defined |
-| `Between` | `Outside` | yes | not defined |
-| `In` | `NotIn` | yes | yes |
+| `IsEqualTo` | `IsNotEqualTo` | yes | yes |
+| `IsLessThan` | `IsNotLessThan` | yes | not defined |
+| `IsGreaterThan` | `IsNotGreaterThan` | yes | not defined |
+| `IsLessThanOrEqualTo` | `IsNotLessThanOrEqualTo` | yes | not defined |
+| `IsGreaterThanOrEqualTo` | `IsNotGreaterThanOrEqualTo` | yes | not defined |
+| `IsBetween` | `IsNotBetween` | yes | not defined |
+| `IsIn` | `IsNotIn` | yes | yes |
 | `IsNull` | `IsNotNull` | yes | yes |
 | `IsDefault` | `IsNotDefault` | yes | yes |
 
 - Ordering and ranges have no meaning for `Boolean` and `Guid`, so they are not defined. For `DateTimeOffset`, ordering and ranges belong to the date-time predicates.
-- `Between` is inclusive on both bounds and `Outside` is its exact complement. Equal bounds are a single-point range. Reversed bounds (`lower` greater than `upper`) are an authoring error, and the bounds are never swapped:
+- `IsBetween` is inclusive on both bounds and `IsNotBetween` is its exact complement. Equal bounds are a single-point range. Reversed bounds (`lower` greater than `upper`) are an authoring error, and the bounds are never swapped:
   - When both bounds are literals, `Compile` reports a `TRE0026` error at the predicate call and returns no rule. The suggestion is to swap the bounds.
   - When a bound is not a literal, for example a value [read from a data source](#arguments-read-from-a-data-source), the compiler does not check it. A reversed value makes the predicate throw an `ArgumentException` at evaluation time, even for a null selection. The evaluator records a `Fault` and answers `Unknown`.
-- `In` and `NotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
+- `IsIn` and `IsNotIn` test one scalar value against a literal candidate array. A candidate array has the same kind as the selector.
 - No value is promoted between kinds. A `long?` selector takes `Int64` literals. A `decimal?` selector takes `Decimal` literals, and a whole number such as `5` is a valid `Decimal` literal. To compare an integer value with a decimal literal, widen it in the selector: `c => (decimal?)c.Count`. Decimal values compare by value, so `1.0` equals `1.00`.
 - `DateTimeOffset` values compare by instant, so the same instant in two offsets is equal.
 - A null selected value answers as [Null selected values](#null-selected-values) describes. `IsNull` and `IsNotNull` are definite and have no option. `IsDefault` tests `default(T)`: `0`, `false`, `Guid.Empty` or the default `DateTimeOffset`. A null selection is a missing value, not a default.
 
 ```csharp
-NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Quantity In Range");
+NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "Quantity In Range");
 ```
 
 ### Collection predicates
@@ -93,52 +108,51 @@ NumericPredicates.Between<Order>("quantityInRange", order => order.Quantity, "Qu
 | `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
 | `ContainsAll` | `NotContainsAll` | `values` (`StringArray`) | Every string in the array is an element. |
 | `IsSubsetOf` | `IsNotSubsetOf` | `values` (`StringArray`) | Every element is in the array. |
-| `In` | `NotIn` | `values` (`StringArray`) | The selected scalar string is in the array. |
-| `CountEqual` | `NotCountEqual` | `count` (`Int64`) | The element count equals `count`. |
-| `CountLessThan` | `NotCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
-| `CountGreaterThan` | `NotCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
-| `CountLessThanOrEqual` | `NotCountLessThanOrEqual` | `count` (`Int64`) | The element count is at most `count`. |
-| `CountGreaterThanOrEqual` | `NotCountGreaterThanOrEqual` | `count` (`Int64`) | The element count is at least `count`. |
+| `HasCountEqualTo` | `NotHasCountEqualTo` | `count` (`Int64`) | The element count equals `count`. |
+| `HasCountLessThan` | `NotHasCountLessThan` | `count` (`Int64`) | The element count is less than `count`. |
+| `HasCountGreaterThan` | `NotHasCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
+| `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` | `count` (`Int64`) | The element count is at most `count`. |
+| `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` | `count` (`Int64`) | The element count is at least `count`. |
 
-`In` and `NotIn` test scalar membership. Their selector returns one `string?`, so a collection selector does not compile. Use `ContainsAny`, `ContainsAll` or `IsSubsetOf` for a collection.
+To test one string against several candidates, use `StringPredicates.IsIn` and `StringPredicates.IsNotIn`.
 
 Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. A null collection is a missing value, not an empty one.
 
 ### Date and time predicates
 
-`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. A date-time literal must end in `Z` or carry an offset such as `+02:00`. Text such as `"2026-01-01"` or `"2026-01-01T09:00"` is a compile error, so a stored rule means the same instant on every host. Values compare by instant, so the same moment with a different offset is equal. `After` and `Before` are strict, and `InTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
+`DateTimePredicates` selects a `DateTimeOffset?` and takes `DateTimeOffset` literal arguments. A date-time literal must end in `Z` or carry an offset such as `+02:00`. Text such as `"2026-01-01"` or `"2026-01-01T09:00"` is a compile error, so a stored rule means the same instant on every host. Values compare by instant, so the same moment with a different offset is equal. `IsAfter` and `IsBefore` are strict, and `IsInTimeWindow` is half-open by default (see [Predicate conventions](predicate-conventions.md#ranges-and-windows)).
 
 | Predicate | Twin | Arguments | `True` when |
 | --- | --- | --- | --- |
-| `After` | `NotAfter` | `value` | The selected instant is later than `value`. An equal instant is `False`. |
-| `Before` | `NotBefore` | `value` | The selected instant is earlier than `value`. An equal instant is `False`. |
-| `Between` | `Outside` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `Outside` is the exact complement. |
+| `IsAfter` | `IsNotAfter` | `value` | The selected instant is later than `value`. An equal instant is `False`. |
+| `IsBefore` | `IsNotBefore` | `value` | The selected instant is earlier than `value`. An equal instant is `False`. |
+| `IsBetween` | `IsNotBetween` | `lower`, `upper` | `lower <= value <= upper`. Both bounds are inclusive. `IsNotBetween` is the exact complement. |
 
-`AfterNow` and `BeforeNow` compare the selected instant with the current time. They take a required `TimeProvider` at registration and no rule-text arguments. There is no ambient default clock.
+`IsAfterNow` and `IsBeforeNow` compare the selected instant with the current time. They take a required `TimeProvider` at registration and no rule-text arguments. There is no ambient default clock.
 
 | Predicate | Twin | `True` when |
 | --- | --- | --- |
-| `AfterNow` | `NotAfterNow` | The selected instant is later than now. An instant equal to now is `False`. |
-| `BeforeNow` | `NotBeforeNow` | The selected instant is earlier than now. An instant equal to now is `False`. |
+| `IsAfterNow` | `IsNotAfterNow` | The selected instant is later than now. An instant equal to now is `False`. |
+| `IsBeforeNow` | `IsNotBeforeNow` | The selected instant is earlier than now. An instant equal to now is `False`. |
 
-An instant equal to now makes `AfterNow` and `BeforeNow` both `False`. Neither is the complement of the other, so each has its own twin.
+An instant equal to now makes `IsAfterNow` and `IsBeforeNow` both `False`. Neither is the complement of the other, so each has its own twin.
 
 ```csharp
-DateTimePredicates.AfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, TimeProvider.System);
+DateTimePredicates.IsAfterNow<Order>("expiresAfterNow", order => order.ExpiresAt, TimeProvider.System);
 ```
 
 The predicate reads the clock each time the engine evaluates it, never at registration. The engine evaluates one term once per `Evaluate` call, so a repeated term sees one instant. Two different terms each read the clock and can see different instants if the clock advances between them. To give every term one instant, register a `TimeProvider` that returns a fixed instant for each evaluation.
 
-`OnDayOfWeek`, `InMonth` and `InTimeWindow` read the selected instant in the fixed offset that the `offset` argument gives: `"Z"` or `"+hh:mm"` / `"-hh:mm"`. Time zone names such as `Europe/Paris` are not accepted, and there are no daylight-saving rules. The argument names are fixed.
+`IsOnDayOfWeek`, `IsInMonth` and `IsInTimeWindow` read the selected instant in the fixed offset that the `offset` argument gives: `"Z"` or `"+hh:mm"` / `"-hh:mm"`. Time zone names such as `Europe/Paris` are not accepted, and there are no daylight-saving rules. The argument names are fixed.
 
 | Predicate | Twin | Arguments | `True` when |
 | --- | --- | --- | --- |
-| `OnDayOfWeek` | `NotOnDayOfWeek` | `days` (English day names), `offset` | The day of the week in `offset` is in `days`. |
-| `InMonth` | `NotInMonth` | `months` (numbers 1 to 12), `offset` | The month in `offset` is in `months`. |
-| `InTimeWindow` | `NotInTimeWindow` | `start`, `end` or `duration`, `includeStart`, `includeEnd`, `offset` | The time of day in `offset` is inside the window. By default the window is $[start, end)$. A start later than the end crosses midnight. |
+| `IsOnDayOfWeek` | `IsNotOnDayOfWeek` | `days` (English day names), `offset` | The day of the week in `offset` is in `days`. |
+| `IsInMonth` | `IsNotInMonth` | `months` (numbers 1 to 12), `offset` | The month in `offset` is in `months`. |
+| `IsInTimeWindow` | `IsNotInTimeWindow` | `start`, `end` or `duration`, `includeStart`, `includeEnd`, `offset` | The time of day in `offset` is inside the window. By default the window is $[start, end)$. A start later than the end crosses midnight. |
 
 ```csharp
-DateTimePredicates.InTimeWindow<Order>("placedInHours", order => order.PlacedAt);
+DateTimePredicates.IsInTimeWindow<Order>("placedInHours", order => order.PlacedAt);
 ```
 
 A rule then calls `placedInHours(start: "09:00", end: "17:00", offset: "+01:00")`, or gives `duration: "PT8H"` in place of `end`. A literal argument that is not valid, a time zone name included, is a `TRE0026` compile error. The [date-time predicates reference](strong-k3/predicates/README.md#fixed-offsets) gives every argument rule.
@@ -150,12 +164,12 @@ A null selected value answers as [Null selected values](#null-selected-values) d
 There is no `DateTime` literal kind and no `DateTime` overload. A `DateTime` can have an unspecified `Kind`, so its meaning depends on the host time zone. Convert it to a `DateTimeOffset` in the selector:
 
 ```csharp
-DateTimePredicates.After<Order>("placedAfter", order => new DateTimeOffset(order.PlacedUtc, TimeSpan.Zero));
+DateTimePredicates.IsAfter<Order>("placedAfter", order => new DateTimeOffset(order.PlacedUtc, TimeSpan.Zero));
 ```
 
 ### Type tests
 
-Each `TypePredicates` test has two overloads under one name. The `string?` overload tests text. The `object?` overload tests the runtime type and also reads text. A null selected value answers `Unknown`. All parsing uses the invariant culture.
+Each `TypePredicates` test has two overloads under one name. The `string?` overload tests text. The `object?` overload tests the runtime type and also reads text. A null selected value answers `Unknown` by default; a host can pass `nullBehavior: NullBehavior.False` to make it `False` (and the `IsNotX` twin `True`). All parsing uses the invariant culture.
 
 | Test | True when |
 | --- | --- |
@@ -236,7 +250,7 @@ services.AddTruthWeaver<PizzaOrder>(builder => builder
 
 ### Checking argument values at compile time
 
-The argument declarations check that each argument is present and of its kind. A rule between argument values, for example "`min` is not greater than `max`", goes in the optional `PredicateSchema.ArgumentValidator`. The compiler calls it once for each call of the predicate, after the argument check passes. It receives the literal arguments only. An argument read from a data source is absent, so the validator skips any check that needs it, and the predicate checks that value at evaluation. Each `PredicateArgumentProblem` that the validator returns becomes a `TRE0026` error at the call, and `Compile` returns no rule. The validator must be pure, thread-safe and must not throw.
+The argument declarations check that each argument is present and of its kind. A rule between argument values, for example "`min` is not greater than `max`", goes in the optional `PredicateSchema.ArgumentValidator`. The compiler calls it once for each call of the predicate, after the argument check passes. It receives the literal arguments only. An argument read from a data source is absent, so the validator skips any check that needs it, and the predicate checks that value at evaluation. An optional argument with no default that the call omits is also absent. `PredicateArguments.IsDeferred(name)` is `true` for a data-source argument and `false` for an omitted one, so a validator can tell them apart. At evaluation `IsDeferred` is `false` for every name, because every data-source value is present. Each `PredicateArgumentProblem` that the validator returns becomes a `TRE0026` error at the call, and `Compile` returns no rule. The validator must be pure, thread-safe and must not throw.
 
 ```csharp
 PredicateSchema schema = new(

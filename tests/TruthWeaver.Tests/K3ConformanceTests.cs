@@ -1,7 +1,6 @@
 namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

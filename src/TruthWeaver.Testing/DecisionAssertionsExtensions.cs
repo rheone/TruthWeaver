@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>Entry point for fluent assertions over a <see cref="Decision"/>.</summary>
 public static class DecisionAssertionsExtensions
 {

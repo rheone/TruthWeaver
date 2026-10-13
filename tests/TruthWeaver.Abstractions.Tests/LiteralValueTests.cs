@@ -17,8 +17,9 @@ public sealed class LiteralValueTests
         );
     }
 
+    /// <summary>Scalar factories round trip through their matching accessor.</summary>
     [Fact]
-    public void Scalar_factories_round_trip_through_their_matching_accessor()
+    public void ScalarFactory_MatchingAccessor_RoundTripsValue_Test()
     {
         Assert.Equal("Y", LiteralValue.OfString("Y").AsString());
         Assert.Equal(42L, LiteralValue.OfInt64(42).AsInt64());
@@ -32,8 +33,9 @@ public sealed class LiteralValueTests
         Assert.Equal(guid, LiteralValue.OfGuid(guid).AsGuid());
     }
 
+    /// <summary>Reading an accessor for the wrong kind throws.</summary>
     [Fact]
-    public void Reading_an_accessor_for_the_wrong_kind_throws()
+    public void Accessor_WrongKind_Throws_Test()
     {
         LiteralValue stringValue = LiteralValue.OfString("Y");
 
@@ -41,8 +43,9 @@ public sealed class LiteralValueTests
         Assert.Throws<InvalidOperationException>(() => stringValue.AsArray());
     }
 
+    /// <summary>String literal comparison is case sensitive.</summary>
     [Fact]
-    public void String_comparison_is_case_sensitive()
+    public void Equals_StringsDifferingInCase_AreNotEqual_Test()
     {
         LiteralValue lower = LiteralValue.OfString("y");
         LiteralValue upper = LiteralValue.OfString("Y");
@@ -50,8 +53,9 @@ public sealed class LiteralValueTests
         Assert.NotEqual(lower, upper);
     }
 
+    /// <summary>The equality operator returns true for equal literals of the same kind.</summary>
     [Fact]
-    public void Equality_operator_returns_true_for_equal_literals_of_the_same_kind()
+    public void OperatorEquals_EqualLiteralsOfSameKind_ReturnsTrue_Test()
     {
         LiteralValue left = LiteralValue.OfInt64(42);
         LiteralValue right = LiteralValue.OfInt64(42);
@@ -60,8 +64,9 @@ public sealed class LiteralValueTests
         Assert.False(left != right);
     }
 
+    /// <summary>The equality operator returns false for unequal literals of the same kind.</summary>
     [Fact]
-    public void Equality_operator_returns_false_for_unequal_literals_of_the_same_kind()
+    public void OperatorEquals_UnequalLiteralsOfSameKind_ReturnsFalse_Test()
     {
         LiteralValue left = LiteralValue.OfInt64(42);
         LiteralValue right = LiteralValue.OfInt64(43);
@@ -70,8 +75,9 @@ public sealed class LiteralValueTests
         Assert.True(left != right);
     }
 
+    /// <summary>Equals returns false when kinds differ, without inspecting payloads.</summary>
     [Fact]
-    public void Equals_returns_false_when_kinds_differ_without_inspecting_payloads()
+    public void Equals_DifferentKinds_ReturnsFalseWithoutInspectingPayloads_Test()
     {
         LiteralValue stringValue = LiteralValue.OfString("42");
         LiteralValue int64Value = LiteralValue.OfInt64(42);
@@ -81,22 +87,25 @@ public sealed class LiteralValueTests
         Assert.True(stringValue != int64Value);
     }
 
+    /// <summary>Array construction rejects an element that does not match the declared kind.</summary>
     [Fact]
-    public void Array_construction_rejects_an_element_that_does_not_match_the_declared_kind()
+    public void Array_ElementOfWrongKind_IsRejected_Test()
     {
         Assert.Throws<ArgumentException>(() =>
             LiteralValue.OfArray(LiteralKind.String, [LiteralValue.OfString("a"), LiteralValue.OfInt64(1)])
         );
     }
 
+    /// <summary>Array construction rejects an array kind as the declared element kind.</summary>
     [Fact]
-    public void Array_construction_rejects_an_array_kind_as_the_declared_element_kind()
+    public void Array_ArrayKindAsElementKind_IsRejected_Test()
     {
         Assert.Throws<ArgumentException>(() => LiteralValue.OfArray(LiteralKind.StringArray, []));
     }
 
+    /// <summary>Arrays are order sensitive and AsArray reports their elements.</summary>
     [Fact]
-    public void Arrays_are_order_sensitive_and_report_their_elements_via_as_array()
+    public void AsArray_Arrays_AreOrderSensitiveAndReportElements_Test()
     {
         LiteralValue left = LiteralValue.OfArray(LiteralKind.Int64, [LiteralValue.OfInt64(1), LiteralValue.OfInt64(2)]);
         LiteralValue right = LiteralValue.OfArray(LiteralKind.Int64, [LiteralValue.OfInt64(2), LiteralValue.OfInt64(1)]);
@@ -105,6 +114,7 @@ public sealed class LiteralValueTests
         Assert.Equal([1L, 2L], left.AsArray().Select(v => v.AsInt64()));
     }
 
+    /// <summary>ToArrayKind and ToElementKind are inverses for every scalar kind.</summary>
     [Theory]
     [InlineData(LiteralKind.String, LiteralKind.StringArray)]
     [InlineData(LiteralKind.Int64, LiteralKind.Int64Array)]
@@ -112,50 +122,56 @@ public sealed class LiteralValueTests
     [InlineData(LiteralKind.Boolean, LiteralKind.BooleanArray)]
     [InlineData(LiteralKind.DateTimeOffset, LiteralKind.DateTimeOffsetArray)]
     [InlineData(LiteralKind.Guid, LiteralKind.GuidArray)]
-    public void ToArrayKind_and_ToElementKind_are_inverses_for_every_scalar_kind(LiteralKind scalar, LiteralKind array)
+    public void ToArrayKind_EveryScalarKind_RoundTripsWithToElementKind_Test(LiteralKind scalar, LiteralKind array)
     {
         Assert.Equal(array, LiteralValue.ToArrayKind(scalar));
         Assert.Equal(scalar, LiteralValue.ToElementKind(array));
     }
 
+    /// <summary>ToArrayKind rejects an array kind as input.</summary>
     [Fact]
-    public void ToArrayKind_rejects_an_array_kind_as_input()
+    public void ToArrayKind_ArrayKindInput_IsRejected_Test()
     {
         Assert.Throws<ArgumentException>(() => LiteralValue.ToArrayKind(LiteralKind.StringArray));
     }
 
+    /// <summary>ToElementKind rejects a scalar kind as input.</summary>
     [Fact]
-    public void ToElementKind_rejects_a_scalar_kind_as_input()
+    public void ToElementKind_ScalarKindInput_IsRejected_Test()
     {
         Assert.Throws<ArgumentException>(() => LiteralValue.ToElementKind(LiteralKind.String));
     }
 
+    /// <summary>ToString renders a string literal as a quoted DSL literal with escapes.</summary>
     [Fact]
-    public void ToString_renders_a_string_literal_as_a_quoted_dsl_literal_with_escapes()
+    public void ToString_StringLiteral_RendersQuotedDslLiteralWithEscapes_Test()
     {
         LiteralValue value = LiteralValue.OfString("a \"quoted\" \\ value");
 
         Assert.Equal("\"a \\\"quoted\\\" \\\\ value\"", value.ToString());
     }
 
+    /// <summary>ToString renders a boolean literal in lowercase.</summary>
     [Fact]
-    public void ToString_renders_a_boolean_literal_lowercase()
+    public void ToString_BooleanLiteral_RendersLowercase_Test()
     {
         Assert.Equal("true", LiteralValue.OfBoolean(true).ToString());
         Assert.Equal("false", LiteralValue.OfBoolean(false).ToString());
     }
 
+    /// <summary>ToString renders an array literal as a bracketed, comma separated list.</summary>
     [Fact]
-    public void ToString_renders_an_array_literal_as_a_bracketed_comma_separated_list()
+    public void ToString_ArrayLiteral_RendersBracketedCommaList_Test()
     {
         LiteralValue array = LiteralValue.OfArray(LiteralKind.Int64, [LiteralValue.OfInt64(1), LiteralValue.OfInt64(2)]);
 
         Assert.Equal("[1, 2]", array.ToString());
     }
 
+    /// <summary>GetHashCode does not throw and matches for equal literals of every kind.</summary>
     [Theory]
     [MemberData(nameof(AllKinds))]
-    public void GetHashCode_does_not_throw_and_is_equal_for_equal_literals_of_every_kind(LiteralKind kind)
+    public void GetHashCode_EqualLiteralsOfEveryKind_DoesNotThrowAndMatches_Test(LiteralKind kind)
     {
         LiteralValue left = MakeSample(kind);
         LiteralValue right = MakeSample(kind);
@@ -168,8 +184,9 @@ public sealed class LiteralValueTests
         Assert.Equal(leftHash, rightHash);
     }
 
+    /// <summary>Literal values work as hash set members across kinds.</summary>
     [Fact]
-    public void GetHashCode_supports_using_literal_values_as_hash_set_members_across_kinds()
+    public void GetHashCode_HashSetMembership_WorksAcrossKinds_Test()
     {
         LiteralValue arrayValue = LiteralValue.OfArray(LiteralKind.String, [LiteralValue.OfString("a")]);
 

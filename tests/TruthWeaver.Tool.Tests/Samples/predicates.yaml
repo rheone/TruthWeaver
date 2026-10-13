@@ -1,0 +1,5 @@
+predicates:
+  isActive: {}
+  hasRole:
+    arguments:
+      role: string

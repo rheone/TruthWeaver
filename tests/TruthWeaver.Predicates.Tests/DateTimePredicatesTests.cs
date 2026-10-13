@@ -5,7 +5,7 @@ using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Pins <see cref="DateTimePredicates"/>: <c>After</c>, <c>Before</c> and <c>Between</c> over
-/// <see cref="DateTimeOffset"/> literals, with the <c>NotAfter</c>, <c>NotBefore</c> and <c>Outside</c>
+/// <see cref="DateTimeOffset"/> literals, with the <c>IsNotAfter</c>, <c>IsNotBefore</c> and <c>IsNotBetween</c>
 /// Strong Kleene twins.
 /// </summary>
 public class DateTimePredicatesTests
@@ -17,12 +17,12 @@ public class DateTimePredicatesTests
     [InlineData(-1, TruthValue.False)]
     [InlineData(0, TruthValue.False)]
     [InlineData(1, TruthValue.True)]
-    public async Task After_TicksAroundBound_IsStrict_Test(long offsetTicks, TruthValue expected)
+    public async Task IsAfter_TicksAroundBound_IsStrict_Test(long offsetTicks, TruthValue expected)
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> after) =
-            DateTimePredicates.After<DateContext>("after", c => c.When);
+            DateTimePredicates.IsAfter<DateContext>("after", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notAfter) =
-            DateTimePredicates.NotAfter<DateContext>("notAfter", c => c.When);
+            DateTimePredicates.IsNotAfter<DateContext>("notAfter", c => c.When);
         DateContext context = new(Bound.AddTicks(offsetTicks));
         PredicateArguments args = Single("value", Bound);
 
@@ -35,12 +35,12 @@ public class DateTimePredicatesTests
     [InlineData(-1, TruthValue.True)]
     [InlineData(0, TruthValue.False)]
     [InlineData(1, TruthValue.False)]
-    public async Task Before_TicksAroundBound_IsStrict_Test(long offsetTicks, TruthValue expected)
+    public async Task IsBefore_TicksAroundBound_IsStrict_Test(long offsetTicks, TruthValue expected)
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> before) =
-            DateTimePredicates.Before<DateContext>("before", c => c.When);
+            DateTimePredicates.IsBefore<DateContext>("before", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notBefore) =
-            DateTimePredicates.NotBefore<DateContext>("notBefore", c => c.When);
+            DateTimePredicates.IsNotBefore<DateContext>("notBefore", c => c.When);
         DateContext context = new(Bound.AddTicks(offsetTicks));
         PredicateArguments args = Single("value", Bound);
 
@@ -50,12 +50,12 @@ public class DateTimePredicatesTests
 
     /// <summary>Comparison is by instant, so the same moment written with another offset is equal, not after or before.</summary>
     [Fact]
-    public async Task After_SameInstantInOtherOffset_ReturnsFalse_Test()
+    public async Task IsAfter_SameInstantInOtherOffset_ReturnsFalse_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> after) =
-            DateTimePredicates.After<DateContext>("after", c => c.When);
+            DateTimePredicates.IsAfter<DateContext>("after", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> before) =
-            DateTimePredicates.Before<DateContext>("before", c => c.When);
+            DateTimePredicates.IsBefore<DateContext>("before", c => c.When);
         DateContext sameInstant = new(new DateTimeOffset(2026, 10, 4, 12, 0, 0, TimeSpan.FromHours(2)));
         DateContext laterByWallClockOnly = new(new DateTimeOffset(2026, 10, 4, 11, 0, 0, TimeSpan.FromHours(2)));
 
@@ -64,19 +64,19 @@ public class DateTimePredicatesTests
         Assert.Equal(TruthValue.True, await RunAsync(before, laterByWallClockOnly, Single("value", Bound)));
     }
 
-    /// <summary>Between is inclusive on both bounds, and Outside is its exact complement.</summary>
+    /// <summary>IsBetween is inclusive on both bounds, and IsNotBetween is its exact complement.</summary>
     [Theory]
     [InlineData(-1, TruthValue.False)]
     [InlineData(0, TruthValue.True)]
     [InlineData(500, TruthValue.True)]
     [InlineData(1000, TruthValue.True)]
     [InlineData(1001, TruthValue.False)]
-    public async Task Between_TicksAroundBounds_IsInclusive_Test(long offsetTicks, TruthValue expected)
+    public async Task IsBetween_TicksAroundBounds_IsInclusive_Test(long offsetTicks, TruthValue expected)
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between) =
-            DateTimePredicates.Between<DateContext>("between", c => c.When);
+            DateTimePredicates.IsBetween<DateContext>("between", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outside) =
-            DateTimePredicates.Outside<DateContext>("outside", c => c.When);
+            DateTimePredicates.IsNotBetween<DateContext>("outside", c => c.When);
         DateContext context = new(Bound.AddTicks(offsetTicks));
         PredicateArguments args = Range(Bound, Bound.AddTicks(1000));
 
@@ -86,10 +86,10 @@ public class DateTimePredicatesTests
 
     /// <summary>Between compares instants across offsets.</summary>
     [Fact]
-    public async Task Between_BoundsInOtherOffsets_ComparesInstants_Test()
+    public async Task IsBetween_BoundsInOtherOffsets_ComparesInstants_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between) =
-            DateTimePredicates.Between<DateContext>("between", c => c.When);
+            DateTimePredicates.IsBetween<DateContext>("between", c => c.When);
         DateTimeOffset lower = new(2026, 10, 4, 12, 0, 0, TimeSpan.FromHours(2));
         DateTimeOffset upper = new(2026, 10, 4, 5, 0, 0, TimeSpan.FromHours(-5));
 
@@ -102,12 +102,12 @@ public class DateTimePredicatesTests
 
     /// <summary>Reversed bounds are an authoring error: the predicate throws and never swaps the bounds.</summary>
     [Fact]
-    public async Task Between_ReversedBounds_ThrowsArgumentException_Test()
+    public async Task IsBetween_ReversedBounds_ThrowsArgumentException_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between) =
-            DateTimePredicates.Between<DateContext>("between", c => c.When);
+            DateTimePredicates.IsBetween<DateContext>("between", c => c.When);
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outside) =
-            DateTimePredicates.Outside<DateContext>("outside", c => c.When);
+            DateTimePredicates.IsNotBetween<DateContext>("outside", c => c.When);
         PredicateArguments reversed = Range(Bound.AddDays(1), Bound);
 
         await Assert.ThrowsAsync<ArgumentException>(async () => await RunAsync(between, new DateContext(Bound), reversed));
@@ -121,11 +121,13 @@ public class DateTimePredicatesTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task BetweenAndOutside_ReversedBoundsWithNullSelection_ThrowSharedMessageAndParamName_Test(bool useOutside)
+    public async Task IsBetweenAndIsNotBetween_ReversedBoundsWithNullSelection_ThrowSharedMessageAndParamName_Test(
+        bool useNotBetween
+    )
     {
-        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useOutside
-            ? DateTimePredicates.Outside<DateContext>("range", c => c.When)
-            : DateTimePredicates.Between<DateContext>("range", c => c.When);
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useNotBetween
+            ? DateTimePredicates.IsNotBetween<DateContext>("range", c => c.When)
+            : DateTimePredicates.IsBetween<DateContext>("range", c => c.When);
         PredicateArguments reversed = Range(Bound.AddDays(1), Bound);
 
         ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -141,10 +143,10 @@ public class DateTimePredicatesTests
     /// text does not depend on the culture of the evaluating thread.
     /// </summary>
     [Fact]
-    public async Task Between_ReversedBoundsUnderNonInvariantCulture_PrintsInvariantRoundTripBounds_Test()
+    public async Task IsBetween_ReversedBoundsUnderNonInvariantCulture_PrintsInvariantRoundTripBounds_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between) =
-            DateTimePredicates.Between<DateContext>("range", c => c.When);
+            DateTimePredicates.IsBetween<DateContext>("range", c => c.When);
         DateTimeOffset lower = Bound.AddDays(1);
         CultureInfo original = CultureInfo.CurrentCulture;
         ArgumentException error;
@@ -175,10 +177,10 @@ public class DateTimePredicatesTests
         DateContext context = new((DateTimeOffset?)null);
         List<Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>>> evaluators =
         [
-            DateTimePredicates.After<DateContext>("p", c => c.When).Evaluate,
-            DateTimePredicates.NotAfter<DateContext>("p", c => c.When).Evaluate,
-            DateTimePredicates.Before<DateContext>("p", c => c.When).Evaluate,
-            DateTimePredicates.NotBefore<DateContext>("p", c => c.When).Evaluate,
+            DateTimePredicates.IsAfter<DateContext>("p", c => c.When).Evaluate,
+            DateTimePredicates.IsNotAfter<DateContext>("p", c => c.When).Evaluate,
+            DateTimePredicates.IsBefore<DateContext>("p", c => c.When).Evaluate,
+            DateTimePredicates.IsNotBefore<DateContext>("p", c => c.When).Evaluate,
         ];
 
         foreach (Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluator in evaluators)
@@ -187,10 +189,10 @@ public class DateTimePredicatesTests
         }
 
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> between = DateTimePredicates
-            .Between<DateContext>("p", c => c.When)
+            .IsBetween<DateContext>("p", c => c.When)
             .Evaluate;
         Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outside = DateTimePredicates
-            .Outside<DateContext>("p", c => c.When)
+            .IsNotBetween<DateContext>("p", c => c.When)
             .Evaluate;
         Assert.Equal(TruthValue.Unknown, await RunAsync(between, context, Range(Bound, Bound.AddDays(1))));
         Assert.Equal(TruthValue.Unknown, await RunAsync(outside, context, Range(Bound, Bound.AddDays(1))));
@@ -198,10 +200,10 @@ public class DateTimePredicatesTests
 
     /// <summary>The host can choose NullBehavior.False: a null selection then answers a definite False.</summary>
     [Fact]
-    public async Task After_NullSelectionWithFalseOption_ReturnsFalse_Test()
+    public async Task IsAfter_NullSelectionWithFalseOption_ReturnsFalse_Test()
     {
         (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> after) =
-            DateTimePredicates.After<DateContext>("after", c => c.When, nullBehavior: NullBehavior.False);
+            DateTimePredicates.IsAfter<DateContext>("after", c => c.When, nullBehavior: NullBehavior.False);
 
         TruthValue result = await RunAsync(after, new DateContext(null), Single("value", Bound));
 
@@ -212,8 +214,8 @@ public class DateTimePredicatesTests
     [Fact]
     public void Schema_AfterAndBetween_DeclareDateTimeOffsetArgumentsAndExplainConversion_Test()
     {
-        (PredicateSchema after, _) = DateTimePredicates.After<DateContext>("after", c => c.When);
-        (PredicateSchema between, _) = DateTimePredicates.Between<DateContext>("between", c => c.When);
+        (PredicateSchema after, _) = DateTimePredicates.IsAfter<DateContext>("after", c => c.When);
+        (PredicateSchema between, _) = DateTimePredicates.IsBetween<DateContext>("between", c => c.When);
 
         Assert.Equal(LiteralKind.DateTimeOffset, Assert.Single(after.Arguments).Type);
         Assert.Equal(2, between.Arguments.Count);

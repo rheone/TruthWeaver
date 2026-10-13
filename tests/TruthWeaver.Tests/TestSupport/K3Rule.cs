@@ -6,12 +6,15 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Compiles one rule text once, over zero-argument predicates named <c>a</c>, <c>b</c>, <c>c</c>…,
+/// Compiles one rule text once, over zero-argument predicates named <c>a</c>, <c>b</c>, <c>c</c>… (skipping <c>f</c>, <c>t</c> and <c>u</c>),
 /// and evaluates it repeatedly under different K3 assignments of those predicates — the single
 /// public-pipeline seam for conformance tests (rule text → <c>Compile</c> → <c>EvaluateAsync</c> → <see cref="Decision"/>).
 /// </summary>
 public sealed class K3Rule
 {
+    // The letters f, t and u are skipped: the rule text reads them as the constants False, True and Unknown.
+    private const string InputNames = "abcdeghijklmnopqrsvwxyz";
+
     private readonly TruthValue[] current;
 
     private K3Rule(CompiledRule<RuleTestContext> compiled, TruthValue[] current)
@@ -23,7 +26,7 @@ public sealed class K3Rule
     /// <summary>Gets the compiled rule under test.</summary>
     public CompiledRule<RuleTestContext> Compiled { get; }
 
-    /// <summary>Compiles <paramref name="ruleText"/> with <paramref name="arity"/> predicates named <c>a</c>, <c>b</c>, and so on.</summary>
+    /// <summary>Compiles <paramref name="ruleText"/> with <paramref name="arity"/> predicates named <c>a</c>, <c>b</c>, and so on (skipping <c>f</c>, <c>t</c> and <c>u</c>).</summary>
     /// <param name="ruleText">The DSL text.</param>
     /// <param name="arity">The number of input predicates to register.</param>
     /// <returns>The compiled rule, or <see langword="null"/> when the text does not compile.</returns>
@@ -34,7 +37,7 @@ public sealed class K3Rule
         for (int i = 0; i < arity; i++)
         {
             int index = i;
-            string name = ((char)('a' + i)).ToString();
+            string name = InputNames[i].ToString();
 
             // Every input, including Unknown, is delivered directly as the predicate's answer.
             builder = builder.Add(

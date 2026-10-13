@@ -14,6 +14,10 @@
     <Project Name="TruthWeaver.Testing" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Generators" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Generators" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Core" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Core" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Predicates.Tests" Configuration="Debug|AnyCPU" Build="true" />
@@ -28,6 +32,10 @@
     <Project Name="TruthWeaver.Yaml.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Generators.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Generators.Tests" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Core.Tests" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Core.Tests" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Tests" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Tool.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Benchmarks" Configuration="Debug|AnyCPU" Build="true" />
@@ -52,6 +60,8 @@
     <Project Path="src\TruthWeaver.Generators\TruthWeaver.Generators.csproj" />
     <Project Path="src\TruthWeaver.Predicates\TruthWeaver.Predicates.csproj" />
     <Project Path="src\TruthWeaver.Testing\TruthWeaver.Testing.csproj" />
+    <Project Path="src\TruthWeaver.Tool.Core\TruthWeaver.Tool.Core.csproj" />
+    <Project Path="src\TruthWeaver.Tool\TruthWeaver.Tool.csproj" />
     <Project Path="src\TruthWeaver.Yaml\TruthWeaver.Yaml.csproj" />
     <Project Path="src\TruthWeaver\TruthWeaver.csproj" />
   </Folder>
@@ -63,6 +73,8 @@
     <Project Path="tests\TruthWeaver.Predicates.Tests\TruthWeaver.Predicates.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Testing.Tests\TruthWeaver.Testing.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Tests\TruthWeaver.Tests.csproj" />
+    <Project Path="tests\TruthWeaver.Tool.Core.Tests\TruthWeaver.Tool.Core.Tests.csproj" />
+    <Project Path="tests\TruthWeaver.Tool.Tests\TruthWeaver.Tool.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Yaml.Tests\TruthWeaver.Yaml.Tests.csproj" />
   </Folder>
   <Folder Name="/_project/">

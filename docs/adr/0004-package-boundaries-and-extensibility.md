@@ -50,6 +50,14 @@ observability is deferred, not v1).
 > and `TruthWeaver.Registry.PredicateRegistryBuilder<TContext>` in the consuming project. It is a separate package, not
 > part of `Abstractions`, so the zero-dependency kernel takes no analyzer and no Roslyn dependency, and the attribute is
 > generated into each consuming compilation instead of shipped as a run-time type. No other package references it.
+>
+> **Amendment (2026-10-11, declarative rule tests):** `TruthWeaver.Testing` now takes a project reference to
+> `TruthWeaver.Yaml` (and through it YamlDotNet and `TruthWeaver.DataSources.Json`), reversing the "never depends on
+> `TruthWeaver.Yaml` or `TruthWeaver.DataSources.Json`" rule of the amendment above. The owner confirmed it for feature
+> backlog ticket 20: a rule test file is YAML, its rule can be YAML, and its case data is YAML or JSON, and the runner
+> (`RuleTestFile`) lives in `Testing` so that C# tests and the `truthweaver test` command run the same cases.
+> `Testing` still never depends on `TruthWeaver.Predicates`, and the tool core (`TruthWeaver.Tool.Core`) does not
+> reference `Testing`; the rule test runner has its own stand-in predicates.
 
 - **`TruthWeaver.Abstractions`** — `IPredicate<TContext>`,
   `PredicateSchema`, `PredicateArguments`, `TruthValue`, `Decision`, `Fault`.

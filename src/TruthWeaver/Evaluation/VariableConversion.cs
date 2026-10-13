@@ -1,6 +1,5 @@
 namespace TruthWeaver.Evaluation;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
 /// <summary>

@@ -6,7 +6,13 @@
     <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
-    <Version>1.0.0-dev</Version>
+    <!-- No Version here: MinVer derives it from the Git tag (see docs/contributing.md). A hand-set Version, or
+         VersionPrefix/VersionSuffix, would fight MinVer. A tag `v1.2.3` gives 1.2.3 on that commit. A later
+         commit gives 1.2.4-preview.0.N (N = commits since the tag). With no tag the version is 1.0.0-preview.0.N
+         because of MinVerMinimumMajorMinor. -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>preview.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
     <Authors>Robert H. Engelhardt</Authors>
     <!-- No Company: this is an individual-authored project, not published under a company entity - Authors
          above already carries attribution. Deliberately omitted rather than a placeholder value. -->
@@ -18,22 +24,19 @@
     <PackageProjectUrl>https://github.com/rheone/TruthWeaver</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <PackageTags>rules engine;boolean;kleene;dsl;truthweaver</PackageTags>
+    <!-- Fallback only: every packable src project sets its own PackageId, Description and PackageTags. -->
+    <PackageTags>rules engine;kleene;k3;truthweaver</PackageTags>
+    <PackageReleaseNotes>See https://github.com/rheone/TruthWeaver/blob/main/CHANGELOG.md</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- No PackageIcon yet: no icon asset exists in the repo, and a placeholder image is worse than none -
          add one and set PackageIcon when real branding exists, rather than shipping a fabricated stand-in. -->
-    <!-- Symbol packages + deterministic builds: the standard pairing with SourceLink above so a
+    <!-- Symbol packages + deterministic builds: the standard pairing with the SDK's built-in Source Link so a
          consumer's debugger can step into this package's source from nuget.org/a symbol server. -->
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
-  <!-- Source Link -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
-  </ItemGroup>
 
   <!-- Package README - every packable project ships the repo root README as its NuGet readme. -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
@@ -57,34 +60,6 @@
     <Using Include="System.Collections.Immutable" />
     <Using Include="System.Globalization" />
     <Using Include="System.Text" />
-  </ItemGroup>
-
-  <!-- Roslynator analyzers -->
-  <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="all" />
-  </ItemGroup>
-
-  <!-- StyleCop -->
-  <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
-  </ItemGroup>
-
-  <!-- SonarAnalyzer -->
-  <ItemGroup>
-    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
-  </ItemGroup>
-
-  <!-- Async/await usage analyzers -->
-  <ItemGroup>
-    <PackageReference Include="AsyncFixer" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
-  </ItemGroup>
-
-  <!-- IDisposable usage analyzer -->
-  <ItemGroup>
-    <PackageReference Include="IDisposableAnalyzers" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Shared AdditionalFiles -->

@@ -143,7 +143,7 @@ public static class DiagnosticCodes
     /// <summary>
     /// The literal argument values of a predicate call break a rule that the predicate's
     /// <c>PredicateSchema.ArgumentValidator</c> checks, for example reversed bounds (<c>lower</c> greater than
-    /// <c>upper</c>) on a <c>Between</c> or <c>Outside</c> range predicate. The span or path is the predicate call.
+    /// <c>upper</c>) on an <c>IsBetween</c> or <c>IsNotBetween</c> range predicate. The span or path is the predicate call.
     /// </summary>
     public const string InvalidArgumentValue = "TRE0026";
 
@@ -183,4 +183,22 @@ public static class DiagnosticCodes
     /// path is the repeated argument. No occurrence wins: the call is an error.
     /// </summary>
     public const string DuplicateArgument = "TRE0032";
+
+    /// <summary>
+    /// Warning: <c>CompressToDerived</c>, <c>Canonicalize</c> or <c>Simplify</c> stopped at its pass limit before the rule
+    /// stopped changing. The rule is equivalent to the input, but rewriting it again can still change it.
+    /// </summary>
+    public const string RewriteNotConverged = "TRE0033";
+
+    /// <summary>
+    /// Warning: <c>PrintTruthTable</c> printed a table with more terms than the default cap of 8, because the options set
+    /// <c>AllowLargerTable</c>. The message gives the row count.
+    /// </summary>
+    public const string TruthTableCapRaised = "TRE0034";
+
+    /// <summary>
+    /// Error: <c>PrintTruthTable</c> refused to print a table. The rule has more terms than the default cap of 8 and the options
+    /// do not set <c>AllowLargerTable</c>, or it has more terms than the hard limit of 12. Nothing was written.
+    /// </summary>
+    public const string TruthTableTooLarge = "TRE0035";
 }

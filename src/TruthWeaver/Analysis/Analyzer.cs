@@ -1,6 +1,5 @@
 namespace TruthWeaver.Analysis;
 
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -72,27 +71,91 @@ internal static class Analyzer
 
         // The values differ exactly when either rail differs.
         int difference = bdd.Or(bdd.Xor(leftRail.Definite, rightRail.Definite), bdd.Xor(leftRail.Possible, rightRail.Possible));
-        IReadOnlyDictionary<int, bool>? path = bdd.FindSatisfyingAssignment(difference);
-        if (path is null)
-        {
-            return null;
-        }
+        return Witness(bdd, difference, variableIndex);
+    }
 
-        Dictionary<TermIdentity, TruthValue> assignment = [];
-        foreach ((TermIdentity term, int index) in variableIndex)
-        {
-            // Each term is two BDD variables: "is True" (2i) and "is Unknown" (2i + 1); unmentioned ones read as false.
-            if (path.GetValueOrDefault(2 * index))
-            {
-                assignment[term] = TruthValue.True;
-            }
-            else
-            {
-                assignment[term] = path.GetValueOrDefault((2 * index) + 1) ? TruthValue.Unknown : TruthValue.False;
-            }
-        }
+    /// <summary>
+    /// Compares the satisfying assignments of two trees (those where a tree is <c>True</c>) over every
+    /// <c>{True, False, Unknown}</c> assignment of their terms, from the definitely-true rail of each tree built on one
+    /// shared BDD.
+    /// </summary>
+    /// <param name="left">The first tree.</param>
+    /// <param name="right">The second tree.</param>
+    /// <returns>
+    /// An assignment where only <paramref name="left"/> is <c>True</c> and one where only <paramref name="right"/> is
+    /// <c>True</c> (each <see langword="null"/> when none exists), and whether some assignment makes both <c>True</c>. Each
+    /// assignment covers every term in either tree; terms the witness does not depend on are <c>False</c>.
+    /// </returns>
+    public static (
+        IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyLeft,
+        IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyRight,
+        bool Shared
+    ) CompareSatisfaction(Expression left, Expression right)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        List<Diagnostic> ignored = [];
+        int leftTrue = Build(left, bdd, variableIndex, ignored).Definite;
+        int rightTrue = Build(right, bdd, variableIndex, ignored).Definite;
 
-        return assignment;
+        return (
+            Witness(bdd, bdd.And(leftTrue, bdd.Not(rightTrue)), variableIndex),
+            Witness(bdd, bdd.And(rightTrue, bdd.Not(leftTrue)), variableIndex),
+            bdd.And(leftTrue, rightTrue) != BddManager.False
+        );
+    }
+
+    /// <summary>
+    /// Builds the function "the tree has the value <paramref name="target"/>" over the two BDD variables of each term:
+    /// the definitely-true rail for <c>True</c>, the complement of the possibly-true rail for <c>False</c>, and "possibly
+    /// but not definitely true" for <c>Unknown</c>.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <param name="target">The value the function tests for.</param>
+    /// <returns>
+    /// The manager, the function's node in it, and each term's index: term <c>i</c> owns variable <c>2i</c> ("is True")
+    /// and <c>2i + 1</c> ("is Unknown").
+    /// </returns>
+    public static (BddManager Bdd, int Node, Dictionary<TermIdentity, int> VariableIndex) TargetFunction(
+        Expression root,
+        TruthValue target
+    )
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        DualRail rail = Build(root, bdd, variableIndex, []);
+        int node = target switch
+        {
+            TruthValue.True => rail.Definite,
+            TruthValue.False => bdd.Not(rail.Possible),
+            _ => bdd.And(rail.Possible, bdd.Not(rail.Definite)),
+        };
+        return (bdd, node, variableIndex);
+    }
+
+    /// <summary>Gets the index of the term whose variable <paramref name="node"/> tests, in the order of <see cref="TargetFunction"/>.</summary>
+    /// <param name="bdd">The manager that holds <paramref name="node"/>.</param>
+    /// <param name="node">A decision node (not a terminal).</param>
+    /// <returns>The term index.</returns>
+    public static int TermOf(BddManager bdd, int node)
+    {
+        // Term i owns variables 2i ("is True") and 2i + 1 ("is Unknown"); see Build.
+        return bdd.VariableOf(node) / 2;
+    }
+
+    /// <summary>
+    /// Gives term <paramref name="term"/> the value <paramref name="value"/> in the function <paramref name="node"/>, whose
+    /// top variable must belong to that term or to a later one.
+    /// </summary>
+    /// <param name="bdd">The manager that holds <paramref name="node"/>.</param>
+    /// <param name="node">The function.</param>
+    /// <param name="term">The term index, in the order of <see cref="TargetFunction"/>.</param>
+    /// <param name="value">The value of the term.</param>
+    /// <returns>The function of the remaining terms.</returns>
+    public static int Cofactor(BddManager bdd, int node, int term, TruthValue value)
+    {
+        int isTrue = bdd.Restrict(node, 2 * term, value == TruthValue.True);
+        return bdd.Restrict(isTrue, (2 * term) + 1, value == TruthValue.Unknown);
     }
 
     /// <summary>
@@ -186,6 +249,22 @@ internal static class Analyzer
     }
 
     /// <summary>
+    /// Builds the tree's dual-rail BDD once and returns a reader for its value under any assignment of its terms (used by
+    /// the truth table). The terms are in first-occurrence order, depth first and left to right, which is the order
+    /// of the equation printer's letters.
+    /// </summary>
+    /// <param name="root">The tree.</param>
+    /// <returns>The valuation, which is not safe for use from more than one thread.</returns>
+    internal static TermValuation CreateValuation(Expression root)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        DualRail rail = Build(root, bdd, variableIndex, []);
+        TermIdentity[] terms = [.. variableIndex.OrderBy(pair => pair.Value).Select(pair => pair.Key)];
+        return new TermValuation(terms, bdd, rail.Definite, rail.Possible);
+    }
+
+    /// <summary>
     /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
     /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
     /// </summary>
@@ -207,6 +286,40 @@ internal static class Analyzer
         {
             CollectTerms(operand, terms);
         }
+    }
+
+    /// <summary>Reads one satisfying assignment of <paramref name="node"/> back as a K3 value for every term.</summary>
+    /// <param name="bdd">The manager that holds <paramref name="node"/>.</param>
+    /// <param name="node">The function to satisfy.</param>
+    /// <param name="variableIndex">The terms and their indexes in the ordering used to build <paramref name="node"/>.</param>
+    /// <returns>The assignment, or <see langword="null"/> when <paramref name="node"/> is constantly false.</returns>
+    private static Dictionary<TermIdentity, TruthValue>? Witness(
+        BddManager bdd,
+        int node,
+        Dictionary<TermIdentity, int> variableIndex
+    )
+    {
+        IReadOnlyDictionary<int, bool>? path = bdd.FindSatisfyingAssignment(node);
+        if (path is null)
+        {
+            return null;
+        }
+
+        Dictionary<TermIdentity, TruthValue> assignment = [];
+        foreach ((TermIdentity term, int index) in variableIndex)
+        {
+            // Each term is two BDD variables: "is True" (2i) and "is Unknown" (2i + 1); unmentioned ones read as false.
+            if (path.GetValueOrDefault(2 * index))
+            {
+                assignment[term] = TruthValue.True;
+            }
+            else
+            {
+                assignment[term] = path.GetValueOrDefault((2 * index) + 1) ? TruthValue.Unknown : TruthValue.False;
+            }
+        }
+
+        return assignment;
     }
 
     /// <summary>

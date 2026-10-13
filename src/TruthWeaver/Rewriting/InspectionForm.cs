@@ -1,7 +1,6 @@
 namespace TruthWeaver.Rewriting;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 
 /// <summary>

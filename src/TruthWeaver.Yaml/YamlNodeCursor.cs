@@ -1,7 +1,6 @@
 namespace TruthWeaver.Yaml;
 
 using System.Diagnostics.CodeAnalysis;
-using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;

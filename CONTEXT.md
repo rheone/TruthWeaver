@@ -30,7 +30,8 @@ the rest, such as **Expression**, **CompiledRule**, `CompilerOptions` and `Evalu
 | **Predicate** | A registered, reusable implementation, `IPredicate<TContext>`, such as `hasTopping` or `lovesPineapple`. The *function*, not any particular call to it. |
 | **Term** | A predicate bound to concrete arguments, e.g. `hasTopping(topping: "greenOlives")`. The tree's leaf node, and the unit of [term identity](#term-identity) and memoization. |
 | **Gate** | The logical concept: `NOT`, `AND` and `OR` taken as Strong Kleene truth functions. A gate is what the function *is*; an **Operator** is how the engine and its users write and run it. The word is used in the [Strong Kleene reference](docs/strong-k3/README.md) (its "Gates / Operators" category) and when discussing logic itself; the engine's code and API say Operator, never gate. |
-| **Operator** | The programmatic implementation of a logical function: the DSL word, the tree node, the JSON/YAML `op` and the `RuleBuilder` member. Spelled `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY` (`NXOR` is rejected, because it conventionally means negated `XOR`), `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
+| **Operator** | The programmatic implementation of a logical function: the DSL word, the tree node, the JSON/YAML `op` and the `RuleBuilder` member. Spelled `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT` (aliases `IFF`, legacy `XNOR`), `IMPLIES`, `NAND`, `NOR`, `PARITY` (`NXOR` is rejected, because it conventionally means negated `XOR`), `ANY`, `ALL`, `NONE`, `BETWEEN(min, max)`, `COALESCE` (infix `??`), `If` (ternary `c ? t : f`), the inspections `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown`, `ExactlyOne`, and the threshold family `AtLeast(k)`/`AtMost(k)`/`GreaterThan(k)`/`LessThan(k)`/`Exactly(k)`, plus the constants `True`/`False`/`Unknown` (case-insensitive; printed upper camel; rule text also reads the letters `T`/`F`/`U`, which are reserved names). Operator names are case-insensitive on input and most have a symbol spelling (`&&` `||` `!` `∧` `∨` `¬` `⊕` `→` `↔` `↑` `↓` `??` `? :`); every spelling compiles to the same node and the canonical form is the upper camel word. Every operator has a `Label`/`Description` exposed via `OperatorInfo.Describe`. |
+| **Note** | Optional free text on one node of a **Rule**: a `//` or `/* */` comment in rule text, a `note` key in JSON or YAML, or `RuleBuilder.WithNote`. It sits beside the compiled tree (`CompiledRule.Notes`, keyed by tree path), not in it, so it is not part of tree equality and never changes the compile result, the analysis or evaluation. The printers write it by default so a conversion keeps it; `CanonicalText` never has it, and a **Rewrite** drops it. A YAML `#` comment is not a note. |
 | **Decision** | The result of evaluating an expression: a `TruthValue` plus any faults recorded along the way, and optionally a trace. |
 | **Trace** | The record of one evaluation, kept on its **Decision** when requested. It has two views of the same run: a flat log in evaluation order, one entry per node visited or skipped (including repeat lookups answered from memoization), and a tree that mirrors the rule's shape, each node carrying its own result. A node skipped by short-circuiting is recorded as not evaluated, never omitted. |
 | **Outline** | The static, human-readable tree of a compiled rule: every operator and term with its **Label** and **Description**, and a term's arguments as text. It says what the rule means and involves no evaluation, so it mirrors the rule's shape in the same operand order as the **Trace** tree. *Avoid*: "rule description" (it is not a description of one rule, but a tree of per-node ones). |
@@ -38,6 +39,8 @@ the rest, such as **Expression**, **CompiledRule**, `CompilerOptions` and `Evalu
 | **Inspection** | `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`: external operators that test the K3 state of their operand. They always yield a definite `True`/`False`, so they never make the enclosing rule `Unknown`. |
 | **Connective** | An **operator** that is a Strong Kleene (K3) operator: monotone in the **information order**, so refining an `Unknown` operand never changes a definite result. `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators and `If`. The rest of the operator set is the **external operators**. |
 | **External operator** | An operator that is not a Strong Kleene connective because it is not monotone in the **information order**: `COALESCE` (`??`) and the four inspections. They are the SQL (`COALESCE`, `IS [NOT] TRUE/FALSE/UNKNOWN`) and Bochvar (external connectives) precedents applied to truth values. Only the connectives (`NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`, the cardinality operators and `If`) are Strong K3, so the "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to external operators (`IsKnown(a) OR IsUnknown(a)` is a tautology). |
+| **Constant format** | A `ConstantFormat`: how a printer writes the constants `True`, `False` and `Unknown`. It has a `ConstantStyle` (`Word`, `Letters` for `T F U`, `LogicSymbols` for `⊤ ⊥ U`) and an override string for each constant. The equation printers default to `Letters`; every other printer defaults to `Word`. There is no `1`/`0`/`½` style, because **truth order** is not a number scale. Rule text reads back the word form and the letter form, but not the symbols. |
+| **HTML fragment and DOT graph** | `PrintHtml` and `PrintDot`: two read views of a compiled rule. `PrintHtml` writes one infix formula in `span` elements with `tw-` classes and no script or inline style. `PrintDot` writes a Graphviz `digraph` with a shape for each node role. Both take a `Decision` to mark the evaluation state of each node. |
 | **Information order** | `Unknown` below both `True` and `False`, which are incomparable. A function is monotone in it when refining an `Unknown` input never changes a definite output; Kleene's strong connectives are exactly the monotone ones. It sits beside the truth order `False < Unknown < True` (`AND` is min, `OR` is max), which is only an implementation aid. |
 | **Project** | A TruthWeaver term (not K3 literature; in relational algebra "projection" means selecting columns) and a method on the result, not part of the rule language: `Decision.Project(unknownAs)` keeps `True`/`False` and replaces only `Unknown` with the chosen definite value, so the answer is never `Unknown`. Inside a rule, `COALESCE(x, True)` / `COALESCE(x, False)` does the same; rule text, JSON and YAML that declare a `Project` are rejected with a diagnostic pointing to `COALESCE` and `Decision.Project`. It is pure, so it never records a **Fault** and never changes `Decision.Result`; `Decision.IsSatisfied` stays fail-closed. |
 | **Rewrite** | An opt-in, value-preserving transform of a compiled rule that returns a new rule: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize`, `Simplify` (and `SimplifyWithSteps`, which also reports each **rewrite step**), `ToNnf`, `ToCnf`, `ToDnf`. The compiler never rewrites on its own. Whitespace tidying of rule text (`RuleText.NormalizeWhitespace`) and depth-varying delimiters (`PrintRuleText(GroupingStyle)`) are text-level formatting, not rewrites. |
@@ -237,7 +240,7 @@ with an operator that would just be a synonym for one of these:
 - `COALESCE(a, b, ...)` and the infix `a ?? b ?? c` are one node that replaces only `Unknown` with the next operand. `True` and `False` pass through, and evaluation short-circuits at the first known value. A chain of `??` is accepted as one n-ary node because the operator is associative, but `??` still follows the no-mixing rule against `AND`/`OR` and other infix operators.
 - `If(condition, whenTrue, whenFalse)` and the ternary `c ? t : f` are one node. A definite condition picks its branch, and the other branch is not evaluated. An `Unknown` condition does not guess: the result is definite only when both branches are the same definite value (`(c AND t) OR (NOT c AND f) OR (t AND f)`). The ternary may not be mixed with other infix operators or a nested ternary without parentheses.
 - `IsTrue(x)`, `IsFalse(x)`, `IsUnknown(x)` and `IsKnown(x)` are one `InspectionExpression` node with a kind. They test the K3 state of `x` and always yield a definite `True` or `False`, never `Unknown`, so they never collapse or fault the enclosing rule.
-- `Project` and `Collapse` are not part of the rule language. `Decision.Result` is always the raw three-valued value, and `COALESCE(x, True|False)` resolves `Unknown` inside a rule. The application chooses at the call site with `Decision.Project(bool)` or `Decision.Collapse(CollapsePolicy)`.
+- `Project` and `Collapse` are not part of the rule language. `Decision.Result` is always the raw three-valued value, and `COALESCE(x, True|False)` resolves `Unknown` inside a rule. The application chooses at the call site with `Decision.Project(TruthValue)` or `Decision.Collapse(CollapsePolicy)`.
 
 `ANY(...)`, `ALL(...)` and `NONE(...)` take two or more operands, like `AND`/`OR`/`ExactlyOne`. In Strong K3 they happen to coincide with `OR(...)`, `AND(...)` and `NOT(OR(...))` (the cardinality interval collapses to the same truth tables); they exist as named, intent-revealing spellings.
 
@@ -281,19 +284,19 @@ Rules the shipped predicate catalog (`TruthWeaver.Predicates`) follows. Each is 
 catalog members, not for the engine.
 
 - **Null selected value.** Every built-in member with a `nullBehavior` option returns `Unknown` (no
-  fault) for a null selected value by default; a host can pass `NullBehavior.False` at registration to
+  fault) for a null selected value by default; a host can pass `NullBehavior.False` at registration (or set it for every registration with `NullBehaviorScope`) to
   get a definite `False` instead. The null tests themselves (`IsNull`, `IsNullOrEmpty`, ...) return a
   definite `True` or `False`. Rationale: a member cannot evaluate a missing value, `Unknown` is the K3
   reading of it, and it stays fail-closed under `Decision.IsSatisfied`.
 - **String comparison is ordinal only.** Catalog members never use culture-sensitive comparison;
   `ignoreCase` means `OrdinalIgnoreCase`. Rationale: culture rules (the Turkish-I case) make results
-  depend on the host's locale, which is unsafe for authorization rules. `EqualsConfigurable` follows the
+  depend on the host's locale, which is unsafe for authorization rules. `IsEqualTo` follows the
   rule too: it is case-sensitive unless the rule sets `ignoreCase: true`, and it has no `culture` argument; a rule that still passes one is rejected at compile time
   with an `UnknownArgument` diagnostic that says to remove it.
 - **Date and time use `DateTimeOffset` only.** There is no `DateTime` literal kind; a host holding a
   `DateTime` converts it in its selector. Rationale: `DateTime` with an unspecified `Kind` is ambiguous,
   and adding a kind breaks exhaustive switches over the closed `LiteralKind` set.
-- **Clock predicates receive a `TimeProvider` at registration.** `AfterNow`/`BeforeNow` take the
+- **Clock predicates receive a `TimeProvider` at registration.** `IsAfterNow`/`IsBeforeNow` take the
   provider as a required registration parameter with no ambient default. Rationale: the clock stays an
   explicit dependency, so evaluation is testable with a fake provider, consistent with the
   [predicate-author contract](#the-predicate-author-contract).
@@ -304,13 +307,16 @@ catalog members, not for the engine.
   A twin has the same default `NullBehavior` as `X`, so both members of a pair registered with the
   defaults answer `Unknown` for a null selected value. Rationale: under `NullBehavior.Unknown` a twin keeps a null input `Unknown` instead of an
   accidental `True`, one rule covers every pair, and rule text can name the negation directly.
-- **`In` and `NotIn` test scalar membership.** The selector returns one scalar value, and the
+  A twin of an `IsX` predicate is `IsNotX` (`IsEqualTo`/`IsNotEqualTo`, `IsLessThan`/`IsNotLessThan`,
+  `IsBetween`/`IsNotBetween`). A twin of a verb predicate is `NotVerb` (`Contains`/`NotContains`). See
+  [Predicate conventions](docs/predicate-conventions.md#naming).
+- **`IsIn` and `IsNotIn` test scalar membership.** They live in `StringPredicates`, `NumericPredicates` and `ScalarPredicates`. The selector returns one scalar value, and the
   predicate is `True` when that value is in the literal candidate array. A collection selector is a
   compile error. The collection predicates are `ContainsAny` (at least one element is in the candidate
   array), `ContainsAll` (every candidate is an element) and `IsSubsetOf` (every element is in the
   candidate array). Each of them has a `NotX` twin.
-- **`Between` is inclusive and `Outside` is its exact complement.** `Between(value, n, k)` is `True`
-  when `n <= value <= k`, for numeric and `DateTimeOffset` values. `Outside` is `True` when `Between` is
+- **`IsBetween` is inclusive and `IsNotBetween` is its exact complement.** `IsBetween(value, n, k)` is `True`
+  when `n <= value <= k`, for numeric and `DateTimeOffset` values. `IsNotBetween` is `True` when `IsBetween` is
   `False`. Reversed bounds (`n > k`) are an authoring error. When both bounds are literals, the
   compiler reports a diagnostic. Otherwise the predicate throws an argument error. The catalog never
   swaps the bounds silently. Rationale: a swapped range hides a mistake in the rule.
@@ -350,7 +356,7 @@ when a sub-expression is `True` (resp. `False`) for every
 
 The string DSL (word operators, plus the symbol aliases `&&`, `||`, `!`, `∧`, `∨`,
 `¬`, `⊕`, `→`, `↔`, `↑`, `↓`, `??` and the ternary `? :` that compile to the same nodes and are never printed; `NOT > AND > OR` precedence, every infix operator other than `NOT`/`AND`/`OR`
-never mixed with `AND`/`OR` or with a different infix operator without parentheses; `()`, `[]` and `{}` are interchangeable grouping delimiters that the tree does not retain; `CanonicalText` prints parentheses only, `PrintRuleText(GroupingStyle.DepthCycling)` is the opt-in depth-varying rendering; `RuleText.NormalizeWhitespace` tidies the spacing of text as written) is
+never mixed with `AND`/`OR` or with a different infix operator without parentheses; `()`, `[]` and `{}` are interchangeable grouping delimiters that the tree does not retain; `CanonicalText` prints parentheses only, `PrintRuleText(GroupingStyle.DepthCycling)` is the opt-in depth-varying rendering; `RuleText.NormalizeWhitespace` tidies the spacing of text as written; `//` and `/* */` comments are **Notes**) is
 canonical and is what gets persisted. JSON and YAML are interchange/tooling
 formats that compile to the same AST and round-trip losslessly with the DSL.
 A rule can also be assembled programmatically via `RuleBuilder`

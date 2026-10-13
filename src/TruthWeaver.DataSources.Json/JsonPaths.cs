@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Json;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// The one place a JSONPath string is parsed, so <see cref="JsonQueryValidator"/> (compile time) and

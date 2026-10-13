@@ -7,7 +7,7 @@ public sealed class DataScopeResultTests
 {
     /// <summary>A successful result carries the scoped source and no error.</summary>
     [Fact]
-    public void Success_CarriesTheSourceAndNoError_Test()
+    public void Success_Construction_CarriesSourceAndNoError_Test()
     {
         StubSource source = new();
 
@@ -21,7 +21,7 @@ public sealed class DataScopeResultTests
 
     /// <summary>A failed result carries the kind and message and no source.</summary>
     [Fact]
-    public void Failure_CarriesTheKindAndMessageAndNoSource_Test()
+    public void Failure_Construction_CarriesKindMessageAndNoSource_Test()
     {
         DataScopeResult result = DataScopeResult.Failure(DataQueryErrorKind.NoMatch, "nothing matched");
 

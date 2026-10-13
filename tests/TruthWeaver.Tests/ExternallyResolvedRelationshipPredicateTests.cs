@@ -25,8 +25,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
     private static readonly Guid ActualManagerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid DifferentManagerId = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
+    /// <summary>A candidate resolved as the resource's actual manager evaluates to true.</summary>
     [Fact]
-    public async Task Candidate_resolved_as_the_resources_actual_manager_evaluates_true()
+    public async Task Evaluate_CandidateResolvedAsActualManager_ReturnsTrue_Test()
     {
         IServiceProvider services = ServicesResolvingManagerAs(ActualManagerId);
         CompiledRule<ResourceContext> rule = CompileIsManagedByCandidate();
@@ -40,8 +41,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A candidate resolved as a different manager evaluates to false.</summary>
     [Fact]
-    public async Task Candidate_resolved_as_a_different_manager_evaluates_false()
+    public async Task Evaluate_CandidateResolvedAsDifferentManager_ReturnsFalse_Test()
     {
         IServiceProvider services = ServicesResolvingManagerAs(DifferentManagerId);
         CompiledRule<ResourceContext> rule = CompileIsManagedByCandidate();
@@ -55,8 +57,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>The injected lookup service is resolved fresh from the service provider on every evaluation.</summary>
     [Fact]
-    public async Task Injected_lookup_service_is_resolved_fresh_from_the_service_provider_on_every_evaluation()
+    public async Task Resolution_InjectedService_ResolvedFreshEachEvaluation_Test()
     {
         List<IsManagedByCandidate> resolvedInstances = [];
         IServiceProvider services = Substitute.For<IServiceProvider>();
@@ -88,8 +91,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.NotSame(resolvedInstances[0], resolvedInstances[1]);
     }
 
+    /// <summary>An external lookup failure is absorbed as a fault and the term evaluates to unknown.</summary>
     [Fact]
-    public async Task External_lookup_failure_is_absorbed_as_a_fault_and_the_term_evaluates_unknown()
+    public async Task Evaluate_LookupFailure_IsAbsorbedAsFaultAndUnknown_Test()
     {
         IServiceProvider services = ServicesWithThrowingManagerLookup();
         CompiledRule<ResourceContext> rule = CompileIsManagedByCandidate();
@@ -107,8 +111,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.IsType<TimeoutException>(fault.Exception);
     }
 
+    /// <summary>An external lookup failure still lets an otherwise determinate rule reach a decision.</summary>
     [Fact]
-    public async Task External_lookup_failure_still_lets_an_otherwise_determinate_rule_reach_a_decision()
+    public async Task Evaluate_LookupFailure_StillReachesDecision_Test()
     {
         IServiceProvider services = ServicesWithThrowingManagerLookup();
         RuleCompiler<ResourceContext> compiler = new(
@@ -136,8 +141,10 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
     // literal key + injected live resolution + comparison) — just with a String key rather than a
     // Guid, and a non-identity Decimal comparison value read straight off the context rather than a
     // second resolved side. The point is the pattern's generality, not a different pattern.
+
+    /// <summary>A context amount within the resolved limit evaluates to true.</summary>
     [Fact]
-    public async Task Context_amount_within_the_resolved_limit_evaluates_true()
+    public async Task Evaluate_AmountWithinResolvedLimit_ReturnsTrue_Test()
     {
         IServiceProvider services = ServicesResolvingLimitAs(500m);
         CompiledRule<PurchaseRequestContext> rule = CompileIsWithinBudget();
@@ -151,8 +158,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A context amount above the resolved limit evaluates to false.</summary>
     [Fact]
-    public async Task Context_amount_exceeding_the_resolved_limit_evaluates_false()
+    public async Task Evaluate_AmountExceedingResolvedLimit_ReturnsFalse_Test()
     {
         IServiceProvider services = ServicesResolvingLimitAs(500m);
         CompiledRule<PurchaseRequestContext> rule = CompileIsWithinBudget();
@@ -169,8 +177,10 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
     // The simplest instance of the same pattern family as the two tests above: a literal key +
     // injected live resolution, but with no second value and no context dependency at all — the
     // resolved value *is* the answer, not a different pattern.
+
+    /// <summary>A flag resolved as true evaluates to true.</summary>
     [Fact]
-    public async Task Flag_resolved_true_evaluates_true()
+    public async Task Evaluate_FlagResolvedTrue_ReturnsTrue_Test()
     {
         IServiceProvider services = ServicesResolvingFlagAs(true);
         CompiledRule<RuleTestContext> rule = CompileIsFeatureEnabled();
@@ -184,8 +194,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A flag resolved as false evaluates to false.</summary>
     [Fact]
-    public async Task Flag_resolved_false_evaluates_false()
+    public async Task Evaluate_FlagResolvedFalse_ReturnsFalse_Test()
     {
         IServiceProvider services = ServicesResolvingFlagAs(false);
         CompiledRule<RuleTestContext> rule = CompileIsFeatureEnabled();
@@ -199,8 +210,9 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>The feature flag lookup service is resolved fresh from the service provider on every evaluation.</summary>
     [Fact]
-    public async Task Feature_flag_lookup_service_is_resolved_fresh_from_the_service_provider_on_every_evaluation()
+    public async Task Resolution_FeatureFlagService_ResolvedFreshEachEvaluation_Test()
     {
         List<IsFeatureEnabled> resolvedInstances = [];
         IServiceProvider services = Substitute.For<IServiceProvider>();

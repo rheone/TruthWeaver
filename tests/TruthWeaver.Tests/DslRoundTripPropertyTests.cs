@@ -4,6 +4,7 @@ using CsCheck;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
+using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
@@ -135,8 +136,9 @@ public sealed class DslRoundTripPropertyTests
         }
     );
 
+    /// <summary>Parsing the printed form of a generated tree reproduces a structurally equal tree.</summary>
     [Fact]
-    public void Parsing_the_printed_form_of_a_generated_tree_reproduces_a_structurally_equal_tree()
+    public void Parse_PrintedGeneratedTree_ReproducesEqualTree_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
 
@@ -150,6 +152,58 @@ public sealed class DslRoundTripPropertyTests
 
                 Assert.True(result.Succeeded, failureMessage);
                 Assert.Equal(tree, result.CompiledRule!.Root);
+            },
+            iter: SampleIterations
+        );
+    }
+
+    /// <summary>
+    /// Ticket 06: <c>PrintRuleText(operatorStyle: OperatorStyle.Symbolic)</c> parses back to the same tree as the
+    /// word form, for any generated tree — the symbols it writes for <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/
+    /// <c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c> are exactly the ones the DSL lexer reads back for them.
+    /// </summary>
+    [Fact]
+    public void Parse_SymbolicPrintedGeneratedTree_ReproducesEqualTree_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+
+        GenExpressionTree.Sample(
+            tree =>
+            {
+                string printed = CanonicalPrinter.Print(tree, GroupingStyle.Parentheses, OperatorStyle.Symbolic);
+                CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+                string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
+                string failureMessage = $"Expected '{printed}' to compile cleanly but got: {diagnosticMessages}";
+
+                Assert.True(result.Succeeded, failureMessage);
+                Assert.Equal(tree, result.CompiledRule!.Root);
+            },
+            iter: SampleIterations
+        );
+    }
+
+    /// <summary>
+    /// Followups C: printing a generated tree with <see cref="ConstantStyle.Letters"/> (T, F, U) compiles back to an equal
+    /// tree, in both operator styles.
+    /// </summary>
+    [Fact]
+    public void Parse_LettersPrintedGeneratedTree_ReproducesEqualTree_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+        ConstantFormat letters = new() { Style = ConstantStyle.Letters };
+
+        GenExpressionTree.Sample(
+            tree =>
+            {
+                foreach (OperatorStyle style in (OperatorStyle[])[OperatorStyle.Word, OperatorStyle.Symbolic])
+                {
+                    string printed = CanonicalPrinter.Print(tree, GroupingStyle.Parentheses, style, letters);
+                    CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+                    string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
+
+                    Assert.True(result.Succeeded, $"Expected '{printed}' to compile cleanly but got: {diagnosticMessages}");
+                    Assert.Equal(tree, result.CompiledRule!.Root);
+                }
             },
             iter: SampleIterations
         );
@@ -205,6 +259,112 @@ public sealed class DslRoundTripPropertyTests
                 },
                 iter: SampleIterations
             );
+    }
+
+    /// <summary>
+    /// Ticket 10: for a generated tree and every width in {1, 10, 20, 40, 80, null}, <c>PrintRuleText(RuleTextOptions)</c>
+    /// compiles back to a tree equal to the original — the same round-trip guarantee as the one-line printer, now
+    /// checked across widths small enough to force breaking and large enough that nothing breaks.
+    /// </summary>
+    [Fact]
+    public void PrintRuleText_WidthAwareOptionsAtSeveralWidths_CompilesBackToAnEqualTree_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+        int?[] widths = [1, 10, 20, 40, 80, null];
+
+        GenExpressionTree.Sample(
+            tree =>
+            {
+                CompiledRule<RuleTestContext> rule = compiler.Compile(CanonicalPrinter.Print(tree)).CompiledRule!;
+                foreach (int? width in widths)
+                {
+                    string printed = rule.PrintRuleText(RuleTextOptions.Default with { Width = width });
+                    CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+                    string diagnosticMessages = string.Join("; ", result.Diagnostics.Select(d => d.Message));
+
+                    Assert.True(
+                        result.Succeeded,
+                        $"Width {width}: expected '{printed}' to compile cleanly but got: {diagnosticMessages}"
+                    );
+                    Assert.Equal(tree, result.CompiledRule!.Root);
+                }
+            },
+            iter: SampleIterations
+        );
+    }
+
+    /// <summary>
+    /// Ticket 10: a width of 1 — too small to fit even the shortest token — breaks every group it can but never loops,
+    /// throws, or splits a token; the output still compiles back to the original tree.
+    /// </summary>
+    [Fact]
+    public void PrintRuleText_WidthOfOne_DoesNotLoopOrThrowAndStillRoundTrips_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+        CompilationResult<RuleTestContext> compiled = compiler.Compile(
+            "flag AND (termString(value: \"x\") OR (termInt64(value: 1) AND termBoolean(value: true))) "
+                + "AND AtLeast(2, flag, termBoolean(value: true), termInt64(value: 1))"
+        );
+        Assert.True(compiled.Succeeded, string.Join("; ", compiled.Diagnostics.Select(d => d.Message)));
+        CompiledRule<RuleTestContext> rule = compiled.CompiledRule!;
+
+        string printed = rule.PrintRuleText(RuleTextOptions.Default with { Width = 1 });
+        CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(rule.Root, result.CompiledRule!.Root);
+    }
+
+    /// <summary>
+    /// Ticket 10: a term name longer than the requested width is printed whole, on its own line, rather than split —
+    /// the unbreakable-token guarantee that keeps a small width from looping or throwing.
+    /// </summary>
+    [Fact]
+    public void PrintRuleText_TermLongerThanWidth_PrintsTheWholeTermOnOneLine_Test()
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        const string LongName = "thisPredicateNameIsDeliberatelyMuchLongerThanAnySensibleWidth";
+        builder.Add(
+            PredicateSchema.NoArguments(LongName, LongName, "A deliberately long name."),
+            (_, _, _) => ValueTask.FromResult(TruthValue.True)
+        );
+        RuleCompiler<RuleTestContext> compiler = new(builder.Build());
+        CompiledRule<RuleTestContext> rule = compiler.Compile($"{LongName} AND {LongName}").CompiledRule!;
+
+        string printed = rule.PrintRuleText(RuleTextOptions.Default with { Width = 5 });
+
+        Assert.Contains(LongName, printed, StringComparison.Ordinal);
+        foreach (string line in printed.Split('\n'))
+        {
+            Assert.DoesNotContain("...", line, StringComparison.Ordinal);
+        }
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(printed);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(rule.Root, result.CompiledRule!.Root);
+    }
+
+    /// <summary>
+    /// Ticket 10: printing the already-broken text's recompiled tree again at the same width gives the identical text —
+    /// the pretty printer is idempotent, not just round-trippable.
+    /// </summary>
+    [Fact]
+    public void PrintRuleText_WidthAwareOutputRecompiledAndReprinted_ProducesIdenticalText_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(BuildRegistry());
+        CompilationResult<RuleTestContext> compiled = compiler.Compile(
+            "flag AND (termString(value: \"x\") OR (termInt64(value: 1) AND termBoolean(value: true))) "
+                + "AND AtLeast(2, flag, termBoolean(value: true), termInt64(value: 1))"
+        );
+        Assert.True(compiled.Succeeded, string.Join("; ", compiled.Diagnostics.Select(d => d.Message)));
+        CompiledRule<RuleTestContext> rule = compiled.CompiledRule!;
+
+        RuleTextOptions options = RuleTextOptions.Default with { Width = 20 };
+        string firstPrint = rule.PrintRuleText(options);
+        CompiledRule<RuleTestContext> reparsed = compiler.Compile(firstPrint).CompiledRule!;
+        string secondPrint = reparsed.PrintRuleText(options);
+
+        Assert.Equal(firstPrint, secondPrint);
     }
 
     /// <summary>

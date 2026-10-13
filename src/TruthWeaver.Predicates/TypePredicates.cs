@@ -2,436 +2,656 @@ namespace TruthWeaver.Predicates;
 
 using System.Globalization;
 using System.Numerics;
-using TruthWeaver.Abstractions;
 
 /// <summary>
 /// Ready-made type-test predicate factories. Each test has two overloads under one name: a <see cref="string"/> selector
 /// (a parse-based test of text) and an <see cref="object"/> selector (a runtime-type test that also reads text). Each
 /// positive test <c>IsX</c> has a twin <c>IsNotX</c> that is its Strong Kleene complement. A <see langword="null"/>
-/// selected value answers <see cref="TruthValue.Unknown"/> for both, never a fault, because the type of a missing value is
-/// not known. All parsing uses <see cref="CultureInfo.InvariantCulture"/>, so the host's current culture never changes a
+/// selected value answers <see cref="TruthValue.Unknown"/> by default, never a fault, because the type of a missing value is
+/// not known; a host can register a test with <see cref="NullBehavior.False"/> to make it <see cref="TruthValue.False"/>
+/// (its twin then answers <see cref="TruthValue.True"/>). All parsing uses <see cref="CultureInfo.InvariantCulture"/>, so the host's current culture never changes a
 /// result. No factory takes a rule-text argument.
 /// </summary>
 public static class TypePredicates
 {
     private static readonly string[] IsoFormats = ["yyyy-MM-dd'T'HH:mm:ssK", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK"];
 
-    /// <summary>Creates a predicate that is true when the selected value is a GUID, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a GUID, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsGuid<TContext>(string name, Func<TContext, string?> selector, string label = "Is Guid")
+    ) IsGuid<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Guid",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a GUID, false when it is not, unknown when it is null.",
+            "True when the selected value is a GUID, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is a GUID, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a GUID, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsGuid<TContext>(string name, Func<TContext, object?> selector, string label = "Is Guid")
+    ) IsGuid<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Guid",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a GUID, false when it is not, unknown when it is null.",
+            "True when the selected value is a GUID, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsGuid</c>: true when the selected value is not a GUID, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
+    /// <summary>Creates the K3 complement of <c>IsGuid</c>: true when the selected value is not a GUID, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotGuid<TContext>(string name, Func<TContext, string?> selector, string label = "Is Not Guid")
+    ) IsNotGuid<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Not Guid",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null.",
+            "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsGuid</c>: true when the selected value is not a GUID, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
+    /// <summary>Creates the K3 complement of <c>IsGuid</c>: true when the selected value is not a GUID, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is accepted by <see cref="Guid.TryParse(string?, out Guid)"/>. That covers the 32-digit form (<c>N</c>), the hyphenated form (<c>D</c>), and the brace (<c>B</c>), parenthesis (<c>P</c>) and hexadecimal-struct (<c>X</c>) forms. For an <see cref="object"/> selector a <see cref="Guid"/> instance also counts.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotGuid<TContext>(string name, Func<TContext, object?> selector, string label = "Is Not Guid")
+    ) IsNotGuid<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Not Guid",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null.",
+            "Complement of IsGuid: true when the selected value is not a GUID, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             GuidTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is numeric, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is numeric, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNumeric<TContext>(string name, Func<TContext, string?> selector, string label = "Is Numeric")
+    ) IsNumeric<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Numeric",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is numeric, false when it is not, unknown when it is null.",
+            "True when the selected value is numeric, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is numeric, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is numeric, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNumeric<TContext>(string name, Func<TContext, object?> selector, string label = "Is Numeric")
+    ) IsNumeric<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Numeric",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is numeric, false when it is not, unknown when it is null.",
+            "True when the selected value is numeric, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsNumeric</c>: true when the selected value is not numeric, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
+    /// <summary>Creates the K3 complement of <c>IsNumeric</c>: true when the selected value is not numeric, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotNumeric<TContext>(string name, Func<TContext, string?> selector, string label = "Is Not Numeric")
+    ) IsNotNumeric<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Not Numeric",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null.",
+            "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsNumeric</c>: true when the selected value is not numeric, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
+    /// <summary>Creates the K3 complement of <c>IsNumeric</c>: true when the selected value is not numeric, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text parses as a finite <see cref="double"/> with <see cref="NumberStyles.Float"/> and <see cref="CultureInfo.InvariantCulture"/>. A sign, a decimal point and an exponent are accepted. Thousands separators, currency symbols, the texts <c>NaN</c> and <c>Infinity</c>, and a value that overflows <see cref="double"/> are rejected. For an <see cref="object"/> selector an instance of a built-in numeric type also counts (<see cref="sbyte"/>, <see cref="byte"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="nint"/>, <see cref="nuint"/>, <see cref="Int128"/>, <see cref="UInt128"/>, <see cref="BigInteger"/>, <see cref="decimal"/>, <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>), except a <c>NaN</c> or infinite floating-point value.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotNumeric<TContext>(string name, Func<TContext, object?> selector, string label = "Is Not Numeric")
+    ) IsNotNumeric<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Not Numeric",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null.",
+            "Complement of IsNumeric: true when the selected value is not numeric, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             NumericTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is a URL, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a URL, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsUrl<TContext>(string name, Func<TContext, string?> selector, string label = "Is Url")
+    ) IsUrl<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Url",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a URL, false when it is not, unknown when it is null.",
+            "True when the selected value is a URL, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is a URL, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a URL, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsUrl<TContext>(string name, Func<TContext, object?> selector, string label = "Is Url")
+    ) IsUrl<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Url",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a URL, false when it is not, unknown when it is null.",
+            "True when the selected value is a URL, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsUrl</c>: true when the selected value is not a URL, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
+    /// <summary>Creates the K3 complement of <c>IsUrl</c>: true when the selected value is not a URL, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotUrl<TContext>(string name, Func<TContext, string?> selector, string label = "Is Not Url")
+    ) IsNotUrl<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Not Url",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null.",
+            "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsUrl</c>: true when the selected value is not a URL, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
+    /// <summary>Creates the K3 complement of <c>IsUrl</c>: true when the selected value is not a URL, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is an absolute URI (<see cref="Uri.TryCreate(string?, UriKind, out Uri?)"/> with <see cref="UriKind.Absolute"/>) whose scheme is <c>http</c> or <c>https</c>. A relative reference and any other scheme are rejected. For an <see cref="object"/> selector a <see cref="Uri"/> instance counts when it meets the same rule.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotUrl<TContext>(string name, Func<TContext, object?> selector, string label = "Is Not Url")
+    ) IsNotUrl<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Not Url",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null.",
+            "Complement of IsUrl: true when the selected value is not a URL, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             UrlTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is a string, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a string, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsString<TContext>(string name, Func<TContext, string?> selector, string label = "Is String")
+    ) IsString<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is String",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a string, false when it is not, unknown when it is null.",
+            "True when the selected value is a string, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             static _ => true,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is a string, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is a string, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsString<TContext>(string name, Func<TContext, object?> selector, string label = "Is String")
+    ) IsString<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is String",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is a string, false when it is not, unknown when it is null.",
+            "True when the selected value is a string, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             StringTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsString</c>: true when the selected value is not a string, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
+    /// <summary>Creates the K3 complement of <c>IsString</c>: true when the selected value is not a string, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotString<TContext>(string name, Func<TContext, string?> selector, string label = "Is Not String")
+    ) IsNotString<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Not String",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null.",
+            "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             static _ => true,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsString</c>: true when the selected value is not a string, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
+    /// <summary>Creates the K3 complement of <c>IsString</c>: true when the selected value is not a string, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The selected value is a <see cref="string"/>. The empty string counts. For a <see cref="string"/> selector every non-null value is a string, so the test reduces to a null test; it is mainly useful with an <see cref="object"/> selector.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotString<TContext>(string name, Func<TContext, object?> selector, string label = "Is Not String")
+    ) IsNotString<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Not String",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null.",
+            "Complement of IsString: true when the selected value is not a string, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             StringTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is an ISO 8601 date and time with an offset, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is an ISO 8601 date and time with an offset, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsDateTimeOffset<TContext>(string name, Func<TContext, string?> selector, string label = "Is DateTimeOffset")
+    ) IsDateTimeOffset<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is DateTimeOffset",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null.",
+            "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates a predicate that is true when the selected value is an ISO 8601 date and time with an offset, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
+    /// <summary>Creates a predicate that is true when the selected value is an ISO 8601 date and time with an offset, false when it is not, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsDateTimeOffset<TContext>(string name, Func<TContext, object?> selector, string label = "Is DateTimeOffset")
+    ) IsDateTimeOffset<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is DateTimeOffset",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null.",
+            "True when the selected value is an ISO 8601 date and time with an offset, false when it is not, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             false
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsDateTimeOffset</c>: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
+    /// <summary>Creates the K3 complement of <c>IsDateTimeOffset</c>: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the string value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotDateTimeOffset<TContext>(string name, Func<TContext, string?> selector, string label = "Is Not DateTimeOffset")
+    ) IsNotDateTimeOffset<TContext>(
+        string name,
+        Func<TContext, string?> selector,
+        string label = "Is Not DateTimeOffset",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null.",
+            "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
 
-    /// <summary>Creates the K3 complement of <c>IsDateTimeOffset</c>: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/>. Definition of the positive test: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
+    /// <summary>Creates the K3 complement of <c>IsDateTimeOffset</c>: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, and <see cref="TruthValue.Unknown"/> when it is <see langword="null"/> (by default; see <paramref name="nullBehavior"/>). Definition of the positive test: The text is ISO 8601 extended format with a time of day to the second (<c>yyyy-MM-ddTHH:mm:ss</c>, with an optional fraction of up to seven digits) and an explicit offset (<c>+hh:mm</c> or <c>-hh:mm</c>) or <c>Z</c>. It is parsed with <see cref="DateTimeStyles.None"/> and <see cref="CultureInfo.InvariantCulture"/>. Text without an offset is rejected, so the instant is never guessed. For an <see cref="object"/> selector a <see cref="DateTimeOffset"/> instance also counts; a <see cref="DateTime"/> instance does not.</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the object value to test from the context.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <param name="nullBehavior">
+    /// What a <see langword="null"/> selected value answers: <see cref="NullBehavior.Unknown"/> (the default) or
+    /// <see cref="NullBehavior.False"/>. The <c>IsNotX</c> twin answers the Strong Kleene complement of the positive test.
+    /// Neither is a fault.
+    /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) IsNotDateTimeOffset<TContext>(string name, Func<TContext, object?> selector, string label = "Is Not DateTimeOffset")
+    ) IsNotDateTimeOffset<TContext>(
+        string name,
+        Func<TContext, object?> selector,
+        string label = "Is Not DateTimeOffset",
+        NullBehavior nullBehavior = NullBehavior.Default
+    )
     {
         return Create(
             name,
             label,
-            "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null.",
+            "Complement of IsDateTimeOffset: true when the selected value is not an ISO 8601 date and time with an offset, false when it is, unknown when it is null (unless the host registers it with NullBehavior.False, which makes the positive test False and its twin True).",
             selector,
             DateTimeOffsetTest,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Type),
             true
         );
     }
@@ -509,7 +729,7 @@ public static class TypePredicates
         return value.EndsWith('Z') || (value.Length > 6 && value[^6] is '+' or '-' && value[^3] == ':');
     }
 
-    /// <summary>Builds the schema and delegate shared by every type test; a null selection is <c>Unknown</c>.</summary>
+    /// <summary>Builds the schema and delegate shared by every type test; a null selection answers per <c>nullBehavior</c>.</summary>
     private static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -519,6 +739,7 @@ public static class TypePredicates
         string description,
         Func<TContext, TValue?> selector,
         Func<TValue, bool> test,
+        NullBehavior nullBehavior,
         bool negate
     )
         where TValue : class
@@ -530,7 +751,7 @@ public static class TypePredicates
             {
                 TValue? selected = selector(context);
                 return selected is null
-                    ? ValueTask.FromResult(TruthValue.Unknown)
+                    ? PredicateResult.ForNullAsync(nullBehavior, negate)
                     : PredicateResult.FromBoolAsync(test(selected) != negate);
             }
         );

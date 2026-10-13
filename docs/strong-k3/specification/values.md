@@ -14,7 +14,7 @@ Every expression evaluates to exactly one of three values. In tables and formula
 
 - `Unknown` is a value in its own right, not an error, not `null` and not a third way of writing `False`. It is never converted to `True` or `False` implicitly. The only conversions to a two-valued answer are the explicit ones: `COALESCE` with a constant inside a rule, and `Decision.Project` or `Decision.Collapse` on the result.
 - A predicate that cannot answer (an exception, a timeout or a cancellation) contributes `Unknown` and records a fault (see [evaluation](evaluation.md#predicates-and-faults)). A predicate that simply returns `Unknown` is a normal answer and records no fault.
-- The literals `True`, `False` and `Unknown` are case-insensitive on input and printed in that spelling. They are not Operations; they are documented here and in each Operation's Syntax section.
+- The literals `True`, `False` and `Unknown` are case-insensitive on input and printed in that spelling. Rule text also reads the letters `T`, `F` and `U` as the same literals. They are not Operations; they are documented here and in each Operation's Syntax section.
 
 > [!WARNING]
 > The `TruthValue` enum is declared in the order `False`, `True`, `Unknown`, so the numeric order of its underlying integers is `F < T < U`. That is **not** the truth order below. Never compare the integers; use the operations. `default(TruthValue)` is `False`, which suits fail-closed handling.

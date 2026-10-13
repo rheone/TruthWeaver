@@ -303,7 +303,7 @@ public sealed class StructuredDiagnosticsTests
 
     /// <summary>
     /// An argument that is not declared and resembles no declared one (a retired argument such as the former
-    /// <c>culture</c> of <c>EqualsConfigurable</c>) is answered with advice that names it and says to remove it.
+    /// <c>culture</c> of the string equality predicate) is answered with advice that names it and says to remove it.
     /// </summary>
     [Fact]
     public void Compile_RetiredArgumentWithNoNearbyName_HintsToRemoveTheNamedArgument_Test()

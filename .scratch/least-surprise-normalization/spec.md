@@ -1,6 +1,6 @@
 # Least-surprise normalization
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** done 2026-10-10
 
 Source: a three-area audit (public API and options; language surface and predicates; rewrites, testing package, printers, docs and tooling) of conventions that would surprise a rule author, a library user or a contributor. The top findings were checked against the code. Items 3, 13, 14 and 15 of the ranked list rest on a code reading that tickets 03, 14 and 15 confirm with a failing test first.
 
@@ -36,10 +36,10 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 
 | Ticket | Change | Blocked by | Status |
 | --- | --- | --- | --- |
-| [01](issues/01-dsl-threshold-k-is-an-error.md) | DSL threshold k that is not a whole number is a compile error | None | ready-for-agent |
-| [02](issues/02-datetime-literal-requires-offset.md) | A date-time literal must carry Z or an offset | None | ready-for-agent |
-| [03](issues/03-strict-tree-keys-and-duplicate-arguments.md) | Reject unknown tree keys and duplicate arguments | None | ready-for-agent |
-| [04](issues/04-builder-overloads-fold-consistently.md) | RuleBuilder overloads follow one rule | None | ready-for-agent |
+| [01](issues/01-dsl-threshold-k-is-an-error.md) | DSL threshold k that is not a whole number is a compile error | None | done |
+| [02](issues/02-datetime-literal-requires-offset.md) | A date-time literal must carry Z or an offset | None | done |
+| [03](issues/03-strict-tree-keys-and-duplicate-arguments.md) | Reject unknown tree keys and duplicate arguments | None | done |
+| [04](issues/04-builder-overloads-fold-consistently.md) | RuleBuilder overloads follow one rule | None | done |
 | [05](issues/05-rewrites-use-rule-options-and-narrow-parameters.md) | Rewrites and comparisons use the rule options and take a narrow parameter | None | resolved |
 | [06](issues/06-fault-budget-reaches-semantics-and-timeout-docs.md) | FaultBudget aborts when faults reach the budget; Timeout is documented | None | resolved |
 | [07](issues/07-null-is-unknown-collection-isempty.md) | A null collection is Unknown for IsEmpty and IsNotEmpty | None | resolved |
@@ -54,15 +54,15 @@ The packages are unpublished (`1.0.0-dev`), so breaking changes are allowed. Eac
 | [16](issues/16-zero-match-array-query-trace-note.md) | The trace notes a zero-match array query | None | resolved |
 | [17](issues/17-compilationresult-rule-accessors.md) | CompilationResult has Rule and GetRuleOrThrow | None | resolved |
 | [18](issues/18-print-api-consistency.md) | Print methods follow one shape | None | resolved |
-| [19](issues/19-options-records-have-defaults.md) | Each options record has a Default | None | ready-for-agent |
-| [20](issues/20-fake-predicate-label-and-harness-double-call.md) | FakePredicates derive their label; the harness documents its double call | None | ready-for-agent |
-| [21](issues/21-precommit-hook-behavior-documented.md) | Document what the pre-commit hook and format-all do | None | ready-for-agent |
-| [22](issues/22-assertion-exception-base-type.md) | One exception family for the Testing assertions | None | needs-owner-decision |
-| [23](issues/23-project-takes-a-policy-not-a-bool.md) | Decision.Project parameter | None | needs-owner-decision |
-| [24](issues/24-compile-entry-point-names.md) | Compile entry point names | None | needs-owner-decision |
-| [25](issues/25-predicate-twin-naming-and-placement.md) | Predicate twin naming and string In placement | None | needs-owner-decision |
-| [26](issues/26-regex-options-timeout-and-cache.md) | Regex predicate options, timeout and cache | None | needs-owner-decision |
-| [27](issues/27-time-window-not-given-sentinel.md) | Time windows use an absent argument, not an empty string | None | needs-owner-decision |
-| [28](issues/28-result-record-list-equality.md) | Equality of Decision, CompilationResult and Trace records | None | needs-owner-decision |
-| [29](issues/29-measure-versus-limit-names-and-convergence.md) | Measure and limit names; rewrite pass limits | None | needs-owner-decision |
-| [30](issues/30-operator-word-casing-in-printed-text.md) | Casing of operator words in canonical text | None | needs-owner-decision |
+| [19](issues/19-options-records-have-defaults.md) | Each options record has a Default | None | done |
+| [20](issues/20-fake-predicate-label-and-harness-double-call.md) | FakePredicates derive their label; the harness documents its double call | None | done |
+| [21](issues/21-precommit-hook-behavior-documented.md) | Document what the pre-commit hook and format-all do | None | done |
+| [22](issues/22-assertion-exception-base-type.md) | One exception family for the Testing assertions | None | done |
+| [23](issues/23-project-takes-a-policy-not-a-bool.md) | Decision.Project parameter | None | done |
+| [24](issues/24-compile-entry-point-names.md) | Compile entry point names | None | done |
+| [25](issues/25-predicate-twin-naming-and-placement.md) | Predicate twin naming and string In placement | None | done |
+| [26](issues/26-regex-options-timeout-and-cache.md) | Regex predicate options, timeout and cache | None | done |
+| [27](issues/27-time-window-not-given-sentinel.md) | Time windows use an absent argument, not an empty string | None | done |
+| [28](issues/28-result-record-list-equality.md) | Equality of Decision, CompilationResult and Trace records | None | done |
+| [29](issues/29-measure-versus-limit-names-and-convergence.md) | Measure and limit names; rewrite pass limits | None | done |
+| [30](issues/30-operator-word-casing-in-printed-text.md) | Casing of operator words in canonical text | None | done |

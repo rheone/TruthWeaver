@@ -5,6 +5,10 @@
   "description": "The flat, key-discriminated JSON tree shape for a TruthWeaver rule expression, as defined by ADR-0003 (docs/adr/0003-rule-syntax-and-serialization.md). A node is discriminated by which of 'const', 'predicate', or 'op' is present. Constants and operator names are case-insensitive when parsed, so each 'op' is matched by a pattern that accepts every letter case (a plain enum would be case-sensitive); a constant may be the string 'unknown'. This schema describes structural JSON shape only, matching what JsonTreeParser accepts before compile-time validation (e.g. XOR/XNOR/IMPLIES binary-only, ExactlyOne/threshold k-range checks) runs; a document can be schema-valid and still fail RuleCompiler validation.",
   "$ref": "#/$defs/node",
   "$defs": {
+    "note": {
+      "description": "An optional note on a node: free text for the people who read the rule. It does not change what the rule means: a rule with notes compiles to the same tree and evaluates the same way as the rule without them. Rule text writes a note as a // or /* */ comment. Line endings become a line feed, each line loses its trailing whitespace and the whole note is trimmed; an empty note is no note.",
+      "type": "string"
+    },
     "node": {
       "description": "Any tree node: a constant, a predicate term, or an operator node.",
       "oneOf": [
@@ -25,7 +29,8 @@
               "pattern": "^(?:[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn])$"
             }
           ]
-        }
+        },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["const"],
       "additionalProperties": false
@@ -67,7 +72,8 @@
         "args": {
           "type": "object",
           "additionalProperties": { "$ref": "#/$defs/argumentValue" }
-        }
+        },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["predicate"],
       "additionalProperties": false
@@ -91,7 +97,8 @@
           "items": { "$ref": "#/$defs/node" },
           "minItems": 1,
           "maxItems": 1
-        }
+        },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["op", "operands"],
       "additionalProperties": false
@@ -104,7 +111,8 @@
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" }
-        }
+        },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["op", "operands"],
       "additionalProperties": false
@@ -118,7 +126,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/node" }
         },
-        "k": { "type": "integer" }
+        "k": { "type": "integer" },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["op", "operands", "k"],
       "additionalProperties": false
@@ -133,7 +142,8 @@
           "items": { "$ref": "#/$defs/node" }
         },
         "min": { "type": "integer" },
-        "max": { "type": "integer" }
+        "max": { "type": "integer" },
+        "note": { "$ref": "#/$defs/note" }
       },
       "required": ["op", "operands", "min", "max"],
       "additionalProperties": false

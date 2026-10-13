@@ -1,6 +1,6 @@
 # Executable documentation examples
 
-The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/predicates.md`, `docs/predicate-conventions.md`, `docs/examples.md`, `docs/diagnostics.md` and `docs/benchmarks.md` are checked on every `dotnet test` by
+The runnable examples in `README.md`, `CONTEXT.md`, `docs/data-sources.md`, `docs/architecture.md`, `docs/packages.md`, `docs/rule-text.md`, `docs/rule-formats.md`, `docs/html-and-dot.md`, `docs/truth-tables.md`, `docs/rulebuilder.md`, `docs/rewriting-rules.md`, `docs/rewriting-examples.md`, `docs/rewriting-normal-form-examples.md`, `docs/predicates.md`, `docs/predicate-conventions.md`, `docs/examples.md`, `docs/diagnostics.md`, `docs/benchmarks.md`, `docs/tool-core.md` and `docs/decision-records.md` are checked on every `dotnet test` by
 `tests/TruthWeaver.Tests/DocExamples/DocExampleChecker.cs` (run by `DocExampleTests`). A change that breaks a documented
 rule, or changes documented output, fails the build. C# fragments are not checked.
 
@@ -14,13 +14,20 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 | --- | --- | --- |
 | `<!-- doctest:rule ID -->` | `text` | The DSL text compiles; its canonical text is remembered as `ID`. |
 | `<!-- doctest:json ID -->`, `<!-- doctest:yaml ID -->` | `json`, `yaml` | The rule compiles to the same canonical text as `rule ID`. |
-| `<!-- doctest:tree ID -->`, `<!-- doctest:mermaid ID -->` | `text`, `mermaid` | The block equals `PrintPlainText()` or `PrintMermaid()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the mermaid marker accepts the words `shapes` and `two-line`, which switch on `MermaidOptions.NodeShapes` and `MermaidOptions.TwoLineTermLabels`. |
+| `<!-- doctest:tree ID -->`, `<!-- doctest:mermaid ID -->` | `text`, `mermaid` | The block equals `PrintPlainText()` or `PrintMermaid()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the mermaid marker accepts the words `shapes`, `two-line`, `symbolic`, `cstyle` and `trace`. `shapes` and `two-line` switch on `MermaidOptions.NodeShapes` and `MermaidOptions.TwoLineTermLabels`. `symbolic` and `cstyle` select `OperatorStyle.Symbolic` or `OperatorStyle.CStyle` (the tree marker takes them too). `trace` evaluates the rule with no service provider and no data sources (every documentation predicate is `True`, and a variable is `Unknown` with a fault) and draws the decision trace. |
+| `<!-- doctest:equation ID -->`, `<!-- doctest:legend ID -->` | `text` | The block equals `PrintEquation()` or `PrintEquationWithLegend()` of `rule ID` (the `rule` block must come earlier in the file). The legend block is the equation, a line feed, then the legend text. An equation marker can also stand above a display-math paragraph (a line that starts with `$$`) instead of a fence. The check compares the paragraph, which GitHub draws as a formula. After the ID, the words `latex`, `ascii` (AsciiMath), `mathml`, `typst`, `plain-ascii` (the 7-bit dialect), `cstyle`, `double-dollar`, `mathjax` and `simple` select the dialect, the LaTeX wrap and simple variables. The words `letters`, `words` and `logic-symbols` select the `ConstantStyle` of an equation, legend, tree or mermaid block. An equation or legend block with none of them documents the default, which is `letters`. The other blocks document `words`. |
+| `<!-- doctest:truthtable ID -->` | `text`, `json`, `html` | The block equals `PrintTruthTable()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the words `csv`, `json`, `html` and `latex` select the format (Markdown with none). The words `classical`, `simple`, `allow-larger` and `no-arguments` set the matching options. The words `letters` (the default), `words` and `logic-symbols` select the `ConstantStyle`. |
+| `<!-- doctest:ruletext ID -->` | `text` | The block equals `PrintRuleText()` of `rule ID` (the `rule` block must come earlier in the file). After the ID, the word `symbolic` selects `OperatorStyle.Symbolic`; `cstyle` is not valid here, since `PrintRuleText` rejects it. |
+| A rewrite word after the ID of a `tree`, `mermaid`, `equation`, `legend` or `ruletext` marker | as the marker | The check applies the rewrite first and compares the output for the rewritten rule. The words are `nnf`, `cnf`, `dnf`, `simplify`, `canonicalize`, `compress` and `primitives`. Several words apply in the order written, so `primitives compress` expands and then compresses. A rewrite that returns no rule fails the check. |
+| `<!-- doctest:rewrite-diagnostics ID -->` | `text` | The block equals the diagnostics of the rewrite that the rewrite words name. The word `cap=N` sets the `maxNodeCount` argument of `ToNnf`, `ToCnf`, `ToDnf` and `ExpandToPrimitives`, so a block can show a refusal at a small cap. |
+| `<!-- doctest:metrics ID -->` | A Markdown table, not a fence | The table that follows equals the depth and node count (`RuleMetrics`) of `rule ID` and of each rewrite word after the ID. The rows are `Original`, then one row for each word. |
 | `<!-- doctest:diagnostics-dsl SOURCE -->` (also `-json`, `-yaml`) | `text` | The block equals `FormatDiagnostics(SOURCE)`; `SOURCE` is the rest of the marker line, verbatim. |
+| `<!-- doctest:decision-record ID -->` | `json` | The block equals `DecisionRecord.PrintJson()` of `rule ID` (the `rule` block must come earlier in the file). The rule is evaluated with no service provider, no data sources and the default `EvaluationOptions`, which the record holds. After the ID, the words `name=NAME` and `version=VERSION` set the `RuleIdentity`, and the word `values` sets `DecisionJsonOptions.IncludeArgumentValues`. |
 | `<!-- doctest:skip REASON -->` | any | Not runnable (pseudo-grammar, class diagram). The reason is mandatory. |
 
 3. Predicates the examples use come from `BuildRegistry` in `DocExampleChecker.cs`. Add a predicate there (same name,
    label and argument defaults the documentation shows) when a new example needs one. The checker
-   declares the data source names `user` and `request` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
+   declares the data source names `user`, `request` and `limits` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
    source name needs adding to the `Compiler` declarations in the same file.
 4. An untagged `text`, `json`, `yaml`, `mermaid` or `ebnf` block fails the check, so a new example cannot be forgotten.
 5. Run `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExampleTests"`. A failure names the file, line and marker
@@ -78,13 +85,13 @@ One Markdown file describes one Operation. The file name is the lower-case canon
 | --- | --- |
 | Formula | A closed formula exists |
 | Truth table | The Operation has a fixed number of operands |
-| Evaluation table | The Operation is parameterised, variadic or a cardinality operation. A page has a Truth table or an Evaluation table, never both. |
+| Evaluation table | The Operation is parameterized, variadic or a cardinality operation. A page has a Truth table or an Evaluation table, never both. |
 | Canonical form | The Operation is derived and has an established definition in primitives |
 | Equivalent forms | Other equivalences hold, including the classical laws that fail |
 | Examples | Always, unless the table already shows the cases |
 | Edge cases | A single operand, `Unknown` propagation, faults and rejected parameters need a statement |
 | Mermaid diagram | The diagram shows something that the formula does not |
 | Evaluation behavior | The Operation has observable evaluation behavior: short-circuit, `NotEvaluated` nodes or rewrite behavior |
-| Related operations | Neighbours and contrasts exist |
+| Related operations | Neighbors and contrasts exist |
 
 Reference pages link only to other pages under `docs/strong-k3/`. They link to no decision record, work item, `.scratch` file or changelog.

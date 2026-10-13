@@ -1,0 +1,15 @@
+{
+  "service": "editor",
+  "rules": {
+    "publish": {
+      "op": "and",
+      "note": "Editors who are active.",
+      "operands": [
+        { "predicate": "isActive" },
+        { "predicate": "hasRole", "args": { "role": "editor" } }
+      ]
+    },
+    "review": "isActive AND hasRole(role: \"reviewer\")",
+    "count": 3
+  }
+}

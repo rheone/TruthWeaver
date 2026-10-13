@@ -4,7 +4,6 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -100,8 +99,9 @@ public sealed class AnalyzerTests
         Assert.DoesNotContain("two-valued", diagnostic.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>A rule with no constant or contradictory subexpression produces no analysis diagnostics.</summary>
     [Fact]
-    public void Rule_with_no_constant_or_contradictory_subexpression_produces_no_analysis_diagnostics()
+    public void Analysis_RuleWithoutContradiction_ProducesNoDiagnostics_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -294,8 +294,9 @@ public sealed class AnalyzerTests
         Assert.True(flagged > 20, $"only {flagged} rules had a K3 verdict");
     }
 
+    /// <summary>Analysis diagnostics are warnings or information, never errors.</summary>
     [Fact]
-    public void Diagnostics_are_warning_or_info_never_error()
+    public void Diagnostics_Severity_AreWarningOrInfoNeverError_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -304,8 +305,9 @@ public sealed class AnalyzerTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>Analysis runs normally when the term count is at or under the cap.</summary>
     [Fact]
-    public void Term_count_at_or_under_the_analysis_cap_runs_analysis_normally()
+    public void TermCount_AtOrUnderCap_RunsAnalysisNormally_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompilerWithMaxAnalysisTerms(2);
 
@@ -316,8 +318,9 @@ public sealed class AnalyzerTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.StructuralContradiction);
     }
 
+    /// <summary>Analysis is skipped, and its contradiction is suppressed, when the term count exceeds the cap.</summary>
     [Fact]
-    public void Term_count_exceeding_the_analysis_cap_skips_analysis_and_suppresses_the_contradiction()
+    public void TermCount_ExceedingCap_SkipsAnalysisAndSuppressesContradiction_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompilerWithMaxAnalysisTerms(1);
 
@@ -329,8 +332,9 @@ public sealed class AnalyzerTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.StructuralContradiction);
     }
 
+    /// <summary>Analysis is not skipped when the term count equals the cap.</summary>
     [Fact]
-    public void Term_count_exactly_equal_to_the_analysis_cap_does_not_trigger_the_skip()
+    public void TermCount_EqualToCap_DoesNotSkipAnalysis_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompilerWithMaxAnalysisTerms(1);
 

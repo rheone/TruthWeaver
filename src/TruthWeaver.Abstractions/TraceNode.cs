@@ -29,7 +29,7 @@ using System.Diagnostics;
 /// <paramref name="NotEvaluated"/> is <see langword="true"/>.
 /// </param>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public sealed record TraceNode(string Text, TruthValue? Result, bool NotEvaluated, IReadOnlyList<TraceNode> Children)
+public sealed record TraceNode(string Text, TruthValue? Result, bool NotEvaluated, EquatableArray<TraceNode> Children)
 {
     // One line per node (text, outcome, child count) instead of the default record ToString, which prints every descendant.
     private string DebuggerDisplay =>

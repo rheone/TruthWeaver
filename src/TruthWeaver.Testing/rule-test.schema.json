@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rheone/TruthWeaver/rule-test.schema.json",
+  "title": "TruthWeaver rule test file",
+  "description": "One rule and named cases. Each case gives stub values for the terms and optional data for from(...) references, and states the expected result. Run it with RuleTestFile.RunAsync or truthweaver test.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "description": "The name of the file, the suite name in a JUnit report. The default is the file name without its extension.",
+      "type": "string",
+      "minLength": 1
+    },
+    "rule": {
+      "description": "The rule inline: rule text (a string) or a rule tree (an object, as rule-tree.schema.json describes it).",
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "object" }]
+    },
+    "ruleFile": {
+      "description": "The path of the rule file, relative to the test file. .json is JSON, .yaml and .yml are YAML, any other extension is rule text.",
+      "type": "string",
+      "minLength": 1
+    },
+    "cases": {
+      "description": "The cases, run in order. Each name is used once.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "required": ["cases"],
+  "oneOf": [{ "required": ["rule"] }, { "required": ["ruleFile"] }],
+  "additionalProperties": false,
+  "$defs": {
+    "truthValue": {
+      "description": "True, False or Unknown, or T, F or U, in any case. A YAML or JSON Boolean is True or False.",
+      "oneOf": [
+        { "type": "string", "pattern": "^\\s*([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[TtFfUu])\\s*$" },
+        { "type": "boolean" }
+      ]
+    },
+    "case": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the case.",
+          "type": "string",
+          "minLength": 1
+        },
+        "given": {
+          "description": "The stub value of each term, keyed by the term in rule text, such as hasRole(role: \"admin\"). A term with no value is Unknown.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/truthValue" }
+        },
+        "variables": {
+          "description": "The data of each from(\"source\", \"query\") source name, inline.",
+          "type": "object"
+        },
+        "variableFiles": {
+          "description": "The JSON or YAML data file of each source name, relative to the test file.",
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "expect": {
+          "type": "object",
+          "properties": {
+            "result": {
+              "description": "The expected result of the rule.",
+              "$ref": "#/$defs/truthValue"
+            },
+            "faults": {
+              "description": "The expected number of faults.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "trace": {
+              "description": "The expected trace tree, as truthweaver evaluate --trace prints it. Line endings, spaces at the end of a line and empty lines at the end are ignored.",
+              "type": "string"
+            }
+          },
+          "required": ["result"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["name", "expect"],
+      "additionalProperties": false
+    }
+  }
+}

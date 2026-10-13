@@ -1,7 +1,5 @@
 namespace TruthWeaver.Ast;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// The single spelling table for K3 constants (ADR-0005 decision 11), shared by the DSL canonical printer, the
 /// descriptors and the JSON/YAML printers and parsers so every layer agrees on how <c>True</c>, <c>False</c> and
@@ -35,6 +33,34 @@ internal static class TruthValueText
             TruthValue.Unknown => "unknown",
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unhandled truth value."),
         };
+    }
+
+    /// <summary>Attempts to read a constant's letter (<c>T</c>, <c>F</c> or <c>U</c>) in either letter case, as the DSL parser does.</summary>
+    /// <param name="text">The text to read.</param>
+    /// <param name="value">The constant's value when recognised.</param>
+    /// <returns><see langword="true"/> if <paramref name="text"/> is one of the three letters.</returns>
+    public static bool TryParseLetter(string? text, out TruthValue value)
+    {
+        if (string.Equals(text, "t", StringComparison.OrdinalIgnoreCase))
+        {
+            value = TruthValue.True;
+            return true;
+        }
+
+        if (string.Equals(text, "f", StringComparison.OrdinalIgnoreCase))
+        {
+            value = TruthValue.False;
+            return true;
+        }
+
+        if (string.Equals(text, "u", StringComparison.OrdinalIgnoreCase))
+        {
+            value = TruthValue.Unknown;
+            return true;
+        }
+
+        value = TruthValue.False;
+        return false;
     }
 
     /// <summary>Attempts to read a constant's text (<c>true</c>, <c>false</c> or <c>unknown</c>) in any letter case.</summary>

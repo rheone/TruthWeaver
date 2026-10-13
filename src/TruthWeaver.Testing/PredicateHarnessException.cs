@@ -5,7 +5,7 @@ namespace TruthWeaver.Testing;
 /// failure. Like <see cref="DecisionAssertionException"/>, it belongs to no test framework, so any runner that treats an
 /// uncaught exception as a failure reports it.
 /// </summary>
-public sealed class PredicateHarnessException : Exception
+public sealed class PredicateHarnessException : TruthWeaverAssertionException
 {
     /// <summary>Initializes a new instance of the <see cref="PredicateHarnessException"/> class.</summary>
     public PredicateHarnessException() { }

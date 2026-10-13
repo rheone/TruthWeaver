@@ -94,4 +94,4 @@ The factory has no `nullBehavior` option. The test delegate or the select delega
 
 ## Related predicates
 
-- The fixed predicates in this index select a value with a selector that the host supplies. Use one of them when a comparison fits, for example [numeric Equal](numeric-equal.md) or [string Equals](string-equals.md).
+- The fixed predicates in this index select a value with a selector that the host supplies. Use one of them when a comparison fits, for example [numeric Equal](numeric-isequalto.md) or [string Equals](string-isequalto.md).

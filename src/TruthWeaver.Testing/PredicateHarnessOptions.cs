@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>Settings for one <see cref="PredicateHarness.RunAsync{TContext}"/> run.</summary>
 public sealed record PredicateHarnessOptions
 {

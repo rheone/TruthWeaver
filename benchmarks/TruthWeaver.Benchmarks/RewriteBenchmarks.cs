@@ -65,7 +65,7 @@ public class RewriteBenchmarks
     [Benchmark]
     public CompiledRule<BenchmarkContext> CompressToDerived()
     {
-        return this.rule.CompressToDerived();
+        return this.rule.CompressToDerived().GetRuleOrThrow();
     }
 
     /// <summary>Rewrites the tree to its canonical form.</summary>
@@ -73,7 +73,7 @@ public class RewriteBenchmarks
     [Benchmark]
     public CompiledRule<BenchmarkContext> Canonicalize()
     {
-        return this.rule.Canonicalize();
+        return this.rule.Canonicalize().GetRuleOrThrow();
     }
 
     /// <summary>Applies the semantics-preserving simplification rules.</summary>
@@ -81,6 +81,6 @@ public class RewriteBenchmarks
     [Benchmark]
     public CompiledRule<BenchmarkContext> Simplify()
     {
-        return this.rule.Simplify();
+        return this.rule.Simplify().GetRuleOrThrow();
     }
 }

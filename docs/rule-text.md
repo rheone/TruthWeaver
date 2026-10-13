@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -36,7 +36,7 @@ not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
 
 primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"
             | constant | call | term ;
-constant    = "True" | "False" | "Unknown" ;
+constant    = "True" | "False" | "Unknown" | "T" | "F" | "U" ;
 call        = list_op "(" expression { "," expression } ")"
             | threshold "(" integer "," expression { "," expression } ")"
             | "BETWEEN" "(" integer "," integer "," expression { "," expression } ")"
@@ -55,11 +55,27 @@ Some rules are context rules, not syntax, so the grammar does not show them:
 
 - **No implicit mixing.** An `infix_op` expression, a `??` chain or a ternary cannot sit next to `AND`, `OR`, another infix operator or a nested ternary at the same level without parentheses. The compiler reports `AmbiguousOperatorMixing`. See [The mixing rule](strong-k3/specification/syntax.md#the-mixing-rule).
 - **Checks after parsing.** The compiler checks operand counts, threshold bounds and argument schemas after it parses the rule. A failure is a diagnostic, not a syntax error.
+- **Comments.** A `//` comment runs to the end of its line, and a `/* */` comment can span lines. A comment can go anywhere whitespace can, and the parser keeps it as the note of a node. See [Notes](rule-formats.md#notes).
 - **Rejected spellings.** `NXOR`, `Project` and `Collapse` are not in the language. The compiler rejects them in rule text, JSON and YAML, and the diagnostic names the replacement. See [Operations outside the rule language](strong-k3/specification/syntax.md#operations-outside-the-rule-language).
 
 ## Case
 
-Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. `and`, `And` and `AND` compile to the same node. The printer writes one spelling: operator words in upper case (`AND`, `XOR`), threshold and function names in upper camel case (`AtLeast`, `ExactlyOne`, `If`, `IsTrue`) and the constants as `True`, `False` and `Unknown`. The printer writes the word form of an operator and never a symbol.
+Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. Rule text also reads the letters `T`, `F` and `U` (any case) as the constants, so `T AND f` and `True AND False` compile to the same tree. JSON and YAML read the words only. `and`, `And` and `AND` compile to the same node.
+
+The printer writes each operator word in one fixed spelling. The rule is:
+
+- Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case: `NOT`, `AND`, `OR`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN`.
+- The other call words are upper camel case: `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`, `If`, `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`.
+- The constants are `True`, `False` and `Unknown`. `ConstantStyle.Letters` writes them as `T`, `F` and `U`.
+
+`PrintRuleText` and `CanonicalText` write the word form of an operator by default. The printed spelling is the one that the [grammar](#grammar) uses for each word. See [Operator style](#operator-style) for the one other spelling `PrintRuleText` supports.
+
+<!-- doctest:rule casing -->
+```text
+parity(isBanned, lovesPineapple, isDineIn) and isknown(isTakeout)
+```
+
+The compiled rule prints as `PARITY(isBanned, lovesPineapple, isDineIn) AND IsKnown(isTakeout)`.
 
 Predicate names and argument names are case-insensitive too. `hasCrust(Crust: "thin")` and `hasCrust(crust: "thin")` compile to the same term, and the printer writes the name as the predicate's schema spells it. Argument values are case-sensitive.
 
@@ -89,12 +105,73 @@ To print a rule with delimiters that change with the nesting depth, pass a `Grou
 CompiledRule<MyContext> rule = compiler.Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))").GetRuleOrThrow();
 
 rule.CanonicalText;                                  // a AND (b OR (c AND (d OR (e AND (f OR g)))))  (parentheses only)
-rule.PrintRuleText();                                    // same as CanonicalText
+rule.PrintRuleText();                                    // same as CanonicalText (the rule has no notes)
 rule.PrintRuleText(GroupingStyle.Parentheses);           // the same, written out
 rule.PrintRuleText(GroupingStyle.DepthCycling);          // a AND (b OR [c AND {d OR (e AND [f OR g])}])
 ```
 
 `DepthCycling` is opt-in and deterministic. The delimiter depends only on how many groups enclose it, and it cycles through `(`, `[` and `{`. It helps people read a deeply nested rule. The output always parses back to a tree equal to the original, so `CanonicalText` stays the form to persist. Function-call argument lists keep `(`.
+
+## Operator style
+
+Pass an `OperatorStyle` to `PrintRuleText` to choose how `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND` and `NOR` are spelled:
+
+- `Word` (the default) writes the word form, exactly as `CanonicalText` does.
+- `Symbolic` writes the mathematical symbol the DSL parser itself reads back for that operator (`∧ ∨ ¬ ⊕ ↔ → ↑ ↓`), so the result still compiles to a tree equal to the original.
+- `CStyle` is rejected: the parser does not read `^` or `==` (see [Spellings](strong-k3/specification/syntax.md#spellings)), so there is no round-trippable C-style rule text. `PrintRuleText` throws `ArgumentException`; `TryPrintRuleText` returns `false` and sets its `out` text to `null` instead.
+
+`COALESCE` and `If` keep their word/function-call spelling in every style: the DSL reads `??` only as an infix operator, with no call syntax for it, so a function-call COALESCE has no symbol to switch to.
+
+<!-- doctest:rule opstyle -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext opstyle -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext opstyle symbolic -->
+```text
+approvedByAlice ∧ (approvedByBob ∨ ¬approvedByCarol)
+```
+
+```csharp
+rule.PrintRuleText();                                         // approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+rule.PrintRuleText(operatorStyle: OperatorStyle.Symbolic);     // approvedByAlice ∧ (approvedByBob ∨ ¬approvedByCarol)
+rule.PrintRuleText(operatorStyle: OperatorStyle.CStyle);       // throws ArgumentException
+
+bool ok = rule.TryPrintRuleText(GroupingStyle.Parentheses, OperatorStyle.CStyle, out string? text);  // false, text is null
+```
+
+## Constant style
+
+`PrintRuleText` and `TryPrintRuleText` take an optional `ConstantFormat` to choose how `True`, `False` and `Unknown` are spelled. The parser reads a constant as the word or as the letter, in any letter case. So rule text accepts only a format that the parser reads back to the same constants:
+
+- `ConstantStyle.Word` (the default) writes `True`, `False` and `Unknown`.
+- `ConstantStyle.Letters` writes `T`, `F` and `U`.
+- An override is accepted when it is a letter-case variant of the constant's own word or letter, for example `TrueText = "TRUE"` or `TrueText = "t"`.
+- `LogicSymbols` is rejected. The parser does not read `⊤` or `⊥`.
+- Any other override is rejected, for example `"1"` for `True`, or `"F"` for `True`.
+
+The names `T`, `F` and `U` are reserved, in any case. A predicate cannot have one of these names, and a term with one of these names is a compile error that says the name is reserved.
+
+`PrintRuleText` throws `ArgumentException` with a message that names the style or the override. `TryPrintRuleText` returns `false` and sets its `out` text to `null` instead.
+
+```csharp
+rule.PrintRuleText(constants: new ConstantFormat { TrueText = "TRUE" });                   // TRUE AND Unknown
+rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.Letters });       // T AND U
+rule.PrintRuleText(constants: new ConstantFormat { Style = ConstantStyle.LogicSymbols });  // throws ArgumentException
+
+bool ok = rule.TryPrintRuleText(
+    GroupingStyle.Parentheses,
+    OperatorStyle.Word,
+    new ConstantFormat { Style = ConstantStyle.LogicSymbols },
+    out string? text);                                                                     // false, text is null
+```
+
+To print `⊤` and `⊥`, use [`PrintEquation`](equations.md#constants) or a tree printer. They are read views, not rule text. See [tree printers](rulebuilder.md#rendering-a-rule-as-a-diagram).
 
 ## Whitespace
 
@@ -108,8 +185,44 @@ RuleText.NormalizeWhitespace("ANY( a ,b,	c )");            // "ANY(a, b, c)"
 RuleText.NormalizeWhitespace("named( value :\"x  y\" )");   // "named(value: \"x  y\")" (string contents untouched)
 ```
 
-The result is the same for any input spacing, and a second call changes nothing. The result compiles to a tree equal to the tree of the input. The prefix `!` and `¬` touch their operand. The argument list of a call or term touches its name. Nothing pads the inside of `()`, `[]` or `{}`. The function keeps characters that the DSL does not recognize in place, so the text of a rule that does not compile yet is never lost.
+The result is the same for any input spacing, and a second call changes nothing. The result compiles to a tree equal to the tree of the input. A comment stays as written, with one space on each side like a token. A `//` comment is followed by a line feed, because it runs to the end of its line. The prefix `!` and `¬` touch their operand. The argument list of a call or term touches its name. Nothing pads the inside of `()`, `[]` or `{}`. The function keeps characters that the DSL does not recognize in place, so the text of a rule that does not compile yet is never lost.
+
+## Width-aware pretty printing
+
+`CompiledRule.PrintRuleText(RuleTextOptions)` and its Try-first sibling `TryPrintRuleText(RuleTextOptions, out string?)` take one options object instead of the `grouping`/`operatorStyle`/`constants` parameters. It adds one more setting, `Width`:
+
+- `Width = null` (the default) prints one line, the same text as the other `PrintRuleText` overloads.
+- `Width = N` breaks a group across lines when its one-line form would be longer than `N` characters at its current indent. `IndentSize` (default 2) is the number of spaces added per nesting level.
+
+The breaking rule, applied independently at every group, from the outermost in:
+
+- If the group's one-line form fits in `Width`, it prints on one line, exactly as `Width = null` would print it.
+- Otherwise, it breaks. An `AND`/`OR` chain or a binary connective (`XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`) breaks after each operator, one operand per line; a call form (`AtLeast(2, a, b, c)`, `BETWEEN(min, max, ...)`, `ANY(...)` and the rest) breaks one argument per line. Each broken operand or argument is indented one more `IndentSize` than its parent, and is itself checked against `Width` the same way, so only the groups that need to break do.
+- A single token (a term name, a constant) is never split. A width smaller than the longest token still prints that token whole, on its own line; it does not loop or throw.
+
+The result always compiles back to a tree equal to the original: breaking is only a presentation choice, the same way `GroupingStyle.DepthCycling` is.
+
+<!-- doctest:rule width -->
+```text
+approvedByAlice AND (approvedByBob OR NOT approvedByCarol)
+```
+
+<!-- doctest:ruletext width width=20 -->
+```text
+approvedByAlice AND
+(
+  approvedByBob OR
+  NOT approvedByCarol
+)
+```
+
+```csharp
+rule.PrintRuleText(RuleTextOptions.Default);                           // one line (Width is null)
+rule.PrintRuleText(RuleTextOptions.Default with { Width = 20 });       // approvedByAlice AND\n(\n  approvedByBob OR\n  NOT approvedByCarol\n)
+```
+
+`PrintRuleText(writer, ...)` and `PrintRuleText(writer, options)` write the same text to a `TextWriter`. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
 
 ## Printer spelling of the ternary
 
-`If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`.
+`If(c, t, f)` and `c ? t : f` compile to the same node. The `CStyle` operator style of the tree printers labels the node `?:`. The other styles label it `If`. `PrintRuleText` never renders the ternary form (see [Operator style](#operator-style)). [`PrintEquation`](equations.md) with `EquationDialect.CStyle` renders `If` as the ternary `c ? t : f` instead of a call; the other dialects keep the call form.

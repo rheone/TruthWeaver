@@ -20,5 +20,18 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <!-- Validates the rule test files against rule-test.schema.json. -->
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+
+  <!-- The rule test samples, and the JUnit XSD (the Jenkins xunit-plugin junit-10.xsd, MIT) that the JUnit output is
+       validated against. The schema of the test file is the shipped one from the Testing project. -->
+  <ItemGroup>
+    <None Include="RuleTests/**" CopyToOutputDirectory="PreserveNewest" />
+    <None
+      Include="../../src/TruthWeaver.Testing/rule-test.schema.json"
+      Link="RuleTests/rule-test.schema.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>

@@ -49,8 +49,9 @@ public sealed class EvaluationOptionsTests
         );
     }
 
+    /// <summary>The unlimited default fault budget completes evaluation with multiple faults.</summary>
     [Fact]
-    public async Task Unlimited_default_fault_budget_continues_to_completion_with_multiple_faults()
+    public async Task FaultBudget_UnlimitedDefault_CompletesWithMultipleFaults_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("a").AddThrowing("b").AddConstant("c", true).Build()
@@ -67,8 +68,9 @@ public sealed class EvaluationOptionsTests
         Assert.DoesNotContain(decision.Trace!.Entries, e => e.NotEvaluated);
     }
 
+    /// <summary>Exhaustive mode evaluates the remaining AND operands after a false first operand.</summary>
     [Fact]
-    public async Task Exhaustive_mode_evaluates_remaining_and_operands_after_a_false_first_operand()
+    public async Task Exhaustive_FalseFirstOperand_EvaluatesRemainingOperands_Test()
     {
         List<string> invocationLog = [];
         RuleCompiler<RuleTestContext> compiler = new(
@@ -91,10 +93,11 @@ public sealed class EvaluationOptionsTests
         Assert.Equal(["a", "b"], invocationLog);
     }
 
+    /// <summary>The result is identical between the default and exhaustive modes.</summary>
     [Theory]
     [InlineData(EvaluationMode.ShortCircuit)]
     [InlineData(EvaluationMode.Exhaustive)]
-    public async Task Result_is_identical_between_default_and_exhaustive_modes(EvaluationMode mode)
+    public async Task Mode_DefaultAndExhaustive_ProduceIdenticalResult_Test(EvaluationMode mode)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", false).AddThrowing("b").Build()
@@ -111,8 +114,9 @@ public sealed class EvaluationOptionsTests
         Assert.Equal(TruthValue.False, decision.Result);
     }
 
+    /// <summary>A timeout cancels an in flight evaluation.</summary>
     [Fact]
-    public Task Timeout_cancels_an_in_flight_evaluation()
+    public Task Timeout_InFlightEvaluation_IsCancelled_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddDelayed("slow", TimeSpan.FromSeconds(5), true).Build()
@@ -129,8 +133,9 @@ public sealed class EvaluationOptionsTests
         );
     }
 
+    /// <summary>Evaluation is unaffected when no timeout is configured.</summary>
     [Fact]
-    public async Task No_timeout_configured_leaves_evaluation_unaffected()
+    public async Task Timeout_NotConfigured_LeavesEvaluationUnaffected_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddDelayed("fast", TimeSpan.FromMilliseconds(10), true).Build()
@@ -146,11 +151,12 @@ public sealed class EvaluationOptionsTests
         Assert.Equal(TruthValue.True, decision.Result);
     }
 
+    /// <summary>A fault budget abort leaves the trace with unevaluated entries.</summary>
     [Fact]
 #pragma warning disable CA1822 // kept as an instance method for reading-order symmetry with its
     // sibling fault-budget test above (SA1204 would otherwise force
     // every static member in this class ahead of every instance one).
-    public async Task Fault_budget_abort_leaves_the_trace_with_unevaluated_entries()
+    public async Task FaultBudget_Abort_LeavesTraceWithUnevaluatedEntries_Test()
 #pragma warning restore CA1822
     {
         Decision decision = await EvaluateWithFaultBudgetAsync(1);
@@ -158,8 +164,9 @@ public sealed class EvaluationOptionsTests
         Assert.Contains(decision.Trace!.Entries, e => e.NotEvaluated);
     }
 
+    /// <summary>Genuine cancellation propagates rather than being recorded as a fault.</summary>
     [Fact]
-    public async Task Genuine_cancellation_propagates_rather_than_being_recorded_as_a_fault()
+    public async Task Cancellation_Genuine_PropagatesRatherThanRecordedAsFault_Test()
     {
         using CancellationTokenSource cts = new();
         RuleCompiler<RuleTestContext> compiler = new(

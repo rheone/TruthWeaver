@@ -12,7 +12,12 @@ using System.Diagnostics.CodeAnalysis;
 /// </summary>
 /// <remarks>Initializes a new instance of the <see cref="PredicateArguments"/> class.</remarks>
 /// <param name="values">The argument values, keyed by the schema's argument names (ordinal). The compiler maps the spelling that a rule used to the schema's spelling, so a predicate reads an argument by the name its schema declares.</param>
-public sealed class PredicateArguments(IReadOnlyDictionary<string, LiteralValue> values)
+/// <param name="deferred">
+/// The names of the arguments that the rule gives as a data-source reference, so they have no value yet, or
+/// <see langword="null"/> for none. Only <see cref="PredicateSchema.ArgumentValidator"/> sees a non-empty set. See
+/// <see cref="IsDeferred"/>.
+/// </param>
+public sealed class PredicateArguments(IReadOnlyDictionary<string, LiteralValue> values, IReadOnlySet<string>? deferred = null)
 {
     private readonly IReadOnlyDictionary<string, LiteralValue> values = values;
 
@@ -113,6 +118,24 @@ public sealed class PredicateArguments(IReadOnlyDictionary<string, LiteralValue>
     public IReadOnlyList<Guid> GetGuidArray(string name)
     {
         return [.. this.Get(name, LiteralKind.GuidArray).AsArray().Select(v => v.AsGuid())];
+    }
+
+    /// <summary>
+    /// Tests whether the rule gives an argument as a data-source reference, whose value is known only at evaluation.
+    /// </summary>
+    /// <param name="name">The argument name.</param>
+    /// <returns>
+    /// <see langword="true"/> when the argument has no value because it comes from a data source. An argument that is
+    /// absent and not deferred was omitted. At evaluation every deferred argument has its value, so this is
+    /// <see langword="false"/> for every name.
+    /// </returns>
+    /// <remarks>
+    /// A <see cref="PredicateSchema.ArgumentValidator"/> uses this to tell an omitted optional argument that has no default
+    /// ("not given") from one that a data source will supply.
+    /// </remarks>
+    public bool IsDeferred(string name)
+    {
+        return deferred?.Contains(name) == true;
     }
 
     /// <summary>Gets the raw literal for an argument when it was supplied.</summary>

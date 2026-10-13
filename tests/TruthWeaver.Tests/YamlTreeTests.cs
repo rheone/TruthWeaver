@@ -46,8 +46,9 @@ public sealed class YamlTreeTests
     private const string WorkedExampleDsl =
         "hasRole(role: \"Y\") AND (hasTraining(training: \"Q\") OR hasTraining(training: \"Z\") OR (isManager XOR isDepartmentHead))";
 
+    /// <summary>The YAML worked example parses to a structure equal to the DSL and JSON forms.</summary>
     [Fact]
-    public void Yaml_worked_example_parses_structurally_equal_to_dsl_and_json_forms()
+    public void Parse_YamlWorkedExample_EqualsDslAndJsonForms_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -57,8 +58,9 @@ public sealed class YamlTreeTests
         Assert.Equal(fromDsl.CanonicalText, fromYaml.CanonicalText);
     }
 
+    /// <summary>A compiled rule prints to YAML and reparses to a structurally equal tree.</summary>
     [Fact]
-    public void Compiled_rule_prints_to_yaml_and_reparses_to_a_structurally_equal_tree()
+    public void Print_CompiledRule_ReparsesToEqualTree_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> original = compiler.Compile(WorkedExampleDsl).CompiledRule!;
@@ -69,13 +71,14 @@ public sealed class YamlTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>The threshold family round trips through YAML.</summary>
     [Theory]
     [InlineData("AtLeast", "atLeast")]
     [InlineData("AtMost", "atMost")]
     [InlineData("GreaterThan", "greaterThan")]
     [InlineData("LessThan", "lessThan")]
     [InlineData("Exactly", "exactly")]
-    public void Threshold_family_round_trips_through_yaml(string dslKeyword, string yamlOpName)
+    public void RoundTrip_ThresholdFamily_ThroughYaml_Test(string dslKeyword, string yamlOpName)
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -94,8 +97,9 @@ public sealed class YamlTreeTests
         Assert.Contains($"op: {yamlOpName}", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>A constant false node round trips through YAML.</summary>
     [Fact]
-    public void Constant_false_node_round_trips_through_yaml()
+    public void RoundTrip_ConstantFalse_ThroughYaml_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> original = compiler.Compile("false").CompiledRule!;
@@ -107,8 +111,9 @@ public sealed class YamlTreeTests
         Assert.Contains("const: false", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>XNOR round trips through YAML.</summary>
     [Fact]
-    public void Xnor_round_trips_through_yaml()
+    public void RoundTrip_Xnor_ThroughYaml_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
@@ -122,8 +127,9 @@ public sealed class YamlTreeTests
         Assert.Contains("op: equivalent", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>A NOT node wraps its single operand and round trips through YAML.</summary>
     [Fact]
-    public void Not_node_wraps_its_single_operand_and_round_trips_through_yaml()
+    public void RoundTrip_Not_WrapsSingleOperand_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build()
@@ -137,8 +143,9 @@ public sealed class YamlTreeTests
         Assert.Contains("op: not", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>An ExactlyOne node wraps its operands and round trips through YAML.</summary>
     [Fact]
-    public void ExactlyOne_node_wraps_its_operands_and_round_trips_through_yaml()
+    public void RoundTrip_ExactlyOne_WrapsOperands_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>
@@ -157,8 +164,9 @@ public sealed class YamlTreeTests
         Assert.Contains("op: exactlyOne", yaml, StringComparison.Ordinal);
     }
 
+    /// <summary>A malformed nested operand short circuits operator parsing, without a parent diagnostic.</summary>
     [Fact]
-    public void A_malformed_nested_operand_short_circuits_operator_parsing_without_a_parent_diagnostic()
+    public void NestedOperand_Malformed_ShortCircuitsWithoutParentDiagnostic_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -177,8 +185,9 @@ public sealed class YamlTreeTests
         Assert.Contains("must have a 'const', 'predicate', or 'op' key", diagnostic.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>A malformed element in an array literal fails the whole literal rather than truncating it.</summary>
     [Fact]
-    public void A_malformed_element_in_an_array_literal_fails_the_whole_literal_rather_than_truncating_it()
+    public void ArrayLiteral_MalformedElement_FailsWholeLiteral_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasRole", "role", "Y").Build()
@@ -200,8 +209,9 @@ public sealed class YamlTreeTests
         Assert.Contains("Unsupported YAML node type", diagnostic.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>A string argument that reads like a boolean stays a string when quoted.</summary>
     [Fact]
-    public void A_string_argument_that_reads_like_a_boolean_stays_a_string_when_quoted()
+    public void Literal_QuotedBooleanLikeString_StaysString_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().AddStringArgPredicate("hasCode", "code", "true").Build()
@@ -218,10 +228,11 @@ public sealed class YamlTreeTests
         Assert.True(result.Succeeded);
     }
 
+    /// <summary>Malformed YAML produces a diagnostic, not an exception.</summary>
     [Theory]
     [InlineData("not: [valid, yaml: [")]
     [InlineData("op: bogus\noperands: []")]
-    public void Malformed_yaml_produces_a_diagnostic_not_an_exception(string yaml)
+    public void Parse_MalformedYaml_ProducesDiagnosticNotException_Test(string yaml)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -231,6 +242,7 @@ public sealed class YamlTreeTests
         Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>Every distinct malformed tree branch raises its specific message.</summary>
     [Theory]
     [InlineData("not: [valid, yaml: [", "Malformed YAML:")]
     [InlineData("", "The YAML document is empty.")]
@@ -244,7 +256,7 @@ public sealed class YamlTreeTests
     [InlineData("op: bogus\noperands: []", "Unknown operator 'bogus'.")]
     [InlineData("op: atLeast\noperands:\n  - const: true", "requires a numeric 'k'")]
     [InlineData("predicate: isManager\nargs:\n  x:\n    weird: 1", "A variable reference has only")]
-    public void Every_distinct_malformed_tree_branch_raises_its_specific_message(string yaml, string expectedMessageSubstring)
+    public void Malformed_EveryBranch_RaisesSpecificMessage_Test(string yaml, string expectedMessageSubstring)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
 
@@ -258,8 +270,9 @@ public sealed class YamlTreeTests
         );
     }
 
+    /// <summary>Compiling a YAML node subtree is structurally equal to compiling the same tree as standalone text.</summary>
     [Fact]
-    public void Compiling_a_yaml_node_subtree_is_structurally_equal_to_compiling_the_same_tree_as_standalone_text()
+    public void Compile_YamlSubtree_EqualsStandaloneText_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         YamlMappingNode document = LoadYamlMappingRoot(
@@ -279,8 +292,9 @@ public sealed class YamlTreeTests
         Assert.Equal(fromText.CanonicalText, fromNode.CanonicalText);
     }
 
+    /// <summary>Two sibling rule expressions in one YAML document compile independently.</summary>
     [Fact]
-    public void Two_sibling_rule_expressions_in_one_document_compile_independently_with_no_cross_talk()
+    public void Compile_SiblingRulesInYamlDocument_AreIndependent_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         YamlMappingNode document = LoadYamlMappingRoot(
@@ -309,8 +323,9 @@ public sealed class YamlTreeTests
         );
     }
 
+    /// <summary>A malformed YAML node produces the same diagnostic as the equivalent standalone YAML text.</summary>
     [Fact]
-    public void A_malformed_yaml_node_produces_the_same_diagnostic_as_the_equivalent_standalone_yaml_text()
+    public void Parse_MalformedYamlNode_MatchesStandaloneDiagnostic_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         const string malformedYaml = "nothingRecognized: true";

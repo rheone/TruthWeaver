@@ -9,8 +9,9 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>Ticket 01: structural diff between two compiled rules.</summary>
 public sealed class RuleDiffTests
 {
+    /// <summary>Structurally identical rules produce an empty diff.</summary>
     [Fact]
-    public void Structurally_identical_rules_produce_an_empty_diff()
+    public void Diff_StructurallyIdenticalRules_ProducesEmptyDiff_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;
@@ -22,8 +23,9 @@ public sealed class RuleDiffTests
         Assert.Empty(diff.Entries);
     }
 
+    /// <summary>A changed operator produces a single changed entry at the root.</summary>
     [Fact]
-    public void A_changed_operator_produces_a_single_changed_entry_at_the_root()
+    public void Diff_ChangedOperator_ProducesSingleChangedEntry_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND isDepartmentHead").CompiledRule!;
@@ -38,8 +40,9 @@ public sealed class RuleDiffTests
         Assert.Equal("OR", entry.After!.Label);
     }
 
+    /// <summary>Changed term arguments produce a changed entry at the term position.</summary>
     [Fact]
-    public void Changed_term_arguments_produce_a_changed_entry_at_the_term_position()
+    public void Diff_ChangedTermArguments_ProduceChangedEntry_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND hasRole(role: \"Y\")").CompiledRule!;
@@ -54,8 +57,9 @@ public sealed class RuleDiffTests
         Assert.Equal("hasRole", entry.After!.Label);
     }
 
+    /// <summary>An added operand produces an added entry.</summary>
     [Fact]
-    public void An_added_operand_produces_an_added_entry()
+    public void Diff_AddedOperand_ProducesAddedEntry_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler.Compile("isManager AND isDepartmentHead").CompiledRule!;
@@ -72,8 +76,9 @@ public sealed class RuleDiffTests
         Assert.Equal("hasRole", entry.After!.Label);
     }
 
+    /// <summary>A removed operand produces a removed entry.</summary>
     [Fact]
-    public void A_removed_operand_produces_a_removed_entry()
+    public void Diff_RemovedOperand_ProducesRemovedEntry_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler
@@ -90,8 +95,9 @@ public sealed class RuleDiffTests
         Assert.Null(entry.After);
     }
 
+    /// <summary>A change nested inside an unchanged operator is reported at its own path.</summary>
     [Fact]
-    public void A_change_nested_inside_an_unchanged_operator_is_reported_at_its_own_path()
+    public void Diff_NestedChange_ReportedAtItsOwnPath_Test()
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> before = compiler

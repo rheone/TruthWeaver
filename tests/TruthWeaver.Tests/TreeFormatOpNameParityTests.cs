@@ -14,6 +14,7 @@ using TruthWeaver.Yaml;
 /// </summary>
 public sealed class TreeFormatOpNameParityTests
 {
+    /// <summary>JSON and YAML print the identical op name string for every operator.</summary>
     [Theory]
     [InlineData("NOT a", "not")]
     [InlineData("a AND b", "and")]
@@ -42,7 +43,7 @@ public sealed class TreeFormatOpNameParityTests
     [InlineData("GreaterThan(1, a, b)", "greaterThan")]
     [InlineData("LessThan(1, a, b)", "lessThan")]
     [InlineData("Exactly(1, a, b)", "exactly")]
-    public void Json_and_yaml_print_the_identical_op_name_string_for_every_operator(string dsl, string expectedOpName)
+    public void Parity_JsonAndYaml_PrintIdenticalOpNames_Test(string dsl, string expectedOpName)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();
         CompiledRule<RuleTestContext> rule = compiler.Compile(dsl).CompiledRule!;
@@ -59,6 +60,7 @@ public sealed class TreeFormatOpNameParityTests
         Assert.Equal(expectedOpName, TreeFormatOpNames.ToTreeFormat(ExpressionShape.Of(rule.Root).OpName));
     }
 
+    /// <summary>JSON and YAML both accept the identical set of op name strings.</summary>
     [Theory]
     [InlineData("not")]
     [InlineData("and")]
@@ -87,7 +89,7 @@ public sealed class TreeFormatOpNameParityTests
     [InlineData("greaterThan")]
     [InlineData("lessThan")]
     [InlineData("exactly")]
-    public void Json_and_yaml_both_accept_the_identical_set_of_op_name_strings(string opName)
+    public void Parity_JsonAndYaml_AcceptIdenticalOpNames_Test(string opName)
     {
         Assert.True(TreeFormatOpNames.TryFromTreeFormat(opName, out _));
     }

@@ -10,22 +10,22 @@ public class NumericPredicatesTests
 
     /// <summary>An ordering predicate is correct just below, at and just above the argument.</summary>
     [Theory]
-    [InlineData("LessThan", 4, TruthValue.True)]
-    [InlineData("LessThan", 5, TruthValue.False)]
-    [InlineData("LessThan", 6, TruthValue.False)]
-    [InlineData("GreaterThan", 4, TruthValue.False)]
-    [InlineData("GreaterThan", 5, TruthValue.False)]
-    [InlineData("GreaterThan", 6, TruthValue.True)]
-    [InlineData("LessThanOrEqual", 4, TruthValue.True)]
-    [InlineData("LessThanOrEqual", 5, TruthValue.True)]
-    [InlineData("LessThanOrEqual", 6, TruthValue.False)]
-    [InlineData("GreaterThanOrEqual", 4, TruthValue.False)]
-    [InlineData("GreaterThanOrEqual", 5, TruthValue.True)]
-    [InlineData("GreaterThanOrEqual", 6, TruthValue.True)]
-    [InlineData("Equal", 4, TruthValue.False)]
-    [InlineData("Equal", 5, TruthValue.True)]
-    [InlineData("NotEqual", 4, TruthValue.True)]
-    [InlineData("NotEqual", 5, TruthValue.False)]
+    [InlineData("IsLessThan", 4, TruthValue.True)]
+    [InlineData("IsLessThan", 5, TruthValue.False)]
+    [InlineData("IsLessThan", 6, TruthValue.False)]
+    [InlineData("IsGreaterThan", 4, TruthValue.False)]
+    [InlineData("IsGreaterThan", 5, TruthValue.False)]
+    [InlineData("IsGreaterThan", 6, TruthValue.True)]
+    [InlineData("IsLessThanOrEqualTo", 4, TruthValue.True)]
+    [InlineData("IsLessThanOrEqualTo", 5, TruthValue.True)]
+    [InlineData("IsLessThanOrEqualTo", 6, TruthValue.False)]
+    [InlineData("IsGreaterThanOrEqualTo", 4, TruthValue.False)]
+    [InlineData("IsGreaterThanOrEqualTo", 5, TruthValue.True)]
+    [InlineData("IsGreaterThanOrEqualTo", 6, TruthValue.True)]
+    [InlineData("IsEqualTo", 4, TruthValue.False)]
+    [InlineData("IsEqualTo", 5, TruthValue.True)]
+    [InlineData("IsNotEqualTo", 4, TruthValue.True)]
+    [InlineData("IsNotEqualTo", 5, TruthValue.False)]
     public async Task Comparison_Int64AtAndAroundTheArgument_ReturnsOrderedResult_Test(
         string member,
         long selected,
@@ -43,12 +43,12 @@ public class NumericPredicatesTests
 
     /// <summary>The same members work over a decimal selection, including fractional values.</summary>
     [Theory]
-    [InlineData("LessThan", "1.49", TruthValue.True)]
-    [InlineData("LessThan", "1.50", TruthValue.False)]
-    [InlineData("GreaterThanOrEqual", "1.50", TruthValue.True)]
-    [InlineData("GreaterThan", "1.51", TruthValue.True)]
-    [InlineData("Equal", "1.5000", TruthValue.True)]
-    [InlineData("NotEqual", "1.51", TruthValue.True)]
+    [InlineData("IsLessThan", "1.49", TruthValue.True)]
+    [InlineData("IsLessThan", "1.50", TruthValue.False)]
+    [InlineData("IsGreaterThanOrEqualTo", "1.50", TruthValue.True)]
+    [InlineData("IsGreaterThan", "1.51", TruthValue.True)]
+    [InlineData("IsEqualTo", "1.5000", TruthValue.True)]
+    [InlineData("IsNotEqualTo", "1.51", TruthValue.True)]
     public async Task Comparison_DecimalAtAndAroundTheArgument_ReturnsOrderedResult_Test(
         string member,
         string selected,
@@ -66,12 +66,12 @@ public class NumericPredicatesTests
 
     /// <summary>A null selection is Unknown by default for every comparison, range and membership member, never a fault.</summary>
     [Theory]
-    [InlineData("Equal")]
-    [InlineData("NotEqual")]
-    [InlineData("LessThan")]
-    [InlineData("GreaterThan")]
-    [InlineData("LessThanOrEqual")]
-    [InlineData("GreaterThanOrEqual")]
+    [InlineData("IsEqualTo")]
+    [InlineData("IsNotEqualTo")]
+    [InlineData("IsLessThan")]
+    [InlineData("IsGreaterThan")]
+    [InlineData("IsLessThanOrEqualTo")]
+    [InlineData("IsGreaterThanOrEqualTo")]
     public async Task Comparison_NullSelection_ReturnsUnknownByDefault_Test(string member)
     {
         TruthValue result = await Int64Comparison(member)(
@@ -85,33 +85,33 @@ public class NumericPredicatesTests
 
     /// <summary>The host can choose a definite False for a null selection.</summary>
     [Fact]
-    public async Task LessThan_NullSelectionWithFalseBehavior_ReturnsFalse_Test()
+    public async Task IsLessThan_NullSelectionWithFalseBehavior_ReturnsFalse_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            NumericPredicates.LessThan<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False);
+            NumericPredicates.IsLessThan<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False);
 
         TruthValue result = await evaluate(new Numbers(null, null), Int64Arg("value", 5), CancellationToken.None);
 
         Assert.Equal(TruthValue.False, result);
     }
 
-    /// <summary>Between is inclusive at both bounds and Outside is its exact complement.</summary>
+    /// <summary>IsBetween is inclusive at both bounds and IsNotBetween is its exact complement.</summary>
     [Theory]
     [InlineData(9, TruthValue.False, TruthValue.True)]
     [InlineData(10, TruthValue.True, TruthValue.False)]
     [InlineData(15, TruthValue.True, TruthValue.False)]
     [InlineData(20, TruthValue.True, TruthValue.False)]
     [InlineData(21, TruthValue.False, TruthValue.True)]
-    public async Task BetweenAndOutside_Int64AtEachBoundary_AreInclusiveComplements_Test(
+    public async Task IsBetweenAndIsNotBetween_Int64AtEachBoundary_AreInclusiveComplements_Test(
         long selected,
         TruthValue between,
         TruthValue outside
     )
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> betweenEval) =
-            NumericPredicates.Between<Numbers>("b", c => c.Count);
+            NumericPredicates.IsBetween<Numbers>("b", c => c.Count);
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outsideEval) =
-            NumericPredicates.Outside<Numbers>("o", c => c.Count);
+            NumericPredicates.IsNotBetween<Numbers>("o", c => c.Count);
         PredicateArguments args = RangeArgs(LiteralValue.OfInt64(10), LiteralValue.OfInt64(20));
 
         TruthValue b = await betweenEval(new Numbers(selected, null), args, CancellationToken.None);
@@ -121,14 +121,14 @@ public class NumericPredicatesTests
         Assert.Equal(outside, o);
     }
 
-    /// <summary>Between and Outside work over decimals and answer Unknown for a null selection.</summary>
+    /// <summary>IsBetween and IsNotBetween work over decimals and answer Unknown for a null selection.</summary>
     [Fact]
-    public async Task BetweenAndOutside_Decimal_AreInclusiveAndUnknownForNull_Test()
+    public async Task IsBetweenAndIsNotBetween_Decimal_AreInclusiveAndUnknownForNull_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> betweenEval) =
-            NumericPredicates.Between<Numbers>("b", c => c.Price);
+            NumericPredicates.IsBetween<Numbers>("b", c => c.Price);
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> outsideEval) =
-            NumericPredicates.Outside<Numbers>("o", c => c.Price);
+            NumericPredicates.IsNotBetween<Numbers>("o", c => c.Price);
         PredicateArguments args = RangeArgs(LiteralValue.OfDecimal(0.5m), LiteralValue.OfDecimal(1.5m));
 
         Assert.Equal(TruthValue.True, await betweenEval(new Numbers(null, 1.5m), args, CancellationToken.None));
@@ -140,10 +140,10 @@ public class NumericPredicatesTests
 
     /// <summary>Equal bounds are a valid single-point range.</summary>
     [Fact]
-    public async Task Between_EqualBounds_IsASinglePointRange_Test()
+    public async Task IsBetween_EqualBounds_IsASinglePointRange_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            NumericPredicates.Between<Numbers>("b", c => c.Count);
+            NumericPredicates.IsBetween<Numbers>("b", c => c.Count);
         PredicateArguments args = RangeArgs(LiteralValue.OfInt64(7), LiteralValue.OfInt64(7));
 
         Assert.Equal(TruthValue.True, await evaluate(new Numbers(7, null), args, CancellationToken.None));
@@ -154,11 +154,11 @@ public class NumericPredicatesTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task BetweenAndOutside_ReversedBounds_ThrowArgumentError_Test(bool useOutside)
+    public async Task IsBetweenAndIsNotBetween_ReversedBounds_ThrowArgumentError_Test(bool useNotBetween)
     {
-        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useOutside
-            ? NumericPredicates.Outside<Numbers>("r", c => c.Count)
-            : NumericPredicates.Between<Numbers>("r", c => c.Count);
+        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = useNotBetween
+            ? NumericPredicates.IsNotBetween<Numbers>("r", c => c.Count)
+            : NumericPredicates.IsBetween<Numbers>("r", c => c.Count);
         PredicateArguments args = RangeArgs(LiteralValue.OfInt64(20), LiteralValue.OfInt64(10));
 
         await Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -171,10 +171,10 @@ public class NumericPredicatesTests
 
     /// <summary>Reversed decimal bounds are an argument error too.</summary>
     [Fact]
-    public Task Between_ReversedDecimalBounds_ThrowArgumentError_Test()
+    public Task IsBetween_ReversedDecimalBounds_ThrowArgumentError_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            NumericPredicates.Between<Numbers>("r", c => c.Price);
+            NumericPredicates.IsBetween<Numbers>("r", c => c.Price);
         PredicateArguments args = RangeArgs(LiteralValue.OfDecimal(2m), LiteralValue.OfDecimal(1m));
 
         return Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -187,10 +187,10 @@ public class NumericPredicatesTests
     /// culture of the evaluating thread.
     /// </summary>
     [Fact]
-    public async Task Between_ReversedDecimalBoundsUnderNonInvariantCulture_PrintsInvariantBounds_Test()
+    public async Task IsBetween_ReversedDecimalBoundsUnderNonInvariantCulture_PrintsInvariantBounds_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            NumericPredicates.Between<Numbers>("r", c => c.Price);
+            NumericPredicates.IsBetween<Numbers>("r", c => c.Price);
         PredicateArguments args = RangeArgs(LiteralValue.OfDecimal(2.5m), LiteralValue.OfDecimal(1.5m));
         CultureInfo original = CultureInfo.CurrentCulture;
         ArgumentException error;
@@ -209,19 +209,21 @@ public class NumericPredicatesTests
         Assert.Contains("'lower' (2.5) is greater than 'upper' (1.5)", error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>In and NotIn are scalar membership, complements of each other, and Unknown for null.</summary>
+    /// <summary>IsIn and IsNotIn are scalar membership, complements of each other, and Unknown for null.</summary>
     [Theory]
     [InlineData(1L, TruthValue.True, TruthValue.False)]
     [InlineData(3L, TruthValue.True, TruthValue.False)]
     [InlineData(2L, TruthValue.False, TruthValue.True)]
-    public async Task InAndNotIn_Int64Membership_AreComplements_Test(long selected, TruthValue inResult, TruthValue notInResult)
+    public async Task IsInAndIsNotIn_Int64Membership_AreComplements_Test(
+        long selected,
+        TruthValue inResult,
+        TruthValue notInResult
+    )
     {
-        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inEval) = NumericPredicates.In<Numbers>(
-            "i",
-            c => c.Count
-        );
+        (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inEval) =
+            NumericPredicates.IsIn<Numbers>("i", c => c.Count);
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInEval) =
-            NumericPredicates.NotIn<Numbers>("n", c => c.Count);
+            NumericPredicates.IsNotIn<Numbers>("n", c => c.Count);
         PredicateArguments args = ArrayArgs("values", LiteralKind.Int64, LiteralValue.OfInt64(1), LiteralValue.OfInt64(3));
 
         Assert.Equal(inResult, await inEval(new Numbers(selected, null), args, CancellationToken.None));
@@ -232,10 +234,10 @@ public class NumericPredicatesTests
 
     /// <summary>Decimal membership compares by value, so 1.0 equals 1.00.</summary>
     [Fact]
-    public async Task In_DecimalMembership_ComparesByValue_Test()
+    public async Task IsIn_DecimalMembership_ComparesByValue_Test()
     {
         (_, Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
-            NumericPredicates.In<Numbers>("i", c => c.Price);
+            NumericPredicates.IsIn<Numbers>("i", c => c.Price);
         PredicateArguments args = ArrayArgs("values", LiteralKind.Decimal, LiteralValue.OfDecimal(1.00m));
 
         Assert.Equal(TruthValue.True, await evaluate(new Numbers(null, 1.0m), args, CancellationToken.None));
@@ -299,11 +301,11 @@ public class NumericPredicatesTests
     /// an integer literal and no cast. A decimal selection takes the decimal overload and a decimal literal.
     /// </summary>
     [Fact]
-    public void Equal_IntSelectorAndDecimalSelector_BindToMatchingArgumentKind_Test()
+    public void IsEqualTo_IntSelectorAndDecimalSelector_BindToMatchingArgumentKind_Test()
     {
-        PredicateSchema fromInt = NumericPredicates.Equal<Numbers>("i", c => c.Small).Schema;
-        PredicateSchema fromLong = NumericPredicates.Equal<Numbers>("l", c => c.Count).Schema;
-        PredicateSchema fromDecimal = NumericPredicates.Equal<Numbers>("d", c => c.Price).Schema;
+        PredicateSchema fromInt = NumericPredicates.IsEqualTo<Numbers>("i", c => c.Small).Schema;
+        PredicateSchema fromLong = NumericPredicates.IsEqualTo<Numbers>("l", c => c.Count).Schema;
+        PredicateSchema fromDecimal = NumericPredicates.IsEqualTo<Numbers>("d", c => c.Price).Schema;
 
         Assert.Equal(LiteralKind.Int64, Assert.Single(fromInt.Arguments).Type);
         Assert.Equal(LiteralKind.Int64, Assert.Single(fromLong.Arguments).Type);
@@ -314,8 +316,8 @@ public class NumericPredicatesTests
     [Fact]
     public void Schemas_RangeAndMembership_DeclareExpectedArguments_Test()
     {
-        PredicateSchema range = NumericPredicates.Between<Numbers>("b", c => c.Price).Schema;
-        PredicateSchema membership = NumericPredicates.NotIn<Numbers>("n", c => c.Count).Schema;
+        PredicateSchema range = NumericPredicates.IsBetween<Numbers>("b", c => c.Price).Schema;
+        PredicateSchema membership = NumericPredicates.IsNotIn<Numbers>("n", c => c.Count).Schema;
 
         Assert.Equal(["lower", "upper"], range.Arguments.Select(a => a.Name));
         Assert.All(range.Arguments, a => Assert.Equal(LiteralKind.Decimal, a.Type));
@@ -323,16 +325,134 @@ public class NumericPredicatesTests
         Assert.False(string.IsNullOrWhiteSpace(range.Description));
     }
 
+    /// <summary>
+    /// Each <c>Int64</c> ordering twin answers the Kleene complement of its positive form just below, at and just above
+    /// the argument, and for a null selection.
+    /// </summary>
+    /// <param name="positive">The positive ordering member.</param>
+    /// <param name="twin">The twin member.</param>
+    [Theory]
+    [InlineData("IsLessThan", "IsNotLessThan")]
+    [InlineData("IsGreaterThan", "IsNotGreaterThan")]
+    [InlineData("IsLessThanOrEqualTo", "IsNotLessThanOrEqualTo")]
+    [InlineData("IsGreaterThanOrEqualTo", "IsNotGreaterThanOrEqualTo")]
+    public async Task OrderingTwin_Int64AroundTheArgumentAndNull_IsKleeneComplementOfPositive_Test(string positive, string twin)
+    {
+        foreach (long? selected in new long?[] { 4, 5, 6, null })
+        {
+            Numbers context = new(selected, null);
+            TruthValue expected = Complement(
+                await Int64Comparison(positive)(context, Int64Arg("value", 5), CancellationToken.None)
+            );
+
+            TruthValue actual = await Int64Comparison(twin)(context, Int64Arg("value", 5), CancellationToken.None);
+
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    /// <summary>
+    /// Each <c>Decimal</c> ordering twin answers the Kleene complement of its positive form just below, at and just
+    /// above the argument, and for a null selection.
+    /// </summary>
+    /// <param name="positive">The positive ordering member.</param>
+    /// <param name="twin">The twin member.</param>
+    [Theory]
+    [InlineData("IsLessThan", "IsNotLessThan")]
+    [InlineData("IsGreaterThan", "IsNotGreaterThan")]
+    [InlineData("IsLessThanOrEqualTo", "IsNotLessThanOrEqualTo")]
+    [InlineData("IsGreaterThanOrEqualTo", "IsNotGreaterThanOrEqualTo")]
+    public async Task OrderingTwin_DecimalAroundTheArgumentAndNull_IsKleeneComplementOfPositive_Test(
+        string positive,
+        string twin
+    )
+    {
+        foreach (decimal? selected in new decimal?[] { 4.5m, 5.5m, 6.5m, null })
+        {
+            Numbers context = new(null, selected);
+            TruthValue expected = Complement(
+                await DecimalComparison(positive)(context, DecimalArg("value", 5.5m), CancellationToken.None)
+            );
+
+            TruthValue actual = await DecimalComparison(twin)(context, DecimalArg("value", 5.5m), CancellationToken.None);
+
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    /// <summary>
+    /// Registered with <c>NullBehavior.False</c>, a positive ordering member answers False for a null selection and its
+    /// twin answers True, including the "or equal" members.
+    /// </summary>
+    /// <param name="positive">The positive ordering member.</param>
+    [Theory]
+    [InlineData("IsLessThan")]
+    [InlineData("IsGreaterThan")]
+    [InlineData("IsLessThanOrEqualTo")]
+    [InlineData("IsGreaterThanOrEqualTo")]
+    public async Task OrderingTwin_NullSelectionWithFalseOption_PositiveIsFalseAndTwinIsTrue_Test(string positive)
+    {
+        Numbers context = new(null, null);
+        Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> positiveEvaluate = positive switch
+        {
+            "IsLessThan" => NumericPredicates.IsLessThan<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False).Evaluate,
+            "IsGreaterThan" => NumericPredicates
+                .IsGreaterThan<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+            "IsLessThanOrEqualTo" => NumericPredicates
+                .IsLessThanOrEqualTo<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+            _ => NumericPredicates
+                .IsGreaterThanOrEqualTo<Numbers>("p", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+        };
+        Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> twinEvaluate = positive switch
+        {
+            "IsLessThan" => NumericPredicates
+                .IsNotLessThan<Numbers>("t", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+            "IsGreaterThan" => NumericPredicates
+                .IsNotGreaterThan<Numbers>("t", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+            "IsLessThanOrEqualTo" => NumericPredicates
+                .IsNotLessThanOrEqualTo<Numbers>("t", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+            _ => NumericPredicates
+                .IsNotGreaterThanOrEqualTo<Numbers>("t", c => c.Count, nullBehavior: NullBehavior.False)
+                .Evaluate,
+        };
+
+        TruthValue positiveResult = await positiveEvaluate(context, Int64Arg("value", 5), CancellationToken.None);
+        TruthValue twinResult = await twinEvaluate(context, Int64Arg("value", 5), CancellationToken.None);
+
+        Assert.Equal(TruthValue.False, positiveResult);
+        Assert.Equal(TruthValue.True, twinResult);
+    }
+
+    private static TruthValue Complement(TruthValue value)
+    {
+        return value switch
+        {
+            TruthValue.True => TruthValue.False,
+            TruthValue.False => TruthValue.True,
+            _ => TruthValue.Unknown,
+        };
+    }
+
     private static Evaluate Int64Comparison(string member)
     {
         Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
-            "Equal" => NumericPredicates.Equal<Numbers>("p", c => c.Count).Evaluate,
-            "NotEqual" => NumericPredicates.NotEqual<Numbers>("p", c => c.Count).Evaluate,
-            "LessThan" => NumericPredicates.LessThan<Numbers>("p", c => c.Count).Evaluate,
-            "GreaterThan" => NumericPredicates.GreaterThan<Numbers>("p", c => c.Count).Evaluate,
-            "LessThanOrEqual" => NumericPredicates.LessThanOrEqual<Numbers>("p", c => c.Count).Evaluate,
-            "GreaterThanOrEqual" => NumericPredicates.GreaterThanOrEqual<Numbers>("p", c => c.Count).Evaluate,
+            "IsEqualTo" => NumericPredicates.IsEqualTo<Numbers>("p", c => c.Count).Evaluate,
+            "IsNotEqualTo" => NumericPredicates.IsNotEqualTo<Numbers>("p", c => c.Count).Evaluate,
+            "IsLessThan" => NumericPredicates.IsLessThan<Numbers>("p", c => c.Count).Evaluate,
+            "IsGreaterThan" => NumericPredicates.IsGreaterThan<Numbers>("p", c => c.Count).Evaluate,
+            "IsLessThanOrEqualTo" => NumericPredicates.IsLessThanOrEqualTo<Numbers>("p", c => c.Count).Evaluate,
+            "IsGreaterThanOrEqualTo" => NumericPredicates.IsGreaterThanOrEqualTo<Numbers>("p", c => c.Count).Evaluate,
+            "IsNotLessThan" => NumericPredicates.IsNotLessThan<Numbers>("p", c => c.Count).Evaluate,
+            "IsNotGreaterThan" => NumericPredicates.IsNotGreaterThan<Numbers>("p", c => c.Count).Evaluate,
+            "IsNotLessThanOrEqualTo" => NumericPredicates.IsNotLessThanOrEqualTo<Numbers>("p", c => c.Count).Evaluate,
+            "IsNotGreaterThanOrEqualTo" => NumericPredicates.IsNotGreaterThanOrEqualTo<Numbers>("p", c => c.Count).Evaluate,
             _ => throw new ArgumentException(member),
         };
         return new Evaluate(f);
@@ -342,12 +462,16 @@ public class NumericPredicatesTests
     {
         Func<Numbers, PredicateArguments, CancellationToken, ValueTask<TruthValue>> f = member switch
         {
-            "Equal" => NumericPredicates.Equal<Numbers>("p", c => c.Price).Evaluate,
-            "NotEqual" => NumericPredicates.NotEqual<Numbers>("p", c => c.Price).Evaluate,
-            "LessThan" => NumericPredicates.LessThan<Numbers>("p", c => c.Price).Evaluate,
-            "GreaterThan" => NumericPredicates.GreaterThan<Numbers>("p", c => c.Price).Evaluate,
-            "LessThanOrEqual" => NumericPredicates.LessThanOrEqual<Numbers>("p", c => c.Price).Evaluate,
-            "GreaterThanOrEqual" => NumericPredicates.GreaterThanOrEqual<Numbers>("p", c => c.Price).Evaluate,
+            "IsEqualTo" => NumericPredicates.IsEqualTo<Numbers>("p", c => c.Price).Evaluate,
+            "IsNotEqualTo" => NumericPredicates.IsNotEqualTo<Numbers>("p", c => c.Price).Evaluate,
+            "IsLessThan" => NumericPredicates.IsLessThan<Numbers>("p", c => c.Price).Evaluate,
+            "IsGreaterThan" => NumericPredicates.IsGreaterThan<Numbers>("p", c => c.Price).Evaluate,
+            "IsLessThanOrEqualTo" => NumericPredicates.IsLessThanOrEqualTo<Numbers>("p", c => c.Price).Evaluate,
+            "IsGreaterThanOrEqualTo" => NumericPredicates.IsGreaterThanOrEqualTo<Numbers>("p", c => c.Price).Evaluate,
+            "IsNotLessThan" => NumericPredicates.IsNotLessThan<Numbers>("p", c => c.Price).Evaluate,
+            "IsNotGreaterThan" => NumericPredicates.IsNotGreaterThan<Numbers>("p", c => c.Price).Evaluate,
+            "IsNotLessThanOrEqualTo" => NumericPredicates.IsNotLessThanOrEqualTo<Numbers>("p", c => c.Price).Evaluate,
+            "IsNotGreaterThanOrEqualTo" => NumericPredicates.IsNotGreaterThanOrEqualTo<Numbers>("p", c => c.Price).Evaluate,
             _ => throw new ArgumentException(member),
         };
         return new Evaluate(f);

@@ -1,0 +1,1 @@
+isActive AND inRegion(region: from("user", "$.region"))

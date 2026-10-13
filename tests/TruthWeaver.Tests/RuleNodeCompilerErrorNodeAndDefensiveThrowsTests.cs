@@ -44,8 +44,9 @@ public sealed class RuleNodeCompilerErrorNodeAndDefensiveThrowsTests
         Assert.Equal([new ConstantExpression(TruthValue.True), new ConstantExpression(TruthValue.Unknown)], and.Operands);
     }
 
+    /// <summary>The build default branch throws, naming the unhandled rule node type.</summary>
     [Fact]
-    public void Builds_unhandled_rule_node_type_default_branch_throws_naming_the_offending_type()
+    public void Builds_UnhandledRuleNodeType_ThrowsNamingType_Test()
     {
         // No production front end (DSL/JSON/YAML) ever produces a RuleNode subtype Build's switch
         // doesn't already handle - this defensive throw guards only against that closed set (ADR-0003)
@@ -63,8 +64,9 @@ public sealed class RuleNodeCompilerErrorNodeAndDefensiveThrowsTests
         Assert.Contains(nameof(BogusRuleNode), exception.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>The threshold range default branch throws, naming the unhandled comparison value.</summary>
     [Fact]
-    public void ValidThresholdRanges_unhandled_comparison_default_branch_throws_naming_the_bogus_value()
+    public void ValidThresholdRanges_UnhandledComparison_ThrowsNamingValue_Test()
     {
         // ThresholdComparison's five values (ADR-0004's closed set) are all handled by
         // ValidThresholdRange's switch; unlike OperatorInfo's ThresholdDescription (ticket 15), this

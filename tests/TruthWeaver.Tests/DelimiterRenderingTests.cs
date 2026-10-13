@@ -20,7 +20,7 @@ public sealed class DelimiterRenderingTests
             .AddConstant("c", true)
             .AddConstant("d", true)
             .AddConstant("e", true)
-            .AddConstant("f", true)
+            .AddConstant("h", true)
             .AddConstant("g", true)
             .Build()
     );
@@ -56,31 +56,31 @@ public sealed class DelimiterRenderingTests
     [Fact]
     public void PrintText_DepthCyclingStyle_CyclesParenthesesBracketsBracesByDepth_Test()
     {
-        CompiledRule<RuleTestContext> rule = Compile("a AND (b OR (c AND (d OR (e AND (f OR g)))))");
+        CompiledRule<RuleTestContext> rule = Compile("a AND (b OR (c AND (d OR (e AND (h OR g)))))");
 
         string text = rule.PrintRuleText(GroupingStyle.DepthCycling);
 
-        Assert.Equal("a AND (b OR [c AND {d OR (e AND [f OR g])}])", text);
+        Assert.Equal("a AND (b OR [c AND {d OR (e AND [h OR g])}])", text);
     }
 
     /// <summary>Function-call argument lists are call syntax and keep parentheses; groups inside them still start at depth 0.</summary>
     [Fact]
     public void PrintText_DepthCyclingStyle_KeepsCallArgumentListsInParentheses_Test()
     {
-        CompiledRule<RuleTestContext> rule = Compile("ANY(a AND (b OR c), d XOR (e AND (f OR g)))");
+        CompiledRule<RuleTestContext> rule = Compile("ANY(a AND (b OR c), d XOR (e AND (h OR g)))");
 
         string text = rule.PrintRuleText(GroupingStyle.DepthCycling);
 
-        Assert.Equal("ANY(a AND (b OR c), (d XOR [e AND {f OR g}]))", text);
+        Assert.Equal("ANY(a AND (b OR c), (d XOR [e AND {h OR g}]))", text);
     }
 
     /// <summary>The depth-cycled text re-parses to a tree equal to the original, and prints the same canonical text.</summary>
     [Theory]
-    [InlineData("a AND (b OR (c AND (d OR (e AND (f OR g)))))")]
+    [InlineData("a AND (b OR (c AND (d OR (e AND (h OR g)))))")]
     [InlineData("NOT (a OR (b XOR (c AND (d OR e))))")]
-    [InlineData("(a XOR b) EQUIVALENT (c IMPLIES (d NAND (e NOR f)))")]
+    [InlineData("(a XOR b) EQUIVALENT (c IMPLIES (d NAND (e NOR h)))")]
     [InlineData("a")]
-    [InlineData("(a AND b) OR (c AND d) OR NOT (e OR f)")]
+    [InlineData("(a AND b) OR (c AND d) OR NOT (e OR h)")]
     public void PrintText_DepthCyclingStyle_ReparsesToAnEqualTree_Test(string text)
     {
         CompiledRule<RuleTestContext> rule = Compile(text);

@@ -1,13 +1,11 @@
 namespace TruthWeaver.Predicates;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// Ready-made <see cref="DateTimeOffset"/> comparison predicate factories, each parameterized by a
 /// <c>Func&lt;TContext, DateTimeOffset?&gt;</c> selector supplied at registration and
 /// <see cref="DateTimeOffset"/> literal arguments supplied in rule text. Values compare by instant, so the same
-/// moment written with different offsets is equal. The calendar predicates (<c>OnDayOfWeek</c>, <c>InMonth</c> and
-/// <c>InTimeWindow</c>) read the instant in a fixed offset that the rule gives.
+/// moment written with different offsets is equal. The calendar predicates (<c>IsOnDayOfWeek</c>, <c>IsInMonth</c> and
+/// <c>IsInTimeWindow</c>) read the instant in a fixed offset that the rule gives.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,8 +17,8 @@ using TruthWeaver.Abstractions;
 /// <para>
 /// A null selected value is <see cref="TruthValue.Unknown"/> by default (the K3 reading of a missing value), or a
 /// definite <see cref="TruthValue.False"/> when the host passes <see cref="NullBehavior.False"/>. Every positive
-/// predicate has a <c>NotX</c> twin that is its Strong Kleene complement. <c>Outside</c> is the twin of
-/// <c>Between</c>.
+/// predicate has a <c>NotX</c> twin that is its Strong Kleene complement. <c>IsNotBetween</c> is the twin of
+/// <c>IsBetween</c>.
 /// </para>
 /// </remarks>
 public static partial class DateTimePredicates
@@ -45,12 +43,12 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) After<TContext>(
+    ) IsAfter<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "After",
+        string label = "Is After",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -61,14 +59,14 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: false,
             argumentName,
             static comparison => comparison > 0
         );
     }
 
-    /// <summary>Creates the <c>NotAfter</c> twin of <see cref="After{TContext}"/>: its Strong Kleene complement (true for an equal or earlier instant, Unknown stays Unknown).</summary>
+    /// <summary>Creates the <c>IsNotAfter</c> twin of <see cref="IsAfter{TContext}"/>: its Strong Kleene complement (true for an equal or earlier instant, Unknown stays Unknown).</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
@@ -83,23 +81,23 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotAfter<TContext>(
+    ) IsNotAfter<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not After",
+        string label = "Is Not After",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of After: True when the selected instant is equal to or earlier than the argument, False when it is later, Unknown when After is Unknown."
+            "The Strong Kleene complement of IsAfter: True when the selected instant is equal to or earlier than the argument, False when it is later, Unknown when IsAfter is Unknown."
             + NullNote;
         return Single(
             name,
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: true,
             argumentName,
             static comparison => comparison > 0
@@ -117,12 +115,12 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Before<TContext>(
+    ) IsBefore<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Before",
+        string label = "Is Before",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
@@ -133,14 +131,14 @@ public static partial class DateTimePredicates
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: false,
             argumentName,
             static comparison => comparison < 0
         );
     }
 
-    /// <summary>Creates the <c>NotBefore</c> twin of <see cref="Before{TContext}"/>: its Strong Kleene complement (true for an equal or later instant, Unknown stays Unknown).</summary>
+    /// <summary>Creates the <c>IsNotBefore</c> twin of <see cref="IsBefore{TContext}"/>: its Strong Kleene complement (true for an equal or later instant, Unknown stays Unknown).</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
     /// <param name="selector">Reads the instant from the context. A <see langword="null"/> result follows <paramref name="nullBehavior"/>. Convert a <see cref="DateTime"/> to a <see cref="DateTimeOffset"/> here.</param>
@@ -155,23 +153,23 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotBefore<TContext>(
+    ) IsNotBefore<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Not Before",
+        string label = "Is Not Before",
         string argumentName = "value",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of Before: True when the selected instant is equal to or later than the argument, False when it is earlier, Unknown when Before is Unknown."
+            "The Strong Kleene complement of IsBefore: True when the selected instant is equal to or later than the argument, False when it is earlier, Unknown when IsBefore is Unknown."
             + NullNote;
         return Single(
             name,
             label,
             description,
             selector,
-            nullBehavior,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
             negate: true,
             argumentName,
             static comparison => comparison < 0
@@ -196,23 +194,32 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Between<TContext>(
+    ) IsBetween<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Between",
+        string label = "Is Between",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is between the two bounds, inclusive on both ends (lower <= value <= upper). Reversed bounds (lower later than upper) are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
-        return Range(name, label, description, selector, nullBehavior, negate: false, lowerName, upperName);
+        return Range(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            lowerName,
+            upperName
+        );
     }
 
     /// <summary>
-    /// Creates the <c>Outside</c> twin of <see cref="Between{TContext}"/>: its exact Strong Kleene complement
+    /// Creates the <c>IsNotBetween</c> twin of <see cref="IsBetween{TContext}"/>: its exact Strong Kleene complement
     /// (true when the instant is earlier than the lower bound or later than the upper bound). Reversed bounds are
     /// an authoring error: a <c>TRE0026</c> compile error for literal bounds, otherwise <see cref="ArgumentException"/>
     /// at evaluation.
@@ -232,19 +239,28 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) Outside<TContext>(
+    ) IsNotBetween<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
-        string label = "Outside",
+        string label = "Is Not Between",
         string lowerName = "lower",
         string upperName = "upper",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of Between: True when the selected instant is earlier than the lower bound or later than the upper bound, False when it is within the inclusive range, Unknown when Between is Unknown. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
+            "The Strong Kleene complement of IsBetween: True when the selected instant is earlier than the lower bound or later than the upper bound, False when it is within the inclusive range, Unknown when IsBetween is Unknown. Reversed bounds are an authoring error, never swapped: a compile error for literal bounds, otherwise a fault at evaluation."
             + NullNote;
-        return Range(name, label, description, selector, nullBehavior, negate: true, lowerName, upperName);
+        return Range(
+            name,
+            label,
+            description,
+            selector,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            lowerName,
+            upperName
+        );
     }
 
     /// <summary>
@@ -255,7 +271,7 @@ public static partial class DateTimePredicates
     /// The predicate reads the clock once each time the engine evaluates it, at evaluation time and not at
     /// registration. The engine evaluates one term (one predicate name with the same arguments) once per
     /// <c>Evaluate</c> call and reuses the answer, so a repeated term sees one instant. Two different terms, such as
-    /// <c>AfterNow</c> and <c>BeforeNow</c> over different selectors, each read the clock and may see different
+    /// <c>IsAfterNow</c> and <c>IsBeforeNow</c> over different selectors, each read the clock and may see different
     /// instants when the clock advances between them. A shared snapshot across terms needs engine support that does
     /// not exist, so a host that needs one injects a <see cref="TimeProvider"/> that returns a fixed instant per
     /// evaluation.
@@ -271,24 +287,33 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) AfterNow<TContext>(
+    ) IsAfterNow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
-        string label = "After Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is After Now",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is strictly later than now, read from the host's TimeProvider; an instant equal to now is False."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: false, after: true);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            after: true
+        );
     }
 
     /// <summary>
-    /// Creates the <c>NotAfterNow</c> twin of <see cref="AfterNow{TContext}"/>: its Strong Kleene complement (true for
+    /// Creates the <c>IsNotAfterNow</c> twin of <see cref="IsAfterNow{TContext}"/>: its Strong Kleene complement (true for
     /// an instant equal to or earlier than now, Unknown stays Unknown). It is not the same predicate as
-    /// <see cref="BeforeNow{TContext}"/>, because an instant equal to now makes both positive forms false.
+    /// <see cref="IsBeforeNow{TContext}"/>, because an instant equal to now makes both positive forms false.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -305,24 +330,33 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotAfterNow<TContext>(
+    ) IsNotAfterNow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
-        string label = "Not After Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Not After Now",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of AfterNow: True when the selected instant is equal to or earlier than now (read from the host's TimeProvider), False when it is later, Unknown when AfterNow is Unknown."
+            "The Strong Kleene complement of IsAfterNow: True when the selected instant is equal to or earlier than now (read from the host's TimeProvider), False when it is later, Unknown when IsAfterNow is Unknown."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: true, after: true);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            after: true
+        );
     }
 
     /// <summary>
     /// Creates a predicate that is true when the selected instant is earlier than the current time, read from
     /// <paramref name="timeProvider"/>. An instant equal to now is <see cref="TruthValue.False"/>. See
-    /// <see cref="AfterNow{TContext}"/> for when the clock is read.
+    /// <see cref="IsAfterNow{TContext}"/> for when the clock is read.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -335,24 +369,33 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) BeforeNow<TContext>(
+    ) IsBeforeNow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
-        string label = "Before Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Before Now",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
             "True when the selected instant is strictly earlier than now, read from the host's TimeProvider; an instant equal to now is False."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: false, after: false);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: false,
+            after: false
+        );
     }
 
     /// <summary>
-    /// Creates the <c>NotBeforeNow</c> twin of <see cref="BeforeNow{TContext}"/>: its Strong Kleene complement (true
+    /// Creates the <c>IsNotBeforeNow</c> twin of <see cref="IsBeforeNow{TContext}"/>: its Strong Kleene complement (true
     /// for an instant equal to or later than now, Unknown stays Unknown). It is not the same predicate as
-    /// <see cref="AfterNow{TContext}"/>, because an instant equal to now makes both positive forms false.
+    /// <see cref="IsAfterNow{TContext}"/>, because an instant equal to now makes both positive forms false.
     /// </summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -369,18 +412,27 @@ public static partial class DateTimePredicates
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
-    ) NotBeforeNow<TContext>(
+    ) IsNotBeforeNow<TContext>(
         string name,
         Func<TContext, DateTimeOffset?> selector,
         TimeProvider timeProvider,
-        string label = "Not Before Now",
-        NullBehavior nullBehavior = NullBehavior.Unknown
+        string label = "Is Not Before Now",
+        NullBehavior nullBehavior = NullBehavior.Default
     )
     {
         const string description =
-            "The Strong Kleene complement of BeforeNow: True when the selected instant is equal to or later than now (read from the host's TimeProvider), False when it is earlier, Unknown when BeforeNow is Unknown."
+            "The Strong Kleene complement of IsBeforeNow: True when the selected instant is equal to or later than now (read from the host's TimeProvider), False when it is earlier, Unknown when IsBeforeNow is Unknown."
             + ClockNote;
-        return Clock(name, label, description, selector, timeProvider, nullBehavior, negate: true, after: false);
+        return Clock(
+            name,
+            label,
+            description,
+            selector,
+            timeProvider,
+            NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.DateTime),
+            negate: true,
+            after: false
+        );
     }
 
     private static (

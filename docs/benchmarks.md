@@ -6,6 +6,7 @@ It measures these areas:
 
 - **Compile-time cost** (`CompileBenchmarks.Compile`): the full Parse, Validate, Analyze and Build pipeline of `RuleCompiler.CompileJson`, including the BDD-based tautology and contradiction analyzer. It runs on a small rule (10 terms) and a large rule (200 terms).
 - **Eval-time memoized term lookup** (`EvaluationBenchmarks.EvaluateAsync`): `CompiledRule.EvaluateAsync` on a rule whose branches all share one term, at increasing branch fan-out. A term that several branches reference is invoked at most once per evaluation, and this benchmark exercises that memoization.
+- **Batch evaluation** (`BatchEvaluationBenchmarks`): `CompiledRule.EvaluateManyAsync` over 100 and 1,000 contexts, with one evaluation at a time and with one evaluation for each processor, against a `foreach` loop of `EvaluateAsync` calls (the baseline).
 - **Operator families** (`OperatorBenchmarks`): the evaluation cost of the connective, cardinality, threshold, external, `If` and `PARITY` operator families.
 - **Rewrites** (`RewriteBenchmarks`): `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize` and `Simplify` on one mixed-operator rule.
 - **Diagnostics formatting** (`DiagnosticsBenchmarks`): `CompilationResult.FormatDiagnostics` with and without source text.

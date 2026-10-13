@@ -1,7 +1,5 @@
 namespace TruthWeaver.Testing;
 
-using TruthWeaver.Abstractions;
-
 /// <summary>
 /// The evaluation context of a <see cref="RuleFuzzer"/> rule: one truth value for each predicate in the rule. The stand-in
 /// predicates of the fuzzer read their answer from it, so the real predicates never run.

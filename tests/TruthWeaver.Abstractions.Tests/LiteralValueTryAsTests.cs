@@ -43,7 +43,7 @@ public sealed class LiteralValueTryAsTests
 
     /// <summary>An array value returns true and its elements; a scalar returns false.</summary>
     [Fact]
-    public void TryAsArray_ReturnsTrueOnlyForAnArrayKind_Test()
+    public void TryAsArray_Kinds_ReturnsTrueOnlyForAnArrayKind_Test()
     {
         LiteralValue array = LiteralValue.OfArray(LiteralKind.Int64, [LiteralValue.OfInt64(1), LiteralValue.OfInt64(2)]);
 

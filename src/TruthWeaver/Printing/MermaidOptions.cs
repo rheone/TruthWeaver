@@ -46,6 +46,12 @@ public sealed record MermaidOptions
     public bool ShowArgumentValues { get; init; } = true;
 
     /// <summary>
+    /// Gets how the constant nodes <c>True</c>, <c>False</c> and <c>Unknown</c> are written. Defaults to
+    /// <see cref="ConstantFormat.Default"/>. Node colors and the trace state do not change.
+    /// </summary>
+    public ConstantFormat Constants { get; init; } = ConstantFormat.Default;
+
+    /// <summary>
     /// Gets a callback that picks a style for any node, or <see langword="null"/> (the default) for none. The
     /// callback runs for every node after evaluation coloring, and a style that it returns replaces the
     /// evaluation color of that node. A <see langword="null"/> result leaves the node as it is. The printer

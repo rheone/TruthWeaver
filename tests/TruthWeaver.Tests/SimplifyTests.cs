@@ -2,7 +2,6 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
@@ -32,7 +31,7 @@ public sealed class SimplifyTests
                 continue;
             }
 
-            K3Rule simplified = original.Rewrite(rule => rule.Simplify());
+            K3Rule simplified = original.Rewrite(rule => rule.Simplify().GetRuleOrThrow());
             checkedRules++;
             int before = PrintedTreeSize.NodeCount(original.Compiled);
             int after = PrintedTreeSize.NodeCount(simplified.Compiled);
@@ -42,7 +41,7 @@ public sealed class SimplifyTests
                 failures.Add($"{generated.Text}: simplified is larger ({simplified.Compiled.CanonicalText})");
             }
 
-            if (simplified.Compiled.CanonicalText != simplified.Compiled.Simplify().CanonicalText)
+            if (simplified.Compiled.CanonicalText != simplified.Compiled.Simplify().GetRuleOrThrow().CanonicalText)
             {
                 failures.Add($"{generated.Text}: not idempotent ({simplified.Compiled.CanonicalText})");
             }
@@ -87,7 +86,7 @@ public sealed class SimplifyTests
             }
 
             K3Rule expanded = original.Rewrite(rule => rule.ExpandToPrimitives().CompiledRule!);
-            K3Rule simplified = expanded.Rewrite(rule => rule.Simplify());
+            K3Rule simplified = expanded.Rewrite(rule => rule.Simplify().GetRuleOrThrow());
             checkedRules++;
             if (PrintedTreeSize.NodeCount(simplified.Compiled) > PrintedTreeSize.NodeCount(expanded.Compiled))
             {
@@ -186,7 +185,7 @@ public sealed class SimplifyTests
     public async Task Simplify_SmallRule_GivesTheStatedSimplifiedText_Test(string ruleText, int arity, string expected)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, Math.Max(arity, 1))!;
-        K3Rule simplified = original.Rewrite(rule => rule.Simplify());
+        K3Rule simplified = original.Rewrite(rule => rule.Simplify().GetRuleOrThrow());
 
         Assert.Equal(expected, simplified.Compiled.CanonicalText);
         foreach (TruthValue[] assignment in K3Oracle.Assignments(Math.Max(arity, 1)))
@@ -217,7 +216,7 @@ public sealed class SimplifyTests
     public async Task Simplify_ClassicalOnlyLaw_IsNotAppliedAndTheOracleStillAgrees_Test(string ruleText, int arity)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, arity)!;
-        K3Rule simplified = original.Rewrite(rule => rule.Simplify());
+        K3Rule simplified = original.Rewrite(rule => rule.Simplify().GetRuleOrThrow());
 
         Assert.NotEqual("True", simplified.Compiled.CanonicalText);
         Assert.NotEqual("False", simplified.Compiled.CanonicalText);
@@ -241,9 +240,9 @@ public sealed class SimplifyTests
     {
         K3Rule original = K3Rule.TryCreate(ruleText, 2)!;
 
-        string simplified = original.Compiled.Simplify().CanonicalText;
+        string simplified = original.Compiled.Simplify().GetRuleOrThrow().CanonicalText;
 
-        Assert.NotEqual(K3Rule.TryCreate(classical, 2)!.Compiled.Canonicalize().CanonicalText, simplified);
+        Assert.NotEqual(K3Rule.TryCreate(classical, 2)!.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText, simplified);
     }
 
     /// <summary>
@@ -260,7 +259,7 @@ public sealed class SimplifyTests
     )
     {
         K3Rule original = K3Rule.TryCreate(ruleText, 1)!;
-        K3Rule simplified = original.Rewrite(rule => rule.Simplify());
+        K3Rule simplified = original.Rewrite(rule => rule.Simplify().GetRuleOrThrow());
 
         Decision decision = await simplified.EvaluateAsync([TruthValue.Unknown], TestContext.Current.CancellationToken);
 
@@ -275,7 +274,7 @@ public sealed class SimplifyTests
         K3Rule original = K3Rule.TryCreate("a AND True", 1)!;
         string textBefore = original.Compiled.CanonicalText;
 
-        CompiledRule<RuleTestContext> simplified = original.Compiled.Simplify();
+        CompiledRule<RuleTestContext> simplified = original.Compiled.Simplify().GetRuleOrThrow();
 
         Assert.NotSame(original.Compiled, simplified);
         Assert.Equal(textBefore, original.Compiled.CanonicalText);

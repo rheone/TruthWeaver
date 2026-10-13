@@ -3,27 +3,35 @@ namespace TruthWeaver.Predicates.Tests;
 using TruthWeaver.Abstractions;
 
 /// <summary>
-/// The <c>NotX</c> twins of <c>EqualsIgnoreCase</c>, <c>StartsWith</c>, <c>EndsWith</c>, <c>EqualsConfigurable</c> and
+/// The <c>NotX</c> twins of <c>IsEqualTo</c>, <c>StartsWith</c>, <c>EndsWith</c> and
 /// <c>SetEquals</c> answer the complement of their positive predicate for a non-null selected value.
 /// </summary>
 public sealed class AddedTwinPredicatesTests
 {
     private delegate ValueTask<TruthValue> Evaluate(TestContext context, PredicateArguments args, CancellationToken token);
 
-    /// <summary><c>NotEqualsIgnoreCase</c> is False for a value equal to the argument in another case, and True otherwise.</summary>
+    /// <summary><c>IsNotEqualTo</c> with <c>ignoreCase</c> true is False for a value equal to the argument in another case, and True otherwise.</summary>
     /// <param name="selected">The selected string.</param>
     /// <param name="expected">The expected twin answer.</param>
     [Theory]
     [InlineData("ALICE", TruthValue.False)]
     [InlineData("bob", TruthValue.True)]
-    public async Task NotEqualsIgnoreCase_NonNullSelection_AnswersComplementOfEqualsIgnoreCase_Test(
+    public async Task IsNotEqualTo_IgnoreCaseTrueAndNonNullSelection_AnswersComplementOfIsEqualTo_Test(
         string selected,
         TruthValue expected
     )
     {
-        Evaluate evaluate = new(StringPredicates.NotEqualsIgnoreCase<TestContext>("p", c => c.Value).Evaluate);
+        Evaluate evaluate = new(StringPredicates.IsNotEqualTo<TestContext>("p", c => c.Value).Evaluate);
+        PredicateArguments args = new(
+            new Dictionary<string, LiteralValue>
+            {
+                ["value"] = LiteralValue.OfString("alice"),
+                ["ignoreCase"] = LiteralValue.OfBoolean(true),
+                ["trim"] = LiteralValue.OfBoolean(false),
+            }
+        );
 
-        TruthValue result = await evaluate(new TestContext(selected), Args("value", "alice"), CancellationToken.None);
+        TruthValue result = await evaluate(new TestContext(selected), args, CancellationToken.None);
 
         Assert.Equal(expected, result);
     }
@@ -61,7 +69,7 @@ public sealed class AddedTwinPredicatesTests
     }
 
     /// <summary>
-    /// <c>NotEqualsConfigurable</c> applies the <c>ignoreCase</c> and <c>trim</c> arguments as <c>EqualsConfigurable</c>
+    /// <c>IsNotEqualTo</c> applies the <c>ignoreCase</c> and <c>trim</c> arguments as <c>IsEqualTo</c>
     /// does and answers the complement.
     /// </summary>
     /// <param name="selected">The selected string.</param>
@@ -73,14 +81,14 @@ public sealed class AddedTwinPredicatesTests
     [InlineData("Alice", false, false, TruthValue.True)]
     [InlineData(" alice ", false, true, TruthValue.False)]
     [InlineData(" alice ", false, false, TruthValue.True)]
-    public async Task NotEqualsConfigurable_NonNullSelection_AnswersComplementOfEqualsConfigurable_Test(
+    public async Task IsNotEqualTo_NonNullSelection_AnswersComplementOfIsEqualTo_Test(
         string selected,
         bool ignoreCase,
         bool trim,
         TruthValue expected
     )
     {
-        Evaluate evaluate = new(StringPredicates.NotEqualsConfigurable<TestContext>("p", c => c.Value).Evaluate);
+        Evaluate evaluate = new(StringPredicates.IsNotEqualTo<TestContext>("p", c => c.Value).Evaluate);
         PredicateArguments args = new(
             new Dictionary<string, LiteralValue>
             {
@@ -95,13 +103,13 @@ public sealed class AddedTwinPredicatesTests
         Assert.Equal(expected, result);
     }
 
-    /// <summary><c>NotEqualsConfigurable</c> declares the same arguments as <c>EqualsConfigurable</c>, with the same defaults.</summary>
+    /// <summary><c>IsNotEqualTo</c> declares the same arguments as <c>IsEqualTo</c>, with the same defaults.</summary>
     [Fact]
-    public void NotEqualsConfigurable_Schema_DeclaresTheArgumentsOfEqualsConfigurable_Test()
+    public void IsNotEqualTo_Schema_DeclaresTheArgumentsOfIsEqualTo_Test()
     {
-        PredicateSchema positive = StringPredicates.EqualsConfigurable<TestContext>("p", c => c.Value).Schema;
+        PredicateSchema positive = StringPredicates.IsEqualTo<TestContext>("p", c => c.Value).Schema;
 
-        PredicateSchema twin = StringPredicates.NotEqualsConfigurable<TestContext>("p", c => c.Value).Schema;
+        PredicateSchema twin = StringPredicates.IsNotEqualTo<TestContext>("p", c => c.Value).Schema;
 
         Assert.Equal(
             positive.Arguments.Select(argument => (argument.Name, argument.Type, argument.Required, argument.Default)),
