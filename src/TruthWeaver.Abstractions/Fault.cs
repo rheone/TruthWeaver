@@ -15,8 +15,15 @@ using System.Diagnostics;
 /// </remarks>
 /// <param name="Term">The identity of the term that faulted.</param>
 /// <param name="Exception">The exception the predicate raised (or propagated from its own dependencies).</param>
+/// <param name="Scope">
+/// An optional, additive label for where inside a quantifier's element iteration this fault happened, such as
+/// <c>line[734]</c>, or a dotted chain for nested quantifiers (<c>line[2]/tag[0]</c>) (ADR-0010 decision 7). <see
+/// langword="null"/> for a fault outside any quantifier body, which is every fault before this field existed. It is not
+/// part of equality or the hash code, so a fault recorded with a scope still equals the same fault recorded, or read
+/// back from a decision record, without one.
+/// </param>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public sealed record Fault(TermIdentity Term, Exception Exception)
+public sealed record Fault(TermIdentity Term, Exception Exception, string? Scope = null)
 {
     /// <summary>
     /// Gets the full type name of <see cref="Exception"/>. For a <see cref="RecordedFaultException"/> it is the type name
@@ -29,7 +36,10 @@ public sealed record Fault(TermIdentity Term, Exception Exception)
 
     // The default record ToString embeds Exception.ToString(), stack trace included, which buries the term and the cause.
     // ExceptionType names the recorded type for a fault read back from a decision record, not RecordedFaultException.
-    private string DebuggerDisplay => $"{this.Term}: {this.ExceptionType}: {this.Exception.Message}";
+    private string DebuggerDisplay =>
+        this.Scope is null
+            ? $"{this.Term}: {this.ExceptionType}: {this.Exception.Message}"
+            : $"{this.Scope} {this.Term}: {this.ExceptionType}: {this.Exception.Message}";
 
     /// <inheritdoc />
     public bool Equals(Fault? other)

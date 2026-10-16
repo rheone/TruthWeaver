@@ -38,6 +38,7 @@ public sealed class AnalyzerDistinctTermsTests
         new BetweenExpression(1, 2, new([A, B, C])),
         new InspectionExpression(InspectionKind.IsKnown, A),
         new IfExpression(A, B, C),
+        new QuantifierExpression(QuantifierKind.ForAll, "x", "items", A),
     ];
 
     /// <summary>Gets the index of each sample so failures name the operator kind.</summary>

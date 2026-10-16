@@ -97,7 +97,7 @@ package. It has no NuGet API key and the job permission is `contents: read`. The
 1. `dotnet pack TruthWeaver.slnx --configuration Release -warnaserror`. A pack warning fails the job. Package validation
    (`EnablePackageValidation` in `src/Directory.Build.props`) runs in this step. It checks the package layout and the
    public API across target frameworks.
-2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the seven packages the script checks that
+2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the eight library packages and the tool package, the script checks that
    the `.nupkg` exists, contains `README.md` and contains only the expected files. It also checks that the symbol package
    (`.snupkg`) contains the `.pdb` file. `TruthWeaver.Generators` is an analyzer-only package and has no symbol package.
    The script fails when it finds a symbol package for it.

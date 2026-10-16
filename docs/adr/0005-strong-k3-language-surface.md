@@ -9,6 +9,20 @@ and "word operators only" decisions in
 [ADR-0003](0003-rule-syntax-and-serialization.md). Source requirements: `.scratch/2026-10-02-TODO.md`; planning
 spec: `.scratch/k3-conformance/spec.md`.
 
+*Amended 2026-10-16: definitions and parameters.* The reserved-word list of decision 2's notation and the
+rule-text grammar gain `let`, and the JSON/YAML tree format gains a `definitions` section and a `use`
+node, all outside the operator set this ADR otherwise governs: a definition expands to an ordinary
+expression tree at compile time and introduces no new operator, evaluator case, analyzer rail or printer
+case. See [ADR-0008](0008-definitions-and-parameters.md) for the full decision.
+
+*Amended 2026-10-16: FORALL/EXISTS quantifiers.* `FORALL` and `EXISTS` join decision 18's list of Strong
+Kleene connectives (the generalized `AND`/`OR` over a collection's elements) and are new reserved words
+alongside the existing operator vocabulary of decision 2. Unlike every operator decision 3 already
+classifies, a quantifier does not reduce to a fixed kernel formula at compile time, because its term set
+depends on the collection's size at evaluation time; the analyzer, the rewrites and every consumer that
+lists "the terms of a rule" treat it as an opaque atom. See [ADR-0010](0010-forall-exists-quantifiers.md)
+for the grammar, semantics, limits and analyzer/rewrite boundaries.
+
 ## Context
 
 [ADR-0001](0001-kleene-failure-model.md) made Strong Kleene (K3) the engine's
@@ -583,7 +597,9 @@ Where they differ from the original wording above they take precedence.
     are `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`. The K3 connectives are
     `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY`,
     the cardinality operators (`AtLeast`, `AtMost`, `Exactly`, `ExactlyOne`,
-    the threshold family, `ANY`, `ALL`, `NONE`, `BETWEEN`) and `If`. The
+    the threshold family, `ANY`, `ALL`, `NONE`, `BETWEEN`), `If`, and, *amended
+    2026-10-16* ([ADR-0010](0010-forall-exists-quantifiers.md)), the quantifiers
+    `FORALL` and `EXISTS`. The
     distinction is the **information order** (`Unknown` below `True` and
     `False`, which are incomparable), which sits beside the truth order
     `False < Unknown < True` of decision 1. Every connective is monotone in the

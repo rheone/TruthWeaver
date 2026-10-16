@@ -59,6 +59,12 @@ internal static class ExpressionShape
             InspectionExpression ins => new NodeShape(ins.Kind.ToString(), null, [ins.Operand]),
             IfExpression i3 => new NodeShape("If", null, [i3.Condition, i3.WhenTrue, i3.WhenFalse]),
             CoalesceExpression co => new NodeShape("Coalesce", null, co.Operands),
+
+            // The quantifier's one structural child is its body; Variable and CollectionName are not operands (ADR-0010).
+            // This is a structural convenience for a generic consumer (note collection, predicate-name listing); it does
+            // not make the analyzer or a rewrite look inside a quantifier — those treat it as an opaque atom explicitly,
+            // ahead of this shared seam.
+            QuantifierExpression q => new NodeShape(q.Kind == QuantifierKind.ForAll ? "Forall" : "Exists", null, [q.Body]),
             ConstantExpression or TermExpression => throw new ArgumentException(
                 $"'{node.GetType().Name}' is a leaf with no operand shape — handle it directly instead "
                     + $"of calling {nameof(ExpressionShape)}.{nameof(Of)}.",

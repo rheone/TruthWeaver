@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>TruthWeaver.Samples.AspNetCore</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver/TruthWeaver.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.AspNetCore/TruthWeaver.AspNetCore.csproj" />
+  </ItemGroup>
+</Project>

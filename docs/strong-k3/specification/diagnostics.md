@@ -47,8 +47,31 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0033` | `RewriteNotConverged` | Warning | Rewrite | On | `CompressToDerived()`, `Canonicalize()` or `Simplify()` stopped at its pass limit before the rule stopped changing. The rule is equivalent to the input, but rewriting it again can still change it. |
 | `TRE0034` | `TruthTableCapRaised` | Warning | Print | On | `PrintTruthTable` printed a table with more terms than the default cap of 8, because the options set `AllowLargerTable`. The message gives the row count. |
 | `TRE0035` | `TruthTableTooLarge` | Error | Print | On | `PrintTruthTable` refused to print a table: the rule has more terms than the default cap of 8 and `AllowLargerTable` is not set, or it has more terms than the hard limit of 12. Nothing is written. |
+| `TRE0036` | `DefinitionCycleDetected` | Error | Validate | On | A `let` definition references itself, directly or through a chain of other definitions' uses. The message names every definition in the cycle. Remove the self- or mutual reference. |
+| `TRE0037` | `DefinitionNameCollision` | Error | Validate | On | A `let` definition's name clashes with another definition already declared in the same document, a reserved word, or a predicate name registered with the compiler. Rename the definition. |
+| `TRE0038` | `MaxDefinitionDepthExceeded` | Error | Validate | On | A use would expand through more `let` definitions than the compiler option `MaxDefinitionDepth` allows, independent of `MaxDepthExceeded` and `DefinitionCycleDetected`. Shorten the chain of definitions or raise the option. |
+| `TRE0039` | `DefinitionArgumentCountMismatch` | Error | Validate | On | A use of a `let` definition supplies a different number of arguments than the definition declares parameters. Match the use to the definition's parameter list. |
+| `TRE0040` | `UnknownDefinition` | Error | Validate | On | A use names a `let` definition that was never declared (or was declared but discarded because its name collided; see `DefinitionNameCollision`). Declare the definition, or fix its name. |
+| `TRE0041` | `UnusedDefinition` | Info | Lint | Opt-in (`LintRules.UnusedDefinition`) | A `let` definition is declared but never used anywhere in the document. |
+| `TRE0042` | `UnknownCollection` | Error | Validate | On | A `FORALL`/`EXISTS` head names a collection that no `PredicateRegistryBuilder.AddCollection` call registered. The message suggests the nearest registered collection name. |
+| `TRE0043` | `MaxQuantifierDepthExceeded` | Error | Validate | On | A rule nests `FORALL`/`EXISTS` quantifiers deeper than the compiler option `MaxQuantifierDepth` allows. |
+| `TRE0044` | `ShadowedVariable` | Error | Validate | On | A nested `FORALL`/`EXISTS` reuses the bound variable name of an enclosing quantifier. Rename the inner quantifier's variable. |
 
 A lint finding carries a suggested replacement.
+
+**Known limitation: `MaxDepthExceeded`/`MaxNodeCountExceeded` inside a `let` expansion.** A diagnostic raised
+inside a `let` definition's expansion should point at the use site and additionally name the definition and its
+own declaration span. `TRE0036`-`TRE0040` (the definition guardrails themselves) already do this, located at the
+use's own name. `TRE0009` `MaxDepthExceeded` and `TRE0010` `MaxNodeCountExceeded`, when the node that tripped the
+limit came from inside a definition's body, do not: the span is the node's position inside the `let` declaration
+that wrote it, not the use site that expanded it there, and the message does not separately name the definition.
+A node that came from an argument at the use site, rather than from the body's own text, already carries that
+argument's real span, which happens to be at or near the use; this limitation is specific to nodes written inside
+the definition's own body. Closing it needs the expander to carry each expanded node's originating use site
+alongside its existing span, threaded through every diagnostic `RuleNodeCompiler` can raise on an expanded node,
+not only these two, so it stays a documented limitation for now rather than a partial fix. No `Diagnostic` public
+API change is needed to close it later: the use site and definition identity can go in the message text, as the
+rest of this page's diagnostics already do for detail that is not part of the stable code.
 
 ## Related
 

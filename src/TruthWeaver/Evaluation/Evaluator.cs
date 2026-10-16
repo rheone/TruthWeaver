@@ -14,6 +14,14 @@ using TruthWeaver.Registry;
 /// <c>CompiledRule.EvaluateAsync</c> — memoization and the fault list are scoped to exactly one
 /// evaluation, never shared across calls.
 /// </summary>
+/// <remarks>
+/// A quantifier's element iteration (ADR-0010) creates one nested <see cref="Evaluator{TContext}"/> per element,
+/// over <c>Element&lt;TOuter, TItem&gt;</c> rather than this instance's own <typeparamref name="TContext"/>. Every
+/// nested evaluator is given this evaluator's own <see cref="EvaluationState"/> (never a fresh one), so the fault
+/// list, the flat trace log, the fault budget and <see cref="EvaluationOptions.MaxElementEvaluations"/> stay
+/// whole-evaluation concepts rather than per-quantifier ones, and each is given its own element scope path, so a
+/// fault or a flat trace entry it records is attributed to the element that raised it.
+/// </remarks>
 /// <typeparam name="TContext">The application context type.</typeparam>
 internal sealed class Evaluator<TContext>(
     TContext context,
@@ -22,7 +30,9 @@ internal sealed class Evaluator<TContext>(
     EvaluationOptions options,
     CancellationToken cancellationToken,
     ILogger? logger = null,
-    DataSources? dataSources = null
+    DataSources? dataSources = null,
+    EvaluationState? state = null,
+    string? scope = null
 )
 {
     private readonly TContext context = context;
@@ -32,22 +42,12 @@ internal sealed class Evaluator<TContext>(
     private readonly CancellationToken cancellationToken = cancellationToken;
     private readonly ILogger logger = logger ?? NullLogger.Instance;
     private readonly DataSources? dataSources = dataSources;
-    private readonly Dictionary<TermIdentity, TruthValue> memo = [];
+    private readonly EvaluationState state = state ?? new EvaluationState();
 
-    // Trace text of terms whose variables resolved, with the values shown; filled only when IncludeResolvedValues is set.
-    private readonly Dictionary<TermIdentity, string> valueDescriptions = [];
-
-    // Array references of a term that matched no node (ADR-0006 decision 7 keeps this a legal empty array, so it is not
-    // a fault); the trace shows them so a mistyped path does not pass unseen. Filled whatever IncludeResolvedValues says,
-    // because the note names the query and never a value.
-    private readonly Dictionary<TermIdentity, List<VariableReference>> zeroMatchReferences = [];
-
-    // What each (source, query) pair answered, queried at most once per evaluation (ADR-0006 decision 11). A failure is
-    // stored like a value, so a repeated reference neither re-queries the source nor re-runs a failing call.
-    private readonly Dictionary<VariableReference, SourceAnswer> sourceAnswers = [];
-    private readonly List<Fault> faults = [];
-    private readonly List<TraceEntry> trace = [];
-    private bool aborted;
+    // The element scope path this evaluator runs in (e.g. "line[2]" or "line[2]/tag[0]"), or null outside any
+    // quantifier. Prefixes every flat trace entry this evaluator records (ADR-0010 decision 7); tree (TraceNode)
+    // labels are never prefixed, because the quantifier already wraps each element's tree in its own "var[i]" node.
+    private readonly string? scope = scope;
 
     public async Task<Decision> EvaluateAsync(Expression root)
     {
@@ -55,10 +55,25 @@ internal sealed class Evaluator<TContext>(
         TruthWeaverMetrics.EvaluationPerformed();
         return new Decision(
             result.Value,
-            new EquatableArray<Fault>(this.faults),
-            new Trace(new EquatableArray<TraceEntry>(this.trace)),
+            new EquatableArray<Fault>(this.state.Faults),
+            new Trace(new EquatableArray<TraceEntry>(this.state.Trace)),
             result.Node
         );
+    }
+
+    /// <summary>
+    /// Evaluates <paramref name="node"/> sharing this evaluator's <see cref="EvaluationState"/> and scope, without
+    /// packaging a fresh <see cref="Decision"/> — the form a quantifier's collection binding uses to run a
+    /// per-element body through a nested <see cref="Evaluator{TContext}"/> (over the element's own
+    /// <c>Element&lt;TOuter, TItem&gt;</c> context) while every fault and flat trace entry it records lands on the
+    /// same shared lists the outer evaluation's <see cref="Decision"/> is eventually built from.
+    /// </summary>
+    /// <param name="node">The node to evaluate (typically a quantifier's body).</param>
+    /// <returns>The node's value and its trace tree.</returns>
+    internal async ValueTask<(TruthValue Value, TraceNode Node)> EvaluateSharedAsync(Expression node)
+    {
+        EvalResult result = await this.EvalAsync(node).ConfigureAwait(false);
+        return (result.Value, result.Node);
     }
 
     /// <summary>
@@ -82,12 +97,20 @@ internal sealed class Evaluator<TContext>(
         return $"{identity.PredicateName}({arguments})";
     }
 
+    /// <summary>Appends a flat trace entry, prefixed with this evaluator's element scope path, if any (ADR-0010 decision 7).</summary>
+    private void AddTraceEntry(string description, TruthValue? value, bool notEvaluated)
+    {
+        this.state.Trace.Add(
+            new TraceEntry(this.scope is null ? description : $"{this.scope}: {description}", value, notEvaluated)
+        );
+    }
+
     private async ValueTask<EvalResult> EvalAsync(Expression node)
     {
-        if (this.aborted)
+        if (this.state.Aborted)
         {
             string skippedDescription = TraceText.Of(node);
-            this.trace.Add(new TraceEntry(skippedDescription, null, true));
+            this.AddTraceEntry(skippedDescription, null, true);
             return new EvalResult(
                 TruthValue.Unknown,
                 new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
@@ -101,13 +124,15 @@ internal sealed class Evaluator<TContext>(
             case ConstantExpression c:
                 TruthValue constantValue = c.Value;
                 string constantDescription = TraceText.Of(node);
-                this.trace.Add(new TraceEntry(constantDescription, constantValue, false));
+                this.AddTraceEntry(constantDescription, constantValue, false);
                 return new EvalResult(
                     constantValue,
                     new TraceNode(constantDescription, constantValue, false, EquatableArray<TraceNode>.Empty)
                 );
             case TermExpression t:
                 return await this.EvalTermAsync(t).ConfigureAwait(false);
+            case QuantifierExpression q:
+                return await this.EvalQuantifierAsync(q).ConfigureAwait(false);
             case NotExpression:
             {
                 NodeShape shape = ExpressionShape.Of(node);
@@ -363,11 +388,44 @@ internal sealed class Evaluator<TContext>(
     private EvalResult Skip(Expression node)
     {
         string skippedDescription = TraceText.Of(node);
-        this.trace.Add(new TraceEntry(skippedDescription, null, true));
+        this.AddTraceEntry(skippedDescription, null, true);
         return new EvalResult(
             TruthValue.Unknown,
             new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
         );
+    }
+
+    /// <summary>Evaluates a quantifier node by delegating to its collection binding (ADR-0010).</summary>
+    private async ValueTask<EvalResult> EvalQuantifierAsync(QuantifierExpression node)
+    {
+        string label = node.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+        string description = $"{label}({node.Variable} IN {node.CollectionName})";
+        if (!this.registry.TryGetCollection(node.CollectionName, out ICollectionBinding<TContext>? binding))
+        {
+            // Defensive only: a successfully Strict-mode-compiled rule cannot reference an unregistered collection.
+            this.AddTraceEntry(description, TruthValue.Unknown, false);
+            return new EvalResult(
+                TruthValue.Unknown,
+                new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
+            );
+        }
+
+        (TruthValue value, TraceNode traceNode) = await binding
+            .EvaluateQuantifierAsync(
+                this.context,
+                node.Kind,
+                node.Variable,
+                node.Body,
+                this.options,
+                this.state,
+                this.services,
+                this.logger,
+                this.dataSources,
+                this.scope,
+                this.cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new EvalResult(value, traceNode);
     }
 
     /// <summary>
@@ -391,10 +449,10 @@ internal sealed class Evaluator<TContext>(
         bool stop = false;
         foreach (Expression operand in operands)
         {
-            if (stop || this.aborted)
+            if (stop || this.state.Aborted)
             {
                 string skippedDescription = TraceText.Of(operand);
-                this.trace.Add(new TraceEntry(skippedDescription, null, true));
+                this.AddTraceEntry(skippedDescription, null, true);
                 children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
                 continue;
             }
@@ -430,33 +488,34 @@ internal sealed class Evaluator<TContext>(
         string description = term.Identity.ToString();
         if (term.IsUnknownPredicate)
         {
-            this.trace.Add(new TraceEntry(description, TruthValue.Unknown, false));
+            this.AddTraceEntry(description, TruthValue.Unknown, false);
             return new EvalResult(
                 TruthValue.Unknown,
                 new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
             );
         }
 
-        if (this.memo.TryGetValue(term.Identity, out TruthValue cached))
+        (string? Scope, TermIdentity Identity) key = (this.scope, term.Identity);
+        if (this.state.Memo.TryGetValue(key, out TruthValue cached))
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
-            description = this.Annotated(term.Identity, description);
-            this.trace.Add(new TraceEntry(description, cached, false));
+            description = this.Annotated(key, description);
+            this.AddTraceEntry(description, cached, false);
             return new EvalResult(cached, new TraceNode(description, cached, false, EquatableArray<TraceNode>.Empty));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
-        this.memo[term.Identity] = result;
-        description = this.Annotated(term.Identity, description);
-        this.trace.Add(new TraceEntry(description, result, false));
+        this.state.Memo[key] = result;
+        description = this.Annotated(key, description);
+        this.AddTraceEntry(description, result, false);
         return new EvalResult(result, new TraceNode(description, result, false, EquatableArray<TraceNode>.Empty));
     }
 
     /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by a note for each array reference that matched no node.</summary>
-    private string Annotated(TermIdentity identity, string description)
+    private string Annotated((string? Scope, TermIdentity Identity) key, string description)
     {
-        string text = this.valueDescriptions.GetValueOrDefault(identity, description);
-        if (this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? references))
+        string text = this.state.ValueDescriptions.GetValueOrDefault(key, description);
+        if (this.state.ZeroMatchReferences.TryGetValue(key, out List<VariableReference>? references))
         {
             text += string.Concat(references.Select(r => $" [no match for {r}]"));
         }
@@ -488,7 +547,7 @@ internal sealed class Evaluator<TContext>(
 
             if (this.options.IncludeResolvedValues && identity.Variables.Count > 0)
             {
-                this.valueDescriptions[identity] = DescribeWithValues(identity, values);
+                this.state.ValueDescriptions[(this.scope, identity)] = DescribeWithValues(identity, values);
             }
 
             PredicateArguments args = new(values);
@@ -509,14 +568,14 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
-        this.faults.Add(new Fault(identity, ex));
+        this.state.Faults.Add(new Fault(identity, ex, this.scope));
         EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
         TruthWeaverMetrics.FaultRecorded();
 
         // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.
-        if (this.options.FaultBudget is { } budget && this.faults.Count >= budget)
+        if (this.options.FaultBudget is { } budget && this.state.Faults.Count >= budget)
         {
-            this.aborted = true;
+            this.state.Aborted = true;
         }
     }
 
@@ -566,10 +625,11 @@ internal sealed class Evaluator<TContext>(
                 if (answer.Matches.Count == 0 && VariableConversion.IsArrayKind(argument.Type))
                 {
                     // An empty array is a valid argument, so only the trace says the query found nothing.
-                    if (!this.zeroMatchReferences.TryGetValue(identity, out List<VariableReference>? noted))
+                    (string? Scope, TermIdentity Identity) key = (this.scope, identity);
+                    if (!this.state.ZeroMatchReferences.TryGetValue(key, out List<VariableReference>? noted))
                     {
                         noted = [];
-                        this.zeroMatchReferences[identity] = noted;
+                        this.state.ZeroMatchReferences[key] = noted;
                     }
 
                     noted.Add(reference);
@@ -593,13 +653,14 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Asks the named source a query, once per evaluation; a failure is stored and replayed like a value.</summary>
     private async ValueTask<SourceAnswer> QuerySourceAsync(VariableReference reference)
     {
-        if (this.sourceAnswers.TryGetValue(reference, out SourceAnswer? known))
+        (string? Scope, VariableReference Reference) key = (this.scope, reference);
+        if (this.state.SourceAnswers.TryGetValue(key, out SourceAnswer? known))
         {
             return known;
         }
 
         SourceAnswer answer = await this.QuerySourceUncachedAsync(reference).ConfigureAwait(false);
-        this.sourceAnswers[reference] = answer;
+        this.state.SourceAnswers[key] = answer;
         return answer;
     }
 
@@ -682,18 +743,4 @@ internal sealed class Evaluator<TContext>(
     /// separate replay pass.
     /// </summary>
     private readonly record struct EvalResult(TruthValue Value, TraceNode Node);
-
-    /// <summary>What a data source answered to one reference: its matches, or the failure to replay.</summary>
-    private sealed record SourceAnswer(IReadOnlyList<LiteralValue> Matches, VariableResolutionException? Failure)
-    {
-        public static SourceAnswer Answered(IReadOnlyList<LiteralValue> matches)
-        {
-            return new(matches, null);
-        }
-
-        public static SourceAnswer Failed(VariableResolutionException failure)
-        {
-            return new([], failure);
-        }
-    }
 }

@@ -8,7 +8,7 @@ This page is the runbook to publish a TruthWeaver version to NuGet. Back to [Con
 > **This runbook has not been run.** No version of TruthWeaver has been published. Each step below is marked
 > *not run*. When you do a release, mark the steps as you do them, and correct this page where it is wrong.
 
-All seven library packages and the `TruthWeaver.Tool` tool package share one version. MinVer reads the version from the Git tag. See
+All eight library packages and the `TruthWeaver.Tool` tool package share one version. MinVer reads the version from the Git tag. See
 [How a package version is made](contributing.md#how-a-package-version-is-made).
 
 ## Before you start

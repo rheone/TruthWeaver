@@ -68,6 +68,11 @@ public enum LintRules
     Style = 512,
 
     /// <summary>
+    /// A <c>let</c> definition (ADR-0008) declared but never used anywhere in the document (<c>TRE0041</c>).
+    /// </summary>
+    UnusedDefinition = 1024,
+
+    /// <summary>
     /// The logic and structure lints: every flag except <see cref="Style"/>. Its findings point at likely mistakes, so a
     /// first run over a reasonable rule is quiet.
     /// </summary>
@@ -80,5 +85,6 @@ public enum LintRules
         | DuplicateOperands
         | DoubleNegation
         | DeepNesting
-        | WideChain,
+        | WideChain
+        | UnusedDefinition,
 }

@@ -80,6 +80,88 @@ The guarantee is about the compiled rule, not the source text. A conversion does
 - **Note text outside the normal form.** A note is normalized when it is read (see [Notes](#notes)), so trailing spaces and blank space around it are not kept.
 - **Notes, after a rewrite.** A rewrite such as `Simplify` returns a rule with no notes, so a rewritten rule converts without them. `CanonicalText`, and a print with `includeNotes: false`, also leave the notes out.
 
+## Definitions and parameters
+
+A JSON or YAML document may name a reusable sub-expression once and use it, optionally with arguments, as many times
+as the rule needs. This is the same mechanism [rule text's `let`](rule-text.md#definitions-and-parameters) gives a
+DSL author, and it produces the identical compiled tree for the same definitions and uses.
+
+A `definitions` object (JSON) or mapping (YAML), alongside the document's own root node, declares zero or more named
+definitions, keyed by name. Each entry is `{"parameters": ["p1", "p2"], "body": <tree>}`; `parameters` is omitted or
+empty for a parameterless definition. A use is a node of its own, wherever a tree node is expected (including nested
+inside another node's `operands`): `{"op": "use", "name": "atLeastAge", "operands": [<arg1>, ...]}`, with `operands`
+omitted or empty for a parameterless use. Inside a definition's own body, a bare `{"predicate": "p1"}` with no `args`
+stands for the parameter `p1`, the same disambiguation rule text makes for a bare identifier; giving it `args` makes
+it an ordinary term instead, shadowing the parameter.
+
+This is the JSON form of rule text's own example:
+
+<!-- doctest:rule jsondefinitions -->
+```text
+(approvedByAlice AND approvedByBob) AND NOT approvedByCarol
+```
+
+<!-- doctest:json jsondefinitions -->
+```json
+{
+  "definitions": {
+    "allApprovals": {
+      "parameters": ["reviewer1", "reviewer2"],
+      "body": {
+        "op": "and",
+        "operands": [{ "predicate": "reviewer1" }, { "predicate": "reviewer2" }]
+      }
+    }
+  },
+  "op": "and",
+  "operands": [
+    {
+      "op": "use",
+      "name": "allApprovals",
+      "operands": [{ "predicate": "approvedByAlice" }, { "predicate": "approvedByBob" }]
+    },
+    { "op": "not", "operands": [{ "predicate": "approvedByCarol" }] }
+  ]
+}
+```
+
+<!-- doctest:yaml jsondefinitions -->
+```yaml
+definitions:
+  allApprovals:
+    parameters: [reviewer1, reviewer2]
+    body:
+      op: and
+      operands:
+        - predicate: reviewer1
+        - predicate: reviewer2
+op: and
+operands:
+  - op: use
+    name: allApprovals
+    operands:
+      - predicate: approvedByAlice
+      - predicate: approvedByBob
+  - op: not
+    operands:
+      - predicate: approvedByCarol
+```
+
+`definitions` is valid only alongside the document's own root node, not on a node nested inside `operands` (a
+`definitions` key there is an unknown-key error, the same as any other key a node does not accept). `use` has no such
+restriction. `rule-tree.schema.json` accepts `definitions` structurally on any node, consistent with the rest of the
+schema's own note that it describes JSON shape, not every compile-time rule; `RuleCompiler` is still the judge of
+where a `definitions` section is actually honored.
+
+Every guardrail diagnostic rule text's own section lists (a cycle, a name collision, a chain deeper than
+`CompilerOptions.MaxDefinitionDepth`, a wrong argument count, an unknown definition, and the opt-in unused-definition
+lint) applies identically to JSON and YAML, with the same diagnostic codes
+([Diagnostics](strong-k3/specification/diagnostics.md)). A diagnostic's span still always points at the use (or, for
+the unused-definition lint, the declaration); for YAML it is the real span of the `use` node's `name` value or the
+`definitions` entry's own key, because YamlDotNet keeps every node's position. For JSON, which keeps no positions, it
+is resolved the same way every other JSON diagnostic is: from the diagnostic's path (`$.operands[1].name` for a use,
+`$.definitions.allApprovals` for a definition) back to a span in the original text.
+
 ## Notes
 
 A note is free text on one node of a rule, for the people who read the rule. A note does not change what the rule means. A rule with notes compiles to the same tree, the same `CanonicalText` and the same diagnostics as the rule without them, and it evaluates the same way.

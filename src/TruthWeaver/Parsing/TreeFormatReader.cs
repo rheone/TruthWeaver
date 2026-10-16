@@ -1,5 +1,6 @@
 namespace TruthWeaver.Parsing;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 
@@ -17,6 +18,20 @@ internal sealed class TreeFormatReader
     private readonly TreeFormatVocabulary words;
     private readonly List<Diagnostic> diagnostics = [];
 
+    // Set by ReadUse: unlike the DSL (where ParseUse is reachable only for a name already scanned as a 'let'
+    // declaration, so a bare use never appears without a document), a JSON/YAML 'use' node is its own explicit shape,
+    // legal even when the document declared no 'definitions' at all (ADR-0008 decision 3 says "wherever a tree node is
+    // expected", not "only when a definitions section exists"). Read uses this, at no extra tree walk, to decide
+    // whether the parsed tree still needs to go through DefinitionExpander — a use with nothing declared is an
+    // UnknownDefinition diagnostic, not a node RuleNodeCompiler.Build would otherwise crash on.
+    private bool sawUse;
+
+    // The declared parameter names of the definition whose body is being read right now, or null outside one
+    // (ReadDefinitionEntry sets and restores it around its own ReadNode call). A single mutable field, rather than
+    // threading the scope through every recursive Read* method, is safe because definitions never nest (ADR-0008
+    // decision 5): reading one body never re-enters ReadDefinitionEntry for another.
+    private IReadOnlySet<string>? activeParameters;
+
     private TreeFormatReader(TreeFormatVocabulary words)
     {
         this.words = words;
@@ -31,7 +46,35 @@ internal sealed class TreeFormatReader
     public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Read(ITreeNodeCursor root, TreeFormatVocabulary words)
     {
         TreeFormatReader reader = new(words);
+
+        // A 'definitions' section sits alongside the document's own root node (ADR-0008 decision 3), never on a
+        // nested node, so it is recognized here, once, rather than as a case of the generic node reader.
+        if (root.Shape == TreeNodeShape.Mapping && root.TryGetChild("definitions", out ITreeNodeCursor? definitionsNode))
+        {
+            IReadOnlyList<DefinitionNode>? definitions = reader.ReadDefinitions(
+                definitionsNode,
+                TreePath.Property(TreePath.Root, "definitions")
+            );
+            RuleNode? body = reader.ReadNode(new KeyExcludingCursor(root, "definitions"), TreePath.Root);
+            if (definitions is null || body is null)
+            {
+                return (null, reader.diagnostics);
+            }
+
+            RuleNode document = new RuleDocumentNode(definitions, body, root.Span) { Path = TreePath.Root };
+            return (document, reader.diagnostics);
+        }
+
         RuleNode? node = reader.ReadNode(root, TreePath.Root);
+        if (node is not null && reader.sawUse)
+        {
+            // No 'definitions' section, but at least one 'use' was still written: wrap with an empty definitions list
+            // so DefinitionExpander still runs and reports it (UnknownDefinition), rather than letting it reach
+            // RuleNodeCompiler.Build, which has no case for a node definitions never expanded away.
+            RuleNode document = new RuleDocumentNode([], node, node.Span) { Path = TreePath.Root };
+            return (document, reader.diagnostics);
+        }
+
         return (node, reader.diagnostics);
     }
 
@@ -186,6 +229,23 @@ internal sealed class TreeFormatReader
 
         if (node.TryGetChild("predicate", out ITreeNodeCursor? predicateNode))
         {
+            // A bare '{"predicate": name}' with no 'args', where 'name' is one of the enclosing definition's own
+            // declared parameters, is that parameter used wherever a term, constant or sub-expression could appear
+            // (ADR-0008 decision 5) — the same disambiguation the DSL makes for a bare identifier. An explicit 'args'
+            // still makes it a real term: that shadows the parameter, exactly as the DSL treats a parameter name
+            // followed by '(' as a call, not a reference.
+            if (
+                this.activeParameters is { } scope
+                && predicateNode.StringValue is { } parameterName
+                && scope.Contains(parameterName)
+                && !node.TryGetChild("args", out _)
+            )
+            {
+                return this.CheckKeys(node, path, "a parameter reference", ["predicate", "note"])
+                    ? new ParameterReferenceNode(parameterName, SourceSpan.None)
+                    : null;
+            }
+
             return this.ReadTerm(node, predicateNode, path);
         }
 
@@ -303,6 +363,27 @@ internal sealed class TreeFormatReader
         {
             this.diagnostics.Add(ProjectRejection.Create(DiagnosticCodes.UnknownPredicate, opNode.Span, path));
             return null;
+        }
+
+        // 'use' (ADR-0008 decision 3) is sugar for a definition's expansion, not an operator in OperatorDefinitions, so
+        // it is recognized here, ahead of the operator-name lookup below, the same way the rejections above are.
+        if (string.Equals(op, "use", StringComparison.OrdinalIgnoreCase))
+        {
+            return this.ReadUse(node, path);
+        }
+
+        // 'forall'/'exists' (ADR-0010) are a quantifier, a third kind alongside the connectives and cardinality
+        // operators, not an entry in OperatorDefinitions: their head carries 'var' and 'in' alongside 'operands',
+        // and 'operands' holds exactly the one body node (not a variadic list), so they are read here rather than
+        // falling into the generic op-name dispatch below.
+        if (string.Equals(op, "forall", StringComparison.OrdinalIgnoreCase))
+        {
+            return this.ReadQuantifier(node, QuantifierKind.ForAll, path);
+        }
+
+        if (string.Equals(op, "exists", StringComparison.OrdinalIgnoreCase))
+        {
+            return this.ReadQuantifier(node, QuantifierKind.Exists, path);
         }
 
         // The operator name is checked before its operands so a typo is reported on its own, with its suggestion.
@@ -487,6 +568,266 @@ internal sealed class TreeFormatReader
         return false;
     }
 
+    /// <summary>
+    /// Reads a <c>{"op": "use", "name": ..., "operands": [...]}</c> node (ADR-0008 decision 3): a use of a document-scoped
+    /// definition, valid wherever a tree node is expected. <c>operands</c> supplies the positional arguments and may be
+    /// omitted or empty for a parameterless use, unlike every other operator node, which requires it.
+    /// </summary>
+    private RuleNode? ReadUse(ITreeNodeCursor node, string path)
+    {
+        this.sawUse = true;
+        if (!this.CheckKeys(node, path, "a 'use' node", ["op", "name", "operands", "note"]))
+        {
+            return null;
+        }
+
+        bool hasName = node.TryGetChild("name", out ITreeNodeCursor? nameNode);
+        if (!hasName || nameNode!.StringValue is not { } name)
+        {
+            this.Report(
+                $"A 'use' node requires a 'name' {this.words.KeyNoun} naming the definition.",
+                hasName ? nameNode!.Span : node.Span,
+                $"a {this.words.StringNoun}",
+                hasName ? nameNode!.Describe() : $"no 'name' {this.words.KeyNoun}",
+                hasName ? TreePath.Property(path, "name") : path
+            );
+            return null;
+        }
+
+        List<RuleNode> arguments = [];
+        if (node.TryGetChild("operands", out ITreeNodeCursor? operandsNode))
+        {
+            if (operandsNode.Shape != TreeNodeShape.Sequence)
+            {
+                this.Report(
+                    $"'operands' of a 'use' node must be a {this.words.SequenceNoun}.",
+                    operandsNode.Span,
+                    $"a {this.words.SequenceNoun}",
+                    operandsNode.Describe(),
+                    TreePath.Property(path, "operands")
+                );
+                return null;
+            }
+
+            string operandsPath = TreePath.Property(path, "operands");
+            int index = 0;
+            foreach (ITreeNodeCursor operandNode in operandsNode.Elements)
+            {
+                RuleNode? operand = this.ReadNode(operandNode, TreePath.Index(operandsPath, index++));
+                if (operand is null)
+                {
+                    return null;
+                }
+
+                arguments.Add(operand);
+            }
+        }
+
+        return new UseNode(name, arguments, SourceSpan.None, nameNode.Span) { NamePath = TreePath.Property(path, "name") };
+    }
+
+    /// <summary>
+    /// Reads a <c>{"op": "forall" | "exists", "var": ..., "in": ..., "operands": [&lt;body&gt;]}</c> node
+    /// (ADR-0010 decision 2): <c>var</c> is the bound variable name, <c>in</c> the collection name, and
+    /// <c>operands</c> holds exactly the one body node — a <see cref="DiagnosticCodes.MalformedTree"/> otherwise,
+    /// so body diagnostics get the path <c>$.operands[0]...</c> like every other node.
+    /// </summary>
+    private RuleNode? ReadQuantifier(ITreeNodeCursor node, QuantifierKind kind, string path)
+    {
+        string op = kind == QuantifierKind.ForAll ? "forall" : "exists";
+        if (!this.CheckKeys(node, path, $"a '{op}' quantifier", ["op", "var", "in", "operands", "note"]))
+        {
+            return null;
+        }
+
+        bool hasVariable = node.TryGetChild("var", out ITreeNodeCursor? variableNode);
+        if (!hasVariable || variableNode!.StringValue is not { } variable)
+        {
+            this.Report(
+                $"A '{op}' quantifier requires a 'var' {this.words.KeyNoun} naming the bound variable.",
+                hasVariable ? variableNode!.Span : node.Span,
+                $"a {this.words.StringNoun}",
+                hasVariable ? variableNode!.Describe() : $"no 'var' {this.words.KeyNoun}",
+                hasVariable ? TreePath.Property(path, "var") : path
+            );
+            return null;
+        }
+
+        bool hasCollection = node.TryGetChild("in", out ITreeNodeCursor? collectionNode);
+        if (!hasCollection || collectionNode!.StringValue is not { } collection)
+        {
+            this.Report(
+                $"A '{op}' quantifier requires an 'in' {this.words.KeyNoun} naming the collection.",
+                hasCollection ? collectionNode!.Span : node.Span,
+                $"a {this.words.StringNoun}",
+                hasCollection ? collectionNode!.Describe() : $"no 'in' {this.words.KeyNoun}",
+                hasCollection ? TreePath.Property(path, "in") : path
+            );
+            return null;
+        }
+
+        string operandsPath = TreePath.Property(path, "operands");
+        string operandsMessage =
+            $"A '{op}' quantifier requires an 'operands' {this.words.SequenceNoun} with exactly one item (the body).";
+        string operandsExpected = $"an 'operands' {this.words.SequenceNoun} with exactly one item";
+        if (!node.TryGetChild("operands", out ITreeNodeCursor? operandsNode))
+        {
+            this.Report(operandsMessage, node.Span, operandsExpected, $"no 'operands' {this.words.KeyNoun}", path);
+            return null;
+        }
+
+        if (operandsNode.Shape != TreeNodeShape.Sequence)
+        {
+            this.Report(operandsMessage, operandsNode.Span, operandsExpected, operandsNode.Describe(), operandsPath);
+            return null;
+        }
+
+        List<ITreeNodeCursor> operandNodes = [.. operandsNode.Elements];
+        if (operandNodes.Count != 1)
+        {
+            this.Report(
+                DiagnosticCodes.MalformedTree,
+                operandsMessage,
+                operandsNode.Span,
+                operandsExpected,
+                FoundOperands(operandNodes.Count),
+                operandsPath
+            );
+            return null;
+        }
+
+        RuleNode? body = this.ReadNode(operandNodes[0], TreePath.Index(operandsPath, 0));
+        if (body is null)
+        {
+            return null;
+        }
+
+        return new QuantifierNode(kind, variable, collection, body, SourceSpan.None);
+    }
+
+    /// <summary>Reads the document root's <c>definitions</c> section (ADR-0008 decision 3) into one <see cref="DefinitionNode"/> per entry.</summary>
+    /// <returns>The definitions, or <see langword="null"/> when the section itself was malformed (a diagnostic was reported).</returns>
+    private List<DefinitionNode>? ReadDefinitions(ITreeNodeCursor definitionsNode, string definitionsPath)
+    {
+        if (definitionsNode.Shape != TreeNodeShape.Mapping)
+        {
+            this.Report(
+                $"'definitions' must be a {this.words.MappingNoun}, keyed by definition name.",
+                definitionsNode.Span,
+                $"a {this.words.MappingNoun}",
+                definitionsNode.Describe(),
+                definitionsPath
+            );
+            return null;
+        }
+
+        List<DefinitionNode> definitions = [];
+        foreach ((string? name, ITreeNodeCursor entry, ITreeNodeCursor? key) in definitionsNode.Members)
+        {
+            if (name is null)
+            {
+                this.Report(
+                    $"A definition name must be a {this.words.StringNoun}.",
+                    key!.Span,
+                    $"a {this.words.StringNoun}",
+                    key.Describe(),
+                    definitionsPath
+                );
+                return null;
+            }
+
+            DefinitionNode? definition = this.ReadDefinitionEntry(name, entry, TreePath.Property(definitionsPath, name), key);
+            if (definition is null)
+            {
+                return null;
+            }
+
+            definitions.Add(definition);
+        }
+
+        return definitions;
+    }
+
+    /// <summary>Reads one <c>definitions</c> entry: <c>{"parameters": [...], "body": &lt;node&gt;}</c>.</summary>
+    private DefinitionNode? ReadDefinitionEntry(string name, ITreeNodeCursor entry, string path, ITreeNodeCursor? keyNode)
+    {
+        if (entry.Shape != TreeNodeShape.Mapping)
+        {
+            this.Report(
+                $"A definition entry must be a {this.words.MappingNoun} with 'parameters' and 'body'.",
+                entry.Span,
+                $"a {this.words.MappingNoun}",
+                entry.Describe(),
+                path
+            );
+            return null;
+        }
+
+        if (!this.CheckKeys(entry, path, "a definition", ["parameters", "body"]))
+        {
+            return null;
+        }
+
+        List<string> parameters = [];
+        if (entry.TryGetChild("parameters", out ITreeNodeCursor? parametersNode))
+        {
+            if (parametersNode.Shape != TreeNodeShape.Sequence)
+            {
+                this.Report(
+                    $"'parameters' must be a {this.words.SequenceNoun} of {this.words.StringNoun}s.",
+                    parametersNode.Span,
+                    $"a {this.words.SequenceNoun} of {this.words.StringNoun}s",
+                    parametersNode.Describe(),
+                    TreePath.Property(path, "parameters")
+                );
+                return null;
+            }
+
+            string parametersPath = TreePath.Property(path, "parameters");
+            int index = 0;
+            foreach (ITreeNodeCursor item in parametersNode.Elements)
+            {
+                if (item.StringValue is not { } parameterName)
+                {
+                    this.Report(
+                        $"Each parameter name must be a {this.words.StringNoun}.",
+                        item.Span,
+                        $"a {this.words.StringNoun}",
+                        item.Describe(),
+                        TreePath.Index(parametersPath, index)
+                    );
+                    return null;
+                }
+
+                parameters.Add(parameterName);
+                index++;
+            }
+        }
+
+        if (!entry.TryGetChild("body", out ITreeNodeCursor? bodyNode))
+        {
+            this.Report(
+                "A definition requires a 'body' node.",
+                entry.Span,
+                "a 'body' node",
+                $"no 'body' {this.words.KeyNoun}",
+                path
+            );
+            return null;
+        }
+
+        IReadOnlySet<string>? enclosingParameters = this.activeParameters;
+        this.activeParameters = new HashSet<string>(parameters, StringComparer.OrdinalIgnoreCase);
+        RuleNode? body = this.ReadNode(bodyNode, TreePath.Property(path, "body"));
+        this.activeParameters = enclosingParameters;
+        if (body is null)
+        {
+            return null;
+        }
+
+        return new DefinitionNode(name, parameters, body, entry.Span, keyNode?.Span ?? SourceSpan.None) { NamePath = path };
+    }
+
     // A mapping in argument position is a variable reference (ADR-0006 decision 10): exactly a "from" source name and a
     // "query" string. Anything else is reported at the member that is wrong, so the author sees which part to fix.
     private RawLiteral? ReadVariable(ITreeNodeCursor node, string path)
@@ -601,6 +942,64 @@ internal sealed class TreeFormatReader
             default:
                 this.Report(node.UnsupportedLiteralMessage, node.Span, this.words.LiteralExpected, node.Describe(), path);
                 return null;
+        }
+    }
+
+    /// <summary>
+    /// A view of <paramref name="inner"/> with one top-level key hidden from <see cref="Members"/>, so the document
+    /// root's own node can be read as if its <c>definitions</c> sibling (ADR-0008 decision 3) were never there —
+    /// without <see cref="CheckKeys"/> flagging it as unknown, and without a second, definitions-aware copy of every
+    /// node-shape check.
+    /// </summary>
+    private readonly struct KeyExcludingCursor(ITreeNodeCursor inner, string excludedKey) : ITreeNodeCursor
+    {
+        public TreeNodeShape Shape => inner.Shape;
+
+        public SourceSpan Span => inner.Span;
+
+        public string KindName => inner.KindName;
+
+        public string? StringValue => inner.StringValue;
+
+        public IEnumerable<ITreeNodeCursor> Elements => inner.Elements;
+
+        public IEnumerable<TreeMember> Members => Filtered(inner.Members, excludedKey);
+
+        public string UnsupportedLiteralMessage => inner.UnsupportedLiteralMessage;
+
+        public string Describe()
+        {
+            return inner.Describe();
+        }
+
+        public string DescribeValue()
+        {
+            return inner.DescribeValue();
+        }
+
+        public bool TryGetChild(string key, [NotNullWhen(true)] out ITreeNodeCursor? child)
+        {
+            return inner.TryGetChild(key, out child);
+        }
+
+        public bool TryGetInt32(out int value)
+        {
+            return inner.TryGetInt32(out value);
+        }
+
+        public bool TryGetTruthValue(out TruthValue value)
+        {
+            return inner.TryGetTruthValue(out value);
+        }
+
+        public RawLiteral? ReadScalarLiteral()
+        {
+            return inner.ReadScalarLiteral();
+        }
+
+        private static IEnumerable<TreeMember> Filtered(IEnumerable<TreeMember> members, string excludedKey)
+        {
+            return members.Where(member => !string.Equals(member.Name, excludedKey, StringComparison.Ordinal));
         }
     }
 }

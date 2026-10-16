@@ -82,6 +82,21 @@ public sealed class RuleTreeSchemaTests
             """{"op": "greaterThan", "k": 1, "operands": [{"const": true}, {"const": true}]}""",
             """{"op": "lessThan", "k": 2, "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "exactly", "k": 1, "operands": [{"const": true}, {"const": false}]}""",
+            """{"op": "use", "name": "adult"}""",
+            """{"op": "use", "name": "bothTrue", "operands": [{"const": true}, {"const": false}]}""",
+            """
+                {
+                  "definitions": {
+                    "adult": { "body": { "predicate": "isAdult" } },
+                    "bothTrue": {
+                      "parameters": ["x", "y"],
+                      "body": { "op": "and", "operands": [{ "predicate": "x" }, { "predicate": "y" }] }
+                    }
+                  },
+                  "op": "use",
+                  "name": "adult"
+                }
+                """,
         ];
     }
 
@@ -116,6 +131,12 @@ public sealed class RuleTreeSchemaTests
             """{"op": "and", "min": 1, "max": 2, "operands": [{"const": true}, {"const": false}]}""",
             """{"op": "and", "operands": [1, 2]}""",
             """{"op": "and", "operands": [], "extra": "nope"}""",
+            """{"op": "use"}""",
+            """{"op": "use", "name": 1}""",
+            """{"op": "use", "name": "adult", "operands": [1]}""",
+            """{"definitions": {"adult": {"parameters": [1], "body": {"predicate": "isAdult"}}}, "op": "use", "name": "adult"}""",
+            """{"definitions": {"adult": {}}, "op": "use", "name": "adult"}""",
+            """{"definitions": "not-an-object", "op": "use", "name": "adult"}""",
         ];
     }
 

@@ -47,6 +47,7 @@ internal static class ReservedWords
         "GREATERTHAN",
         "LESSTHAN",
         "EXACTLY",
+        "LET",
     ];
 
     /// <summary>Determines whether an identifier is a reserved keyword.</summary>

@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN` and `EXACTLY`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one.
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN`, `EXACTLY` and `LET`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one. A `let` definition's own name follows the same rule: see [Definitions and parameters](#definitions-and-parameters).
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -51,12 +51,74 @@ argument    = identifier ":" literal ;
 literal     = string | number | "true" | "false" | "[" [ literal { "," literal } ] "]" ;
 ```
 
+`rule` is written here as a single `expression` for brevity; the full grammar a document actually parses is zero or
+more `let` declarations followed by one `expression`, the [definitions and parameters](#definitions-and-parameters)
+section below.
+
 Some rules are context rules, not syntax, so the grammar does not show them:
 
 - **No implicit mixing.** An `infix_op` expression, a `??` chain or a ternary cannot sit next to `AND`, `OR`, another infix operator or a nested ternary at the same level without parentheses. The compiler reports `AmbiguousOperatorMixing`. See [The mixing rule](strong-k3/specification/syntax.md#the-mixing-rule).
 - **Checks after parsing.** The compiler checks operand counts, threshold bounds and argument schemas after it parses the rule. A failure is a diagnostic, not a syntax error.
 - **Comments.** A `//` comment runs to the end of its line, and a `/* */` comment can span lines. A comment can go anywhere whitespace can, and the parser keeps it as the note of a node. See [Notes](rule-formats.md#notes).
 - **Rejected spellings.** `NXOR`, `Project` and `Collapse` are not in the language. The compiler rejects them in rule text, JSON and YAML, and the diagnostic names the replacement. See [Operations outside the rule language](strong-k3/specification/syntax.md#operations-outside-the-rule-language).
+
+## Definitions and parameters
+
+A rule text document may name a reusable sub-expression once and use it, optionally with arguments, as many times
+as the rule needs. Declare it with `let`, before the rule's own value:
+
+<!-- doctest:skip grammar notation, not a rule -->
+```ebnf
+document    = { definition } rule ;
+definition  = "let" identifier [ "(" identifier { "," identifier } ")" ] "=" expression ";" ;
+```
+
+`let name = expression;` declares a definition with no parameters; a use of it is the bare name, wherever a term or
+a constant could appear. `let name(p1, p2, ...) = expression;` declares one with parameters; a use applies the name
+to its arguments like a call, `name(arg1, arg2, ...)`, each argument itself a term, a constant, or any other
+sub-expression (the same things an `AND`/`OR` operand can be). Inside the definition's own body, each parameter is
+used the same way: a bare name wherever a term, constant or sub-expression could appear.
+
+<!-- doctest:rule definitions -->
+```text
+let allApprovals(reviewer1, reviewer2) = reviewer1 AND reviewer2;
+allApprovals(approvedByAlice, approvedByBob) AND NOT approvedByCarol
+```
+
+Expansion happens at compile time: every use is replaced by the definition's body, with its parameters substituted,
+before the rule reaches the evaluator, the analyzer, a rewrite or a printer. None of those needs a definitions-aware
+case, because the tree they see never contains one: it holds only the operators this page already describes.
+`PrintRuleText`, `PrintJson`, `PrintYaml` and `CanonicalText` all print the already-expanded rule, exactly as if
+every use had been written out by hand:
+
+<!-- doctest:ruletext definitions -->
+```text
+(approvedByAlice AND approvedByBob) AND NOT approvedByCarol
+```
+
+A definition is document-scoped sugar, not a new kind of node, so it follows a few rules of its own:
+
+- **No loops, no recursion.** A definition cannot reference itself, directly or through a chain of other
+  definitions, at any depth. The compiler detects a cycle before it would recurse unboundedly.
+- **Unique, non-reserved names.** A definition's name must be unique (case-insensitively) within its document. It
+  cannot reuse `let` or any other reserved word, `T`/`F`/`U`, or the name of a predicate registered with the
+  compiler.
+- **Order does not matter.** A use may name a definition declared earlier or later in the same document.
+- **Expansion counts toward the normal limits.** Once a use is expanded, its nodes are ordinary tree nodes: they
+  count toward `CompilerOptions.MaxNodeCount` and `MaxDepth` exactly as if written out by hand.
+- **A bounded chain of definitions.** `CompilerOptions.MaxDefinitionDepth` (default 8) bounds how many definitions
+  deep a use may expand through (a use inside definition A naming B, whose body names C, and so on), independent
+  of `MaxDepth` and the cycle check.
+- **An unused definition is an opt-in lint**, `LintRules.UnusedDefinition`, off by default.
+
+Each rule is a distinct compile diagnostic, listed with the others in [Diagnostics](strong-k3/specification/diagnostics.md):
+a self- or mutual reference (`DefinitionCycleDetected`), a name collision (`DefinitionNameCollision`), a chain
+deeper than `MaxDefinitionDepth` (`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments
+(`DefinitionArgumentCountMismatch`), a use of a name that was never declared (`UnknownDefinition`), and the
+unused-definition lint (`UnusedDefinition`). A diagnostic's span always points at the use; one actually inside a
+definition's own body additionally names the definition.
+
+Printing a rule's `let` statements back out, rather than its expanded form, is not supported.
 
 ## Case
 
@@ -222,6 +284,10 @@ rule.PrintRuleText(RuleTextOptions.Default with { Width = 20 });       // approv
 ```
 
 `PrintRuleText(writer, ...)` and `PrintRuleText(writer, options)` write the same text to a `TextWriter`. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
+
+## Editor support
+
+[`editors/vscode`](../editors/vscode/README.md) has a TextMate grammar and a VS Code language configuration for rule text. The grammar colors operators in word, symbolic and C-style forms, call forms, constants, terms and their arguments, `from(...)` variable references, strings, numbers, comments and brackets. It colors text and does not check it: the compiler is still the judge of a rule. The files are not published, and the folder README explains how to load them in VS Code. A test in `dotnet test` runs the grammar over every rule text block of this page and of [Examples](examples.md), so a documented rule always gets colors.
 
 ## Printer spelling of the ternary
 

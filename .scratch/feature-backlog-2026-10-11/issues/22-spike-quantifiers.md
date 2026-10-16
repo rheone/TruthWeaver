@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent (spike: produces a design note, changes no library code)
+**Status:** done (authoritative note: ../notes/22-quantifiers-design.md, grilled 2026-10-16; build is 22b)
 
 - [ ] A design note exists at `.scratch/feature-backlog-2026-10-11/notes/<item>.md` covering semantics, API shape, cost, risks and a recommended go or no-go
 - [ ] Prototype code, if any, lives in a scratch branch or the scratchpad and is not committed to the main branch

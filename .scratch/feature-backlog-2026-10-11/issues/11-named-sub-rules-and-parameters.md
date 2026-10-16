@@ -15,7 +15,7 @@
 
 **Blocked by:** None (can start immediately). Ask the owner before anything beyond this scope (standing rule on new packages and dependencies; this ticket adds none).
 
-**Status:** ready-for-agent
+**Status:** done (11-1 to 11-5 done 2026-10-16; one limitation recorded in ADR-0008 and the diagnostics page: a node-count or depth diagnostic inside an expansion points at the let declaration only)
 
 - [ ] An ADR records the grammar, expansion model and guardrails
 - [ ] The grammar, the JSON and YAML tree formats (with schema), and the builder produce identical compiled trees for the same definitions (cross-form equality test)

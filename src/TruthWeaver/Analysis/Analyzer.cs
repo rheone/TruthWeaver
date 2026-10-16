@@ -23,12 +23,26 @@ internal static class Analyzer
     private static readonly DualRail FalseRail = new(BddManager.False, BddManager.False);
     private static readonly DualRail UnknownRail = new(BddManager.False, BddManager.True);
 
+    /// <summary>The order the nine <see cref="JointOutcomes"/> cells are reported in, for each side.</summary>
+    private static readonly TruthValue[] CellOrder = [TruthValue.True, TruthValue.False, TruthValue.Unknown];
+
     /// <summary>Analyzes a compiled tree for Strong K3 tautologies and contradictions.</summary>
     /// <param name="root">The compiled expression tree.</param>
     /// <param name="options">The compiler options, whose <c>MaxAnalysisTerms</c> caps this analysis.</param>
     /// <returns>The diagnostics raised (never <see cref="DiagnosticSeverity.Error"/>).</returns>
     public static IReadOnlyList<Diagnostic> Analyze(Expression root, CompilerOptions options)
     {
+        // A quantifier's term set is not fixed at compile time (ADR-0010 decision 8: it is an opaque atom, keyed
+        // by its own canonical text including its body), which the dual-rail BDD below cannot represent without
+        // the atom-keying and scope-qualified term identity ticket 22b-5 adds. Until then, a rule that uses a
+        // quantifier anywhere skips this analysis rather than reporting on the outer rule alone; this is strictly
+        // weaker, never wrong (ADR-0010's "Consequences": fewer tautologies/contradictions are reported for a
+        // rule that uses a quantifier).
+        if (ContainsQuantifier(root))
+        {
+            return [];
+        }
+
         HashSet<TermIdentity> distinctTerms = [];
         CollectTerms(root, distinctTerms);
         if (distinctTerms.Count > options.MaxAnalysisTerms)
@@ -124,13 +138,7 @@ internal static class Analyzer
         Dictionary<TermIdentity, int> variableIndex = [];
         BddManager bdd = new();
         DualRail rail = Build(root, bdd, variableIndex, []);
-        int node = target switch
-        {
-            TruthValue.True => rail.Definite,
-            TruthValue.False => bdd.Not(rail.Possible),
-            _ => bdd.And(rail.Possible, bdd.Not(rail.Definite)),
-        };
-        return (bdd, node, variableIndex);
+        return (bdd, ValueNode(bdd, rail, target), variableIndex);
     }
 
     /// <summary>Gets the index of the term whose variable <paramref name="node"/> tests, in the order of <see cref="TargetFunction"/>.</summary>
@@ -212,6 +220,68 @@ internal static class Analyzer
     }
 
     /// <summary>
+    /// Decides which of the nine Strong K3 <c>(True/False/Unknown, True/False/Unknown)</c> pairs some assignment of
+    /// the terms of <paramref name="left"/> and <paramref name="right"/> can produce, from the rail formulas
+    /// <see cref="ValueNode"/> uses (<see cref="TargetFunction"/>): both trees are built on one shared BDD, so equal
+    /// terms share variables, and a pair is reachable exactly when the conjunction of the two "is this value" functions
+    /// is not the constant-false BDD (ADR-0009 decisions 1 and 2).
+    /// </summary>
+    /// <param name="left">The first tree.</param>
+    /// <param name="right">The second tree.</param>
+    /// <returns>
+    /// One entry per reachable pair, in the fixed order <c>True</c>, <c>False</c>, <c>Unknown</c> for each side (so
+    /// <c>(True, True)</c> is first when reachable). Each example covers every term of either tree; terms the witness
+    /// does not depend on are <c>False</c>. The witness prefers an assignment where no term is <c>Unknown</c> — ANDing
+    /// in the constraint that every term's "is Unknown" variable is false — falling back to any witness when no such
+    /// assignment exists (ADR-0009 decision 4: a reader trusts a definite example more than one with an opaque
+    /// <c>Unknown</c> term in it).
+    /// </returns>
+    internal static IReadOnlyList<(
+        TruthValue First,
+        TruthValue Second,
+        IReadOnlyDictionary<TermIdentity, TruthValue> Example
+    )> JointOutcomes(Expression left, Expression right)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        List<Diagnostic> ignored = [];
+        DualRail leftRail = Build(left, bdd, variableIndex, ignored);
+        DualRail rightRail = Build(right, bdd, variableIndex, ignored);
+
+        Dictionary<TruthValue, int> leftByValue = ValueNodesByTarget(bdd, leftRail);
+        Dictionary<TruthValue, int> rightByValue = ValueNodesByTarget(bdd, rightRail);
+
+        // No term is Unknown: every term's "is Unknown" variable (2i + 1) is false. ANDing this into a cell gives a
+        // witness with no opaque Unknown term, when one exists.
+        int noTermIsUnknown = BddManager.True;
+        foreach (int index in variableIndex.Values)
+        {
+            noTermIsUnknown = bdd.And(noTermIsUnknown, bdd.Not(bdd.Variable((2 * index) + 1)));
+        }
+
+        List<(TruthValue, TruthValue, IReadOnlyDictionary<TermIdentity, TruthValue>)> results = [];
+        foreach (TruthValue firstValue in CellOrder)
+        {
+            foreach (TruthValue secondValue in CellOrder)
+            {
+                int cell = bdd.And(leftByValue[firstValue], rightByValue[secondValue]);
+                if (cell == BddManager.False)
+                {
+                    continue;
+                }
+
+                int preferred = bdd.And(cell, noTermIsUnknown);
+                Dictionary<TermIdentity, TruthValue> example =
+                    Witness(bdd, preferred != BddManager.False ? preferred : cell, variableIndex)
+                    ?? throw new InvalidOperationException("A reachable cell must have a witness.");
+                results.Add((firstValue, secondValue, example));
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
     /// Reads a tree's Strong K3 value for one assignment of its terms directly from the analyzer's own dual-rail
     /// BDD, by walking both rails for that assignment (ticket 17). Used to pin <c>Evaluator</c> to the analyzer:
     /// today the two are compared only at the tautology/contradiction extremes (<see cref="Analyze"/>), so a
@@ -262,6 +332,50 @@ internal static class Analyzer
         DualRail rail = Build(root, bdd, variableIndex, []);
         TermIdentity[] terms = [.. variableIndex.OrderBy(pair => pair.Value).Select(pair => pair.Key)];
         return new TermValuation(terms, bdd, rail.Definite, rail.Possible);
+    }
+
+    /// <summary>The three "is this value" BDD nodes for one tree's dual rail, keyed by the value they test for.</summary>
+    private static Dictionary<TruthValue, int> ValueNodesByTarget(BddManager bdd, DualRail rail)
+    {
+        return new Dictionary<TruthValue, int>
+        {
+            [TruthValue.True] = ValueNode(bdd, rail, TruthValue.True),
+            [TruthValue.False] = ValueNode(bdd, rail, TruthValue.False),
+            [TruthValue.Unknown] = ValueNode(bdd, rail, TruthValue.Unknown),
+        };
+    }
+
+    /// <summary>
+    /// Builds the function "the tree has the value <paramref name="target"/>" from its dual rail: the definitely-true
+    /// rail for <c>True</c>, the complement of the possibly-true rail for <c>False</c>, and "possibly but not
+    /// definitely true" for <c>Unknown</c>.
+    /// </summary>
+    private static int ValueNode(BddManager bdd, DualRail rail, TruthValue target)
+    {
+        return target switch
+        {
+            TruthValue.True => rail.Definite,
+            TruthValue.False => bdd.Not(rail.Possible),
+            _ => bdd.And(rail.Possible, bdd.Not(rail.Definite)),
+        };
+    }
+
+    /// <summary>Tells whether <paramref name="node"/> or any descendant is a quantifier (see <see cref="Analyze"/>).</summary>
+    /// <param name="node">The node to check.</param>
+    /// <returns><see langword="true"/> if a <see cref="QuantifierExpression"/> is anywhere in this subtree.</returns>
+    private static bool ContainsQuantifier(Expression node)
+    {
+        if (node is QuantifierExpression)
+        {
+            return true;
+        }
+
+        if (node is ConstantExpression or TermExpression)
+        {
+            return false;
+        }
+
+        return ExpressionShape.Of(node).Operands.Any(ContainsQuantifier);
     }
 
     /// <summary>
