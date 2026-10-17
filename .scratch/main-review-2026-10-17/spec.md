@@ -6,9 +6,9 @@ Statuses: `ready-for-agent` is mechanical or has a clear fix in an ADR. `needs-o
 
 | # | Ticket | Blocked by | Status |
 | --- | --- | --- | --- |
-| [01](issues/01-quantifier-memo-scope-uses-variable-name.md) | Quantifier memo scope keys on the variable, not the binding | None | ready-for-agent |
-| [02](issues/02-selector-materialized-once.md) | Collection selector is materialized once per binding and outer element | 01 | ready-for-agent |
-| [03](issues/03-adr-0010-conformance-gaps.md) | ADR-0010 conformance gaps | None | needs-triage |
+| [01](issues/01-quantifier-memo-scope-uses-variable-name.md) | Quantifier memo scope keys on the variable, not the binding | None | done |
+| [02](issues/02-selector-materialized-once.md) | Collection selector is materialized once per binding and outer element | 01 | done |
+| [03](issues/03-adr-0010-conformance-gaps.md) | ADR-0010 conformance gaps | None | done (triage only) |
 | [04](issues/04-tre0016-reuse.md) | TRE0016 reused although ADR-0005 retired it | None | needs-owner-decision |
 | [05](issues/05-lenient-unknown-predicate-no-fault.md) | Lenient unknown predicate records no Fault | None | needs-owner-decision |
 | [06](issues/06-decision-trace-optionality.md) | Decision.Trace is documented as optional but always set | None | needs-owner-decision |
@@ -19,7 +19,7 @@ Statuses: `ready-for-agent` is mechanical or has a clear fix in an ADR. `needs-o
 | [11](issues/11-operator-tables-repeated.md) | Operator symbol and label tables repeated in several files | 09 | needs-owner-decision |
 | [12](issues/12-compiledrule-size.md) | CompiledRule<TContext> is 1748 lines | 09, 10, 11 | needs-owner-decision |
 | [13](issues/13-audit-reachable-throws.md) | Audit reachable throw sites in the compile pipeline | None | needs-triage |
-| [14](issues/14-coverage-abstractions-public-api.md) | Coverage of the Abstractions public API | None | ready-for-agent |
-| [15](issues/15-coverage-readers.md) | Coverage of the tree-format and decision-JSON readers | None | ready-for-agent |
-| [16](issues/16-coverage-evaluator-analysis.md) | Coverage of evaluator, analysis, definitions and printer branches | None | ready-for-agent |
-| [17](issues/17-coverage-testing-toolcore-generators.md) | Coverage of Testing, Tool.Core and Generators | None | ready-for-agent |
+| [14](issues/14-coverage-abstractions-public-api.md) | Coverage of the Abstractions public API | None | done |
+| [15](issues/15-coverage-readers.md) | Coverage of the tree-format and decision-JSON readers | None | done |
+| [16](issues/16-coverage-evaluator-analysis.md) | Coverage of evaluator, analysis, definitions and printer branches | None | done |
+| [17](issues/17-coverage-testing-toolcore-generators.md) | Coverage of Testing, Tool.Core and Generators | None | done |
