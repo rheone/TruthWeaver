@@ -17,7 +17,7 @@ using TruthWeaver.Rewriting;
 /// <summary>
 /// The immutable, thread-safe result of compiling a rule's text (CONTEXT.md). Safe to cache and
 /// share; compile once, evaluate many times. Runtime rule updates are a compile-and-swap of the
-/// reference holding the active instance — no lock is needed (ADR-0002).
+/// reference holding the active instance. No lock is needed (ADR-0002).
 /// </summary>
 /// <typeparam name="TContext">The application context type this rule evaluates against.</typeparam>
 public sealed class CompiledRule<TContext>
@@ -58,7 +58,7 @@ public sealed class CompiledRule<TContext>
         this.noteLookup = new Lazy<NoteLookup?>(() => NoteLookup.Create(this.Root, this.Notes));
     }
 
-    /// <summary>Gets this rule's canonical printed DSL text — the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
+    /// <summary>Gets this rule's canonical printed DSL text, the form <c>RuleCompiler.Compile</c> reproduces a structurally equal tree from.</summary>
     public string CanonicalText => this.canonicalText.Value;
 
     /// <summary>
@@ -93,7 +93,7 @@ public sealed class CompiledRule<TContext>
     public IReadOnlyDictionary<string, string> Notes { get; }
 
     /// <summary>
-    /// Gets the underlying expression tree. Internal — visible to <c>TruthWeaver.Yaml</c> via
+    /// Gets the underlying expression tree. Internal: visible to <c>TruthWeaver.Yaml</c> via
     /// <c>InternalsVisibleTo</c>, so its YAML printer can render the same tree <see cref="CanonicalText"/>
     /// and <see cref="PrintJson()"/> render, without this package needing to know YAML exists.
     /// </summary>
@@ -184,7 +184,7 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Renders this rule as DSL text using <paramref name="options"/> (ticket 10). This is the same text as
+    /// Renders this rule as DSL text using <paramref name="options"/>. This is the same text as
     /// <see cref="PrintRuleText(GroupingStyle, OperatorStyle, ConstantFormat?)"/> for an equivalent grouping, operator
     /// style and constants, with one addition: when <see cref="RuleTextOptions.Width"/> is set, a group that does not
     /// fit the width breaks across lines, indented by <see cref="RuleTextOptions.IndentSize"/> per nesting level. The
@@ -304,8 +304,8 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Rewrites every derived operator into the primitive kernel — <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>AtLeast</c>,
-    /// <c>AtMost</c>, <c>Exactly</c> and <c>COALESCE</c> — and returns the result as a new rule (ADR-0005 decision 10). The
+    /// Rewrites every derived operator into the primitive kernel: <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>AtLeast</c>,
+    /// <c>AtMost</c>, <c>Exactly</c> and <c>COALESCE</c>, and returns the result as a new rule (ADR-0005 decision 10). The
     /// derived operators are <c>IMPLIES</c>, <c>EQUIVALENT</c>, <c>XOR</c>, <c>NAND</c>, <c>NOR</c>, <c>PARITY</c>,
     /// <c>ExactlyOne</c>, <c>ANY</c>, <c>ALL</c>, <c>NONE</c>, <c>BETWEEN</c>, <c>GreaterThan</c>, <c>LessThan</c>,
     /// <c>If</c> and the four inspections; every one of them has a kernel definition, so nothing is left
@@ -804,7 +804,7 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
-    /// Builds this rule's outline: its expression tree, recursively — every operator's label/description (from
+    /// Builds this rule's outline: its expression tree, recursively. Every operator's label/description (from
     /// <see cref="OperatorInfo"/>) and every term's label/description (from its predicate's registered
     /// <see cref="PredicateSchema"/>), without exposing the underlying closed-set AST types
     /// themselves. Useful for a rule-authoring UI or a generated "what does this rule mean" report.
@@ -1376,7 +1376,7 @@ public sealed class CompiledRule<TContext>
     /// </summary>
     /// <param name="context">The application-supplied evaluation context.</param>
     /// <param name="services">
-    /// The service provider to resolve class-based predicates from, fresh for this call — never
+    /// The service provider to resolve class-based predicates from, fresh for this call. Never
     /// captured once at registration, so scoped dependencies (a <c>DbContext</c>, a scoped
     /// <c>HttpClient</c>) resolve correctly even though this <see cref="CompiledRule{TContext}"/>
     /// outlives any one scope (ADR-0002). <see langword="null"/> means an empty provider: a class-based
@@ -1625,7 +1625,7 @@ public sealed class CompiledRule<TContext>
     /// <summary>
     /// Renders a term's rule-text arguments as comma-joined <c>name: value</c> pairs, matching the
     /// per-argument formatting <see cref="TermIdentity.ToString"/> uses for its parenthesized part, but
-    /// without repeating the predicate name — that comes from the term's own
+    /// without repeating the predicate name. That comes from the term's own
     /// <see cref="OutlineNode.Label"/> instead.
     /// </summary>
     /// <param name="identity">The term's identity.</param>

@@ -14,7 +14,7 @@ public sealed record RuleOverlapResult(RuleOverlapOutcome Outcome, IReadOnlyList
     /// <summary>
     /// Gets a value indicating whether the two rules can ever both be <c>True</c> for the same assignment (ADR-0009
     /// decision 2: <c>(True, True)</c> is reachable). <see langword="false"/> when <see cref="Outcome"/> is
-    /// <see cref="RuleOverlapOutcome.Undecided"/> — check <see cref="Outcome"/> first; this member does not itself
+    /// <see cref="RuleOverlapOutcome.Undecided"/>. Check <see cref="Outcome"/> first. This member does not itself
     /// distinguish "proved never" from "not decided".
     /// </summary>
     public bool CanOverlap => this.Find(TruthValue.True, TruthValue.True) is not null;
@@ -23,7 +23,7 @@ public sealed record RuleOverlapResult(RuleOverlapOutcome Outcome, IReadOnlyList
     /// Gets a value indicating whether the two rules can ever disagree in the satisfaction reading: one rule
     /// <c>True</c> and the other not <c>True</c> for the same assignment (ADR-0009 decision 3: <c>(True, False)</c>,
     /// <c>(True, Unknown)</c>, <c>(False, True)</c> or <c>(Unknown, True)</c> is reachable). <see langword="false"/>
-    /// when <see cref="Outcome"/> is <see cref="RuleOverlapOutcome.Undecided"/> — check <see cref="Outcome"/> first.
+    /// when <see cref="Outcome"/> is <see cref="RuleOverlapOutcome.Undecided"/>: check <see cref="Outcome"/> first.
     /// This reading is noisier than the strict "both definite and opposite" question, which the <c>(True, False)</c>
     /// and <c>(False, True)</c> entries of <see cref="Reachable"/> answer on their own.
     /// </summary>

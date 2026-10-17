@@ -4,7 +4,7 @@ using TruthWeaver.Diagnostics;
 
 /// <summary>
 /// Hand-written tokenizer for the word-operator DSL, which also accepts symbolic operator aliases (ADR-0005; ADR-0003 notes this is a hand-written
-/// recursive-descent parser, not Roslyn-based — there is no C# involved in rule text).
+/// recursive-descent parser, not Roslyn-based, as there is no C# involved in rule text).
 /// </summary>
 internal sealed class Lexer(string source)
 {

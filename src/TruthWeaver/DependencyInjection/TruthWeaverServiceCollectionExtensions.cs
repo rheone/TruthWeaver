@@ -8,7 +8,7 @@ using TruthWeaver.Registry;
 /// <summary>
 /// <see cref="IServiceCollection"/> extensions for wiring a <see cref="PredicateRegistry{TContext}"/>
 /// and <see cref="RuleCompiler{TContext}"/> into a host application's container (ADR-0002/ADR-0004).
-/// Registration remains explicit — this only wires the container, it does not scan assemblies for
+/// Registration remains explicit. This only wires the container, it does not scan assemblies for
 /// predicates.
 /// </summary>
 public static class TruthWeaverServiceCollectionExtensions

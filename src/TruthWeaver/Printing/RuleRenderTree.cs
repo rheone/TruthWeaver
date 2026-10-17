@@ -5,11 +5,11 @@ using TruthWeaver.Evaluation;
 
 /// <summary>
 /// <para>
-/// Zips a rule's <see cref="OutlineNode"/> (what to say — labels, always the full static shape)
-/// against an optional <see cref="TraceNode"/> (what happened — results and skips, only as deep as
+/// Zips a rule's <see cref="OutlineNode"/> (what to say: labels, always the full static shape)
+/// against an optional <see cref="TraceNode"/> (what happened: results and skips, only as deep as
 /// evaluation actually went) into one <see cref="RenderNode"/> tree. Both source trees are built from
-/// the same shared node-shape seam (<c>ExpressionShape.Of</c>) — <c>CompiledRule.OutlineOf</c> and
-/// <c>Evaluator</c> respectively — so they align positionally with no need to match by text or replay
+/// the same shared node-shape seam (<c>ExpressionShape.Of</c>): <c>CompiledRule.OutlineOf</c> and
+/// <c>Evaluator</c> respectively, so they align positionally with no need to match by text or replay
 /// any short-circuit logic here.
 /// </para>
 /// <para>
@@ -68,7 +68,7 @@ internal static class RuleRenderTree
         RenderState state = skipped ? RenderState.Skipped : StateFor(evaluated?.Result);
 
         // A skipped subtree's TraceNode has no children (evaluation never recursed into it), so
-        // there is nothing per-descendant to pass down — "skipped" itself propagates via `skipped`.
+        // there is nothing per-descendant to pass down. "skipped" itself propagates via `skipped`.
         IReadOnlyList<TraceNode>? children = evaluated is { NotEvaluated: false } ? evaluated.Children : null;
 
         List<RenderNode> renderedChildren = [with(description.Operands.Count)];
@@ -95,7 +95,7 @@ internal static class RuleRenderTree
     /// <see cref="OutlineNode.ArgumentText"/> appended when <paramref name="showArgumentValues"/>
     /// is <see langword="true"/> and the term has any. Only an operator node's exact word-form label
     /// (<c>AND</c>, <c>OR</c>, <c>NOT</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>IMPLIES</c>, <c>NAND</c>, <c>NOR</c>) with at least one operand is
-    /// eligible for restyling — a term or constant leaf (always zero operands) is never restyled even
+    /// eligible for restyling: a term or constant leaf (always zero operands) is never restyled even
     /// if a predicate's authored label happens to collide with one of those words, and
     /// <c>ExactlyOne</c>/threshold/<c>BETWEEN</c>/inspection labels (e.g. <c>AtLeast(3)</c>) fall through unchanged in every
     /// style, since they have no symbolic or C-style spelling. <c>If</c> keeps its word label except in the C-style form,
@@ -179,9 +179,7 @@ internal static class RuleRenderTree
     /// <summary>
     /// Guards the positional-zip invariant this method depends on: <see cref="OutlineNode"/> and
     /// <see cref="TraceNode"/> are built by two independent recursive traversals (<c>CompiledRule.OutlineOf</c>
-    /// and <see cref="Evaluation.Evaluator{TContext}"/> respectively — see <c>evaluated-node-rule-description-alignment</c>
-    /// ticket 02 for making that structurally impossible to violate instead of merely conventional), so
-    /// nothing stops them from disagreeing on operand count if either traversal is edited carelessly.
+    /// and <see cref="Evaluation.Evaluator{TContext}"/> respectively. Nothing structural stops them from disagreeing on operand count if either traversal is edited carelessly.
     /// Runs in every build: without it, a mismatch surfaces later as an <see cref="IndexOutOfRangeException"/>
     /// from the positional zip below, which is far harder to diagnose than this guard's explicit message.
     /// </summary>

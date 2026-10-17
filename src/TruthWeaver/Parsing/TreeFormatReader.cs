@@ -22,7 +22,7 @@ internal sealed class TreeFormatReader
     // declaration, so a bare use never appears without a document), a JSON/YAML 'use' node is its own explicit shape,
     // legal even when the document declared no 'definitions' at all (ADR-0008 decision 3 says "wherever a tree node is
     // expected", not "only when a definitions section exists"). Read uses this, at no extra tree walk, to decide
-    // whether the parsed tree still needs to go through DefinitionExpander — a use with nothing declared is an
+    // whether the parsed tree still needs to go through DefinitionExpander: a use with nothing declared is an
     // UnknownDefinition diagnostic, not a node RuleNodeCompiler.Build would otherwise crash on.
     private bool sawUse;
 
@@ -231,7 +231,7 @@ internal sealed class TreeFormatReader
         {
             // A bare '{"predicate": name}' with no 'args', where 'name' is one of the enclosing definition's own
             // declared parameters, is that parameter used wherever a term, constant or sub-expression could appear
-            // (ADR-0008 decision 5) — the same disambiguation the DSL makes for a bare identifier. An explicit 'args'
+            // (ADR-0008 decision 5), the same disambiguation the DSL makes for a bare identifier. An explicit 'args'
             // still makes it a real term: that shadows the parameter, exactly as the DSL treats a parameter name
             // followed by '(' as a call, not a reference.
             if (
@@ -629,7 +629,7 @@ internal sealed class TreeFormatReader
     /// <summary>
     /// Reads a <c>{"op": "forall" | "exists", "var": ..., "in": ..., "operands": [&lt;body&gt;]}</c> node
     /// (ADR-0010 decision 2): <c>var</c> is the bound variable name, <c>in</c> the collection name, and
-    /// <c>operands</c> holds exactly the one body node — a <see cref="DiagnosticCodes.MalformedTree"/> otherwise,
+    /// <c>operands</c> holds exactly the one body node. A <see cref="DiagnosticCodes.MalformedTree"/> otherwise,
     /// so body diagnostics get the path <c>$.operands[0]...</c> like every other node.
     /// </summary>
     private RuleNode? ReadQuantifier(ITreeNodeCursor node, QuantifierKind kind, string path)
@@ -947,7 +947,7 @@ internal sealed class TreeFormatReader
 
     /// <summary>
     /// A view of <paramref name="inner"/> with one top-level key hidden from <see cref="Members"/>, so the document
-    /// root's own node can be read as if its <c>definitions</c> sibling (ADR-0008 decision 3) were never there —
+    /// root's own node can be read as if its <c>definitions</c> sibling (ADR-0008 decision 3) were never there,
     /// without <see cref="CheckKeys"/> flagging it as unknown, and without a second, definitions-aware copy of every
     /// node-shape check.
     /// </summary>

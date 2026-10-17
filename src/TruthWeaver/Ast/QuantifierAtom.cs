@@ -8,7 +8,7 @@ using TruthWeaver.Printing;
 /// rule" treats it as (ADR-0010 decision 8): the analyzer's own BDD variable pair, and <c>RuleCoverage</c>'s
 /// distinct-term list. The key is the node's own canonical text, which includes its body, so two syntactically
 /// equal quantifiers in one rule share one atom and two quantifiers with differently written (even if
-/// semantically equivalent) bodies do not — sound, intentionally incomplete (ADR-0010 decision 8).
+/// semantically equivalent) bodies do not. Sound, intentionally incomplete (ADR-0010 decision 8).
 /// </summary>
 internal static class QuantifierAtom
 {

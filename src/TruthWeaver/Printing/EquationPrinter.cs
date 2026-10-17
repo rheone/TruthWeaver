@@ -161,7 +161,7 @@ internal static class EquationPrinter
     /// <summary>
     /// An infix connective needs parentheses only as an operand of another connective. <c>NOT</c> binds tightest
     /// and never needs them. A function call delimits its own arguments, so it never needs them either. <c>If</c>
-    /// needs them too, but only when <see cref="EquationTokens.FormatIf"/> turns it into a ternary — the function-call
+    /// needs them too, but only when <see cref="EquationTokens.FormatIf"/> turns it into a ternary. The function-call
     /// form delimits itself like any other call.
     /// </summary>
     private static bool NeedsParentheses(Expression node, PrintContext context, EquationTokens tokens)

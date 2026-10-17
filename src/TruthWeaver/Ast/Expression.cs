@@ -55,7 +55,7 @@ public enum QuantifierKind
 
 /// <summary>
 /// The base of the immutable expression tree a <c>CompiledRule</c> wraps (CONTEXT.md's conceptual
-/// model). Every node type below is a closed set by design (ADR-0004) — adding an operator is a
+/// model). Every node type below is a closed set by design (ADR-0004): adding an operator is a
 /// versioned change to this package, not a plugin point.
 /// </summary>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
@@ -75,11 +75,11 @@ public abstract record Expression
 public sealed record ConstantExpression(TruthValue Value) : Expression;
 
 /// <summary>A leaf node: a predicate bound to concrete, validated arguments.</summary>
-/// <param name="Identity">This term's identity — the unit of memoization and structural equality.</param>
+/// <param name="Identity">This term's identity: the unit of memoization and structural equality.</param>
 /// <param name="IsUnknownPredicate">
 /// <see langword="true"/> when this term was compiled under <c>CompilationMode.Lenient</c> against an
 /// unregistered predicate name; such a term always evaluates to <see cref="TruthValue.Unknown"/> and
-/// never invokes anything (ticket 09).
+/// never invokes anything.
 /// </param>
 public sealed record TermExpression(TermIdentity Identity, bool IsUnknownPredicate = false) : Expression;
 
@@ -102,7 +102,7 @@ public sealed record XorExpression(Expression Left, Expression Right) : Expressi
 
 /// <summary>
 /// The Strong Kleene biconditional (<c>EQUIVALENT</c>, written <c>IFF</c> or <c>↔</c> as well; the legacy name is
-/// <c>XNOR</c>) — the negation of <see cref="XorExpression"/>, so it is <c>Unknown</c> whenever either operand is.
+/// <c>XNOR</c>). The negation of <see cref="XorExpression"/>, so it is <c>Unknown</c> whenever either operand is.
 /// Deliberately binary: it is not generalized to n-ary parity for the same reason <c>XOR</c> isn't (ADR-0003).
 /// Formerly <c>XnorExpression</c> (renamed by ADR-0005 decision 5).
 /// </summary>
@@ -175,11 +175,11 @@ public sealed record ExactlyOneExpression(EquatableArray<Expression> Operands) :
 /// <summary>
 /// N-ary count-threshold operator: <c>AtLeast(k, ...)</c>, <c>AtMost(k, ...)</c>,
 /// <c>GreaterThan(k, ...)</c>, <c>LessThan(k, ...)</c>, and <c>Exactly(k, ...)</c> all compile to
-/// this one node, parameterized by <see cref="ThresholdComparison"/> — they differ only in which
+/// this one node, parameterized by <see cref="ThresholdComparison"/>: they differ only in which
 /// comparison against the count of true operands they apply.
 /// </summary>
 /// <param name="Comparison">Which comparison against the true-operand count this threshold applies.</param>
-/// <param name="K">The threshold value being compared against. Valid range depends on <paramref name="Comparison"/> and the operand count — see <c>RuleNodeCompiler</c>.</param>
+/// <param name="K">The threshold value being compared against. Valid range depends on <paramref name="Comparison"/> and the operand count. See <c>RuleNodeCompiler</c>.</param>
 /// <param name="Operands">The operands.</param>
 public sealed record ThresholdExpression(ThresholdComparison Comparison, int K, EquatableArray<Expression> Operands)
     : Expression;
@@ -228,7 +228,7 @@ public sealed record CoalesceExpression(EquatableArray<Expression> Operands) : E
 /// <c>FORALL(variable IN collection, body)</c> / <c>EXISTS(variable IN collection, body)</c> (ADR-0010): a Strong Kleene
 /// quantifier that ranges over a collection binding the host registered on the predicate registry
 /// (<c>PredicateRegistryBuilder.AddCollection</c>). Unlike every other operator node, its term set is not fixed at
-/// compile time — it depends on the collection's size at evaluation time — so the analyzer and every rewrite treat it
+/// compile time (it depends on the collection's size at evaluation time), so the analyzer and every rewrite treat it
 /// as a single opaque atom, keyed by its own canonical text (which includes <see cref="Body"/>); only the evaluator
 /// looks inside it. <see cref="Variable"/> is part of tree equality and canonical text (ADR-0010 decision 2): it is
 /// not needed to resolve a typed element predicate, but it labels the trace (<c>line[2]</c>) and keeps two

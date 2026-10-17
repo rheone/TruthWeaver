@@ -1,7 +1,7 @@
 namespace TruthWeaver.Evaluation;
 
 /// <summary>
-/// One node of a rule's outline: the static, human-readable tree of a compiled expression — an operator's or a
+/// One node of a rule's outline: the static, human-readable tree of a compiled expression: an operator's or a
 /// predicate's <c>Label</c>/<c>Description</c>, plus its operands' own outline nodes, recursively. The root
 /// node returned by <see cref="CompiledRule{TContext}.Outline"/> is the rule's outline.
 /// Produced by <see cref="CompiledRule{TContext}.Outline"/> so a rule-authoring UI or generated

@@ -1,7 +1,7 @@
 namespace TruthWeaver.Registry;
 
 /// <summary>
-/// A registered predicate's compile-time-known shape plus how to invoke it at evaluation time —
+/// A registered predicate's compile-time-known shape plus how to invoke it at evaluation time:
 /// either a stateless lambda, or an implementation type resolved fresh from the per-evaluation
 /// <see cref="IServiceProvider"/> (ADR-0002).
 /// </summary>

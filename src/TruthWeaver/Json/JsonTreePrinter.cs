@@ -5,8 +5,8 @@ using TruthWeaver.Ast;
 using TruthWeaver.Printing;
 
 /// <summary>
-/// Prints a compiled expression tree to the flat, key-discriminated JSON tree shape (ADR-0003) —
-/// the JSON-direction half of ticket 07's round-trip guarantee.
+/// Prints a compiled expression tree to the flat, key-discriminated JSON tree shape (ADR-0003):
+/// the JSON-direction half of the round-trip guarantee.
 /// </summary>
 internal static class JsonTreePrinter
 {

@@ -3,8 +3,8 @@ namespace TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 
 /// <summary>
-/// Renders a <see cref="RuleDiffResult"/> (ticket rule-diff/01) as human-readable text, suitable for an
-/// audit-log entry or a rule-review UI — one line per <see cref="RuleDiffEntry"/>, naming each node by
+/// Renders a <see cref="RuleDiffResult"/> as human-readable text, suitable for an
+/// audit-log entry or a rule-review UI: one line per <see cref="RuleDiffEntry"/>, naming each node by
 /// its <see cref="OutlineNode.Label"/>/<see cref="OutlineNode.Description"/> rather than its
 /// closed-set AST type name (ADR-0004).
 /// </summary>

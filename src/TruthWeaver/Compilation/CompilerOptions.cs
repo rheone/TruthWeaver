@@ -1,7 +1,7 @@
 namespace TruthWeaver.Compilation;
 
 /// <summary>
-/// Compile-time resource bounds and mode (ADR-0002/ticket 09), so a rule authored somewhere not
+/// Compile-time resource bounds and mode (ADR-0002), so a rule authored somewhere not
 /// code-reviewed (e.g. an admin UI backed by a database) cannot pathologically hang a request thread.
 /// </summary>
 /// <remarks>

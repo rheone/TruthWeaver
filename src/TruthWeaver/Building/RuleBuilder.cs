@@ -11,13 +11,13 @@ using TruthWeaver.Json;
 using TruthWeaver.Parsing;
 
 /// <summary>
-/// A fluent, programmatic way to assemble a rule without hand-writing DSL/JSON/YAML text —
+/// A fluent, programmatic way to assemble a rule without hand-writing DSL/JSON/YAML text,
 /// useful when a rule's shape comes from application logic (e.g. a dynamically built list of
 /// conditions) rather than from an author typing it directly. A builder tree renders to the exact
 /// flat, key-discriminated JSON tree shape ADR-0003 defines and compiles through
 /// <see cref="RuleCompiler{TContext}.CompileJson(System.Text.Json.JsonElement)"/>, so a builder-assembled rule
 /// receives every diagnostic a hand-written one would (unknown predicate, bad argument, invalid threshold,
-/// XOR/EQUIVALENT arity, resource limits, structural tautology/contradiction) — nothing here bypasses the
+/// XOR/EQUIVALENT arity, resource limits, structural tautology/contradiction). Nothing here bypasses the
 /// Validate/Analyze stages of the compilation pipeline. A diagnostic located in the tree carries a path into
 /// this builder's tree, never a span into the generated JSON (see <see cref="Compile{TContext}(RuleCompiler{TContext})"/>).
 /// </summary>
@@ -94,7 +94,7 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
-    /// Creates a builder for a use of a named definition (ADR-0008 decision 4) — the builder equivalent of rule
+    /// Creates a builder for a use of a named definition (ADR-0008 decision 4): the builder equivalent of rule
     /// text's <c>name(arg1, arg2, ...)</c>, or the bare <c>name</c> for a parameterless definition. The use expands
     /// at compile time to the matching <see cref="RuleDefinition"/>'s own tree, with each argument substituted for
     /// the matching parameter; attach the definitions a use can reach with <see cref="WithDefinitions(RuleDefinition[])"/>
@@ -135,7 +135,7 @@ public abstract class RuleBuilder
 
     /// <summary>
     /// Creates a named definition with parameters for <see cref="WithDefinitions(RuleDefinition[])"/>. Reference a
-    /// parameter inside <paramref name="body"/> with <see cref="Predicate(string)"/> of the same name — a bare term
+    /// parameter inside <paramref name="body"/> with <see cref="Predicate(string)"/> of the same name. A bare term
     /// with no arguments, named after a parameter in scope, is the parameter reference rather than a predicate call,
     /// the same disambiguation rule text and JSON/YAML make for a bare identifier (ADR-0008 decision 5).
     /// </summary>
@@ -710,8 +710,8 @@ public abstract class RuleBuilder
     /// <summary>
     /// Attaches named definitions (ADR-0008 decision 4) to this builder's tree, so a <see cref="Use(string, RuleBuilder[])"/>
     /// anywhere in it (including inside another definition's own body) can expand through them. Call it once, on the
-    /// root builder of the tree passed to <see cref="Compile{TContext}(RuleCompiler{TContext})"/> or <see cref="ToJson"/> —
-    /// a definition is document-scoped, the same as a rule text <c>let</c> or a JSON/YAML <c>definitions</c> section,
+    /// root builder of the tree passed to <see cref="Compile{TContext}(RuleCompiler{TContext})"/> or <see cref="ToJson"/>.
+    /// A definition is document-scoped, the same as a rule text <c>let</c> or a JSON/YAML <c>definitions</c> section,
     /// not a property of the particular node it happens to be called on.
     /// </summary>
     /// <remarks>
@@ -767,8 +767,8 @@ public abstract class RuleBuilder
     /// </summary>
     /// <remarks>
     /// A diagnostic located in this tree (an unknown predicate, a bad argument, an arity violation, and the
-    /// rest) carries a path into this builder's tree — the same <c>$.operands[1].op</c> shape a hand-written
-    /// JSON or YAML rule gets — but never a <see cref="Diagnostic.Span"/> into generated text: this method
+    /// rest) carries a path into this builder's tree, the same <c>$.operands[1].op</c> shape a hand-written
+    /// JSON or YAML rule gets, but never a <see cref="Diagnostic.Span"/> into generated text: this method
     /// compiles through <see cref="RuleCompiler{TContext}.CompileJson(JsonElement)"/>, which, unlike
     /// <see cref="RuleCompiler{TContext}.CompileJson(string)"/>, never re-reads rendered JSON to locate a path
     /// as a span (ADR-0005 decision 11), because the caller never sees that JSON and a span into it would not
@@ -1150,7 +1150,7 @@ public abstract class RuleBuilder
     /// <summary>
     /// Attaches a <c>definitions</c> section (ADR-0008 decision 3) to an inner builder's rendered node. A duplicate
     /// definition name is reported here, before rendering, because the JSON object the definitions render into would
-    /// otherwise silently keep only the last one — the same reason <c>PredicateBuilder</c> pre-checks a duplicate
+    /// otherwise silently keep only the last one, the same reason <c>PredicateBuilder</c> pre-checks a duplicate
     /// argument name instead of letting it reach <c>CompileJson</c> invisibly.
     /// </summary>
     private sealed class DefinitionsBuilder(RuleBuilder body, IReadOnlyList<RuleDefinition> definitions) : RuleBuilder

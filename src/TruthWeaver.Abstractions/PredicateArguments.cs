@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 /// A small, non-generic accessor a predicate uses to read its own arguments inside
 /// <see cref="IPredicate{TContext}.EvaluateAsync"/>. Argument presence and type are validated
 /// against the predicate's <see cref="PredicateSchema"/> at compile time (ADR-0002), so a missing or
-/// mistyped argument is a compile diagnostic, never a runtime failure here — these accessors throw
+/// mistyped argument is a compile diagnostic, never a runtime failure here. These accessors throw
 /// only if a predicate asks for an argument name or type its own schema never declared, which is an
 /// authoring bug in the predicate itself, not a rule-authoring error.
 /// </summary>

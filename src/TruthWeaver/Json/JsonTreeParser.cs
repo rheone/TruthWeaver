@@ -9,8 +9,8 @@ using TruthWeaver.Parsing;
 /// <summary>
 /// Parses the flat, key-discriminated JSON tree shape (ADR-0003) into the same raw
 /// <see cref="RuleNode"/> tree the DSL parser produces, so both front ends funnel through identical
-/// validation (ticket 07). A node is discriminated by which key is present: <c>const</c>,
-/// <c>predicate</c>, or <c>op</c>. Never throws for malformed input — it reports a
+/// validation. A node is discriminated by which key is present: <c>const</c>,
+/// <c>predicate</c>, or <c>op</c>. Never throws for malformed input. It reports a
 /// <see cref="DiagnosticCodes.MalformedTree"/> diagnostic instead. Every diagnostic is located by its path from the
 /// document root (<c>$.operands[1].op</c>), because a <see cref="JsonElement"/> does not keep source positions. Invalid JSON syntax carries the reader's
 /// position; for every other diagnostic <c>RuleCompiler.CompileJson</c> adds the span afterwards (see

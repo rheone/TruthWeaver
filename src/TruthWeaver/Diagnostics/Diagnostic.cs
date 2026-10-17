@@ -5,7 +5,7 @@ using System.Diagnostics;
 /// <summary>
 /// One compile-time diagnostic: a stable code, a severity, a plain-language message, where the problem is, and, where
 /// they apply, what was expected versus found and a suggested remedy (ADR-0002, ADR-0003, ADR-0005 decision 11).
-/// <c>RuleCompiler.Compile</c> never throws for an authoring error — it reports diagnostics instead. The structure is
+/// <c>RuleCompiler.Compile</c> never throws for an authoring error. It reports diagnostics instead. The structure is
 /// there so a UI can lay a diagnostic out itself; <see cref="DiagnosticFormatter"/> renders the same data as plain text.
 /// </summary>
 /// <param name="Code">A stable identifier for this diagnostic's kind, e.g. <see cref="DiagnosticCodes.UnknownPredicate"/>.</param>

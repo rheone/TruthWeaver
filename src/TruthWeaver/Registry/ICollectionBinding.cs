@@ -11,7 +11,7 @@ using TruthWeaver.Parsing;
 /// The non-generic-over-<c>TItem</c> face of a <see cref="CollectionBinding{TContext, TItem}"/>
 /// (ADR-0010 decision 3), the shape <see cref="PredicateRegistry{TContext}"/> stores a collection binding as so
 /// that neither the registry nor <c>RuleNodeCompiler&lt;TContext&gt;</c>/<c>Evaluator&lt;TContext&gt;</c> need to
-/// know the element type — only the binding itself (created inside the generic
+/// know the element type. Only the binding itself (created inside the generic
 /// <see cref="PredicateRegistryBuilder{TContext}.AddCollection{TItem}"/> call, where <c>TItem</c> is known) does.
 /// </summary>
 /// <typeparam name="TContext">The outer context type the collection is selected from.</typeparam>
@@ -21,7 +21,7 @@ internal interface ICollectionBinding<TContext>
     public string Name { get; }
 
     /// <summary>
-    /// Validates and builds <paramref name="body"/> against this collection's element registry — the quantifier
+    /// Validates and builds <paramref name="body"/> against this collection's element registry. The quantifier
     /// body's own compile step, run in the element's own scope rather than the outer <c>RuleNodeCompiler</c>'s.
     /// </summary>
     /// <param name="variable">

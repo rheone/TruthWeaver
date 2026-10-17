@@ -27,8 +27,8 @@ public static class YamlRuleExtensions
 
     /// <summary>
     /// Compiles the identical flat, key-discriminated tree shape JSON uses (ADR-0003), expressed in
-    /// YAML, from a <see cref="YamlNode"/> already extracted from a larger document — e.g. one mapping
-    /// node of a multi-rule document parsed with YamlDotNet — rather than requiring the caller to
+    /// YAML, from a <see cref="YamlNode"/> already extracted from a larger document (e.g. one mapping
+    /// node of a multi-rule document parsed with YamlDotNet), rather than requiring the caller to
     /// re-serialize it to standalone YAML text first. Extracting the subtree is the caller's own
     /// navigation via YamlDotNet's node APIs; the engine adds no path/pointer syntax of its own
     /// (ADR-0003).

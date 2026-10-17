@@ -3,7 +3,7 @@ namespace TruthWeaver.Diagnostics;
 /// <summary>The severity of a compile <see cref="Diagnostic"/>.</summary>
 public enum DiagnosticSeverity
 {
-    /// <summary>Informational only — e.g. analysis was skipped because a resource limit was exceeded.</summary>
+    /// <summary>Informational only: e.g. analysis was skipped because a resource limit was exceeded.</summary>
     Info,
 
     /// <summary>A likely authoring mistake that does not block compilation (e.g. a Strong K3 tautology or contradiction).</summary>

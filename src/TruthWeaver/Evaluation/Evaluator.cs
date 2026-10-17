@@ -11,7 +11,7 @@ using TruthWeaver.Registry;
 /// Walks a compiled <see cref="Expression"/> tree once, implementing the three-valued Kleene truth
 /// tables (ADR-0001), left-to-right short-circuiting, per-evaluation term memoization, and fault
 /// absorption (ADR-0002). A new instance is created for every call to
-/// <c>CompiledRule.EvaluateAsync</c> — memoization and the fault list are scoped to exactly one
+/// <c>CompiledRule.EvaluateAsync</c>: memoization and the fault list are scoped to exactly one
 /// evaluation, never shared across calls.
 /// </summary>
 /// <remarks>
@@ -73,7 +73,7 @@ internal sealed class Evaluator<TContext>(
 
     /// <summary>
     /// Evaluates <paramref name="node"/> sharing this evaluator's <see cref="EvaluationState"/> and scope, without
-    /// packaging a fresh <see cref="Decision"/> — the form a quantifier's collection binding uses to run a
+    /// packaging a fresh <see cref="Decision"/>: the form a quantifier's collection binding uses to run a
     /// per-element body through a nested <see cref="Evaluator{TContext}"/> (over the element's own
     /// <c>Element&lt;TOuter, TItem&gt;</c> context) while every fault and flat trace entry it records lands on the
     /// same shared lists the outer evaluation's <see cref="Decision"/> is eventually built from.
@@ -314,7 +314,7 @@ internal sealed class Evaluator<TContext>(
             case ExactlyOneExpression:
             {
                 // ExactlyOne is Exactly(1, ...) over the same definite/possible interval as every other
-                // cardinality operator (ticket 17: folded into the one threshold path, no separate evaluation).
+                // cardinality operator (it folds into the one threshold path, with no separate evaluation).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Threshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
@@ -748,7 +748,7 @@ internal sealed class Evaluator<TContext>(
 
     /// <summary>
     /// One node's outcome, paired with a structural <see cref="TraceNode"/> mirroring the shape
-    /// <see cref="Expression"/> is recursed over — every recursive evaluation step returns one of these
+    /// <see cref="Expression"/> is recursed over. Every recursive evaluation step returns one of these
     /// instead of a bare <see cref="TruthValue"/>, so the per-node annotations needed for
     /// <see cref="Decision.TraceTree"/> fall out of the existing recursion for free, with no
     /// separate replay pass.

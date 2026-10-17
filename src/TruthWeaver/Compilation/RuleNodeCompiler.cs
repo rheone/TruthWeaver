@@ -7,7 +7,7 @@ using TruthWeaver.Registry;
 
 /// <summary>
 /// Turns a raw <see cref="RuleNode"/> tree (produced identically by the DSL, JSON, and YAML front
-/// ends) into a validated, immutable <see cref="Expression"/> tree plus diagnostics — the
+/// ends) into a validated, immutable <see cref="Expression"/> tree plus diagnostics: the
 /// Validate + Build stages of the compilation pipeline (ADR-0003). This is the single place that
 /// resolves predicate names against a <see cref="PredicateRegistry{TContext}"/>, validates argument
 /// schemas, and enforces the resource limits from <see cref="CompilerOptions"/>, so every front end
@@ -182,10 +182,10 @@ internal sealed class RuleNodeCompiler<TContext>
 
     /// <summary>
     /// The threshold values that would make a comparison structurally trivial (always true or always
-    /// false regardless of what the operands evaluate to) for a given operand count — e.g.
+    /// false regardless of what the operands evaluate to) for a given operand count: e.g.
     /// <c>AtLeast(0, ...)</c> is always true, <c>AtLeast(n + 1, ...)</c> is always false. Rejecting
     /// these catches an authoring mistake at compile time rather than silently accepting a constant
-    /// rule, the same rationale ticket 09 applied to the original <c>AtLeast</c> operator.
+    /// rule, the same rationale used for the original <c>AtLeast</c> operator.
     /// </summary>
     private static (int MinK, int MaxK) ValidThresholdRange(ThresholdComparison comparison, int operandCount)
     {

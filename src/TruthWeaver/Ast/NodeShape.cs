@@ -7,7 +7,7 @@ namespace TruthWeaver.Ast;
 /// and its operand list, in source order.
 /// </summary>
 /// <param name="OpName">
-/// The node's canonical, format-neutral op-name — e.g. <c>"And"</c>, <c>"Xor"</c>, or, for a
+/// The node's canonical, format-neutral op-name, e.g. <c>"And"</c>, <c>"Xor"</c>, or, for a
 /// <see cref="ThresholdExpression"/>, its <see cref="ThresholdComparison"/>'s name (e.g.
 /// <c>"AtLeast"</c>). Each consumer maps this to its own format-specific keyword or label; the seam
 /// only settles what the name structurally is, not how any one format spells it.
@@ -29,8 +29,8 @@ internal static class ExpressionShape
 {
     /// <summary>Gets the structural shape of an operator node.</summary>
     /// <param name="node">
-    /// The expression node. Must not be a <see cref="ConstantExpression"/> or <see cref="TermExpression"/>
-    /// — those are leaves with no operand shape, so callers pattern-match those two cases themselves
+    /// The expression node. Must not be a <see cref="ConstantExpression"/> or <see cref="TermExpression"/>.
+    /// Those are leaves with no operand shape, so callers pattern-match those two cases themselves
     /// before falling back to this method for every other node type.
     /// </param>
     /// <returns>The node's op-name, threshold <c>K</c> (if applicable), and operands.</returns>
@@ -62,7 +62,7 @@ internal static class ExpressionShape
 
             // The quantifier's one structural child is its body; Variable and CollectionName are not operands (ADR-0010).
             // This is a structural convenience for a generic consumer (note collection, predicate-name listing); it does
-            // not make the analyzer or a rewrite look inside a quantifier — those treat it as an opaque atom explicitly,
+            // not make the analyzer or a rewrite look inside a quantifier. Those treat it as an opaque atom explicitly,
             // ahead of this shared seam.
             QuantifierExpression q => new NodeShape(q.Kind == QuantifierKind.ForAll ? "Forall" : "Exists", null, [q.Body]),
             ConstantExpression or TermExpression => throw new ArgumentException(

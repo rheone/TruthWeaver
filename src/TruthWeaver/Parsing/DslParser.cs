@@ -7,7 +7,7 @@ using TruthWeaver.Diagnostics;
 /// Hand-written recursive-descent parser for the canonical word-operator DSL (ADR-0003): word
 /// operators only, matched case-insensitively; precedence <c>NOT</c> &gt; <c>AND</c> &gt; <c>OR</c>;
 /// <c>XOR</c> mixed with <c>AND</c>/<c>OR</c> at the same syntactic level without parentheses is
-/// rejected rather than resolved by a precedence guess. Never throws for a syntax error — it reports
+/// rejected rather than resolved by a precedence guess. Never throws for a syntax error. It reports
 /// a <see cref="DiagnosticCodes.SyntaxError"/> diagnostic and recovers with an <see cref="ErrorNode"/>
 /// so the rest of the source still gets parsed and can surface further diagnostics.
 /// </summary>
@@ -817,7 +817,7 @@ internal sealed class DslParser
 
     /// <summary>
     /// Parses a use of a declared definition (ADR-0008 decision 2): the name, optionally applied, call-like, to
-    /// positional arguments (<c>atLeastAge(21)</c>), each itself a full expression — unlike a <see cref="TermNode"/>'s
+    /// positional arguments (<c>atLeastAge(21)</c>), each itself a full expression, unlike a <see cref="TermNode"/>'s
     /// named arguments, a use's arguments are parsed the same way an <c>AND</c>/<c>OR</c> operand is.
     /// </summary>
     private RuleNode ParseUse()
@@ -967,7 +967,7 @@ internal sealed class DslParser
     /// <summary>
     /// Parses <c>FORALL(variable IN collection, body)</c> or <c>EXISTS(...)</c> (ADR-0010 decision 2): the bound
     /// variable and the collection name are plain identifiers read from the quantifier's head. <c>IN</c> is a
-    /// contextual keyword here only — it is not in <see cref="ReservedWords"/>, so a predicate elsewhere named
+    /// contextual keyword here only. It is not in <see cref="ReservedWords"/>, so a predicate elsewhere named
     /// <c>In</c> is unaffected.
     /// </summary>
     private RuleNode ParseQuantifier(QuantifierKind kind)

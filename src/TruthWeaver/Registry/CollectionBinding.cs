@@ -144,7 +144,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
         // Set only when THIS quantifier's own loop hits MaxElementEvaluations (ADR-0010 decision 6): the elements
         // this quantifier never reached could still have decided it, so its result is forced Unknown regardless of
-        // what the elements reached so far folded to — unlike a fault-budget abort (which, "exactly as today",
+        // what the elements reached so far folded to: unlike a fault-budget abort (which, "exactly as today",
         // keeps whatever the fold reached before the remaining elements were skipped).
         bool elementLimitExceeded = false;
         List<TraceNode> children = [];

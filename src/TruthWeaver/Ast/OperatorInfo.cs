@@ -3,7 +3,7 @@ namespace TruthWeaver.Ast;
 /// <summary>
 /// Looks up the <see cref="OperatorDescriptor"/> (label + description) for any operator node in a
 /// compiled expression tree. Every operator in the closed set (ADR-0004) has one; a
-/// <see cref="TermExpression"/> does not — a term's label/description come from its predicate's
+/// <see cref="TermExpression"/> does not. A term's label/description come from its predicate's
 /// registered <see cref="Abstractions.PredicateSchema"/> instead, since that's where they are
 /// authored, not from the AST node itself.
 /// </summary>
