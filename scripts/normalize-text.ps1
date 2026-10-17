@@ -7,7 +7,8 @@
     segment starting with "." (.claude, .scratch, .github, .tmp and so on):
       - The file must be valid UTF-8. An invalid file is reported and the script exits with code 1.
       - A UTF-8 byte order mark is removed, except from *.ps1 (Windows PowerShell 5.1 reads a BOM-less file as ANSI).
-      - An em dash (U+2014) becomes " - " and the ellipsis character (U+2026) becomes "...".
+      - An em dash (U+2014) becomes " - ", the ellipsis character (U+2026) becomes "..." and the curly quotes
+        (U+2018, U+2019, U+201C, U+201D) become straight quotes. $curlyQuoteAllowlist lists the files that keep them.
       - Every line ending becomes LF.
       - Trailing spaces and tabs are removed, except the two-space hard break in Markdown. C# files keep their line
         content, because dotnet format owns it and a trim could change a string literal.
@@ -53,6 +54,18 @@ $files = $candidates | Where-Object {
 
 $emDash = [string][char]0x2014
 $ellipsis = [string][char]0x2026
+$leftSingle = [string][char]0x2018
+$rightSingle = [string][char]0x2019
+$leftDouble = [string][char]0x201C
+$rightDouble = [string][char]0x201D
+# Files where a curly quote is the expected text: the AsciiMath printer maps a straight double quote to U+201D.
+$curlyQuoteAllowlist = @(
+    'docs/equations.md',
+    'docs/examples.md',
+    'src/TruthWeaver/Printing/AsciiMathText.cs',
+    'tests/TruthWeaver.Tests/ConstantStyleTests.cs',
+    'tests/TruthWeaver.Tests/EquationAsciiMathTests.cs'
+)
 $strictUtf8 = [Text.UTF8Encoding]::new($false, $true)
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 $changed = [Collections.Generic.List[string]]::new()
@@ -77,6 +90,12 @@ foreach ($file in $files) {
     $new = $new -replace "(?m)[ \t]*$emDash[ \t]*$", ' -'
     $new = $new -replace "[ \t]*$emDash[ \t]*", ' - '
     $new = $new.Replace($ellipsis, '...')
+
+    # Curly quotes become straight quotes, except in the files that document or test the AsciiMath printer, which
+    # replaces a straight double quote with U+201D on purpose.
+    if ($file -replace '\\', '/' -cnotin $curlyQuoteAllowlist) {
+        $new = $new.Replace($leftSingle, "'").Replace($rightSingle, "'").Replace($leftDouble, '"').Replace($rightDouble, '"')
+    }
 
     $new = $new.Replace("`r`n", "`n").Replace("`r", "`n")
 
