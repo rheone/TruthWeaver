@@ -14,10 +14,10 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # Every package that dotnet pack makes. TruthWeaver.Generators is an analyzer-only package and has no symbol package.
-# TruthWeaver.Tool is the .NET tool of the command line; CI packs and checks it but does not publish it.
+# TruthWeaver.Tool is the .NET tool of the command line; a release publishes it with the other packages.
 $packages = @(
-    'TruthWeaver', 'TruthWeaver.Abstractions', 'TruthWeaver.AspNetCore', 'TruthWeaver.DataSources.Json', 'TruthWeaver.Generators',
-    'TruthWeaver.Predicates', 'TruthWeaver.Testing', 'TruthWeaver.Yaml', 'TruthWeaver.Tool'
+    'TruthWeaver', 'TruthWeaver.Abstractions', 'TruthWeaver.AspNetCore', 'TruthWeaver.DataSources.Json', 'TruthWeaver.Extensions.Configuration', 'TruthWeaver.Generators',
+    'TruthWeaver.Policies', 'TruthWeaver.Predicates', 'TruthWeaver.Testing', 'TruthWeaver.Yaml', 'TruthWeaver.Tool'
 )
 $noSymbols = @('TruthWeaver.Generators')
 # .NET tool packages carry the tool and its dependencies under tools/<tfm>/any/, not lib/.

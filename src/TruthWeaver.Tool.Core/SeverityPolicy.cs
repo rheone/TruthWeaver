@@ -27,6 +27,7 @@ public static class SeverityPolicy
         ToolDiagnosticCodes.UnknownArtifact,
         ToolDiagnosticCodes.WriteBackFailed,
         ToolDiagnosticCodes.InvalidRuleTestFile,
+        ToolDiagnosticCodes.UnsupportedJsonLogic,
     ];
 
     /// <summary>Tells whether a diagnostic fails a command.</summary>

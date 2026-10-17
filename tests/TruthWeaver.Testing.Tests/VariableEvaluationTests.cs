@@ -139,11 +139,12 @@ public sealed class VariableEvaluationTests
         Decision decision = await VariableHarness.EvaluateAsync(
             rule,
             sources,
-            cancellationToken: TestContext.Current.CancellationToken
+            new EvaluationOptions(IncludeTrace: true),
+            TestContext.Current.CancellationToken
         );
 
         TraceNode tree = decision.TraceTree!;
-        Assert.Equal("takesString(v: from(\"user\", \"$.secret\"))", tree.Text);
+        Assert.Equal("takesString(v: from(\"user\", \"$.secret\")) [from(\"user\", \"$.secret\"): resolved]", tree.Text);
         Assert.DoesNotContain("hunter2", tree.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("hunter2", decision.Trace!.Entries[0].Text, StringComparison.Ordinal);
     }

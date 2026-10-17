@@ -9,6 +9,11 @@ and "word operators only" decisions in
 [ADR-0003](0003-rule-syntax-and-serialization.md). Source requirements: `.scratch/2026-10-02-TODO.md`; planning
 spec: `.scratch/k3-conformance/spec.md`.
 
+*Amended 2026-10-17: `TRE0016` reuse.* Decision 14 retired `TRE0016` with the `NestedCollapse` diagnostic and said it
+would not be reused. The code now means `RewriteTooLarge` (an expanding rewrite over `MaxRewriteNodeCount`).
+`NestedCollapse` was never released, because the project has no release, so no published meaning changes. The
+diagnostic table in [diagnostics](../strong-k3/specification/diagnostics.md) lists `TRE0016` as `RewriteTooLarge`.
+
 *Amended 2026-10-16: definitions and parameters.* The reserved-word list of decision 2's notation and the
 rule-text grammar gain `let`, and the JSON/YAML tree format gains a `definitions` section and a `use`
 node, all outside the operator set this ADR otherwise governs: a definition expands to an ordinary
@@ -548,7 +553,7 @@ the aliases are cheap once the canonical form stays single.
     `CompiledRule.CollapsePolicy`, the collapse root of `Outline()` and of the
     trace tree, `rule-tree.schema.json`'s `collapseOperatorNode`, the printers'
     and `RuleDiff`'s collapse handling and the `NestedCollapse` diagnostic
-    (`TRE0016`, retired and not reused). A rule that still declares one is rejected,
+    (`TRE0016`, retired with the collapse operator and then reused for `RewriteTooLarge`; see the 2026-10-17 amendment). A rule that still declares one is rejected,
     wherever it appears and in any letter case, with an error whose message and hint
     point to `Decision.Collapse`: `SyntaxError` (`TRE0001`) spanning the whole call in
     DSL text, and `MalformedTree` (`TRE0014`) at the node's path in JSON and YAML.

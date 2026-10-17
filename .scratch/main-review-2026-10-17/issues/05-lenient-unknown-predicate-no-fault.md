@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Record a Fault (permanent Unknown fault on the term) for an unknown predicate in lenient mode, as ADR-0002 states.
 

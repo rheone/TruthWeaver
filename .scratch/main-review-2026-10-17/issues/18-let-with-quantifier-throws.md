@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **What to build:** Make definition expansion handle quantifier nodes: recurse into the quantifier body the same way it already does for `If` and inspection nodes, so `let` definitions are visible inside a `FORALL` or `EXISTS` body. `Compile` must never throw for an authoring error, so the result is either a compiled rule or a diagnostic.
 

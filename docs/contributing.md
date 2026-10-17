@@ -68,6 +68,35 @@ The hook builds and tests only the files that you stage, and it does not run Ros
 - **Docs show the `Try` form first.** An example in a documentation page uses the `Try` form. It uses the `OrThrow` form
   only where a failure is a bug, such as at startup or in a test, and says so.
 
+## Central package rules
+
+Every package version is in `Directory.Packages.props`. These rules apply to every project:
+
+- **One version per package.** A project writes `<PackageReference Include="X" />` with no version. A `VersionOverride`
+  attribute is an error (`CentralPackageVersionOverrideEnabled` is `false`).
+- **Analyzers are global.** The analyzer packages and MinVer are `GlobalPackageReference` items with
+  `PrivateAssets="all"`, so they apply to every project and never become a dependency of a shipped package.
+  The pack check (`scripts/check-packages.ps1`) fails when a package contains an unexpected file.
+- **Transitive pinning is on.** A `PackageVersion` item for a package that only a dependency pulls in raises that
+  package to the version in the item. Use it to fix a vulnerable transitive package, and name the advisory in a comment.
+  If a pin is lower than a dependency needs, restore fails with NU1109. Raise the pin.
+- **NuGetAudit checks every package.** The audit covers direct and transitive packages at every severity
+  (`NuGetAuditMode` is `all`, `NuGetAuditLevel` is `low`). A vulnerability warning (NU1900 to NU1904) is a warning in a
+  local build and an error when `CI=true`.
+- **Restore is mapped.** `NuGet.config` has one source, nuget.org, and a `packageSourceMapping` entry with the
+  pattern `*`. When you add a source, add its own patterns in the same change. Run restore with `--locked-mode`.
+
+## How package updates arrive
+
+Dependabot (`.github/dependabot.yml`) checks NuGet packages and GitHub Actions once a week and opens grouped pull
+requests: analyzers, test packages, and all other packages (and `Microsoft.Extensions.*` after .NET 11 GA). It updates
+the versions in `Directory.Packages.props`. The deliberate pins are on its ignore list, each with a reason: the
+`Microsoft.Extensions.*` RC line, `StyleCop.Analyzers` beta, `Microsoft.CodeAnalysis.CSharp` and
+`Microsoft.CodeAnalysis.Analyzers`. When you change a pin, change the ignore list in the same pull request.
+
+Dependabot does not check the local tools in `dotnet-tools.json`. Check them by hand with `dotnet tool list` and update the
+versions in the file.
+
 ## How a package version is made
 
 [MinVer](https://github.com/adamralph/minver) derives the version of every package from the Git tags. No project sets a
@@ -97,7 +126,7 @@ package. It has no NuGet API key and the job permission is `contents: read`. The
 1. `dotnet pack TruthWeaver.slnx --configuration Release -warnaserror`. A pack warning fails the job. Package validation
    (`EnablePackageValidation` in `src/Directory.Build.props`) runs in this step. It checks the package layout and the
    public API across target frameworks.
-2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the eight library packages and the tool package, the script checks that
+2. `pwsh scripts/check-packages.ps1 -PackageDirectory <directory>`. For each of the ten library packages and the tool package, the script checks that
    the `.nupkg` exists, contains `README.md` and contains only the expected files. It also checks that the symbol package
    (`.snupkg`) contains the `.pdb` file. `TruthWeaver.Generators` is an analyzer-only package and has no symbol package.
    The script fails when it finds a symbol package for it.

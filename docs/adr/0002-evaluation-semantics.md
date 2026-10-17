@@ -132,6 +132,12 @@ properties this v1 prioritizes over the latency win. This is deliberately
 left as an additive `EvaluationOptions` knob for later, since it becomes safe
 purely as a consequence of predicates already being contractually pure.
 
+> **Note (2026-10-17):** two later features touch this section without changing it. `EvaluateManyAsync` can overlap
+> whole evaluations of different contexts, up to a caller-chosen limit that defaults to 1; the operands of one rule are
+> still evaluated one after the other ([ADR-0012](0012-batch-evaluation.md)). `OptimizeOrder()` is an explicit rewrite
+> that puts the cheaper `AND`/`OR` operands first; the evaluator still reads the tree strictly left to right
+> ([ADR-0011](0011-evaluation-order-optimization.md)).
+
 An `EvaluationMode.Exhaustive` option evaluates every reachable term (no
 short-circuit) and collects every fault, for diagnostic/support use. This
 mode never changes `Decision.Result` - it only changes which terms run and
@@ -236,7 +242,8 @@ predicate-author contract in [CONTEXT.md](../../CONTEXT.md).
   + a shared `CompiledRule`), which is the intended answer to "evaluate this
   rule for many candidate users" - the caller loops, rather than the engine
   offering a bulk/partial-evaluation API in v1 (deferred, see
-  [CONTEXT.md](../../CONTEXT.md#deferred)).
+  [CONTEXT.md](../../CONTEXT.md#deferred)). (Note, 2026-10-17: `EvaluateManyAsync` is that loop, written once; it adds
+  no evaluation semantics. See [ADR-0012](0012-batch-evaluation.md). Partial evaluation stays deferred.)
 - The trace is an accurate, literal record of what was and wasn't evaluated,
   which makes it trustworthy for "why was this denied" without being
   misleading about short-circuited branches.

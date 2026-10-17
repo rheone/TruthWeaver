@@ -118,6 +118,9 @@ public sealed record Decision(
 > `Result` or records a fault); `IsSatisfied` is still fail-closed. A rule cannot declare a
 > collapse and there is no `Decision.Outcome` (amended 2026-10-03). See
 > [ADR-0005](0005-strong-k3-language-surface.md) decision 14.
+>
+> `Decision.Trace` is `null` unless the caller sets `EvaluationOptions.IncludeTrace`; `TraceTree` is always filled
+> (amended 2026-10-17).
 
 `IsSatisfied` is `true` only for `TruthValue.True`. `Unknown` - whether from
 one absorbed fault or a hundred - reads as "not satisfied," which is the

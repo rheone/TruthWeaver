@@ -21,6 +21,9 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
     private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly;
     private static readonly Assembly AspNetCore = typeof(TruthWeaver.AspNetCore.RuleRequirement).Assembly;
+    private static readonly Assembly Policies = typeof(TruthWeaver.Policies.PolicySet<>).Assembly;
+    private static readonly Assembly ExtensionsConfiguration =
+        typeof(TruthWeaver.Extensions.Configuration.RuleReloadReport).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
     // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) -
@@ -295,6 +298,89 @@ public sealed class PackageBoundaryTests
             string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
             Assert.DoesNotContain(AspNetCore.GetName().Name, names);
             Assert.DoesNotContain(names, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Policies</c> takes the runtime, the core package and the abstractions, and nothing else: it adds
+    /// no third-party dependency.
+    /// </summary>
+    [Fact]
+    public void Policies_References_RuntimeCoreAndAbstractionsOnly_Test()
+    {
+        string[] referenced = [.. Policies.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        string[] unexpected =
+        [
+            .. referenced.Where(name =>
+                !name.StartsWith("System.", StringComparison.Ordinal)
+                && name is not ("TruthWeaver" or "TruthWeaver.Abstractions")
+            ),
+        ];
+
+        Assert.Empty(unexpected);
+        Assert.Contains("TruthWeaver", referenced);
+    }
+
+    /// <summary>No other package and not the tool core references <c>TruthWeaver.Policies</c>: a host opts into it.</summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludePolicies_Test()
+    {
+        foreach (
+            Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, AspNetCore }
+        )
+        {
+            Assert.DoesNotContain(
+                Policies.GetName().Name,
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Extensions.Configuration</c> references the core package, the abstractions, the runtime and the
+    /// <c>Microsoft.Extensions.*</c> packages (configuration, primitives, logging), and nothing else.
+    /// </summary>
+    [Fact]
+    public void ExtensionsConfiguration_References_CoreAndMicrosoftExtensionsOnly_Test()
+    {
+        string[] referenced = [.. ExtensionsConfiguration.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        string[] unexpected =
+        [
+            .. referenced.Where(name =>
+                !name.StartsWith("System.", StringComparison.Ordinal)
+                && !name.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
+                && name is not ("TruthWeaver" or "TruthWeaver.Abstractions")
+            ),
+        ];
+
+        Assert.Empty(unexpected);
+        Assert.Contains("Microsoft.Extensions.Configuration.Abstractions", referenced);
+    }
+
+    /// <summary>
+    /// No other package references <c>TruthWeaver.Extensions.Configuration</c>, and the core and the abstractions take no
+    /// <c>Microsoft.Extensions.Configuration</c> assembly: a host opts into the rule store.
+    /// </summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludeExtensionsConfiguration_Test()
+    {
+        foreach (
+            Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, AspNetCore }
+        )
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(ExtensionsConfiguration.GetName().Name, names);
+        }
+
+        foreach (Assembly assembly in new[] { Abstractions, Core })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(
+                names,
+                name => name.StartsWith("Microsoft.Extensions.Configuration", StringComparison.Ordinal)
+            );
         }
     }
 

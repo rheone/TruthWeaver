@@ -4,7 +4,7 @@
 
 **Blocked by:** 09 (the printers and parser comments change first)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Consolidate the Symbolic and C-style spellings and the FORALL/EXISTS labels onto OperatorDefinitions (plus a quantifier equivalent), with an exhaustive test. Consider the OutlineNode quantifier record.
 

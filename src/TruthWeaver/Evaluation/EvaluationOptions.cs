@@ -30,12 +30,18 @@ namespace TruthWeaver.Evaluation;
 /// controls how deeply a rule nests quantifiers and over what collections, so an unbounded default would let
 /// authored rule text alone make one evaluation arbitrarily expensive.
 /// </param>
+/// <param name="IncludeTrace">
+/// <see langword="true"/> to fill <c>Decision.Trace</c>, the flat log of every term and operator in evaluation order
+/// (ADR-0001). The default <see langword="false"/> leaves <c>Decision.Trace</c> <see langword="null"/>. <c>Decision.TraceTree</c>
+/// is always filled.
+/// </param>
 public sealed record EvaluationOptions(
     int? FaultBudget = null,
     EvaluationMode Mode = EvaluationMode.ShortCircuit,
     TimeSpan? Timeout = null,
     bool IncludeResolvedValues = false,
-    int MaxElementEvaluations = 10_000
+    int MaxElementEvaluations = 10_000,
+    bool IncludeTrace = false
 )
 {
     /// <summary>

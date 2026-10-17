@@ -17,7 +17,10 @@ public sealed class VariableTraceRedactionTests
     {
         Decision decision = await EvaluateAsync(new FakeDataSource().With("$.secret", Secret), EvaluationOptions.Default);
 
-        Assert.Equal("takesString(v: from(\"user\", \"$.secret\"))", decision.TraceTree!.Text);
+        Assert.Equal(
+            "takesString(v: from(\"user\", \"$.secret\")) [from(\"user\", \"$.secret\"): resolved]",
+            decision.TraceTree!.Text
+        );
         Assert.All(decision.Trace!.Entries, e => Assert.DoesNotContain(Secret, e.Text, StringComparison.Ordinal));
     }
 
@@ -49,7 +52,8 @@ public sealed class VariableTraceRedactionTests
             new EvaluationOptions(IncludeResolvedValues: true)
         );
 
-        const string expected = "takesString(v: from(\"user\", \"$.secret\") = \"hunter2\")";
+        const string expected =
+            "takesString(v: from(\"user\", \"$.secret\") = \"hunter2\") [from(\"user\", \"$.secret\"): resolved]";
         Assert.Equal(expected, decision.TraceTree!.Text);
         Assert.Equal(expected, decision.Trace!.Entries[0].Text);
     }
@@ -77,7 +81,10 @@ public sealed class VariableTraceRedactionTests
     {
         Decision decision = await EvaluateAsync(new FakeDataSource(), new EvaluationOptions(IncludeResolvedValues: true));
 
-        Assert.Equal("takesString(v: from(\"user\", \"$.secret\"))", decision.TraceTree!.Text);
+        Assert.Equal(
+            "takesString(v: from(\"user\", \"$.secret\")) [from(\"user\", \"$.secret\"): missing]",
+            decision.TraceTree!.Text
+        );
     }
 
     /// <summary>An array query that matches no node stays an empty array without a fault, and the trace names the query.</summary>
@@ -93,12 +100,13 @@ public sealed class VariableTraceRedactionTests
 
         decision.Should().HaveNoFaults();
         Assert.Equal(TruthValue.True, decision.Result);
-        const string expected = Rule + " [no match for from(\"user\", \"$.rolez[*]\")]";
+        const string expected =
+            Rule + " [from(\"user\", \"$.rolez[*]\"): resolved] [no match for from(\"user\", \"$.rolez[*]\")]";
         Assert.Equal(expected, decision.TraceTree!.Text);
         Assert.Equal(expected, decision.Trace!.Entries[0].Text);
     }
 
-    /// <summary>An array query that matches a node adds no note to the trace.</summary>
+    /// <summary>An array query that matches a node adds the resolved outcome and no no-match note to the trace.</summary>
     [Fact]
     public async Task EvaluateAsync_ArrayQueryMatchingANode_TraceCarriesNoNote_Test()
     {
@@ -109,7 +117,7 @@ public sealed class VariableTraceRedactionTests
             Rule
         );
 
-        Assert.Equal(Rule, decision.TraceTree!.Text);
+        Assert.Equal(Rule + " [from(\"user\", \"$.roles[*]\"): resolved]", decision.TraceTree!.Text);
     }
 
     private static Task<Decision> EvaluateAsync(
@@ -122,7 +130,10 @@ public sealed class VariableTraceRedactionTests
         return VariableHarness.EvaluateAsync(
             harness.Compile(rule, "user"),
             new DataSources { ["user"] = source },
-            options,
+            options with
+            {
+                IncludeTrace = true,
+            },
             TestContext.Current.CancellationToken
         );
     }

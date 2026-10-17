@@ -4,7 +4,7 @@
 
 **Blocked by:** 09, 10, 11 (a file split must follow the edits to the same file)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Split CompiledRule<TContext> into partial files by concern (printing, rewrites, analysis, evaluation) with no public API change, after 09-11.
 

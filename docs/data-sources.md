@@ -210,7 +210,7 @@ The predicate's argument declares a `LiteralKind`, and that decides what a query
 
 An array query that matches no node is not a failure, so no fault is recorded. The trace marks the term instead, so a mistyped
 path does not pass unseen. The trace text of the term ends with `[no match for from("user", "$.rolez[*]")]`, with or without
-`IncludeResolvedValues`. The note names the query and never a value.
+`IncludeResolvedValues`, after the outcome note described in [Failures](#failures). The note names the query and never a value.
 
 Conversions are deliberately the same as for literals written in a rule:
 
@@ -276,7 +276,12 @@ A validator checks syntax only. It cannot know whether the data holds a match, s
 be missing at evaluation.
 
 Faults and the evaluation trace name the reference and the outcome, but not the resolved value, because the
-data may be sensitive. To include values in the trace while debugging:
+data may be sensitive. The trace text of a term with variables ends with one note for each reference, in the form
+`[from("user", "$.age"): resolved]`. The outcome word is `resolved`, `missing`, `ambiguous`, `type mismatch`,
+`source error` or `unsupplied source`, so a reference that resolved is visible as well as one that failed. A missing
+`$.age` gives `ageAtLeast(min: from("user", "$.age")) [from("user", "$.age"): missing]`.
+
+To include values in the trace while debugging:
 
 ```csharp
 Decision decision = await rule.EvaluateAsync(

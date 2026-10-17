@@ -1,6 +1,10 @@
 namespace TruthWeaver.Tests;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
+using TruthWeaver.Compilation;
+using TruthWeaver.Registry;
+using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
 /// The operator definition table (<see cref="OperatorDefinitions"/>): one descriptive definition per operator in the
@@ -38,6 +42,24 @@ public sealed class OperatorDefinitionsTests
         "IsKnown",
     ];
 
+    private static readonly RuleCompiler<RuleTestContext> Compiler = new(
+        PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
+    );
+
+    /// <summary>The connectives the DSL reads by symbol, as independent literals.</summary>
+    private static readonly string[] SymbolConnectives =
+    [
+        "Not",
+        "And",
+        "Or",
+        "Xor",
+        "Equivalent",
+        "Implies",
+        "Nand",
+        "Nor",
+        "Coalesce",
+    ];
+
     /// <summary>Verifies the table holds exactly one definition for every operator in the closed set.</summary>
     [Fact]
     public void All_has_exactly_one_definition_per_operator_in_the_closed_set_Test()
@@ -60,6 +82,59 @@ public sealed class OperatorDefinitionsTests
             Assert.True(d.MinOperands >= 1, d.OpName);
             Assert.True(d.MaxOperands is null || d.MaxOperands >= d.MinOperands, d.OpName);
         }
+    }
+
+    /// <summary>Verifies exactly the symbol connectives carry lexer-read symbols, and each has a symbolic spelling the lexer reads back.</summary>
+    [Fact]
+    public void All_every_symbol_connective_has_a_symbolic_spelling_the_parser_reads_Test()
+    {
+        string[] withSymbols = [.. OperatorDefinitions.All.Where(d => d.ReadSymbols is { Count: > 0 }).Select(d => d.OpName)];
+
+        Assert.Equal(SymbolConnectives.Order(StringComparer.Ordinal), withSymbols.Order(StringComparer.Ordinal));
+        foreach (OperatorDefinition d in OperatorDefinitions.All.Where(d => d.ReadSymbols is not null))
+        {
+            Assert.NotNull(d.SymbolicSpelling);
+            Assert.Contains(d.SymbolicSpelling, d.ReadSymbols!);
+            foreach (string symbol in d.ReadSymbols!)
+            {
+                Assert.True(OperatorDefinitions.TryGetBySymbol(symbol, out OperatorDefinition? found), symbol);
+                Assert.Equal(d.OpName, found.OpName);
+            }
+        }
+    }
+
+    /// <summary>Verifies every symbol connective's symbolic spelling compiles to the same tree as its canonical word.</summary>
+    [Fact]
+    public void Compile_every_symbolic_spelling_builds_the_same_tree_as_the_word_Test()
+    {
+        foreach (OperatorDefinition d in OperatorDefinitions.All.Where(d => d.ReadSymbols is not null))
+        {
+            string symbolic = d.OpName == "Not" ? $"{d.SymbolicSpelling}a" : $"a {d.SymbolicSpelling} b";
+            string named = d.OpName switch
+            {
+                "Not" => $"{d.LabelTemplate} a",
+                "Coalesce" => "COALESCE(a, b)",
+                _ => $"a {d.LabelTemplate} b",
+            };
+
+            string? fromSymbol = Compiler.Compile(symbolic).CompiledRule?.CanonicalText;
+            string? fromWord = Compiler.Compile(named).CompiledRule?.CanonicalText;
+
+            Assert.NotNull(fromWord);
+            Assert.Equal(fromWord, fromSymbol);
+        }
+    }
+
+    /// <summary>Verifies the quantifier spellings come from one place and are distinct per kind.</summary>
+    [Fact]
+    public void QuantifierText_every_kind_has_a_distinct_label_and_glyph_Test()
+    {
+        QuantifierKind[] kinds = Enum.GetValues<QuantifierKind>();
+
+        Assert.Equal(kinds.Length, kinds.Select(QuantifierText.Label).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(kinds.Length, kinds.Select(QuantifierText.Glyph).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal("FORALL", QuantifierText.Label(QuantifierKind.ForAll));
+        Assert.Equal(QuantifierText.Glyph(QuantifierKind.Exists), QuantifierText.Glyph("EXISTS"));
     }
 
     /// <summary>Verifies canonical names and tree-format names are each unique (tree-format names ignoring case).</summary>

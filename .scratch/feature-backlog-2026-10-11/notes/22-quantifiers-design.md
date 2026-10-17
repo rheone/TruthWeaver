@@ -1,7 +1,7 @@
 # 22: Quantifiers over collections: design note
 
 **Ticket:** [22 spike](../issues/22-spike-quantifiers.md). **Feeds:** [22b build](../issues/22b-quantifiers-build.md) (on hold).
-**Status:** spike output, 2026-10-11. This note decides nothing. The owner schedules a grilling on it; the open questions at the end are written for that session.
+**Status:** done. Spike output of 2026-10-11, grilled 2026-10-16; the owner's answers to the open questions are recorded in [ADR-0010](../../../docs/adr/0010-forall-exists-quantifiers.md). This note is kept as the design background.
 **Read with:** [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md), [ADR-0006](../../../docs/adr/0006-data-sources-for-expression-variables.md), `CONTEXT.md`.
 
 ## Recommendation

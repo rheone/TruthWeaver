@@ -28,6 +28,26 @@ public sealed class EvaluationOptionsTests
         Assert.Contains(decision.Trace!.Entries, e => e.NotEvaluated);
     }
 
+    /// <summary>By default the flat trace is not requested, so <see cref="Decision.Trace"/> is null while the trace tree is still filled.</summary>
+    [Fact]
+    public async Task EvaluateAsync_DefaultOptions_LeavesTheFlatTraceNullAndFillsTheTraceTree_Test()
+    {
+        Decision decision = await EvaluateWithTraceAsync(EvaluationOptions.Default);
+
+        Assert.Null(decision.Trace);
+        Assert.NotNull(decision.TraceTree);
+    }
+
+    /// <summary>With <see cref="EvaluationOptions.IncludeTrace"/> the flat trace holds one entry for each node visited.</summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTrace_FillsTheFlatTrace_Test()
+    {
+        Decision decision = await EvaluateWithTraceAsync(new EvaluationOptions(IncludeTrace: true));
+
+        Assert.NotNull(decision.Trace);
+        Assert.Equal(["a", "b"], decision.Trace.Entries.Select(e => e.Text));
+    }
+
     /// <summary>A budget below 1 is rejected, because no evaluation could stay within it.</summary>
     [Theory]
     [InlineData(0)]
@@ -61,6 +81,7 @@ public sealed class EvaluationOptionsTests
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
         );
 
@@ -227,7 +248,22 @@ public sealed class EvaluationOptionsTests
         return rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
-            options: new EvaluationOptions(FaultBudget: budget),
+            options: new EvaluationOptions(FaultBudget: budget, IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+    }
+
+    private static Task<Decision> EvaluateWithTraceAsync(EvaluationOptions options)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("a AND b").CompiledRule!;
+
+        return rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: options,
             cancellationToken: TestContext.Current.CancellationToken
         );
     }

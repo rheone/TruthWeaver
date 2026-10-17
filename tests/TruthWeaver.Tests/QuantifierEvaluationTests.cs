@@ -7,6 +7,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Testing;
+using TruthWeaver.Yaml;
 using Arg = TruthWeaver.Building.Arg;
 
 /// <summary>
@@ -250,6 +251,7 @@ public sealed class QuantifierEvaluationTests
 
         Decision decision = await rule.EvaluateAsync(
             new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
         );
 
@@ -704,6 +706,69 @@ public sealed class QuantifierEvaluationTests
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UndeclaredDataSource);
+    }
+
+    /// <summary>
+    /// A <c>let</c> definition used in a quantifier body compiles and evaluates in every format: the use expands in
+    /// the body's element scope (ADR-0010 decision 10), so the definition's term resolves in the element registry.
+    /// </summary>
+    [Theory]
+    [InlineData("text")]
+    [InlineData("json")]
+    [InlineData("yaml")]
+    [InlineData("builder")]
+    public async Task Compile_DefinitionUsedInsideQuantifierBody_EvaluatesInEveryFormat_Test(string format)
+    {
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+
+        CompilationResult<QuantifierContext> result = format switch
+        {
+            "text" => compiler.Compile("let y = elementTrue; FORALL(x IN items, y)"),
+            "json" => compiler.CompileJson(
+                """{"definitions":{"y":{"body":{"predicate":"elementTrue"}}},"op":"forall","var":"x","in":"items","operands":[{"op":"use","name":"y"}]}"""
+            ),
+            "yaml" => compiler.CompileYaml(
+                """
+                definitions:
+                  y:
+                    body:
+                      predicate: elementTrue
+                op: forall
+                var: x
+                in: items
+                operands:
+                  - op: use
+                    name: y
+                """
+            ),
+            _ => RuleBuilder
+                .ForAll("x", "items", RuleBuilder.Use("y"))
+                .WithDefinitions(RuleBuilder.Define("y", RuleBuilder.Predicate("elementTrue")))
+                .Compile(compiler),
+        };
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal("FORALL(x IN items, elementTrue)", result.CompiledRule!.CanonicalText);
+        Decision decision = await result.CompiledRule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.False] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// A definition whose body holds an element-only term, used outside the quantifier, is checked against the outer
+    /// registry and gives the ordinary unknown-predicate diagnostic instead of throwing (ADR-0010 decision 10).
+    /// </summary>
+    [Fact]
+    public void Compile_QuantifierDefinitionUsedOutsideTheBody_ReportsUnknownPredicate_Test()
+    {
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+
+        CompilationResult<QuantifierContext> result = compiler.Compile("let y = elementTrue; FORALL(x IN items, y) AND y");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
     }
 
     private static RuleCompiler<LinesContext> CreateLinesCompiler()

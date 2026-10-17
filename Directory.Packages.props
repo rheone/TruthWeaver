@@ -1,6 +1,12 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Pin transitive packages from this file too: a PackageVersion item for a package that only a dependency pulls in
+         raises it to that version. Use it to fix a vulnerable transitive package that NuGetAudit reports, with a comment
+         that names the advisory. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <!-- A project cannot override a central version with a VersionOverride attribute. Every version is in this file. -->
+    <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
   </PropertyGroup>
   <!-- The analyzer packages and Source Link below are GlobalPackageReference items, not PackageVersion items.
        A global reference applies to every project in the repository (src, tests, samples, benchmarks and the
@@ -27,7 +33,7 @@
   <!-- Async/await usage analyzers -->
   <ItemGroup>
     <GlobalPackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
-    <GlobalPackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" PrivateAssets="all" />
+    <GlobalPackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" PrivateAssets="all" />
   </ItemGroup>
   <!-- IDisposable usage analyzer -->
   <ItemGroup>
@@ -41,6 +47,12 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-rc.1.26425.128" />
+  </ItemGroup>
+  <!-- Microsoft.Extensions.Configuration - TruthWeaver.Extensions.Configuration's only package dependency: IConfiguration and its
+       change token feed the rule store (ADR-0016). It stays on the .NET 11 RC line with the other Microsoft.Extensions.* packages
+       (see the Dependabot ignore entry). The core package takes no dependency on it. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="11.0.0-rc.1.26425.128" />
   </ItemGroup>
   <!-- Microsoft.AspNetCore.TestHost - test-project-only (TruthWeaver.AspNetCore.Tests and the AspNetCore sample tests): TestServer
        runs a host in memory, so the authorization tests send real requests without a network port. TruthWeaver.AspNetCore itself
@@ -63,7 +75,7 @@
        RequiresUnreferencedCode/RequiresDynamicCode). No other project may reference it; an architecture test checks the
        tool core. -->
   <ItemGroup>
-    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.13" />
   </ItemGroup>
   <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
@@ -76,8 +88,8 @@
   <ItemGroup>
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
-    <PackageVersion Include="Microsoft.Testing.Platform" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <!-- coverlet.MTP, not coverlet.collector (a VSTest data collector, which the
          UseMicrosoftTestingPlatformRunner test host below cannot load), is the native
          Microsoft.Testing.Platform coverage extension; run via the "coverlet" CLI flag
@@ -93,7 +105,7 @@
        JSON fixtures (ticket: JSON Schema for the rule tree). Not referenced by any shipping project;
        the schema itself is packaged as a plain content file, not consumed by production code. -->
   <ItemGroup>
-    <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
   </ItemGroup>
   <!-- CsCheck - test-project-only, property-based/generative testing for the DSL printer/parser
        round-trip (ticket: DSL round-trip property testing). Chosen over FsCheck: pure C# (no F#

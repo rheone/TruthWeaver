@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-10-16). Amends [ADR-0005](0005-strong-k3-language-surface.md)'s operator and connective
+Accepted (2026-10-16). Amended 2026-10-17: the registration shape of the untyped element read is fixed (see the
+amendment under decision 3, which closes the first open question). Amends [ADR-0005](0005-strong-k3-language-surface.md)'s operator and connective
 lists in place (dated note there, pointing here). Records the owner's decisions from the grilling session
 on `.scratch/feature-backlog-2026-10-11/notes/22-quantifiers-design.md` (spike output, 2026-10-11) and the
 scope `.scratch/feature-backlog-2026-10-11/issues/22b-quantifiers-build.md` (parent ticket) set on
@@ -84,8 +85,8 @@ whose `TItem` is not projectable to a data-source node supports only the typed p
 writes `from(<variable>, ...)` against such a collection is an undeclared-source diagnostic, the same
 diagnostic ADR-0006 decision 3 already gives for a variable that names no supplied source. The exact
 registration shape for the untyped projection (an additional delegate parameter on `AddCollection`, a
-separate opt-in registration call, or an interface `TItem` can implement) is **not fixed by this ADR**; see
-Open questions.
+separate opt-in registration call, or an interface `TItem` can implement) was left open when this ADR was
+accepted; the amendment below fixes it.
 
 Reused unchanged from the note for the typed path: `AddCollection<TItem>(string name, Func<TContext,
 IEnumerable<TItem>?> selector, Action<PredicateRegistryBuilder<Element<TContext, TItem>>> elements)`.
@@ -95,6 +96,36 @@ unknown collection name is a diagnostic with a "did you mean" suggestion over th
 A body term resolves only in the element registry (and, for the untyped path, the element's own bound data
 source) of its own quantifier; outer data reaches an element predicate through `Element.Outer` in C#, not
 through rule text. Outer predicates usable directly inside a body are out of scope for slice 1 (below).
+
+> **Amendment (2026-10-17, the `elementSource` registration shape):** the untyped element read is opted into with an
+> additional, optional delegate parameter on `AddCollection<TItem>`, not with a separate registration call and not with
+> an interface that `TItem` implements:
+>
+> ```csharp
+> AddCollection<TItem>(
+>     string name,
+>     Func<TContext, IEnumerable<TItem>?> selector,
+>     Action<PredicateRegistryBuilder<Element<TContext, TItem>>> elements,
+>     Func<TItem, IDataSource>? elementSource = null)
+> ```
+>
+> The owner confirmed this shape on 2026-10-17 (main review ticket 08), as the code already had it. Why:
+> `elementSource` is a projection from the element to an `IDataSource`, so a host can use an existing source type such as
+> `JsonDataSource` without changing its element class (an interface on `TItem` would force that), and a collection that
+> needs only the typed path passes nothing, so the typed registration of this decision is unchanged. The rules of the
+> shape:
+>
+> - **`null` (the default) means typed reads only.** A body that writes `from(<variable>, ...)` against such a collection
+>   is the ordinary undeclared-source diagnostic of ADR-0006 decision 3.
+> - **The source is named by the quantifier's variable.** When the body is compiled, the variable is declared as a data
+>   source name with no query validator, because the dialect of the query is the projected source's own. A name that was
+>   already declared keeps its validator.
+> - **The element binding wins.** Inside the body, a source supplied to the evaluation under the same name as the
+>   variable is hidden, because the variable names the element lexically. Every other supplied source stays reachable.
+> - **The projection is lazy and a failure is a data failure.** The delegate runs at the first query of that element, not
+>   when the element is bound. A delegate that throws is a source error: the term is `Unknown` plus a fault
+>   ([ADR-0001](0001-kleene-failure-model.md), [ADR-0006](0006-data-sources-for-expression-variables.md) decision 9),
+>   and the loop over the other elements goes on.
 
 ### 4. Strong Kleene semantics
 
@@ -243,12 +274,8 @@ element is memoized once, the same term across different elements is called once
 
 ## Open questions for the owner
 
-- **The untyped element-read registration shape (decision 3).** This ADR authorizes untyped `from(...)`
-  reads of a typed collection's element, alongside typed element predicates, in slice 1, but does not fix how
-  a host opts an element into that path: as an additional delegate parameter on `AddCollection<TItem>` (a
-  projection from `TItem` to a data-source-shaped node), a separate registration call, or an interface
-  `TItem` can implement. The implementing ticket needs this decided before it writes `AddCollection` and the
-  per-element data-source binding.
+- **The untyped element-read registration shape (decision 3).** Resolved 2026-10-17: an additional optional
+  delegate parameter on `AddCollection<TItem>`. See the amendment under decision 3.
 - **Diagnostic codes.** This ADR names new diagnostics (unknown collection name, invalid or shadowed
   variable name, `MaxQuantifierDepth` exceeded, undeclared source for an untyped element read reusing
   ADR-0006's existing code) but does not allocate `TRE` codes for the ones that are new; the next free code

@@ -233,19 +233,7 @@ internal sealed class DslParser
     /// </summary>
     private static string? SymbolAlias(string symbol)
     {
-        return symbol switch
-        {
-            "&&" or "∧" => "AND",
-            "||" or "∨" => "OR",
-            "!" or "¬" => "NOT",
-            "⊕" or "⊻" => "XOR",
-            "→" or "⇒" => "IMPLIES",
-            "↔" or "⇔" => "EQUIVALENT",
-            "↑" or "⊼" => "NAND",
-            "↓" or "⊽" => "NOR",
-            "??" => "COALESCE",
-            _ => null,
-        };
+        return OperatorDefinitions.TryGetBySymbol(symbol, out OperatorDefinition? definition) ? definition.LabelTemplate : null;
     }
 
     /// <summary>

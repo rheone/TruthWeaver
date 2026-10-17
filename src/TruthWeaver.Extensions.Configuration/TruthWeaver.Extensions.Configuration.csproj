@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>5f3c2a7e-8d41-4b6a-9c0e-2b7d1e4a6f93</ProjectGuid>
+    <RootNamespace>TruthWeaver.Extensions.Configuration</RootNamespace>
+    <PackageId>TruthWeaver.Extensions.Configuration</PackageId>
+    <Description>A rule store for TruthWeaver that loads named rules from an IConfiguration section, compiles each rule once, caches it by the hash of its text, and swaps the compiled rules atomically when the configuration reloads. A bad reload keeps the last good rule.</Description>
+    <PackageTags>rules engine;kleene;k3;configuration;hot reload;rule store;truthweaver</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+  </ItemGroup>
+</Project>

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Add an EvaluationOptions flag to request the trace, off by default. Decision.Trace stays nullable and is null unless requested.
 
