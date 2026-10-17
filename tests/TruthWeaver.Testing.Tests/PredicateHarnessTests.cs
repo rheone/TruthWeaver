@@ -352,6 +352,20 @@ public sealed class PredicateHarnessTests
         report.ShouldPass();
     }
 
+    /// <summary>The report text names the predicate and lists every outcome on its own line, as the outcome prints it.</summary>
+    [Fact]
+    public async Task ToString_AnyRun_NamesThePredicateAndListsEveryOutcome_Test()
+    {
+        PredicateHarnessReport report = await RunMinAgeAsync(
+            (age, args, _) => ValueTask.FromResult(age >= args.GetInt64("min") ? TruthValue.True : TruthValue.False)
+        );
+
+        string[] lines = report.ToString().ReplaceLineEndings("\n").Split('\n');
+
+        Assert.Equal("Predicate harness report for 'ageAtLeast':", lines[0]);
+        Assert.Equal(report.Outcomes.Select(o => "- " + o), lines.Skip(1));
+    }
+
     /// <summary>A null schema is a programming error and throws ArgumentNullException.</summary>
     [Fact]
     public Task RunAsync_NullSchema_ThrowsArgumentNullException_Test()

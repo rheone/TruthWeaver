@@ -356,6 +356,156 @@ public sealed class RulePatcherTests
         Assert.Contains("\"owner\": \"platform-team\"", result.Value.Text, StringComparison.Ordinal);
     }
 
+    /// <summary>The round-trip mode replaces a whole JSON file when the rule is the document itself.</summary>
+    [Fact]
+    public void Patch_JsonWholeFileRoundTrip_ReplacesTheDocument_Test()
+    {
+        LoadedRule rule = RuleLoader
+            .LoadString("{\"op\":\"and\",\"operands\":[{\"predicate\":\"a\"},{\"predicate\":\"b\"}]}", "rule.json")
+            .Value!;
+        CompiledRule<StubAssignment> edited = Compile("a OR b");
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(rule, edited, WriteBackMode.RoundTrip);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RulePatchKind.DocumentRewritten, Assert.Single(result.Value.Rules).Kind);
+        AssertReadsBackAs(result.Value.Text, RuleFormat.Json, null, edited);
+    }
+
+    /// <summary>The round-trip mode puts a rule at an array position of a JSON document and keeps the other items.</summary>
+    [Fact]
+    public void Patch_JsonArrayItemRoundTrip_ReplacesOnlyThatItem_Test()
+    {
+        LoadedRule rule = RuleLoader
+            .LoadString(
+                "{\"list\":[{\"predicate\":\"a\"},{\"predicate\":\"b\"}]}",
+                "doc.json",
+                new RuleLoadOptions { Path = "list[1]" }
+            )
+            .Value!;
+        CompiledRule<StubAssignment> edited = Compile("NOT c");
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(rule, edited, WriteBackMode.RoundTrip);
+
+        Assert.True(result.Succeeded);
+        AssertReadsBackAs(result.Value.Text, RuleFormat.Json, "list[1]", edited);
+        AssertReadsBackAs(result.Value.Text, RuleFormat.Json, "list[0]", Compile("a"));
+    }
+
+    /// <summary>The round-trip mode replaces a whole YAML file when the rule is the document itself.</summary>
+    [Fact]
+    public void Patch_YamlWholeFileRoundTrip_ReplacesTheDocument_Test()
+    {
+        LoadedRule rule = RuleLoader
+            .LoadString("# c\nop: and\noperands:\n  - predicate: a\n  - predicate: b\n", "rule.yaml")
+            .Value!;
+        CompiledRule<StubAssignment> edited = Compile("a OR b");
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(rule, edited, WriteBackMode.RoundTrip);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RulePatchKind.DocumentRewritten, Assert.Single(result.Value.Rules).Kind);
+        AssertReadsBackAs(result.Value.Text, RuleFormat.Yaml, null, edited);
+    }
+
+    /// <summary>The round-trip mode puts a rule at an array position of a YAML document and keeps the other items.</summary>
+    [Fact]
+    public void Patch_YamlArrayItemRoundTrip_ReplacesOnlyThatItem_Test()
+    {
+        LoadedRule rule = Load(YamlFixture, "rules.list[0]");
+        CompiledRule<StubAssignment> edited = Compile("NOT isSuspended");
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(rule, edited, WriteBackMode.RoundTrip);
+
+        Assert.True(result.Succeeded);
+        AssertReadsBackAs(result.Value.Text, RuleFormat.Yaml, "rules.list[0]", edited);
+        AssertReadsBackAs(
+            result.Value.Text,
+            RuleFormat.Yaml,
+            "rules.review",
+            Compile("isActive AND hasRole(role: \"reviewer\")")
+        );
+    }
+
+    /// <summary>The round-trip mode over a rule text file writes the edited text.</summary>
+    [Fact]
+    public void Patch_RuleTextFileRoundTrip_WritesTheEditedText_Test()
+    {
+        LoadedRule rule = RuleLoader.LoadString("isActive AND isVerified\n", "access.rule").Value!;
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(rule, Compile("isActive OR isVerified"), WriteBackMode.RoundTrip);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("isActive OR isVerified\n", result.Value.Text);
+        Assert.Equal(RulePatchKind.DocumentRewritten, Assert.Single(result.Value.Rules).Kind);
+    }
+
+    /// <summary>The round-trip mode fails with the loader's diagnostic when an edit's path selects nothing.</summary>
+    [Fact]
+    public void Patch_RoundTripPathNotFound_Fails_Test()
+    {
+        SourceText document = Load(YamlFixture, null).Source;
+
+        ToolResult<DocumentPatch> result = RulePatcher.Patch(
+            document,
+            RuleFormat.Yaml,
+            [new RuleEdit<StubAssignment>("rules.missing", Compile("isActive"))],
+            WriteBackMode.RoundTrip
+        );
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.PathNotFound, Assert.Single(result.Diagnostics).Code);
+    }
+
+    /// <summary>An undefined format or mode is a programming error and throws.</summary>
+    [Fact]
+    public void Patch_UndefinedFormatOrMode_ThrowsArgumentOutOfRangeException_Test()
+    {
+        SourceText document = Load(YamlFixture, null).Source;
+        RuleEdit<StubAssignment>[] edits = [new("rules.publish", Compile("isActive"))];
+
+        ArgumentOutOfRangeException format = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RulePatcher.Patch(document, (RuleFormat)99, edits)
+        );
+        ArgumentOutOfRangeException mode = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RulePatcher.Patch(document, RuleFormat.Yaml, edits, (WriteBackMode)99)
+        );
+
+        Assert.Equal("format", format.ParamName);
+        Assert.Equal("mode", mode.ParamName);
+    }
+
+    /// <summary>A null edit in the list is a programming error and throws.</summary>
+    [Fact]
+    public void Patch_NullEdit_ThrowsArgumentNullException_Test()
+    {
+        SourceText document = Load(YamlFixture, null).Source;
+
+        ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() =>
+            RulePatcher.Patch(document, RuleFormat.Yaml, new RuleEdit<StubAssignment>[] { null! })
+        );
+
+        Assert.Equal("edits", exception.ParamName);
+    }
+
+    /// <summary>Encoding a patch writes the byte order mark of each encoding, then the text in that encoding.</summary>
+    [Theory]
+    [InlineData(SourceEncoding.Utf8, new byte[0])]
+    [InlineData(SourceEncoding.Utf8WithBom, new byte[] { 0xEF, 0xBB, 0xBF })]
+    [InlineData(SourceEncoding.Utf16LittleEndian, new byte[] { 0xFF, 0xFE })]
+    [InlineData(SourceEncoding.Utf16BigEndian, new byte[] { 0xFE, 0xFF })]
+    [InlineData(SourceEncoding.Utf32LittleEndian, new byte[] { 0xFF, 0xFE, 0x00, 0x00 })]
+    [InlineData(SourceEncoding.Utf32BigEndian, new byte[] { 0x00, 0x00, 0xFE, 0xFF })]
+    public void Encode_EachEncoding_StartsWithItsByteOrderMark_Test(SourceEncoding encoding, byte[] mark)
+    {
+        DocumentPatch patch = new("a", encoding, []);
+
+        byte[] bytes = RulePatcher.Encode(patch);
+
+        Assert.True(bytes.AsSpan().StartsWith(mark));
+        Assert.True(bytes.Length > mark.Length);
+    }
+
     /// <summary>An edit whose path selects nothing fails with the loader's diagnostic and gives no text.</summary>
     [Fact]
     public void Patch_PathNotFound_Fails_Test()
@@ -427,7 +577,7 @@ public sealed class RulePatcherTests
     private static void AssertReadsBackAs(
         string document,
         RuleFormat format,
-        string path,
+        string? path,
         CompiledRule<StubAssignment> expected
     )
     {
