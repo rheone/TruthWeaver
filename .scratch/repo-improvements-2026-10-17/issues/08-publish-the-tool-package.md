@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] No page or comment says the Tool package is not published
 - [ ] A clean-directory install test of the packed tool passes and is recorded

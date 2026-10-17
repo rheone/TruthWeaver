@@ -55,7 +55,7 @@ To check that a stored record came from a rule, compare `record.Rule.CanonicalTe
 | Data | In the record |
 | --- | --- |
 | The literal argument values of the rule | Only with `new DecisionJsonOptions(IncludeArgumentValues: true)`. By default a faulting term has the name and kind of each argument and no value, and each trace text and trace tree text has `<omitted>` in place of each literal argument value: `lookup(id: 42)` becomes `lookup(id: <omitted>)`. `argumentValues` says which. |
-| The variable references | Always, in the fault terms and in the trace texts. A reference is a source name and a query, which are rule text, not data. |
+| The variable references and their outcomes | Always, in the fault terms and in the trace texts (`[from("user", "$.age"): resolved]`). A reference is a source name and a query, which are rule text, not data. |
 | A value that a data source resolved | In the trace only when the evaluation set `EvaluationOptions.IncludeResolvedValues` (`v: from("user", "$.age") = 18`). `DecisionJsonOptions` does not change it. |
 | The exception of a fault | Its full type name and message. A `VariableResolutionException` also has its reference and failure kind. The stack trace and inner exceptions are not written. |
 | The trace and the trace tree | Every entry and node, with its result and `notEvaluated` flag. An operator label, such as `AND` or `Exactly(2)`, is written as it is. |
@@ -90,7 +90,7 @@ This rule has a `lookup` predicate that faults:
 lookup(id: 42) OR hasRole(role: "admin")
 ```
 
-With the default options, the default `DecisionJsonOptions` and `RuleIdentity.Of(rule, "access", "3")`, it gives this record:
+With `new EvaluationOptions(IncludeTrace: true)`, the default `DecisionJsonOptions` and `RuleIdentity.Of(rule, "access", "3")`, it gives this record:
 
 <!-- doctest:decision-record record name=access version=3 -->
 ```json
@@ -105,7 +105,8 @@ With the default options, the default `DecisionJsonOptions` and `RuleIdentity.Of
     "faultBudget": null,
     "mode": "ShortCircuit",
     "timeout": null,
-    "includeResolvedValues": false
+    "includeResolvedValues": false,
+    "includeTrace": true
   },
   "argumentValues": "omitted",
   "result": "True",
@@ -165,7 +166,7 @@ With the default options, the default `DecisionJsonOptions` and `RuleIdentity.Of
 | --- | --- |
 | `formatVersion` | Always 1. |
 | `rule` | `canonicalTextSha256`, and `name` and `version` when they are not `null`. Absent when the record has no rule identity. |
-| `options` | `faultBudget` (a number or `null`), `mode` (`ShortCircuit` or `Exhaustive`), `timeout` (a .NET constant-format time span such as `00:00:02.5000000`, or `null`) and `includeResolvedValues`. Absent when the record has no options. |
+| `options` | `faultBudget` (a number or `null`), `mode` (`ShortCircuit` or `Exhaustive`), `timeout` (a .NET constant-format time span such as `00:00:02.5000000`, or `null`) `includeResolvedValues` and `includeTrace` (optional when you read a record, `false` when absent). Absent when the record has no options. |
 | `argumentValues` | `included` or `omitted`. With `omitted`, no literal argument value of the rule is in the record. |
 | `result` | `True`, `False` or `Unknown`. |
 | `faults` | One object for each fault, in the order of the faults. `term` has `predicate`, `arguments` (each with `name`, `kind` and, when included, `value`) and `variables` (each with `name`, `source` and `query`), sorted by name. `exception` has `type`, `message` and, for a variable failure, `variable` with `source`, `query` and `failure`. |

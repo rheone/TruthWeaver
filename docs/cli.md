@@ -6,7 +6,13 @@ The commands are a thin front end over the [tool core](tool-core.md), so the com
 
 ## Install
 
-The package `TruthWeaver.Tool` is a .NET tool. It is not on NuGet. Pack it from the repository and install it from the folder:
+The package `TruthWeaver.Tool` is a .NET tool. Install it from NuGet:
+
+```shell
+dotnet tool install --global TruthWeaver.Tool
+```
+
+To install a build from the repository, pack it and install it from the folder:
 
 ```shell
 dotnet pack src/TruthWeaver.Tool --configuration Release --output ./packages
@@ -14,6 +20,8 @@ dotnet tool install --global TruthWeaver.Tool --add-source ./packages --prerelea
 ```
 
 The command is `truthweaver`. `truthweaver --help` lists the commands, and `truthweaver <command> --help` lists the options of a command.
+
+The tool runs on .NET 11. Its command line (the commands, the options and the exit codes) is part of the public surface and follows [Semantic Versioning](https://semver.org/) once the package is published.
 
 ## Commands
 

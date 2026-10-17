@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Amend ADR-0005 decision 14 to allow TRE0016 to be reused for RewriteTooLarge. No code change.
 

@@ -100,7 +100,7 @@ environment variable.
 dotnet nuget push "$env:TEMP/tw-release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
 ```
 
-`TruthWeaver.Tool` is the .NET tool package of the [command line](cli.md). The pack step makes it and the package check checks it, but it is not published: delete `TruthWeaver.Tool.*.nupkg` and its `.snupkg` from the output directory before the push.
+`TruthWeaver.Tool` is the .NET tool package of the [command line](cli.md). The push publishes it with the other packages, and the pack step and the package check treat it like them.
 
 `dotnet nuget push` of a `.nupkg` also pushes the `.snupkg` that is next to it. NuGet.org cannot unpublish a version.
 After a push you can only unlist it. Do this step last, after all the checks pass.

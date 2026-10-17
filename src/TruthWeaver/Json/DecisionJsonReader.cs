@@ -236,6 +236,7 @@ internal sealed class DecisionJsonReader
                     DecisionJsonNames.Mode,
                     DecisionJsonNames.Timeout,
                     DecisionJsonNames.IncludeResolvedValues,
+                    DecisionJsonNames.IncludeTrace,
                 ]
             )
         )
@@ -301,7 +302,19 @@ internal sealed class DecisionJsonReader
             return this.Fail<EvaluationOptions>($"{Path}.includeResolvedValues", "expected true or false.");
         }
 
-        return new EvaluationOptions(faultBudget, mode, timeout, includeElement.GetBoolean());
+        // Optional, so a record written before the member existed still reads: it did not request a trace option.
+        bool includeTrace = false;
+        if (element.TryGetProperty(DecisionJsonNames.IncludeTrace, out JsonElement traceElement))
+        {
+            if (traceElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            {
+                return this.Fail<EvaluationOptions>($"{Path}.includeTrace", "expected true or false.");
+            }
+
+            includeTrace = traceElement.GetBoolean();
+        }
+
+        return new EvaluationOptions(faultBudget, mode, timeout, includeElement.GetBoolean(), IncludeTrace: includeTrace);
     }
 
     private List<Fault>? ReadFaults(JsonElement element, bool valuesIncluded)

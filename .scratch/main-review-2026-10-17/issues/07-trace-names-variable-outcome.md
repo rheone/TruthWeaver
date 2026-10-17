@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Owner decision (2026-10-17):** Implement ADR-0006 decision 13: trace entries for variable terms name the reference and the outcome (resolved, missing, ambiguous).
 

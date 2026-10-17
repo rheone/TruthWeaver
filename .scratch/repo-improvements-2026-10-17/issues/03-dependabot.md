@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The file is valid and Dependabot's first run opens grouped PRs only
 - [ ] The ignore list matches the pins and each ignore has a comment

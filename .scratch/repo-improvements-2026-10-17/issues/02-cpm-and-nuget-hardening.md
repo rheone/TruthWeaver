@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Each setting is on, or its blocker is recorded in a comment next to where it would sit
 - [ ] A deliberate vulnerable-package test (on a scratch branch) shows CI failing; the result is noted in the ticket

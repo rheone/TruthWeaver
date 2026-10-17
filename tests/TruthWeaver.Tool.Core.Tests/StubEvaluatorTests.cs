@@ -284,7 +284,11 @@ public sealed class StubEvaluatorTests
 
         ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
             rule,
-            new StubEvaluationOptions { Stubs = stubs, Evaluation = new EvaluationOptions(Mode: EvaluationMode.Exhaustive) },
+            new StubEvaluationOptions
+            {
+                Stubs = stubs,
+                Evaluation = new EvaluationOptions(Mode: EvaluationMode.Exhaustive, IncludeTrace: true),
+            },
             TestContext.Current.CancellationToken
         );
 

@@ -113,6 +113,30 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(TruthValue.Unknown, decision.Result);
     }
 
+    /// <summary>
+    /// An unregistered predicate in lenient mode records one fault on its term, even when the rule repeats the term, so
+    /// the decision says why the result is Unknown (ADR-0002).
+    /// </summary>
+    [Fact]
+    public async Task Lenient_UnknownTerm_RecordsOneFaultOnTheTerm_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
+            new CompilerOptions(Mode: CompilationMode.Lenient)
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("noSuchPredicate OR noSuchPredicate").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Fault fault = Assert.Single(decision.Faults);
+        Assert.Equal("noSuchPredicate", fault.Term.PredicateName);
+        Assert.Contains("noSuchPredicate", fault.Exception.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>Lenient mode compiles a heterogeneous array literal against an unregistered predicate without error.</summary>
     [Fact]
     public void Lenient_HeterogeneousArray_CompilesWithoutError_Test()

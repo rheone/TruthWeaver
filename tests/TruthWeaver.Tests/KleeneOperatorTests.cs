@@ -2,6 +2,7 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
+using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
@@ -182,6 +183,7 @@ public sealed class KleeneOperatorTests
             .CompiledRule!.EvaluateAsync(
                 new RuleTestContext(),
                 EmptyServiceProvider.Instance,
+                options: new EvaluationOptions(IncludeTrace: true),
                 cancellationToken: TestContext.Current.CancellationToken
             );
 

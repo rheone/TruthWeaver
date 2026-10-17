@@ -73,7 +73,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
         void AddFlat(TruthValue? value, bool notEvaluated)
         {
-            state.Trace.Add(
+            state.AddTrace(
                 new TraceEntry(outerScope is null ? description : $"{outerScope}: {description}", value, notEvaluated)
             );
         }

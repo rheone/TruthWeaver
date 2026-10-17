@@ -35,7 +35,7 @@ using TruthWeaver.Yaml;
 /// <item><c>metrics ID</c>: the Markdown table that follows must equal the depth and node count of the <c>rule ID</c> example and of each rewrite word that follows the ID.</item>
 /// <item><c>diagnostics-dsl SOURCE</c>, <c>diagnostics-json SOURCE</c>, <c>diagnostics-yaml SOURCE</c>: documented output that must equal <c>FormatDiagnostics</c> for compiling the rest of the marker line as that format.</item>
 /// <item><c>truthtable ID</c>: documented output that must equal <c>PrintTruthTable()</c> of the <c>rule ID</c> example; the words <c>csv</c>, <c>json</c>, <c>html</c> and <c>latex</c> select the format (Markdown with none), <c>classical</c>, <c>simple</c>, <c>allow-larger</c> and <c>no-arguments</c> set the matching options, and <c>letters</c> (the default), <c>words</c> and <c>logic-symbols</c> select the constant style.</item>
-/// <item><c>decision-record ID</c>: documented output that must equal <c>DecisionRecord.PrintJson()</c> for an evaluation of the <c>rule ID</c> example without data sources and with the default options; the words <c>name=NAME</c> and <c>version=VERSION</c> set the rule identity and <c>values</c> sets <c>IncludeArgumentValues</c>.</item>
+/// <item><c>decision-record ID</c>: documented output that must equal <c>DecisionRecord.PrintJson()</c> for an evaluation of the <c>rule ID</c> example without data sources and with <c>EvaluationOptions(IncludeTrace: true)</c>; the words <c>name=NAME</c> and <c>version=VERSION</c> set the rule identity and <c>values</c> sets <c>IncludeArgumentValues</c>.</item>
 /// <item><c>skip REASON</c>: the block is not runnable (a pseudo-grammar, a class diagram); the reason is mandatory.</item>
 /// </list>
 /// <para>Failures are returned, not thrown, so the checker can be shown to fail on a deliberately broken example.</para>
@@ -347,7 +347,7 @@ internal static partial class DocExampleChecker
                 break;
             case "decision-record":
                 // The words after the rule id: "name=NAME" and "version=VERSION" for the rule identity, and "values" for
-                // DecisionJsonOptions.IncludeArgumentValues. The rule is evaluated with the default options, which the record holds.
+                // DecisionJsonOptions.IncludeArgumentValues. The rule is evaluated with IncludeTrace on, so the record holds the flat trace.
                 string[] recordWords = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string recordRuleId = recordWords.Length > 0 ? recordWords[0] : string.Empty;
                 if (!rules.TryGetValue(recordRuleId, out CompiledRule<RuleTestContext>? recordRule))
@@ -356,10 +356,11 @@ internal static partial class DocExampleChecker
                     break;
                 }
 
+                EvaluationOptions recordOptions = new(IncludeTrace: true);
                 DecisionRecord record = new(
-                    await EvaluateWithoutDataSourcesAsync(recordRule),
+                    await recordRule.EvaluateAsync(new RuleTestContext(), options: recordOptions),
                     RuleIdentity.Of(recordRule, WordValue(recordWords, "name="), WordValue(recordWords, "version=")),
-                    EvaluationOptions.Default
+                    recordOptions
                 );
                 CompareOutput(
                     record.PrintJson(new DecisionJsonOptions(IncludeArgumentValues: recordWords.Contains("values"))),

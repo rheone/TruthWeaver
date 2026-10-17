@@ -215,7 +215,7 @@ isActive: True
 | --- | --- | --- |
 | `Stubs` | The [stub values](#stub-values). | `StubAssignment.Empty`: every term is `Unknown`. |
 | `DataSources` | The [data files](#data-files) for the `from("source", "query")` references. | None. |
-| `Evaluation` | The mode, the fault budget, the timeout and the resolved values in the trace. | `EvaluationOptions.Default` |
+| `Evaluation` | The mode, the fault budget, the timeout, the flat trace and the resolved values in the trace. | `EvaluationOptions.Default` |
 | `Settings` | The compile limits and the schema file. | `ToolSettings.Default` |
 | `PredicateSchema` | A [predicate schema file](#predicate-schema-file) that is already read. Otherwise the evaluator reads the file of `Settings.SchemaFile`, when one is set. | None. |
 

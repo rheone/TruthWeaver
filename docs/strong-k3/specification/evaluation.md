@@ -20,7 +20,7 @@ A predicate answers `True`, `False` or `Unknown`. An answer of `Unknown` is a no
 
 A predicate that cannot answer is a fault. A thrown exception, or a predicate's own timeout or cancellation, gives the term the value `Unknown` and records a fault on the `Decision`. Cancellation of the evaluation itself is not a fault: it throws `OperationCanceledException`. The rest of the expression sees `Unknown`. A fault never changes the rules of an Operation. `False` still settles `AND`, and `True` still settles `OR`, whether or not another operand faulted.
 
-The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. When it expires, the evaluation throws `OperationCanceledException` and does not record a fault. `FaultBudget` stops the evaluation as soon as that many faults are recorded, so a budget of 1 stops at the first fault. `null` means no limit, and a budget below 1 throws `ArgumentOutOfRangeException`.
+The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. When it expires, the evaluation throws `OperationCanceledException` and does not record a fault. `FaultBudget` stops the evaluation as soon as that many faults are recorded, so a budget of 1 stops at the first fault. `null` means no limit, and a budget below 1 throws `ArgumentOutOfRangeException`. `IncludeTrace` fills `Decision.Trace`, the flat log of the trace. It is `false` by default, and `Decision.Trace` is then `null`. `Decision.TraceTree` is always filled.
 
 ## Evaluation modes
 

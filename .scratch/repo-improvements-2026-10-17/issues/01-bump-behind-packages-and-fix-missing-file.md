@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Both packages are updated; the outdated report shows no stable update left
 - [ ] `dictionary.dic` is added with a purpose or its `AdditionalFiles` item is removed, with the reason stated in the commit

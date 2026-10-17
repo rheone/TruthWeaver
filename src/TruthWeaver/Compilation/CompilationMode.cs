@@ -11,7 +11,7 @@ public enum CompilationMode
 
     /// <summary>
     /// An unregistered predicate name compiles successfully as a term that permanently evaluates to
-    /// <c>TruthValue.Unknown</c>. Intended for read paths in a multi-service shared-rule-store
+    /// <c>TruthValue.Unknown</c> and records one <c>Fault</c> on that term at evaluation. Intended for read paths in a multi-service shared-rule-store
     /// topology, never for the write/persistence path.
     /// </summary>
     Lenient,

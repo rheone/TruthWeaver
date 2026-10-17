@@ -43,7 +43,7 @@ internal sealed class Evaluator<TContext>(
     private readonly CancellationToken cancellationToken = cancellationToken;
     private readonly ILogger logger = logger ?? NullLogger.Instance;
     private readonly DataSources? dataSources = dataSources;
-    private readonly EvaluationState state = state ?? new EvaluationState();
+    private readonly EvaluationState state = state ?? new EvaluationState(options.IncludeTrace);
 
     // The element scope path this evaluator runs in (e.g. "line[2]" or "line[2]/tag[0]"), or null outside any
     // quantifier. Prefixes every flat trace entry this evaluator records (ADR-0010 decision 7) and labels
@@ -66,7 +66,7 @@ internal sealed class Evaluator<TContext>(
         return new Decision(
             result.Value,
             new EquatableArray<Fault>(this.state.Faults),
-            new Trace(new EquatableArray<TraceEntry>(this.state.Trace)),
+            this.options.IncludeTrace ? new Trace(new EquatableArray<TraceEntry>(this.state.Trace)) : null,
             result.Node
         );
     }
@@ -107,10 +107,24 @@ internal sealed class Evaluator<TContext>(
         return $"{identity.PredicateName}({arguments})";
     }
 
+    /// <summary>Gets the words the trace uses for a failed variable resolution.</summary>
+    private static string OutcomeName(VariableFailureKind kind)
+    {
+        return kind switch
+        {
+            VariableFailureKind.Missing => "missing",
+            VariableFailureKind.Ambiguous => "ambiguous",
+            VariableFailureKind.TypeMismatch => "type mismatch",
+            VariableFailureKind.SourceError => "source error",
+            VariableFailureKind.UnsuppliedSource => "unsupplied source",
+            _ => "failed",
+        };
+    }
+
     /// <summary>Appends a flat trace entry, prefixed with this evaluator's element scope path, if any (ADR-0010 decision 7).</summary>
     private void AddTraceEntry(string description, TruthValue? value, bool notEvaluated)
     {
-        this.state.Trace.Add(
+        this.state.AddTrace(
             new TraceEntry(this.scope is null ? description : $"{this.scope}: {description}", value, notEvaluated)
         );
     }
@@ -497,8 +511,22 @@ internal sealed class Evaluator<TContext>(
     private async ValueTask<EvalResult> EvalTermAsync(TermExpression term)
     {
         string description = term.Identity.ToString();
+        (string? Scope, TermIdentity Identity) key = (this.memoScope, term.Identity);
         if (term.IsUnknownPredicate)
         {
+            // An unregistered predicate compiled under CompilationMode.Lenient is a permanent Unknown fault on its
+            // term (ADR-0002): the predicate is never invoked, but the fault says why the result is Unknown. The
+            // memo makes a repeat of the term in the same scope report one fault, like any other term.
+            if (this.state.Memo.TryAdd(key, TruthValue.Unknown))
+            {
+                this.RecordFault(
+                    term.Identity,
+                    new KeyNotFoundException(
+                        $"No predicate named '{term.Identity.PredicateName}' is registered (CompilationMode.Lenient)."
+                    )
+                );
+            }
+
             this.AddTraceEntry(description, TruthValue.Unknown, false);
             return new EvalResult(
                 TruthValue.Unknown,
@@ -506,7 +534,6 @@ internal sealed class Evaluator<TContext>(
             );
         }
 
-        (string? Scope, TermIdentity Identity) key = (this.memoScope, term.Identity);
         if (this.state.Memo.TryGetValue(key, out TruthValue cached))
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
@@ -522,10 +549,17 @@ internal sealed class Evaluator<TContext>(
         return new EvalResult(result, new TraceNode(description, result, false, EquatableArray<TraceNode>.Empty));
     }
 
-    /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by a note for each array reference that matched no node.</summary>
+    /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by the outcome of each variable reference and a note for each array reference that matched no node.</summary>
     private string Annotated((string? Scope, TermIdentity Identity) key, string description)
     {
         string text = this.state.ValueDescriptions.GetValueOrDefault(key, description);
+
+        // Every variable reference of the term names its outcome, so a resolved reference is visible too (ADR-0006 decision 13).
+        if (this.state.VariableOutcomes.TryGetValue(key, out List<string>? outcomes))
+        {
+            text += string.Concat(outcomes.Select(o => $" [{o}]"));
+        }
+
         if (this.state.ZeroMatchReferences.TryGetValue(key, out List<VariableReference>? references))
         {
             text += string.Concat(references.Select(r => $" [no match for {r}]"));
@@ -602,6 +636,7 @@ internal sealed class Evaluator<TContext>(
     )
     {
         bool resolved = true;
+        List<string> outcomes = [];
         foreach ((string argumentName, VariableReference reference) in identity.Variables)
         {
             VariableResolutionException? failure = null;
@@ -651,6 +686,8 @@ internal sealed class Evaluator<TContext>(
                 failure = new VariableResolutionException(reference, kind, $"{reference}: {message}");
             }
 
+            // The trace names the reference and what happened to it, never the value (ADR-0006 decision 13).
+            outcomes.Add($"{reference}: {(failure is null ? "resolved" : OutcomeName(failure.Kind))}");
             if (failure is not null)
             {
                 resolved = false;
@@ -658,6 +695,7 @@ internal sealed class Evaluator<TContext>(
             }
         }
 
+        this.state.VariableOutcomes[(this.scope, identity)] = outcomes;
         return resolved;
     }
 
