@@ -18,6 +18,8 @@ Recorded in the planning session of 2026-10-17. The owner approved each one.
 8. **Reference rule.** No ADR, ticket, PRD or `.scratch` reference in `src`, `tests` or in-scope documents. Exempt: `docs/adr/`, `.scratch/`, `docs/agents/`, `.agents/`, `CLAUDE.md`. A guard test enforces it, with a shrink-only baseline. `CLAUDE.md` states the rule.
 9. **Verification.** Each phase ends with a fresh-reader review by a sub-agent that has not seen the work. The owner approves the phase before the next starts.
 10. **Execution.** Run groups of tickets with `/dispatch-tasks`. Open questions are settled with grilling first.
+11. **Rich XML docs (amendment, 2026-10-17).** A public member's XML doc uses the full set where it applies: `summary`, `remarks` (behavior, constraints, thread safety), `param`, `typeparam`, `returns`, `exception` (every reachable throw), `example` (a short, compiling sample), `seealso`, `inheritdoc` for overrides and implementations. Where a member can yield or accept `Unknown`, the doc states what happens and whether a Fault is recorded. Internal members get a summary only where the name does not say enough. Phase 2 and the final gate enforce this.
+12. **Tests (amendment, 2026-10-17).** A test summary states what is tested and the expected result in one or two plain sentences. Test files need no `remarks`, `param` or `example` tags. The test-name format from `CLAUDE.md` still applies. Comments inside tests are written only when the arrange step is not obvious. Phase 5 uses this rule.
 
 ## Phases and tickets
 

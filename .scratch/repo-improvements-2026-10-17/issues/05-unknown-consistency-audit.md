@@ -8,12 +8,12 @@ Fold in the open items of `.scratch/main-review-2026-10-17` (05, 06, 07). Link, 
 
 **Blocked by:** None
 
-**Status:** audit written; waiting for owner decisions D1-D10 (see Answer)
+**Status:** done (owner decisions 2026-10-17; follow-up tickets 10-16)
 
 - [x] The matrix is complete for every area above, with a code reference for each row
 - [x] Each deviation lists the cases, the options and a recommendation
 - [x] No source file is changed
-- [ ] The result is in `## Answer`, and the owner has been asked about each deviation, one at a time
+- [x] The result is in `## Answer`, and the owner has been asked about each deviation, one at a time
 
 ## Answer
 
@@ -165,3 +165,7 @@ Each needs an owner decision before a fix ticket is written. They are ordered by
 ### Owner decisions
 
 Pending. The last acceptance box needs the owner to be asked about D1 to D10 one at a time (project rule 8). That interview has not run.
+
+### Owner decisions (2026-10-17)
+
+D1: reorder `TruthValue` (ticket 10). D2: validate pattern and flags first (11). D3 and D5: fix and record faults (12). D4: keep, document (16). D6: keep, document (16). D7: loud only on misuse, the exact shape is the implementer's to propose (13). D8: keep. D9: accept `T`/`F`/`U` in JSON and YAML (14; the audit recommended keeping them rejected). D10: add `IsNullOrEmpty` and its twin (15).
