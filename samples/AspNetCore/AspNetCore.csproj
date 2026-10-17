@@ -2,6 +2,9 @@
   <PropertyGroup>
     <RootNamespace>TruthWeaver.Samples.AspNetCore</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The Web SDK warns when `dotnet pack` meets a non-packable project, and the CI pack step runs with
+         -warnaserror over the whole solution. A sample is never packed, so silence that warning. -->
+    <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
   </PropertyGroup>
 
   <ItemGroup>
