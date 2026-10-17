@@ -14,7 +14,7 @@ using TruthWeaver.Evaluation;
 /// <code>
 /// RuleDiffResult diff = RuleDiff.Compare(before, after);
 /// string text = RuleDiffPrinter.Print(diff);
-/// // "Added operand at root/2: hasRole — Test predicate 'hasRole', true iff 'role' equals 'Y'."
+/// // "Added operand at root/2: hasRole - Test predicate 'hasRole', true iff 'role' equals 'Y'."
 /// </code>
 /// </example>
 public static class RuleDiffPrinter
@@ -75,7 +75,7 @@ public static class RuleDiffPrinter
 
     private static string PrintNode(OutlineNode? node)
     {
-        return node is null ? "(none)" : $"{node.Label} — {node.Description}";
+        return node is null ? "(none)" : $"{node.Label} - {node.Description}";
     }
 
     private static string PrintPath(IReadOnlyList<int> path)

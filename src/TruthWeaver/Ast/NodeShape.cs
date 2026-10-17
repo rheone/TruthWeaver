@@ -66,7 +66,7 @@ internal static class ExpressionShape
             // ahead of this shared seam.
             QuantifierExpression q => new NodeShape(q.Kind == QuantifierKind.ForAll ? "Forall" : "Exists", null, [q.Body]),
             ConstantExpression or TermExpression => throw new ArgumentException(
-                $"'{node.GetType().Name}' is a leaf with no operand shape — handle it directly instead "
+                $"'{node.GetType().Name}' is a leaf with no operand shape - handle it directly instead "
                     + $"of calling {nameof(ExpressionShape)}.{nameof(Of)}.",
                 nameof(node)
             ),

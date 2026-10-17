@@ -1639,7 +1639,7 @@ public sealed class CompiledRule<TContext>
     {
         return decision.TraceTree
             ?? throw new ArgumentException(
-                "This decision has no TraceTree to render — it must come from EvaluateAsync on this same rule.",
+                "This decision has no TraceTree to render - it must come from EvaluateAsync on this same rule.",
                 nameof(decision)
             );
     }

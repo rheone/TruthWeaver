@@ -5,7 +5,7 @@ using TruthWeaver.Registry;
 
 /// <summary>
 /// Small hand-written test predicates (constant-true, constant-false, throwing, delayed/cancellable)
-/// per the spec's testing decisions — behavioral test doubles, not mocks, driven through
+/// per the spec's testing decisions - behavioral test doubles, not mocks, driven through
 /// <c>RuleCompiler.Compile</c> and <c>CompiledRule.EvaluateAsync</c>.
 /// </summary>
 public static class TestPredicates
@@ -96,7 +96,7 @@ public static class TestPredicates
 
     /// <summary>
     /// Registers a zero-argument predicate that cancels the supplied <see cref="CancellationTokenSource"/>
-    /// and then observes its own cancellation via the caller's token — used to exercise the genuine
+    /// and then observes its own cancellation via the caller's token - used to exercise the genuine
     /// cancellation path (as opposed to a self-thrown <see cref="OperationCanceledException"/> the
     /// caller never requested).
     /// </summary>
@@ -119,7 +119,7 @@ public static class TestPredicates
 
     /// <summary>
     /// Registers a zero-argument predicate that throws <see cref="OperationCanceledException"/> on its
-    /// own initiative, without the caller's token ever being cancelled — this must be recorded as an
+    /// own initiative, without the caller's token ever being cancelled - this must be recorded as an
     /// ordinary <see cref="Fault"/>, not treated as a genuine cancellation.
     /// </summary>
     public static PredicateRegistryBuilder<RuleTestContext> AddSelfCancelingPredicate(
@@ -135,7 +135,7 @@ public static class TestPredicates
 
     /// <summary>
     /// Registers a zero-argument predicate that throws <see cref="TimeoutException"/> on its own initiative
-    /// (its own internal deadline, not the evaluation's token) — an ordinary <see cref="Fault"/>, mirroring
+    /// (its own internal deadline, not the evaluation's token) - an ordinary <see cref="Fault"/>, mirroring
     /// a data source's own timeout.
     /// </summary>
     public static PredicateRegistryBuilder<RuleTestContext> AddTimingOutPredicate(

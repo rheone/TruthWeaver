@@ -43,7 +43,7 @@ public static class CollectionPredicates
     {
         const string description =
             "True when the selected collection and the argument array contain the same elements, "
-            + "ignoring order and duplicates (set semantics, not sequence semantics — a deliberate "
+            + "ignoring order and duplicates (set semantics, not sequence semantics - a deliberate "
             + "divergence from CONTEXT.md's array-argument order-sensitive term-identity rule, which "
             + "governs term identity, not this predicate's evaluation semantics). Comparison is "
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "

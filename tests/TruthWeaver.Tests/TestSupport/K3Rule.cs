@@ -6,8 +6,8 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Compiles one rule text once, over zero-argument predicates named <c>a</c>, <c>b</c>, <c>c</c>… (skipping <c>f</c>, <c>t</c> and <c>u</c>),
-/// and evaluates it repeatedly under different K3 assignments of those predicates — the single
+/// Compiles one rule text once, over zero-argument predicates named <c>a</c>, <c>b</c>, <c>c</c>... (skipping <c>f</c>, <c>t</c> and <c>u</c>),
+/// and evaluates it repeatedly under different K3 assignments of those predicates - the single
 /// public-pipeline seam for conformance tests (rule text → <c>Compile</c> → <c>EvaluateAsync</c> → <see cref="Decision"/>).
 /// </summary>
 public sealed class K3Rule

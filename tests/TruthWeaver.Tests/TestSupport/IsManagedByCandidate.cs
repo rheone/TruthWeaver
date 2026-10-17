@@ -6,7 +6,7 @@ using TruthWeaver.Abstractions;
 /// A worked example of the externally-resolved-value predicate pattern's two-sided shape (ticket 03):
 /// both the context anchor (<see cref="ResourceContext.ResourceId"/>) and the rule-text
 /// <c>candidateManagerId</c> argument are resolved through <see cref="IManagerLookupService"/> before
-/// comparison. Neither side is "the current user" — the context is a resource id, not a party.
+/// comparison. Neither side is "the current user" - the context is a resource id, not a party.
 /// </summary>
 /// <param name="managers">The injected live-lookup dependency, resolved fresh per evaluation (ADR-0002).</param>
 public sealed class IsManagedByCandidate(IManagerLookupService managers) : IPredicate<ResourceContext>

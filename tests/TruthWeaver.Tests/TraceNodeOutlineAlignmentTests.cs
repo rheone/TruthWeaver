@@ -10,7 +10,7 @@ using TruthWeaver.Tests.TestSupport;
 /// <see cref="Evaluator{TContext}"/>'s <see cref="TraceNode"/> tree and <c>CompiledRule.OutlineOf</c>'s
 /// <see cref="OutlineNode"/> tree are two independently-invoked traversals that both consume the
 /// same shared node-shape seam (<c>ExpressionShape.Of</c>), so they cannot structurally diverge in
-/// operand order — the two trees stay positionally zippable by construction (see
+/// operand order - the two trees stay positionally zippable by construction (see
 /// <c>evaluated-node-rule-description-alignment</c> ticket 02), not merely by the two traversals
 /// happening to agree.
 /// </summary>

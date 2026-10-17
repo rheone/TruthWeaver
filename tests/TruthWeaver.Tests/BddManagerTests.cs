@@ -101,7 +101,7 @@ public sealed class BddManagerTests
         // BddManager.Ite(i, t, e) is defined semantically as "(i AND t) OR (NOT i AND e)". Because
         // ROBDD nodes are uniquified per (variable, low, high) under a fixed variable ordering, two
         // different constructions of the *same* boolean function are guaranteed to produce the
-        // identical node id — so comparing node ids here is equivalent to checking every one of the
+        // identical node id - so comparing node ids here is equivalent to checking every one of the
         // 8 possible assignments of i/t/e against the brute-force truth table.
         BddManager bdd = new();
         int i = bdd.Variable(0);

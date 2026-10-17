@@ -159,8 +159,8 @@ public sealed class QuantifierAnalysisRewritesCoverageTests
     }
 
     /// <summary>
-    /// Coverage over a corpus whose decisions range over element counts of 0, 1, 2 and 3 — including a decision whose
-    /// quantifier short-circuits with a trailing, not-evaluated element — does not throw despite every decision's
+    /// Coverage over a corpus whose decisions range over element counts of 0, 1, 2 and 3 - including a decision whose
+    /// quantifier short-circuits with a trailing, not-evaluated element - does not throw despite every decision's
     /// trace carrying a different number of per-element children for the same compiled rule shape, and folds each
     /// element's contribution onto the quantifier's own term and its body's one <see cref="NodeCoverage"/>.
     /// </summary>

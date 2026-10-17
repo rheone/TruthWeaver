@@ -6,7 +6,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary>Ticket 11: <see cref="EvaluationOptions"/> — FaultBudget, Exhaustive mode, and timeout.</summary>
+/// <summary>Ticket 11: <see cref="EvaluationOptions"/> - FaultBudget, Exhaustive mode, and timeout.</summary>
 public sealed class EvaluationOptionsTests
 {
     /// <summary>A budget of 1 aborts as soon as the first fault is recorded, so the later faulting term never runs.</summary>

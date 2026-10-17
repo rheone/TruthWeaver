@@ -20,8 +20,8 @@ public sealed class DefinitionsCrossFormAndPropertyTests
     private static readonly string[] Predicates = ["a", "b", "c", "d"];
 
     /// <summary>
-    /// Rule text, JSON, YAML and <see cref="RuleBuilder"/> all compile a representative set of definitions — a
-    /// parameterless definition, a parameterized one, and a definition that uses another one — to the identical
+    /// Rule text, JSON, YAML and <see cref="RuleBuilder"/> all compile a representative set of definitions - a
+    /// parameterless definition, a parameterized one, and a definition that uses another one - to the identical
     /// compiled tree (ADR-0008 decisions 2-4).
     /// </summary>
     [Fact]
@@ -227,7 +227,7 @@ public sealed class DefinitionsCrossFormAndPropertyTests
 
     /// <summary>
     /// Expands <paramref name="node"/> by hand: every <see cref="Use"/> is replaced by its definition's body with
-    /// its parameters substituted, exactly what ADR-0008 decision 1 asks the compiler to do — implemented here
+    /// its parameters substituted, exactly what ADR-0008 decision 1 asks the compiler to do - implemented here
     /// independently of <c>DefinitionExpander</c>, as the property test's reference model.
     /// </summary>
     private static TestExpr HandExpand(

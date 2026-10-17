@@ -141,7 +141,7 @@ A simple recursive print gives the shape of a "what does this rule mean" report:
 ```csharp
 void Print(OutlineNode node, int depth = 0)
 {
-    Console.WriteLine($"{new string(' ', depth * 2)}{node.Label} — {node.Description}");
+    Console.WriteLine($"{new string(' ', depth * 2)}{node.Label} - {node.Description}");
     foreach (OutlineNode operand in node.Operands)
     {
         Print(operand, depth + 1);

@@ -25,7 +25,7 @@ Two specific traps drove several of the decisions below:
 - **N-ary XOR is not what people mean.** The parity generalization of binary
   XOR (odd number of `true` operands) is the algebraically "correct"
   extension to more than two operands, but it is almost never what an author
-  writing `XOR(a, b, c)` intends — they mean *exactly one*. Silently
+  writing `XOR(a, b, c)` intends - they mean *exactly one*. Silently
   resolving that ambiguity one way is a latent bug generator.
 
 ## Decision
@@ -37,7 +37,7 @@ Two specific traps drove several of the decisions below:
 > `COALESCE`, `If`, the inspections exist (and `Project` as a method on `Decision`, not a rule operator), `EQUIVALENT` replaces `XNOR`, and `Unknown` is
 > a constant. The text below is kept as the original decision.
 
-`AND`, `OR`, `NOT`, `XOR` (**binary only** — a compile error if given more
+`AND`, `OR`, `NOT`, `XOR` (**binary only** - a compile error if given more
 than two operands), `ExactlyOne(...)` (n-ary, true iff exactly one operand is
 `True`), `AtLeast(k, ...)` (n-ary threshold, e.g. "any two of these three
 approvals"), and the constants `true`/`false`. See
@@ -47,13 +47,13 @@ was first accepted.
 
 > **Superseded by ADR-0005 (decision 3):** `IMPLIES` is now an operator (Strong Kleene material implication).
 
-`IMPLIES` was deliberately **not** included — it saves two characters over
+`IMPLIES` was deliberately **not** included - it saves two characters over
 `OR(NOT(a), b)` and rule authors reliably get its truth table wrong, so the
 "convenience" is negative value. N-ary `XOR` is not supported under that
-name at all — the ambiguity above is resolved by giving the "exactly one"
+name at all - the ambiguity above is resolved by giving the "exactly one"
 meaning its own explicit name (`ExactlyOne`) instead of overloading `XOR`.
 
-### String DSL — canonical form
+### String DSL - canonical form
 
 > **Superseded in part by ADR-0005 (decisions 2, 8, 9):** symbol aliases and `[]`/`{}` grouping are
 > accepted on input (the canonical form is still the upper camel word with parentheses), and every
@@ -61,19 +61,19 @@ meaning its own explicit name (`ExactlyOne`) instead of overloading `XOR`.
 > `NOT` > `AND` > `OR` precedence below stands.
 
 Word operators only (`AND`, `OR`, `NOT`, `XOR`, `ExactlyOne`, `AtLeast`),
-matched case-insensitively on input. No symbol aliases (`&&`, `||`) — one
+matched case-insensitively on input. No symbol aliases (`&&`, `||`) - one
 syntax is one thing to document, parse, and test, and rules will often be
 authored or reviewed by people who are not C# developers and have no
 existing attachment to C-style operators.
 
 Precedence for parsing: `NOT` > `AND` > `OR`. **Mixing `XOR` with `AND`/`OR`
 without parentheses is a compile error**, not resolved by a precedence rule
-— nobody's intuition about `a AND b XOR c` is reliable enough to make an
+- nobody's intuition about `a AND b XOR c` is reliable enough to make an
 implicit answer safe. Zero-argument terms are written bare (`isManager`, not
 `isManager()`).
 
 Arguments are **named, never positional**, in both the DSL and the tree
-forms — `hasRole(role: "Y")`. This removes the inconsistency in the original
+forms - `hasRole(role: "Y")`. This removes the inconsistency in the original
 draft (JSON used named arguments, the string sketch used positional), and it
 lets each predicate declare an explicit argument schema (name, type,
 required/default) that the compiler validates once, at compile time, so a
@@ -87,7 +87,7 @@ predicate.
 Argument values are **literals only**, from a closed set of types: `string`,
 `long`, `decimal`, `bool`, `DateTimeOffset`, and arrays of those. There is no
 `{{handlebar}}` or path-expression syntax referencing the evaluation context
-from within a rule string — a rule needing something like "the resource's
+from within a rule string - a rule needing something like "the resource's
 owner id" defines a predicate that reaches into its own `TContext` for that
 value (e.g. `IsManagerOfResourceOwner`), rather than the rule text expressing
 a context path. This is deliberate: context-bound argument values are
@@ -99,7 +99,7 @@ their path expressions resolve to. See
 rejected, feature.
 
 The canonical printer (the form a `CompiledRule` round-trips back to)
-emits **minimal but unambiguous** parentheses — it always parenthesizes
+emits **minimal but unambiguous** parentheses - it always parenthesizes
 `XOR` explicitly and is deterministic (the same tree always prints
 identically), so canonical printed forms can be diffed and compared directly.
 
@@ -109,7 +109,7 @@ Example:
 hasRole(role: "Y") AND (hasTraining(training: "Q") OR hasTraining(training: "Z") OR (isManager XOR isDepartmentHead))
 ```
 
-### JSON / YAML — interchange, not canonical
+### JSON / YAML - interchange, not canonical
 
 JSON and YAML are **interchange and tooling formats**, not the persisted
 form. Both compile to exactly the same AST as the DSL, and the guarantee
@@ -154,8 +154,8 @@ This shape is published as a JSON Schema document,
 shipped as a content asset in the `TruthWeaver` NuGet package so a
 rule-authoring UI or other external tooling can validate a generated tree
 structurally without hand-copying this shape. The schema covers structural
-JSON shape only — the same level `JsonTreeParser` enforces before
-`RuleCompiler` validation runs — so it does not (and cannot, as JSON Schema)
+JSON shape only - the same level `JsonTreeParser` enforces before
+`RuleCompiler` validation runs - so it does not (and cannot, as JSON Schema)
 express compile-time-only constraints like `XOR`/`XNOR` being binary-only or
 a threshold's `k` being in range for its operand count; a schema-valid
 document can still fail compilation. `RuleTreeSchemaTests` validates the
@@ -172,7 +172,7 @@ a caller embedding a rule as one field of a larger document can compile it
 directly from the field it already parsed, without re-serializing that
 subtree back to text first. Locating that subtree is ordinary caller-side
 navigation through the JSON/YAML library's own node APIs (`GetProperty`,
-`mapping.Children[...]`, etc.) — the engine adds no path/pointer syntax of
+`mapping.Children[...]`, etc.) - the engine adds no path/pointer syntax of
 its own for it. This is the same rationale as the decision above against
 context-path argument values: a path-expression grammar is a real
 sub-language to design and version, and the engine stays out of that
@@ -204,8 +204,8 @@ for how this integrates with persistence.
 ### Expression tree shape
 
 The worked example from the original spec, shown as the tree the compiler
-actually builds (identical regardless of which surface — DSL, JSON, or YAML
-— it was parsed from):
+actually builds (identical regardless of which surface - DSL, JSON, or YAML
+- it was parsed from):
 
 ```mermaid
 flowchart TD
@@ -243,7 +243,7 @@ flowchart TD
   entangled in it.
 - A predicate needing a value from the evaluation context must be authored
   as a distinct, named predicate rather than parameterized generically from
-  a path expression — more predicates to register, but each one is fully
+  a path expression - more predicates to register, but each one is fully
   inspectable and testable in isolation.
 
 ## Amendments
@@ -260,7 +260,7 @@ composition (each expressed via the existing `AtLeast`-counting BDD helper,
 e.g. `AtMost(k, ...)` is `NOT AtLeast(k + 1, ...)`), and one compile-time
 range check: for a given operand count, a `k` outside the range that makes
 the result structurally non-constant is rejected (`TRE0008`,
-`InvalidThresholdValue`) — the same "don't silently accept a constant rule"
+`InvalidThresholdValue`) - the same "don't silently accept a constant rule"
 rationale the original `AtLeast` validation already applied.
 
 DSL keywords: `AtLeast(k, ...)`, `AtMost(k, ...)`, `GreaterThan(k, ...)`,
@@ -271,7 +271,7 @@ carrying its threshold as a `k` key alongside `operands`, exactly as
 
 Several edge values in this family collapse to other operators in the set
 (`AtMost(0, ...)` is `NOT(OR(...))`, `GreaterThan(0, ...)` is `OR(...)`,
-`Exactly(n, ...)` at the full operand count is `AND(...)`, and so on) — see
+`Exactly(n, ...)` at the full operand count is `AND(...)`, and so on) - see
 [CONTEXT.md's "Equivalency rules"](../../CONTEXT.md#equivalency-rules) for
 the full table and why no `All`/`None` operators exist to duplicate them.
 
@@ -284,7 +284,7 @@ Added as `XOR`'s natural counterpart: binary-only for the same reason `XOR`
 is (the n-ary generalization is a parity operator nobody means when they
 write `XNOR(a, b, c)`), always parenthesized by the canonical printer
 regardless of context, and included in the same ambiguous-mixing check `XOR`
-already had — mixing `XNOR` with `AND`/`OR`, or mixing `XOR` with `XNOR`, at
+already had - mixing `XNOR` with `AND`/`OR`, or mixing `XOR` with `XNOR`, at
 the same syntactic level without parentheses is a compile error
 (`TRE0007`). DSL keyword: `XNOR`. JSON/YAML op name: `xnor`.
 
@@ -304,7 +304,7 @@ so a rule-authoring UI or generated documentation always has something to
 show for every registered predicate and its arguments, rather than an empty
 string a UI would have to guard against.
 
-`PredicateSchema` later gained a second required string, `Label` — a short,
+`PredicateSchema` later gained a second required string, `Label` - a short,
 human-friendly display name distinct from the machine-facing `Name` used in
 rule text (e.g. `Name: "hasRole"`, `Label: "Has Role"`). The distinction
 matters because `Name` is load-bearing for term identity (CONTEXT.md) and
@@ -325,7 +325,7 @@ walks the whole tree and returns an `OutlineNode` (`Label`, `Description`,
 `Operands`) recursively, resolving each term's `Label`/`Description` from its
 predicate's registered `PredicateSchema` via the new public
 `PredicateRegistry<TContext>.TryGetSchema`. `OutlineNode` is a plain DTO,
-not the AST itself — the closed-set `Expression`/`RuleNode` types stay
+not the AST itself - the closed-set `Expression`/`RuleNode` types stay
 internal-to-the-package (ADR-0004); nothing here opens them up as a second,
 parallel public surface.
 
@@ -339,7 +339,7 @@ in a large, deeply nested rule, where a human has to reconstruct precedence
 mentally to see the grouping the parser already knows. The printer now
 parenthesizes an operand whenever it's a different operator than the one
 it's nested under (`a AND b OR c` → `(a AND b) OR c`), even where the parser
-would resolve the same meaning unambiguously without them — precedence still
+would resolve the same meaning unambiguously without them - precedence still
 governs *parsing*, but the printed form no longer relies on the reader
 holding that precedence table in their head. `XOR`/`XNOR` operands remain
 always-parenthesized regardless of context, as before. This does not change
@@ -350,8 +350,8 @@ reparse to.
 ### Programmatic construction: `RuleBuilder`
 
 A fluent `RuleBuilder` (in `TruthWeaver.Building`) lets a host
-assemble a rule tree from application logic — e.g. a dynamically built list
-of conditions — without hand-writing or string-concatenating DSL/JSON/YAML
+assemble a rule tree from application logic - e.g. a dynamically built list
+of conditions - without hand-writing or string-concatenating DSL/JSON/YAML
 text. It is deliberately *not* a fourth parallel front end into the AST:
 each builder method renders to the same flat JSON tree shape this ADR
 already defines, and compiles through the existing `RuleCompiler.CompileJson`,

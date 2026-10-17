@@ -179,7 +179,7 @@ internal static partial class DocumentationLint
             }
 
             int number = i + 1;
-            if (lines[i].Contains('—', StringComparison.Ordinal))
+            if (lines[i].Contains('\u2014', StringComparison.Ordinal))
             {
                 failures.Add($"{path}:{number}: em dash; use a period, comma, colon or parentheses");
             }

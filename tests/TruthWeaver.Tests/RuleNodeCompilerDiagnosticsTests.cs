@@ -11,7 +11,7 @@ using TruthWeaver.Tests.TestSupport;
 /// Ticket 14: <c>RuleNodeCompiler</c>'s malformed-tree diagnostics and optional-argument default
 /// substitution. The JSON front end doesn't enforce AND/OR/ExactlyOne/threshold operand-count arity at
 /// parse time (only the DSL parser's own grammar makes that structurally impossible), so a
-/// hand-written or embedded JSON subtree reaches the compiler's own defensive arity checks — reachable
+/// hand-written or embedded JSON subtree reaches the compiler's own defensive arity checks - reachable
 /// through the public <c>RuleCompiler.CompileJson</c> surface, no internal access needed.
 /// </summary>
 public sealed class RuleNodeCompilerDiagnosticsTests

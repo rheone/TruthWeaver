@@ -86,7 +86,7 @@ copyright line reads 2026.
   `PrintEquation` dialect for code-like output (`&&`, `||`, `!`, `^`, `==`); it renders `If` as the ternary
   `c ? t : f` instead of a call, a caveat documented on both types. `docs/rule-text.md` and `docs/equations.md`
   cover both.
-- `Try` forms beside every method that returns a `CompilationResult<TContext>`: `RuleCompiler.TryCompile`, `TryCompileText`, `TryCompileJson` (text and `JsonElement`), `TryCompileYaml` (text and `YamlNode`), `RuleBuilder.TryCompile`, and on `CompiledRule` `TrySimplify`, `TryCanonicalize`, `TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`. Each is `bool Try…(…, out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)`; `rule` is non-null exactly when the method returns `true`, and a warning-only result returns `true`. `CompilationResult.TryGetRule` is the sibling of `GetRuleOrThrow`. Nothing breaks; the existing methods are unchanged. The convention (every public `…OrThrow` has a `Try…` sibling, and documentation shows the `Try` form first) is in `docs/contributing.md` and is enforced by an architecture test.
+- `Try` forms beside every method that returns a `CompilationResult<TContext>`: `RuleCompiler.TryCompile`, `TryCompileText`, `TryCompileJson` (text and `JsonElement`), `TryCompileYaml` (text and `YamlNode`), `RuleBuilder.TryCompile`, and on `CompiledRule` `TrySimplify`, `TryCanonicalize`, `TryCompressToDerived`, `TryExpandToPrimitives`, `TryExpandToNand`, `TryExpandToNor`, `TryToNnf`, `TryToCnf` and `TryToDnf`. Each is `bool Try...(..., out CompiledRule<TContext>? rule, out EquatableArray<Diagnostic> diagnostics)`; `rule` is non-null exactly when the method returns `true`, and a warning-only result returns `true`. `CompilationResult.TryGetRule` is the sibling of `GetRuleOrThrow`. Nothing breaks; the existing methods are unchanged. The convention (every public `...OrThrow` has a `Try...` sibling, and documentation shows the `Try` form first) is in `docs/contributing.md` and is enforced by an architecture test.
 - MinVer derives the package version from Git tags with the prefix `v`. An untagged build is `1.0.0-preview.0.N`. The
   hand-set `Version` of `1.0.0-dev` is removed from `Directory.Build.props`. CI checks out the full history so the
   version is correct.
@@ -120,8 +120,8 @@ copyright line reads 2026.
   selected value is `Unknown`.
 - `Try` forms for reading optional or mixed-kind arguments without exception handling: `LiteralValue.TryAsString`, `TryAsInt64`,
   `TryAsDecimal`, `TryAsBoolean`, `TryAsDateTimeOffset`, `TryAsGuid` and `TryAsArray`, and `PredicateArguments.TryGetString`,
-  `TryGetInt64`, `TryGetDecimal`, `TryGetBool`, `TryGetDateTimeOffset`, `TryGetGuid`, the matching `TryGet…Array` forms and
-  `TryGetRaw`. Each returns `false` for a missing name or a different kind. The existing `As…` and `Get…` members still throw.
+  `TryGetInt64`, `TryGetDecimal`, `TryGetBool`, `TryGetDateTimeOffset`, `TryGetGuid`, the matching `TryGet...Array` forms and
+  `TryGetRaw`. Each returns `false` for a missing name or a different kind. The existing `As...` and `Get...` members still throw.
 - Collection and date/time predicates in `TruthWeaver.Predicates`: `CollectionPredicates` adds `IsEmpty`, `Contains`, `ContainsAny`, `ContainsAll`, `IsSubsetOf`, scalar `In` and the `Count*` comparisons, and the new `DateTimePredicates` adds `After`, `Before` and `Between` over `DateTimeOffset`. Each has a `NotX` Strong Kleene twin (`Outside` for `Between`). Null selections return `Unknown` by default, with `NullBehavior.False` as the host option, and reversed `Between` bounds throw `ArgumentException`. `DateTimePredicates` also adds the clock predicates `AfterNow` and `BeforeNow` with twins `NotAfterNow` and `NotBeforeNow`; each factory requires a `TimeProvider` and there is no ambient clock.
 - Strong Kleene (K3) language surface (see [ADR-0005](docs/adr/0005-strong-k3-language-surface.md)): `Unknown` as a first
   class value and constant; the operators `IMPLIES`, `EQUIVALENT` (`IFF`), `NAND`, `NOR`, `PARITY`, `ANY`, `ALL`, `NONE`,
@@ -300,8 +300,8 @@ copyright line reads 2026.
   `NotMatchesIgnoreCase`, register `IsMatch` or `IsNotMatch` and add `flags: "i"` to those rules. The default labels are now
   `Is Match` and `Is Not Match`.
 
-- **Breaking:** the collection count predicates are renamed to `HasCount…` verb phrases, and their twins to
-  `NotHasCount…` (Form B in the [naming guide](docs/predicate-conventions.md#naming)). Behavior, arguments and null handling
+- **Breaking:** the collection count predicates are renamed to `HasCount...` verb phrases, and their twins to
+  `NotHasCount...` (Form B in the [naming guide](docs/predicate-conventions.md#naming)). Behavior, arguments and null handling
   do not change. The default labels follow the new names (for example `Has Count Equal To`). There are no `[Obsolete]`
   forwarders, because the packages are unpublished. The reference pages under `docs/strong-k3/predicates` are renamed to
   match, and their family is corrected to `CollectionPredicates`.

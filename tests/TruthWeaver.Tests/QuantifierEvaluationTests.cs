@@ -200,7 +200,7 @@ public sealed class QuantifierEvaluationTests
 
     /// <summary>
     /// Over <see cref="EvaluationOptions.MaxElementEvaluations"/>, the quantifier is <c>Unknown</c> with exactly one
-    /// extra fault for the collection and the evaluation aborts — not an exception (ADR-0010 decision 6).
+    /// extra fault for the collection and the evaluation aborts - not an exception (ADR-0010 decision 6).
     /// </summary>
     [Fact]
     public async Task ForAll_OverMaxElementEvaluations_IsUnknownWithOneFault_Test()

@@ -6,7 +6,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
 
 /// <summary>
-/// Ticket 25: <see cref="LiteralConversion.TryConvert"/>'s array-conversion failure paths — a
+/// Ticket 25: <see cref="LiteralConversion.TryConvert"/>'s array-conversion failure paths - a
 /// non-array (or elements-less) raw literal presented against an array-typed <see cref="LiteralKind"/>,
 /// and an array literal whose elements don't all match the expected element kind.
 /// </summary>

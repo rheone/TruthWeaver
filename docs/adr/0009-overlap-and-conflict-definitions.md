@@ -13,8 +13,8 @@ later ticket 07 (policy sets and combining algorithms) build on these definition
 ## Context
 
 Ticket 13 answers "is rule A looser or tighter than rule B" for one rule compared with a new version of itself
-(`RuleImplication.Compare`, `RuleEquivalence`). Authors of a *group* of peer rules — a permission rule per action, a
-feature flag per audience — ask two further questions that ticket 13 does not answer: "can these two rules ever both
+(`RuleImplication.Compare`, `RuleEquivalence`). Authors of a *group* of peer rules - a permission rule per action, a
+feature flag per audience - ask two further questions that ticket 13 does not answer: "can these two rules ever both
 apply" and "can these two rules ever disagree". The design note above explores what the engine can honestly claim
 about those questions, given that a rule's terms are opaque, independent predicates (`CONTEXT.md`, Term identity)
 and that TruthWeaver evaluates Strong Kleene (K3), not two-valued, logic.
@@ -26,7 +26,7 @@ and shape that ticket 21b-2 is built against, so the terms exist before any libr
 ## Decision
 
 1. **Joint outcome.** For two rules `A` and `B` sharing the same universe of assignments (a map from every distinct
-   term of either rule to `True`, `False` or `Unknown` — the same space `RuleEquivalence` and `RuleImplication`
+   term of either rule to `True`, `False` or `Unknown` - the same space `RuleEquivalence` and `RuleImplication`
    already use), the joint outcome of an assignment `σ` is the pair `(A(σ), B(σ))`. A pair is **reachable** when
    some `σ` produces it. There are nine possible pairs; `RuleOverlap.Compare` (ticket 21b-2) reports which are
    reachable, each with one example assignment.
@@ -41,7 +41,7 @@ and shape that ticket 21b-2 is built against, so the terms exist before any libr
    matches `Decision.IsSatisfied` and ticket 13's `SatisfiesOnlyBefore`/`SatisfiesOnlyAfter`, which already read
    "not `True`" as the failure state a host acts on (a permission or feature-flag check that comes back `Unknown`
    is treated the same as one that comes back `False`). The design note's Reading A (strict: `True`/`False` only)
-   remains a documented, narrower question — "do the two rules ever give a *definite* and opposite answer" — but it
+   remains a documented, narrower question - "do the two rules ever give a *definite* and opposite answer" - but it
    is not what the shipped API calls a conflict. Reading C (any off-diagonal pair) is not called a conflict either,
    for the reason the note gives: once any term can be `Unknown` (a fault reaches every term), `(True, Unknown)` is
    reachable for nearly every pair of rules that share no structure, and a word that fires that often stops being
@@ -62,7 +62,7 @@ and shape that ticket 21b-2 is built against, so the terms exist before any libr
    TruthWeaver does not define yet (ticket 07, on hold) and no BDD node budget exists yet (Q7). Deferred, not
    rejected:
    - **Result shape (Q3, option 1).** The reachable pairs, each with an example, plus `CanOverlap` and
-     `CanConflict` convenience members that are `false` whenever the overall result is undecided — a caller checks
+     `CanConflict` convenience members that are `false` whenever the overall result is undecided - a caller checks
      the outcome first, rather than treating a `false` convenience member as a proved "never".
    - **Assumptions (Q6, option 1).** A caller-supplied fact between terms (`ageAtLeast(21) IMPLIES ageAtLeast(18)`)
      that narrows which assignments are considered is a later, optional argument on the comparison APIs, added
@@ -113,8 +113,8 @@ and shape that ticket 21b-2 is built against, so the terms exist before any libr
   `(True, Unknown)` and `(Unknown, True)` both count, `CanConflict` will be `true` for most pairs of rules that
   share no asserted relationship between their terms, for the same structural reason the design note gives for
   overlap (section 3: 763 of 780 random pairs over 20 terms overlap). A report that leads with `CanConflict` is
-  lower-value than one that leads with the proofs — "these two never overlap", "these two never conflict", "this
-  one is covered by that one" — and the implementing ticket's docs and report shaping should say so.
+  lower-value than one that leads with the proofs - "these two never overlap", "these two never conflict", "this
+  one is covered by that one" - and the implementing ticket's docs and report shaping should say so.
   `IsUnknown`/`IsFalse`/etc. terms make this worse still, because they can make `(True, Unknown)` reachable through
   a term's own external-operator logic rather than through two independent predicates.
   Documentation states the strict reading as the question "do these two rules ever give opposite *definite*

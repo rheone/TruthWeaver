@@ -7,7 +7,7 @@ using NSubstitute.Core;
 /// <summary>
 /// Inspects calls recorded on a substitute <see cref="ILogger"/> without needing to know the
 /// compiler-generated <c>TState</c> type each <c>[LoggerMessage]</c> partial method uses internally
-/// — NSubstitute records every call via reflection regardless of its generic instantiation, so
+/// - NSubstitute records every call via reflection regardless of its generic instantiation, so
 /// assertions here work against the structured field values themselves, never the rendered message
 /// text (ticket 13).
 /// </summary>

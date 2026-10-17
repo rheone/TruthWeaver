@@ -80,7 +80,7 @@ public sealed class QuantifierFormsTests
     /// <summary>
     /// A quantifier nested inside <c>NOT</c>, and a quantifier head that repeats the contextual <c>IN</c> keyword twice
     /// (once per nesting level), both parse with no syntax error. The inner <c>FORALL</c> still fails to compile
-    /// (<c>items</c> is not registered on the outer quantifier's own element registry — ADR-0010 decision 3's "a body
+    /// (<c>items</c> is not registered on the outer quantifier's own element registry - ADR-0010 decision 3's "a body
     /// term resolves only in the element registry ... of its own quantifier"), which is a semantic diagnostic, not a
     /// parse failure, so it is the one this test expects.
     /// </summary>

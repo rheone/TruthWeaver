@@ -34,7 +34,7 @@ public sealed class DocumentationLintTests
     [Fact]
     public void Check_EmDash_ReportsFileAndLine_Test()
     {
-        string failure = Assert.Single(DocumentationLint.Check("docs/guide.md", "# Guide\n\nOne — two.\n"));
+        string failure = Assert.Single(DocumentationLint.Check("docs/guide.md", "# Guide\n\nOne \u2014 two.\n"));
 
         Assert.StartsWith("docs/guide.md:3:", failure, StringComparison.Ordinal);
     }
@@ -55,7 +55,7 @@ public sealed class DocumentationLintTests
     [Fact]
     public void Check_HistoryWordingInCode_ReportsNothing_Test()
     {
-        const string markdown = "# Guide\n\nThe `ticket` field.\n\n```text\nADR-0005 — ticket\n```\n";
+        const string markdown = "# Guide\n\nThe `ticket` field.\n\n```text\nADR-0005 \u2014 ticket\n```\n";
 
         Assert.Empty(DocumentationLint.Check("docs/guide.md", markdown));
     }
@@ -64,7 +64,7 @@ public sealed class DocumentationLintTests
     [Fact]
     public void Check_AgentFile_SkipsHistoryWordsButNotEmDashes_Test()
     {
-        const string markdown = "# Rules\n\nSee the ticket and ADR-0003.\n\nA — dash.\n";
+        const string markdown = "# Rules\n\nSee the ticket and ADR-0003.\n\nA \u2014 dash.\n";
 
         string failure = Assert.Single(DocumentationLint.Check("CLAUDE.md", markdown));
 
@@ -181,7 +181,7 @@ public sealed class DocumentationLintTests
         string root = Path.Combine(Path.GetTempPath(), "tw-lint-" + Guid.NewGuid().ToString("N"));
         try
         {
-            Write(root, "README.md", "# R\n\nOne — two.\n");
+            Write(root, "README.md", "# R\n\nOne \u2014 two.\n");
             HashSet<string> baseline = ["README.md", "docs/gone.md"];
 
             Assert.Equal(

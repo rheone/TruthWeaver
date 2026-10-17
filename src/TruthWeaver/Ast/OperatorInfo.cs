@@ -26,7 +26,7 @@ public static class OperatorInfo
         if (node is TermExpression)
         {
             throw new ArgumentException(
-                "A TermExpression has no operator descriptor — look up its label/description from the "
+                "A TermExpression has no operator descriptor - look up its label/description from the "
                     + "registered PredicateSchema via the term's predicate name instead.",
                 nameof(node)
             );
