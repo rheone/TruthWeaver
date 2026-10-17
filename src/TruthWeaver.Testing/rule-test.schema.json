@@ -33,7 +33,10 @@
     "truthValue": {
       "description": "True, False or Unknown, or T, F or U, in any case. A YAML or JSON Boolean is True or False.",
       "oneOf": [
-        { "type": "string", "pattern": "^\\s*([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[TtFfUu])\\s*$" },
+        {
+          "type": "string",
+          "pattern": "^\\s*([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[TtFfUu])\\s*$"
+        },
         { "type": "boolean" }
       ]
     },

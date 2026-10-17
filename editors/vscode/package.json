@@ -6,14 +6,23 @@
   "private": true,
   "publisher": "truthweaver-local",
   "license": "Apache-2.0",
-  "engines": { "vscode": "^1.80.0" },
-  "categories": ["Programming Languages"],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "truthweaver",
-        "aliases": ["TruthWeaver rule text", "truthweaver"],
-        "extensions": [".truthweaver"],
+        "aliases": [
+          "TruthWeaver rule text",
+          "truthweaver"
+        ],
+        "extensions": [
+          ".truthweaver"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
