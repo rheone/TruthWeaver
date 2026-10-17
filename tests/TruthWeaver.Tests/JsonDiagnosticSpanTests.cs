@@ -85,7 +85,7 @@ public sealed class JsonDiagnosticSpanTests
     [Fact]
     public void CompileJson_LeadingByteOrderMark_SyntaxErrorSpanIsOneCharacter_Test()
     {
-        const string json = "﻿{\"op\":\"annd\",\"operands\":[]}";
+        const string json = "\uFEFF{\"op\":\"annd\",\"operands\":[]}";
 
         Diagnostic diagnostic = Single(json);
 

@@ -497,6 +497,11 @@ internal static class Simplifier
             {
                 ConstantExpression c => c.Value != TruthValue.Unknown,
                 TermExpression => false,
+
+                // A quantifier can always be Unknown (a null collection, ADR-0010 decision 4) no matter how
+                // definite its body is, unlike every other operator, whose definiteness follows from its
+                // operands'; so it is never treated as definite here, which keeps COALESCE/inspection folds sound.
+                QuantifierExpression => false,
                 InspectionExpression => true,
                 CoalesceExpression c => c.Operands.Any(this.IsDefinite),
                 _ => ExpressionTools.Children(node).All(this.IsDefinite),

@@ -38,6 +38,7 @@ public sealed class AnalyzerDistinctTermsTests
         new BetweenExpression(1, 2, new([A, B, C])),
         new InspectionExpression(InspectionKind.IsKnown, A),
         new IfExpression(A, B, C),
+        new QuantifierExpression(QuantifierKind.ForAll, "x", "items", A),
     ];
 
     /// <summary>Gets the index of each sample so failures name the operator kind.</summary>
@@ -84,6 +85,14 @@ public sealed class AnalyzerDistinctTermsTests
         if (node is TermExpression term)
         {
             yield return term.Identity.PredicateName;
+            yield break;
+        }
+
+        // ADR-0010 decision 8: a quantifier is an opaque atom in the outer analysis, keyed by its own canonical
+        // text (which includes the body), not by the terms the body happens to contain.
+        if (node is QuantifierExpression quantifier)
+        {
+            yield return QuantifierAtom.IdentityOf(quantifier).PredicateName;
             yield break;
         }
 

@@ -6,7 +6,7 @@ using YamlDotNet.RepresentationModel;
 
 /// <summary>
 /// Prints a compiled expression tree to the identical flat, key-discriminated tree shape JSON uses
-/// (ADR-0003), expressed in YAML (ticket 08) — the YAML-direction half of the round-trip guarantee.
+/// (ADR-0003), expressed in YAML: the YAML-direction half of the round-trip guarantee.
 /// String-kind literals are always emitted double-quoted so a value that happens to read as
 /// <c>true</c>/<c>false</c>/a number (e.g. a role code of <c>"1"</c>) never gets reparsed as a
 /// different literal kind.

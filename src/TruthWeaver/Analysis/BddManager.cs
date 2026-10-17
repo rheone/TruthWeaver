@@ -3,12 +3,12 @@ namespace TruthWeaver.Analysis;
 /// <summary>
 /// A minimal reduced-ordered binary decision diagram (ROBDD) manager: variables are ordered by
 /// increasing integer index (the analyzer assigns indices by each term's first occurrence in the
-/// tree — a simple, explicit variable-ordering choice, not tuned for any particular rule shape),
+/// tree: a simple, explicit variable-ordering choice, not tuned for any particular rule shape),
 /// nodes are uniquified so structurally identical sub-BDDs are physically the same node, and
 /// <c>Ite</c> (if-then-else) is the single primitive every boolean operator is built from. This
 /// gives every compiled expression node an O(1) tautology/contradiction check (compare its BDD node
 /// id against the <see cref="True"/>/<see cref="False"/> terminal) without repeated brute-force
-/// truth-table enumeration per sub-expression (ticket 10).
+/// truth-table enumeration per sub-expression.
 /// </summary>
 internal sealed class BddManager
 {
@@ -155,8 +155,8 @@ internal sealed class BddManager
 
     /// <summary>
     /// Evaluates the function represented by <paramref name="node"/> for one full variable assignment, by walking
-    /// the reduced diagram from the root to a terminal (ticket 17: pins <c>Evaluator</c> to these same rails for
-    /// every generated assignment, not only at the tautology/contradiction extremes).
+    /// the reduced diagram from the root to a terminal. It pins <c>Evaluator</c> to these same rails for
+    /// every generated assignment, not only at the tautology/contradiction extremes.
     /// </summary>
     /// <param name="node">The function's node id.</param>
     /// <param name="valueOf">Supplies the assignment's value for a variable index.</param>

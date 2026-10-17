@@ -156,6 +156,8 @@ Each limit has one setting and one outcome. The compile limits are `CompilerOpti
 | Rewrite pass limit (16 for `CompressToDerived()`, 8 for `Canonicalize()`, 16 for `Simplify()`) | fixed | The rewrite returns its equivalent rule and a `TRE0033` warning. See [Pass limits](rewriting-rules.md#pass-limits). |
 | `TruthTableOptions.DefaultTermCap` and `TruthTableOptions.HardTermLimit` | 8 and 12 | `PrintTruthTable` refuses a table over the cap with a `TRE0035` error, unless `AllowLargerTable` is set, and then it adds a `TRE0034` warning. Over the hard limit it always refuses. See [Size limits](truth-tables.md#size-limits). |
 | `EvaluationOptions.FaultBudget` | none | The evaluation stops when the faults reach the budget. The terms not yet run are `Unknown` in the trace, so the result is usually `Unknown`. |
+| `CompilerOptions.MaxQuantifierDepth` | 2 | `Compile` returns a `TRE0043` error and no rule. |
+| `EvaluationOptions.MaxElementEvaluations` | 10,000 | The quantifier being evaluated is `Unknown`, one fault is recorded and the evaluation stops. The count covers every `FORALL` and `EXISTS` body run, so nested quantifiers multiply. |
 | `EvaluationOptions.Timeout` | none | `EvaluateAsync` throws `OperationCanceledException`. It records no fault and gives no `Unknown`. |
 
 The two caps on rewrites are independent: `MaxRewriteNodeCount` limits what a rewrite builds, and `MaxNodeCount` limits what the compiler reads. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.

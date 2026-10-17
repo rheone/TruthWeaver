@@ -42,6 +42,12 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-rc.1.26425.128" />
   </ItemGroup>
+  <!-- Microsoft.AspNetCore.TestHost - test-project-only (TruthWeaver.AspNetCore.Tests and the AspNetCore sample tests): TestServer
+       runs a host in memory, so the authorization tests send real requests without a network port. TruthWeaver.AspNetCore itself
+       takes only the Microsoft.AspNetCore.App framework reference. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-rc.1.26425.128" />
+  </ItemGroup>
   <!-- Meziantou.Framework.JsonPath - TruthWeaver.DataSources.Json's JSONPath (RFC 9535) engine (ADR-0006). MIT, no dependencies,
        a net11.0 build, evaluates System.Text.Json JsonNode directly and is actively maintained. Chosen over JsonPath.Net, whose
        3.x binaries ship under the Open Source Maintenance Fee EULA. -->

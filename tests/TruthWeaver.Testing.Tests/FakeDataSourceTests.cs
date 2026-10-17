@@ -19,6 +19,40 @@ public sealed class FakeDataSourceTests
         Assert.Empty(unscripted.Matches);
     }
 
+    /// <summary>Each single-value overload scripts one match of its own kind.</summary>
+    [Fact]
+    public async Task QueryAsync_TypedSingleValueScripts_ReturnOneMatchOfEachKind_Test()
+    {
+        DateTimeOffset moment = new(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+        Guid id = Guid.Parse("11111111-2222-3333-4444-555555555555");
+        FakeDataSource source = new FakeDataSource()
+            .With("$.price", 12.5m)
+            .With("$.flag", true)
+            .With("$.when", moment)
+            .With("$.id", id);
+
+        DataQueryResult price = await source.QueryAsync("$.price", TestContext.Current.CancellationToken);
+        DataQueryResult flag = await source.QueryAsync("$.flag", TestContext.Current.CancellationToken);
+        DataQueryResult when = await source.QueryAsync("$.when", TestContext.Current.CancellationToken);
+        DataQueryResult identifier = await source.QueryAsync("$.id", TestContext.Current.CancellationToken);
+
+        Assert.Equal(LiteralValue.OfDecimal(12.5m), Assert.Single(price.Matches));
+        Assert.Equal(LiteralValue.OfBoolean(true), Assert.Single(flag.Matches));
+        Assert.Equal(LiteralValue.OfDateTimeOffset(moment), Assert.Single(when.Matches));
+        Assert.Equal(LiteralValue.OfGuid(id), Assert.Single(identifier.Matches));
+    }
+
+    /// <summary>A multi-valued integer script returns one match per value, in order.</summary>
+    [Fact]
+    public async Task QueryAsync_ScriptedIntegerCollection_ReturnsOneMatchPerValue_Test()
+    {
+        FakeDataSource source = new FakeDataSource().With("$.levels[*]", [1, 5]);
+
+        DataQueryResult result = await source.QueryAsync("$.levels[*]", TestContext.Current.CancellationToken);
+
+        Assert.Equal([LiteralValue.OfInt64(1), LiteralValue.OfInt64(5)], result.Matches);
+    }
+
     /// <summary>A multi-valued script returns one match per value, in order.</summary>
     [Fact]
     public async Task QueryAsync_ScriptedCollection_ReturnsOneMatchPerValue_Test()

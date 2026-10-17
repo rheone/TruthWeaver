@@ -1,7 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
 /// <summary>
-/// A registered, reusable three-valued (Strong Kleene) condition over an application-supplied context — the function a
+/// A registered, reusable three-valued (Strong Kleene) condition over an application-supplied context: the function a
 /// rule's terms bind arguments to and call (CONTEXT.md). Implementations should be stateless; any
 /// per-call dependency (a <c>DbContext</c>, a scoped <c>HttpClient</c>) is resolved by the engine
 /// from the <see cref="IServiceProvider"/> supplied to each evaluation, never captured once at
@@ -22,7 +22,7 @@ public interface IPredicate<in TContext>
     /// Evaluates this predicate for one term. Return <see cref="TruthValue.Unknown"/> when the
     /// answer is legitimately indeterminate (for example the data is not available); that is a normal
     /// result and records no <see cref="Fault"/>. Signal a genuine failure (a timeout, a connection
-    /// failure) by simply throwing — the evaluator absorbs the exception as a <see cref="Fault"/>
+    /// failure) by simply throwing. The evaluator absorbs the exception as a <see cref="Fault"/>
     /// and treats the term as <see cref="TruthValue.Unknown"/> (ADR-0001, ADR-0005); no
     /// try/catch-and-wrap boilerplate is expected of the implementation.
     /// </summary>

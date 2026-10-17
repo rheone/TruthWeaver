@@ -7,7 +7,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary>Ticket 02: the tracer bullet — compile and evaluate the smallest possible rule shapes.</summary>
+/// <summary>Ticket 02: the tracer bullet - compile and evaluate the smallest possible rule shapes.</summary>
 public sealed class CompilationTests
 {
     /// <summary>A registered zero argument predicate evaluates to its registered value.</summary>
@@ -171,8 +171,8 @@ public sealed class CompilationTests
 
     /// <summary>
     /// <see cref="CompilationResult{TContext}.Diagnostics"/> is an <see cref="EquatableArray{T}"/> (ticket 28), so two
-    /// failed compiles of the same invalid rule text — each producing a fresh diagnostics list and a
-    /// <see langword="null"/> <c>CompiledRule</c> — compare equal and share a hash code, instead of the reference
+    /// failed compiles of the same invalid rule text - each producing a fresh diagnostics list and a
+    /// <see langword="null"/> <c>CompiledRule</c> - compare equal and share a hash code, instead of the reference
     /// equality a plain <see cref="IReadOnlyList{T}"/> member would give two different lists.
     /// </summary>
     [Fact]
@@ -192,7 +192,7 @@ public sealed class CompilationTests
     /// <summary>
     /// <see cref="Decision.Faults"/> and <see cref="Decision.Trace"/> are <see cref="EquatableArray{T}"/>-backed
     /// (ticket 28), so two <c>EvaluateAsync</c> calls against the same compiled rule and an equivalent context
-    /// produce Decisions that compare equal and share a hash code — the trace entries and tree nodes compare by
+    /// produce Decisions that compare equal and share a hash code - the trace entries and tree nodes compare by
     /// value, not by the reference identity of the lists the evaluator happened to allocate for each call.
     /// </summary>
     [Fact]

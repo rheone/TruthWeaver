@@ -7,6 +7,8 @@
     move a token that CSharpier then moves back). It then runs the CI gates: csharpier check, dotnet format
     --verify-no-changes --severity info, and Roslynator. A failure in the first two after the formatters ran means
     they disagree about some code. Reshape that code. See CLAUDE.md, section Formatting.
+    Before them it runs normalize-text.ps1 (ASCII dashes and ellipses, LF, no BOM, no trailing whitespace) and
+    format-data.ps1 (Prettier for JSON, YAML and YML), and checks both again with the gates.
     Use -CheckOnly to skip the apply step and only run the gates.
 #>
 param([switch] $CheckOnly)
@@ -24,10 +26,15 @@ function Invoke-Checked {
 }
 
 if (-not $CheckOnly) {
+    Invoke-Checked 'normalize-text' { pwsh -NoProfile -File scripts/normalize-text.ps1 }
+    Invoke-Checked 'format-data' { pwsh -NoProfile -File scripts/format-data.ps1 }
     Invoke-Checked 'csharpier format' { dotnet csharpier format . }
     Invoke-Checked 'dotnet format' { dotnet format TruthWeaver.slnx --no-restore --severity info }
     Invoke-Checked 'csharpier format (second pass)' { dotnet csharpier format . }
 }
+
+Invoke-Checked 'normalize-text check' { pwsh -NoProfile -File scripts/normalize-text.ps1 -CheckOnly }
+Invoke-Checked 'format-data check' { pwsh -NoProfile -File scripts/format-data.ps1 -CheckOnly }
 
 # These three commands are the CI gates in .github/workflows/ci.yml. Keep them identical to it.
 Invoke-Checked 'csharpier check' { dotnet csharpier check . }

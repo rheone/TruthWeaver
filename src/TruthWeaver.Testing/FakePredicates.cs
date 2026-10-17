@@ -2,7 +2,7 @@ namespace TruthWeaver.Testing;
 
 /// <summary>
 /// Fake/stub predicate factories for tests: a fixed answer, a Kleene (<see cref="TruthValue"/>)
-/// answer, a simulated fault, or a scripted sequence of answers across successive calls — without
+/// answer, a simulated fault, or a scripted sequence of answers across successive calls, without
 /// writing a hand-written <see cref="IPredicate{TContext}"/> class per test. Mirrors the shape of
 /// <c>TruthWeaver.Predicates</c>'s ready-made predicate factories: each method returns the
 /// schema plus a stateless evaluation delegate, ready for
@@ -87,7 +87,7 @@ public static class FakePredicates
 
     /// <summary>
     /// Creates a predicate that answers with successive entries from <paramref name="script"/>, one
-    /// per call, in order — useful for testing memoization boundaries or a sequence of evaluations
+    /// per call, in order: useful for testing memoization boundaries or a sequence of evaluations
     /// against the same rule with a predicate whose answer changes over time (e.g. a simulated flap).
     /// A <see cref="TruthValue.Unknown"/> entry answers Unknown on that call without a fault, the same
     /// as <see cref="Returning{TContext}(string, TruthValue, string, string)"/>.

@@ -6,7 +6,7 @@
 
 **Blocked by:** 13
 
-**Status:** ready-for-agent (spike: produces a design note, changes no library code)
+**Status:** done (authoritative note: ../notes/21-overlap-conflict-design.md, grilled 2026-10-16; build is 21b-1, 21b-2 and 21c)
 
 - [ ] A design note exists at `.scratch/feature-backlog-2026-10-11/notes/<item>.md` covering semantics, API shape, cost, risks and a recommended go or no-go
 - [ ] Prototype code, if any, lives in a scratch branch or the scratchpad and is not committed to the main branch

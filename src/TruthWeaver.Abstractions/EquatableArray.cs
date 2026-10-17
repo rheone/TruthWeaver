@@ -6,7 +6,7 @@ using System.Diagnostics;
 /// An immutable, order-sensitive, structurally-equatable list. Record types compare reference-typed
 /// properties with <see cref="EqualityComparer{T}.Default"/>, which for <c>IReadOnlyList&lt;T&gt;</c>
 /// backed by a plain array or <see cref="ImmutableArray{T}"/> means reference equality, not element
-/// equality — this wrapper is what lets AST nodes and term arguments compare structurally, which the
+/// equality. This wrapper is what lets AST nodes and term arguments compare structurally, which the
 /// canonical-equality and round-trip guarantees (ADR-0003) depend on.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>

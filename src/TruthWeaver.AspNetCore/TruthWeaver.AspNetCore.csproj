@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>9eac79eb-4136-40fe-9929-dbe91d663c1c</ProjectGuid>
+    <RootNamespace>TruthWeaver.AspNetCore</RootNamespace>
+    <PackageId>TruthWeaver.AspNetCore</PackageId>
+    <Description>ASP.NET Core authorization for TruthWeaver rules: a rule requirement and its handler for named policies and resource-based checks, an authorization context with claim, role, authentication and owner predicates, fail-closed results that keep the Decision, and problem-details responses.</Description>
+    <PackageTags>rules engine;kleene;k3;aspnetcore;authorization;policy;truthweaver</PackageTags>
+  </PropertyGroup>
+
+  <!-- The shared framework only: no NuGet package beyond the TruthWeaver projects. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+  </ItemGroup>
+</Project>

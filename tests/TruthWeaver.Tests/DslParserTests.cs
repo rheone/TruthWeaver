@@ -184,4 +184,78 @@ public sealed class DslParserTests
     {
         Assert.False(DslParser.IsReservedWord("hasRole"));
     }
+
+    /// <summary>IsReservedWord returns true for the 'let' keyword (ADR-0008), case-insensitively.</summary>
+    [Fact]
+    public void IsReservedWord_Let_ReturnsTrue_Test()
+    {
+        Assert.True(DslParser.IsReservedWord("let"));
+        Assert.True(DslParser.IsReservedWord("LET"));
+    }
+
+    /// <summary>A document with one parameterless 'let' and a bare use parses to a RuleDocumentNode wrapping one UseNode.</summary>
+    [Fact]
+    public void Parse_ParameterlessLetAndBareUse_ProducesRuleDocumentNodeWithUseNode_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("let adult = a; adult");
+
+        Assert.Empty(diagnostics);
+        RuleDocumentNode document = Assert.IsType<RuleDocumentNode>(root);
+        DefinitionNode definition = Assert.Single(document.Definitions);
+        Assert.Equal("adult", definition.Name);
+        Assert.Empty(definition.Parameters);
+        Assert.IsType<TermNode>(definition.Body);
+        UseNode use = Assert.IsType<UseNode>(document.Body);
+        Assert.Equal("adult", use.Name);
+        Assert.Empty(use.Arguments);
+    }
+
+    /// <summary>A parameterized 'let' and a call-like use parse to a DefinitionNode with its parameters and a UseNode with positional argument expressions.</summary>
+    [Fact]
+    public void Parse_ParameterizedLetAndCallLikeUse_ProducesDefinitionAndUseWithArguments_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(
+            "let bothTrue(x, y) = x AND y; bothTrue(a, b)"
+        );
+
+        Assert.Empty(diagnostics);
+        RuleDocumentNode document = Assert.IsType<RuleDocumentNode>(root);
+        DefinitionNode definition = Assert.Single(document.Definitions);
+        Assert.Equal(["x", "y"], definition.Parameters);
+        AndNode body = Assert.IsType<AndNode>(definition.Body);
+        Assert.IsType<ParameterReferenceNode>(body.Operands[0]);
+        Assert.IsType<ParameterReferenceNode>(body.Operands[1]);
+        UseNode use = Assert.IsType<UseNode>(document.Body);
+        Assert.Equal(2, use.Arguments.Count);
+        Assert.All(use.Arguments, argument => Assert.IsType<TermNode>(argument));
+    }
+
+    /// <summary>A 'let' declaration missing its '=' raises a syntax error naming it.</summary>
+    [Fact]
+    public void Parse_LetMissingEquals_RaisesSyntaxErrorForEquals_Test()
+    {
+        (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("let adult a; adult");
+
+        Assert.Contains(diagnostics, d => d.Code == DiagnosticCodes.SyntaxError && d.Message.Contains("Expected '='"));
+    }
+
+    /// <summary>A 'let' declaration missing its terminating ';' raises a syntax error naming it.</summary>
+    [Fact]
+    public void Parse_LetMissingSemicolon_RaisesSyntaxErrorForSemicolon_Test()
+    {
+        (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("let adult = a adult");
+
+        Assert.Contains(diagnostics, d => d.Code == DiagnosticCodes.SyntaxError && d.Message.Contains("Expected ';'"));
+    }
+
+    /// <summary>A bare identifier that is a term name, not a declared definition or parameter, still parses as an ordinary TermNode.</summary>
+    [Fact]
+    public void Parse_BareIdentifierNotADefinitionOrParameter_StaysATermNode_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("let adult = a; hasRole");
+
+        Assert.Empty(diagnostics);
+        RuleDocumentNode document = Assert.IsType<RuleDocumentNode>(root);
+        Assert.IsType<TermNode>(document.Body);
+    }
 }

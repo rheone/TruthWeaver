@@ -15,13 +15,16 @@ using TruthWeaver.Printing;
 /// every assignment (the possibly-true rail is constant false). So <c>A AND NOT A</c> and
 /// <c>A OR NOT A</c> are not reported: both are <c>Unknown</c> when <c>A</c> is. Term identity
 /// (CONTEXT.md) recognises repeated references to the same variable. Findings are
-/// <see cref="DiagnosticSeverity.Warning"/> diagnostics — they never block compilation.
+/// <see cref="DiagnosticSeverity.Warning"/> diagnostics. They never block compilation.
 /// </summary>
 internal static class Analyzer
 {
     private static readonly DualRail TrueRail = new(BddManager.True, BddManager.True);
     private static readonly DualRail FalseRail = new(BddManager.False, BddManager.False);
     private static readonly DualRail UnknownRail = new(BddManager.False, BddManager.True);
+
+    /// <summary>The order the nine <see cref="JointOutcomes"/> cells are reported in, for each side.</summary>
+    private static readonly TruthValue[] CellOrder = [TruthValue.True, TruthValue.False, TruthValue.Unknown];
 
     /// <summary>Analyzes a compiled tree for Strong K3 tautologies and contradictions.</summary>
     /// <param name="root">The compiled expression tree.</param>
@@ -47,6 +50,18 @@ internal static class Analyzer
         BddManager bdd = new();
         List<Diagnostic> diagnostics = [];
         _ = Build(root, bdd, variableIndex, diagnostics);
+
+        // ADR-0010 decision 8: a quantifier is an opaque atom in the outer analysis above (its own BDD variable
+        // pair, keyed by its canonical text in Build's TermExpression-like case below); its body is analyzed on
+        // its own, in its own scope, with its own term variables and its own MaxAnalysisTerms cap, so a tautology
+        // or contradiction inside the body is still reported. Nested quantifiers recurse through this same call.
+        Dictionary<TermIdentity, QuantifierExpression> quantifiers = [];
+        CollectTopLevelQuantifiers(root, quantifiers);
+        foreach (QuantifierExpression quantifier in quantifiers.Values)
+        {
+            diagnostics.AddRange(Analyze(quantifier.Body, options));
+        }
+
         return diagnostics;
     }
 
@@ -124,13 +139,7 @@ internal static class Analyzer
         Dictionary<TermIdentity, int> variableIndex = [];
         BddManager bdd = new();
         DualRail rail = Build(root, bdd, variableIndex, []);
-        int node = target switch
-        {
-            TruthValue.True => rail.Definite,
-            TruthValue.False => bdd.Not(rail.Possible),
-            _ => bdd.And(rail.Possible, bdd.Not(rail.Definite)),
-        };
-        return (bdd, node, variableIndex);
+        return (bdd, ValueNode(bdd, rail, target), variableIndex);
     }
 
     /// <summary>Gets the index of the term whose variable <paramref name="node"/> tests, in the order of <see cref="TargetFunction"/>.</summary>
@@ -212,8 +221,70 @@ internal static class Analyzer
     }
 
     /// <summary>
+    /// Decides which of the nine Strong K3 <c>(True/False/Unknown, True/False/Unknown)</c> pairs some assignment of
+    /// the terms of <paramref name="left"/> and <paramref name="right"/> can produce, from the rail formulas
+    /// <see cref="ValueNode"/> uses (<see cref="TargetFunction"/>): both trees are built on one shared BDD, so equal
+    /// terms share variables, and a pair is reachable exactly when the conjunction of the two "is this value" functions
+    /// is not the constant-false BDD (ADR-0009 decisions 1 and 2).
+    /// </summary>
+    /// <param name="left">The first tree.</param>
+    /// <param name="right">The second tree.</param>
+    /// <returns>
+    /// One entry per reachable pair, in the fixed order <c>True</c>, <c>False</c>, <c>Unknown</c> for each side (so
+    /// <c>(True, True)</c> is first when reachable). Each example covers every term of either tree; terms the witness
+    /// does not depend on are <c>False</c>. The witness prefers an assignment where no term is <c>Unknown</c>: ANDing
+    /// in the constraint that every term's "is Unknown" variable is false, falling back to any witness when no such
+    /// assignment exists (ADR-0009 decision 4: a reader trusts a definite example more than one with an opaque
+    /// <c>Unknown</c> term in it).
+    /// </returns>
+    internal static IReadOnlyList<(
+        TruthValue First,
+        TruthValue Second,
+        IReadOnlyDictionary<TermIdentity, TruthValue> Example
+    )> JointOutcomes(Expression left, Expression right)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new();
+        List<Diagnostic> ignored = [];
+        DualRail leftRail = Build(left, bdd, variableIndex, ignored);
+        DualRail rightRail = Build(right, bdd, variableIndex, ignored);
+
+        Dictionary<TruthValue, int> leftByValue = ValueNodesByTarget(bdd, leftRail);
+        Dictionary<TruthValue, int> rightByValue = ValueNodesByTarget(bdd, rightRail);
+
+        // No term is Unknown: every term's "is Unknown" variable (2i + 1) is false. ANDing this into a cell gives a
+        // witness with no opaque Unknown term, when one exists.
+        int noTermIsUnknown = BddManager.True;
+        foreach (int index in variableIndex.Values)
+        {
+            noTermIsUnknown = bdd.And(noTermIsUnknown, bdd.Not(bdd.Variable((2 * index) + 1)));
+        }
+
+        List<(TruthValue, TruthValue, IReadOnlyDictionary<TermIdentity, TruthValue>)> results = [];
+        foreach (TruthValue firstValue in CellOrder)
+        {
+            foreach (TruthValue secondValue in CellOrder)
+            {
+                int cell = bdd.And(leftByValue[firstValue], rightByValue[secondValue]);
+                if (cell == BddManager.False)
+                {
+                    continue;
+                }
+
+                int preferred = bdd.And(cell, noTermIsUnknown);
+                Dictionary<TermIdentity, TruthValue> example =
+                    Witness(bdd, preferred != BddManager.False ? preferred : cell, variableIndex)
+                    ?? throw new InvalidOperationException("A reachable cell must have a witness.");
+                results.Add((firstValue, secondValue, example));
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
     /// Reads a tree's Strong K3 value for one assignment of its terms directly from the analyzer's own dual-rail
-    /// BDD, by walking both rails for that assignment (ticket 17). Used to pin <c>Evaluator</c> to the analyzer:
+    /// BDD, by walking both rails for that assignment. Used to pin <c>Evaluator</c> to the analyzer:
     /// today the two are compared only at the tautology/contradiction extremes (<see cref="Analyze"/>), so a
     /// property test instead checks every generated assignment, not only those two.
     /// </summary>
@@ -264,9 +335,61 @@ internal static class Analyzer
         return new TermValuation(terms, bdd, rail.Definite, rail.Possible);
     }
 
+    /// <summary>The three "is this value" BDD nodes for one tree's dual rail, keyed by the value they test for.</summary>
+    private static Dictionary<TruthValue, int> ValueNodesByTarget(BddManager bdd, DualRail rail)
+    {
+        return new Dictionary<TruthValue, int>
+        {
+            [TruthValue.True] = ValueNode(bdd, rail, TruthValue.True),
+            [TruthValue.False] = ValueNode(bdd, rail, TruthValue.False),
+            [TruthValue.Unknown] = ValueNode(bdd, rail, TruthValue.Unknown),
+        };
+    }
+
+    /// <summary>
+    /// Builds the function "the tree has the value <paramref name="target"/>" from its dual rail: the definitely-true
+    /// rail for <c>True</c>, the complement of the possibly-true rail for <c>False</c>, and "possibly but not
+    /// definitely true" for <c>Unknown</c>.
+    /// </summary>
+    private static int ValueNode(BddManager bdd, DualRail rail, TruthValue target)
+    {
+        return target switch
+        {
+            TruthValue.True => rail.Definite,
+            TruthValue.False => bdd.Not(rail.Possible),
+            _ => bdd.And(rail.Possible, bdd.Not(rail.Definite)),
+        };
+    }
+
+    /// <summary>
+    /// Finds every quantifier in <paramref name="node"/>'s own scope, not inside another quantifier's body, which
+    /// <see cref="Analyze"/> analyzes separately and recursively, deduplicated by canonical text (ADR-0010
+    /// decision 8: two syntactically equal quantifiers are the same atom).
+    /// </summary>
+    private static void CollectTopLevelQuantifiers(Expression node, Dictionary<TermIdentity, QuantifierExpression> quantifiers)
+    {
+        if (node is QuantifierExpression quantifier)
+        {
+            quantifiers.TryAdd(QuantifierAtom.IdentityOf(quantifier), quantifier);
+            return;
+        }
+
+        if (node is ConstantExpression or TermExpression)
+        {
+            return;
+        }
+
+        foreach (Expression operand in ExpressionShape.Of(node).Operands)
+        {
+            CollectTopLevelQuantifiers(operand, quantifiers);
+        }
+    }
+
     /// <summary>
     /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
     /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
+    /// A quantifier is a leaf for this purpose (ADR-0010 decision 8): it contributes its own atom identity, and its
+    /// body's terms are not collected here, because they belong to the body's own, separate analysis scope.
     /// </summary>
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
@@ -274,6 +397,12 @@ internal static class Analyzer
         if (node is TermExpression term)
         {
             terms.Add(term.Identity);
+            return;
+        }
+
+        if (node is QuantifierExpression quantifier)
+        {
+            terms.Add(QuantifierAtom.IdentityOf(quantifier));
             return;
         }
 
@@ -362,7 +491,7 @@ internal static class Analyzer
     }
 
     /// <summary>
-    /// Binary XOR as <c>(x AND NOT y) OR (NOT x AND y)</c> — the primitive definition, so it is
+    /// Binary XOR as <c>(x AND NOT y) OR (NOT x AND y)</c>: the primitive definition, so it is
     /// <c>Unknown</c> whenever either side is.
     /// </summary>
     private static DualRail Xor(BddManager bdd, DualRail x, DualRail y)
@@ -545,6 +674,21 @@ internal static class Analyzer
                 int definite = bdd.Variable(2 * index);
                 int unknown = bdd.Variable((2 * index) + 1);
                 return new DualRail(definite, bdd.Or(definite, unknown));
+            case QuantifierExpression q:
+                // ADR-0010 decision 8: the quantifier is an opaque atom in the outer analysis, keyed by its own
+                // canonical text (including its body) exactly as TermExpression above is keyed by its identity;
+                // every K3 value of the atom is reachable for some collection, so this is sound. Analyze's caller
+                // separately re-analyzes the body in its own scope.
+                TermIdentity atom = QuantifierAtom.IdentityOf(q);
+                if (!variableIndex.TryGetValue(atom, out int atomIndex))
+                {
+                    atomIndex = variableIndex.Count;
+                    variableIndex[atom] = atomIndex;
+                }
+
+                int atomDefinite = bdd.Variable(2 * atomIndex);
+                int atomUnknown = bdd.Variable((2 * atomIndex) + 1);
+                return new DualRail(atomDefinite, bdd.Or(atomDefinite, atomUnknown));
             case NotExpression n:
                 rail = Not(bdd, Build(n.Operand, bdd, variableIndex, diagnostics));
                 break;
@@ -644,8 +788,7 @@ internal static class Analyzer
     /// the cost differs. Operands are built left to right, so an earlier operand's terms take lower variable indices
     /// and sit above a later operand's in the ordering. Combining <c>op(earlier, accumulated)</c> lets <c>Ite</c> walk
     /// only the earlier operand's nodes and reuse the accumulated BDD unchanged under it. A left fold puts the growing
-    /// accumulated BDD on top and rebuilds all of it for every operand, which is quadratic in the operand count
-    /// (k3-hardening ticket 19).
+    /// accumulated BDD on top and rebuilds all of it for every operand, which is quadratic in the operand count.
     /// </summary>
     private static DualRail FoldRight(
         List<DualRail> operands,

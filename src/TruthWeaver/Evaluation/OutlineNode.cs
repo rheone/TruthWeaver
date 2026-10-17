@@ -1,7 +1,7 @@
 namespace TruthWeaver.Evaluation;
 
 /// <summary>
-/// One node of a rule's outline: the static, human-readable tree of a compiled expression — an operator's or a
+/// One node of a rule's outline: the static, human-readable tree of a compiled expression: an operator's or a
 /// predicate's <c>Label</c>/<c>Description</c>, plus its operands' own outline nodes, recursively. The root
 /// node returned by <see cref="CompiledRule{TContext}.Outline"/> is the rule's outline.
 /// Produced by <see cref="CompiledRule{TContext}.Outline"/> so a rule-authoring UI or generated
@@ -19,10 +19,19 @@ namespace TruthWeaver.Evaluation;
 /// The node's role. The printers use it to pick a node shape. A node with operands is always an operator,
 /// whatever its <paramref name="Kind"/>; a hand-built leaf defaults to <see cref="OutlineNodeKind.Term"/>.
 /// </param>
+/// <param name="QuantifierVariable">
+/// The bound variable name (<c>line</c> in <c>line IN lines</c>) when this node is a <c>FORALL</c>/<c>EXISTS</c>
+/// quantifier (ADR-0010); otherwise <see langword="null"/>. Carried separately from <paramref name="ArgumentText"/>
+/// because a quantifier's head renders as part of its label (<c>FORALL line IN lines</c>), not as a parenthesized
+/// suffix.
+/// </param>
+/// <param name="QuantifierCollection">The registered collection name a quantifier ranges over, or <see langword="null"/> for every other node.</param>
 public sealed record OutlineNode(
     string Label,
     string Description,
     IReadOnlyList<OutlineNode> Operands,
     string? ArgumentText = null,
-    OutlineNodeKind Kind = OutlineNodeKind.Term
+    OutlineNodeKind Kind = OutlineNodeKind.Term,
+    string? QuantifierVariable = null,
+    string? QuantifierCollection = null
 );

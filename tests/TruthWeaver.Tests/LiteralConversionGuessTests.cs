@@ -6,7 +6,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
 
 /// <summary>
-/// Ticket 24: <see cref="LiteralConversion.Guess"/>'s lenient-mode fallback branches — boolean and
+/// Ticket 24: <see cref="LiteralConversion.Guess"/>'s lenient-mode fallback branches - boolean and
 /// decimal-form numbers, plus <c>GuessArray</c>'s empty-array branch. These are exercised directly
 /// against the raw parse-tree shape rather than through <c>RuleCompiler</c>, since the integer-form
 /// number branch is already covered end-to-end via the lenient-mode compiler tests.

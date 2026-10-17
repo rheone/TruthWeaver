@@ -33,7 +33,7 @@ internal static class RuleFixtures
     }
 
     /// <summary>
-    /// Builds a "grouped" rule shape representative of real authoring — an <c>AND</c> of several
+    /// Builds a "grouped" rule shape representative of real authoring - an <c>AND</c> of several
     /// <c>OR</c> groups (e.g. "must satisfy every one of these categories, each satisfied by any of
     /// several alternatives"). Each group's members are its own, mostly-disjoint slice of the
     /// <c>term0</c>..<c>term{termCount-1}</c> pool; every fifth group additionally repeats the very

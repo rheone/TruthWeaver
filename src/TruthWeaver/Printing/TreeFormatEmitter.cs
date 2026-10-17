@@ -24,6 +24,9 @@ internal static class TreeFormatEmitter
             case TermExpression t:
                 EmitTerm(t, writer, notes);
                 return;
+            case QuantifierExpression q:
+                EmitQuantifier(q, writer, notes);
+                return;
         }
 
         NodeShape shape = ExpressionShape.Of(node);
@@ -64,6 +67,29 @@ internal static class TreeFormatEmitter
             writer.Property("note");
             writer.String(note, quoted: true);
         }
+    }
+
+    /// <summary>
+    /// Writes a quantifier node's <c>{"op": "forall" | "exists", "var", "in", "operands": [body]}</c> shape
+    /// (ADR-0010 decision 2). It bypasses the generic operator path above because a quantifier is not in the
+    /// closed <see cref="OperatorDefinitions"/> table (it is a third kind, not a connective with a fixed arity) and
+    /// carries two extra keys (<c>var</c>, <c>in</c>) that no other operator node has.
+    /// </summary>
+    private static void EmitQuantifier(QuantifierExpression node, ITreeWriter writer, NoteLookup? notes)
+    {
+        writer.BeginObject();
+        writer.Property("op");
+        writer.String(node.Kind == QuantifierKind.ForAll ? "forall" : "exists", quoted: false);
+        writer.Property("var");
+        writer.String(node.Variable, quoted: false);
+        writer.Property("in");
+        writer.String(node.CollectionName, quoted: false);
+        writer.Property("operands");
+        writer.BeginArray();
+        Emit(node.Body, writer, notes);
+        writer.EndArray();
+        EmitNote(node, writer, notes);
+        writer.EndObject();
     }
 
     private static void EmitConstant(ConstantExpression constant, ITreeWriter writer, NoteLookup? notes)

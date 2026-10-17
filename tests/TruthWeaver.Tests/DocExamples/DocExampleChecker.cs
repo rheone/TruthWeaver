@@ -8,6 +8,7 @@ using TruthWeaver.DataSources.Json;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -27,7 +28,7 @@ using TruthWeaver.Yaml;
 /// <item><c>tree ID</c>, <c>mermaid ID</c>: documented output that must equal <c>PrintPlainText()</c> / <c>PrintMermaid()</c> of the <c>rule ID</c> example.</item>
 /// <item><c>html ID</c>, <c>dot ID</c>: documented output (in an <c>html</c> or <c>dot</c> block) that must equal <c>PrintHtml()</c> / <c>PrintDot()</c> of the <c>rule ID</c> example; the option words <c>symbolic</c>, <c>cstyle</c>, <c>letters</c>, <c>logic-symbols</c> and <c>trace</c> follow the ID, <c>simple</c> on an <c>html</c> marker, and <c>plain</c> and <c>left-right</c> on a <c>dot</c> marker.</item>
 /// <item><c>equation ID</c>, <c>legend ID</c>: documented output that must equal <c>PrintEquation()</c> / <c>PrintEquationWithLegend()</c> of the <c>rule ID</c> example; the option words <c>latex</c>, <c>ascii</c> (AsciiMath), <c>mathml</c>, <c>typst</c>, <c>plain-ascii</c> (the 7-bit <see cref="EquationDialect.Ascii"/> dialect), <c>cstyle</c>, <c>double-dollar</c>, <c>mathjax</c> and <c>simple</c> follow the ID, and so do the constant-style words <c>letters</c>, <c>words</c> and <c>logic-symbols</c> (also valid on a <c>tree</c> or <c>mermaid</c> marker; an equation or legend marker with none documents the letters default).</item>
-/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here — <c>PrintRuleText</c> rejects it). A <c>width=N</c> word (ticket 10) checks <c>PrintRuleText(RuleTextOptions)</c> with that width instead of the one-line form.</item>
+/// <item><c>ruletext ID</c>: documented output that must equal <c>PrintRuleText()</c> of the <c>rule ID</c> example; the option word <c>symbolic</c> follows the ID (<c>cstyle</c> is not valid here - <c>PrintRuleText</c> rejects it). A <c>width=N</c> word (ticket 10) checks <c>PrintRuleText(RuleTextOptions)</c> with that width instead of the one-line form.</item>
 /// <item>A rewrite word (<c>nnf</c>, <c>cnf</c>, <c>dnf</c>, <c>simplify</c>, <c>canonicalize</c>, <c>compress</c> or <c>primitives</c>) after the ID of a <c>tree</c>, <c>mermaid</c>, <c>equation</c>, <c>legend</c> or <c>ruletext</c> marker applies that rewrite first, so the block documents the rewritten rule. Several words apply in the order written.</item>
 /// <item>An <c>equation</c> marker can stand above a display-math paragraph (a line that starts with <c>$$</c>) instead of a fence.</item>
 /// <item><c>rewrite-diagnostics ID</c>: documented output that must equal the diagnostics of the rewrite named by the rewrite word; <c>cap=N</c> sets the <c>maxNodeCount</c> of an expanding rewrite.</item>
@@ -760,7 +761,60 @@ internal static partial class DocExampleChecker
             ),
             ConstantAsync
         );
+
+        // The quantifier examples (ADR-0010, docs/rule-text.md "Quantifiers"): "lines" is a collection binding with
+        // a nested "details" collection registered on its own element builder, so a nested FORALL/EXISTS example
+        // compiles. The documentation never evaluates these rules, so the selectors' actual data does not matter.
+        // The 4th AddCollection argument (ADR-0010 decision 3) projects an element to a data source, so the
+        // "untyped element read" example (`from(line, ...)`) compiles too; it is never queried.
+        builder.AddCollection(
+            "lines",
+            _ => Array.Empty<bool>(),
+            elements =>
+                elements
+                    .Add(
+                        PredicateSchema.NoArguments("inStock", "In Stock", "Is this line item in stock?"),
+                        ConstantElementAsync
+                    )
+                    .Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "Is this line item's quantity above the given threshold?",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        ConstantElementAsync
+                    )
+                    .AddCollection(
+                        "details",
+                        _ => Array.Empty<bool>(),
+                        detailElements =>
+                            detailElements.Add(
+                                PredicateSchema.NoArguments("inStock", "In Stock", "Is this order detail in stock?"),
+                                ConstantNestedElementAsync
+                            )
+                    ),
+            _ => new FakeDataSource()
+        );
         return builder.Build();
+    }
+
+    private static ValueTask<TruthValue> ConstantElementAsync(
+        Element<RuleTestContext, bool> context,
+        PredicateArguments args,
+        CancellationToken ct
+    )
+    {
+        return ValueTask.FromResult(TruthValue.True);
+    }
+
+    private static ValueTask<TruthValue> ConstantNestedElementAsync(
+        Element<Element<RuleTestContext, bool>, bool> context,
+        PredicateArguments args,
+        CancellationToken ct
+    )
+    {
+        return ValueTask.FromResult(TruthValue.True);
     }
 
     private static ValueTask<TruthValue> ConstantAsync(RuleTestContext context, PredicateArguments args, CancellationToken ct)

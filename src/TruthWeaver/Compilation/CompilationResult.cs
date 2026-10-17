@@ -5,7 +5,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 
 /// <summary>
-/// The result of <c>RuleCompiler.Compile</c> — never thrown, always returned (ADR-0002/ADR-0003).
+/// The result of <c>RuleCompiler.Compile</c>: never thrown, always returned (ADR-0002/ADR-0003).
 /// <see cref="CompiledRule"/> is populated only when <see cref="Diagnostics"/> contains no
 /// <see cref="DiagnosticSeverity.Error"/>-severity entries.
 /// </summary>

@@ -15,7 +15,7 @@ using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Compiles rule text (DSL, JSON, or — via <c>TruthWeaver.Yaml</c> — YAML) into an immutable
+/// Compiles rule text (DSL, JSON, or YAML via <c>TruthWeaver.Yaml</c>) into an immutable
 /// <see cref="CompiledRule{TContext}"/>, following the Parse → Validate → Analyze → Build pipeline
 /// (ADR-0003). Never throws for an authoring error: every problem, from a syntax error to a
 /// structural tautology, becomes a <see cref="Diagnostic"/> in the returned
@@ -68,8 +68,8 @@ public sealed class RuleCompiler<TContext>(
 
     /// <summary>
     /// Compiles the flat, key-discriminated JSON tree shape (ADR-0003) from a <see cref="JsonElement"/>
-    /// already extracted from a larger document — e.g. one field of a multi-rule document parsed with
-    /// <see cref="JsonDocument"/> — rather than requiring the caller to re-serialize it to standalone
+    /// already extracted from a larger document (e.g. one field of a multi-rule document parsed with
+    /// <see cref="JsonDocument"/>), rather than requiring the caller to re-serialize it to standalone
     /// JSON text first.
     /// </summary>
     /// <param name="element">The JSON tree node.</param>
@@ -138,7 +138,7 @@ public sealed class RuleCompiler<TContext>(
 
     /// <summary>
     /// Notifies this compiler's logger that the host application swapped its active
-    /// <see cref="CompiledRule{TContext}"/> reference — the library owns compilation and evaluation
+    /// <see cref="CompiledRule{TContext}"/> reference. The library owns compilation and evaluation
     /// only, not rule storage or swap scheduling (ADR-0002), so it logs only what it is told.
     /// </summary>
     /// <param name="ruleIdentifier">A host-supplied identifier for the swapped rule (e.g. its name or storage key).</param>
@@ -215,11 +215,8 @@ public sealed class RuleCompiler<TContext>(
             return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
-        (Expression? tree, IReadOnlyList<Diagnostic> validationDiagnostics) = RuleNodeCompiler<TContext>.Compile(
-            root,
-            this.registry,
-            this.options
-        );
+        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics) =
+            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.options);
         diagnostics.AddRange(validationDiagnostics);
 
         if (tree is not null)
@@ -237,7 +234,13 @@ public sealed class RuleCompiler<TContext>(
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         CompiledRule<TContext>? compiled =
             !hasErrors && tree is not null
-                ? new CompiledRule<TContext>(tree, this.registry, this.logger, this.options, NoteCollector.Collect(root, tree))
+                ? new CompiledRule<TContext>(
+                    tree,
+                    this.registry,
+                    this.logger,
+                    this.options,
+                    NoteCollector.Collect(expandedRoot, tree)
+                )
                 : null;
         return new CompilationResult<TContext>(compiled, new EquatableArray<Diagnostic>(diagnostics));
     }

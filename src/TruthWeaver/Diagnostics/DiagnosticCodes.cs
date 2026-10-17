@@ -201,4 +201,63 @@ public static class DiagnosticCodes
     /// do not set <c>AllowLargerTable</c>, or it has more terms than the hard limit of 12. Nothing was written.
     /// </summary>
     public const string TruthTableTooLarge = "TRE0035";
+
+    /// <summary>
+    /// A <c>let</c> definition references itself, directly or through a chain of other definitions' uses (ADR-0008
+    /// decision 6). The message names every definition in the cycle, in the order the compiler found them. The span is
+    /// the use that closed the cycle.
+    /// </summary>
+    public const string DefinitionCycleDetected = "TRE0036";
+
+    /// <summary>
+    /// A <c>let</c> definition's name clashes with another definition already declared in the same document, a
+    /// reserved word (including <c>let</c> itself and <c>T</c>/<c>F</c>/<c>U</c>), or a predicate name registered with
+    /// the compiler (ADR-0008 decision 6). The span is the definition's own name, not a use of it.
+    /// </summary>
+    public const string DefinitionNameCollision = "TRE0037";
+
+    /// <summary>
+    /// Expanding a use would nest more <c>let</c> definitions deep than <c>CompilerOptions.MaxDefinitionDepth</c>
+    /// (ADR-0008 decision 6), independent of <c>MaxDepthExceeded</c>, which bounds the expanded tree's structural
+    /// depth, not the definition chain, and independent of <see cref="DefinitionCycleDetected"/>, which only catches an
+    /// unbounded (cyclic) chain, not a pathologically deep but non-cyclic one.
+    /// </summary>
+    public const string MaxDefinitionDepthExceeded = "TRE0038";
+
+    /// <summary>
+    /// A use of a <c>let</c> definition supplies a different number of arguments than the definition declares
+    /// parameters (ADR-0008 decision 6). The span is the use.
+    /// </summary>
+    public const string DefinitionArgumentCountMismatch = "TRE0039";
+
+    /// <summary>
+    /// A use names a <c>let</c> definition that was never declared in this document (ADR-0008 decision 6). The span is
+    /// the use.
+    /// </summary>
+    public const string UnknownDefinition = "TRE0040";
+
+    /// <summary>
+    /// Lint (opt-in via <c>CompilerOptions.Lints</c>, <c>TruthWeaver.Compilation.LintRules.UnusedDefinition</c>): a
+    /// <c>let</c> definition with no use anywhere in the document (ADR-0008 decision 6). The span is the definition's
+    /// own name.
+    /// </summary>
+    public const string UnusedDefinition = "TRE0041";
+
+    /// <summary>
+    /// A <c>FORALL</c>/<c>EXISTS</c> head names a collection no <c>PredicateRegistryBuilder.AddCollection</c> call
+    /// registered (ADR-0010 decision 3). The span or path is the collection name.
+    /// </summary>
+    public const string UnknownCollection = "TRE0042";
+
+    /// <summary>
+    /// A rule nests quantifiers deeper than <c>CompilerOptions.MaxQuantifierDepth</c> (ADR-0010 decision 6). The span
+    /// or path is the innermost quantifier that crossed the limit.
+    /// </summary>
+    public const string MaxQuantifierDepthExceeded = "TRE0043";
+
+    /// <summary>
+    /// A quantifier's bound variable name is already in scope: reusing an enclosing quantifier's own variable name
+    /// (ADR-0010 decision 2). The span or path is the inner quantifier's head.
+    /// </summary>
+    public const string ShadowedVariable = "TRE0044";
 }

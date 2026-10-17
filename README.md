@@ -43,7 +43,9 @@ check ("can the current user do X") is one consumer of the engine, not part of i
 | **Decision** | The evaluation result: a `TruthValue`, any faults and optionally a trace. `IsSatisfied` is fail-closed, so only `True` is satisfied. |
 
 `Project` and `Collapse` are methods on the result, not rule operators. See
-[Result transformations](docs/strong-k3/result-transformations/README.md). The
+[Result transformations](docs/strong-k3/result-transformations/README.md).
+`FORALL` and `EXISTS` range over a registered collection. See
+[Quantifiers](docs/strong-k3/quantifiers/README.md). The
 vocabulary and the predicate-author contract are in [CONTEXT.md](CONTEXT.md).
 Release status, version policy and the migration guide for each breaking change
 are in `CHANGELOG.md`.
@@ -124,6 +126,7 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.DataSources.Json` | Read variable values from a JSON document. |
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
 | `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests, and run YAML rule tests. |
+| `TruthWeaver.AspNetCore` | Decide ASP.NET Core authorization policies with rules. |
 | `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
@@ -172,6 +175,7 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Rule coverage](docs/rule-coverage.md): find the terms and branches of a rule that never decide, are always `Unknown` or fault, over many decisions.
 - [What would change a decision](docs/counterfactuals.md): the smallest sets of term changes that would make a rule `True` (or `False`), for a "what to fix" list.
 - [Decision records](docs/decision-records.md): store a decision as JSON for an audit log, with the rule identity and the evaluation options, and read it back for replay.
+- [ASP.NET Core authorization](docs/aspnetcore.md): decide authorization policies and resource-based checks with rules, fail-closed, with the decision for logs and problem-details responses.
 - [Command line](docs/cli.md): the `truthweaver` .NET tool: validate, convert, format, print, export, report, diff, evaluate and test rules from the shell, with JSON output, SARIF and documented exit codes.
 - [Tool core](docs/tool-core.md): the library under the command line and the terminal UI: load, detect, extract and convert rules, validate them in levels with statistics, write diagnostics as text, JSON or SARIF, export every artifact with a manifest, write a Markdown report, render images with Graphviz or the Mermaid CLI, the `truthweaver.json` file, stub values, data files and deterministic output.
 - [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.

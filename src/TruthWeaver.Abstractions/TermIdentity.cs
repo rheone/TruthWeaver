@@ -1,7 +1,7 @@
 namespace TruthWeaver.Abstractions;
 
 /// <summary>
-/// The identity of a term — a predicate name bound to concrete arguments — per CONTEXT.md's
+/// The identity of a term (a predicate name bound to concrete arguments), per CONTEXT.md's
 /// term-identity rule. Two terms are the same identity if and only if their predicate names are
 /// equal (already normalized to the registry's casing by the time a <see cref="TermIdentity"/> is
 /// constructed) and their arguments, sorted by name, are pairwise equal by exact type-normalized

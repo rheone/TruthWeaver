@@ -5,20 +5,20 @@ using System.Text;
 using TruthWeaver.Ast;
 
 /// <summary>
-/// Renders a compiled expression tree back to canonical DSL text (ADR-0003) — deterministic, and
+/// Renders a compiled expression tree back to canonical DSL text (ADR-0003): deterministic, and
 /// parenthesized for clarity wherever an operator is mixed with a different one, even where
 /// precedence alone would make the meaning unambiguous (e.g. <c>a AND b OR c</c> prints as
-/// <c>(a AND b) OR c</c>) — the point is to make a large nested rule easy for a human to read at a
+/// <c>(a AND b) OR c</c>). The point is to make a large nested rule easy for a human to read at a
 /// glance, not merely to avoid a parser error. <c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c> are always parenthesized
 /// regardless of context. This is the exact form <c>parse</c> reproduces a structurally equal tree
-/// from (ticket 06).
+/// from.
 /// </summary>
 /// <remarks>
-/// <see cref="OperatorStyle.Symbolic"/> (ticket 06) swaps <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>
+/// <see cref="OperatorStyle.Symbolic"/> swaps <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/<c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c>
 /// for the symbols the DSL lexer itself reads for them (<c>DslParser.SymbolAlias</c>), so
 /// the printed text still re-parses to an equal tree. <c>COALESCE</c> and <c>If</c> are unaffected: the DSL has no call
 /// syntax for <c>??</c>, so they always print in word/function-call form. <see cref="OperatorStyle.CStyle"/> is not
-/// supported here — the caller (<c>CompiledRule.PrintRuleText</c>) rejects it before this printer ever sees it, since
+/// supported here. The caller (<c>CompiledRule.PrintRuleText</c>) rejects it before this printer ever sees it, since
 /// <c>^</c> and <c>==</c> are not DSL tokens.
 /// </remarks>
 internal static class CanonicalPrinter
@@ -66,7 +66,7 @@ internal static class CanonicalPrinter
     }
 
     /// <summary>
-    /// Prints an expression tree to DSL text using <paramref name="options"/> (ticket 10). When
+    /// Prints an expression tree to DSL text using <paramref name="options"/>. When
     /// <see cref="RuleTextOptions.Width"/> is <see langword="null"/>, this returns exactly what
     /// <see cref="Print(Expression, GroupingStyle, OperatorStyle, ConstantFormat?, NoteLookup?)"/> returns for the same grouping,
     /// operator style and constants. Otherwise, a group that does not fit the width breaks across lines: see the
@@ -272,6 +272,8 @@ internal static class CanonicalPrinter
                 $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             ThresholdExpression th =>
                 $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
+            QuantifierExpression q =>
+                $"{QuantifierName(q)}({q.Variable} IN {q.CollectionName}, {PrintNode(q.Body, PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -288,10 +290,10 @@ internal static class CanonicalPrinter
     /// <summary>
     /// Prints <paramref name="node"/> the way <see cref="PrintNode"/> would (the flat, one-line form), unless that
     /// flat form does not fit <paramref name="width"/> at the current <paramref name="indentLevel"/>, in which case the
-    /// node breaks across lines (ticket 10, documented in <c>docs/rule-text.md</c>): an <c>AND</c>/<c>OR</c> chain or a
+    /// node breaks across lines (documented in <c>docs/rule-text.md</c>): an <c>AND</c>/<c>OR</c> chain or a
     /// binary connective breaks after each operator; a call form breaks one argument per line. A leaf
-    /// (<see cref="ConstantExpression"/>, <see cref="TermExpression"/>) always prints flat — there is nothing in a
-    /// single token to break — so a width smaller than the longest token never loops or throws; it only produces a
+    /// (<see cref="ConstantExpression"/>, <see cref="TermExpression"/>) always prints flat. There is nothing in a
+    /// single token to break, so a width smaller than the longest token never loops or throws; it only produces a
     /// line longer than the requested width.
     /// </summary>
     private static string PrintPretty(
@@ -467,13 +469,24 @@ internal static class CanonicalPrinter
                 indentSize,
                 notes
             ),
+            QuantifierExpression q => BreakQuantifier(
+                q,
+                innerDepth,
+                indentLevel,
+                grouping,
+                operatorStyle,
+                constants,
+                width,
+                indentSize,
+                notes
+            ),
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
         return note is null ? broken : NoteComment(note) + broken;
     }
 
     /// <summary>
-    /// Breaks an <c>AND</c>/<c>OR</c> chain after each operator (ticket 10): the group's delimiters (when
+    /// Breaks an <c>AND</c>/<c>OR</c> chain after each operator: the group's delimiters (when
     /// <paramref name="wrap"/>) each get their own line, and every operand is printed at
     /// <paramref name="innerIndentLevel"/>, recursively broken again if it still does not fit.
     /// </summary>
@@ -605,7 +618,7 @@ internal static class CanonicalPrinter
 
     /// <summary>
     /// Breaks a call form (<c>AtLeast(2, a, b, c)</c>, <c>BETWEEN(min, max, ...)</c>, <c>ANY(...)</c> and the rest) one
-    /// argument per line (ticket 10): any leading bound (<c>k</c>, or <c>min</c>/<c>max</c>) prints first, then each
+    /// argument per line: any leading bound (<c>k</c>, or <c>min</c>/<c>max</c>) prints first, then each
     /// operand, recursively broken again if it still does not fit. Call parentheses are always literal <c>(</c>/<c>)</c>,
     /// never the grouping delimiters, matching <see cref="PrintNode"/>.
     /// </summary>
@@ -679,6 +692,57 @@ internal static class CanonicalPrinter
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Breaks a quantifier (<c>FORALL(line IN lines, body)</c>) one item per line: the head
+    /// (<c>line IN lines</c>) prints first, then the body, recursively broken again if it still does not fit.
+    /// </summary>
+    private static string BreakQuantifier(
+        QuantifierExpression node,
+        int depth,
+        int indentLevel,
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle,
+        ConstantFormat constants,
+        int? width,
+        int indentSize,
+        NoteLookup? notes
+    )
+    {
+        int innerIndentLevel = indentLevel + 1;
+        StringBuilder builder = new();
+        builder.Append(QuantifierName(node)).Append('(');
+        builder
+            .Append('\n')
+            .Append(Indent(innerIndentLevel, indentSize))
+            .Append(node.Variable)
+            .Append(" IN ")
+            .Append(node.CollectionName)
+            .Append(',');
+        builder.Append('\n').Append(Indent(innerIndentLevel, indentSize));
+        builder.Append(
+            PrintPretty(
+                node.Body,
+                PrintContext.Top,
+                depth,
+                innerIndentLevel,
+                grouping,
+                operatorStyle,
+                constants,
+                width,
+                indentSize,
+                notes
+            )
+        );
+        builder.Append('\n').Append(Indent(indentLevel, indentSize)).Append(')');
+        return builder.ToString();
+    }
+
+    /// <summary>Gets the canonical DSL word for a quantifier: <c>FORALL</c> or <c>EXISTS</c> (ADR-0010 decision 2).</summary>
+    private static string QuantifierName(QuantifierExpression node)
+    {
+        return node.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+    }
+
     /// <summary>Gets the call keyword for a call-form node, exactly as <see cref="PrintNode"/> writes it.</summary>
     private static string CallName(Expression node)
     {
@@ -698,7 +762,7 @@ internal static class CanonicalPrinter
         };
     }
 
-    /// <summary>Gets the bare (unpadded) token for a binary connective, in the given <paramref name="style"/> — <see cref="InfixToken"/> without its surrounding spaces.</summary>
+    /// <summary>Gets the bare (unpadded) token for a binary connective, in the given <paramref name="style"/>, <see cref="InfixToken"/> without its surrounding spaces.</summary>
     private static string OperatorToken(string word, OperatorStyle style)
     {
         return InfixToken(word, style).Trim();

@@ -2,6 +2,48 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
+      "name": "normalize-text-staged",
+      "group": "pre-commit",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-File",
+        "scripts/normalize-text-staged.ps1"
+      ],
+      "include": [
+        "**/*.md",
+        "**/*.txt",
+        "**/*.cs",
+        "**/*.ps1",
+        "**/*.py",
+        "**/*.mjs",
+        "**/*.sh",
+        "**/*.yml",
+        "**/*.yaml",
+        "**/*.json",
+        "**/*.props",
+        "**/*.targets",
+        "**/*.csproj",
+        "**/*.slnx",
+        "**/*.xsd"
+      ]
+    },
+    {
+      "name": "format-data-staged",
+      "group": "pre-commit",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-File",
+        "scripts/format-data-staged.ps1"
+      ],
+      "include": [
+        "**/*.json",
+        "**/*.yaml",
+        "**/*.yml"
+      ]
+    },
+    {
       "name": "format-staged",
       "group": "pre-commit",
       "command": "pwsh",
@@ -51,6 +93,26 @@
         "**/*.targets",
         "**/*.slnx",
         "global.json"
+      ]
+    },
+    {
+      "name": "doc-tests",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "tests/TruthWeaver.Tests",
+        "--configuration",
+        "Release",
+        "--filter-class",
+        "*DocumentationLint*",
+        "--filter-class",
+        "*K3Reference*",
+        "--filter-class",
+        "*DocExample*"
+      ],
+      "include": [
+        "**/*.md"
       ]
     }
   ]

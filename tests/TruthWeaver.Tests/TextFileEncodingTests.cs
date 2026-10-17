@@ -80,7 +80,7 @@ public sealed class TextFileEncodingTests
     [Fact]
     public void Check_ValidUtf8WithMultiByteCharacters_ReportsNothing_Test()
     {
-        byte[] bytes = Encoding.UTF8.GetBytes("HasCount… and é and ⊤");
+        byte[] bytes = Encoding.UTF8.GetBytes("HasCount... and é and ⊤");
 
         IReadOnlyList<string> failures = Check([("CHANGELOG.md", bytes)]);
 

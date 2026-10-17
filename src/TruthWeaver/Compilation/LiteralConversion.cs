@@ -6,8 +6,7 @@ using TruthWeaver.Parsing;
 /// <summary>
 /// Reconciles a <see cref="RawLiteral"/> (the shape a literal took in whichever surface it was
 /// parsed from) against a predicate argument's declared <see cref="LiteralKind"/>. This is the one
-/// place a DSL string, a JSON scalar, and a YAML scalar all become the same <see cref="LiteralValue"/>
-/// — including the DSL's only way to express a <see cref="LiteralKind.DateTimeOffset"/>: a quoted
+/// place a DSL string, a JSON scalar, and a YAML scalar all become the same <see cref="LiteralValue"/>, including the DSL's only way to express a <see cref="LiteralKind.DateTimeOffset"/>: a quoted
 /// string the schema says to parse as a date rather than keep as text.
 /// </summary>
 internal static class LiteralConversion
@@ -64,7 +63,7 @@ internal static class LiteralConversion
 
     /// <summary>
     /// Best-effort infers a <see cref="LiteralValue"/> from a raw literal with no declared schema to
-    /// validate against — used only for a term bound to an unregistered predicate under
+    /// validate against: used only for a term bound to an unregistered predicate under
     /// <c>CompilationMode.Lenient</c>, where the term will never actually be evaluated (it is
     /// permanently <c>TruthValue.Unknown</c>) but still needs a stable identity for memoization.
     /// </summary>

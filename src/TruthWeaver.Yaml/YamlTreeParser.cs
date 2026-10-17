@@ -9,8 +9,8 @@ using YamlDotNet.RepresentationModel;
 
 /// <summary>
 /// Parses the identical flat, key-discriminated tree shape JSON uses (ADR-0003), expressed in YAML,
-/// into the same raw <see cref="RuleNode"/> tree the DSL and JSON front ends produce (ticket 08).
-/// Never throws for malformed YAML — it reports a <see cref="DiagnosticCodes.MalformedTree"/>
+/// into the same raw <see cref="RuleNode"/> tree the DSL and JSON front ends produce.
+/// Never throws for malformed YAML. It reports a <see cref="DiagnosticCodes.MalformedTree"/>
 /// diagnostic instead. Each diagnostic is located by its path from the document root (<c>$.operands[1].op</c>, the same
 /// syntax JSON uses) and, because YamlDotNet keeps node positions, by the span of the offending node as well.
 /// </summary>

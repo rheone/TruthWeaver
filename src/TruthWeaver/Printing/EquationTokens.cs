@@ -22,6 +22,9 @@ internal sealed record EquationTokens
             Implies = "→",
             Nand = "↑",
             Nor = "↓",
+            ForAll = "∀",
+            Exists = "∃",
+            ElementOf = "∈",
             FormatTerm = (identity, showArgumentValues) => showArgumentValues ? identity.ToString() : identity.PredicateName,
             FormatConstant = (value, constants) => constants.Text(value),
             FormatFunctionName = name => name,
@@ -41,6 +44,9 @@ internal sealed record EquationTokens
             Implies = "=>",
             Nand = "uarr",
             Nor = "darr",
+            ForAll = "AA",
+            Exists = "EE",
+            ElementOf = "in",
             FormatTerm = (identity, showArgumentValues) =>
                 AsciiMathText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
             FormatConstant = (value, constants) =>
@@ -95,6 +101,21 @@ internal sealed record EquationTokens
     public required string Nor { get; init; }
 
     /// <summary>
+    /// Gets the prefix token for <c>FORALL</c> (ADR-0010), for example <c>∀</c>. Defaults to the word
+    /// <c>FORALL</c>, which every dialect keeps unless it has a native quantifier glyph or command.
+    /// </summary>
+    public string ForAll { get; init; } = "FORALL";
+
+    /// <summary>Gets the prefix token for <c>EXISTS</c> (ADR-0010), for example <c>∃</c>. Defaults to the word <c>EXISTS</c>.</summary>
+    public string Exists { get; init; } = "EXISTS";
+
+    /// <summary>Gets the membership token between a quantifier's bound variable and its collection, for example <c>∈</c>. Defaults to the word <c>IN</c>.</summary>
+    public string ElementOf { get; init; } = "IN";
+
+    /// <summary>Gets the separator between a quantifier's head and its body, for example <c> . </c> (with its own spacing).</summary>
+    public string QuantifierDot { get; init; } = " . ";
+
+    /// <summary>
     /// Gets the formatter for <c>If(condition, whenTrue, whenFalse)</c> as a ternary, given the three operands already
     /// printed (and parenthesized, where their own context needs it). <see langword="null"/> (the default for every
     /// dialect but <see cref="EquationDialect.CStyle"/>) means <c>If</c> prints in function-call form instead.
@@ -144,6 +165,10 @@ internal sealed record EquationTokens
             Implies = "<mo>→</mo>",
             Nand = "<mo>↑</mo>",
             Nor = "<mo>↓</mo>",
+            ForAll = "<mo>∀</mo>",
+            Exists = "<mo>∃</mo>",
+            ElementOf = "<mo>∈</mo>",
+            QuantifierDot = "<mo>.</mo> ",
             OpenParen = "<mo>(</mo>",
             CloseParen = "<mo>)</mo>",
             ArgumentSeparator = " <mo>,</mo> ",
@@ -181,6 +206,9 @@ internal sealed record EquationTokens
             Implies = "=>",
             Nand = "arrow.t",
             Nor = "arrow.b",
+            ForAll = "forall",
+            Exists = "exists",
+            ElementOf = "in",
             FormatTerm = (identity, showArgumentValues) =>
                 TypstText.Quote(showArgumentValues ? identity.ToString() : identity.PredicateName),
             FormatConstant = (value, constants) =>
@@ -263,6 +291,9 @@ internal sealed record EquationTokens
             Implies = @"\rightarrow",
             Nand = @"\uparrow",
             Nor = @"\downarrow",
+            ForAll = @"\forall",
+            Exists = @"\exists",
+            ElementOf = @"\in",
             FormatTerm = (identity, showArgumentValues) =>
                 LatexText.Text(showArgumentValues ? identity.ToString() : identity.PredicateName, mathJaxSafe),
             FormatConstant = (value, constants) =>

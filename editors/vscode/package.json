@@ -1,0 +1,37 @@
+{
+  "name": "truthweaver-rule-text",
+  "displayName": "TruthWeaver rule text",
+  "description": "Syntax highlighting for TruthWeaver rule text (the Strong Kleene rule language).",
+  "version": "0.0.0",
+  "private": true,
+  "publisher": "truthweaver-local",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "truthweaver",
+        "aliases": [
+          "TruthWeaver rule text",
+          "truthweaver"
+        ],
+        "extensions": [
+          ".truthweaver"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "truthweaver",
+        "scopeName": "source.truthweaver",
+        "path": "./syntaxes/truthweaver.tmLanguage.json"
+      }
+    ]
+  }
+}

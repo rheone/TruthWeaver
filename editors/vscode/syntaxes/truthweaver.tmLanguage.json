@@ -1,0 +1,217 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TruthWeaver rule text",
+  "scopeName": "source.truthweaver",
+  "fileTypes": ["truthweaver"],
+  "patterns": [{ "include": "#expression" }],
+  "repository": {
+    "expression": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#let-keyword" },
+        { "include": "#definition-equals" },
+        { "include": "#statement-end" },
+        { "include": "#quantifier-call" },
+        { "include": "#operator-call" },
+        { "include": "#operator" },
+        { "include": "#constant" },
+        { "include": "#number" },
+        { "include": "#group" },
+        { "include": "#term-call" },
+        { "include": "#term" }
+      ]
+    },
+    "let-keyword": {
+      "name": "keyword.control.let.truthweaver",
+      "match": "(?i)\\blet\\b"
+    },
+    "definition-equals": {
+      "name": "keyword.operator.assignment.truthweaver",
+      "match": "="
+    },
+    "statement-end": {
+      "name": "punctuation.terminator.statement.truthweaver",
+      "match": ";"
+    },
+    "comment": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.truthweaver",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.truthweaver",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "quantifier-call": {
+      "begin": "(?i)\\b(forall|exists)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.quantifier.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.quantifier-call.truthweaver",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#quantifier-in" },
+        { "include": "#comma" },
+        { "include": "#expression" }
+      ]
+    },
+    "quantifier-in": {
+      "name": "keyword.control.quantifier.in.truthweaver",
+      "match": "(?i)\\bin\\b"
+    },
+    "operator-call": {
+      "begin": "(?i)\\b(parity|any|all|none|coalesce|between|if|exactlyone|atleast|atmost|greaterthan|lessthan|exactly|istrue|isfalse|isunknown|isknown)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "support.function.operator.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.operator-call.truthweaver",
+      "patterns": [{ "include": "#comma" }, { "include": "#expression" }]
+    },
+    "operator": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.not.truthweaver",
+          "match": "(?i)\\bnot\\b|[!¬]"
+        },
+        {
+          "name": "keyword.operator.logical.infix.truthweaver",
+          "match": "(?i)\\b(?:and|or|xor|equivalent|iff|xnor|implies|nand|nor)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.symbol.truthweaver",
+          "match": "&&|\\|\\||\\?\\?|[∧∨⊕⊻↔⇔→⇒↑⊼↓⊽]"
+        },
+        {
+          "name": "keyword.operator.ternary.truthweaver",
+          "match": "[?:]"
+        }
+      ]
+    },
+    "constant": {
+      "name": "constant.language.truthweaver",
+      "match": "(?i)\\b(?:true|false|unknown|[tfu])\\b"
+    },
+    "number": {
+      "name": "constant.numeric.truthweaver",
+      "match": "-?\\d+(?:\\.\\d+)?"
+    },
+    "group": {
+      "patterns": [
+        {
+          "begin": "\\(",
+          "end": "\\)",
+          "name": "meta.group.truthweaver",
+          "beginCaptures": { "0": { "name": "punctuation.section.group.begin.truthweaver" } },
+          "endCaptures": { "0": { "name": "punctuation.section.group.end.truthweaver" } },
+          "patterns": [{ "include": "#expression" }]
+        },
+        {
+          "begin": "\\[",
+          "end": "\\]",
+          "name": "meta.group.truthweaver",
+          "beginCaptures": { "0": { "name": "punctuation.section.group.begin.truthweaver" } },
+          "endCaptures": { "0": { "name": "punctuation.section.group.end.truthweaver" } },
+          "patterns": [{ "include": "#expression" }]
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "name": "meta.group.truthweaver",
+          "beginCaptures": { "0": { "name": "punctuation.section.group.begin.truthweaver" } },
+          "endCaptures": { "0": { "name": "punctuation.section.group.end.truthweaver" } },
+          "patterns": [{ "include": "#expression" }]
+        }
+      ]
+    },
+    "term-call": {
+      "begin": "([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.function.term.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.term-call.truthweaver",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#comma" },
+        { "include": "#argument-name" },
+        { "include": "#variable-reference" },
+        { "include": "#literal" },
+        { "include": "#expression" }
+      ]
+    },
+    "term": {
+      "name": "variable.other.term.truthweaver",
+      "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+    },
+    "argument-name": {
+      "match": "([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(:)",
+      "captures": {
+        "1": { "name": "variable.parameter.argument.truthweaver" },
+        "2": { "name": "punctuation.separator.key-value.truthweaver" }
+      }
+    },
+    "variable-reference": {
+      "begin": "(?i)\\b(from)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "support.function.variable-reference.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.variable-reference.truthweaver",
+      "patterns": [{ "include": "#comment" }, { "include": "#comma" }, { "include": "#string" }]
+    },
+    "literal": {
+      "patterns": [{ "include": "#string" }, { "include": "#number" }, { "include": "#constant" }, { "include": "#array" }]
+    },
+    "array": {
+      "begin": "\\[",
+      "end": "\\]",
+      "name": "meta.array.truthweaver",
+      "beginCaptures": { "0": { "name": "punctuation.section.array.begin.truthweaver" } },
+      "endCaptures": { "0": { "name": "punctuation.section.array.end.truthweaver" } },
+      "patterns": [{ "include": "#comment" }, { "include": "#comma" }, { "include": "#literal" }]
+    },
+    "string": {
+      "name": "string.quoted.double.truthweaver",
+      "begin": "\"",
+      "end": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.truthweaver" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.truthweaver" } },
+      "patterns": [
+        {
+          "name": "constant.character.escape.truthweaver",
+          "match": "\\\\[\"\\\\nt]"
+        },
+        {
+          "name": "invalid.illegal.escape.truthweaver",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "comma": {
+      "name": "punctuation.separator.comma.truthweaver",
+      "match": ","
+    }
+  }
+}

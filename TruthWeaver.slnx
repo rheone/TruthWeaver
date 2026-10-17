@@ -36,6 +36,10 @@
     <Project Name="TruthWeaver.Tool.Core.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Tool.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Tool.Tests" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.AspNetCore" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.AspNetCore" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.AspNetCore.Tests" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.AspNetCore.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Benchmarks" Configuration="Debug|AnyCPU" Build="true" />
@@ -46,6 +50,8 @@
   </Folder>
   <Folder Name="/samples/">
     <File Path="samples\Directory.Build.props" />
+    <Project Path="samples\AspNetCore.Tests\AspNetCore.Tests.csproj" />
+    <Project Path="samples\AspNetCore\AspNetCore.csproj" />
     <Project Path="samples\Consumer.Tests\Consumer.Tests.csproj" />
     <Project Path="samples\Consumer\Consumer.csproj" />
     <Project Path="samples\DataSource.Tests\DataSource.Tests.csproj" />
@@ -56,6 +62,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src\TruthWeaver.Abstractions\TruthWeaver.Abstractions.csproj" />
+    <Project Path="src\TruthWeaver.AspNetCore\TruthWeaver.AspNetCore.csproj" />
     <Project Path="src\TruthWeaver.DataSources.Json\TruthWeaver.DataSources.Json.csproj" />
     <Project Path="src\TruthWeaver.Generators\TruthWeaver.Generators.csproj" />
     <Project Path="src\TruthWeaver.Predicates\TruthWeaver.Predicates.csproj" />
@@ -68,6 +75,7 @@
   <Folder Name="/tests/">
     <Project Path="tests\TruthWeaver.Abstractions.Tests\TruthWeaver.Abstractions.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Architecture.Tests\TruthWeaver.Architecture.Tests.csproj" />
+    <Project Path="tests\TruthWeaver.AspNetCore.Tests\TruthWeaver.AspNetCore.Tests.csproj" />
     <Project Path="tests\TruthWeaver.DataSources.Json.Tests\TruthWeaver.DataSources.Json.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Generators.Tests\TruthWeaver.Generators.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Predicates.Tests\TruthWeaver.Predicates.Tests.csproj" />

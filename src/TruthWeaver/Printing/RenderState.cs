@@ -6,7 +6,7 @@ namespace TruthWeaver.Printing;
 /// </summary>
 internal enum RenderState
 {
-    /// <summary>No evaluation data was supplied — a purely structural render.</summary>
+    /// <summary>No evaluation data was supplied: a purely structural render.</summary>
     NoData,
 
     /// <summary>Evaluated and resolved to <see cref="TruthValue.True"/>.</summary>
@@ -18,6 +18,6 @@ internal enum RenderState
     /// <summary>Evaluated and resolved to <see cref="TruthValue.Unknown"/>.</summary>
     Indeterminate,
 
-    /// <summary>Skipped by short-circuiting — either this node directly, or an ancestor of it.</summary>
+    /// <summary>Skipped by short-circuiting: either this node directly, or an ancestor of it.</summary>
     Skipped,
 }

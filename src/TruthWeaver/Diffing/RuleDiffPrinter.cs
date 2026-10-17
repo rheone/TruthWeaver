@@ -3,8 +3,8 @@ namespace TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 
 /// <summary>
-/// Renders a <see cref="RuleDiffResult"/> (ticket rule-diff/01) as human-readable text, suitable for an
-/// audit-log entry or a rule-review UI — one line per <see cref="RuleDiffEntry"/>, naming each node by
+/// Renders a <see cref="RuleDiffResult"/> as human-readable text, suitable for an
+/// audit-log entry or a rule-review UI: one line per <see cref="RuleDiffEntry"/>, naming each node by
 /// its <see cref="OutlineNode.Label"/>/<see cref="OutlineNode.Description"/> rather than its
 /// closed-set AST type name (ADR-0004).
 /// </summary>
@@ -14,7 +14,7 @@ using TruthWeaver.Evaluation;
 /// <code>
 /// RuleDiffResult diff = RuleDiff.Compare(before, after);
 /// string text = RuleDiffPrinter.Print(diff);
-/// // "Added operand at root/2: hasRole — Test predicate 'hasRole', true iff 'role' equals 'Y'."
+/// // "Added operand at root/2: hasRole - Test predicate 'hasRole', true iff 'role' equals 'Y'."
 /// </code>
 /// </example>
 public static class RuleDiffPrinter
@@ -75,7 +75,7 @@ public static class RuleDiffPrinter
 
     private static string PrintNode(OutlineNode? node)
     {
-        return node is null ? "(none)" : $"{node.Label} — {node.Description}";
+        return node is null ? "(none)" : $"{node.Label} - {node.Description}";
     }
 
     private static string PrintPath(IReadOnlyList<int> path)

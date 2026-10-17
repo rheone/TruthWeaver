@@ -112,7 +112,9 @@ internal static class HtmlPrinter
         }
         else
         {
-            WriteCall(node, canonical, stateClass, variables, html);
+            // Most operators' Heading equals Source.Label (canonical); a quantifier's Heading additionally carries its
+            // "x IN items" head (ADR-0010), which WriteCall must show, so it is passed the styled heading, not canonical.
+            WriteCall(node, heading, stateClass, variables, html);
         }
 
         if (infix && nested)
@@ -123,18 +125,19 @@ internal static class HtmlPrinter
 
     /// <summary>
     /// Writes an operator with no infix symbol as <c>Name(operands...)</c>. A label that already ends with its parameters, such
-    /// as <c>AtLeast(3)</c>, takes the operands after them: <c>AtLeast(3, a, b)</c>.
+    /// as <c>AtLeast(3)</c>, takes the operands after them: <c>AtLeast(3, a, b)</c>. <paramref name="heading"/> is the
+    /// styled head text (e.g. <c>FORALL x IN items</c> for a quantifier, ADR-0010), not the bare canonical op-name.
     /// </summary>
     private static void WriteCall(
         RenderNode node,
-        string canonical,
+        string heading,
         string stateClass,
         Dictionary<string, string> variables,
         StringBuilder html
     )
     {
-        bool hasParameters = canonical.EndsWith(')');
-        string name = hasParameters ? canonical[..^1] : canonical;
+        bool hasParameters = heading.EndsWith(')');
+        string name = hasParameters ? heading[..^1] : heading;
         html.Append("<span class=\"tw-operator").Append(stateClass).Append("\">").Append(HtmlText.Escape(name));
         html.Append(hasParameters ? ", " : "(").Append("</span>");
         for (int i = 0; i < node.Children.Count; i++)

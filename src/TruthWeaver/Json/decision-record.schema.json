@@ -66,10 +66,7 @@
         "mode": { "enum": ["ShortCircuit", "Exhaustive"] },
         "timeout": {
           "description": "The time limit in the .NET constant TimeSpan format ([-][d.]hh:mm:ss[.fffffff]), or null for none.",
-          "oneOf": [
-            { "type": "string", "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$" },
-            { "type": "null" }
-          ]
+          "oneOf": [{ "type": "string", "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$" }, { "type": "null" }]
         },
         "includeResolvedValues": {
           "description": "Whether the trace shows the values that data sources resolved.",

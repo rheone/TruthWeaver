@@ -178,9 +178,13 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     {
         foreach (KeyValuePair<YamlNode, YamlNode> entry in mapping.Children)
         {
+            // The key cursor is always supplied (not only for a non-string key): YamlDotNet keeps every node's
+            // position, so a diagnostic about a keyed-by-name construct, such as a 'definitions' entry's own name, can
+            // locate itself from this key's real span rather than falling back to a path.
+            YamlNodeCursor keyCursor = new(entry.Key);
             yield return entry.Key is YamlScalarNode { Value: { } name }
-                ? new TreeMember(name, new YamlNodeCursor(entry.Value))
-                : new TreeMember(null, new YamlNodeCursor(entry.Value), new YamlNodeCursor(entry.Key));
+                ? new TreeMember(name, new YamlNodeCursor(entry.Value), keyCursor)
+                : new TreeMember(null, new YamlNodeCursor(entry.Value), keyCursor);
         }
     }
 

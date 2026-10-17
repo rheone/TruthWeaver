@@ -6,10 +6,10 @@ using TruthWeaver.Diagnostics;
 /// <summary>
 /// The library's <see cref="System.Diagnostics.Metrics"/> instrumentation. A single static
 /// <see cref="Meter"/> named <see cref="MeterName"/>, with counters incremented at the same points
-/// structured logging (Logging/*.cs) instruments — evaluations performed, faults recorded, and
+/// structured logging (Logging/*.cs) instruments: evaluations performed, faults recorded, and
 /// compile diagnostics raised. A host observes these the same way it observes any other
 /// <see cref="System.Diagnostics.Metrics"/> producer (a <see cref="MeterListener"/>, or an
-/// OpenTelemetry <c>AddMeter(TruthWeaverMetrics.MeterName)</c> call) — the library takes no
+/// OpenTelemetry <c>AddMeter(TruthWeaverMetrics.MeterName)</c> call). The library takes no
 /// dependency on a particular metrics exporter.
 /// </summary>
 internal static class TruthWeaverMetrics

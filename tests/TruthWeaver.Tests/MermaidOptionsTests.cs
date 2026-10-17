@@ -8,7 +8,7 @@ using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
-/// <see cref="MermaidOptions"/> — the single options record behind <see cref="MermaidTreePrinter"/> and
+/// <see cref="MermaidOptions"/> - the single options record behind <see cref="MermaidTreePrinter"/> and
 /// <c>CompiledRule.PrintMermaid</c>: diagram direction and per-role node shapes.
 /// </summary>
 public sealed class MermaidOptionsTests

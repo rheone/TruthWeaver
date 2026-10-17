@@ -9,12 +9,12 @@ The `src` projects follow the rule lifecycle from [Getting started](../README.md
 <!-- doctest:skip class diagram, structure only -->
 ```mermaid
 flowchart TD
-    subgraph Kernel["TruthWeaver.Abstractions — the zero-dependency kernel"]
+    subgraph Kernel["TruthWeaver.Abstractions - the zero-dependency kernel"]
         IPredicate["IPredicate&lt;TContext&gt;, PredicateSchema"]
         Types["TruthValue, Decision, Fault, Trace"]
     end
 
-    subgraph Core["TruthWeaver — parse, compile, analyze, evaluate"]
+    subgraph Core["TruthWeaver - parse, compile, analyze, evaluate"]
         direction TB
         Parsing["Parsing<br/>DSL lexer + parser"]
         Ast["Ast<br/>Expression tree, operator metadata"]
