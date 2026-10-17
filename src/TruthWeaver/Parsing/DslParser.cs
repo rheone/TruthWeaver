@@ -626,6 +626,16 @@ internal sealed class DslParser
             return this.ParseOperandCall((operands, span) => new NoneNode(operands, span));
         }
 
+        if (this.IsKeyword("FORALL"))
+        {
+            return this.ParseQuantifier(QuantifierKind.ForAll);
+        }
+
+        if (this.IsKeyword("EXISTS"))
+        {
+            return this.ParseQuantifier(QuantifierKind.Exists);
+        }
+
         if (this.Current.Kind == TokenKind.Identifier && this.IsKeyword("COALESCE"))
         {
             return this.ParseOperandCall((operands, span) => new CoalesceNode(operands, span));
@@ -952,6 +962,60 @@ internal sealed class DslParser
         int end = this.Current.Span.End;
         this.Expect(TokenKind.RBracket, "']'");
         return RawLiteral.OfArray(elements, SpanCovering(start, end));
+    }
+
+    /// <summary>
+    /// Parses <c>FORALL(variable IN collection, body)</c> or <c>EXISTS(...)</c> (ADR-0010 decision 2): the bound
+    /// variable and the collection name are plain identifiers read from the quantifier's head. <c>IN</c> is a
+    /// contextual keyword here only — it is not in <see cref="ReservedWords"/>, so a predicate elsewhere named
+    /// <c>In</c> is unaffected.
+    /// </summary>
+    private RuleNode ParseQuantifier(QuantifierKind kind)
+    {
+        int start = this.Current.Span.Start;
+        this.position++; // 'FORALL' or 'EXISTS'
+        Token opener = this.ExpectOpenParen();
+
+        string variable = this.ExpectIdentifierName("a bound variable name");
+        this.ExpectIn();
+        string collection = this.ExpectIdentifierName("a collection name");
+        this.Expect(TokenKind.Comma, "','");
+        RuleNode body = this.ParseExpression();
+
+        int end = this.Current.Span.End;
+        this.ExpectClose(opener);
+        return new QuantifierNode(kind, variable, collection, body, SpanCovering(start, end));
+    }
+
+    /// <summary>Consumes an identifier token and returns its text, or reports <paramref name="description"/> and returns an empty string.</summary>
+    private string ExpectIdentifierName(string description)
+    {
+        Token token = this.Current;
+        this.Expect(TokenKind.Identifier, description);
+        return token.Kind == TokenKind.Identifier ? token.Text : string.Empty;
+    }
+
+    /// <summary>Consumes the contextual <c>IN</c> keyword of a quantifier head, or reports what is wrong.</summary>
+    private void ExpectIn()
+    {
+        if (
+            this.Current.Kind == TokenKind.Identifier
+            && string.Equals(this.Current.Text, "IN", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            this.position++;
+            return;
+        }
+
+        this.diagnostics.Add(
+            Diagnostic.Error(
+                DiagnosticCodes.SyntaxError,
+                $"Expected 'IN' but found '{this.Current.Text}'.",
+                this.Current.Span,
+                expected: "'IN'",
+                found: DescribeFound(this.Current)
+            )
+        );
     }
 
     private RuleNode ParseExactlyOne()

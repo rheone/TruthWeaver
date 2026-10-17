@@ -64,6 +64,10 @@ internal static class PrimitiveExpander
             IfExpression f => IfForm.Build(f.Condition, f.WhenTrue, f.WhenFalse),
             InspectionExpression s => InspectionForm.Build(s.Kind, s.Operand),
 
+            // The quantifier itself never expands (ADR-0010 decision 9): n is known only at evaluation time, so
+            // it cannot reduce to a fixed kernel formula. Expand already rewrote its body (MapChildren, above).
+            QuantifierExpression => node,
+
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
         };
     }

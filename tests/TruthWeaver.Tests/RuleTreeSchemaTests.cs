@@ -97,6 +97,9 @@ public sealed class RuleTreeSchemaTests
                   "name": "adult"
                 }
                 """,
+            """{"op": "forall", "var": "x", "in": "items", "operands": [{"const": true}]}""",
+            """{"op": "exists", "var": "x", "in": "items", "operands": [{"const": true}]}""",
+            """{"op": "FORALL", "var": "x", "in": "items", "operands": [{"predicate": "elementTrue"}]}""",
         ];
     }
 
@@ -137,6 +140,11 @@ public sealed class RuleTreeSchemaTests
             """{"definitions": {"adult": {"parameters": [1], "body": {"predicate": "isAdult"}}}, "op": "use", "name": "adult"}""",
             """{"definitions": {"adult": {}}, "op": "use", "name": "adult"}""",
             """{"definitions": "not-an-object", "op": "use", "name": "adult"}""",
+            """{"op": "forall", "var": "x", "in": "items", "operands": [{"const": true}, {"const": false}]}""",
+            """{"op": "forall", "in": "items", "operands": [{"const": true}]}""",
+            """{"op": "forall", "var": "x", "operands": [{"const": true}]}""",
+            """{"op": "forall", "var": 1, "in": "items", "operands": [{"const": true}]}""",
+            """{"op": "exists", "var": "x", "in": "items", "operands": []}""",
         ];
     }
 

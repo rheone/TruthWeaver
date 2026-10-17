@@ -6,6 +6,8 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
+using Arg = TruthWeaver.Building.Arg;
 
 /// <summary>
 /// <c>FORALL</c>/<c>EXISTS</c> over a <see cref="PredicateRegistryBuilder{TContext}.AddCollection{TItem}"/> binding
@@ -445,6 +447,174 @@ public sealed class QuantifierEvaluationTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
     }
 
+    /// <summary>
+    /// A quantifier body may read the current element with an untyped <c>from(variable, "...")</c> argument as
+    /// well as a typed element predicate (ADR-0010 decision 3), when the collection was registered with an
+    /// element-to-data-source projection: the per-element value the projection scripts for one element decides the
+    /// body for that element, independently of every other element.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_BodyReadsElementWithFrom_UsesThePerElementProjectedSource_Test()
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler();
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5), new LineItem(3)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Empty(decision.Faults);
+    }
+
+    /// <summary>
+    /// The per-element projected source stays independent per element: one element whose projected source answers
+    /// <c>False</c> makes <c>FORALL</c> <c>False</c>, whatever the other elements answer.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_BodyReadsElementWithFrom_OneElementFalse_IsFalse_Test()
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler();
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5), new LineItem(0)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// A query that matches no node in the element's projected source (ADR-0006 decision 6: a scalar argument with
+    /// zero matches is missing) makes that element's body <c>Unknown</c> with a fault, not an exception, exactly as
+    /// an undeclared-source or missing-match reference does outside a quantifier.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_BodyReadsElementWithFrom_QueryMatchesNoNode_ElementIsUnknownWithFault_Test()
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler();
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5, ScriptQty: false)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.NotEmpty(decision.Faults);
+    }
+
+    /// <summary>
+    /// An element-to-data-source projection that throws faults that one element exactly like any other failing data
+    /// source (ADR-0001, ADR-0006 decision 9): <c>Unknown</c> plus one fault, not an unhandled exception out of
+    /// <c>EvaluateAsync</c>.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_ElementSourceProjectorThrows_ElementIsUnknownWithFault_Test()
+    {
+        PredicateRegistryBuilder<LinesContext> builder = PredicateRegistry<LinesContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                ctx => ctx.Lines,
+                elements =>
+                    elements.Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "True when the element's quantity is above zero.",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        (_, args, _) => ValueTask.FromResult(args.GetInt64("n") > 0 ? TruthValue.True : TruthValue.False)
+                    ),
+                _ => throw new InvalidOperationException("projection fault")
+            );
+        RuleCompiler<LinesContext> compiler = new(builder.Build());
+
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Fault fault = Assert.Single(decision.Faults);
+        VariableResolutionException resolutionFault = Assert.IsType<VariableResolutionException>(fault.Exception);
+        Assert.IsType<InvalidOperationException>(resolutionFault.InnerException);
+    }
+
+    /// <summary>
+    /// A collection registered with no element-to-data-source projection leaves its bound variable undeclared as a
+    /// data source name, so a body that still writes <c>from(variable, ...)</c> against it gets the same
+    /// undeclared-data-source diagnostic ADR-0006 already gives any other undeclared name (ADR-0010 decision 3).
+    /// </summary>
+    [Fact]
+    public void Compile_QuantifierBodyFromOnCollectionWithNoElementSource_ReportsUndeclaredDataSource_Test()
+    {
+        // No elementSource delegate (the 4th AddCollection argument): this collection supports only the typed path.
+        PredicateRegistryBuilder<LinesContext> builder = PredicateRegistry<LinesContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                ctx => ctx.Lines,
+                elements =>
+                    elements.Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "True when the element's quantity is above zero.",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        (_, args, _) => ValueTask.FromResult(args.GetInt64("n") > 0 ? TruthValue.True : TruthValue.False)
+                    )
+            );
+        RuleCompiler<LinesContext> compiler = new(builder.Build());
+
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UndeclaredDataSource);
+    }
+
+    private static RuleCompiler<LinesContext> CreateLinesCompiler()
+    {
+        PredicateRegistryBuilder<LinesContext> builder = PredicateRegistry<LinesContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                ctx => ctx.Lines,
+                elements =>
+                    elements.Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "True when the element's quantity is above zero.",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        (_, args, _) => ValueTask.FromResult(args.GetInt64("n") > 0 ? TruthValue.True : TruthValue.False)
+                    ),
+                line => line.ScriptQty ? new FakeDataSource().With("$.qty", (long)line.Qty) : new FakeDataSource()
+            );
+        return new RuleCompiler<LinesContext>(builder.Build());
+    }
+
     private static RuleCompiler<QuantifierContext> CreateCompiler(
         Func<QuantifierContext, IEnumerable<TruthValue>?>? selector = null,
         CompilerOptions? options = null
@@ -515,4 +685,16 @@ public sealed class QuantifierEvaluationTests
     {
         public IReadOnlyList<IReadOnlyList<TruthValue>?>? Groups { get; init; }
     }
+
+    /// <summary>A collection context for the untyped element-read tests: a list of order lines.</summary>
+    private sealed class LinesContext
+    {
+        public IReadOnlyList<LineItem>? Lines { get; init; }
+    }
+
+    /// <summary>
+    /// One order line. <see cref="ScriptQty"/> lets a test build a line whose projected per-element source has no
+    /// scripted answer for <c>$.qty</c>, to exercise the "query matches no node" case independently of the value.
+    /// </summary>
+    private sealed record LineItem(int Qty, bool ScriptQty = true);
 }

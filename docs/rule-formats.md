@@ -162,6 +162,36 @@ the unused-definition lint, the declaration); for YAML it is the real span of th
 is resolved the same way every other JSON diagnostic is: from the diagnostic's path (`$.operands[1].name` for a use,
 `$.definitions.allApprovals` for a definition) back to a span in the original text.
 
+## Quantifiers
+
+`FORALL` and `EXISTS` follow the same `{"op": "...", "operands": [...]}` pattern as every other operator node, with
+two extra fields at the node's own level: `var`, the bound variable name, and `in`, the collection name. `operands`
+holds exactly one item, the body (a `MalformedTree` error otherwise), so body diagnostics get the path
+`$.operands[0]...` like every other node. `rule-tree.schema.json` has a `quantifierOperatorNode` definition for this
+shape. The meaning of `var`/`in`/`body`, and the rule-text spelling, is in
+[Rule text's Quantifiers section](rule-text.md#quantifiers).
+
+This is the JSON and YAML form of rule text's own example:
+
+<!-- doctest:rule forall -->
+```text
+FORALL(line IN lines, inStock)
+```
+
+<!-- doctest:json forall -->
+```json
+{ "op": "forall", "var": "line", "in": "lines", "operands": [{ "predicate": "inStock" }] }
+```
+
+<!-- doctest:yaml forall -->
+```yaml
+op: forall
+var: line
+in: lines
+operands:
+  - predicate: inStock
+```
+
 ## Notes
 
 A note is free text on one node of a rule, for the people who read the rule. A note does not change what the rule means. A rule with notes compiles to the same tree, the same `CanonicalText` and the same diagnostics as the rule without them, and it evaluates the same way.

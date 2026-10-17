@@ -116,6 +116,21 @@ internal static class RuleRenderTree
 
     private static string BaseLabel(OutlineNode description, OperatorStyle style, ConstantFormat? constants)
     {
+        // A quantifier's head (ADR-0010) renders as part of the label itself, in each style: "FORALL line IN
+        // lines" (word, and C-style, which has no quantifier glyph of its own) or "∀ line ∈ lines" (symbolic).
+        // This bypasses ArgumentText's "label (argumentText)" shape below, which is for a term's arguments, not a
+        // quantifier's head.
+        if (description is { QuantifierVariable: { } variable, QuantifierCollection: { } collection })
+        {
+            if (style != OperatorStyle.Symbolic)
+            {
+                return $"{description.Label} {variable} IN {collection}";
+            }
+
+            string symbol = description.Label == "FORALL" ? "∀" : "∃";
+            return $"{symbol} {variable} ∈ {collection}";
+        }
+
         // A constant leaf takes the constant format. Its outline label is always the canonical word, so the word tells the value.
         if (
             constants is not null

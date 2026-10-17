@@ -1,5 +1,6 @@
 namespace TruthWeaver.Registry;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Parsing;
 
 /// <summary>
@@ -60,13 +61,21 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <c>Unknown</c> with one fault for the collection (ADR-0010 decision 4).
     /// </param>
     /// <param name="elements">Registers the element predicates a quantifier body over this collection may use.</param>
+    /// <param name="elementSource">
+    /// Projects one element to an <see cref="IDataSource"/> scoped to it (ADR-0010 decision 3), so a quantifier
+    /// body may read the element untyped with <c>from(variable, "...")</c> as well as with the typed element
+    /// predicates <paramref name="elements"/> registers. <see langword="null"/> (the default) when the element has
+    /// no such projection; a body that still writes <c>from(variable, ...)</c> against this collection then gets
+    /// the ordinary undeclared-data-source diagnostic, the same one ADR-0006 gives any other name nothing declared.
+    /// </param>
     /// <returns>This builder, for chaining.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="name"/>, <paramref name="selector"/> or <paramref name="elements"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A collection with the same name (case-insensitive) is already registered on this builder.</exception>
     public PredicateRegistryBuilder<TContext> AddCollection<TItem>(
         string name,
         Func<TContext, IEnumerable<TItem>?> selector,
-        Action<PredicateRegistryBuilder<Element<TContext, TItem>>> elements
+        Action<PredicateRegistryBuilder<Element<TContext, TItem>>> elements,
+        Func<TItem, IDataSource>? elementSource = null
     )
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -77,7 +86,7 @@ public sealed class PredicateRegistryBuilder<TContext>
         elements(elementBuilder);
         PredicateRegistry<Element<TContext, TItem>> elementRegistry = elementBuilder.Build();
 
-        CollectionBinding<TContext, TItem> binding = new(name, selector, elementRegistry);
+        CollectionBinding<TContext, TItem> binding = new(name, selector, elementRegistry, elementSource);
         string key = name.ToUpperInvariant();
         if (!this.collectionsByName.TryAdd(key, binding))
         {

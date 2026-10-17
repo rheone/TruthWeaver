@@ -34,6 +34,7 @@ Every operator has a static factory method on `TruthWeaver.Building.RuleBuilder`
 | `If` | `RuleBuilder.If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)` (JSON/YAML: `{"op": "if", "operands": [condition, whenTrue, whenFalse]}`) |
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
 | `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
+| `FORALL` / `EXISTS` | `RuleBuilder.ForAll(string variable, string collection, RuleBuilder body)` / `RuleBuilder.Exists(...)` (JSON/YAML: `{"op": "forall", "var": "line", "in": "lines", "operands": [body]}`); see [Quantifiers](rule-text.md#quantifiers) |
 | A use of a definition | `RuleBuilder.Use(string name, params RuleBuilder[] arguments)` (JSON/YAML: `{"op": "use", "name": "...", "operands": [...]}`); see [Definitions and parameters](#definitions-and-parameters) |
 
 A term takes each argument name once, and argument names match ignoring case. `RuleBuilder.Predicate("hasRole", ("role", "A"), ("role", "B"))` and the same call with `("Role", "B")` as the second pair both compile to the error `DuplicateArgument` (`TRE0032`) at the second argument, for example with the path `$.args.role`. `ToJson()` throws `InvalidOperationException` for the same builder, because JSON cannot hold both values.

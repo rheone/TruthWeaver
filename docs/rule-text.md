@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN`, `EXACTLY` and `LET`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one. A `let` definition's own name follows the same rule: see [Definitions and parameters](#definitions-and-parameters).
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN`, `EXACTLY`, `LET`, `FORALL` and `EXISTS`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate with one of these names, and the source generator reports `TWG007` for a method with one. A `let` definition's own name follows the same rule: see [Definitions and parameters](#definitions-and-parameters). `IN` is a contextual keyword: it is reserved only at the head of a `FORALL`/`EXISTS` quantifier, so a predicate named `In` elsewhere is unaffected; see [Quantifiers](#quantifiers).
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -35,7 +35,7 @@ infix_op    = "XOR" | "⊕" | "⊻" | "EQUIVALENT" | "IFF" | "XNOR" | "↔" | "�
 not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
 
 primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"
-            | constant | call | term ;
+            | constant | call | quantifier | term ;
 constant    = "True" | "False" | "Unknown" | "T" | "F" | "U" ;
 call        = list_op "(" expression { "," expression } ")"
             | threshold "(" integer "," expression { "," expression } ")"
@@ -45,6 +45,7 @@ call        = list_op "(" expression { "," expression } ")"
 list_op     = "PARITY" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
 threshold   = "AtLeast" | "AtMost" | "GreaterThan" | "LessThan" | "Exactly" ;
 inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
+quantifier  = ( "FORALL" | "EXISTS" ) "(" identifier "IN" identifier "," expression ")" ;
 
 term        = identifier [ "(" [ argument { "," argument } ] ")" ] ;
 argument    = identifier ":" literal ;
@@ -119,6 +120,44 @@ unused-definition lint (`UnusedDefinition`). A diagnostic's span always points a
 definition's own body additionally names the definition.
 
 Printing a rule's `let` statements back out, rather than its expanded form, is not supported.
+
+## Quantifiers
+
+`FORALL(variable IN collection, body)` and `EXISTS(variable IN collection, body)` range over a **collection
+binding** the host registered on the predicate registry. They are a function-call form with no
+precedence, like `PARITY`, `ANY` and `If`: no parentheses are needed beside an infix operator, and `body` is a full
+expression. `FORALL` and `EXISTS` are reserved words; `IN` is reserved only here, at a quantifier's head, so a
+predicate named `In` elsewhere is unaffected. `variable` is a plain identifier that labels the trace (`line[2]`) and
+is part of tree equality and canonical text; `collection` names a collection the compiler resolves against its
+registry, a namespace of its own, separate from predicate names.
+
+<!-- doctest:rule forall -->
+```text
+FORALL(line IN lines, inStock)
+```
+
+The meaning of `FORALL`/`EXISTS` (the generalized `AND`/`OR` over a collection's elements, the empty- and
+`null`-collection cases, the runtime and compile-time limits, and the trace shape) is in
+[CONTEXT.md's Quantifiers section](../CONTEXT.md#quantifiers), not repeated here. Nesting one quantifier inside
+another is allowed, up to `CompilerOptions.MaxQuantifierDepth`:
+
+<!-- doctest:rule nested-quantifier -->
+```text
+EXISTS(line IN lines, FORALL(detail IN details, inStock))
+```
+
+A body term may read the element itself in two ways, and may mix both in the same body: a typed element
+predicate such as `inStock` above, registered on the collection's own element registry, and an untyped
+`from(variable, "...")` read, as if the element were a data source of its own. The second way needs the host to
+opt the collection in: `AddCollection`'s optional `elementSource` parameter projects one element to an
+`IDataSource`. A collection registered without it supports only the typed path, and a body that still writes
+`from(variable, ...)` against it gets the same undeclared-data-source diagnostic [data sources](data-sources.md)
+already gives any other name nothing declared.
+
+<!-- doctest:rule forall-element-source -->
+```text
+FORALL(line IN lines, qtyAbove(n: from("line", "$.qty")))
+```
 
 ## Case
 

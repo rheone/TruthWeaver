@@ -15,7 +15,8 @@
         { "$ref": "#/$defs/constNode" },
         { "$ref": "#/$defs/predicateNode" },
         { "$ref": "#/$defs/operatorNode" },
-        { "$ref": "#/$defs/useNode" }
+        { "$ref": "#/$defs/useNode" },
+        { "$ref": "#/$defs/quantifierOperatorNode" }
       ]
     },
     "parameterName": {
@@ -191,6 +192,25 @@
         "definitions": { "$ref": "#/$defs/definitions" }
       },
       "required": ["op", "operands", "min", "max"],
+      "additionalProperties": false
+    },
+    "quantifierOperatorNode": {
+      "description": "FORALL or EXISTS (ADR-0010 docs/adr/0010-forall-exists-quantifiers.md): a Strong Kleene quantifier ranging over a registered collection binding, not an entry of the closed operator table (it is a third kind, alongside the gates and the cardinality operators). 'var' names the bound variable (required, part of tree equality); 'in' names the collection the compiler resolves against its registry. 'operands' holds exactly one item, the body, so body diagnostics get the path $.operands[0]... like every other node.",
+      "type": "object",
+      "properties": {
+        "op": { "type": "string", "pattern": "^(?:[fF][oO][rR][aA][lL][lL]|[eE][xX][iI][sS][tT][sS])$" },
+        "var": { "type": "string" },
+        "in": { "type": "string" },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "note": { "$ref": "#/$defs/note" },
+        "definitions": { "$ref": "#/$defs/definitions" }
+      },
+      "required": ["op", "var", "in", "operands"],
       "additionalProperties": false
     }
   }

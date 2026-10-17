@@ -6,10 +6,10 @@
 
 **Blocked by:** 22b-2
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Cross-form equality test (rule text, JSON, YAML, builder) passes
-- [ ] The schema accepts and rejects the right documents
-- [ ] Every printer writes the node and round-trips
-- [ ] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Cross-form equality test (rule text, JSON, YAML, builder) passes
+- [x] The schema accepts and rejects the right documents
+- [x] Every printer writes the node and round-trips
+- [x] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

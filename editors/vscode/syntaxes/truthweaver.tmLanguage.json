@@ -11,6 +11,7 @@
         { "include": "#let-keyword" },
         { "include": "#definition-equals" },
         { "include": "#statement-end" },
+        { "include": "#quantifier-call" },
         { "include": "#operator-call" },
         { "include": "#operator" },
         { "include": "#constant" },
@@ -44,6 +45,28 @@
           "end": "\\*/"
         }
       ]
+    },
+    "quantifier-call": {
+      "begin": "(?i)\\b(forall|exists)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.quantifier.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.quantifier-call.truthweaver",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#quantifier-in" },
+        { "include": "#comma" },
+        { "include": "#expression" }
+      ]
+    },
+    "quantifier-in": {
+      "name": "keyword.control.quantifier.in.truthweaver",
+      "match": "(?i)\\bin\\b"
     },
     "operator-call": {
       "begin": "(?i)\\b(parity|any|all|none|coalesce|between|if|exactlyone|atleast|atmost|greaterthan|lessthan|exactly|istrue|isfalse|isunknown|isknown)\\s*(\\()",

@@ -6,8 +6,8 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The ADR exists, numbered next in sequence, with context, decision and consequences, and records every parent decision
-- [ ] ADR-0005's lists carry a dated amendment pointing at it
-- [ ] `CONTEXT.md` and `docs/glossary.md` define **quantifier**, **collection binding** and **element context**
+- [x] The ADR exists, numbered next in sequence, with context, decision and consequences, and records every parent decision
+- [x] ADR-0005's lists carry a dated amendment pointing at it
+- [x] `CONTEXT.md` and `docs/glossary.md` define **quantifier**, **collection binding** and **element context**

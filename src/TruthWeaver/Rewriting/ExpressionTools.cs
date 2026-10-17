@@ -165,6 +165,10 @@ internal static class ExpressionTools
             BetweenExpression b => new BetweenExpression(b.Min, b.Max, new EquatableArray<Expression>(operands)),
             InspectionExpression s => new InspectionExpression(s.Kind, operands[0]),
             IfExpression => new IfExpression(operands[0], operands[1], operands[2]),
+
+            // The quantifier's only structural child is its body (ADR-0010 decision 8); Variable, CollectionName
+            // and Kind are not operands and are carried over unchanged.
+            QuantifierExpression q => new QuantifierExpression(q.Kind, q.Variable, q.CollectionName, operands[0]),
             _ => throw new InvalidOperationException($"Unhandled expression type '{original.GetType().Name}'."),
         };
     }

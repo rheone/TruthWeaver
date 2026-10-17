@@ -24,6 +24,14 @@ internal interface ICollectionBinding<TContext>
     /// Validates and builds <paramref name="body"/> against this collection's element registry — the quantifier
     /// body's own compile step, run in the element's own scope rather than the outer <c>RuleNodeCompiler</c>'s.
     /// </summary>
+    /// <param name="variable">
+    /// The quantifier's bound variable name. When this collection was registered with an element-to-data-source
+    /// projection (ADR-0010 decision 3), the name is declared to the body's own <see cref="CompilerOptions.DataSources"/>
+    /// so a body term may read the element untyped with <c>from(variable, "...")</c>, alongside typed element
+    /// predicates. A collection registered without a projection leaves the name undeclared, so such a read is the
+    /// same <see cref="DiagnosticCodes.UndeclaredDataSource"/> diagnostic ADR-0006 already gives any other
+    /// undeclared source name.
+    /// </param>
     /// <param name="body">The quantifier's body, as a raw parse node.</param>
     /// <param name="options">The compiler's resource limits and mode.</param>
     /// <param name="depth">The structural tree depth the body starts at (the quantifier node's own depth plus one).</param>
@@ -31,6 +39,7 @@ internal interface ICollectionBinding<TContext>
     /// <param name="enclosingVariables">The bound variable names already in scope from every enclosing quantifier, innermost last, for the shadowed-variable rule across the collection-binding boundary.</param>
     /// <returns>The built body tree (or <see langword="null"/> on an error) and every diagnostic raised building it.</returns>
     public (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics) CompileBody(
+        string variable,
         RuleNode body,
         CompilerOptions options,
         int depth,

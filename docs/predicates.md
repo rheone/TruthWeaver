@@ -179,6 +179,24 @@ Each `TypePredicates` test has two overloads under one name. The `string?` overl
 | `IsString` | The value is a string. With a `string?` selector every non-null value is a string. |
 | `IsDateTimeOffset` | The text is ISO 8601 with seconds and an explicit offset or `Z`, such as `2026-10-04T12:00:00Z`. Text without an offset is rejected. An `object?` selector also accepts a `DateTimeOffset`. |
 
+## Collections for quantifiers
+
+`PredicateRegistryBuilder<TContext>.AddCollection<TItem>` registers a named collection that `FORALL` and `EXISTS` can range over. It takes the collection name, a selector from `TContext` to `IEnumerable<TItem>?`, and a delegate that registers the element predicates on a nested builder of type `PredicateRegistryBuilder<Element<TContext, TItem>>`. An element predicate reads `Element<TOuter, TItem>`: `Outer` is the outer context, `Item` is the element and `Index` is its position. A nested collection registers on the element builder. A collection name is unique ignoring case, and it is a namespace of its own, separate from predicate names.
+
+```csharp
+builder.AddCollection<OrderLine>(
+    "lines",
+    order => order.Lines,
+    elements =>
+        elements.Add(
+            inStockSchema,
+            (element, _, _) => ValueTask.FromResult(element.Item.InStock ? TruthValue.True : TruthValue.False)
+        )
+);
+```
+
+An optional fourth parameter, `elementSource`, projects one element to an `IDataSource`. A quantifier body over that collection can then read the element untyped with `from(variable, "...")`, as well as with the typed element predicates. Without it, only the typed path works. The rule text is in [Quantifiers](rule-text.md#quantifiers), and the meaning is in the [Quantifiers reference](strong-k3/quantifiers/README.md).
+
 ## 0 arguments, stateless lambda
 
 ```csharp

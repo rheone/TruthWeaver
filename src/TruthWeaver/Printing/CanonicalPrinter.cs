@@ -272,6 +272,8 @@ internal static class CanonicalPrinter
                 $"BETWEEN({bt.Min}, {bt.Max}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             ThresholdExpression th =>
                 $"{th.Comparison}({th.K}, {JoinOperands(node, ", ", PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
+            QuantifierExpression q =>
+                $"{QuantifierName(q)}({q.Variable} IN {q.CollectionName}, {PrintNode(q.Body, PrintContext.Top, innerDepth, grouping, operatorStyle, constants, notes)})",
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -458,6 +460,17 @@ internal static class CanonicalPrinter
             or ThresholdExpression
             or BetweenExpression => BreakCall(
                 node,
+                innerDepth,
+                indentLevel,
+                grouping,
+                operatorStyle,
+                constants,
+                width,
+                indentSize,
+                notes
+            ),
+            QuantifierExpression q => BreakQuantifier(
+                q,
                 innerDepth,
                 indentLevel,
                 grouping,
@@ -677,6 +690,57 @@ internal static class CanonicalPrinter
 
         builder.Append('\n').Append(Indent(indentLevel, indentSize)).Append(')');
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Breaks a quantifier (<c>FORALL(line IN lines, body)</c>) one item per line (ticket 22b-3): the head
+    /// (<c>line IN lines</c>) prints first, then the body, recursively broken again if it still does not fit.
+    /// </summary>
+    private static string BreakQuantifier(
+        QuantifierExpression node,
+        int depth,
+        int indentLevel,
+        GroupingStyle grouping,
+        OperatorStyle operatorStyle,
+        ConstantFormat constants,
+        int? width,
+        int indentSize,
+        NoteLookup? notes
+    )
+    {
+        int innerIndentLevel = indentLevel + 1;
+        StringBuilder builder = new();
+        builder.Append(QuantifierName(node)).Append('(');
+        builder
+            .Append('\n')
+            .Append(Indent(innerIndentLevel, indentSize))
+            .Append(node.Variable)
+            .Append(" IN ")
+            .Append(node.CollectionName)
+            .Append(',');
+        builder.Append('\n').Append(Indent(innerIndentLevel, indentSize));
+        builder.Append(
+            PrintPretty(
+                node.Body,
+                PrintContext.Top,
+                depth,
+                innerIndentLevel,
+                grouping,
+                operatorStyle,
+                constants,
+                width,
+                indentSize,
+                notes
+            )
+        );
+        builder.Append('\n').Append(Indent(indentLevel, indentSize)).Append(')');
+        return builder.ToString();
+    }
+
+    /// <summary>Gets the canonical DSL word for a quantifier: <c>FORALL</c> or <c>EXISTS</c> (ADR-0010 decision 2).</summary>
+    private static string QuantifierName(QuantifierExpression node)
+    {
+        return node.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
     }
 
     /// <summary>Gets the call keyword for a call-form node, exactly as <see cref="PrintNode"/> writes it.</summary>

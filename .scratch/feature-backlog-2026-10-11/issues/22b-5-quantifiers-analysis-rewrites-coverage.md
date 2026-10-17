@@ -6,10 +6,10 @@
 
 **Blocked by:** 22b-3
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Equivalence and implication checks work on rules containing quantifiers, treating each as an opaque term
-- [ ] `ToNnf` negation tests; other rewrites leave the node unchanged
-- [ ] Coverage over a corpus works for quantifier rules
-- [ ] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Equivalence and implication checks work on rules containing quantifiers, treating each as an opaque term
+- [x] `ToNnf` negation tests; other rewrites leave the node unchanged
+- [x] Coverage over a corpus works for quantifier rules
+- [x] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

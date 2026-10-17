@@ -6,8 +6,8 @@
 
 **Blocked by:** 22b-4, 22b-5
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `docs/strong-k3/` has a document for `FORALL` and `EXISTS`; `K3ReferenceSyncChecker` passes
-- [ ] Doc examples are tagged and tested
-- [ ] `CHANGELOG.md` is complete and the full validation set from `CLAUDE.md` passes
+- [x] `docs/strong-k3/` has a document for `FORALL` and `EXISTS`; `K3ReferenceSyncChecker` passes
+- [x] Doc examples are tagged and tested
+- [x] `CHANGELOG.md` is complete and the full validation set from `CLAUDE.md` passes

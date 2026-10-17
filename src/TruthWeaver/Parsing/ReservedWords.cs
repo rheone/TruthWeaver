@@ -48,6 +48,8 @@ internal static class ReservedWords
         "LESSTHAN",
         "EXACTLY",
         "LET",
+        "FORALL",
+        "EXISTS",
     ];
 
     /// <summary>Determines whether an identifier is a reserved keyword.</summary>

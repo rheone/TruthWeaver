@@ -64,7 +64,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Primitive** | An Operation with no definition in terms of other Operations: `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly` and `COALESCE`. |
 | **Project** | A method on a `Decision`, not part of a rule. `Decision.Project(unknownAs)` keeps `True` and `False` and replaces `Unknown` with `True` or `False`. In relational algebra, "projection" means selecting columns. See [Project](strong-k3/result-transformations/project.md). |
 | **Public form** | The spelling that a rule author uses to name an Operation: the printed word, the JSON and YAML `op` value and the `RuleBuilder` member. See [terminology](strong-k3/specification/terminology.md#forms-of-an-operation). |
-| **Quantifier** | `FORALL` or `EXISTS`: a Strong Kleene connective that ranges over a collection binding's elements, equivalent to `AND`/`OR` folded over them. An empty collection gives `FORALL` `True` and `EXISTS` `False`; a `null` collection gives `Unknown`. Its term set is not fixed at compile time, so the analyzer and rewrites treat it as an opaque atom. See [CONTEXT.md](../CONTEXT.md#quantifiers). |
+| **Quantifier** | `FORALL` or `EXISTS`: a Strong Kleene connective that ranges over a collection binding's elements, equivalent to `AND`/`OR` folded over them. An empty collection gives `FORALL` `True` and `EXISTS` `False`; a `null` collection gives `Unknown`. Its term set is not fixed at compile time, so the analyzer and rewrites treat it as an opaque atom. See [Quantifiers](strong-k3/quantifiers/README.md) and [CONTEXT.md](../CONTEXT.md#quantifiers). |
 
 ## R to Z
 

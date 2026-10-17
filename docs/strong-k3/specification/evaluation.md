@@ -34,7 +34,11 @@ The caller can pass evaluation options. `Mode` selects the evaluation mode below
 | `OR` | Stops after the first `True` |
 | `COALESCE` | Stops after the first operand that is not `Unknown` |
 | `If` | Runs the condition and the branch that the condition selects. A condition of `Unknown` runs both branches. |
+| `FORALL` | Stops after the first element whose body is `False` |
+| `EXISTS` | Stops after the first element whose body is `True` |
 | Every other Operation | Runs every operand |
+
+A quantifier has one trace child for each element of its collection, not one for each written operand. `EvaluationOptions.MaxElementEvaluations` (default 10,000) bounds the body runs of all quantifiers in one evaluation. See [quantifiers](../quantifiers/README.md).
 
 The Evaluation behavior section of each Operation document states the rule for that Operation. These rows show the effect on a fault. Here `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`.
 

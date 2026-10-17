@@ -43,7 +43,9 @@ check ("can the current user do X") is one consumer of the engine, not part of i
 | **Decision** | The evaluation result: a `TruthValue`, any faults and optionally a trace. `IsSatisfied` is fail-closed, so only `True` is satisfied. |
 
 `Project` and `Collapse` are methods on the result, not rule operators. See
-[Result transformations](docs/strong-k3/result-transformations/README.md). The
+[Result transformations](docs/strong-k3/result-transformations/README.md).
+`FORALL` and `EXISTS` range over a registered collection. See
+[Quantifiers](docs/strong-k3/quantifiers/README.md). The
 vocabulary and the predicate-author contract are in [CONTEXT.md](CONTEXT.md).
 Release status, version policy and the migration guide for each breaking change
 are in `CHANGELOG.md`.

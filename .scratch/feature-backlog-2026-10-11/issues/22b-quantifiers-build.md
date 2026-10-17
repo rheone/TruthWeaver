@@ -18,7 +18,7 @@ Decisions:
 
 **Blocked by:** 22 (done) and the grilling (done).
 
-**Status:** split (owner, 2026-10-16) into 22b-1 to 22b-6. Done when all six are done.
+**Status:** done (22b-1 to 22b-6 all done).
 
 - [ ] Scope confirmed with the owner: no new packages, projects or dependencies (stop and ask if one is needed)
 - [ ] All sub-tickets are done and the full validation set from `CLAUDE.md` passes

@@ -414,6 +414,8 @@ public sealed class DslParserDiagnosticTests
                 "False",
                 "Unknown",
                 "Let",
+                "FORALL",
+                "EXISTS",
             ],
             DslVocabulary.Keywords
         );

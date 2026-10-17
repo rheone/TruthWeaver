@@ -32,17 +32,6 @@ internal static class Analyzer
     /// <returns>The diagnostics raised (never <see cref="DiagnosticSeverity.Error"/>).</returns>
     public static IReadOnlyList<Diagnostic> Analyze(Expression root, CompilerOptions options)
     {
-        // A quantifier's term set is not fixed at compile time (ADR-0010 decision 8: it is an opaque atom, keyed
-        // by its own canonical text including its body), which the dual-rail BDD below cannot represent without
-        // the atom-keying and scope-qualified term identity ticket 22b-5 adds. Until then, a rule that uses a
-        // quantifier anywhere skips this analysis rather than reporting on the outer rule alone; this is strictly
-        // weaker, never wrong (ADR-0010's "Consequences": fewer tautologies/contradictions are reported for a
-        // rule that uses a quantifier).
-        if (ContainsQuantifier(root))
-        {
-            return [];
-        }
-
         HashSet<TermIdentity> distinctTerms = [];
         CollectTerms(root, distinctTerms);
         if (distinctTerms.Count > options.MaxAnalysisTerms)
@@ -61,6 +50,18 @@ internal static class Analyzer
         BddManager bdd = new();
         List<Diagnostic> diagnostics = [];
         _ = Build(root, bdd, variableIndex, diagnostics);
+
+        // ADR-0010 decision 8: a quantifier is an opaque atom in the outer analysis above (its own BDD variable
+        // pair, keyed by its canonical text in Build's TermExpression-like case below); its body is analyzed on
+        // its own, in its own scope, with its own term variables and its own MaxAnalysisTerms cap, so a tautology
+        // or contradiction inside the body is still reported. Nested quantifiers recurse through this same call.
+        Dictionary<TermIdentity, QuantifierExpression> quantifiers = [];
+        CollectTopLevelQuantifiers(root, quantifiers);
+        foreach (QuantifierExpression quantifier in quantifiers.Values)
+        {
+            diagnostics.AddRange(Analyze(quantifier.Body, options));
+        }
+
         return diagnostics;
     }
 
@@ -360,27 +361,35 @@ internal static class Analyzer
         };
     }
 
-    /// <summary>Tells whether <paramref name="node"/> or any descendant is a quantifier (see <see cref="Analyze"/>).</summary>
-    /// <param name="node">The node to check.</param>
-    /// <returns><see langword="true"/> if a <see cref="QuantifierExpression"/> is anywhere in this subtree.</returns>
-    private static bool ContainsQuantifier(Expression node)
+    /// <summary>
+    /// Finds every quantifier in <paramref name="node"/>'s own scope — not inside another quantifier's body, which
+    /// <see cref="Analyze"/> analyzes separately and recursively — deduplicated by canonical text (ADR-0010
+    /// decision 8: two syntactically equal quantifiers are the same atom).
+    /// </summary>
+    private static void CollectTopLevelQuantifiers(Expression node, Dictionary<TermIdentity, QuantifierExpression> quantifiers)
     {
-        if (node is QuantifierExpression)
+        if (node is QuantifierExpression quantifier)
         {
-            return true;
+            quantifiers.TryAdd(QuantifierAtom.IdentityOf(quantifier), quantifier);
+            return;
         }
 
         if (node is ConstantExpression or TermExpression)
         {
-            return false;
+            return;
         }
 
-        return ExpressionShape.Of(node).Operands.Any(ContainsQuantifier);
+        foreach (Expression operand in ExpressionShape.Of(node).Operands)
+        {
+            CollectTopLevelQuantifiers(operand, quantifiers);
+        }
     }
 
     /// <summary>
     /// Adds every term under <paramref name="node"/> to <paramref name="terms"/>. Children come from
     /// <see cref="ExpressionShape"/>, the single child list, so a new operator cannot have its terms skipped here.
+    /// A quantifier is a leaf for this purpose (ADR-0010 decision 8): it contributes its own atom identity, and its
+    /// body's terms are not collected here, because they belong to the body's own, separate analysis scope.
     /// </summary>
     private static void CollectTerms(Expression node, HashSet<TermIdentity> terms)
     {
@@ -388,6 +397,12 @@ internal static class Analyzer
         if (node is TermExpression term)
         {
             terms.Add(term.Identity);
+            return;
+        }
+
+        if (node is QuantifierExpression quantifier)
+        {
+            terms.Add(QuantifierAtom.IdentityOf(quantifier));
             return;
         }
 
@@ -659,6 +674,21 @@ internal static class Analyzer
                 int definite = bdd.Variable(2 * index);
                 int unknown = bdd.Variable((2 * index) + 1);
                 return new DualRail(definite, bdd.Or(definite, unknown));
+            case QuantifierExpression q:
+                // ADR-0010 decision 8: the quantifier is an opaque atom in the outer analysis, keyed by its own
+                // canonical text (including its body) exactly as TermExpression above is keyed by its identity;
+                // every K3 value of the atom is reachable for some collection, so this is sound. Analyze's caller
+                // separately re-analyzes the body in its own scope.
+                TermIdentity atom = QuantifierAtom.IdentityOf(q);
+                if (!variableIndex.TryGetValue(atom, out int atomIndex))
+                {
+                    atomIndex = variableIndex.Count;
+                    variableIndex[atom] = atomIndex;
+                }
+
+                int atomDefinite = bdd.Variable(2 * atomIndex);
+                int atomUnknown = bdd.Variable((2 * atomIndex) + 1);
+                return new DualRail(atomDefinite, bdd.Or(atomDefinite, atomUnknown));
             case NotExpression n:
                 rail = Not(bdd, Build(n.Operand, bdd, variableIndex, diagnostics));
                 break;

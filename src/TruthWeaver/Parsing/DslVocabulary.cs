@@ -37,6 +37,8 @@ internal static class DslVocabulary
         "False",
         "Unknown",
         "Let",
+        "FORALL",
+        "EXISTS",
     ];
 
     /// <summary>Gets the symbolic spelling to suggest for a stray character that is half of a doubled symbol, or <see langword="null"/>.</summary>

@@ -88,6 +88,14 @@ public sealed class AnalyzerDistinctTermsTests
             yield break;
         }
 
+        // ADR-0010 decision 8: a quantifier is an opaque atom in the outer analysis, keyed by its own canonical
+        // text (which includes the body), not by the terms the body happens to contain.
+        if (node is QuantifierExpression quantifier)
+        {
+            yield return QuantifierAtom.IdentityOf(quantifier).PredicateName;
+            yield break;
+        }
+
         foreach (PropertyInfo property in node.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (property.GetValue(node) is Expression child)

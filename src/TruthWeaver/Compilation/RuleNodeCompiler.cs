@@ -423,6 +423,7 @@ internal sealed class RuleNodeCompiler<TContext>
 
         this.activeVariables.Add(node.Variable);
         (Expression? bodyTree, IReadOnlyList<Diagnostic> bodyDiagnostics) = binding.CompileBody(
+            node.Variable,
             node.Body,
             this.options,
             depth + 1,

@@ -6,10 +6,10 @@
 
 **Blocked by:** 22b-1
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Semantics table tests, including each parent decision
-- [ ] Over the element bound gives `Unknown` plus a fault, not an exception
-- [ ] Trace and `Fault.Scope` tests
-- [ ] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Semantics table tests, including each parent decision
+- [x] Over the element bound gives `Unknown` plus a fault, not an exception
+- [x] Trace and `Fault.Scope` tests
+- [x] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

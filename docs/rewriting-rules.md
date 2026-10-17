@@ -8,6 +8,8 @@ A compiled rule is immutable, so a rewrite never edits it. A rewrite returns a *
 
 Each rewrite is verified per operator. The K3 laws hold for connectives only. `Simplify()` handles the external operators (`COALESCE` and the inspections) with its own rules. See [Strong Kleene connectives and external operators](strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators).
 
+A quantifier (`FORALL`/`EXISTS`) is an atom for every rewrite except `ToNnf()`: its body is rewritten in its own scope, but the quantifier itself is never expanded, reordered or merged with another quantifier, because its element count is known only at evaluation time. `ToNnf()` is the one exception, below.
+
 | Rewrite | Result |
 | --- | --- |
 | [`ExpandToPrimitives()`](#expand-to-primitives) | Only the primitive kernel. |
@@ -385,6 +387,8 @@ NOT (IsTrue(isDineIn) AND isTakeout)
 NOT IsTrue(isDineIn) OR NOT isTakeout
 ```
 
+`ToNnf()` pushes a negation through a quantifier too: `NOT FORALL(line IN lines, b)` becomes `EXISTS(line IN lines, NOT b)`, and the dual, for every collection, including an empty or missing one. This holds because `FORALL` and `EXISTS` are each other's De Morgan dual over the collection's elements, the same way `AND` and `OR` are. `ToCnf()` and `ToDnf()` still treat the quantifier as an atom: only its body is put in NNF, never split across clauses.
+
 ## Rule equivalence
 
 `RuleEquivalence.Compare(first, second)` answers the question "do these two rules always give the same result?" under Strong Kleene logic. It uses the same dual-rail BDD as the analyzer. The check is exact, not sampled, and it returns a `RuleEquivalenceResult`:
@@ -394,6 +398,8 @@ NOT IsTrue(isDineIn) OR NOT isTakeout
 | `Equivalent` | Same value for every `True`/`False`/`Unknown` assignment of the terms. |
 | `NotEquivalent` | Some assignment differs. `CounterExample` maps every distinct term in either rule (keyed by its printed form, such as `hasRole(role: "Y")`) to the value it takes. |
 | `Undecided` | The rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms` (default 20). `Reason` says so. Nothing is guessed. |
+
+A quantifier (`FORALL`/`EXISTS`) compares as an opaque atom, keyed by its own canonical text (the variable, the collection and the body together): two rules with the same quantifier text compare correctly, but two quantifiers with equivalent yet differently written bodies count as different atoms. The check is still sound; it is incomplete across such rewordings.
 
 ```csharp
 RuleEquivalenceResult result = RuleEquivalence.Compare(
