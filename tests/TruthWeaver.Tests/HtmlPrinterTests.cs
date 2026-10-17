@@ -219,7 +219,7 @@ public sealed class HtmlPrinterTests
     [InlineData("⊥", "&perp;")]
     [InlineData("<>&\"'", "&lt;&gt;&amp;&quot;&#39;")]
     [InlineData("a\nb\tc\rd", "a&#10;b&#9;c&#13;d")]
-    [InlineData("\u0001\u007F", "��")]
+    [InlineData("\u0001\u007F", "\uFFFD\uFFFD")]
     [InlineData("é 😀", "é 😀")]
     public void Escape_Text_WritesEntitiesAndReplacesControlCharacters_Test(string text, string expected)
     {

@@ -70,7 +70,7 @@ public static class SourceReader
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(origin);
 
-        bool hasMark = text.StartsWith('﻿');
+        bool hasMark = text.StartsWith('\uFEFF');
         return ToolResults.Success(
             new SourceText(hasMark ? text[1..] : text, origin, hasMark ? SourceEncoding.Utf8WithBom : SourceEncoding.Utf8)
         );

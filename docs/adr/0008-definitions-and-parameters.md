@@ -109,7 +109,7 @@ this ADR. The four questions below were resolved by the implementing ticket (11-
 owner's standing instruction for this change directed; each resolution is recorded here rather than left
 open, and amends this ADR in place.
 
-- **Diagnostic codes (resolved 2026-10-16).** Allocated the next six free codes, `TRE0036`–`TRE0041`, in
+- **Diagnostic codes (resolved 2026-10-16).** Allocated the next six free codes, `TRE0036`-`TRE0041`, in
   declaration order of decision 6's bullets: `TRE0036` `DefinitionCycleDetected`, `TRE0037`
   `DefinitionNameCollision`, `TRE0038` `MaxDefinitionDepthExceeded`, `TRE0039`
   `DefinitionArgumentCountMismatch`, `TRE0040` `UnknownDefinition`, `TRE0041` `UnusedDefinition`. "Expanded

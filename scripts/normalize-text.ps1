@@ -9,6 +9,8 @@
       - A UTF-8 byte order mark is removed, except from *.ps1 (Windows PowerShell 5.1 reads a BOM-less file as ANSI).
       - An em dash (U+2014) becomes " - ", the ellipsis character (U+2026) becomes "..." and the curly quotes
         (U+2018, U+2019, U+201C, U+201D) become straight quotes. $curlyQuoteAllowlist lists the files that keep them.
+      - An en dash (U+2013) becomes "-" and a no-break space (U+00A0) becomes a space.
+      - A hidden or garbled character (see $blocklist) is reported and the script exits with code 1.
       - Every line ending becomes LF.
       - Trailing spaces and tabs are removed, except the two-space hard break in Markdown. C# files keep their line
         content, because dotnet format owns it and a trim could change a string literal.
@@ -54,6 +56,12 @@ $files = $candidates | Where-Object {
 
 $emDash = [string][char]0x2014
 $ellipsis = [string][char]0x2026
+$enDash = [string][char]0x2013
+$noBreakSpace = [string][char]0x00A0
+# Never allowed: soft hyphen, zero-width and direction marks, line and paragraph separators, bidirectional
+# controls (they can reorder displayed code), the word joiner, a byte order mark inside a file and the replacement
+# character (a sign of broken encoding). Write one as a \u escape when code needs it as data.
+$blocklist = '[' + ((@(0xAD) + (0x200B..0x200F) + @(0x2028, 0x2029) + (0x202A..0x202E) + @(0x2060) + (0x2066..0x2069) + @(0xFEFF, 0xFFFD) | ForEach-Object { [string][char]$_ }) -join '') + ']'
 $leftSingle = [string][char]0x2018
 $rightSingle = [string][char]0x2019
 $leftDouble = [string][char]0x201C
@@ -70,6 +78,7 @@ $strictUtf8 = [Text.UTF8Encoding]::new($false, $true)
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 $changed = [Collections.Generic.List[string]]::new()
 $invalid = [Collections.Generic.List[string]]::new()
+$blocked = [Collections.Generic.List[string]]::new()
 
 foreach ($file in $files) {
     $extension = [IO.Path]::GetExtension($file).ToLowerInvariant()
@@ -95,6 +104,15 @@ foreach ($file in $files) {
     # replaces a straight double quote with U+201D on purpose.
     if ($file -replace '\\', '/' -cnotin $curlyQuoteAllowlist) {
         $new = $new.Replace($leftSingle, "'").Replace($rightSingle, "'").Replace($leftDouble, '"').Replace($rightDouble, '"')
+    }
+
+    $new = $new.Replace($enDash, '-').Replace($noBreakSpace, ' ')
+
+    # Characters that hide or garble text cannot be fixed by a replacement. Report them with line and code point.
+    $hidden = [Text.RegularExpressions.Regex]::Matches($new, $blocklist)
+    foreach ($match in $hidden) {
+        $line = ($new.Substring(0, $match.Index) -split "`n").Count
+        $blocked.Add(('{0}:{1}: U+{2:X4}' -f $file, $line, [int][char]$match.Value))
     }
 
     $new = $new.Replace("`r`n", "`n").Replace("`r", "`n")
@@ -126,10 +144,13 @@ foreach ($file in $files) {
 if ($invalid.Count -gt 0) {
     [Console]::Error.WriteLine("normalize-text: $($invalid.Count) file(s) are not valid UTF-8 (fix the encoding by hand):`n  $($invalid -join "`n  ")")
 }
+if ($blocked.Count -gt 0) {
+    [Console]::Error.WriteLine("normalize-text: $($blocked.Count) blocked character(s) (remove them, or write them as \u escapes):`n  $($blocked -join "`n  ")")
+}
 if ($CheckOnly -and $changed.Count -gt 0) {
     [Console]::Error.WriteLine("normalize-text: $($changed.Count) file(s) need normalizing (run scripts/normalize-text.ps1):`n  $($changed -join "`n  ")")
 }
-if ($invalid.Count -gt 0 -or ($CheckOnly -and $changed.Count -gt 0)) { exit 1 }
+if ($invalid.Count -gt 0 -or $blocked.Count -gt 0 -or ($CheckOnly -and $changed.Count -gt 0)) { exit 1 }
 if ($changed.Count -eq 0) {
     Write-Host 'normalize-text: all files are normalized.'
 }

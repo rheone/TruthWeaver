@@ -89,7 +89,7 @@ public sealed class SourceReaderTests
     [Fact]
     public void ReadString_LeadingMarkCharacter_RemovesIt_Test()
     {
-        ToolResult<SourceText> result = SourceReader.ReadString("﻿isActive", "pasted");
+        ToolResult<SourceText> result = SourceReader.ReadString("\uFEFFisActive", "pasted");
 
         Assert.Equal(new SourceText("isActive", "pasted", SourceEncoding.Utf8WithBom), result.Value);
     }
