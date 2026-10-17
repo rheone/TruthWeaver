@@ -5,7 +5,7 @@ using TruthWeaver.Evaluation;
 
 /// <summary>
 /// Renders a rule's <see cref="OutlineNode"/> tree (from <c>CompiledRule.Outline()</c>) as an
-/// indented ASCII tree — for logs, terminals, or any consumer that needs the same structure and
+/// indented ASCII tree, for logs, terminals, or any consumer that needs the same structure and
 /// evaluation coloring <see cref="MermaidTreePrinter"/> renders, without a diagram viewer. Shares its
 /// zip/skip-propagation logic with <see cref="MermaidTreePrinter"/> via <see cref="RuleRenderTree"/>,
 /// so "what a skipped subtree looks like" is decided in exactly one place for both formats.

@@ -7,7 +7,7 @@ using TruthWeaver.Printing;
 using TruthWeaver.Rewriting;
 
 /// <summary>
-/// The opt-in lint step that runs after <see cref="Analyzer"/> (ticket k3-hardening 09). It walks the tree and reports
+/// The opt-in lint step that runs after <see cref="Analyzer"/>. It walks the tree and reports
 /// constructs that are provably redundant under Strong Kleene (K3) semantics as <see cref="DiagnosticSeverity.Info"/>
 /// diagnostics, each with a <see cref="DiagnosticSuggestionKind.Replacement"/> holding the simpler rule text and a message
 /// that states why the replacement means the same. A lint only fires when the replacement is K3-equivalent, never on a

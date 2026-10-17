@@ -9,11 +9,11 @@ namespace TruthWeaver.Predicates;
 /// <remarks>
 /// This factory is the lighter-weight, complementary path to that class-based
 /// <see cref="IPredicate{TContext}"/> pattern, for the sub-case where the thing doing the selecting is
-/// safe to capture once, at registration time — a long-lived, thread-safe client (a cached
+/// safe to capture once, at registration time: a long-lived, thread-safe client (a cached
 /// feature-flag reader, an <c>HttpClient</c>-backed lookup wrapper), exactly like any other lambda
 /// predicate's selector (see <see cref="StringPredicates"/>). It is <em>not</em> appropriate when the
 /// selecting dependency is scoped (a <c>DbContext</c>, a per-request <c>HttpClient</c>) and needs to be
-/// re-created fresh on every evaluation — use a class-based <see cref="IPredicate{TContext}"/> for
+/// re-created fresh on every evaluation. Use a class-based <see cref="IPredicate{TContext}"/> for
 /// that case instead, per README's documented alternative.
 /// </remarks>
 public static class SelectedValuePredicates
@@ -29,7 +29,7 @@ public static class SelectedValuePredicates
     /// <param name="description">A human-readable description of what this predicate answers.</param>
     /// <param name="select">
     /// Performs the live selection, reading whatever it needs from <c>TContext</c> and/or the
-    /// term's rule-text arguments. Captured once at registration time — see the type-level remarks
+    /// term's rule-text arguments. Captured once at registration time. See the type-level remarks
     /// for when that's appropriate.
     /// </param>
     /// <param name="test">Turns the selected value into the predicate's Kleene answer; return <see cref="TruthValue.Unknown"/> when the selected value cannot decide it.</param>
@@ -70,7 +70,7 @@ public static class SelectedValuePredicates
     /// <param name="select">
     /// Performs the live selection, reading whatever it needs from <c>TContext</c> and/or the
     /// term's rule-text arguments, selecting the Kleene answer directly. Captured once at
-    /// registration time — see the type-level remarks for when that's appropriate.
+    /// registration time. See the type-level remarks for when that's appropriate.
     /// </param>
     /// <param name="arguments">The rule-text argument declarations <paramref name="select"/> needs, if any.</param>
     /// <returns>The predicate's schema and evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>

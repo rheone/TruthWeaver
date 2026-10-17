@@ -16,7 +16,7 @@ using TruthWeaver.Tests.TestSupport;
 /// Term identity for this pattern's literal argument is an ordinary case of the general term-identity
 /// rule already covered end to end by <see cref="ArgumentsAndMemoizationTests"/> (same predicate name +
 /// same literal argument value = same term, regardless of what a class-based predicate's injected
-/// dependency happens to resolve it to at evaluation time) — nothing about external resolution changes
+/// dependency happens to resolve it to at evaluation time) - nothing about external resolution changes
 /// that rule, so it is not re-asserted here.
 /// </remarks>
 public sealed class ExternallyResolvedRelationshipPredicateTests
@@ -138,7 +138,7 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
     }
 
     // Deliberately the same shape as the two-sided IsManagedByCandidate tests above (context anchor +
-    // literal key + injected live resolution + comparison) — just with a String key rather than a
+    // literal key + injected live resolution + comparison) - just with a String key rather than a
     // Guid, and a non-identity Decimal comparison value read straight off the context rather than a
     // second resolved side. The point is the pattern's generality, not a different pattern.
 
@@ -175,7 +175,7 @@ public sealed class ExternallyResolvedRelationshipPredicateTests
     }
 
     // The simplest instance of the same pattern family as the two tests above: a literal key +
-    // injected live resolution, but with no second value and no context dependency at all — the
+    // injected live resolution, but with no second value and no context dependency at all - the
     // resolved value *is* the answer, not a different pattern.
 
     /// <summary>A flag resolved as true evaluates to true.</summary>

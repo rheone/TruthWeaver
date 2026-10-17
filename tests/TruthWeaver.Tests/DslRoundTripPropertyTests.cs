@@ -21,11 +21,11 @@ public sealed class DslRoundTripPropertyTests
     /// <summary>
     /// The generator's recursion cutoff. Bounded well under <see cref="CompilerOptions"/>'s default
     /// 32/512 depth/node limits so every generated tree is one the default compiler accepts outright
-    /// — this suite is about round-tripping, not about exercising the resource-limit diagnostics.
+    /// - this suite is about round-tripping, not about exercising the resource-limit diagnostics.
     /// </summary>
     private const int MaxTreeDepth = 4;
 
-    /// <summary>The bounded sample size — enough to exercise every shape below, with no unbounded/flaky runtime.</summary>
+    /// <summary>The bounded sample size - enough to exercise every shape below, with no unbounded/flaky runtime.</summary>
     private const int SampleIterations = 300;
 
     private static readonly IReadOnlyList<TermSpec> TermSpecs =
@@ -69,7 +69,7 @@ public sealed class DslRoundTripPropertyTests
     private static readonly Gen<Expression> GenLeaf = Gen.OneOf(GenConstant, GenTerm);
 
     /// <summary>
-    /// The full recursive expression generator — every operator (<c>AND</c>/<c>OR</c>/<c>NOT</c>/
+    /// The full recursive expression generator - every operator (<c>AND</c>/<c>OR</c>/<c>NOT</c>/
     /// <c>XOR</c>/<c>EQUIVALENT</c>/<c>ExactlyOne</c>/the threshold family) plus leaves, arity/threshold-range
     /// constrained to mirror <c>RuleNodeCompiler</c>'s own validation exactly, so no generated tree is
     /// ever rejected for a reason unrelated to round-tripping.
@@ -159,7 +159,7 @@ public sealed class DslRoundTripPropertyTests
 
     /// <summary>
     /// Ticket 06: <c>PrintRuleText(operatorStyle: OperatorStyle.Symbolic)</c> parses back to the same tree as the
-    /// word form, for any generated tree — the symbols it writes for <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/
+    /// word form, for any generated tree - the symbols it writes for <c>AND</c>/<c>OR</c>/<c>NOT</c>/<c>XOR</c>/
     /// <c>EQUIVALENT</c>/<c>IMPLIES</c>/<c>NAND</c>/<c>NOR</c> are exactly the ones the DSL lexer reads back for them.
     /// </summary>
     [Fact]
@@ -263,7 +263,7 @@ public sealed class DslRoundTripPropertyTests
 
     /// <summary>
     /// Ticket 10: for a generated tree and every width in {1, 10, 20, 40, 80, null}, <c>PrintRuleText(RuleTextOptions)</c>
-    /// compiles back to a tree equal to the original — the same round-trip guarantee as the one-line printer, now
+    /// compiles back to a tree equal to the original - the same round-trip guarantee as the one-line printer, now
     /// checked across widths small enough to force breaking and large enough that nothing breaks.
     /// </summary>
     [Fact]
@@ -294,7 +294,7 @@ public sealed class DslRoundTripPropertyTests
     }
 
     /// <summary>
-    /// Ticket 10: a width of 1 — too small to fit even the shortest token — breaks every group it can but never loops,
+    /// Ticket 10: a width of 1 - too small to fit even the shortest token - breaks every group it can but never loops,
     /// throws, or splits a token; the output still compiles back to the original tree.
     /// </summary>
     [Fact]
@@ -316,7 +316,7 @@ public sealed class DslRoundTripPropertyTests
     }
 
     /// <summary>
-    /// Ticket 10: a term name longer than the requested width is printed whole, on its own line, rather than split —
+    /// Ticket 10: a term name longer than the requested width is printed whole, on its own line, rather than split -
     /// the unbreakable-token guarantee that keeps a small width from looping or throwing.
     /// </summary>
     [Fact]
@@ -345,7 +345,7 @@ public sealed class DslRoundTripPropertyTests
     }
 
     /// <summary>
-    /// Ticket 10: printing the already-broken text's recompiled tree again at the same width gives the identical text —
+    /// Ticket 10: printing the already-broken text's recompiled tree again at the same width gives the identical text -
     /// the pretty printer is idempotent, not just round-trippable.
     /// </summary>
     [Fact]
@@ -470,7 +470,7 @@ public sealed class DslRoundTripPropertyTests
 
     /// <summary>
     /// The threshold value range that keeps <c>k</c> compile-valid for a given comparison and operand
-    /// count — deliberately mirrors <c>RuleNodeCompiler.ValidThresholdRange</c> (private there), kept
+    /// count - deliberately mirrors <c>RuleNodeCompiler.ValidThresholdRange</c> (private there), kept
     /// in sync intentionally rather than shared, since this is generator-side test scaffolding rather
     /// than production logic.
     /// </summary>

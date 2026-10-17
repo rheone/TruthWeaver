@@ -7,7 +7,7 @@ using TruthWeaver.Compilation;
 /// <summary>
 /// Asserts the four-package boundary rules from
 /// <see href="../../docs/adr/0004-package-boundaries-and-extensibility.md">ADR-0004</see> hold at the
-/// assembly-dependency level, not merely by convention — a stray <c>ProjectReference</c> or a
+/// assembly-dependency level, not merely by convention - a stray <c>ProjectReference</c> or a
 /// misplaced <c>using</c> that widens one of these packages' dependency surface fails the build
 /// instead of waiting for a reviewer to notice.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly AspNetCore = typeof(TruthWeaver.AspNetCore.RuleRequirement).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
-    // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) —
+    // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) -
     // every TruthWeaver (Core) namespace is spelled out instead of relying on that shared prefix.
     private static readonly string[] CoreNamespaces =
     [

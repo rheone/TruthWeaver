@@ -2,7 +2,7 @@ namespace TruthWeaver.Logging;
 
 using Microsoft.Extensions.Logging;
 
-/// <summary>Structured log events for absorbed evaluation faults (ticket 13).</summary>
+/// <summary>Structured log events for absorbed evaluation faults.</summary>
 internal static partial class EvaluationLog
 {
     /// <summary>Logs one absorbed predicate fault.</summary>

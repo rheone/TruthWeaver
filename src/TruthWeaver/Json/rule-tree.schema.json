@@ -100,10 +100,7 @@
     },
     "argumentValue": {
       "description": "A predicate argument: a literal, or a variable reference resolved from a data source when the rule is evaluated. A variable reference is not allowed inside an array literal.",
-      "oneOf": [
-        { "$ref": "#/$defs/literal" },
-        { "$ref": "#/$defs/variableReference" }
-      ]
+      "oneOf": [{ "$ref": "#/$defs/literal" }, { "$ref": "#/$defs/variableReference" }]
     },
     "predicateNode": {
       "description": "A term: a predicate bound to named argument values (literals or variable references).",
@@ -133,7 +130,10 @@
       "description": "NOT, or an inspection (IsTrue, IsFalse, IsUnknown, IsKnown; case-insensitive on read): exactly one operand. An inspection always yields a definite true or false.",
       "type": "object",
       "properties": {
-        "op": { "type": "string", "pattern": "^(?:[nN][oO][tT]|[iI][sS][tT][rR][uU][eE]|[iI][sS][fF][aA][lL][sS][eE]|[iI][sS][uU][nN][kK][nN][oO][wW][nN]|[iI][sS][kK][nN][oO][wW][nN])$" },
+        "op": {
+          "type": "string",
+          "pattern": "^(?:[nN][oO][tT]|[iI][sS][tT][rR][uU][eE]|[iI][sS][fF][aA][lL][sS][eE]|[iI][sS][uU][nN][kK][nN][oO][wW][nN]|[iI][sS][kK][nN][oO][wW][nN])$"
+        },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" },
@@ -150,7 +150,10 @@
       "description": "AND, OR, XOR, EQUIVALENT, IMPLIES, NAND, NOR, PARITY, ANY, ALL, NONE, COALESCE, If, ExactlyOne: an operand list ('iff' and the legacy 'xnor' are accepted aliases of 'equivalent'; XOR/EQUIVALENT/IMPLIES/NAND/NOR are compile-time restricted to exactly two operands, IMPLIES as [antecedent, consequent]; that restriction is not expressible as JSON structure; COALESCE takes its operands in priority order; If is compile-time restricted to exactly three operands, [condition, whenTrue, whenFalse]).",
       "type": "object",
       "properties": {
-        "op": { "type": "string", "pattern": "^(?:[aA][nN][dD]|[oO][rR]|[xX][oO][rR]|[eE][qQ][uU][iI][vV][aA][lL][eE][nN][tT]|[iI][fF][fF]|[xX][nN][oO][rR]|[iI][mM][pP][lL][iI][eE][sS]|[nN][aA][nN][dD]|[nN][oO][rR]|[pP][aA][rR][iI][tT][yY]|[aA][nN][yY]|[aA][lL][lL]|[nN][oO][nN][eE]|[cC][oO][aA][lL][eE][sS][cC][eE]|[iI][fF]|[eE][xX][aA][cC][tT][lL][yY][oO][nN][eE])$" },
+        "op": {
+          "type": "string",
+          "pattern": "^(?:[aA][nN][dD]|[oO][rR]|[xX][oO][rR]|[eE][qQ][uU][iI][vV][aA][lL][eE][nN][tT]|[iI][fF][fF]|[xX][nN][oO][rR]|[iI][mM][pP][lL][iI][eE][sS]|[nN][aA][nN][dD]|[nN][oO][rR]|[pP][aA][rR][iI][tT][yY]|[aA][nN][yY]|[aA][lL][lL]|[nN][oO][nN][eE]|[cC][oO][aA][lL][eE][sS][cC][eE]|[iI][fF]|[eE][xX][aA][cC][tT][lL][yY][oO][nN][eE])$"
+        },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" }
@@ -165,7 +168,10 @@
       "description": "The count-threshold family: AtLeast/AtMost/GreaterThan/LessThan/Exactly, each carrying its threshold as 'k'.",
       "type": "object",
       "properties": {
-        "op": { "type": "string", "pattern": "^(?:[aA][tT][lL][eE][aA][sS][tT]|[aA][tT][mM][oO][sS][tT]|[gG][rR][eE][aA][tT][eE][rR][tT][hH][aA][nN]|[lL][eE][sS][sS][tT][hH][aA][nN]|[eE][xX][aA][cC][tT][lL][yY])$" },
+        "op": {
+          "type": "string",
+          "pattern": "^(?:[aA][tT][lL][eE][aA][sS][tT]|[aA][tT][mM][oO][sS][tT]|[gG][rR][eE][aA][tT][eE][rR][tT][hH][aA][nN]|[lL][eE][sS][sS][tT][hH][aA][nN]|[eE][xX][aA][cC][tT][lL][yY])$"
+        },
         "operands": {
           "type": "array",
           "items": { "$ref": "#/$defs/node" }

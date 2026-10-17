@@ -3,8 +3,8 @@ namespace TruthWeaver.Logging;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// Structured log event for a rule-swap notification (ticket 13). The library does not own rule
-/// storage or swap scheduling (ADR-0002) — it only logs what the host application tells it happened,
+/// Structured log event for a rule-swap notification. The library does not own rule
+/// storage or swap scheduling (ADR-0002). It only logs what the host application tells it happened,
 /// via <c>RuleCompiler.NotifyRuleSwapped</c>.
 /// </summary>
 internal static partial class RuleSwapLog

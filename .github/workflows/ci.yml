@@ -54,6 +54,14 @@ jobs:
         # code as missing in the generator tests.
         run: dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 
+      - name: Text normalization
+        # Same check as scripts/format-all.ps1: UTF-8, LF, ASCII dashes and quotes, no hidden characters.
+        run: pwsh -NoProfile -File scripts/normalize-text.ps1 -CheckOnly
+
+      - name: JSON and YAML formatting
+        # Prettier is pinned in scripts/format-data.ps1; the runner image provides Node.js.
+        run: pwsh -NoProfile -File scripts/format-data.ps1 -CheckOnly
+
   pack:
     # Packs every package and checks it. This job never pushes or publishes: it has no NuGet API key and only
     # contents: read permission. The pack output stays in the runner's temp directory.

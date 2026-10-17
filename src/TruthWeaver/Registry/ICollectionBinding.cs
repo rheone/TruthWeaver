@@ -11,7 +11,7 @@ using TruthWeaver.Parsing;
 /// The non-generic-over-<c>TItem</c> face of a <see cref="CollectionBinding{TContext, TItem}"/>
 /// (ADR-0010 decision 3), the shape <see cref="PredicateRegistry{TContext}"/> stores a collection binding as so
 /// that neither the registry nor <c>RuleNodeCompiler&lt;TContext&gt;</c>/<c>Evaluator&lt;TContext&gt;</c> need to
-/// know the element type — only the binding itself (created inside the generic
+/// know the element type. Only the binding itself (created inside the generic
 /// <see cref="PredicateRegistryBuilder{TContext}.AddCollection{TItem}"/> call, where <c>TItem</c> is known) does.
 /// </summary>
 /// <typeparam name="TContext">The outer context type the collection is selected from.</typeparam>
@@ -21,7 +21,7 @@ internal interface ICollectionBinding<TContext>
     public string Name { get; }
 
     /// <summary>
-    /// Validates and builds <paramref name="body"/> against this collection's element registry — the quantifier
+    /// Validates and builds <paramref name="body"/> against this collection's element registry. The quantifier
     /// body's own compile step, run in the element's own scope rather than the outer <c>RuleNodeCompiler</c>'s.
     /// </summary>
     /// <param name="variable">
@@ -61,7 +61,8 @@ internal interface ICollectionBinding<TContext>
     /// <param name="services">The service provider for class-based element predicates.</param>
     /// <param name="logger">The logger faults inside an element are written to.</param>
     /// <param name="dataSources">The data sources supplied to this evaluation.</param>
-    /// <param name="outerScope">The enclosing element scope path, or <see langword="null"/> outside any quantifier.</param>
+    /// <param name="outerScope">The enclosing display scope path (built from bound variable names), or <see langword="null"/> outside any quantifier. Labels <see cref="Fault.Scope"/> and the flat trace log (ADR-0010 decision 7).</param>
+    /// <param name="outerMemoScope">The enclosing memoization scope path (built from registered collection names), or <see langword="null"/> outside any quantifier (ADR-0010 decision 5). Different from <paramref name="outerScope"/>: it is what the selector-materialization cache and a nested evaluator's term memo key are built from.</param>
     /// <param name="cancellationToken">Cancels the evaluation.</param>
     /// <returns>The quantifier's value and its trace node (one child per element).</returns>
     public ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -75,6 +76,7 @@ internal interface ICollectionBinding<TContext>
         ILogger logger,
         DataSources? dataSources,
         string? outerScope,
+        string? outerMemoScope,
         CancellationToken cancellationToken
     );
 }

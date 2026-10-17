@@ -10,7 +10,7 @@ public enum RuleDiffChangeKind
     Removed,
 
     /// <summary>
-    /// The node at this position differs between the two trees — a different operator, a different
+    /// The node at this position differs between the two trees: a different operator, a different
     /// threshold <c>K</c>, a different constant value, or a different term (predicate name or
     /// arguments). The subtree below a changed node is not diffed further; the whole node is reported
     /// as replaced.

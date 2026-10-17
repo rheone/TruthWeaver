@@ -3,7 +3,7 @@ namespace TruthWeaver.Registry;
 using TruthWeaver.Parsing;
 
 /// <summary>
-/// Builds a <see cref="PredicateRegistry{TContext}"/> via explicit registration — either a
+/// Builds a <see cref="PredicateRegistry{TContext}"/> via explicit registration: either a
 /// class-based <see cref="IPredicate{TContext}"/> (resolved per-evaluation from
 /// <see cref="IServiceProvider"/>) or a stateless lambda. No attribute or assembly scanning
 /// (ADR-0004).

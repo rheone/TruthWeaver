@@ -135,6 +135,131 @@ public sealed class StubEvaluatorTests
         Assert.Empty(result.Value.Decision.Faults);
     }
 
+    /// <summary>Arguments of every literal kind, and a mix of whole and decimal numbers, compile and find their stubs.</summary>
+    [Fact]
+    public async Task EvaluateAsync_ArgumentsOfEveryLiteralKind_FindEachStub_Test()
+    {
+        LoadedRule rule = RuleLoader
+            .LoadString(
+                "flag(on: true) AND ids(ids: [1, 2]) AND prices(prices: [1.5]) AND oks(oks: [true]) "
+                    + "AND num(n: 1) AND num(n: 2.5) AND nums(n: [1]) AND nums(n: [2.5]) AND empty(items: [])"
+            )
+            .Value!;
+        StubAssignment stubs = StubAssignment
+            .Parse(
+                """
+                'flag(on: true)': T
+                'ids(ids: [1, 2])': T
+                'prices(prices: [1.5])': T
+                'oks(oks: [true])': T
+                'num(n: 1)': T
+                'num(n: 2.5)': T
+                'nums(n: [1])': T
+                'nums(n: [2.5])': T
+                'empty(items: [])': T
+                """,
+                RuleFormat.Yaml
+            )
+            .Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            new StubEvaluationOptions { Stubs = stubs },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(TruthValue.True, result.Value.Decision.Result);
+    }
+
+    /// <summary>An argument given by a literal in one call and by a data reference in another keeps the literal kind.</summary>
+    [Fact]
+    public async Task EvaluateAsync_ArgumentAsLiteralAndReference_EvaluatesBoth_Test()
+    {
+        LoadedRule rule = RuleLoader.LoadString("older(age: 1) AND older(age: from(\"user\", \"$.age\"))").Value!;
+        DataSourceSet data = [];
+        data.Add("user", DataSourceFiles.Parse("{\"age\": 42}", RuleFormat.Json).Value!);
+        StubAssignment stubs = StubAssignment.Parse("'older(age: 1)': T\n'older(age: 42)': T\n", RuleFormat.Yaml).Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            new StubEvaluationOptions { Stubs = stubs, DataSources = data },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(TruthValue.True, result.Value.Decision.Result);
+        Assert.Empty(result.Value.Decision.Faults);
+    }
+
+    /// <summary>The schema file named in the settings gives the kind of an argument when no schema was passed in the options.</summary>
+    [Fact]
+    public async Task EvaluateAsync_SchemaFileInSettings_IsLoadedAndApplied_Test()
+    {
+        using TemporaryDirectory directory = new();
+        string schemaPath = directory.File("predicates.yaml");
+        await File.WriteAllTextAsync(
+            schemaPath,
+            "predicates:\n  olderThan:\n    arguments:\n      age: int64\n",
+            TestContext.Current.CancellationToken
+        );
+        LoadedRule rule = RuleLoader.LoadString("olderThan(age: from(\"user\", \"$.age\"))").Value!;
+        DataSourceSet data = [];
+        data.Add("user", DataSourceFiles.Parse("{\"age\": 42}", RuleFormat.Json).Value!);
+        StubAssignment stubs = StubAssignment.Parse("'olderThan(age: 42)': True", RuleFormat.Yaml).Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            new StubEvaluationOptions
+            {
+                Stubs = stubs,
+                DataSources = data,
+                Settings = ToolSettings.Default with { SchemaFile = schemaPath },
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(TruthValue.True, result.Value.Decision.Result);
+        Assert.Empty(result.Value.Decision.Faults);
+    }
+
+    /// <summary>A schema file in the settings that cannot be read gives no evaluation and its diagnostics.</summary>
+    [Fact]
+    public async Task EvaluateAsync_SchemaFileInSettingsMissing_ReturnsTheDiagnostics_Test()
+    {
+        using TemporaryDirectory directory = new();
+        LoadedRule rule = RuleLoader.LoadString("isActive").Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            new StubEvaluationOptions { Settings = ToolSettings.Default with { SchemaFile = directory.File("missing.yaml") } },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    /// <summary>A schema file kind that the literal in the rule does not fit fails with the error of the stand-in compile.</summary>
+    [Fact]
+    public async Task EvaluateAsync_SchemaKindDiffersFromLiteral_ReturnsTheDiagnostics_Test()
+    {
+        LoadedRule rule = RuleLoader.LoadString("olderThan(age: 42)").Value!;
+        PredicateSchemaFile schema = PredicateSchemaFile
+            .Parse("predicates:\n  olderThan:\n    arguments:\n      age: string\n")
+            .Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            new StubEvaluationOptions { PredicateSchema = schema },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     /// <summary>A rule that does not compile gives no evaluation and the compile diagnostics.</summary>
     [Fact]
     public async Task EvaluateAsync_RuleThatDoesNotCompile_ReturnsTheDiagnostics_Test()

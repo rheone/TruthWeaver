@@ -18,7 +18,7 @@ using YamlDotNet.RepresentationModel;
 /// backing dictionary has exactly the same ten entries as the switch's non-default cases (see
 /// <c>TreeFormatOpNames.CanonicalToTreeFormat</c>). There is no parameter or public seam through which
 /// a test can make that lookup yield an eleventh, unhandled canonical name, so the branch is genuinely
-/// unreachable rather than merely untested — it exists defensively against the closed set (ADR-0003)
+/// unreachable rather than merely untested - it exists defensively against the closed set (ADR-0003)
 /// ever growing without updating this switch in lockstep.
 /// </remarks>
 public sealed class YamlTreeTests

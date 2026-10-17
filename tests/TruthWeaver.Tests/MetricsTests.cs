@@ -11,7 +11,7 @@ using TruthWeaver.Tests.TestSupport;
 /// <summary>
 /// Meter-based counters for evaluation, faults, and compile diagnostics. The library's <c>Meter</c>
 /// is process-wide static state (same as any <c>System.Diagnostics.Metrics</c> producer), so these
-/// assertions tolerate measurements from other tests running concurrently in the same process —
+/// assertions tolerate measurements from other tests running concurrently in the same process -
 /// "at least one matching measurement was recorded", never an exact count.
 /// </summary>
 public sealed class MetricsTests

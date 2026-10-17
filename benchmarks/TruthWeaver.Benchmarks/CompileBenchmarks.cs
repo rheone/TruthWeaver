@@ -6,9 +6,9 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Measures <see cref="RuleCompiler{TContext}.CompileJson(string)"/>'s end-to-end cost — Parse →
+/// Measures <see cref="RuleCompiler{TContext}.CompileJson(string)"/>'s end-to-end cost - Parse →
 /// Validate → Analyze → Build (ADR-0003), including the BDD-based tautology/contradiction analyzer
-/// (<c>Analysis.Analyzer</c>) — across two representative rule sizes. <see cref="RuleSize.Large"/>
+/// (<c>Analysis.Analyzer</c>) - across two representative rule sizes. <see cref="RuleSize.Large"/>
 /// raises <see cref="CompilerOptions.MaxAnalysisTerms"/> so the analyzer actually runs at that size
 /// instead of being skipped past the default cap of 20 distinct terms.
 /// </summary>

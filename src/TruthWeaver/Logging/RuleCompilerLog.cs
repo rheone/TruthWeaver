@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using TruthWeaver.Diagnostics;
 
 /// <summary>
-/// Structured log events for compile diagnostics (ticket 13) — named fields, not just an
+/// Structured log events for compile diagnostics: named fields, not just an
 /// interpolated message, so a host's chosen provider (Serilog or otherwise) can query on them.
 /// </summary>
 internal static partial class RuleCompilerLog

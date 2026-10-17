@@ -114,7 +114,7 @@ internal static class K3Logic
 
     /// <summary>
     /// Evaluates any count-threshold comparison against the range of true-operand counts still
-    /// reachable given how many operands remain <see cref="TruthValue.Unknown"/> — determinate only
+    /// reachable given how many operands remain <see cref="TruthValue.Unknown"/>: determinate only
     /// when the comparison agrees at both the lowest and highest possible count (monotonic
     /// comparisons) or when there is no remaining ambiguity at all (<see cref="ThresholdComparison.Exactly"/>,
     /// which is not monotonic in the count).

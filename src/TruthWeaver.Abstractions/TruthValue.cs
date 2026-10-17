@@ -14,7 +14,7 @@ public enum TruthValue
     True,
 
     /// <summary>
-    /// The expression could not be determined — either a predicate faulted, or the value
+    /// The expression could not be determined: either a predicate faulted, or the value
     /// depends on an operand that itself is <see cref="Unknown"/> in a way the operator's
     /// truth table cannot resolve.
     /// </summary>

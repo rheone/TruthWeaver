@@ -169,7 +169,7 @@ public sealed class ScopedResolutionAndRegistrationTests
 
         // Under Strict (the default), an unregistered predicate name is a compile Error and
         // CompiledRule is null; under Lenient it compiles successfully as an always-Unknown term.
-        // Observing the latter confirms the supplied options — not the defaults — reached the compiler.
+        // Observing the latter confirms the supplied options - not the defaults - reached the compiler.
         CompilationResult<RuleTestContext> result = compiler.Compile("noSuchPredicate");
 
         Assert.NotNull(result.CompiledRule);

@@ -5,10 +5,10 @@ using TruthWeaver.Diagnostics;
 /// <summary>
 /// The shape a literal took in the original source, before the compiler resolves it against a
 /// predicate's declared <c>PredicateArgumentSchema</c>. This indirection is what lets a single
-/// validation routine serve the DSL, JSON, and YAML parsers alike (tickets 04/07/08): each surface
+/// validation routine serve the DSL, JSON, and YAML parsers alike: each surface
 /// produces the same <see cref="RawLiteral"/> shape from its own native syntax, and only one place
 /// (<c>RuleNodeCompiler</c>) knows how to reconcile a raw literal against an expected
-/// <c>LiteralKind</c> — including the DSL's only way to write a <c>DateTimeOffset</c>, a quoted
+/// <c>LiteralKind</c>, including the DSL's only way to write a <c>DateTimeOffset</c>, a quoted
 /// string the schema says to parse as a date rather than keep as text.
 /// </summary>
 internal enum RawLiteralForm

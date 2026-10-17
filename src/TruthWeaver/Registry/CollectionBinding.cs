@@ -64,6 +64,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
         ILogger logger,
         DataSources? dataSources,
         string? outerScope,
+        string? outerMemoScope,
         CancellationToken cancellationToken
     )
     {
@@ -77,24 +78,48 @@ internal sealed class CollectionBinding<TContext, TItem>(
             );
         }
 
-        IReadOnlyList<TItem>? elements;
-        try
+        // ADR-0010 decision 5: the selector is called at most once per (binding, outer element) within one
+        // evaluation. The cache key is the enclosing memoization scope (the outer element) plus this collection's
+        // registered name (the binding); a second quantifier over the same binding at the same outer element, even
+        // under a different bound variable, reuses the first call's outcome instead of invoking the selector again.
+        (string? OuterScope, string Binding) materializationKey = (outerMemoScope, name);
+        bool firstMaterialization = !state.CollectionMaterializations.TryGetValue(
+            materializationKey,
+            out CollectionMaterialization materialization
+        );
+        if (firstMaterialization)
         {
-            elements = selector(context)?.ToList();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-        {
-            // ADR-0010 decision 4: a throwing selector is Unknown plus one fault for the collection itself.
-            state.Faults.Add(new Fault(new TermIdentity(name, []), ex, outerScope));
-            if (options.FaultBudget is { } budget && state.Faults.Count >= budget)
+            try
             {
-                state.Aborted = true;
+                materialization = new CollectionMaterialization(false, null, selector(context)?.ToList());
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                materialization = new CollectionMaterialization(true, ex, null);
+            }
+
+            state.CollectionMaterializations[materializationKey] = materialization;
+        }
+
+        if (materialization.Faulted)
+        {
+            // ADR-0010 decision 4: a throwing selector is Unknown plus one fault for the collection itself. The
+            // fault is recorded only the first time the selector actually ran, matching how a cached term memo
+            // hit never re-raises the fault that produced it.
+            if (firstMaterialization)
+            {
+                state.Faults.Add(new Fault(new TermIdentity(name, []), materialization.Fault!, outerScope));
+                if (options.FaultBudget is { } budget && state.Faults.Count >= budget)
+                {
+                    state.Aborted = true;
+                }
             }
 
             AddFlat(TruthValue.Unknown, false);
             return (TruthValue.Unknown, new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty));
         }
 
+        IReadOnlyList<TItem>? elements = (IReadOnlyList<TItem>?)materialization.Elements;
         if (elements is null)
         {
             // ADR-0010 decision 4: a null collection is Unknown with no fault (the catalog's default NullBehavior).
@@ -119,7 +144,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
         // Set only when THIS quantifier's own loop hits MaxElementEvaluations (ADR-0010 decision 6): the elements
         // this quantifier never reached could still have decided it, so its result is forced Unknown regardless of
-        // what the elements reached so far folded to — unlike a fault-budget abort (which, "exactly as today",
+        // what the elements reached so far folded to: unlike a fault-budget abort (which, "exactly as today",
         // keeps whatever the fold reached before the remaining elements were skipped).
         bool elementLimitExceeded = false;
         List<TraceNode> children = [];
@@ -127,6 +152,12 @@ internal sealed class CollectionBinding<TContext, TItem>(
         {
             string elementLabel = $"{variable}[{i}]";
             string elementScope = outerScope is null ? elementLabel : $"{outerScope}/{elementLabel}";
+
+            // ADR-0010 decision 5: the memo scope chains on the collection's registered name, not the bound
+            // variable, so two quantifiers over the same binding under different variable names share memo
+            // entries for an equal term, while the same variable name reused over a different collection does not.
+            string bindingLabel = $"{name}[{i}]";
+            string elementMemoScope = outerMemoScope is null ? bindingLabel : $"{outerMemoScope}/{bindingLabel}";
 
             if (stop || state.Aborted)
             {
@@ -167,7 +198,8 @@ internal sealed class CollectionBinding<TContext, TItem>(
                 logger,
                 elementDataSources,
                 state,
-                elementScope
+                elementScope,
+                elementMemoScope
             );
             (TruthValue value, TraceNode node) = await nested.EvaluateSharedAsync(body).ConfigureAwait(false);
             accumulator = kind == QuantifierKind.ForAll ? K3Logic.And(accumulator, value) : K3Logic.Or(accumulator, value);

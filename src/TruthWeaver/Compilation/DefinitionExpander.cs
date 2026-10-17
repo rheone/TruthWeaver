@@ -8,8 +8,8 @@ using TruthWeaver.Registry;
 /// Expands a rule document's <c>let</c> definitions at compile time (ADR-0008 decision 1): every <see cref="UseNode"/>
 /// is replaced by its definition's body with parameters substituted, before the raw tree ever reaches
 /// <see cref="RuleNodeCompiler{TContext}"/>. The expanded tree contains no <see cref="DefinitionNode"/>,
-/// <see cref="UseNode"/> or <see cref="ParameterReferenceNode"/> — only the primitive and derived operator nodes
-/// <c>RuleNodeCompiler</c> already understands — so the evaluator, BDD analyzer, rewrites and every printer need no
+/// <see cref="UseNode"/> or <see cref="ParameterReferenceNode"/>. Only the primitive and derived operator nodes
+/// <c>RuleNodeCompiler</c> already understands, so the evaluator, BDD analyzer, rewrites and every printer need no
 /// definitions-aware case.
 /// </summary>
 internal static class DefinitionExpander
@@ -204,7 +204,7 @@ internal static class DefinitionExpander
         )
         {
             // Arguments are expanded in the scope the use itself sits in (the caller's own parameters, if any), before
-            // being substituted into the definition's body — a use never sees the callee's parameters.
+            // being substituted into the definition's body. A use never sees the callee's parameters.
             RuleNode[] arguments = new RuleNode[use.Arguments.Count];
             for (int i = 0; i < use.Arguments.Count; i++)
             {

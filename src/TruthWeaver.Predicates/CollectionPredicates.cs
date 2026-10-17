@@ -10,7 +10,7 @@ public static class CollectionPredicates
     /// Creates an order-insensitive, duplicate-insensitive set-equality predicate: true when the
     /// selected collection and the literal array argument contain the same distinct elements. This is
     /// a deliberate divergence from CONTEXT.md's "array-valued arguments are order-sensitive"
-    /// term-identity rule — that rule governs *term identity* (whether two terms are the same
+    /// term-identity rule. That rule governs *term identity* (whether two terms are the same
     /// variable for memoization/canonical-equality purposes), not this predicate's own *evaluation*
     /// semantics, so it is not a contradiction of that rule. Comparison is case-sensitive (ordinal),
     /// consistent with CONTEXT.md's general "argument values are case-sensitive" stance; there is no
@@ -43,7 +43,7 @@ public static class CollectionPredicates
     {
         const string description =
             "True when the selected collection and the argument array contain the same elements, "
-            + "ignoring order and duplicates (set semantics, not sequence semantics — a deliberate "
+            + "ignoring order and duplicates (set semantics, not sequence semantics - a deliberate "
             + "divergence from CONTEXT.md's array-argument order-sensitive term-identity rule, which "
             + "governs term identity, not this predicate's evaluation semantics). Comparison is "
             + "case-sensitive (ordinal); no case-insensitive variant is provided. A null selected "

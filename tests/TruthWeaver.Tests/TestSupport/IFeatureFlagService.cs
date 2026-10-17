@@ -2,7 +2,7 @@ namespace TruthWeaver.Tests.TestSupport;
 
 /// <summary>
 /// A live-lookup dependency used to prove the externally-resolved-value predicate pattern's simplest
-/// shape (ticket 05): the literal key resolves directly to the boolean answer — there is no second
+/// shape (ticket 05): the literal key resolves directly to the boolean answer - there is no second
 /// value to compare against.
 /// </summary>
 public interface IFeatureFlagService

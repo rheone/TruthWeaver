@@ -73,7 +73,7 @@ public sealed class TraceTreeTests
     public async Task Skipped_WholeSubtreeOperand_HasNoChildren_Test()
     {
         // "a AND (b OR c)" with a = false: the (b OR c) OrExpression is itself the second AND operand,
-        // so the whole subtree is skipped as one unit — nothing about b or c is recorded.
+        // so the whole subtree is skipped as one unit - nothing about b or c is recorded.
         PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
             .CreateBuilder()
             .AddConstant("a", false)

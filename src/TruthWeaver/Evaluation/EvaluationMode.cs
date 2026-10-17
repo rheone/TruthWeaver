@@ -8,7 +8,7 @@ public enum EvaluationMode
 
     /// <summary>
     /// Evaluates every reachable term (no short-circuit) and collects every fault, for
-    /// diagnostic/support use. Never changes <see cref="Abstractions.Decision.Result"/> — only which
+    /// diagnostic/support use. Never changes <see cref="Abstractions.Decision.Result"/>, only which
     /// terms run and what the trace/fault list contains.
     /// </summary>
     Exhaustive,

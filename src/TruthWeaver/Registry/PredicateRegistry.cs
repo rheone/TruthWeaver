@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// Where predicate implementations are registered under a name, with their argument schema
 /// (CONTEXT.md). Immutable once built; registration is exclusively through
-/// <see cref="PredicateRegistryBuilder{TContext}"/> — there is no attribute or assembly-scanning
+/// <see cref="PredicateRegistryBuilder{TContext}"/>. There is no attribute or assembly-scanning
 /// discovery path (ADR-0004).
 /// </summary>
 /// <typeparam name="TContext">The application context type predicates in this registry read from.</typeparam>
@@ -46,7 +46,7 @@ public sealed class PredicateRegistry<TContext>
     }
 
     /// <summary>
-    /// Looks up a predicate's schema by name, case-insensitively — the label/description source for a
+    /// Looks up a predicate's schema by name, case-insensitively. The label/description source for a
     /// <see cref="Ast.TermExpression"/> node, since a term itself carries only its resolved identity,
     /// not the descriptive metadata authored on its predicate's registration.
     /// </summary>

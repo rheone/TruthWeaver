@@ -1,7 +1,7 @@
 namespace TruthWeaver.Ast;
 
 /// <summary>
-/// A short, human-friendly display label plus a human-readable description for one operator — the
+/// A short, human-friendly display label plus a human-readable description for one operator: the
 /// operator-side counterpart to <see cref="Abstractions.PredicateSchema"/>'s required
 /// <c>Label</c>/<c>Description</c>, so a rule-authoring UI or generated documentation can describe
 /// every node of a compiled expression tree, not just its predicate leaves.

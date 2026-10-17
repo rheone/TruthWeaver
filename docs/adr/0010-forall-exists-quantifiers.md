@@ -71,11 +71,11 @@ a **quantifier**, alongside the gates and the cardinality functions.
 
 The design note's section 2 frames this as a choice between two designs for how a quantifier's body reads
 the element: **A**, a typed collection binding (`PredicateRegistryBuilder.AddCollection<TItem>`, element
-predicates over `Element<TOuter, TItem>` with `Outer`/`Item`/`Index` properties — the note's recommendation)
+predicates over `Element<TOuter, TItem>` with `Outer`/`Item`/`Index` properties - the note's recommendation)
 and **B**, untyped reads through `from("line", "...")` data-source arguments. The parent ticket's decision
 departs from the note's recommendation of A alone: **the collection itself is always a typed collection
-binding (option A's range) in slice 1** — the note's option B range (`FORALL(line IN from("order",
-"$.lines[*]"), ...)`, enumerating a data source directly) is deferred to 22c, below — **but a body reads an
+binding (option A's range) in slice 1** - the note's option B range (`FORALL(line IN from("order",
+"$.lines[*]"), ...)`, enumerating a data source directly) is deferred to 22c, below - **but a body reads an
 element through both mechanisms in slice 1**: typed element predicates registered on the collection's
 element registry (`Element<TOuter, TItem>`), and, additionally, an untyped data-source read of the element
 itself, so a body term may use `from(line, "$.qty")` against the per-element value, as if that element were
@@ -135,7 +135,7 @@ A `null` collection reading as `Unknown` means `FORALL(x IN c, True)` is **not**
   fault budget aborts. Default: 10,000. This is deliberately not unlimited, unlike every other
   `EvaluationOptions` default: the rule *author*, not the host calling `EvaluateAsync`, controls how deeply a
   rule nests quantifiers and over what collections, so an unbounded default would let authored rule text
-  alone make one evaluation arbitrarily expensive — the same reason `CompilerOptions`' structural limits have
+  alone make one evaluation arbitrarily expensive - the same reason `CompilerOptions`' structural limits have
   non-`null` defaults.
 - **`CompilerOptions.MaxQuantifierDepth`**, a new compile-time bound: how deeply quantifiers may nest, so the
   product of collection sizes stays predictable before any data is read. Default: 2. Exceeding it is a
@@ -149,7 +149,7 @@ A `null` collection reading as `Unknown` means `FORALL(x IN c, True)` is **not**
 
 ### 7. Trace shape
 
-A quantifier node has one child per element instead of one child per written operand — the one controlled
+A quantifier node has one child per element instead of one child per written operand - the one controlled
 exception to "the trace tree mirrors the rule's shape". Each element child is labelled `<variable>[<index>]`
 and holds the body's own trace tree; the flat log prefixes each body entry with the scope path (for example
 `line[1]: inStock`). An empty collection has no element children; a `null` collection is the quantifier node
@@ -193,7 +193,7 @@ quantifier's own scope, without an element index.
 
 | Rewrite | Effect on a quantifier |
 | --- | --- |
-| `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor` | The quantifier itself is not expanded — a documented boundary, as `COALESCE` already is, because `n` is known only at evaluation time. Its body is rewritten in place. |
+| `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor` | The quantifier itself is not expanded - a documented boundary, as `COALESCE` already is, because `n` is known only at evaluation time. Its body is rewritten in place. |
 | `ToNnf` | `NOT FORALL(x IN c, b)` becomes `EXISTS(x IN c, NOT b)`, and the dual, for every collection including empty and `null`. |
 | `ToCnf`, `ToDnf` | The quantifier is an atom; its body is put into normal form on its own. |
 | `Canonicalize`, `CompressToDerived` | The body is rewritten in its own scope; the quantifier itself is not reordered or merged with another quantifier. |
@@ -217,7 +217,7 @@ decision 8 already requires for every diagnostic raised inside an expansion.
 Deferred, not rejected, and not authorized by this ADR:
 
 - **Data-source ranges** (`FORALL(line IN from("order", "$.lines[*]"), ...)`, enumerating a data source
-  directly as the collection) — a later ticket, 22c, with its own [ADR-0006](0006-data-sources-for-expression-variables.md)
+  directly as the collection) - a later ticket, 22c, with its own [ADR-0006](0006-data-sources-for-expression-variables.md)
   amendment (its decision 8 currently puts "iteration over repeated subtrees" out of scope) and a new
   `IDataSource` enumeration member.
 - Counted quantifiers (`AtLeast(k, x IN c, b)`), which fall out of the interval semantics once the plain

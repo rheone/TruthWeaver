@@ -179,19 +179,10 @@
         "0": { "name": "punctuation.section.arguments.end.truthweaver" }
       },
       "name": "meta.variable-reference.truthweaver",
-      "patterns": [
-        { "include": "#comment" },
-        { "include": "#comma" },
-        { "include": "#string" }
-      ]
+      "patterns": [{ "include": "#comment" }, { "include": "#comma" }, { "include": "#string" }]
     },
     "literal": {
-      "patterns": [
-        { "include": "#string" },
-        { "include": "#number" },
-        { "include": "#constant" },
-        { "include": "#array" }
-      ]
+      "patterns": [{ "include": "#string" }, { "include": "#number" }, { "include": "#constant" }, { "include": "#array" }]
     },
     "array": {
       "begin": "\\[",
@@ -199,11 +190,7 @@
       "name": "meta.array.truthweaver",
       "beginCaptures": { "0": { "name": "punctuation.section.array.begin.truthweaver" } },
       "endCaptures": { "0": { "name": "punctuation.section.array.end.truthweaver" } },
-      "patterns": [
-        { "include": "#comment" },
-        { "include": "#comma" },
-        { "include": "#literal" }
-      ]
+      "patterns": [{ "include": "#comment" }, { "include": "#comma" }, { "include": "#literal" }]
     },
     "string": {
       "name": "string.quoted.double.truthweaver",

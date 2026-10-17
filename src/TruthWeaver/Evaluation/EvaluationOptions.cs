@@ -2,8 +2,7 @@ namespace TruthWeaver.Evaluation;
 
 /// <summary>
 /// Per-call evaluation knobs (ADR-0002), passed to <c>CompiledRule.EvaluateAsync</c>. Defaults
-/// preserve the engine's default semantics (unlimited fault tolerance, short-circuiting, no timeout)
-/// — every knob here is an explicit caller opt-in, not a change to those defaults.
+/// preserve the engine's default semantics (unlimited fault tolerance, short-circuiting, no timeout). Every knob here is an explicit caller opt-in, not a change to those defaults.
 /// </summary>
 /// <param name="FaultBudget">
 /// Evaluation aborts when the number of recorded faults reaches this value, so a budget of 1 aborts on the first fault.

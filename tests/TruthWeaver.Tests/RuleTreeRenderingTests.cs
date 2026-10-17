@@ -9,7 +9,7 @@ using TruthWeaver.Tests.TestSupport;
 
 /// <summary>
 /// <see cref="CompiledRule{TContext}.PrintMermaid(MermaidOptions)"/>/<see cref="CompiledRule{TContext}.PrintPlainText(bool, ConstantFormat?)"/>
-/// — structure-only and evaluation-colored tree rendering, for delivery to a diagram UI or a log.
+/// - structure-only and evaluation-colored tree rendering, for delivery to a diagram UI or a log.
 /// </summary>
 public sealed class RuleTreeRenderingTests
 {

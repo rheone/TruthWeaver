@@ -47,7 +47,7 @@ builder changes (tickets 11-2 through 11-5) touch any code.
    remains the ordinary, zero-overhead way to reuse an un-parameterized shape and is not itself a
    definition. The builder's new, explicit definition API (named in ticket 11-4) additionally supports
    parameters, and compiles, through the same JSON tree the builder already renders
-   (`RuleCompiler.CompileJson(JsonElement)`), to the `definitions` section and `use` nodes of decision 3 —
+   (`RuleCompiler.CompileJson(JsonElement)`), to the `definitions` section and `use` nodes of decision 3 -
    so a builder-authored rule with definitions produces the identical compiled tree a DSL or JSON author
    would get for the same definitions and uses (the cross-form equality ticket 11-5's property test checks).
 5. **Parameters take literals or sub-expressions; no loops, no recursion.** An argument at a use site is
@@ -73,7 +73,7 @@ builder changes (tickets 11-2 through 11-5) touch any code.
      if the author had written them out by hand, and the existing `TRE0009`/`TRE0010` diagnostics apply
      with no special-casing for where the nodes came from. A term a definition repeats keeps one shared
      identity after expansion when the arguments are identical, consistent with the engine's existing term
-     identity rule — this does not relax `MaxNodeCount`, which counts the tree as printed, matching the
+     identity rule - this does not relax `MaxNodeCount`, which counts the tree as printed, matching the
      existing rewrite-size accounting ADR-0005 decision 10 already established for `ExpandToPrimitives`.
    - **Definition nesting depth.** A new `CompilerOptions.MaxDefinitionDepth` bounds how many definitions
      deep a use may expand through (a use inside definition A's body that names definition B, whose body
@@ -109,7 +109,7 @@ this ADR. The four questions below were resolved by the implementing ticket (11-
 owner's standing instruction for this change directed; each resolution is recorded here rather than left
 open, and amends this ADR in place.
 
-- **Diagnostic codes (resolved 2026-10-16).** Allocated the next six free codes, `TRE0036`–`TRE0041`, in
+- **Diagnostic codes (resolved 2026-10-16).** Allocated the next six free codes, `TRE0036`-`TRE0041`, in
   declaration order of decision 6's bullets: `TRE0036` `DefinitionCycleDetected`, `TRE0037`
   `DefinitionNameCollision`, `TRE0038` `MaxDefinitionDepthExceeded`, `TRE0039`
   `DefinitionArgumentCountMismatch`, `TRE0040` `UnknownDefinition`, `TRE0041` `UnusedDefinition`. "Expanded

@@ -11,7 +11,7 @@ using TruthWeaver.Registry;
 /// Walks a compiled <see cref="Expression"/> tree once, implementing the three-valued Kleene truth
 /// tables (ADR-0001), left-to-right short-circuiting, per-evaluation term memoization, and fault
 /// absorption (ADR-0002). A new instance is created for every call to
-/// <c>CompiledRule.EvaluateAsync</c> — memoization and the fault list are scoped to exactly one
+/// <c>CompiledRule.EvaluateAsync</c>: memoization and the fault list are scoped to exactly one
 /// evaluation, never shared across calls.
 /// </summary>
 /// <remarks>
@@ -32,7 +32,8 @@ internal sealed class Evaluator<TContext>(
     ILogger? logger = null,
     DataSources? dataSources = null,
     EvaluationState? state = null,
-    string? scope = null
+    string? scope = null,
+    string? memoScope = null
 )
 {
     private readonly TContext context = context;
@@ -45,9 +46,18 @@ internal sealed class Evaluator<TContext>(
     private readonly EvaluationState state = state ?? new EvaluationState();
 
     // The element scope path this evaluator runs in (e.g. "line[2]" or "line[2]/tag[0]"), or null outside any
-    // quantifier. Prefixes every flat trace entry this evaluator records (ADR-0010 decision 7); tree (TraceNode)
-    // labels are never prefixed, because the quantifier already wraps each element's tree in its own "var[i]" node.
+    // quantifier. Prefixes every flat trace entry this evaluator records (ADR-0010 decision 7) and labels
+    // Fault.Scope; tree (TraceNode) labels are never prefixed, because the quantifier already wraps each
+    // element's tree in its own "var[i]" node.
     private readonly string? scope = scope;
+
+    // The memoization scope path this evaluator runs in, or null outside any quantifier (ADR-0010 decision 5):
+    // the chain of (binding, index) pairs, for example "lines[2]/tags[0]", built from the registered collection
+    // name rather than the quantifier's bound variable. This is deliberately a different string from `scope`
+    // above: two quantifiers over the same binding under different variable names share this path (and so
+    // share memo entries for an equal term), while the same variable name reused over different collections
+    // does not, because the collection name differs.
+    private readonly string? memoScope = memoScope;
 
     public async Task<Decision> EvaluateAsync(Expression root)
     {
@@ -63,7 +73,7 @@ internal sealed class Evaluator<TContext>(
 
     /// <summary>
     /// Evaluates <paramref name="node"/> sharing this evaluator's <see cref="EvaluationState"/> and scope, without
-    /// packaging a fresh <see cref="Decision"/> — the form a quantifier's collection binding uses to run a
+    /// packaging a fresh <see cref="Decision"/>: the form a quantifier's collection binding uses to run a
     /// per-element body through a nested <see cref="Evaluator{TContext}"/> (over the element's own
     /// <c>Element&lt;TOuter, TItem&gt;</c> context) while every fault and flat trace entry it records lands on the
     /// same shared lists the outer evaluation's <see cref="Decision"/> is eventually built from.
@@ -304,7 +314,7 @@ internal sealed class Evaluator<TContext>(
             case ExactlyOneExpression:
             {
                 // ExactlyOne is Exactly(1, ...) over the same definite/possible interval as every other
-                // cardinality operator (ticket 17: folded into the one threshold path, no separate evaluation).
+                // cardinality operator (it folds into the one threshold path, with no separate evaluation).
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Threshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
@@ -422,6 +432,7 @@ internal sealed class Evaluator<TContext>(
                 this.logger,
                 this.dataSources,
                 this.scope,
+                this.memoScope,
                 this.cancellationToken
             )
             .ConfigureAwait(false);
@@ -495,7 +506,7 @@ internal sealed class Evaluator<TContext>(
             );
         }
 
-        (string? Scope, TermIdentity Identity) key = (this.scope, term.Identity);
+        (string? Scope, TermIdentity Identity) key = (this.memoScope, term.Identity);
         if (this.state.Memo.TryGetValue(key, out TruthValue cached))
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
@@ -547,7 +558,7 @@ internal sealed class Evaluator<TContext>(
 
             if (this.options.IncludeResolvedValues && identity.Variables.Count > 0)
             {
-                this.state.ValueDescriptions[(this.scope, identity)] = DescribeWithValues(identity, values);
+                this.state.ValueDescriptions[(this.memoScope, identity)] = DescribeWithValues(identity, values);
             }
 
             PredicateArguments args = new(values);
@@ -625,7 +636,7 @@ internal sealed class Evaluator<TContext>(
                 if (answer.Matches.Count == 0 && VariableConversion.IsArrayKind(argument.Type))
                 {
                     // An empty array is a valid argument, so only the trace says the query found nothing.
-                    (string? Scope, TermIdentity Identity) key = (this.scope, identity);
+                    (string? Scope, TermIdentity Identity) key = (this.memoScope, identity);
                     if (!this.state.ZeroMatchReferences.TryGetValue(key, out List<VariableReference>? noted))
                     {
                         noted = [];
@@ -653,7 +664,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Asks the named source a query, once per evaluation; a failure is stored and replayed like a value.</summary>
     private async ValueTask<SourceAnswer> QuerySourceAsync(VariableReference reference)
     {
-        (string? Scope, VariableReference Reference) key = (this.scope, reference);
+        (string? Scope, VariableReference Reference) key = (this.memoScope, reference);
         if (this.state.SourceAnswers.TryGetValue(key, out SourceAnswer? known))
         {
             return known;
@@ -737,7 +748,7 @@ internal sealed class Evaluator<TContext>(
 
     /// <summary>
     /// One node's outcome, paired with a structural <see cref="TraceNode"/> mirroring the shape
-    /// <see cref="Expression"/> is recursed over — every recursive evaluation step returns one of these
+    /// <see cref="Expression"/> is recursed over. Every recursive evaluation step returns one of these
     /// instead of a bare <see cref="TruthValue"/>, so the per-node annotations needed for
     /// <see cref="Decision.TraceTree"/> fall out of the existing recursion for free, with no
     /// separate replay pass.

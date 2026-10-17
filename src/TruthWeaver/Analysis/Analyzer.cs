@@ -15,7 +15,7 @@ using TruthWeaver.Printing;
 /// every assignment (the possibly-true rail is constant false). So <c>A AND NOT A</c> and
 /// <c>A OR NOT A</c> are not reported: both are <c>Unknown</c> when <c>A</c> is. Term identity
 /// (CONTEXT.md) recognises repeated references to the same variable. Findings are
-/// <see cref="DiagnosticSeverity.Warning"/> diagnostics — they never block compilation.
+/// <see cref="DiagnosticSeverity.Warning"/> diagnostics. They never block compilation.
 /// </summary>
 internal static class Analyzer
 {
@@ -232,8 +232,8 @@ internal static class Analyzer
     /// <returns>
     /// One entry per reachable pair, in the fixed order <c>True</c>, <c>False</c>, <c>Unknown</c> for each side (so
     /// <c>(True, True)</c> is first when reachable). Each example covers every term of either tree; terms the witness
-    /// does not depend on are <c>False</c>. The witness prefers an assignment where no term is <c>Unknown</c> — ANDing
-    /// in the constraint that every term's "is Unknown" variable is false — falling back to any witness when no such
+    /// does not depend on are <c>False</c>. The witness prefers an assignment where no term is <c>Unknown</c>: ANDing
+    /// in the constraint that every term's "is Unknown" variable is false, falling back to any witness when no such
     /// assignment exists (ADR-0009 decision 4: a reader trusts a definite example more than one with an opaque
     /// <c>Unknown</c> term in it).
     /// </returns>
@@ -284,7 +284,7 @@ internal static class Analyzer
 
     /// <summary>
     /// Reads a tree's Strong K3 value for one assignment of its terms directly from the analyzer's own dual-rail
-    /// BDD, by walking both rails for that assignment (ticket 17). Used to pin <c>Evaluator</c> to the analyzer:
+    /// BDD, by walking both rails for that assignment. Used to pin <c>Evaluator</c> to the analyzer:
     /// today the two are compared only at the tautology/contradiction extremes (<see cref="Analyze"/>), so a
     /// property test instead checks every generated assignment, not only those two.
     /// </summary>
@@ -362,8 +362,8 @@ internal static class Analyzer
     }
 
     /// <summary>
-    /// Finds every quantifier in <paramref name="node"/>'s own scope — not inside another quantifier's body, which
-    /// <see cref="Analyze"/> analyzes separately and recursively — deduplicated by canonical text (ADR-0010
+    /// Finds every quantifier in <paramref name="node"/>'s own scope, not inside another quantifier's body, which
+    /// <see cref="Analyze"/> analyzes separately and recursively, deduplicated by canonical text (ADR-0010
     /// decision 8: two syntactically equal quantifiers are the same atom).
     /// </summary>
     private static void CollectTopLevelQuantifiers(Expression node, Dictionary<TermIdentity, QuantifierExpression> quantifiers)
@@ -491,7 +491,7 @@ internal static class Analyzer
     }
 
     /// <summary>
-    /// Binary XOR as <c>(x AND NOT y) OR (NOT x AND y)</c> — the primitive definition, so it is
+    /// Binary XOR as <c>(x AND NOT y) OR (NOT x AND y)</c>: the primitive definition, so it is
     /// <c>Unknown</c> whenever either side is.
     /// </summary>
     private static DualRail Xor(BddManager bdd, DualRail x, DualRail y)
@@ -788,8 +788,7 @@ internal static class Analyzer
     /// the cost differs. Operands are built left to right, so an earlier operand's terms take lower variable indices
     /// and sit above a later operand's in the ordering. Combining <c>op(earlier, accumulated)</c> lets <c>Ite</c> walk
     /// only the earlier operand's nodes and reuse the accumulated BDD unchanged under it. A left fold puts the growing
-    /// accumulated BDD on top and rebuilds all of it for every operand, which is quadratic in the operand count
-    /// (k3-hardening ticket 19).
+    /// accumulated BDD on top and rebuilds all of it for every operand, which is quadratic in the operand count.
     /// </summary>
     private static DualRail FoldRight(
         List<DualRail> operands,

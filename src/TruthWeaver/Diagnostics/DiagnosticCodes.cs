@@ -218,7 +218,7 @@ public static class DiagnosticCodes
 
     /// <summary>
     /// Expanding a use would nest more <c>let</c> definitions deep than <c>CompilerOptions.MaxDefinitionDepth</c>
-    /// (ADR-0008 decision 6) — independent of <c>MaxDepthExceeded</c>, which bounds the expanded tree's structural
+    /// (ADR-0008 decision 6), independent of <c>MaxDepthExceeded</c>, which bounds the expanded tree's structural
     /// depth, not the definition chain, and independent of <see cref="DefinitionCycleDetected"/>, which only catches an
     /// unbounded (cyclic) chain, not a pathologically deep but non-cyclic one.
     /// </summary>
@@ -256,7 +256,7 @@ public static class DiagnosticCodes
     public const string MaxQuantifierDepthExceeded = "TRE0043";
 
     /// <summary>
-    /// A quantifier's bound variable name is already in scope — reusing an enclosing quantifier's own variable name
+    /// A quantifier's bound variable name is already in scope: reusing an enclosing quantifier's own variable name
     /// (ADR-0010 decision 2). The span or path is the inner quantifier's head.
     /// </summary>
     public const string ShadowedVariable = "TRE0044";

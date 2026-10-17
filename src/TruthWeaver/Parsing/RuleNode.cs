@@ -4,7 +4,7 @@ using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
 
 // SA1402 relaxed: a single closed-set discriminated union describing raw (pre-validation) parse
-// output, shared identically by the DSL, JSON, and YAML front ends (tickets 06/07/08) so that
+// output, shared identically by the DSL, JSON, and YAML front ends so that
 // "parse(print(x)) is structurally equal to x" and "JSON/YAML parse to the same AST as DSL" are true
 // by construction rather than by parallel maintenance of three grammars.
 #pragma warning disable SA1402
@@ -13,7 +13,7 @@ using TruthWeaver.Diagnostics;
 /// A node in the raw parse tree produced by any of the three rule-text front ends, before predicate
 /// names are resolved and argument literals are validated against a schema. <c>RuleNodeCompiler</c>
 /// (in the <c>Compilation</c> namespace) is the single place that turns a <see cref="RuleNode"/> tree
-/// into a validated <c>Ast.Expression</c> tree — every front end funnels through it, which is what
+/// into a validated <c>Ast.Expression</c> tree. Every front end funnels through it, which is what
 /// makes DSL/JSON/YAML round-tripping and cross-format equality a property of the design rather than
 /// something tested for and hoped to remain true.
 /// </summary>
@@ -95,7 +95,7 @@ internal sealed record AndNode(IReadOnlyList<RuleNode> Operands, SourceSpan Span
 internal sealed record OrNode(IReadOnlyList<RuleNode> Operands, SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
-/// A raw <c>XOR</c> reference. Operand count is not yet validated here — a DSL infix chain
+/// A raw <c>XOR</c> reference. Operand count is not yet validated here. A DSL infix chain
 /// (<c>a XOR b XOR c</c>) or an explicit JSON/YAML <c>op: xor</c> node with the wrong operand count
 /// both flow through as an <see cref="XorNode"/>, and <c>RuleNodeCompiler</c> uniformly rejects
 /// anything other than exactly two operands (ADR-0003).
@@ -187,7 +187,7 @@ internal sealed record ErrorNode(SourceSpan Span) : RuleNode(Span);
 /// <summary>
 /// A document-scoped <c>let</c> declaration (ADR-0008): names a reusable sub-expression, with zero or more declared
 /// parameters, that a <see cref="UseNode"/> elsewhere in the same document can expand at compile time. Never reaches
-/// the evaluator, analyzer, rewrites or printers — <c>DefinitionExpander</c> replaces every use before
+/// the evaluator, analyzer, rewrites or printers. <c>DefinitionExpander</c> replaces every use before
 /// <c>RuleNodeCompiler</c> builds the compiled <see cref="Ast.Expression"/> tree.
 /// </summary>
 /// <param name="Name">The definition's name, unique (case-insensitively) within its document.</param>
@@ -244,7 +244,7 @@ internal sealed record UseNode(string Name, IReadOnlyList<RuleNode> Arguments, S
 /// <summary>
 /// The root of a rule-text document that declared one or more <c>let</c> definitions (ADR-0008 decision 2).
 /// <c>DefinitionExpander</c> expands it, before <c>RuleNodeCompiler</c> ever runs, into <see cref="Body"/> alone with
-/// every <see cref="UseNode"/> replaced — so this node, like <see cref="DefinitionNode"/>, <see cref="UseNode"/> and
+/// every <see cref="UseNode"/> replaced, so this node, like <see cref="DefinitionNode"/>, <see cref="UseNode"/> and
 /// <see cref="ParameterReferenceNode"/>, never reaches the evaluator, analyzer, rewrites or printers.
 /// </summary>
 /// <param name="Definitions">The document's <c>let</c> declarations, in source order.</param>
