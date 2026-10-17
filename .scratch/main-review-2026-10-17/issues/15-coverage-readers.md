@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** ready-for-agent
 
 **What to build:** Add malformed-input tests for the error branches of TreeFormatReader and DecisionJsonReader, as tables of bad payloads.

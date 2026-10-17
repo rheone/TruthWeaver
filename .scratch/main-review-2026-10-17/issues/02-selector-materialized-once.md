@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** 01 (both change CollectionBinding.cs, so they run one after the other)
+
 **Status:** ready-for-agent
 
 **What to build:** Call a collection selector at most once per (binding, outer element) per evaluation and reuse the materialized list (ADR-0010 decision 5).

@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-owner-decision
 
 **What to build:** Write short ADRs or ADR amendments, one at a time, for: OrderOptimizer and PredicateSchema.Cost (soundness, fault order and trace order against ADR-0002 left-to-right); BatchEvaluator/EvaluateMany and maxDegreeOfParallelism (against ADR-0002 caller-loops and no implicit concurrency); the packages TruthWeaver.AspNetCore, TruthWeaver.Tool and TruthWeaver.Tool.Core (ADR-0004 package set); TruthWeaverMetrics (ADR-0004 defers observability); RuleCounterfactual, RuleRelation, ChangeSetSearch, Linter, RuleCoverage and RuleDiff; the chosen elementSource registration shape (ADR-0010).

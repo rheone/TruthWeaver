@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** 09 (the printers and parser comments change first)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide whether to move the Symbolic and C-style spellings, and the FORALL/EXISTS labels, onto OperatorDefinitions (or a quantifier equivalent) so the printers and parser read one table. Also consider grouping OutlineNode's QuantifierVariable and QuantifierCollection into one nullable record.

@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** 09, 10, 11 (a file split must follow the edits to the same file)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide whether to split CompiledRule<TContext> into partial files by concern (printing, rewrites, analysis, evaluation) without changing the public surface.

@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** ready-for-agent
 
 **What to build:** Build the quantifier memo scope from the chain of (binding, index) pairs as ADR-0010 decision 5 says, not from the variable name.

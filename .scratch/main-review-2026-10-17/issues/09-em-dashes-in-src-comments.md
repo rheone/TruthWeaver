@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** ready-for-agent
 
 **What to build:** Replace the em dash in comments and XML docs under src/ with a comma, colon, period or parentheses. Leave string literals alone (for example the sample in RuleDiffPrinter.cs:17). Check the 171 en-dash comment lines and fix only those that act as em dashes.

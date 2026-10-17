@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-triage
 
 **What to build:** For each of the 36 throw sites (InvalidOperationException, NotSupportedException, FormatException) in 25 src/TruthWeaver files, confirm it is an internal-invariant guard unreachable from user rule text. Where reachable, return a diagnostic instead (Compile must not throw for authoring errors).

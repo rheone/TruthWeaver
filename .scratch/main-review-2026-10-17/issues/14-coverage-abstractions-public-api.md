@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** ready-for-agent
 
 **What to build:** Add focused tests for the untested public members of TruthWeaver.Abstractions.

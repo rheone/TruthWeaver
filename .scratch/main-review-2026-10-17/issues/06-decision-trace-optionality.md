@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide: add the EvaluationOptions flag the ADR and docs promise, or change the docs and the nullable shape to match the always-on behavior.

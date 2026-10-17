@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** ready-for-agent
 
 **What to build:** Cover the untested branches with scenario tests.

@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide whether an unknown predicate in lenient mode should add a Fault. ADR-0002 says it compiles as a permanent Unknown fault on that term.

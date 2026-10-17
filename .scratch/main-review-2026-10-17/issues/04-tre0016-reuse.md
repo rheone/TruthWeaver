@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide: amend ADR-0005 decision 14 to allow reuse, or move the rewrite-size code to a new TRE number.

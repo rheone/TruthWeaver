@@ -2,6 +2,8 @@
 
 **Parent:** [main review](../spec.md)
 
+**Blocked by:** None (can start immediately)
+
 **Status:** needs-owner-decision
 
 **What to build:** Decide whether to implement ADR-0006 decision 13 (trace and faults name the reference and the outcome: resolved, missing, ambiguous) or amend the ADR.
