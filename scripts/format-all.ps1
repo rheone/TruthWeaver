@@ -24,10 +24,13 @@ function Invoke-Checked {
 }
 
 if (-not $CheckOnly) {
+    Invoke-Checked 'normalize-ascii' { pwsh -NoProfile -File scripts/normalize-ascii.ps1 }
     Invoke-Checked 'csharpier format' { dotnet csharpier format . }
     Invoke-Checked 'dotnet format' { dotnet format TruthWeaver.slnx --no-restore --severity info }
     Invoke-Checked 'csharpier format (second pass)' { dotnet csharpier format . }
 }
+
+Invoke-Checked 'normalize-ascii check' { pwsh -NoProfile -File scripts/normalize-ascii.ps1 -CheckOnly }
 
 # These three commands are the CI gates in .github/workflows/ci.yml. Keep them identical to it.
 Invoke-Checked 'csharpier check' { dotnet csharpier check . }
