@@ -14,12 +14,13 @@ Statuses: `ready-for-agent` is mechanical or has a clear fix in an ADR. `needs-o
 | [06](issues/06-decision-trace-optionality.md) | Decision.Trace is documented as optional but always set | None | needs-owner-decision |
 | [07](issues/07-trace-names-variable-outcome.md) | Trace does not name the variable-resolution outcome | None | needs-owner-decision |
 | [08](issues/08-shipped-surface-without-adr.md) | Shipped surface with no ADR | None | needs-owner-decision |
-| [09](issues/09-em-dashes-in-src-comments.md) | Em dashes in src comments and XML docs | None | ready-for-agent |
-| [10](issues/10-ticket-references-in-xml-docs.md) | Ticket and .scratch references in XML docs | 09 | ready-for-agent |
+| [09](issues/09-em-dashes-in-src-comments.md) | Em dashes in src comments and XML docs | None | done |
+| [10](issues/10-ticket-references-in-xml-docs.md) | Ticket and .scratch references in XML docs | 09 | done |
 | [11](issues/11-operator-tables-repeated.md) | Operator symbol and label tables repeated in several files | 09 | needs-owner-decision |
 | [12](issues/12-compiledrule-size.md) | CompiledRule<TContext> is 1748 lines | 09, 10, 11 | needs-owner-decision |
-| [13](issues/13-audit-reachable-throws.md) | Audit reachable throw sites in the compile pipeline | None | needs-triage |
+| [13](issues/13-audit-reachable-throws.md) | Audit reachable throw sites in the compile pipeline | None | done (audit only) |
 | [14](issues/14-coverage-abstractions-public-api.md) | Coverage of the Abstractions public API | None | done |
 | [15](issues/15-coverage-readers.md) | Coverage of the tree-format and decision-JSON readers | None | done |
 | [16](issues/16-coverage-evaluator-analysis.md) | Coverage of evaluator, analysis, definitions and printer branches | None | done |
 | [17](issues/17-coverage-testing-toolcore-generators.md) | Coverage of Testing, Tool.Core and Generators | None | done |
+| [18](issues/18-let-with-quantifier-throws.md) | A rule that combines let with a quantifier throws | None | ready-for-agent |
