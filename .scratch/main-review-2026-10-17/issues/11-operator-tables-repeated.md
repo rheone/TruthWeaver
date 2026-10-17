@@ -4,7 +4,9 @@
 
 **Blocked by:** 09 (the printers and parser comments change first)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
+
+**Owner decision (2026-10-17):** Consolidate the Symbolic and C-style spellings and the FORALL/EXISTS labels onto OperatorDefinitions (plus a quantifier equivalent), with an exhaustive test. Consider the OutlineNode quantifier record.
 
 **What to build:** Decide whether to move the Symbolic and C-style spellings, and the FORALL/EXISTS labels, onto OperatorDefinitions (or a quantifier equivalent) so the printers and parser read one table. Also consider grouping OutlineNode's QuantifierVariable and QuantifierCollection into one nullable record.
 

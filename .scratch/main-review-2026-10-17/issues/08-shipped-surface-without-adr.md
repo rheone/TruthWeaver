@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
+
+**Owner decision (2026-10-17):** Write ADRs or amendments for: OrderOptimizer/PredicateSchema.Cost; BatchEvaluator/EvaluateMany; the AspNetCore, Tool and Tool.Core packages (ADR-0004 amendment); TruthWeaverMetrics. One grouped ADR for the analysis tools (RuleCounterfactual, RuleRelation, ChangeSetSearch, Linter, RuleCoverage, RuleDiff). An ADR-0010 amendment for the elementSource registration shape.
 
 **What to build:** Write short ADRs or ADR amendments, one at a time, for: OrderOptimizer and PredicateSchema.Cost (soundness, fault order and trace order against ADR-0002 left-to-right); BatchEvaluator/EvaluateMany and maxDegreeOfParallelism (against ADR-0002 caller-loops and no implicit concurrency); the packages TruthWeaver.AspNetCore, TruthWeaver.Tool and TruthWeaver.Tool.Core (ADR-0004 package set); TruthWeaverMetrics (ADR-0004 defers observability); RuleCounterfactual, RuleRelation, ChangeSetSearch, Linter, RuleCoverage and RuleDiff; the chosen elementSource registration shape (ADR-0010).
 

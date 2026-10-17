@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** ready-for-agent
+
+**Owner decision (2026-10-17):** Record a Fault (permanent Unknown fault on the term) for an unknown predicate in lenient mode, as ADR-0002 states.
 
 **What to build:** Decide whether an unknown predicate in lenient mode should add a Fault. ADR-0002 says it compiles as a permanent Unknown fault on that term.
 
