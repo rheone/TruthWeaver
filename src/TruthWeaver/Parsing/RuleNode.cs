@@ -63,6 +63,10 @@ internal abstract record RuleNode(SourceSpan Span)
             InspectionNode inspection => inspection.Operands,
             IfNode conditional => conditional.Operands,
             CoalesceNode coalesce => coalesce.Operands,
+            UseNode use => use.Arguments,
+            DefinitionNode definition => [definition.Body],
+            RuleDocumentNode document => [.. document.Definitions, document.Body],
+            QuantifierNode quantifier => [quantifier.Body],
             _ => [],
         };
     }
@@ -179,3 +183,91 @@ internal sealed record CoalesceNode(IReadOnlyList<RuleNode> Operands, SourceSpan
 /// can continue (and thus report further diagnostics in the same pass) without ever throwing.
 /// </summary>
 internal sealed record ErrorNode(SourceSpan Span) : RuleNode(Span);
+
+/// <summary>
+/// A document-scoped <c>let</c> declaration (ADR-0008): names a reusable sub-expression, with zero or more declared
+/// parameters, that a <see cref="UseNode"/> elsewhere in the same document can expand at compile time. Never reaches
+/// the evaluator, analyzer, rewrites or printers — <c>DefinitionExpander</c> replaces every use before
+/// <c>RuleNodeCompiler</c> builds the compiled <see cref="Ast.Expression"/> tree.
+/// </summary>
+/// <param name="Name">The definition's name, unique (case-insensitively) within its document.</param>
+/// <param name="Parameters">The definition's declared parameter names, in positional order; empty for a parameterless definition.</param>
+/// <param name="Body">The definition's own expression, in which a <see cref="ParameterReferenceNode"/> stands for each parameter.</param>
+/// <param name="Span">The declaration's full span, from <c>let</c> to the closing <c>;</c>.</param>
+/// <param name="NameSpan">The span of the definition's name token alone, the span a diagnostic about the declaration (as opposed to a use) points at.</param>
+internal sealed record DefinitionNode(
+    string Name,
+    IReadOnlyList<string> Parameters,
+    RuleNode Body,
+    SourceSpan Span,
+    SourceSpan NameSpan
+) : RuleNode(Span)
+{
+    /// <summary>
+    /// Gets where this definition's own name sits in the JSON or YAML document it came from (the definitions entry's
+    /// path, e.g. <c>$.definitions.adult</c>), or <see langword="null"/> for a DSL definition, where <see cref="NameSpan"/>
+    /// alone already locates it. <c>RuleCompiler</c> resolves a diagnostic located by this path to a real span the same
+    /// way it resolves any other path-located diagnostic (ADR-0008 decision 8).
+    /// </summary>
+    public string? NamePath { get; init; }
+}
+
+/// <summary>
+/// A reference, inside a <see cref="DefinitionNode"/>'s own body, to one of that definition's declared parameters
+/// (ADR-0008 decision 5). <c>DefinitionExpander</c> replaces it with the argument tree supplied at the use site that
+/// triggered this expansion; a parameter is never itself a node the evaluator or printers see.
+/// </summary>
+internal sealed record ParameterReferenceNode(string Name, SourceSpan Span) : RuleNode(Span);
+
+/// <summary>
+/// A use of a declared <see cref="DefinitionNode"/> (ADR-0008 decision 2): the name applied, call-like, to its
+/// positional arguments (<c>atLeastAge(21)</c>), or written bare for a parameterless definition (<c>adult</c>).
+/// <c>DefinitionExpander</c> replaces it, at compile time, with the definition's body with each parameter substituted
+/// by the corresponding (already expanded) argument.
+/// </summary>
+/// <param name="Name">The definition's name as written at the use site.</param>
+/// <param name="Arguments">The positional arguments, each itself a term, constant or sub-expression; empty for a parameterless use.</param>
+/// <param name="Span">The use's full span, from the name to the closing <c>)</c> (or just the name for a parameterless use).</param>
+/// <param name="NameSpan">The span of the name token alone, the span the definition-expansion diagnostics point at.</param>
+internal sealed record UseNode(string Name, IReadOnlyList<RuleNode> Arguments, SourceSpan Span, SourceSpan NameSpan)
+    : RuleNode(Span)
+{
+    /// <summary>
+    /// Gets where this use's own name sits in the JSON or YAML document it came from (e.g. <c>$.operands[1].name</c>), or
+    /// <see langword="null"/> for a DSL use, where <see cref="NameSpan"/> alone already locates it. <c>RuleCompiler</c>
+    /// resolves a diagnostic located by this path to a real span the same way it resolves any other path-located
+    /// diagnostic (ADR-0008 decision 8).
+    /// </summary>
+    public string? NamePath { get; init; }
+}
+
+/// <summary>
+/// The root of a rule-text document that declared one or more <c>let</c> definitions (ADR-0008 decision 2).
+/// <c>DefinitionExpander</c> expands it, before <c>RuleNodeCompiler</c> ever runs, into <see cref="Body"/> alone with
+/// every <see cref="UseNode"/> replaced — so this node, like <see cref="DefinitionNode"/>, <see cref="UseNode"/> and
+/// <see cref="ParameterReferenceNode"/>, never reaches the evaluator, analyzer, rewrites or printers.
+/// </summary>
+/// <param name="Definitions">The document's <c>let</c> declarations, in source order.</param>
+/// <param name="Body">The rule's own expression, the document's single value.</param>
+/// <param name="Span">The whole document's span.</param>
+internal sealed record RuleDocumentNode(IReadOnlyList<DefinitionNode> Definitions, RuleNode Body, SourceSpan Span)
+    : RuleNode(Span);
+
+/// <summary>
+/// A raw <c>FORALL</c>/<c>EXISTS</c> reference (ADR-0010): the bound variable, the collection name at the head, and
+/// the body (the quantifier's one structural operand). <c>RuleNodeCompiler</c> resolves the collection name
+/// against the registry's collection bindings and compiles the body against that binding's own element registry,
+/// rather than against the registry it compiles the rest of the rule with.
+/// </summary>
+/// <param name="Kind">Whether this is <c>FORALL</c> or <c>EXISTS</c>.</param>
+/// <param name="Variable">The bound variable name, as written at the quantifier's head.</param>
+/// <param name="CollectionName">The collection name at the head, not yet resolved against the registry.</param>
+/// <param name="Body">The element condition.</param>
+/// <param name="Span">The quantifier's own span.</param>
+internal sealed record QuantifierNode(
+    QuantifierKind Kind,
+    string Variable,
+    string CollectionName,
+    RuleNode Body,
+    SourceSpan Span
+) : RuleNode(Span);

@@ -44,6 +44,8 @@ In `EvaluationMode.ShortCircuit` mode an operand after the deciding one is not e
 
 `NodeCoverage` has `Path` (the tree path, `$` for the root and `$.operands[1]` for the second operand of the root), `Text` (the text the trace shows), `EvaluatedCount`, `NotEvaluatedCount`, `TrueCount`, `FalseCount`, `UnknownCount`, `DecidedCount`, `Operands` and `UndecidedOperands`. An operand of an operator is a branch of that operator.
 
+A `FORALL`/`EXISTS` quantifier's one operand is its body, even though its trace has one child per element rather than one per written operand: this coverage folds every element's evaluation of the body onto that one `NodeCoverage`, so its counts are the union over every element the decision reached. `DecidedCount`, for a node inside the body, counts an element in which a different value at that node would have changed the *body's own* result for that element (not the quantifier's overall fold or the rule's result). `Terms` lists a quantifier itself (keyed by its full canonical text) alongside the rule's other terms, but not the terms inside its body: the same opaque-atom boundary the analyzer and rule equivalence use (see [Rewriting rules and rule equivalence](rewriting-rules.md)).
+
 ## Reports
 
 `PrintMarkdown()` writes a Markdown report and `PrintJson()` writes indented JSON. Each has a `TextWriter` overload that writes the same text. Both use line feeds.

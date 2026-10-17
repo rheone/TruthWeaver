@@ -32,16 +32,31 @@ internal sealed class DslParser
     private readonly IReadOnlyList<Token> tokens;
     private readonly List<Diagnostic> diagnostics;
 
+    // Every 'let' name declared anywhere in the document (ADR-0008), collected by CollectDefinitionNames before any
+    // body is parsed so a use may name a definition declared later in the same document, not only an earlier one.
+    private readonly IReadOnlySet<string> definitionNames;
+
     // The extent, delimiters included, of each node written inside a group: a comment before the opener is that node's
     // note, so the note attacher needs to know where the group began. Keyed by reference, as two equal nodes are distinct.
     private readonly Dictionary<RuleNode, (int Start, int End)> groups = [with(ReferenceEqualityComparer.Instance)];
+
+    // The current definition's declared parameters while its own body is being parsed, so a bare identifier matching
+    // one is read as a ParameterReferenceNode rather than a term or a use; null outside a definition's body (ADR-0008
+    // decision 5: definitions do not nest, so this is never more than one level deep).
+    private IReadOnlySet<string>? currentParameters;
     private int position;
 
-    private DslParser(string source, IReadOnlyList<Token> tokens, List<Diagnostic> diagnostics)
+    private DslParser(
+        string source,
+        IReadOnlyList<Token> tokens,
+        List<Diagnostic> diagnostics,
+        IReadOnlySet<string> definitionNames
+    )
     {
         this.source = source;
         this.tokens = tokens;
         this.diagnostics = diagnostics;
+        this.definitionNames = definitionNames;
     }
 
     private Token Current => this.tokens[this.position];
@@ -62,8 +77,15 @@ internal sealed class DslParser
         Lexer lexer = new(source);
         IReadOnlyList<Token> tokens = lexer.Tokenize();
         List<Diagnostic> diagnostics = [.. lexer.Diagnostics];
-        DslParser parser = new(source, tokens, diagnostics);
-        RuleNode root = parser.ParseExpression();
+        DslParser parser = new(source, tokens, diagnostics, CollectDefinitionNames(tokens));
+
+        List<DefinitionNode> definitions = [];
+        while (parser.IsKeyword("LET"))
+        {
+            definitions.Add(parser.ParseDefinition());
+        }
+
+        RuleNode body = parser.ParseExpression();
         if (IsGroupCloser(parser.Current.Kind))
         {
             // Nothing is open at the top level, so a closer here never had an opener.
@@ -91,8 +113,64 @@ internal sealed class DslParser
             );
         }
 
+        RuleNode root =
+            definitions.Count == 0
+                ? body
+                : new RuleDocumentNode(definitions, body, SpanCovering(definitions[0].Span.Start, body.Span.End));
         NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
         return (root, diagnostics);
+    }
+
+    /// <summary>
+    /// Scans the token stream for every <c>let name</c> declared at the top level, without parsing bodies, so a use may
+    /// name a definition declared later in the document (ADR-0008 decision 2 does not require declaration order). Each
+    /// <c>let</c> statement is skipped up to its own top-level <c>;</c>, honoring nesting depth, so a definition's body
+    /// cannot hide another <c>let</c> keyword from this scan.
+    /// </summary>
+    private static IReadOnlySet<string> CollectDefinitionNames(IReadOnlyList<Token> tokens)
+    {
+        HashSet<string> names = [with(StringComparer.OrdinalIgnoreCase)];
+        int i = 0;
+        while (
+            i < tokens.Count
+            && tokens[i].Kind == TokenKind.Identifier
+            && string.Equals(tokens[i].Text, "LET", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            i++;
+            if (i < tokens.Count && tokens[i].Kind == TokenKind.Identifier)
+            {
+                names.Add(tokens[i].Text);
+                i++;
+            }
+
+            int depth = 0;
+            while (i < tokens.Count)
+            {
+                TokenKind kind = tokens[i].Kind;
+                if (IsGroupOpener(kind))
+                {
+                    depth++;
+                }
+                else if (IsGroupCloser(kind))
+                {
+                    depth--;
+                }
+                else if (kind == TokenKind.Semicolon && depth == 0)
+                {
+                    i++;
+                    break;
+                }
+                else if (kind == TokenKind.Eof)
+                {
+                    break;
+                }
+
+                i++;
+            }
+        }
+
+        return names;
     }
 
     /// <summary>Describes a token for a diagnostic's <c>Found</c>: its text in quotes, or "end of rule" for the end of input.</summary>
@@ -548,6 +626,16 @@ internal sealed class DslParser
             return this.ParseOperandCall((operands, span) => new NoneNode(operands, span));
         }
 
+        if (this.IsKeyword("FORALL"))
+        {
+            return this.ParseQuantifier(QuantifierKind.ForAll);
+        }
+
+        if (this.IsKeyword("EXISTS"))
+        {
+            return this.ParseQuantifier(QuantifierKind.Exists);
+        }
+
         if (this.Current.Kind == TokenKind.Identifier && this.IsKeyword("COALESCE"))
         {
             return this.ParseOperandCall((operands, span) => new CoalesceNode(operands, span));
@@ -606,6 +694,26 @@ internal sealed class DslParser
             return this.ParseThreshold(ThresholdComparison.Exactly);
         }
 
+        // A bare identifier matching the current definition's own parameter (ADR-0008 decision 5) stands for whatever
+        // sub-expression the use that is being expanded supplied; followed by '(' it is instead an ordinary term/use
+        // name, matching the T/F/U short-constant precedent just above.
+        if (
+            this.Current.Kind == TokenKind.Identifier
+            && this.currentParameters is { } parameters
+            && parameters.Contains(this.Current.Text)
+            && this.tokens[this.position + 1].Kind != TokenKind.LParen
+        )
+        {
+            Token parameterToken = this.Current;
+            this.position++;
+            return new ParameterReferenceNode(parameterToken.Text, parameterToken.Span);
+        }
+
+        if (this.Current.Kind == TokenKind.Identifier && this.definitionNames.Contains(this.Current.Text))
+        {
+            return this.ParseUse();
+        }
+
         if (this.Current.Kind == TokenKind.Identifier)
         {
             return this.ParseTerm();
@@ -654,6 +762,89 @@ internal sealed class DslParser
         }
 
         return new TermNode(nameToken.Text, arguments, SpanCovering(nameToken.Span.Start, end));
+    }
+
+    /// <summary>
+    /// Parses one <c>let name = expression;</c> or <c>let name(p1, p2, ...) = expression;</c> declaration (ADR-0008
+    /// decision 2). Name uniqueness, reserved-word and predicate-name collisions, argument counts, unknown definitions
+    /// and recursion are checked later by <c>DefinitionExpander</c>, which has the predicate registry this parser does
+    /// not; this method only builds the raw declaration.
+    /// </summary>
+    private DefinitionNode ParseDefinition()
+    {
+        int letStart = this.Current.Span.Start;
+        this.position++; // 'let'
+        Token nameToken = this.Current;
+        this.Expect(TokenKind.Identifier, "a definition name");
+        List<string> parameters = [];
+        if (this.Current.Kind == TokenKind.LParen)
+        {
+            Token opener = this.Current;
+            this.position++;
+            if (this.Current.Kind != TokenKind.RParen)
+            {
+                parameters.Add(this.ExpectParameterName());
+                while (this.Current.Kind == TokenKind.Comma)
+                {
+                    this.position++;
+                    parameters.Add(this.ExpectParameterName());
+                }
+            }
+
+            this.ExpectClose(opener);
+        }
+
+        this.Expect(TokenKind.Equals, "'='");
+
+        // A definition's own body is the only place its parameters are in scope (ADR-0008 decision 5: definitions do
+        // not nest, so there is never more than one set of parameters active at once).
+        IReadOnlySet<string>? enclosingParameters = this.currentParameters;
+        this.currentParameters = new HashSet<string>(parameters, StringComparer.OrdinalIgnoreCase);
+        RuleNode body = this.ParseExpression();
+        this.currentParameters = enclosingParameters;
+
+        int declarationEnd = this.Current.Span.End;
+        this.Expect(TokenKind.Semicolon, "';'");
+        return new DefinitionNode(nameToken.Text, parameters, body, SpanCovering(letStart, declarationEnd), nameToken.Span);
+    }
+
+    private string ExpectParameterName()
+    {
+        Token token = this.Current;
+        this.Expect(TokenKind.Identifier, "a parameter name");
+        return token.Text;
+    }
+
+    /// <summary>
+    /// Parses a use of a declared definition (ADR-0008 decision 2): the name, optionally applied, call-like, to
+    /// positional arguments (<c>atLeastAge(21)</c>), each itself a full expression — unlike a <see cref="TermNode"/>'s
+    /// named arguments, a use's arguments are parsed the same way an <c>AND</c>/<c>OR</c> operand is.
+    /// </summary>
+    private RuleNode ParseUse()
+    {
+        Token nameToken = this.Current;
+        this.position++;
+        List<RuleNode> arguments = [];
+        int end = nameToken.Span.End;
+        if (this.Current.Kind == TokenKind.LParen)
+        {
+            Token opener = this.Current;
+            this.position++;
+            if (this.Current.Kind != TokenKind.RParen)
+            {
+                arguments.Add(this.ParseExpression());
+                while (this.Current.Kind == TokenKind.Comma)
+                {
+                    this.position++;
+                    arguments.Add(this.ParseExpression());
+                }
+            }
+
+            end = this.Current.Span.End;
+            this.ExpectClose(opener);
+        }
+
+        return new UseNode(nameToken.Text, arguments, SpanCovering(nameToken.Span.Start, end), nameToken.Span);
     }
 
     private ArgumentNode ParseArgument()
@@ -771,6 +962,60 @@ internal sealed class DslParser
         int end = this.Current.Span.End;
         this.Expect(TokenKind.RBracket, "']'");
         return RawLiteral.OfArray(elements, SpanCovering(start, end));
+    }
+
+    /// <summary>
+    /// Parses <c>FORALL(variable IN collection, body)</c> or <c>EXISTS(...)</c> (ADR-0010 decision 2): the bound
+    /// variable and the collection name are plain identifiers read from the quantifier's head. <c>IN</c> is a
+    /// contextual keyword here only — it is not in <see cref="ReservedWords"/>, so a predicate elsewhere named
+    /// <c>In</c> is unaffected.
+    /// </summary>
+    private RuleNode ParseQuantifier(QuantifierKind kind)
+    {
+        int start = this.Current.Span.Start;
+        this.position++; // 'FORALL' or 'EXISTS'
+        Token opener = this.ExpectOpenParen();
+
+        string variable = this.ExpectIdentifierName("a bound variable name");
+        this.ExpectIn();
+        string collection = this.ExpectIdentifierName("a collection name");
+        this.Expect(TokenKind.Comma, "','");
+        RuleNode body = this.ParseExpression();
+
+        int end = this.Current.Span.End;
+        this.ExpectClose(opener);
+        return new QuantifierNode(kind, variable, collection, body, SpanCovering(start, end));
+    }
+
+    /// <summary>Consumes an identifier token and returns its text, or reports <paramref name="description"/> and returns an empty string.</summary>
+    private string ExpectIdentifierName(string description)
+    {
+        Token token = this.Current;
+        this.Expect(TokenKind.Identifier, description);
+        return token.Kind == TokenKind.Identifier ? token.Text : string.Empty;
+    }
+
+    /// <summary>Consumes the contextual <c>IN</c> keyword of a quantifier head, or reports what is wrong.</summary>
+    private void ExpectIn()
+    {
+        if (
+            this.Current.Kind == TokenKind.Identifier
+            && string.Equals(this.Current.Text, "IN", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            this.position++;
+            return;
+        }
+
+        this.diagnostics.Add(
+            Diagnostic.Error(
+                DiagnosticCodes.SyntaxError,
+                $"Expected 'IN' but found '{this.Current.Text}'.",
+                this.Current.Span,
+                expected: "'IN'",
+                found: DescribeFound(this.Current)
+            )
+        );
     }
 
     private RuleNode ParseExactlyOne()

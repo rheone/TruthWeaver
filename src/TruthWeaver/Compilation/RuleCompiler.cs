@@ -215,11 +215,8 @@ public sealed class RuleCompiler<TContext>(
             return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
-        (Expression? tree, IReadOnlyList<Diagnostic> validationDiagnostics) = RuleNodeCompiler<TContext>.Compile(
-            root,
-            this.registry,
-            this.options
-        );
+        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics) =
+            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.options);
         diagnostics.AddRange(validationDiagnostics);
 
         if (tree is not null)
@@ -237,7 +234,13 @@ public sealed class RuleCompiler<TContext>(
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         CompiledRule<TContext>? compiled =
             !hasErrors && tree is not null
-                ? new CompiledRule<TContext>(tree, this.registry, this.logger, this.options, NoteCollector.Collect(root, tree))
+                ? new CompiledRule<TContext>(
+                    tree,
+                    this.registry,
+                    this.logger,
+                    this.options,
+                    NoteCollector.Collect(expandedRoot, tree)
+                )
                 : null;
         return new CompilationResult<TContext>(compiled, new EquatableArray<Diagnostic>(diagnostics));
     }

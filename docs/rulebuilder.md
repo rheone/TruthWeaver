@@ -34,6 +34,8 @@ Every operator has a static factory method on `TruthWeaver.Building.RuleBuilder`
 | `If` | `RuleBuilder.If(RuleBuilder condition, RuleBuilder whenTrue, RuleBuilder whenFalse)` (JSON/YAML: `{"op": "if", "operands": [condition, whenTrue, whenFalse]}`) |
 | `ExactlyOne` | `RuleBuilder.ExactlyOne(params RuleBuilder[] operands)` |
 | `AtLeast(k)` / `AtMost(k)` / `GreaterThan(k)` / `LessThan(k)` / `Exactly(k)` | `RuleBuilder.AtLeast(int k, params RuleBuilder[] operands)` (and the four siblings, same shape) |
+| `FORALL` / `EXISTS` | `RuleBuilder.ForAll(string variable, string collection, RuleBuilder body)` / `RuleBuilder.Exists(...)` (JSON/YAML: `{"op": "forall", "var": "line", "in": "lines", "operands": [body]}`); see [Quantifiers](rule-text.md#quantifiers) |
+| A use of a definition | `RuleBuilder.Use(string name, params RuleBuilder[] arguments)` (JSON/YAML: `{"op": "use", "name": "...", "operands": [...]}`); see [Definitions and parameters](#definitions-and-parameters) |
 
 A term takes each argument name once, and argument names match ignoring case. `RuleBuilder.Predicate("hasRole", ("role", "A"), ("role", "B"))` and the same call with `("Role", "B")` as the second pair both compile to the error `DuplicateArgument` (`TRE0032`) at the second argument, for example with the path `$.args.role`. `ToJson()` throws `InvalidOperationException` for the same builder, because JSON cannot hold both values.
 
@@ -65,6 +67,28 @@ RuleBuilder.Parity(new List<RuleBuilder> { x }); // the same InfixArityViolation
 Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumerable<RuleBuilder>` overload. A `null` sequence throws `ArgumentNullException`, and the builder enumerates the sequence once.
 
 A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it.
+
+### Definitions and parameters
+
+`RuleBuilder.Use(string name, params RuleBuilder[] arguments)` is the builder form of a rule-text `let` use: the bare `name` for a parameterless definition, or `name` applied to positional arguments for a parameterized one. `RuleBuilder.Define(string name, RuleBuilder body)` and `RuleBuilder.Define(string name, IReadOnlyList<string> parameters, RuleBuilder body)` create a `RuleDefinition`; `WithDefinitions(params RuleDefinition[] definitions)` attaches one or more definitions to the root builder of the tree, so every `Use` in it, including inside another definition's own body, can expand through them. Reference a parameter inside a definition's body with `RuleBuilder.Predicate(name)` of the same name: a bare term with no arguments, named after a parameter in scope, is the parameter reference rather than a predicate call, the same disambiguation rule text and JSON/YAML make for a bare identifier. See [Definitions and parameters](rule-text.md#definitions-and-parameters) for the full rule.
+
+```csharp
+RuleDefinition bothTrue = RuleBuilder.Define(
+    "bothTrue",
+    ["x", "y"],
+    RuleBuilder.And(RuleBuilder.Predicate("x"), RuleBuilder.Predicate("y"))
+);
+
+CompiledRule<Customer> rule = RuleBuilder
+    .Use("bothTrue", RuleBuilder.Predicate("approvedByAlice"), RuleBuilder.Predicate("approvedByBob"))
+    .WithDefinitions(bothTrue)
+    .Compile(compiler)
+    .GetRuleOrThrow();
+
+rule.CanonicalText; // "approvedByAlice AND approvedByBob"
+```
+
+This compiles through the same `definitions`/`use` JSON shape the JSON and YAML forms use (`rule-formats.md`), so a builder tree with definitions compiles to the identical tree the equivalent rule text or JSON/YAML document would. Every guardrail diagnostic those forms report (a cycle, `DefinitionCycleDetected`; a name collision, `DefinitionNameCollision`; a chain deeper than `CompilerOptions.MaxDefinitionDepth`, `MaxDefinitionDepthExceeded`; a use with the wrong number of arguments, `DefinitionArgumentCountMismatch`; a use of a name that was never declared, `UnknownDefinition`; and, opted into, the unused-definition lint, `UnusedDefinition`) is reported for builder input too, located by the builder path and never by a span into generated text. Two definitions attached with the same name are also `DefinitionNameCollision`: `WithDefinitions` detects the repeat itself, at `$.definitions.<name>`, rather than letting the second one silently replace the first in the rendered JSON object, which has one key per name. Calling `WithDefinitions` a second time on its own result replaces the earlier definitions outright, the same policy a second `WithNote` uses for a note.
 
 ### Notes
 

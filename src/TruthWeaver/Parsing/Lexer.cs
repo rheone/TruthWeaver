@@ -78,6 +78,12 @@ internal sealed class Lexer(string source)
             case ':':
                 this.position++;
                 return new Token(TokenKind.Colon, ":", new SourceSpan(start, 1));
+            case ';':
+                this.position++;
+                return new Token(TokenKind.Semicolon, ";", new SourceSpan(start, 1));
+            case '=':
+                this.position++;
+                return new Token(TokenKind.Equals, "=", new SourceSpan(start, 1));
             case '"':
                 return this.ReadString(start);
             case '!' or '¬' or '∧' or '∨' or '⊕' or '→' or '↔' or '↑' or '↓' or '⊼' or '⊽' or '⊻' or '⇒' or '⇔':

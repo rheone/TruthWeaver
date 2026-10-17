@@ -151,6 +151,7 @@ internal static class EquationPrinter
             CoalesceExpression => FunctionCall("COALESCE", [], node, tokens, formatTerm, constants),
             BetweenExpression bt => FunctionCall("BETWEEN", [bt.Min, bt.Max], node, tokens, formatTerm, constants),
             ThresholdExpression th => FunctionCall(th.Comparison.ToString(), [th.K], node, tokens, formatTerm, constants),
+            QuantifierExpression q => FormatQuantifier(q, tokens, formatTerm, constants),
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType()}'."),
         };
 
@@ -179,6 +180,23 @@ internal static class EquationPrinter
                     or NandExpression
                     or NorExpression
             || (node is IfExpression && tokens.FormatIf is not null);
+    }
+
+    /// <summary>
+    /// Prints a quantifier (ADR-0010) as <c>&#8704; line &#8712; lines . (body)</c> in each dialect's own symbols for
+    /// <c>FORALL</c>/<c>EXISTS</c> and membership, with the body printed in full (unlike the analyzer's opaque-atom
+    /// treatment of a quantifier, the equation printer's job is to show what the rule says, not to bound analysis).
+    /// </summary>
+    private static string FormatQuantifier(
+        QuantifierExpression node,
+        EquationTokens tokens,
+        Func<TermIdentity, string> formatTerm,
+        ConstantFormat constants
+    )
+    {
+        string symbol = node.Kind == QuantifierKind.ForAll ? tokens.ForAll : tokens.Exists;
+        string body = PrintNode(node.Body, PrintContext.Top, tokens, formatTerm, constants);
+        return $"{symbol} {node.Variable} {tokens.ElementOf} {node.CollectionName}{tokens.QuantifierDot}({body})";
     }
 
     private static string JoinInfix(

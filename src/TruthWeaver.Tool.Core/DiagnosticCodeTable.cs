@@ -173,6 +173,51 @@ public static class DiagnosticCodeTable
             nameof(DiagnosticCodes.TruthTableTooLarge),
             "A truth table was refused because the rule has too many terms."
         ),
+        Error(
+            DiagnosticCodes.DefinitionCycleDetected,
+            nameof(DiagnosticCodes.DefinitionCycleDetected),
+            "A let definition references itself, directly or through a chain of other definitions."
+        ),
+        Error(
+            DiagnosticCodes.DefinitionNameCollision,
+            nameof(DiagnosticCodes.DefinitionNameCollision),
+            "A let definition's name clashes with another definition, a reserved word, or a predicate name."
+        ),
+        Error(
+            DiagnosticCodes.MaxDefinitionDepthExceeded,
+            nameof(DiagnosticCodes.MaxDefinitionDepthExceeded),
+            "A use would expand through more let definitions than the definition-depth limit."
+        ),
+        Error(
+            DiagnosticCodes.DefinitionArgumentCountMismatch,
+            nameof(DiagnosticCodes.DefinitionArgumentCountMismatch),
+            "A use of a let definition supplies the wrong number of arguments."
+        ),
+        Error(
+            DiagnosticCodes.UnknownDefinition,
+            nameof(DiagnosticCodes.UnknownDefinition),
+            "A use names a let definition that was never declared."
+        ),
+        Info(
+            DiagnosticCodes.UnusedDefinition,
+            nameof(DiagnosticCodes.UnusedDefinition),
+            "A let definition is declared but never used."
+        ),
+        Error(
+            DiagnosticCodes.UnknownCollection,
+            nameof(DiagnosticCodes.UnknownCollection),
+            "A FORALL/EXISTS head names a collection that is not registered."
+        ),
+        Error(
+            DiagnosticCodes.MaxQuantifierDepthExceeded,
+            nameof(DiagnosticCodes.MaxQuantifierDepthExceeded),
+            "A rule nests quantifiers deeper than the compiler option MaxQuantifierDepth allows."
+        ),
+        Error(
+            DiagnosticCodes.ShadowedVariable,
+            nameof(DiagnosticCodes.ShadowedVariable),
+            "A nested quantifier reuses the bound variable name of an enclosing quantifier."
+        ),
         Error(ToolDiagnosticCodes.InputUnreadable, nameof(ToolDiagnosticCodes.InputUnreadable), "The input cannot be read."),
         Error(
             ToolDiagnosticCodes.InvalidEncoding,

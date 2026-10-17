@@ -13,10 +13,11 @@ The value set is `{True, False, Unknown}`. Tables write the values as T, F and U
 | Derived Logical Operations | The connectives defined by composing gates | [derived/](derived/README.md) |
 | Cardinality Functions | The operations over the count of true operands | [cardinality/](cardinality/README.md) |
 | Functions | `COALESCE`, `If` and the four inspections | [functions/](functions/README.md) |
+| Quantifiers | `FORALL` and `EXISTS`, which range over the elements of a collection | [quantifiers/](quantifiers/README.md) |
 | Result Transformations | `Project` and `Collapse`, the methods on an evaluated decision | [result-transformations/](result-transformations/README.md) |
 | Predicates | The numeric, scalar, string, regex, collection, date-time and type-test predicates and the selected-value factory, with the shared rules for null values, twins and argument kinds | [predicates/](predicates/README.md) |
 
-Start with [values](specification/values.md) and [semantics](specification/semantics.md). [evaluation](specification/evaluation.md) explains how an expression becomes a decision. [operations](specification/operations.md) lists all 27 Operations.
+Start with [values](specification/values.md) and [semantics](specification/semantics.md). [evaluation](specification/evaluation.md) explains how an expression becomes a decision. [operations](specification/operations.md) lists all 27 Operations. The two quantifiers are a separate kind and are not in that list: see [quantifiers](quantifiers/README.md).
 
 ## How an Operation document is organized
 

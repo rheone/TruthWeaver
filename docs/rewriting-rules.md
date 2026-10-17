@@ -8,6 +8,8 @@ A compiled rule is immutable, so a rewrite never edits it. A rewrite returns a *
 
 Each rewrite is verified per operator. The K3 laws hold for connectives only. `Simplify()` handles the external operators (`COALESCE` and the inspections) with its own rules. See [Strong Kleene connectives and external operators](strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators).
 
+A quantifier (`FORALL`/`EXISTS`) is an atom for every rewrite except `ToNnf()`: its body is rewritten in its own scope, but the quantifier itself is never expanded, reordered or merged with another quantifier, because its element count is known only at evaluation time. `ToNnf()` is the one exception, below.
+
 | Rewrite | Result |
 | --- | --- |
 | [`ExpandToPrimitives()`](#expand-to-primitives) | Only the primitive kernel. |
@@ -385,6 +387,8 @@ NOT (IsTrue(isDineIn) AND isTakeout)
 NOT IsTrue(isDineIn) OR NOT isTakeout
 ```
 
+`ToNnf()` pushes a negation through a quantifier too: `NOT FORALL(line IN lines, b)` becomes `EXISTS(line IN lines, NOT b)`, and the dual, for every collection, including an empty or missing one. This holds because `FORALL` and `EXISTS` are each other's De Morgan dual over the collection's elements, the same way `AND` and `OR` are. `ToCnf()` and `ToDnf()` still treat the quantifier as an atom: only its body is put in NNF, never split across clauses.
+
 ## Rule equivalence
 
 `RuleEquivalence.Compare(first, second)` answers the question "do these two rules always give the same result?" under Strong Kleene logic. It uses the same dual-rail BDD as the analyzer. The check is exact, not sampled, and it returns a `RuleEquivalenceResult`:
@@ -394,6 +398,8 @@ NOT IsTrue(isDineIn) OR NOT isTakeout
 | `Equivalent` | Same value for every `True`/`False`/`Unknown` assignment of the terms. |
 | `NotEquivalent` | Some assignment differs. `CounterExample` maps every distinct term in either rule (keyed by its printed form, such as `hasRole(role: "Y")`) to the value it takes. |
 | `Undecided` | The rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms` (default 20). `Reason` says so. Nothing is guessed. |
+
+A quantifier (`FORALL`/`EXISTS`) compares as an opaque atom, keyed by its own canonical text (the variable, the collection and the body together): two rules with the same quantifier text compare correctly, but two quantifiers with equivalent yet differently written bodies count as different atoms. The check is still sound; it is incomplete across such rewordings.
 
 ```csharp
 RuleEquivalenceResult result = RuleEquivalence.Compare(
@@ -453,3 +459,31 @@ Limits to know:
 - **The other limits are the same as for rule equivalence.** Terms are opaque and independent, the cap is on distinct terms across both rules, and the check does not compare evaluation order, short-circuiting or faults.
 
 `RuleDiff.Compare` also reports the relation. `RuleDiffResult.Relation` is `Equivalent` when the rules are structurally identical, and otherwise the `Relation` of `RuleImplication.Compare(before, after, maxAnalysisTerms)`. It is `Undecided` when the term cap stops the check. Because only `True` counts, `Relation` can be `Equivalent` while `PreservesMeaning` is `false`: `a` and `IsTrue(a)` are an example.
+
+## Overlap and conflict
+
+`RuleImplication` reads one rule as a new version of another. `RuleOverlap` reads two rules as peers instead: a permission rule per action, a feature flag per audience. Its question is "can these two rules ever both apply" and "can these two ever disagree", for a `TContext` both rules share.
+
+`RuleOverlap.Compare(first, second)` builds both rules on one shared dual-rail BDD, the same one `RuleEquivalence` and `RuleImplication` use, and decides which of the nine pairs `(first(σ), second(σ))` some assignment `σ` of the terms can produce. The **joint outcome** of an assignment is that pair; a pair is **reachable** when some assignment produces it.
+
+```csharp
+RuleOverlapResult result = RuleOverlap.Compare(
+    compiler.Compile("hasRole(role: \"Y\")").GetRuleOrThrow(),
+    compiler.Compile("hasRole(role: \"Z\")").GetRuleOrThrow());
+// result.CanOverlap == true: both roles can be held at once
+// result.CanConflict == true: one role can be held without the other
+```
+
+- **Overlap.** The rules overlap when `(True, True)` is reachable: some assignment satisfies both. `RuleOverlapResult.CanOverlap` reports it.
+- **Conflict.** The rules conflict when one rule is `True` and the other is not `True` for the same assignment: the pair is `(True, False)`, `(True, Unknown)`, `(False, True)` or `(Unknown, True)`. Two `Unknown` values are not a conflict, because neither rule is satisfied, so there is nothing for the two to disagree about. This is the satisfaction reading (`Decision.IsSatisfied`'s fail-closed reading, where only `True` satisfies a rule), the same reading `RuleImplication.Compare`'s `SatisfiesOnlyBefore`/`SatisfiesOnlyAfter` already use. It is not "both definite and opposite", and it is not "any difference". `RuleOverlapResult.CanConflict` reports it. TruthWeaver rules carry no permit/deny effect, so a conflict here means only "opposite satisfaction", never an authorization decision.
+- **A stricter, narrower question** asks whether the two rules ever give a *definite* and opposite answer. It is the `(True, False)` and `(False, True)` cells on their own: `result.Find(TruthValue.True, TruthValue.False)` and `result.Find(TruthValue.False, TruthValue.True)`.
+
+`RuleOverlapResult.Reachable` lists every reachable pair as a `JointOutcome`, with `First`, `Second` and an `Example` assignment that produces it (every distinct term in either rule, keyed by its printed form; a term the pair does not depend on is `False`). `Find(first, second)` looks up one pair. `CanOverlap` and `CanConflict` are `false` for `RuleOverlapOutcome.Undecided`: check `Outcome` before trusting a `false`, the same fail-closed shape as the rest of this page's checks.
+
+**Proof versus candidate.** A pair missing from `Reachable` is a **proof** for every real application context, provided the predicate-author contract holds (the same term answers the same way within one evaluation): every real context produces some assignment, so no context can reach a pair that no assignment reaches. A pair **in** `Reachable`, with its example, is a **candidate only**: terms are opaque and independent (Term identity), so the example can be impossible in the application. `ageAtLeast(n: 21) = True` with `ageAtLeast(n: 18) = False` is such an example. Overlap and conflict reports are noisy for this reason: two rules over unrelated terms overlap and conflict almost always, because nothing rules out the combination. Lead with the pairs that are **not** reachable ("these two never overlap", "these two never conflict"); they are the honest findings.
+
+Limits to know:
+
+- **External operators need an `Unknown` example.** `IsUnknown(a)` and `b` can both be `True` only when `a` is `Unknown`; the witness for that pair must then set `a` to `Unknown`. For rules built only from connectives, every reachable pair where neither side is `Unknown` has a witness with no `Unknown` term at all, because connectives are monotone in the information order: refining an `Unknown` term to `True` or `False` never flips a definite result. `RuleOverlap` prefers such a witness when one exists, and otherwise uses one that needs an `Unknown` term.
+- **Terms are opaque and independent, the cap is on distinct terms across both rules**, and the check does not compare evaluation order, short-circuiting or faults: the same limits as `RuleEquivalence` and `RuleImplication`. The term cap is the optional `maxAnalysisTerms` argument; `null` uses `CompilerOptions.Default.MaxAnalysisTerms` (20).
+- **Pairwise only.** `RuleOverlap.Compare` compares two rules. A rule set's redundancy, shadowing, or a caller-supplied assumption between terms are set-level questions outside this check's scope.

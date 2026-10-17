@@ -11,11 +11,19 @@ using System.Diagnostics.CodeAnalysis;
 /// <typeparam name="TContext">The application context type predicates in this registry read from.</typeparam>
 public sealed class PredicateRegistry<TContext>
 {
-    private readonly IReadOnlyDictionary<string, PredicateDescriptor<TContext>> descriptorsByName;
+    private static readonly IReadOnlyDictionary<string, ICollectionBinding<TContext>> EmptyCollections =
+        new Dictionary<string, ICollectionBinding<TContext>>();
 
-    internal PredicateRegistry(IReadOnlyDictionary<string, PredicateDescriptor<TContext>> descriptorsByName)
+    private readonly IReadOnlyDictionary<string, PredicateDescriptor<TContext>> descriptorsByName;
+    private readonly IReadOnlyDictionary<string, ICollectionBinding<TContext>> collectionsByName;
+
+    internal PredicateRegistry(
+        IReadOnlyDictionary<string, PredicateDescriptor<TContext>> descriptorsByName,
+        IReadOnlyDictionary<string, ICollectionBinding<TContext>>? collectionsByName = null
+    )
     {
         this.descriptorsByName = descriptorsByName;
+        this.collectionsByName = collectionsByName ?? EmptyCollections;
     }
 
     /// <summary>
@@ -26,6 +34,9 @@ public sealed class PredicateRegistry<TContext>
 
     /// <summary>Gets the registered predicate names as they were registered, the candidates for a "did you mean" suggestion.</summary>
     internal IEnumerable<string> Names => this.descriptorsByName.Values.Select(d => d.Schema.Name);
+
+    /// <summary>Gets the registered collection names as they were registered, the candidates for a "did you mean" suggestion.</summary>
+    internal IEnumerable<string> CollectionNames => this.collectionsByName.Values.Select(c => c.Name);
 
     /// <summary>Creates a builder for constructing a new registry.</summary>
     /// <returns>A new, empty builder.</returns>
@@ -61,5 +72,17 @@ public sealed class PredicateRegistry<TContext>
     internal bool TryGet(string name, [NotNullWhen(true)] out PredicateDescriptor<TContext>? descriptor)
     {
         return this.descriptorsByName.TryGetValue(name.ToUpperInvariant(), out descriptor);
+    }
+
+    /// <summary>
+    /// Looks up a collection binding by name, case-insensitively (ADR-0010 decision 3: collection names are a
+    /// namespace of their own, separate from predicate and data-source names).
+    /// </summary>
+    /// <param name="name">The collection name as written at a quantifier's head.</param>
+    /// <param name="binding">The matching binding, if found.</param>
+    /// <returns><see langword="true"/> if a collection with this name (case-insensitive) is registered.</returns>
+    internal bool TryGetCollection(string name, [NotNullWhen(true)] out ICollectionBinding<TContext>? binding)
+    {
+        return this.collectionsByName.TryGetValue(name.ToUpperInvariant(), out binding);
     }
 }

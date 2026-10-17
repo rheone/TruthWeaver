@@ -19,33 +19,83 @@ internal sealed class RuleNodeCompiler<TContext>
     private readonly PredicateRegistry<TContext> registry;
     private readonly CompilerOptions options;
     private readonly List<Diagnostic> diagnostics = [];
+
+    // The bound variable names currently in scope, innermost last (ADR-0010 decision 2): a quantifier head whose
+    // variable is already here is a shadowed-variable diagnostic rather than a silently inner-shadowing rebind.
+    private readonly List<string> activeVariables = [];
+
     private int nodeCount;
     private bool nodeLimitReported;
 
-    private RuleNodeCompiler(PredicateRegistry<TContext> registry, CompilerOptions options)
+    // How many quantifiers deep the node being built is, for CompilerOptions.MaxQuantifierDepth (ADR-0010 decision 6).
+    private int quantifierDepth;
+
+    private RuleNodeCompiler(
+        PredicateRegistry<TContext> registry,
+        CompilerOptions options,
+        int startQuantifierDepth,
+        IReadOnlyList<string> inheritedVariables
+    )
     {
         this.registry = registry;
         this.options = options;
+        this.quantifierDepth = startQuantifierDepth;
+        this.activeVariables.AddRange(inheritedVariables);
     }
 
     /// <summary>Validates and builds an expression tree from a raw parse tree.</summary>
-    /// <param name="root">The raw parse tree root.</param>
+    /// <param name="root">
+    /// The raw parse tree root. A <c>RuleDocumentNode</c> (one or more <c>let</c> definitions, ADR-0008) is expanded by
+    /// <see cref="DefinitionExpander"/> first, so <see cref="Build"/> itself never sees a definition or a use of one.
+    /// </param>
     /// <param name="registry">The predicate registry to resolve term names against.</param>
     /// <param name="options">The compiler's resource limits and mode.</param>
+    /// <param name="startDepth">
+    /// The structural tree depth <paramref name="root"/> itself starts at; 1 for a rule's own root. A quantifier's
+    /// collection binding passes its own depth plus one when compiling the quantifier's body (ADR-0010), so
+    /// <see cref="CompilerOptions.MaxDepth"/> is enforced across the quantifier boundary as if the body were
+    /// nested in place.
+    /// </param>
+    /// <param name="startQuantifierDepth">
+    /// How many quantifiers deep <paramref name="root"/> itself already is; 0 for a rule's own root. A quantifier's
+    /// collection binding passes its own quantifier depth plus one when compiling the body, so
+    /// <see cref="CompilerOptions.MaxQuantifierDepth"/> is enforced across the collection-binding boundary (a
+    /// separate <see cref="RuleNodeCompiler{TContext}"/> instance, over the element type) as one continuous count
+    /// (ADR-0010 decision 6).
+    /// </param>
+    /// <param name="inheritedVariables">
+    /// The bound variable names already in scope from an enclosing quantifier, innermost last; empty for a rule's
+    /// own root. Passed the same way as <paramref name="startQuantifierDepth"/>, so a nested quantifier that reuses
+    /// an enclosing one's variable name is caught across the collection-binding boundary too (ADR-0010 decision 2).
+    /// </param>
     /// <returns>
-    /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/>
-    /// diagnostic was produced) and every diagnostic raised while validating.
+    /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/> diagnostic was
+    /// produced), the already-expanded raw tree <see cref="Build"/> actually built from (the same as
+    /// <paramref name="root"/> when it declared no definitions; <c>NoteCollector</c> walks this one, not
+    /// <paramref name="root"/>, so a note inside a <c>let</c> body still lands on the right compiled node), and every
+    /// diagnostic raised while expanding and validating.
     /// </returns>
-    public static (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics) Compile(
+    public static (Expression? Tree, RuleNode ExpandedRoot, IReadOnlyList<Diagnostic> Diagnostics) Compile(
         RuleNode root,
         PredicateRegistry<TContext> registry,
-        CompilerOptions options
+        CompilerOptions options,
+        int startDepth = 1,
+        int startQuantifierDepth = 0,
+        IReadOnlyList<string>? inheritedVariables = null
     )
     {
-        RuleNodeCompiler<TContext> compiler = new(registry, options);
-        Expression tree = compiler.Build(root, depth: 1);
-        bool hasErrors = compiler.diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
-        return (hasErrors ? null : tree, compiler.diagnostics);
+        List<Diagnostic> expansionDiagnostics = [];
+        if (root is RuleDocumentNode document)
+        {
+            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(document, registry, options);
+            expansionDiagnostics.AddRange(diagnosed);
+        }
+
+        RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? []);
+        Expression tree = compiler.Build(root, depth: startDepth);
+        List<Diagnostic> diagnostics = [.. expansionDiagnostics, .. compiler.diagnostics];
+        bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
+        return (hasErrors ? null : tree, root, diagnostics);
     }
 
     /// <summary>Gets the path of a property of a JSON/YAML node, or <see langword="null"/> for a DSL node.</summary>
@@ -259,6 +309,7 @@ internal sealed class RuleNodeCompiler<TContext>
             ),
             IfNode ifNode => this.BuildIf(ifNode, depth),
             InspectionNode ins => this.BuildInspection(ins, depth),
+            QuantifierNode q => this.BuildQuantifier(q, depth),
             _ => throw new InvalidOperationException($"Unhandled rule node type '{node.GetType()}'."),
         };
     }
@@ -309,6 +360,86 @@ internal sealed class RuleNodeCompiler<TContext>
         }
 
         return new InspectionExpression(node.Kind, this.Build(node.Operands[0], depth + 1));
+    }
+
+    /// <summary>
+    /// Builds <c>FORALL</c>/<c>EXISTS</c> (ADR-0010): resolves the collection name, enforces
+    /// <see cref="CompilerOptions.MaxQuantifierDepth"/> and the shadowed-variable rule, then compiles the body
+    /// against the collection's own element registry rather than this compiler's own <see cref="registry"/>.
+    /// </summary>
+    private Expression BuildQuantifier(QuantifierNode node, int depth)
+    {
+        if (!this.registry.TryGetCollection(node.CollectionName, out ICollectionBinding<TContext>? binding))
+        {
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.UnknownCollection,
+                    $"No collection named '{node.CollectionName}' is registered.",
+                    node.Span,
+                    expected: "a registered collection name",
+                    found: $"'{node.CollectionName}'",
+                    suggestion: NameSuggester.Suggest(node.CollectionName, this.registry.CollectionNames),
+                    path: PathOf(node, "in")
+                )
+            );
+            return FailedNode.Placeholder;
+        }
+
+        if (this.activeVariables.Contains(node.Variable, StringComparer.Ordinal))
+        {
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.ShadowedVariable,
+                    $"Variable '{node.Variable}' is already bound by an enclosing quantifier.",
+                    node.Span,
+                    expected: "a variable name not already bound by an enclosing quantifier",
+                    found: $"'{node.Variable}'",
+                    suggestion: new DiagnosticSuggestion(
+                        DiagnosticSuggestionKind.Hint,
+                        $"Rename this quantifier's variable to something other than '{node.Variable}'."
+                    ),
+                    path: PathOf(node, "var")
+                )
+            );
+            return FailedNode.Placeholder;
+        }
+
+        this.quantifierDepth++;
+        if (this.quantifierDepth > this.options.MaxQuantifierDepth)
+        {
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.MaxQuantifierDepthExceeded,
+                    $"Quantifiers nest deeper than the maximum of {this.options.MaxQuantifierDepth}.",
+                    node.Span,
+                    expected: $"quantifiers nested at most {this.options.MaxQuantifierDepth} deep",
+                    found: "deeper nesting",
+                    path: node.Path
+                )
+            );
+            this.quantifierDepth--;
+            return FailedNode.Placeholder;
+        }
+
+        this.activeVariables.Add(node.Variable);
+        (Expression? bodyTree, IReadOnlyList<Diagnostic> bodyDiagnostics) = binding.CompileBody(
+            node.Variable,
+            node.Body,
+            this.options,
+            depth + 1,
+            this.quantifierDepth,
+            this.activeVariables
+        );
+        this.activeVariables.RemoveAt(this.activeVariables.Count - 1);
+        this.quantifierDepth--;
+
+        this.diagnostics.AddRange(bodyDiagnostics);
+        if (bodyTree is null)
+        {
+            return FailedNode.Placeholder;
+        }
+
+        return new QuantifierExpression(node.Kind, node.Variable, node.CollectionName, bodyTree);
     }
 
     private Expression BuildVariadic(

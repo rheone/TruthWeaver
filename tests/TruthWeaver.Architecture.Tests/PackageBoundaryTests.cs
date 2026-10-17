@@ -20,6 +20,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly Predicates = typeof(TruthWeaver.Predicates.StringPredicates).Assembly;
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
     private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly;
+    private static readonly Assembly AspNetCore = typeof(TruthWeaver.AspNetCore.RuleRequirement).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
     // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) —
@@ -258,6 +259,42 @@ public sealed class PackageBoundaryTests
                 ToolCore.GetName().Name,
                 assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
             );
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.AspNetCore</c> takes the <c>Microsoft.AspNetCore.App</c> shared framework and no other package: it
+    /// references the runtime, the shared framework (<c>Microsoft.AspNetCore.*</c> and <c>Microsoft.Extensions.*</c>), the
+    /// core package and the abstractions, and nothing else.
+    /// </summary>
+    [Fact]
+    public void AspNetCore_References_SharedFrameworkAndCoreOnly_Test()
+    {
+        string[] referenced = [.. AspNetCore.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        string[] unexpected =
+        [
+            .. referenced.Where(name =>
+                !name.StartsWith("System.", StringComparison.Ordinal)
+                && !name.StartsWith("Microsoft.AspNetCore.", StringComparison.Ordinal)
+                && !name.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
+                && name is not ("TruthWeaver" or "TruthWeaver.Abstractions")
+            ),
+        ];
+
+        Assert.Empty(unexpected);
+        Assert.Contains("TruthWeaver", referenced);
+    }
+
+    /// <summary>No other package and not the tool core references <c>TruthWeaver.AspNetCore</c>: a host opts into it.</summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludeAspNetCore_Test()
+    {
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(AspNetCore.GetName().Name, names);
+            Assert.DoesNotContain(names, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
         }
     }
 

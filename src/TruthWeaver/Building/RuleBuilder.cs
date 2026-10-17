@@ -93,6 +93,97 @@ public abstract class RuleBuilder
         return new PredicateBuilder(name, arguments);
     }
 
+    /// <summary>
+    /// Creates a builder for a use of a named definition (ADR-0008 decision 4) — the builder equivalent of rule
+    /// text's <c>name(arg1, arg2, ...)</c>, or the bare <c>name</c> for a parameterless definition. The use expands
+    /// at compile time to the matching <see cref="RuleDefinition"/>'s own tree, with each argument substituted for
+    /// the matching parameter; attach the definitions a use can reach with <see cref="WithDefinitions(RuleDefinition[])"/>
+    /// on the tree's root builder. A use of a name no definition declares, or with the wrong argument count, is the
+    /// same compile diagnostic (<c>UnknownDefinition</c>, <c>DefinitionArgumentCountMismatch</c>) rule text and
+    /// JSON/YAML report.
+    /// </summary>
+    /// <param name="name">The definition's name, as declared with <see cref="Define(string, RuleBuilder)"/> or <see cref="Define(string, IReadOnlyList{string}, RuleBuilder)"/>.</param>
+    /// <param name="arguments">The positional arguments, each itself a term, constant or sub-expression; empty for a parameterless use.</param>
+    /// <returns>A builder for the use.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Use(string name, params RuleBuilder[] arguments)
+    {
+        return Use(name, (IEnumerable<RuleBuilder>)arguments);
+    }
+
+    /// <summary>The <see cref="IEnumerable{T}"/> form of <see cref="Use(string, RuleBuilder[])"/>, for an argument list of unknown length.</summary>
+    /// <param name="name">The definition's name.</param>
+    /// <param name="arguments">The positional arguments; may be empty.</param>
+    /// <returns>A builder for the use.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> or <paramref name="arguments"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Use(string name, IEnumerable<RuleBuilder> arguments)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        return new UseBuilder(name, Materialize(arguments));
+    }
+
+    /// <summary>Creates a parameterless named definition for <see cref="WithDefinitions(RuleDefinition[])"/>.</summary>
+    /// <param name="name">The definition's name, unique (case-insensitively) within the tree it is attached to; it cannot reuse a reserved word, <c>T</c>/<c>F</c>/<c>U</c>, or a predicate name registered with the compiler.</param>
+    /// <param name="body">The definition's own expression.</param>
+    /// <returns>The definition.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> or <paramref name="body"/> is <see langword="null"/>.</exception>
+    public static RuleDefinition Define(string name, RuleBuilder body)
+    {
+        return Define(name, [], body);
+    }
+
+    /// <summary>
+    /// Creates a named definition with parameters for <see cref="WithDefinitions(RuleDefinition[])"/>. Reference a
+    /// parameter inside <paramref name="body"/> with <see cref="Predicate(string)"/> of the same name — a bare term
+    /// with no arguments, named after a parameter in scope, is the parameter reference rather than a predicate call,
+    /// the same disambiguation rule text and JSON/YAML make for a bare identifier (ADR-0008 decision 5).
+    /// </summary>
+    /// <param name="name">The definition's name, unique (case-insensitively) within the tree it is attached to; it cannot reuse a reserved word, <c>T</c>/<c>F</c>/<c>U</c>, or a predicate name registered with the compiler.</param>
+    /// <param name="parameters">The definition's parameter names, in positional order; empty for a parameterless definition.</param>
+    /// <param name="body">The definition's own expression, in which <paramref name="parameters"/> are referenced as described above.</param>
+    /// <returns>The definition.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/>, <paramref name="parameters"/> or <paramref name="body"/> is <see langword="null"/>.</exception>
+    public static RuleDefinition Define(string name, IReadOnlyList<string> parameters, RuleBuilder body)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(parameters);
+        ArgumentNullException.ThrowIfNull(body);
+
+        return new RuleDefinition(name, [.. parameters], body);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>FORALL(variable IN collection, body)</c> (ADR-0010): the generalized <c>AND</c>
+    /// over a registered collection binding's elements, <c>True</c> for an empty collection and <c>Unknown</c>
+    /// for a <see langword="null"/> one. Nesting another <see cref="ForAll"/>/<see cref="Exists"/> inside
+    /// <paramref name="body"/> is allowed, up to <see cref="CompilerOptions.MaxQuantifierDepth"/>.
+    /// </summary>
+    /// <param name="variable">The bound variable name. Part of tree equality and the trace labels (<c>line[2]</c>).</param>
+    /// <param name="collection">The registered collection name, resolved against the compiler's registry at compile time.</param>
+    /// <param name="body">The element condition, checked against the collection's own element registry, not this tree's outer registry.</param>
+    /// <returns>A builder for the quantifier.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="variable"/>, <paramref name="collection"/> or <paramref name="body"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder ForAll(string variable, string collection, RuleBuilder body)
+    {
+        return QuantifierBuilder.Create(QuantifierKind.ForAll, variable, collection, body);
+    }
+
+    /// <summary>
+    /// Creates a builder for <c>EXISTS(variable IN collection, body)</c> (ADR-0010): the generalized <c>OR</c>
+    /// over a registered collection binding's elements, <c>False</c> for an empty collection and <c>Unknown</c>
+    /// for a <see langword="null"/> one. See <see cref="ForAll"/> for the shared rules (nesting, variable identity).
+    /// </summary>
+    /// <param name="variable">The bound variable name. Part of tree equality and the trace labels (<c>line[2]</c>).</param>
+    /// <param name="collection">The registered collection name, resolved against the compiler's registry at compile time.</param>
+    /// <param name="body">The element condition, checked against the collection's own element registry, not this tree's outer registry.</param>
+    /// <returns>A builder for the quantifier.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="variable"/>, <paramref name="collection"/> or <paramref name="body"/> is <see langword="null"/>.</exception>
+    public static RuleBuilder Exists(string variable, string collection, RuleBuilder body)
+    {
+        return QuantifierBuilder.Create(QuantifierKind.Exists, variable, collection, body);
+    }
+
     /// <summary>Creates a builder for logical conjunction.</summary>
     /// <param name="operands">The operands. An empty array is <c>Constant(TruthValue.True)</c>; one operand is itself.</param>
     /// <remarks>
@@ -616,6 +707,41 @@ public abstract class RuleBuilder
         return new NotedBuilder(this, note);
     }
 
+    /// <summary>
+    /// Attaches named definitions (ADR-0008 decision 4) to this builder's tree, so a <see cref="Use(string, RuleBuilder[])"/>
+    /// anywhere in it (including inside another definition's own body) can expand through them. Call it once, on the
+    /// root builder of the tree passed to <see cref="Compile{TContext}(RuleCompiler{TContext})"/> or <see cref="ToJson"/> —
+    /// a definition is document-scoped, the same as a rule text <c>let</c> or a JSON/YAML <c>definitions</c> section,
+    /// not a property of the particular node it happens to be called on.
+    /// </summary>
+    /// <remarks>
+    /// Compiles through the same <c>definitions</c>/<c>use</c> JSON shape ADR-0008 decision 3 gives the JSON and YAML
+    /// forms, so a builder tree with definitions compiles to the identical tree the equivalent rule text or JSON/YAML
+    /// document would. Every guardrail diagnostic those forms report (a cycle, a name collision, a chain deeper than
+    /// <c>CompilerOptions.MaxDefinitionDepth</c>, a wrong argument count, an unknown definition, and, opted into, the
+    /// unused-definition lint) is reported here too, located by the builder path (never a span into generated text,
+    /// matching every other builder diagnostic). A second call replaces the definitions of the first, the same policy
+    /// <see cref="WithNote"/> uses for a second note.
+    /// </remarks>
+    /// <param name="definitions">The definitions; may be empty.</param>
+    /// <returns>A builder for the same tree, with the definitions attached.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="definitions"/> is <see langword="null"/>.</exception>
+    public RuleBuilder WithDefinitions(params RuleDefinition[] definitions)
+    {
+        return this.WithDefinitions((IEnumerable<RuleDefinition>)definitions);
+    }
+
+    /// <summary>The <see cref="IEnumerable{T}"/> form of <see cref="WithDefinitions(RuleDefinition[])"/>, for a definition list of unknown length.</summary>
+    /// <param name="definitions">The definitions; may be empty.</param>
+    /// <returns>A builder for the same tree, with the definitions attached.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="definitions"/> is <see langword="null"/>.</exception>
+    public RuleBuilder WithDefinitions(IEnumerable<RuleDefinition> definitions)
+    {
+        ArgumentNullException.ThrowIfNull(definitions);
+
+        return new DefinitionsBuilder(this, [.. definitions]);
+    }
+
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
     /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
@@ -957,6 +1083,139 @@ public abstract class RuleBuilder
                 ["k"] = this.k,
                 ["operands"] = OperandsNode(this.operands),
             };
+        }
+    }
+
+    /// <summary>
+    /// A <c>FORALL</c>/<c>EXISTS</c> quantifier (ADR-0010 decision 2): renders to the
+    /// <c>{"op": "forall" | "exists", "var": ..., "in": ..., "operands": [&lt;body&gt;]}</c> shape decision 2
+    /// defines, with the body as the one item of <c>operands</c>, so body diagnostics get the path
+    /// <c>$.operands[0]...</c> like every other node.
+    /// </summary>
+    private sealed class QuantifierBuilder(QuantifierKind kind, string variable, string collection, RuleBuilder body)
+        : RuleBuilder
+    {
+        public static RuleBuilder Create(QuantifierKind kind, string variable, string collection, RuleBuilder body)
+        {
+            ArgumentNullException.ThrowIfNull(variable);
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(body);
+
+            return new QuantifierBuilder(kind, variable, collection, body);
+        }
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            body.CollectProblems(TreePath.Index(TreePath.Property(path, "operands"), 0), problems);
+        }
+
+        private protected override JsonNode ToNode()
+        {
+            return new JsonObject
+            {
+                ["op"] = kind == QuantifierKind.ForAll ? "forall" : "exists",
+                ["var"] = variable,
+                ["in"] = collection,
+                ["operands"] = new JsonArray(body.ToNode()),
+            };
+        }
+    }
+
+    /// <summary>A use of a named definition (ADR-0008 decision 4): renders to the <c>{"op": "use", ...}</c> shape ADR-0008 decision 3 defines for JSON/YAML.</summary>
+    private sealed class UseBuilder(string name, IReadOnlyList<RuleBuilder> arguments) : RuleBuilder
+    {
+        private readonly string name = name;
+        private readonly IReadOnlyList<RuleBuilder> arguments = arguments;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            CollectOperandProblems(path, this.arguments, problems);
+        }
+
+        private protected override JsonNode ToNode()
+        {
+            // "use" is not an entry in OperatorDefinitions/TreeFormatOpNames: it is the one node shape ADR-0008 adds
+            // outside the operator catalog, so the literal lower-case name goes straight into the node, matching
+            // what TreeFormatReader.ReadUse compares against (case-insensitively).
+            JsonObject node = new() { ["op"] = "use", ["name"] = this.name };
+            if (this.arguments.Count > 0)
+            {
+                node["operands"] = OperandsNode(this.arguments);
+            }
+
+            return node;
+        }
+    }
+
+    /// <summary>
+    /// Attaches a <c>definitions</c> section (ADR-0008 decision 3) to an inner builder's rendered node. A duplicate
+    /// definition name is reported here, before rendering, because the JSON object the definitions render into would
+    /// otherwise silently keep only the last one — the same reason <c>PredicateBuilder</c> pre-checks a duplicate
+    /// argument name instead of letting it reach <c>CompileJson</c> invisibly.
+    /// </summary>
+    private sealed class DefinitionsBuilder(RuleBuilder body, IReadOnlyList<RuleDefinition> definitions) : RuleBuilder
+    {
+        private readonly RuleBuilder body = body;
+        private readonly IReadOnlyList<RuleDefinition> definitions = definitions;
+
+        private protected override void CollectProblems(string path, List<Diagnostic> problems)
+        {
+            this.body.CollectProblems(path, problems);
+
+            string definitionsPath = TreePath.Property(path, "definitions");
+            HashSet<string> seen = [with(StringComparer.OrdinalIgnoreCase)];
+            foreach (RuleDefinition definition in this.definitions)
+            {
+                string entryPath = TreePath.Property(definitionsPath, definition.Name);
+                if (!seen.Add(definition.Name))
+                {
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.DefinitionNameCollision,
+                            $"Definition name '{definition.Name}' clashes with a definition already declared with this name in this document.",
+                            SourceSpan.None,
+                            expected: "a definition name not already used in this document",
+                            found: $"'{definition.Name}' repeated",
+                            suggestion: new DiagnosticSuggestion(
+                                DiagnosticSuggestionKind.Hint,
+                                $"Remove or rename one of the '{definition.Name}' definitions."
+                            ),
+                            path: entryPath
+                        )
+                    );
+                    continue;
+                }
+
+                definition.Body.CollectProblems(TreePath.Property(entryPath, "body"), problems);
+            }
+        }
+
+        private protected override JsonNode ToNode()
+        {
+            JsonNode bodyNode = this.body.ToNode();
+
+            JsonObject definitionsNode = [];
+            foreach (RuleDefinition definition in this.definitions)
+            {
+                JsonObject entry = new() { ["body"] = definition.Body.ToNode() };
+                if (definition.Parameters.Count > 0)
+                {
+                    JsonArray parameters = [];
+                    foreach (string parameter in definition.Parameters)
+                    {
+                        parameters.Add(ValueToNode(parameter));
+                    }
+
+                    entry["parameters"] = parameters;
+                }
+
+                // CollectProblems already reported a repeated name as DefinitionNameCollision before Compile or
+                // ToJson ever renders this node, so overwriting here never silently hides one.
+                definitionsNode[definition.Name] = entry;
+            }
+
+            bodyNode["definitions"] = definitionsNode;
+            return bodyNode;
         }
     }
 }

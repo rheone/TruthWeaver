@@ -1,6 +1,6 @@
 # Packages
 
-TruthWeaver ships as seven packages. Each package has one purpose, so a consumer takes only the dependencies that it needs. For the layout of the source, see [Architecture](architecture.md).
+TruthWeaver ships as eight packages. Each package has one purpose, so a consumer takes only the dependencies that it needs. For the layout of the source, see [Architecture](architecture.md).
 
 | Package | Depends on | Ships |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ TruthWeaver ships as seven packages. Each package has one purpose, so a consumer
 | `TruthWeaver.DataSources.Json` | `TruthWeaver.Abstractions`, Meziantou.Framework.JsonPath | `JsonDataSource` (a JSON document as a data source for `from("source", "query")` variable references, queried with JSONPath, RFC 9535) and `JsonQueryValidator` (compile-time syntax check of those queries). Isolated so the core package takes no JSONPath dependency. |
 | `TruthWeaver.Predicates` | `TruthWeaver.Abstractions` | Ready-made generic `IPredicate<TContext>` factories for string comparison, null/empty, set equality, regex matching, and externally-selected-value predicates for a safe-to-share lookup client. A consumer uses them for common checks without writing a class and without the parser, compiler or analyzer. |
 | `TruthWeaver.Testing` | `TruthWeaver.Abstractions`, `TruthWeaver`, `TruthWeaver.Yaml` | Fluent `Decision` assertions, fake/scripted predicate factories and an in-memory `FakeDataSource` for tests, without a hand-written `IPredicate<TContext>` or data source per test. Also builds rule-level testing tools (an equivalence assertion, a predicate harness, a public rule fuzzer) on the compiler and analyzer, and runs declarative YAML rule tests with stub values (`RuleTestFile`, `StubRuleCompiler`). The rule tests read YAML, so this package references `TruthWeaver.Yaml`, which brings YamlDotNet and `TruthWeaver.DataSources.Json`. See [Testing assertions](testing-assertions.md), [Predicate harness](predicate-harness.md), [Rule fuzzer](rule-fuzzer.md) and [Rule tests](rule-tests.md). |
+| `TruthWeaver.AspNetCore` | `TruthWeaver`, `TruthWeaver.Abstractions`, the `Microsoft.AspNetCore.App` shared framework | ASP.NET Core authorization with rules: a rule requirement and its handler for named policies, resource-based checks and `AuthorizeView`, `AuthorizationContext<TResource>` with the `hasClaim`, `isInRole`, `isAuthenticated` and `isOwner` predicates, a map function for a host context type, fail-closed results that keep the `Decision`, and problem-details responses. It takes no other package. See [ASP.NET Core authorization](aspnetcore.md). |
 | `TruthWeaver.Generators` | *(no TruthWeaver assembly; analyzer only)* | A Roslyn source generator and its `[Predicate]` attribute. It writes a `Register` method for each type with `[Predicate]` methods, at compile time. The generated code uses `TruthWeaver.Abstractions` and `TruthWeaver` in the consuming project. See [Predicate source generator](predicate-source-generator.md). |
 
 <!-- doctest:skip class diagram, structure only -->
@@ -42,6 +43,10 @@ flowchart LR
         Assertions["Decision assertions + fake predicates + rule tests"]
     end
 
+    subgraph AspNetCorePkg["TruthWeaver.AspNetCore<br/>(shared framework only)"]
+        Authorization["Rule policies + authorization predicates"]
+    end
+
     subgraph GeneratorsPkg["TruthWeaver.Generators<br/>(analyzer, compile time)"]
         Generator["[Predicate] registration generator"]
     end
@@ -52,6 +57,7 @@ flowchart LR
     TestingPkg --> Core
     TestingPkg --> Abstractions
     TestingPkg --> YamlPkg
+    AspNetCorePkg --> Core
 
     App["Predicate-implementing service"] -.->|"references only"| Abstractions
     Host["Rule-authoring / evaluation host"] -->|"references"| Core
@@ -59,6 +65,7 @@ flowchart LR
     Host -.->|"optional"| PredicatesPkg
     Host -.->|"optional, test projects only"| TestingPkg
     Host -.->|"optional, build time only"| GeneratorsPkg
+    Host -.->|"optional, web hosts"| AspNetCorePkg
 ```
 
 A service that only implements domain predicates references `TruthWeaver.Abstractions` alone. It needs no parser, no BDD analyzer and no YAML library.

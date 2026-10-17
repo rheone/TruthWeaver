@@ -23,6 +23,13 @@ internal sealed class RuleCoverageAccumulator
     private readonly Dictionary<TermIdentity, int> termIndex = [];
     private readonly List<int>[] termNodes;
 
+    // ADR-0010 decision 7: a quantifier's trace has one child per element, not one child per written operand, so
+    // its body cannot be paired against the per-decision value/evaluated arrays below like every other node (one
+    // slot per node per decision). True for every node under a quantifier's body (including a nested quantifier's
+    // own body), at any depth; the per-decision loop in Add skips these, and PairElement folds each element's
+    // contribution into nodeCounts directly, immediately, instead.
+    private readonly List<bool> underQuantifierBody = [];
+
     // Counts per node and per term, indexed like the lists above: true, false, unknown, evaluated, not evaluated, decided, faults.
     private readonly int[,] nodeCounts;
     private readonly int[,] termCounts;
@@ -32,7 +39,7 @@ internal sealed class RuleCoverageAccumulator
     /// <param name="root">The root of the rule.</param>
     public RuleCoverageAccumulator(Expression root)
     {
-        this.Flatten(root, -1, TreePath.Root);
+        this.Flatten(root, -1, TreePath.Root, insideBody: false);
         this.termNodes = [.. this.terms.Select(_ => new List<int>())];
         for (int i = 0; i < this.nodes.Count; i++)
         {
@@ -78,6 +85,12 @@ internal sealed class RuleCoverageAccumulator
         this.outcomes[(int)ToCount(decision.Result)]++;
         for (int i = 0; i < count; i++)
         {
+            if (this.underQuantifierBody[i])
+            {
+                // Folded per element by PairElement already, as Pair walked the trace above.
+                continue;
+            }
+
             if (!evaluated[i])
             {
                 this.nodeCounts[i, (int)Count.NotEvaluated]++;
@@ -211,7 +224,30 @@ internal sealed class RuleCoverageAccumulator
         );
     }
 
-    private void Flatten(Expression node, int parent, string path)
+    /// <summary>Registers one term-like leaf (a predicate or a quantifier atom) and returns its term number.</summary>
+    private int RegisterTerm(TermIdentity identity)
+    {
+        if (!this.termIndex.TryGetValue(identity, out int termNumber))
+        {
+            termNumber = this.terms.Count;
+            this.terms.Add(identity);
+            this.termIndex.Add(identity, termNumber);
+        }
+
+        return termNumber;
+    }
+
+    /// <summary>Flattens the compiled tree into the depth-first arrays this accumulator pairs a trace tree against.</summary>
+    /// <param name="node">The node to flatten.</param>
+    /// <param name="parent">The flattened index of <paramref name="node"/>'s parent, or -1 for the root.</param>
+    /// <param name="path">The tree path to <paramref name="node"/>.</param>
+    /// <param name="insideBody">
+    /// Whether <paramref name="node"/> is under a quantifier's body (at any depth, including a nested
+    /// quantifier's own body). Such a node's coverage is folded per element by <see cref="PairElement"/> instead
+    /// of once per decision (ADR-0010 decision 7), and its terms are not listed in <see cref="RuleCoverage.Terms"/>
+    /// (ADR-0010 decision 8: "the terms of a rule" are the outer terms and the quantifier atoms, not a body's).
+    /// </param>
+    private void Flatten(Expression node, int parent, string path, bool insideBody)
     {
         int index = this.nodes.Count;
         this.nodes.Add(node);
@@ -221,17 +257,15 @@ internal sealed class RuleCoverageAccumulator
         this.subtreeEnds.Add(index + 1);
         this.operands.Add([]);
         this.termOfNode.Add(-1);
+        this.underQuantifierBody.Add(insideBody);
 
         if (node is TermExpression term)
         {
-            if (!this.termIndex.TryGetValue(term.Identity, out int termNumber))
+            if (!insideBody)
             {
-                termNumber = this.terms.Count;
-                this.terms.Add(term.Identity);
-                this.termIndex.Add(term.Identity, termNumber);
+                this.termOfNode[index] = this.RegisterTerm(term.Identity);
             }
 
-            this.termOfNode[index] = termNumber;
             return;
         }
 
@@ -240,20 +274,35 @@ internal sealed class RuleCoverageAccumulator
             return;
         }
 
+        bool isQuantifier = node is QuantifierExpression;
+        if (node is QuantifierExpression quantifier)
+        {
+            // ADR-0010 decision 8: the quantifier is an opaque atom for "the terms of a rule", keyed by its own
+            // canonical text (including the body) exactly as the analyzer keys it; the body's own terms, flattened
+            // below with insideBody: true, are excluded from this list.
+            this.termOfNode[index] = this.RegisterTerm(QuantifierAtom.IdentityOf(quantifier));
+        }
+
         IReadOnlyList<Expression> children = ExpressionShape.Of(node).Operands;
         string operandsPath = TreePath.Property(path, "operands");
         int[] childIndexes = new int[children.Count];
         for (int i = 0; i < children.Count; i++)
         {
             childIndexes[i] = this.nodes.Count;
-            this.Flatten(children[i], index, TreePath.Index(operandsPath, i));
+            this.Flatten(children[i], index, TreePath.Index(operandsPath, i), insideBody || isQuantifier);
         }
 
         this.operands[index] = childIndexes;
         this.subtreeEnds[index] = this.nodes.Count;
     }
 
-    /// <summary>Reads the value of node <paramref name="index"/> and its operands from the trace tree. A skipped node and every node below it stay not evaluated.</summary>
+    /// <summary>
+    /// Reads the value of node <paramref name="index"/> and its operands from the trace tree. A skipped node and
+    /// every node below it stay not evaluated. A quantifier (ADR-0010 decision 7) is the one exception: its own
+    /// value is read here like any other node, but its trace has one child per element rather than one child per
+    /// written operand, so each element is folded into coverage separately and immediately by
+    /// <see cref="PairElement"/> instead of being paired positionally into <paramref name="value"/>/<paramref name="evaluated"/>.
+    /// </summary>
     private void Pair(int index, TraceNode traceNode, TruthValue[] value, bool[] evaluated)
     {
         Expression node = this.nodes[index];
@@ -272,8 +321,31 @@ internal sealed class RuleCoverageAccumulator
             return;
         }
 
+        if (traceNode.Result is not { } result)
+        {
+            throw Mismatch(this.paths[index]);
+        }
+
+        if (node is QuantifierExpression)
+        {
+            evaluated[index] = true;
+            value[index] = result;
+            int bodyIndex = this.operands[index][0];
+            if (traceNode.Children.Any(elementTrace => elementTrace.Children.Count != 1))
+            {
+                throw Mismatch(this.paths[index]);
+            }
+
+            foreach (TraceNode bodyTrace in traceNode.Children.Select(elementTrace => elementTrace.Children[0]))
+            {
+                this.PairElement(bodyIndex, bodyTrace);
+            }
+
+            return;
+        }
+
         int[] children = this.operands[index];
-        if (traceNode.Result is not { } result || traceNode.Children.Count != children.Length)
+        if (traceNode.Children.Count != children.Length)
         {
             throw Mismatch(this.paths[index]);
         }
@@ -283,6 +355,38 @@ internal sealed class RuleCoverageAccumulator
         for (int i = 0; i < children.Length; i++)
         {
             this.Pair(children[i], traceNode.Children[i], value, evaluated);
+        }
+    }
+
+    /// <summary>
+    /// Folds one element's body evaluation (the single child of a quantifier's per-element trace node, ADR-0010
+    /// decision 7) into <see cref="nodeCounts"/> directly, as if it were its own one-decision coverage pass over
+    /// just the body subtree. Scoped to its own local <c>value</c>/<c>evaluated</c> arrays, because the body's
+    /// nodes get a different value for every element, which the shared per-decision arrays cannot hold.
+    /// </summary>
+    private void PairElement(int bodyIndex, TraceNode bodyTrace)
+    {
+        TruthValue[] elementValue = new TruthValue[this.nodes.Count];
+        bool[] elementEvaluated = new bool[this.nodes.Count];
+        Array.Fill(elementValue, TruthValue.Unknown);
+        this.Pair(bodyIndex, bodyTrace, elementValue, elementEvaluated);
+        this.CheckBodyValues(bodyIndex, elementValue, elementEvaluated);
+
+        int end = this.subtreeEnds[bodyIndex];
+        for (int i = bodyIndex; i < end; i++)
+        {
+            if (!elementEvaluated[i])
+            {
+                this.nodeCounts[i, (int)Count.NotEvaluated]++;
+                continue;
+            }
+
+            this.nodeCounts[i, (int)Count.Evaluated]++;
+            this.nodeCounts[i, (int)ToCount(elementValue[i])]++;
+            if (Values.Any(other => other != elementValue[i] && this.ChangesResultBounded(i, other, elementValue, bodyIndex)))
+            {
+                this.nodeCounts[i, (int)Count.Decided]++;
+            }
         }
     }
 
@@ -300,6 +404,30 @@ internal sealed class RuleCoverageAccumulator
             {
                 ConstantExpression constant => !evaluated[i] || constant.Value == value[i],
                 TermExpression => true,
+
+                // Trusted like a term: the fold over its elements is not recomputable from a single operand value
+                // (ADR-0010 decision 7), so its recorded result is taken as given, as a term's is.
+                QuantifierExpression => true,
+                _ => !evaluated[i] || this.CombineAt(i, value) == value[i],
+            };
+            if (!consistent)
+            {
+                throw Mismatch(this.paths[i]);
+            }
+        }
+    }
+
+    /// <summary>The <see cref="CheckValues"/> consistency check, scoped to one element's body subtree instead of the whole decision.</summary>
+    private void CheckBodyValues(int bodyIndex, TruthValue[] value, bool[] evaluated)
+    {
+        int end = this.subtreeEnds[bodyIndex];
+        for (int i = bodyIndex; i < end; i++)
+        {
+            bool consistent = this.nodes[i] switch
+            {
+                ConstantExpression constant => !evaluated[i] || constant.Value == value[i],
+                TermExpression => true,
+                QuantifierExpression => true,
                 _ => !evaluated[i] || this.CombineAt(i, value) == value[i],
             };
             if (!consistent)
@@ -338,6 +466,43 @@ internal sealed class RuleCoverageAccumulator
         }
 
         return changed != value[0];
+    }
+
+    /// <summary>
+    /// <see cref="ChangesResult"/>, bounded at <paramref name="subtreeRoot"/> instead of the rule's root: used by
+    /// <see cref="PairElement"/>, whose <paramref name="value"/> array holds only one element's body subtree, so
+    /// ascending past <paramref name="subtreeRoot"/> (into the quantifier node and beyond) would read values for
+    /// nodes this array was never filled for.
+    /// </summary>
+    private bool ChangesResultBounded(int index, TruthValue replacement, TruthValue[] value, int subtreeRoot)
+    {
+        if (index == subtreeRoot)
+        {
+            return replacement != value[subtreeRoot];
+        }
+
+        int current = index;
+        TruthValue changed = replacement;
+        while (true)
+        {
+            int parent = this.parents[current];
+            TruthValue[] operandValues =
+            [
+                .. this.operands[parent].Select(operand => operand == current ? changed : value[operand]),
+            ];
+            changed = Combine(this.nodes[parent], operandValues);
+            if (changed == value[parent])
+            {
+                return false;
+            }
+
+            if (parent == subtreeRoot)
+            {
+                return true;
+            }
+
+            current = parent;
+        }
     }
 
     private void CountTerm(int term, TruthValue[] value, bool[] evaluated)

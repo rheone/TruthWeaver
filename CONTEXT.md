@@ -56,6 +56,11 @@ the rest, such as **Expression**, **CompiledRule**, `CompilerOptions` and `Evalu
 | **Data source** | A named, read-only store of application data (a JSON document, a YAML document, anything that can answer a query) supplied to one evaluation through `DataSources`. Each source owns its query dialect; JSON and YAML sources use JSONPath. |
 | **Variable reference** | A term argument written as `from("source", "query")` instead of a literal: it names a **data source** and a query, and is resolved afresh on each evaluation, then checked against the argument's `LiteralKind`. Not a predicate and not an operator. A scalar needs exactly one match; none or several is a **Fault** and the term is `Unknown`. *Avoid*: context path, binding. |
 | **PredicateRegistry** | Where predicate implementations are registered under a name, with their argument schema. Every predicate carries a required, read-only `Label` and `Description`; every argument carries a required `Description`. |
+| **Definition** | A named sub-expression declared once in a rule document and reused by name, in any of the four forms (`let` in rule text, a `definitions` entry in JSON or YAML, or the `RuleBuilder` definition API). Each use expands at compile time into the definition's own tree with its **parameters** substituted; the compiled **Expression** holds no definitions, so evaluation, analysis, rewrites and printing see only the expanded tree. A definition cannot reference itself, directly or indirectly. |
+| **Parameter** | A name a **definition** declares so each use can supply its own term, constant or sub-expression, such as `reviewer1` in `let bothApproved(reviewer1, reviewer2) = reviewer1 AND reviewer2`. Substitution at expansion is structural only: no loops, no recursion. |
+| **Joint outcome** | For two rules `A` and `B` compared over the same assignments (a map from every distinct term of either rule to `True`, `False` or `Unknown`, the space **RuleEquivalence** and **RuleImplication** already use), the pair `(A(σ), B(σ))` that one assignment `σ` produces. A pair is *reachable* when some `σ` produces it. An unreachable pair is a **proof** for every real application context (every real context produces some assignment, so no context can reach what no assignment reaches); a reachable pair, with its example assignment, is a **candidate** only, because terms are opaque and independent (**Term identity**), so the example can be impossible in the application. |
+| **Overlap** | `A` and `B` **overlap** when the joint outcome `(True, True)` is reachable: some assignment satisfies both rules at once. |
+| **Conflict** | `A` and `B` **conflict** when one rule is `True` and the other is not `True` for the same assignment: the joint outcome is `(True, False)`, `(True, Unknown)`, `(False, True)` or `(Unknown, True)`. A pair of two `Unknown` values is not a conflict, because neither rule is satisfied. This is the satisfaction reading (matching `Decision.IsSatisfied`'s fail-closed "true only for `True`"), not "both definite and opposite" and not "any difference"; TruthWeaver rules carry no permit/deny effect, so a conflict here means only "opposite satisfaction", never an authorization decision. |
 
 Avoid these near-synonyms once the term above is established: "term" and
 "predicate" are not interchangeable (a predicate is the function; a term is
@@ -192,6 +197,25 @@ Rule = Expression
 Every expression evaluates to exactly one `TruthValue`. At the API boundary,
 a `Decision.IsSatisfied` is `true` only when the result is `True`; `Unknown`
 fails closed.
+
+## Quantifiers
+
+- **Quantifier.** `FORALL` and `EXISTS` are Strong Kleene connectives that range over a **collection
+  binding**'s elements: `FORALL` is the generalized `AND` and `EXISTS` the generalized `OR` over the
+  elements' results. An empty collection gives `FORALL` `True` and `EXISTS` `False` (the identity elements
+  of `AND`/`OR`); a `null` collection gives `Unknown` with no fault, and a collection whose selector throws
+  gives `Unknown` with a fault. A quantifier's term set depends on the collection's size at evaluation time,
+  so, unlike every other connective, it is treated as a single opaque atom by the analyzer and by every
+  rewrite: its body is analyzed and rewritten in its own scope, not folded into the outer rule's term set.
+- **Collection binding.** A named collection a host registers on a predicate registry for a quantifier to
+  range over: a name, a typed selector from the outer context to the collection's elements, and a registry
+  of element predicates for the resulting **element context**. Collection names are a namespace of their
+  own, separate from predicate and data source names.
+- **Element context.** What a quantifier's body evaluates against for one element of its collection
+  binding: the typed `Element<TOuter, TItem>` (its `Outer`, `Item` and `Index`), reached through element
+  predicates registered on the binding, an untyped data-source read of the element itself, or both. It is a
+  separate predicate scope from the outer rule's `TContext`; a body term resolves only in its own element
+  context, not in the outer registry.
 
 ## Term identity
 

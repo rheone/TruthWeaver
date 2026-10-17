@@ -165,12 +165,23 @@ public sealed class BatchEvaluationTests
     public async Task EvaluateManyAsync_ConsumerStopsEarly_CancelsTheEvaluationsInFlight_Test()
     {
         int cancelled = 0;
+
+        // Item 0 finishes only once the other three are running, so the consumer never stops before they have started;
+        // a task cancelled before it starts never runs its delegate and would not be counted.
+        TaskCompletionSource allOthersStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int started = 0;
         CompiledRule<BatchItem> rule = CompileProbe(
             async (item, ct) =>
             {
                 if (item.Id == 0)
                 {
+                    await allOthersStarted.Task.WaitAsync(ct).ConfigureAwait(false);
                     return TruthValue.True;
+                }
+
+                if (Interlocked.Increment(ref started) == 3)
+                {
+                    allOthersStarted.SetResult();
                 }
 
                 try

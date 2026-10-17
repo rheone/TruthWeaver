@@ -247,6 +247,12 @@ internal static class NormalForms
             return result;
         }
 
+        /// <summary>The other quantifier kind: De Morgan's dual of <c>FORALL</c> is <c>EXISTS</c>, and back.</summary>
+        private static QuantifierKind Dual(QuantifierKind kind)
+        {
+            return kind == QuantifierKind.ForAll ? QuantifierKind.Exists : QuantifierKind.ForAll;
+        }
+
         private Expression VisitCore(Expression node, bool negate)
         {
             return node switch
@@ -266,6 +272,18 @@ internal static class NormalForms
                 ),
 
                 ThresholdExpression t => this.VisitThreshold((ThresholdExpression)PrimitiveExpander.ExpandTop(t), negate),
+
+                // ADR-0010 decision 9: NOT FORALL(x IN c, b) is EXISTS(x IN c, NOT b), and the dual, for every
+                // collection including empty and null. Pushing the negation through flips the quantifier kind and
+                // negates the body's own polarity; a positive quantifier normalizes its body positively, in its
+                // own scope. The quantifier itself is otherwise left exactly where it is (it is an atom for
+                // ToCnf/ToDnf's later distribution step, which does not know about it and so cannot split it).
+                QuantifierExpression q => new QuantifierExpression(
+                    negate ? Dual(q.Kind) : q.Kind,
+                    q.Variable,
+                    q.CollectionName,
+                    this.Visit(q.Body, negate)
+                ),
 
                 // Every other operator is derived: expand its own level, then normalize the definition.
                 _ => this.Visit(PrimitiveExpander.ExpandTop(node), negate),

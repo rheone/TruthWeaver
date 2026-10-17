@@ -8,6 +8,7 @@ using TruthWeaver.DataSources.Json;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 
@@ -760,7 +761,60 @@ internal static partial class DocExampleChecker
             ),
             ConstantAsync
         );
+
+        // The quantifier examples (ADR-0010, docs/rule-text.md "Quantifiers"): "lines" is a collection binding with
+        // a nested "details" collection registered on its own element builder, so a nested FORALL/EXISTS example
+        // compiles. The documentation never evaluates these rules, so the selectors' actual data does not matter.
+        // The 4th AddCollection argument (ADR-0010 decision 3) projects an element to a data source, so the
+        // "untyped element read" example (`from(line, ...)`) compiles too; it is never queried.
+        builder.AddCollection(
+            "lines",
+            _ => Array.Empty<bool>(),
+            elements =>
+                elements
+                    .Add(
+                        PredicateSchema.NoArguments("inStock", "In Stock", "Is this line item in stock?"),
+                        ConstantElementAsync
+                    )
+                    .Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "Is this line item's quantity above the given threshold?",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        ConstantElementAsync
+                    )
+                    .AddCollection(
+                        "details",
+                        _ => Array.Empty<bool>(),
+                        detailElements =>
+                            detailElements.Add(
+                                PredicateSchema.NoArguments("inStock", "In Stock", "Is this order detail in stock?"),
+                                ConstantNestedElementAsync
+                            )
+                    ),
+            _ => new FakeDataSource()
+        );
         return builder.Build();
+    }
+
+    private static ValueTask<TruthValue> ConstantElementAsync(
+        Element<RuleTestContext, bool> context,
+        PredicateArguments args,
+        CancellationToken ct
+    )
+    {
+        return ValueTask.FromResult(TruthValue.True);
+    }
+
+    private static ValueTask<TruthValue> ConstantNestedElementAsync(
+        Element<Element<RuleTestContext, bool>, bool> context,
+        PredicateArguments args,
+        CancellationToken ct
+    )
+    {
+        return ValueTask.FromResult(TruthValue.True);
     }
 
     private static ValueTask<TruthValue> ConstantAsync(RuleTestContext context, PredicateArguments args, CancellationToken ct)

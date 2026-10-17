@@ -12,22 +12,26 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Category** | The one group that an Operation belongs to in the K3 reference, such as Gates / Operators or Cardinality Functions. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
 | **CNF** | Conjunctive normal form: an `AND` of `OR`s of literals and atoms. `ToCnf()` returns it. See [conjunctive normal form](rewriting-normal-form-examples.md#conjunctive-normal-form). |
 | **Collapse** | A method on a `Decision`, not part of a rule. `Decision.Collapse(policy)` turns the result into a `CollapseOutcome`. `CollapsePolicy` is `UnknownAsFalse`, `UnknownAsTrue` or `UnknownIsError`. `CollapseOutcome` is `True`, `False` or `RejectedUnresolved`. See [Collapse](strong-k3/result-transformations/collapse.md). |
+| **Collection binding** | A named collection a host registers on a predicate registry for `FORALL`/`EXISTS` to range over: a name, a typed selector from the outer context to its elements, and a registry of element predicates for the element context. See [CONTEXT.md](../CONTEXT.md#quantifiers). |
 | **CompilationMode** | `Strict`, the default, makes an unregistered predicate a compile error. `Lenient` compiles it to a term that is always `Unknown`. |
+| **Conflict** | For two rules compared over the same assignments, one rule is `True` and the other is not `True`: the joint outcome is `(True, False)`, `(True, Unknown)`, `(False, True)` or `(Unknown, True)`. Two `Unknown` values are not a conflict. See [Overlap and conflict](rewriting-rules.md#overlap-and-conflict). |
 | **Constant letters** | The spellings `T`, `F` and `U` for `True`, `False` and `Unknown`. Rule text reads them in any case, and `ConstantStyle.Letters` writes them. They are reserved names, so a predicate cannot be named `T`, `F` or `U`. See [Constant style](rule-text.md#constant-style). |
 | **CompilationResult** | What `Compile`, `CompileJson` and `CompileYaml` return: a `CompiledRule`, which is `null` when compilation fails, and every diagnostic. |
 | **CompiledRule** | The immutable, thread-safe result of a successful compile. It can be cached, shared and evaluated many times. |
 | **CompilerOptions** | The compile-time limits (tree depth, node count, analyzer term count, rewrite size) and the `CompilationMode`. |
 
-## D to I
+## D to J
 
 | Term | Meaning |
 | --- | --- |
 | **Data source** | A named supplier of values, declared when the compiler is built and supplied at evaluation. A variable reference reads from it. See [data sources](data-sources.md). |
 | **Decision** | The result of one evaluation: a `TruthValue`, the faults that the evaluation absorbed and, if requested, a trace. `IsSatisfied` is `true` only for `True`. See [evaluation](strong-k3/specification/evaluation.md). |
+| **Definition** | A named, reusable sub-expression declared once in a rule document (`let` in rule text, an entry under `definitions` in JSON or YAML, or the `RuleBuilder` definition API) and expanded at compile time wherever it is used. The compiled tree holds no definitions, only the expanded result. See [Definitions and parameters](rule-text.md#definitions-and-parameters). |
 | **Decision record** | A `Decision` stored as JSON for an audit log, with the identity of the rule (a hash of its canonical text, a name and a version) and the evaluation options. `DecisionRecord.TryParseJson` reads it back. See [Decision records](decision-records.md). |
 | **Derived** | An Operation that has a definition in terms of primitives. It stays a node of its own. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
 | **Diagnostic** | One compile-time problem or finding: a code, a severity, a message, and a span or path. Only the severity Error blocks compilation. See [diagnostics](strong-k3/specification/diagnostics.md). |
 | **DNF** | Disjunctive normal form: an `OR` of `AND`s of literals and atoms. `ToDnf()` returns it. See [disjunctive normal form](rewriting-normal-form-examples.md#disjunctive-normal-form). |
+| **Element context** | What a `FORALL`/`EXISTS` body evaluates against for one element: the typed `Element<TOuter, TItem>` (its `Outer`, `Item` and `Index`) for a collection binding's own element predicates, or the untyped per-element data-source read, or both. It is a separate predicate scope from the outer rule's context. See [CONTEXT.md](../CONTEXT.md#quantifiers). |
 | **Evaluation mode** | `ShortCircuit`, the default, stops an Operation when its result is settled. `Exhaustive` runs every reachable term. The mode never changes the result. See [evaluation](strong-k3/specification/evaluation.md#evaluation-modes). |
 | **EvaluationOptions** | The per-call options: `Mode`, `Timeout`, `FaultBudget` and `IncludeResolvedValues`. |
 | **Expression** | The immutable tree of Operations over terms and constants. A `CompiledRule` wraps one. |
@@ -36,8 +40,9 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Gate** | `NOT`, `AND` or `OR` as a Strong Kleene truth function. An Operator is the programmatic form of a gate. See [terminology](strong-k3/specification/terminology.md#classifying-an-operation). |
 | **Information order** | `Unknown` is below `True` and `False`, which are not comparable. Strong Kleene connectives are monotone in this order. See [values](strong-k3/specification/values.md#information-order). |
 | **Inspection** | `IsTrue`, `IsFalse`, `IsUnknown` or `IsKnown`. An inspection tests the state of its operand and always answers `True` or `False`. See [Functions](strong-k3/functions/README.md). |
+| **Joint outcome** | For two rules compared over the same assignments, the pair `(A(σ), B(σ))` that one assignment `σ` of their terms produces. A pair is reachable when some assignment produces it; an unreachable pair is a proof, a reachable one (with its example) is a candidate only. See [Overlap and conflict](rewriting-rules.md#overlap-and-conflict). |
 
-## K to P
+## K to Q
 
 | Term | Meaning |
 | --- | --- |
@@ -49,7 +54,9 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Operation** | Anything with its own document in the K3 reference: an operator, a cardinality function, a function or a result transformation. See [operations](strong-k3/specification/operations.md). |
 | **Operator** | One way to combine terms and sub-expressions, such as `AND` or `If`. The engine and its API say Operator. |
 | **Operator spelling** | The one printed spelling of an operator word in canonical text. Connectives and the call words `PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE` and `BETWEEN` are upper case. The other call words, such as `ExactlyOne`, `AtLeast`, `If` and `IsTrue`, are upper camel case. See [case](rule-text.md#case). |
+| **Overlap** | For two rules compared over the same assignments, the joint outcome `(True, True)` is reachable: some assignment satisfies both. See [Overlap and conflict](rewriting-rules.md#overlap-and-conflict). |
 | **Outline** | The view of a compiled rule as a tree of labels and descriptions, from `CompiledRule.Outline()`. |
+| **Parameter** | A name a **definition** declares so a use can supply a different term, constant or sub-expression each time, such as `reviewer1` in `let bothApproved(reviewer1, reviewer2) = reviewer1 AND reviewer2`. Substitution is structural, at expansion; there are no loops and no recursion. See [Definitions and parameters](rule-text.md#definitions-and-parameters). |
 | **PARITY** | The n-ary operator that is `True` when an odd number of operands are `True`. It is not `ExactlyOne`. The two differ from three operands. See [PARITY](strong-k3/derived/parity.md). |
 | **Predicate** | A registered, reusable function that answers `True`, `False` or `Unknown`. A predicate is the function, not one call to it. See [terminology](strong-k3/specification/terminology.md#engine-terms). |
 | **PredicateRegistry** | Where predicates are registered by name together with their `PredicateSchema`. |
@@ -57,6 +64,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | **Primitive** | An Operation with no definition in terms of other Operations: `NOT`, `AND`, `OR`, `AtLeast`, `AtMost`, `Exactly` and `COALESCE`. |
 | **Project** | A method on a `Decision`, not part of a rule. `Decision.Project(unknownAs)` keeps `True` and `False` and replaces `Unknown` with `True` or `False`. In relational algebra, "projection" means selecting columns. See [Project](strong-k3/result-transformations/project.md). |
 | **Public form** | The spelling that a rule author uses to name an Operation: the printed word, the JSON and YAML `op` value and the `RuleBuilder` member. See [terminology](strong-k3/specification/terminology.md#forms-of-an-operation). |
+| **Quantifier** | `FORALL` or `EXISTS`: a Strong Kleene connective that ranges over a collection binding's elements, equivalent to `AND`/`OR` folded over them. An empty collection gives `FORALL` `True` and `EXISTS` `False`; a `null` collection gives `Unknown`. Its term set is not fixed at compile time, so the analyzer and rewrites treat it as an opaque atom. See [Quantifiers](strong-k3/quantifiers/README.md) and [CONTEXT.md](../CONTEXT.md#quantifiers). |
 
 ## R to Z
 
