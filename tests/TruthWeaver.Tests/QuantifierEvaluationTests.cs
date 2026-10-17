@@ -304,6 +304,119 @@ public sealed class QuantifierEvaluationTests
         Assert.Null(fault.Scope);
     }
 
+    /// <summary>
+    /// Two quantifiers reusing the same bound variable name over two different collections (ADR-0010 decision 5:
+    /// "the scope path is the chain of (binding, index) pairs") must not share memo entries. If the memo scope were
+    /// built from the variable name instead of the collection's registered name, the second quantifier's element 0
+    /// would wrongly reuse the first quantifier's cached answer for the identical term "elementTrue()", even though
+    /// the two elements come from different collections with different values.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_SameVariableNameOverDifferentCollections_DoesNotShareMemoEntries_Test()
+    {
+        static Action<PredicateRegistryBuilder<Element<TwoCollectionsContext, TruthValue>>> ElementTrue() =>
+            elements =>
+                elements.Add(
+                    PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                    (e, _, _) => ValueTask.FromResult(e.Item)
+                );
+        PredicateRegistryBuilder<TwoCollectionsContext> builder = PredicateRegistry<TwoCollectionsContext>
+            .CreateBuilder()
+            .AddCollection("a", ctx => ctx.A, ElementTrue())
+            .AddCollection("b", ctx => ctx.B, ElementTrue());
+        RuleCompiler<TwoCollectionsContext> compiler = new(builder.Build());
+        CompilationResult<TwoCollectionsContext> result = RuleBuilder
+            .And(
+                RuleBuilder.ForAll("x", "a", RuleBuilder.Predicate("elementTrue")),
+                RuleBuilder.ForAll("x", "b", RuleBuilder.Predicate("elementTrue"))
+            )
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        // FORALL(x IN a, elementTrue) is True; FORALL(x IN b, elementTrue) is False. A memo scope keyed on the
+        // variable "x" rather than the collection would let the second quantifier's element 0 reuse the first
+        // quantifier's cached True, making the AND wrongly read True instead of False.
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new TwoCollectionsContext { A = [TruthValue.True], B = [TruthValue.False] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// Two quantifiers over the same collection binding, bound under two different variable names, share memo
+    /// entries for an equal term (ADR-0010 decision 5: "two quantifiers over the same binding in one rule share the
+    /// scope path and so share memo entries for equal terms"), so the predicate is invoked once per element rather
+    /// than once per quantifier occurrence.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_SameCollectionUnderDifferentVariableNames_SharesMemoEntries_Test()
+    {
+        int predicateCallCount = 0;
+        PredicateRegistryBuilder<QuantifierContext> builder = PredicateRegistry<QuantifierContext>
+            .CreateBuilder()
+            .AddCollection(
+                "items",
+                ctx => ctx.Items,
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("countingTrue", "countingTrue", "Counts calls and returns the element."),
+                        (e, _, _) =>
+                        {
+                            predicateCallCount++;
+                            return ValueTask.FromResult(e.Item);
+                        }
+                    )
+            );
+        RuleCompiler<QuantifierContext> compiler = new(builder.Build());
+        CompilationResult<QuantifierContext> result = RuleBuilder
+            .And(
+                RuleBuilder.ForAll("x", "items", RuleBuilder.Predicate("countingTrue")),
+                RuleBuilder.ForAll("y", "items", RuleBuilder.Predicate("countingTrue"))
+            )
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.True] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Equal(2, predicateCallCount);
+    }
+
+    /// <summary>
+    /// A collection selector is called at most once per (binding, outer element) within one evaluation (ADR-0010
+    /// decision 5), so two quantifiers over the same collection in one evaluation call the selector once between
+    /// them and reuse the materialized list.
+    /// </summary>
+    [Fact]
+    public async Task Quantifiers_SameCollectionInOneEvaluation_MaterializesSelectorOnce_Test()
+    {
+        int selectorCallCount = 0;
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler(ctx =>
+        {
+            selectorCallCount++;
+            return ctx.Items;
+        });
+        CompilationResult<QuantifierContext> result = RuleBuilder
+            .And(
+                RuleBuilder.ForAll("x", "items", RuleBuilder.Predicate("elementTrue")),
+                RuleBuilder.Exists("y", "items", RuleBuilder.Predicate("elementTrue"))
+            )
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        await result.CompiledRule!.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.True] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1, selectorCallCount);
+    }
+
     /// <summary>Nesting a quantifier inside another quantifier's body is allowed and evaluates with the expected semantics (ADR-0010).</summary>
     [Fact]
     public async Task ForAll_NestedExists_EvaluatesBothLevels_Test()
@@ -678,6 +791,14 @@ public sealed class QuantifierEvaluationTests
     private sealed class QuantifierContext
     {
         public IReadOnlyList<TruthValue>? Items { get; init; }
+    }
+
+    /// <summary>A context with two independent collections, for tests that reuse one variable name across them.</summary>
+    private sealed class TwoCollectionsContext
+    {
+        public IReadOnlyList<TruthValue>? A { get; init; }
+
+        public IReadOnlyList<TruthValue>? B { get; init; }
     }
 
     /// <summary>A nested-collection context: a list of groups, each itself a (nullable) list of K3 values.</summary>

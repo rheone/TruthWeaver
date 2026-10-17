@@ -61,7 +61,8 @@ internal interface ICollectionBinding<TContext>
     /// <param name="services">The service provider for class-based element predicates.</param>
     /// <param name="logger">The logger faults inside an element are written to.</param>
     /// <param name="dataSources">The data sources supplied to this evaluation.</param>
-    /// <param name="outerScope">The enclosing element scope path, or <see langword="null"/> outside any quantifier.</param>
+    /// <param name="outerScope">The enclosing display scope path (built from bound variable names), or <see langword="null"/> outside any quantifier. Labels <see cref="Fault.Scope"/> and the flat trace log (ADR-0010 decision 7).</param>
+    /// <param name="outerMemoScope">The enclosing memoization scope path (built from registered collection names), or <see langword="null"/> outside any quantifier (ADR-0010 decision 5). Different from <paramref name="outerScope"/>: it is what the selector-materialization cache and a nested evaluator's term memo key are built from.</param>
     /// <param name="cancellationToken">Cancels the evaluation.</param>
     /// <returns>The quantifier's value and its trace node (one child per element).</returns>
     public ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -75,6 +76,7 @@ internal interface ICollectionBinding<TContext>
         ILogger logger,
         DataSources? dataSources,
         string? outerScope,
+        string? outerMemoScope,
         CancellationToken cancellationToken
     );
 }

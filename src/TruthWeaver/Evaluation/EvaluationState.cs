@@ -41,4 +41,14 @@ internal sealed class EvaluationState
 
     /// <summary>Gets the per-evaluation data-source query memo, keyed by the element scope path plus the reference.</summary>
     public Dictionary<(string? Scope, VariableReference Reference), SourceAnswer> SourceAnswers { get; } = [];
+
+    /// <summary>
+    /// Gets the per-evaluation collection-materialization cache, keyed by the enclosing memoization scope path
+    /// (<see langword="null"/> outside any quantifier) plus the collection's registered name (ADR-0010 decision 5:
+    /// "the selector is called at most once per (binding, outer element) within one evaluation"). The value is an
+    /// opaque <see cref="CollectionMaterialization"/>; the owning <c>CollectionBinding&lt;TContext, TItem&gt;</c>
+    /// is the only reader, and it casts <see cref="CollectionMaterialization.Elements"/> back to
+    /// <c>IReadOnlyList&lt;TItem&gt;</c>, the type it stored.
+    /// </summary>
+    public Dictionary<(string? Scope, string Binding), CollectionMaterialization> CollectionMaterializations { get; } = [];
 }
