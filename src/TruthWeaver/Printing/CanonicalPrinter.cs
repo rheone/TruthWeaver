@@ -740,7 +740,7 @@ internal static class CanonicalPrinter
     /// <summary>Gets the canonical DSL word for a quantifier: <c>FORALL</c> or <c>EXISTS</c> (ADR-0010 decision 2).</summary>
     private static string QuantifierName(QuantifierExpression node)
     {
-        return node.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+        return QuantifierText.Label(node.Kind);
     }
 
     /// <summary>Gets the call keyword for a call-form node, exactly as <see cref="PrintNode"/> writes it.</summary>
@@ -803,17 +803,11 @@ internal static class CanonicalPrinter
     /// <summary>Maps a connective's canonical word to the symbol <c>DslParser.SymbolAlias</c> reads back to it.</summary>
     private static string SymbolFor(string word)
     {
-        return word switch
-        {
-            "AND" => "∧",
-            "OR" => "∨",
-            "XOR" => "⊕",
-            "EQUIVALENT" => "↔",
-            "IMPLIES" => "→",
-            "NAND" => "↑",
-            "NOR" => "↓",
-            _ => throw new ArgumentOutOfRangeException(nameof(word), word, "No symbolic spelling for this connective."),
-        };
+        return
+            OperatorDefinitions.TryGetByLabel(word, out OperatorDefinition? definition)
+            && definition.SymbolicSpelling is { } symbol
+            ? symbol
+            : throw new ArgumentOutOfRangeException(nameof(word), word, "No symbolic spelling for this connective.");
     }
 
     /// <summary>

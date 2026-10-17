@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready (grilled 2026-10-17; scope confirmed: no new package or dependency)
+**Status:** done
 
 - [ ] Scope is confirmed with the owner before any work (standing rule for new packages, projects and dependencies)
 - [ ] The page that describes the new behavior is written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass

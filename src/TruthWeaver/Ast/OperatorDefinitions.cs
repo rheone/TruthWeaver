@@ -12,16 +12,39 @@ internal static class OperatorDefinitions
 
     private static readonly OperatorDefinition[] Definitions =
     [
-        new("Not", "not", 1, 1, "NOT", "Logical negation. Unknown stays Unknown."),
-        new("And", "and", 2, null, "AND", "True iff every operand is true. Short-circuits at the first False."),
-        new("Or", "or", 2, null, "OR", "True iff at least one operand is true. Short-circuits at the first True."),
+        new("Not", "not", 1, 1, "NOT", "Logical negation. Unknown stays Unknown.", "¬", "!", ["!", "¬"]),
+        new(
+            "And",
+            "and",
+            2,
+            null,
+            "AND",
+            "True iff every operand is true. Short-circuits at the first False.",
+            "∧",
+            "&&",
+            ["&&", "∧"]
+        ),
+        new(
+            "Or",
+            "or",
+            2,
+            null,
+            "OR",
+            "True iff at least one operand is true. Short-circuits at the first True.",
+            "∨",
+            "||",
+            ["||", "∨"]
+        ),
         new(
             "Xor",
             "xor",
             2,
             2,
             "XOR",
-            "True iff exactly one of the two operands is true. Unknown if either operand is Unknown."
+            "True iff exactly one of the two operands is true. Unknown if either operand is Unknown.",
+            "⊕",
+            "^",
+            ["⊕", "⊻"]
         ),
         new(
             "Equivalent",
@@ -29,7 +52,10 @@ internal static class OperatorDefinitions
             2,
             2,
             "EQUIVALENT",
-            "Logical biconditional (IFF, formerly XNOR) - true iff both operands agree (both true or both false). The negation of XOR; Unknown if either operand is Unknown."
+            "Logical biconditional (IFF, formerly XNOR) - true iff both operands agree (both true or both false). The negation of XOR; Unknown if either operand is Unknown.",
+            "↔",
+            "==",
+            ["↔", "⇔"]
         ),
         new(
             "Implies",
@@ -37,7 +63,10 @@ internal static class OperatorDefinitions
             2,
             2,
             "IMPLIES",
-            "Material implication (NOT antecedent OR consequent). True if the antecedent is False or the consequent is True; otherwise Unknown if either operand is Unknown."
+            "Material implication (NOT antecedent OR consequent). True if the antecedent is False or the consequent is True; otherwise Unknown if either operand is Unknown.",
+            "→",
+            null,
+            ["→", "⇒"]
         ),
         new(
             "Nand",
@@ -45,7 +74,10 @@ internal static class OperatorDefinitions
             2,
             2,
             "NAND",
-            "Negated conjunction, NOT (left AND right). False only when both operands are True; True if either is False; otherwise Unknown."
+            "Negated conjunction, NOT (left AND right). False only when both operands are True; True if either is False; otherwise Unknown.",
+            "↑",
+            null,
+            ["↑", "⊼"]
         ),
         new(
             "Nor",
@@ -53,7 +85,10 @@ internal static class OperatorDefinitions
             2,
             2,
             "NOR",
-            "Negated disjunction, NOT (left OR right). True only when both operands are False; False if either is True; otherwise Unknown."
+            "Negated disjunction, NOT (left OR right). True only when both operands are False; False if either is True; otherwise Unknown.",
+            "↓",
+            null,
+            ["↓", "⊽"]
         ),
         new(
             "Parity",
@@ -107,7 +142,10 @@ internal static class OperatorDefinitions
             2,
             null,
             "COALESCE",
-            "The first operand that is not Unknown; True and False pass through unchanged and the result is Unknown only if every operand is Unknown. Operands after the first known value are skipped."
+            "The first operand that is not Unknown; True and False pass through unchanged and the result is Unknown only if every operand is Unknown. Operands after the first known value are skipped.",
+            "??",
+            "??",
+            ["??"]
         ),
         new(
             "If",
@@ -115,7 +153,10 @@ internal static class OperatorDefinitions
             3,
             3,
             "If",
-            "Conditional: the second operand when the condition is True, the third when it is False. An Unknown condition does not pick a branch: the result is the branch value when both branches are the same definite value, otherwise Unknown. Only the needed branch is evaluated for a definite condition."
+            "Conditional: the second operand when the condition is True, the third when it is False. An Unknown condition does not pick a branch: the result is the branch value when both branches are the same definite value, otherwise Unknown. Only the needed branch is evaluated for a definite condition.",
+            null,
+            "?:",
+            null
         ),
         new(
             "IsTrue",
@@ -156,6 +197,15 @@ internal static class OperatorDefinitions
         StringComparer.Ordinal
     );
 
+    private static readonly Dictionary<string, OperatorDefinition> ByLabel = Definitions.ToDictionary(
+        d => d.LabelTemplate,
+        StringComparer.Ordinal
+    );
+
+    private static readonly Dictionary<string, OperatorDefinition> BySymbol = Definitions
+        .SelectMany(d => (d.ReadSymbols ?? []).Select(symbol => (Symbol: symbol, Definition: d)))
+        .ToDictionary(pair => pair.Symbol, pair => pair.Definition, StringComparer.Ordinal);
+
     /// <summary>Gets every operator definition, in no significant order.</summary>
     public static IReadOnlyList<OperatorDefinition> All => Definitions;
 
@@ -166,5 +216,23 @@ internal static class OperatorDefinitions
     public static bool TryGet(string opName, [NotNullWhen(true)] out OperatorDefinition? definition)
     {
         return ByOpName.TryGetValue(opName, out definition);
+    }
+
+    /// <summary>Looks up a definition by its display label (<see cref="OperatorDefinition.LabelTemplate"/>), as an outline node carries it.</summary>
+    /// <param name="label">The label, e.g. <c>"AND"</c>.</param>
+    /// <param name="definition">The definition when found.</param>
+    /// <returns><see langword="true"/> if <paramref name="label"/> is the label of an operator in the table.</returns>
+    public static bool TryGetByLabel(string label, [NotNullWhen(true)] out OperatorDefinition? definition)
+    {
+        return ByLabel.TryGetValue(label, out definition);
+    }
+
+    /// <summary>Looks up the definition whose lexer-read symbols include <paramref name="symbol"/>.</summary>
+    /// <param name="symbol">The operator token text, e.g. <c>"&amp;&amp;"</c> or <c>"∧"</c>.</param>
+    /// <param name="definition">The definition when found.</param>
+    /// <returns><see langword="true"/> if the DSL reads <paramref name="symbol"/> as an operator.</returns>
+    public static bool TryGetBySymbol(string symbol, [NotNullWhen(true)] out OperatorDefinition? definition)
+    {
+        return BySymbol.TryGetValue(symbol, out definition);
     }
 }

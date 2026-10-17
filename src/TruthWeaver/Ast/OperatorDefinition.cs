@@ -11,13 +11,19 @@ namespace TruthWeaver.Ast;
 /// <param name="MaxOperands">The most operands the operator accepts, or <see langword="null"/> when unbounded.</param>
 /// <param name="LabelTemplate">The display label; <c>{K}</c> and <c>{Max}</c> stand for the node's threshold and upper bound.</param>
 /// <param name="DescriptionTemplate">The human-readable description; <c>{K}</c> and <c>{Max}</c> as in <paramref name="LabelTemplate"/>.</param>
+/// <param name="SymbolicSpelling">The glyph the symbolic print style writes for the operator, or <see langword="null"/> when it has none.</param>
+/// <param name="CStyleSpelling">The token the C-style render style writes for the operator, or <see langword="null"/> when it has none.</param>
+/// <param name="ReadSymbols">Every symbol the DSL lexer reads as this operator, so the parser and the printers share one table.</param>
 internal sealed record OperatorDefinition(
     string OpName,
     string TreeFormatName,
     int MinOperands,
     int? MaxOperands,
     string LabelTemplate,
-    string DescriptionTemplate
+    string DescriptionTemplate,
+    string? SymbolicSpelling = null,
+    string? CStyleSpelling = null,
+    IReadOnlyList<string>? ReadSymbols = null
 )
 {
     /// <summary>Gets the display label for a node of this operator, with its threshold and bound filled in.</summary>

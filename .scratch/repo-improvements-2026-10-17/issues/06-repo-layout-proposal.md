@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The proposal has a before/after tree and a cost table per move
 - [ ] The owner approves or declines each move; each approved move becomes its own ticket

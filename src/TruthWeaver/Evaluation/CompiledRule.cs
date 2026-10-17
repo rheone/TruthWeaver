@@ -1213,6 +1213,32 @@ public sealed class CompiledRule<TContext>
     }
 
     /// <summary>
+    /// Explains one evaluation in a sentence of fixed English, for example
+    /// <c>Satisfied because Order Type (kind: "takeout") is true and Over Limit is true.</c>. Only the terms that
+    /// decided the result are named, using the label of each predicate and its argument values. When the result is
+    /// <see cref="TruthValue.Unknown"/> no term decided it, so the sentence names the terms that were unknown or that
+    /// could not be evaluated. The wording has no template engine and no localization surface; use
+    /// <see cref="ExplainOptions.Labels"/> to change the label of a predicate.
+    /// </summary>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the schema labels and no descriptions.</param>
+    /// <returns>The sentence, ending with a period.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="decision"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>, or its trace tree does not match the shape of this rule.</exception>
+    public string Explain(Decision decision, ExplainOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(decision);
+        RuleCoverage coverage = RuleCoverage.FromDecisions(this, [decision]);
+        return DecisionExplainer.Explain(
+            this.Root,
+            decision,
+            coverage,
+            name => this.registry.TryGetSchema(name, out PredicateSchema? schema) ? schema : null,
+            options ?? new ExplainOptions()
+        );
+    }
+
+    /// <summary>
     /// Renders this rule as a flat, single-line infix equation, for example <c>a ∧ (b ∨ c)</c>. The connectives
     /// <c>NOT</c>, <c>AND</c>, <c>OR</c>, <c>XOR</c>, <c>EQUIVALENT</c>, <c>IMPLIES</c>, <c>NAND</c> and <c>NOR</c> print
     /// as infix symbols. Every other operator prints in function-call form, for example <c>AtLeast(2, a, b, c)</c>.
@@ -1596,7 +1622,7 @@ public sealed class CompiledRule<TContext>
         // parenthesized argument text.
         if (node is QuantifierExpression quantifier)
         {
-            string label = quantifier.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+            string label = QuantifierText.Label(quantifier.Kind);
             string description =
                 quantifier.Kind == QuantifierKind.ForAll
                     ? "Universal quantifier: the generalized AND over a registered collection binding's elements (ADR-0010)."

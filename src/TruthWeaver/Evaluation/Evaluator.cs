@@ -422,7 +422,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Evaluates a quantifier node by delegating to its collection binding (ADR-0010).</summary>
     private async ValueTask<EvalResult> EvalQuantifierAsync(QuantifierExpression node)
     {
-        string label = node.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+        string label = QuantifierText.Label(node.Kind);
         string description = $"{label}({node.Variable} IN {node.CollectionName})";
         if (!this.registry.TryGetCollection(node.CollectionName, out ICollectionBinding<TContext>? binding))
         {

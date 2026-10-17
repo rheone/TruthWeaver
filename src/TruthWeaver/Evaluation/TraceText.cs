@@ -25,7 +25,7 @@ internal static class TraceText
             // Must match the description the evaluator and the collection binding build for this node's trace
             // entries exactly (Evaluator.EvalQuantifierAsync, CollectionBinding.EvaluateQuantifierAsync), since
             // RuleCoverageAccumulator compares this text against the trace text recorded at evaluation time.
-            string label = q.Kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+            string label = QuantifierText.Label(q.Kind);
             return $"{label}({q.Variable} IN {q.CollectionName})";
         }
 

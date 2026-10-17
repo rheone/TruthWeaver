@@ -127,7 +127,7 @@ internal static class RuleRenderTree
                 return $"{description.Label} {variable} IN {collection}";
             }
 
-            string symbol = description.Label == "FORALL" ? "∀" : "∃";
+            string symbol = QuantifierText.Glyph(description.Label);
             return $"{symbol} {variable} ∈ {collection}";
         }
 
@@ -146,32 +146,11 @@ internal static class RuleRenderTree
             return description.Label;
         }
 
+        OperatorDefinitions.TryGetByLabel(description.Label, out OperatorDefinition? definition);
         return style switch
         {
-            OperatorStyle.Symbolic => description.Label switch
-            {
-                "AND" => "∧",
-                "OR" => "∨",
-                "NOT" => "¬",
-                "XOR" => "⊕",
-                "EQUIVALENT" => "↔",
-                "IMPLIES" => "→",
-                "NAND" => "↑",
-                "NOR" => "↓",
-                "COALESCE" => "??",
-                _ => description.Label,
-            },
-            OperatorStyle.CStyle => description.Label switch
-            {
-                "AND" => "&&",
-                "OR" => "||",
-                "NOT" => "!",
-                "XOR" => "^",
-                "EQUIVALENT" => "==",
-                "COALESCE" => "??",
-                "If" => "?:",
-                _ => description.Label,
-            },
+            OperatorStyle.Symbolic => definition?.SymbolicSpelling ?? description.Label,
+            OperatorStyle.CStyle => definition?.CStyleSpelling ?? description.Label,
             _ => throw new InvalidOperationException($"Unhandled operator style '{style}'."),
         };
     }

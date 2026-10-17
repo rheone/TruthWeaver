@@ -11,7 +11,7 @@ Pin each third-party action to a full commit SHA. Permissions default to `conten
 
 **Blocked by:** 02, 08
 
-**Status:** ready-for-agent (the workflow cannot publish until the owner finishes ticket 09)
+**Status:** done
 
 - [ ] A dry run with publish disabled (`workflow_dispatch` input or a fork) passes `verify` and `pack`
 - [ ] Every action is pinned to a SHA; no stored secret is used; only the publish job has `id-token: write`

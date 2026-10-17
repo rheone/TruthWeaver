@@ -1,0 +1,43 @@
+namespace TruthWeaver.Ast;
+
+/// <summary>
+/// The one place that spells a <see cref="QuantifierKind"/>: its canonical DSL word and its symbolic glyph. The
+/// evaluator, the collection binding, the trace text, the outline and the printers all read these, so a trace entry
+/// and the text the coverage accumulator compares it against can never disagree.
+/// </summary>
+internal static class QuantifierText
+{
+    /// <summary>Gets the canonical DSL word for <paramref name="kind"/>: <c>FORALL</c> or <c>EXISTS</c> (ADR-0010 decision 2).</summary>
+    /// <param name="kind">The quantifier kind.</param>
+    /// <returns>The canonical word.</returns>
+    public static string Label(QuantifierKind kind)
+    {
+        return kind switch
+        {
+            QuantifierKind.ForAll => "FORALL",
+            QuantifierKind.Exists => "EXISTS",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown quantifier kind."),
+        };
+    }
+
+    /// <summary>Gets the symbolic glyph for <paramref name="kind"/>: <c>∀</c> or <c>∃</c>.</summary>
+    /// <param name="kind">The quantifier kind.</param>
+    /// <returns>The glyph.</returns>
+    public static string Glyph(QuantifierKind kind)
+    {
+        return kind switch
+        {
+            QuantifierKind.ForAll => "∀",
+            QuantifierKind.Exists => "∃",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown quantifier kind."),
+        };
+    }
+
+    /// <summary>Gets the symbolic glyph for an outline label, which is the canonical word of a quantifier.</summary>
+    /// <param name="label">The quantifier's <see cref="Label(QuantifierKind)"/> word.</param>
+    /// <returns>The glyph.</returns>
+    public static string Glyph(string label)
+    {
+        return Glyph(label == Label(QuantifierKind.ForAll) ? QuantifierKind.ForAll : QuantifierKind.Exists);
+    }
+}

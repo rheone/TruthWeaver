@@ -5,11 +5,52 @@
 This page is the runbook to publish a TruthWeaver version to NuGet. Back to [Contributing](contributing.md).
 
 > [!IMPORTANT]
-> **This runbook has not been run.** No version of TruthWeaver has been published. Each step below is marked
-> *not run*. When you do a release, mark the steps as you do them, and correct this page where it is wrong.
+> **This runbook has not been run.** No version of TruthWeaver has been published, and the release workflow has not
+> run. Each step below is marked *not run*. When you do a release, mark the steps as you do them, and correct this page
+> where it is wrong.
 
 All eight library packages and the `TruthWeaver.Tool` tool package share one version. MinVer reads the version from the Git tag. See
 [How a package version is made](contributing.md#how-a-package-version-is-made).
+
+## Release workflow
+
+The workflow `.github/workflows/release.yml` publishes a version when you push a tag with the prefix `v`. It has four
+jobs.
+
+| Job | What it does |
+| --- | --- |
+| `verify` | Checks that the tagged commit is on `main` and that MinVer makes the version from the tag. Then it restores in locked mode, builds, tests, and runs the formatter, analyzer, text and data checks of CI. |
+| `pack` | Packs in Release with `-warnaserror`, runs `scripts/check-packages.ps1`, checks SourceLink and determinism with `dotnet-validate`, and uploads the packages as an artifact. |
+| `publish` | Needs `verify` and `pack`. Runs in the `nuget` environment, which waits for a manual approval. Makes build provenance for the packages, gets a short-lived API key from NuGet.org trusted publishing, and pushes every `.nupkg` and `.snupkg` with `--skip-duplicate`. |
+| `release` | Creates a GitHub Release with generated notes and the package files. |
+
+A tag with a hyphen, for example `v1.2.0-rc.1`, makes a pre-release on GitHub and on NuGet.org. Only the `publish` job
+has the permission `id-token: write`. The workflow uses no stored secret.
+
+To test the workflow without a release, start it by hand (Actions, Release, Run workflow) on a branch. The manual run
+does the `verify` and `pack` jobs and skips the tag checks, `publish` and `release`.
+
+### One-time setup (not run)
+
+The workflow cannot publish until the owner has done these steps.
+
+1. Create the `nuget` environment in the repository settings and add a required reviewer.
+2. On NuGet.org, add a trusted publishing policy for this repository, the workflow file `release.yml` and the `nuget`
+   environment. Do this for each of the nine package ids.
+3. Add the repository variable `NUGET_USER` with the NuGet.org profile name that owns the policy.
+
+| Part | Status |
+| --- | --- |
+| Manual run of `verify` and `pack` | Not run |
+| One-time setup | Not run |
+| Tag run with `publish` and `release` | Not run |
+
+To release with the workflow, do steps 1 and 2 below, then push the tag (step 6). Do not run steps 3 to 5 yourself. The
+workflow does them. After the release, do step 7.
+
+## Manual fallback
+
+Use the steps below when the workflow cannot run, for example when trusted publishing is not set up.
 
 ## Before you start
 
@@ -106,6 +147,9 @@ dotnet nuget push "$env:TEMP/tw-release/*.nupkg" --source https://api.nuget.org/
 After a push you can only unlist it. Do this step last, after all the checks pass.
 
 ### 6. Push the tag (not run)
+
+Pushing a `v` tag starts the release workflow. In the manual fallback, the workflow pushes the packages again. This is
+safe because of `--skip-duplicate`, or you can disable the workflow before you push.
 
 ```powershell
 git push origin v1.0.0
