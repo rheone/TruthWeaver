@@ -104,4 +104,17 @@ public static class ToolDiagnosticCodes
     /// type, or a rule file or data file cannot be read.
     /// </summary>
     public const string InvalidRuleTestFile = "TWT0022";
+
+    /// <summary>
+    /// A JsonLogic document uses an operator or a shape that the importer cannot map to a TruthWeaver rule, so the import
+    /// fails. The message names the operator and the JsonLogic path.
+    /// </summary>
+    public const string UnsupportedJsonLogic = "TWT0023";
+
+    /// <summary>
+    /// An imported JsonLogic construct can give a different answer in TruthWeaver, because JsonLogic is two-valued: a
+    /// variable read by truthiness, a missing variable, a loose comparison, a missing else branch, a default value. The
+    /// import succeeds.
+    /// </summary>
+    public const string JsonLogicBehaviorDiffers = "TWT0024";
 }

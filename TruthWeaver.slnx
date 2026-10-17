@@ -40,6 +40,14 @@
     <Project Name="TruthWeaver.AspNetCore" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.AspNetCore.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.AspNetCore.Tests" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Policies" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Policies" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Policies.Tests" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Policies.Tests" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Extensions.Configuration" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Extensions.Configuration" Configuration="Release|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Extensions.Configuration.Tests" Configuration="Debug|AnyCPU" Build="true" />
+    <Project Name="TruthWeaver.Extensions.Configuration.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Debug|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Architecture.Tests" Configuration="Release|AnyCPU" Build="true" />
     <Project Name="TruthWeaver.Benchmarks" Configuration="Debug|AnyCPU" Build="true" />
@@ -64,7 +72,9 @@
     <Project Path="src\TruthWeaver.Abstractions\TruthWeaver.Abstractions.csproj" />
     <Project Path="src\TruthWeaver.AspNetCore\TruthWeaver.AspNetCore.csproj" />
     <Project Path="src\TruthWeaver.DataSources.Json\TruthWeaver.DataSources.Json.csproj" />
+    <Project Path="src\TruthWeaver.Extensions.Configuration\TruthWeaver.Extensions.Configuration.csproj" />
     <Project Path="src\TruthWeaver.Generators\TruthWeaver.Generators.csproj" />
+    <Project Path="src\TruthWeaver.Policies\TruthWeaver.Policies.csproj" />
     <Project Path="src\TruthWeaver.Predicates\TruthWeaver.Predicates.csproj" />
     <Project Path="src\TruthWeaver.Testing\TruthWeaver.Testing.csproj" />
     <Project Path="src\TruthWeaver.Tool.Core\TruthWeaver.Tool.Core.csproj" />
@@ -77,7 +87,9 @@
     <Project Path="tests\TruthWeaver.Architecture.Tests\TruthWeaver.Architecture.Tests.csproj" />
     <Project Path="tests\TruthWeaver.AspNetCore.Tests\TruthWeaver.AspNetCore.Tests.csproj" />
     <Project Path="tests\TruthWeaver.DataSources.Json.Tests\TruthWeaver.DataSources.Json.Tests.csproj" />
+    <Project Path="tests\TruthWeaver.Extensions.Configuration.Tests\TruthWeaver.Extensions.Configuration.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Generators.Tests\TruthWeaver.Generators.Tests.csproj" />
+    <Project Path="tests\TruthWeaver.Policies.Tests\TruthWeaver.Policies.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Predicates.Tests\TruthWeaver.Predicates.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Testing.Tests\TruthWeaver.Testing.Tests.csproj" />
     <Project Path="tests\TruthWeaver.Tests\TruthWeaver.Tests.csproj" />

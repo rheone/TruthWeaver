@@ -48,6 +48,12 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-rc.1.26425.128" />
   </ItemGroup>
+  <!-- Microsoft.Extensions.Configuration - TruthWeaver.Extensions.Configuration's only package dependency: IConfiguration and its
+       change token feed the rule store (ADR-0016). It stays on the .NET 11 RC line with the other Microsoft.Extensions.* packages
+       (see the Dependabot ignore entry). The core package takes no dependency on it. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="11.0.0-rc.1.26425.128" />
+  </ItemGroup>
   <!-- Microsoft.AspNetCore.TestHost - test-project-only (TruthWeaver.AspNetCore.Tests and the AspNetCore sample tests): TestServer
        runs a host in memory, so the authorization tests send real requests without a network port. TruthWeaver.AspNetCore itself
        takes only the Microsoft.AspNetCore.App framework reference. -->

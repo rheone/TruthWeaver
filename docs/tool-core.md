@@ -12,6 +12,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `FormatDetector` | Finds the format of an input: rule text, JSON or YAML. |
 | `RuleLoader` | Loads a rule from a file, a stream or a string, and selects a rule inside a larger document by a path. |
 | `RuleConverter` | Compiles a loaded rule and converts it to another format. |
+| `JsonLogicImporter` | Imports a JsonLogic rule as a rule tree (JSON). See [JsonLogic import](#jsonlogic-import). |
 | `ToolConfigurationFile`, `ToolConfiguration`, `ToolSettings` | Find and read `truthweaver.json`, and resolve the settings. |
 | `StubAssignment` | Loads stub values: one truth value for each term. |
 | `DataSourceFiles` | Loads JSON and YAML data files for `from("source", "query")` references. |
@@ -97,6 +98,41 @@ A path that selects nothing is a `TWT0005` error that names the first segment th
 The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name and every argument as written. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors and limits are still diagnostics. The limits come from the [settings](#configuration-file).
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
+
+## JsonLogic import
+
+`JsonLogicImporter.Import(jsonLogic)` reads a [JsonLogic](https://jsonlogic.com) rule and returns the rule tree as compact JSON. Load the result with `RuleLoader.LoadString` in the JSON format to compile or convert it. The importer uses `System.Text.Json` only.
+
+JsonLogic is two-valued, so a mapped rule can answer `Unknown` where JsonLogic answers `false`. The import reports each such place as a `TWT0024` warning. An operator or shape without a mapping fails the import with a `TWT0023` error for each occurrence, and the result has no value.
+
+| JsonLogic | TruthWeaver |
+| --- | --- |
+| `true`, `false` | The constants `True` and `False`. |
+| `null` as a condition | The constant `Unknown`, with a `TWT0024` warning. |
+| `{"and": [...]}`, `{"or": [...]}` | `AND`, `OR`. One operand gives that operand. No operand is a `TWT0023` error. |
+| `{"!": x}` | `NOT`. |
+| `{"!!": x}` | The operand `x`. |
+| `{"if": [c, a, b]}` | `If(c, a, b)`. A longer list `[c1, a1, c2, a2, e]` nests in the else position. A list with no else branch uses `Unknown` for it, with a `TWT0024` warning. |
+| `{"var": "a.b"}` as a condition | The term `aB`, with a `TWT0024` warning: JsonLogic reads the value by truthiness. |
+| `{"==": [{"var": "a"}, v]}`, `===` | The term `aIsEqualTo(value: v)`. With `null` for `v`: `aIsNull`. |
+| `{"!=": ...}`, `!==` | `aIsNotEqualTo(value: v)`. With `null`: `aIsNotNull`. |
+| `<`, `<=`, `>`, `>=` | `aIsLessThan`, `aIsLessThanOrEqualTo`, `aIsGreaterThan`, `aIsGreaterThanOrEqualTo`, each with `value`. A literal on the left flips the comparison. |
+| `{"<=": [lo, {"var": "a"}, hi]}` | `aIsBetween(lower: lo, upper: hi)`. |
+| `{"<": [lo, {"var": "a"}, hi]}` | `aIsGreaterThan(value: lo) AND aIsLessThan(value: hi)`. |
+| `{"in": [{"var": "a"}, [..]]}` | `aIsIn(values: [..])`. |
+| `{"in": [v, {"var": "a"}]}` | `aContains(value: v)`. |
+
+A term name is the variable path in camel case, followed by the catalog member: `user.age` with `>` gives `userAgeIsGreaterThan`. The host registers a predicate with that name that selects the value. A character that a name cannot hold becomes `_`.
+
+The importer warns about these differences:
+
+- A `var` that is read by truthiness, in `and`, `or`, `!`, `if` or at the root.
+- A missing variable. JsonLogic reads it as `null`, so the comparison is `false`. The term answers `Unknown`. The warning appears once for each variable.
+- `==` and `!=`. They convert types in JsonLogic. The terms compare without conversion, like `===` and `!==`.
+- A default value of `var`. The importer ignores it.
+- An `if` with no else branch, and a `null` condition.
+
+These have no mapping and fail the import: every other operator (`+`, `cat`, `map`, `reduce`, `missing`, `some` and the rest), a comparison between two variables or two literals, a comparison of a literal with an operation, a literal that is not `true`, `false` or `null` where a condition is expected, and a `var` path that is not a non-empty string.
 
 ## Writing a rule back
 
@@ -321,7 +357,7 @@ For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AN
 | --- | --- | --- |
 | `Success` | 0 | No error, and no warning in strict mode. |
 | `Failed` | 1 | An error, or a warning in strict mode. |
-| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a write-back or a rule test file. This code wins over `Failed`. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a write-back, a rule test file or a JsonLogic document that the importer cannot map. This code wins over `Failed`. |
 
 ## Diagnostics output
 
@@ -462,6 +498,8 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0020` | `RoundTripWriteBack` | Warning | A round-trip write-back serialized the whole document again; YAML comments and layout can be lost. |
 | `TWT0021` | `WriteBackFailed` | Error | An edited rule cannot be written back into its document. |
 | `TWT0022` | `InvalidRuleTestFile` | Error | A rule test file is not usable. |
+| `TWT0023` | `UnsupportedJsonLogic` | Error | A JsonLogic document uses an operator or a shape that the importer cannot map. |
+| `TWT0024` | `JsonLogicBehaviorDiffers` | Warning | An imported JsonLogic construct can give a different answer in TruthWeaver. |
 
 ## Packaging
 

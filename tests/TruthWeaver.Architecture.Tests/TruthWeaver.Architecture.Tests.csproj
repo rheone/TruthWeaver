@@ -22,6 +22,8 @@
     <ProjectReference Include="../../src/TruthWeaver.Tool.Core/TruthWeaver.Tool.Core.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.Tool/TruthWeaver.Tool.csproj" />
     <ProjectReference Include="../../src/TruthWeaver.AspNetCore/TruthWeaver.AspNetCore.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Policies/TruthWeaver.Policies.csproj" />
+    <ProjectReference Include="../../src/TruthWeaver.Extensions.Configuration/TruthWeaver.Extensions.Configuration.csproj" />
   </ItemGroup>
 
   <!-- Every test project, referenced so TestNamingTests can reflect over their test methods. -->
@@ -30,7 +32,9 @@
     <ProjectReference Include="../TruthWeaver.Abstractions.Tests/TruthWeaver.Abstractions.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.AspNetCore.Tests/TruthWeaver.AspNetCore.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.DataSources.Json.Tests/TruthWeaver.DataSources.Json.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Extensions.Configuration.Tests/TruthWeaver.Extensions.Configuration.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Generators.Tests/TruthWeaver.Generators.Tests.csproj" />
+    <ProjectReference Include="../TruthWeaver.Policies.Tests/TruthWeaver.Policies.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Predicates.Tests/TruthWeaver.Predicates.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Testing.Tests/TruthWeaver.Testing.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Tool.Core.Tests/TruthWeaver.Tool.Core.Tests.csproj" />

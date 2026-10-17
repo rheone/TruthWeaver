@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>6173482c-5b78-4979-8373-bae3db16d7a7</ProjectGuid>
+    <RootNamespace>TruthWeaver.Policies</RootNamespace>
+    <PackageId>TruthWeaver.Policies</PackageId>
+    <Description>Policy sets for TruthWeaver: policies with a target, an effect and a priority, combined by deny-overrides, permit-overrides or first-applicable under Strong Kleene logic, with a fail-closed decision that never turns Unknown into a permit.</Description>
+    <PackageTags>rules engine;kleene;k3;policy;authorization;xacml;truthweaver</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TruthWeaver.Abstractions/TruthWeaver.Abstractions.csproj" />
+    <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
+  </ItemGroup>
+</Project>

@@ -29,6 +29,7 @@ The tool runs on .NET 11. Its command line (the commands, the options and the ex
 | --- | --- |
 | [`validate`](#validate) | Validates a rule in every level, and reports the statistics. |
 | [`convert`](#convert) | Converts a rule to rule text, JSON or YAML. |
+| [`import`](#import) | Imports a rule from another rule format, now JsonLogic. |
 | [`format`](#format) | Prints a rule in its own format, canonical or pretty, or checks that it is. |
 | [`print`](#print) | Prints one artifact of a rule on standard output. |
 | [`export`](#export) | Writes one artifact to a file, or every artifact to a folder with a manifest. |
@@ -112,7 +113,7 @@ The text output of a check is one line: the file and `identical`, `missing` or `
 | --- | --- |
 | 0 | Success. |
 | 1 | The command failed: an error in the rule, a warning with `validate --strict`, a `--check` that found a difference, or `diff` found that the rules are not equivalent. |
-| 2 | The tool could not do its work: a usage error (an unknown option, a missing value, options that cannot go together), or a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer or a rule test file. |
+| 2 | The tool could not do its work: a usage error (an unknown option, a missing value, options that cannot go together), or a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a rule test file or a JsonLogic document that the importer cannot map. |
 
 Code 2 wins over code 1. [Exit codes](tool-core.md#exit-codes) lists the `TWT` codes that give code 2.
 
@@ -139,6 +140,36 @@ The JSON result has `report`: the JSON validation report of [Diagnostics output]
 | `--no-notes` | Leaves out the notes. |
 
 The JSON result has `format`, and `text` or `output`.
+
+## import
+
+`truthweaver import [input] [--from jsonlogic] [--to <format>]` imports a rule from another rule format and writes it as `text` (the default), `json` or `yaml`. The only source format is `jsonlogic`. The input is a file, or standard input. The `--from` option of the other commands (the input format) is a different option, and `import` has no `--path`.
+
+| Option | Meaning |
+| --- | --- |
+| `--from <format>` | The format to import. The only value is `jsonlogic`, the default. |
+| `--to <format>` | The format to write: `text` (the default), `json` or `yaml`. |
+| `--config <file>`, `--operator-style <style>`, `--max-depth <n>`, `--max-node-count <n>` | As for the other commands. |
+| `--output <file>`, `--check` | As [Output files and checks](#output-files-and-checks) describes. |
+| `--json` | Writes one JSON object. |
+
+A JsonLogic construct that can answer differently in TruthWeaver is a `TWT0024` warning, and the import goes on. An operator or shape that has no mapping is a `TWT0023` error with exit code 2, and nothing is written. [JsonLogic import](tool-core.md#jsonlogic-import) lists the mapping, the warnings and the unsupported constructs.
+
+A JsonLogic file `age.json`:
+
+<!-- doctest:skip JsonLogic input, not a rule tree -->
+```json
+{ "and": [{ ">=": [{ "var": "user.age" }, 18] }, { "!": { "var": "user.banned" } }] }
+```
+
+`truthweaver import age.json` writes:
+
+<!-- doctest:skip output of the command, uses host predicates -->
+```text
+userAgeIsGreaterThanOrEqualTo(value: 18) AND NOT userBanned
+```
+
+The JSON result has `from`, `format`, and `text` or `output`.
 
 ## format
 
