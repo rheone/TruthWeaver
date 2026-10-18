@@ -6,10 +6,10 @@ Scope decisions (owner, 2026-10-11) are in the spec; the worker adds no project,
 
 **Blocked by:** 01, C4 (the patcher lives in Core)
 
-**Status:** on-hold until tickets 16 and 20 (feature-backlog-2026-10-11) are done; then ready-for-agent
+**Status:** done
 
-- [ ] Patch-in-place leaves every byte outside the rule's span unchanged (tested on a commented YAML fixture)
-- [ ] Round-trip write-back warns before it runs
-- [ ] A path that matches nothing or many shows a clear message; the document is never overwritten without confirmation
-- [ ] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Patch-in-place leaves every byte outside the rule's span unchanged (tested on a commented YAML fixture)
+- [x] Round-trip write-back warns before it runs
+- [x] A path that matches nothing or many shows a clear message; the document is never overwritten without confirmation
+- [x] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

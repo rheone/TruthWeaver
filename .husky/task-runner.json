@@ -4,17 +4,15 @@
     {
       "name": "normalize-text-staged",
       "group": "pre-commit",
-      "command": "pwsh",
+      "command": "dotnet",
       "args": [
-        "-NoProfile",
-        "-File",
-        "scripts/normalize-text-staged.ps1"
+        "run",
+        "scripts/normalize-text-staged.cs"
       ],
       "include": [
         "**/*.md",
         "**/*.txt",
         "**/*.cs",
-        "**/*.ps1",
         "**/*.py",
         "**/*.mjs",
         "**/*.sh",
@@ -31,11 +29,10 @@
     {
       "name": "format-data-staged",
       "group": "pre-commit",
-      "command": "pwsh",
+      "command": "dotnet",
       "args": [
-        "-NoProfile",
-        "-File",
-        "scripts/format-data-staged.ps1"
+        "run",
+        "scripts/format-data-staged.cs"
       ],
       "include": [
         "**/*.json",
@@ -46,11 +43,10 @@
     {
       "name": "format-staged",
       "group": "pre-commit",
-      "command": "pwsh",
+      "command": "dotnet",
       "args": [
-        "-NoProfile",
-        "-File",
-        "scripts/format-staged.ps1"
+        "run",
+        "scripts/format-staged.cs"
       ],
       "include": [
         "**/*.cs"

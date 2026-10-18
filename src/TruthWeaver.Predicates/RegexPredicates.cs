@@ -65,7 +65,7 @@ public static class RegexPredicates
             + "invariant culture), m (multiline), s (single line), n (explicit capture) and x (ignore pattern white space). "
             + "The compiled pattern is cached per distinct pattern and flags, not recompiled per evaluation. A literal "
             + "pattern or flags string is validated when the rule compiles (an invalid one is a compile error); an invalid "
-            + "value from a data source surfaces as an evaluation-time fault (Unknown). "
+            + "value from a data source surfaces as an evaluation-time fault (Unknown), even when the selected value is null. "
             + "A null selected value is Unknown, never a fault, unless the host registers it with "
             + "NullBehavior.False, which makes it False.";
         return Create(
@@ -171,19 +171,23 @@ public static class RegexPredicates
             schema,
             (context, args, _) =>
             {
-                string? selected = selector(context);
-                if (selected is null)
-                {
-                    return PredicateResult.ForNullAsync(nullBehavior, negate);
-                }
-
+                // Read and validate the pattern and flags first, so a bad data-source value faults even when the
+                // selection is null. A null selection must not hide an invalid pattern until the first non-null value.
                 string pattern = args.GetString(argumentName);
 
                 // The schema defaults flags to empty. TryGet keeps a delegate that is invoked directly, with only the
                 // pattern, behaving as that default instead of failing on a missing argument.
                 args.TryGetString(FlagsArgumentName, out string? flags);
                 RegexOptions options = ParseFlags(flags ?? string.Empty);
-                return PredicateResult.FromBoolAsync(Cache.Get(pattern, options).IsMatch(selected) != negate);
+                Regex regex = Cache.Get(pattern, options);
+
+                string? selected = selector(context);
+                if (selected is null)
+                {
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
+                }
+
+                return PredicateResult.FromBoolAsync(regex.IsMatch(selected) != negate);
             }
         );
     }

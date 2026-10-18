@@ -106,9 +106,10 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     /// <inheritdoc />
     public bool TryGetTruthValue(out TruthValue value)
     {
-        // YAML has a native boolean, but a plain scalar's text is all the parser keeps, so true, false and unknown share one spelling rule.
-        value = default;
-        return node is YamlScalarNode { Value: { } text } && TruthValueText.TryParse(text, out value);
+        // YAML has a native boolean, but a plain scalar's text is all the parser keeps, so the words true, false and unknown and the letters T, F and U share one spelling rule.
+        value = TruthValue.Unknown;
+        return node is YamlScalarNode { Value: { } text }
+            && (TruthValueText.TryParse(text, out value) || TruthValueText.TryParseLetter(text, out value));
     }
 
     /// <inheritdoc />

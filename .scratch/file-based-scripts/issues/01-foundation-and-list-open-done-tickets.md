@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `scripts/shared/` holds the helpers the later tickets need, without top-level statements
-- [ ] The app output and exit code match the `.ps1` on the current `.scratch/` tree
-- [ ] `dotnet build -p:CI=true`, CSharpier, `dotnet format --severity info` and Roslynator pass with `scripts/*.cs` in scope
-- [ ] Confirm `dotnet run` works from a fresh worktree and from the Husky working directory; record the warm and cold start time
-- [ ] (The CLAUDE.md "prefer file-based apps" rule is already in place.)
-- [ ] The page that documents the scripts (`docs/contributing.md`) names the new command (acceptance criterion for docs-with-code)
+- [x] `scripts/shared/` holds the helpers the later tickets need, without top-level statements
+- [x] The app output and exit code match the `.ps1` on the current `.scratch/` tree
+- [x] `dotnet build -p:CI=true`, CSharpier, `dotnet format --severity info` and Roslynator pass with `scripts/*.cs` in scope
+- [x] Confirm `dotnet run` works from a fresh worktree and from the Husky working directory; record the warm and cold start time
+- [x] (The CLAUDE.md "prefer file-based apps" rule is already in place.)
+- [x] The page that documents the scripts (`docs/contributing.md`) names the new command (acceptance criterion for docs-with-code)

@@ -86,6 +86,9 @@ as a failure.
 
 An `Unknown` answer that the predicate returns is valid. Its outcome has `HasFault` set to `false`.
 
+A `FakePredicates.Scripted` fake that is called after its last answer throws an `InvalidOperationException` that is not
+an outcome: `RunAsync` throws it, as `EvaluateAsync` does, because it is a mistake in the test.
+
 To accept an exception, add it to `PredicateHarnessOptions.ExpectedFaults`. An allow-listed exception reports with the
 status `ExpectedFault` and does not fail the run.
 

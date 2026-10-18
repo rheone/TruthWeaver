@@ -1,5 +1,7 @@
 namespace TruthWeaver.Testing;
 
+using TruthWeaver.Evaluation;
+
 /// <summary>
 /// Fake/stub predicate factories for tests: a fixed answer, a Kleene (<see cref="TruthValue"/>)
 /// answer, a simulated fault, or a scripted sequence of answers across successive calls, without
@@ -91,9 +93,9 @@ public static class FakePredicates
     /// against the same rule with a predicate whose answer changes over time (e.g. a simulated flap).
     /// A <see cref="TruthValue.Unknown"/> entry answers Unknown on that call without a fault, the same
     /// as <see cref="Returning{TContext}(string, TruthValue, string, string)"/>.
-    /// Calling the predicate more times than <paramref name="script"/> has entries throws
-    /// <see cref="InvalidOperationException"/>, so an under-scripted test fails loudly rather than
-    /// silently repeating or wrapping around.
+    /// Calling the predicate more times than <paramref name="script"/> has entries is test misuse: it throws an
+    /// <see cref="InvalidOperationException"/> that the evaluator does not absorb, so <c>EvaluateAsync</c> throws and
+    /// the test fails. It is never an <c>Unknown</c> result with a <see cref="Fault"/>.
     /// </summary>
     /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -101,6 +103,7 @@ public static class FakePredicates
     /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
     /// <param name="description">A human-readable description of this fake predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="script"/> is empty.</exception>
     public static (
         PredicateSchema Schema,
@@ -113,6 +116,39 @@ public static class FakePredicates
             "A fake predicate that answers with successive scripted results across calls, registered for a test."
     )
     {
+        ArgumentNullException.ThrowIfNull(script);
+        return Scripted<TContext>(name, [.. script.Select(answer => (Func<TruthValue>)(() => answer))], label, description);
+    }
+
+    /// <summary>
+    /// Creates a predicate that runs successive steps from <paramref name="script"/>, one per call, in order. A step
+    /// returns the call's answer or throws on purpose, for example <c>() =&gt; throw new TimeoutException()</c> to
+    /// simulate one failed call in a sequence. An exception that a step throws is a predicate failure: the evaluator
+    /// records it as a <see cref="Fault"/> and the term is <see cref="TruthValue.Unknown"/> (ADR-0001).
+    /// Calling the predicate more times than <paramref name="script"/> has steps is test misuse: it throws an
+    /// <see cref="InvalidOperationException"/> that the evaluator does not absorb, so <c>EvaluateAsync</c> throws and
+    /// the test fails.
+    /// </summary>
+    /// <typeparam name="TContext">The application context type (ignored by the fake).</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="script">The ordered sequence of steps, one run per call.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate, or <see langword="null"/> (the default) to use <paramref name="name"/>, so that each fake in a rendered diagram shows its own name.</param>
+    /// <param name="description">A human-readable description of this fake predicate.</param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="script"/> is empty.</exception>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) Scripted<TContext>(
+        string name,
+        IReadOnlyList<Func<TruthValue>> script,
+        string? label = null,
+        string description =
+            "A fake predicate that answers with successive scripted results across calls, registered for a test."
+    )
+    {
+        ArgumentNullException.ThrowIfNull(script);
         if (script.Count == 0)
         {
             throw new ArgumentException("A scripted fake predicate needs at least one scripted answer.", nameof(script));
@@ -127,13 +163,14 @@ public static class FakePredicates
                 int index = Interlocked.Increment(ref callCount) - 1;
                 if (index >= script.Count)
                 {
-                    throw new InvalidOperationException(
+                    // Misuse, not a predicate failure: the evaluator lets this type escape so the test fails loudly.
+                    throw new TestDoubleMisuseException(
                         $"Scripted fake predicate '{name}' was called {index + 1} times, "
                             + $"but only {script.Count} answer(s) were scripted."
                     );
                 }
 
-                return ValueTask.FromResult(script[index]);
+                return ValueTask.FromResult(script[index]());
             }
         );
     }

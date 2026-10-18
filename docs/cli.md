@@ -2,7 +2,7 @@
 
 `truthweaver` is the command line of TruthWeaver. It validates, converts, formats, prints, exports, reports, compares, evaluates and tests rules in rule text, JSON or YAML. Back to the [README](../README.md).
 
-The commands are a thin front end over the [tool core](tool-core.md), so the command line and the terminal UI behave the same way. The tool has no host registry: it compiles every rule permissively, and it evaluates a rule with stub values in place of the predicates.
+The commands are a thin front end over the [tool core](tool-core.md), so the command line and the [terminal UI](tui.md) behave the same way. The tool has no host registry: it compiles every rule permissively, and it evaluates a rule with stub values in place of the predicates.
 
 ## Install
 

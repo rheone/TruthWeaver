@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Run against the whole repo, the app reports and rewrites exactly what the `.ps1` does (compare on a scratch copy)
-- [ ] `--check-only` rewrites nothing and exits 1 on a file that needs a change
-- [ ] The `.ps1` BOM exception stays until ticket 08
-- [ ] All build and format gates pass for the new file
+- [x] Run against the whole repo, the app reports and rewrites exactly what the `.ps1` does (compare on a scratch copy)
+- [x] `--check-only` rewrites nothing and exits 1 on a file that needs a change
+- [x] The `.ps1` BOM exception stays until ticket 08
+- [x] All build and format gates pass for the new file

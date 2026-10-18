@@ -608,6 +608,42 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// Inside a <c>FORALL</c> or <c>EXISTS</c> body, a term that reads the element with <c>from(...)</c> shows the
+    /// outcome of the reference after the term in both the trace tree and the flat trace, as it does at the root of a
+    /// rule (ADR-0006 decision 13).
+    /// </summary>
+    /// <param name="exists"><see langword="true"/> for <c>EXISTS</c>; <see langword="false"/> for <c>FORALL</c>.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EvaluateAsync_FromReferenceInsideQuantifierBody_TraceShowsTheOutcome_Test(bool exists)
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler();
+        RuleBuilder body = RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty")));
+        CompilationResult<LinesContext> result = (
+            exists ? RuleBuilder.Exists("line", "lines", body) : RuleBuilder.ForAll("line", "lines", body)
+        ).Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(0)] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        const string Outcome = "[from(\"line\", \"$.qty\"): resolved]";
+        TraceNode element = Assert.Single(decision.TraceTree!.Children);
+        TraceNode term = Assert.Single(element.Children);
+        Assert.EndsWith(Outcome, term.Text, StringComparison.Ordinal);
+        Assert.Contains(
+            decision.Trace!.Entries,
+            entry =>
+                entry.Text.StartsWith("line[0]: qtyAbove", StringComparison.Ordinal)
+                && entry.Text.EndsWith(Outcome, StringComparison.Ordinal)
+        );
+    }
+
+    /// <summary>
     /// A query that matches no node in the element's projected source (ADR-0006 decision 6: a scalar argument with
     /// zero matches is missing) makes that element's body <c>Unknown</c> with a fault, not an exception, exactly as
     /// an undeclared-source or missing-match reference does outside a quantifier.

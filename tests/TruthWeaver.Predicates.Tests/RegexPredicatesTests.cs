@@ -226,6 +226,55 @@ public class RegexPredicatesTests
         );
     }
 
+    /// <summary>A bad data-source pattern or flags value throws for a null selection too, so the evaluator records a fault.</summary>
+    [Theory]
+    [InlineData(true, "(", "")]
+    [InlineData(true, "a", "q")]
+    [InlineData(false, "(", "")]
+    [InlineData(false, "a", "ii")]
+    public Task IsMatchAndIsNotMatch_BadPatternOrFlagsWithNullSelection_Throws_Test(bool negated, string pattern, string flags)
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) = negated
+            ? RegexPredicates.IsNotMatch<TestContext>("m", c => c.Value)
+            : RegexPredicates.IsMatch<TestContext>("m", c => c.Value);
+
+        return Assert.ThrowsAnyAsync<ArgumentException>(async () =>
+            await evaluate(new TestContext(null), Args(("pattern", pattern), ("flags", flags)), CancellationToken.None)
+        );
+    }
+
+    /// <summary>For <c>IsMatch</c>, a good pattern and flags with a null selection still answer per <c>NullBehavior</c>.</summary>
+    [Fact]
+    public async Task IsMatch_GoodPatternWithNullSelection_ReturnsUnknown_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            RegexPredicates.IsMatch<TestContext>("m", c => c.Value);
+
+        TruthValue result = await evaluate(
+            new TestContext(null),
+            Args(("pattern", "a"), ("flags", "i")),
+            CancellationToken.None
+        );
+
+        Assert.Equal(TruthValue.Unknown, result);
+    }
+
+    /// <summary>A good pattern with a null selection still answers per <c>NullBehavior</c>.</summary>
+    [Fact]
+    public async Task IsNotMatch_GoodPatternWithNullSelection_ReturnsUnknown_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            RegexPredicates.IsNotMatch<TestContext>("m", c => c.Value);
+
+        TruthValue result = await evaluate(
+            new TestContext(null),
+            Args(("pattern", "a"), ("flags", "i")),
+            CancellationToken.None
+        );
+
+        Assert.Equal(TruthValue.Unknown, result);
+    }
+
     /// <summary>An invalid pattern from a data source throws at evaluation when the <c>i</c> flag is set, as with no flags.</summary>
     [Fact]
     public Task IsMatch_FlagIAndInvalidPattern_ThrowsAtEvaluationTime_Test()

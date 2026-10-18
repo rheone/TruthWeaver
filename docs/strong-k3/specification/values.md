@@ -17,7 +17,7 @@ Every expression evaluates to exactly one of three values. In tables and formula
 - The literals `True`, `False` and `Unknown` are case-insensitive on input and printed in that spelling. Rule text also reads the letters `T`, `F` and `U` as the same literals. They are not Operations; they are documented here and in each Operation's Syntax section.
 
 > [!WARNING]
-> The `TruthValue` enum is declared in the order `False`, `True`, `Unknown`, so the numeric order of its underlying integers is `F < T < U`. That is **not** the truth order below. Never compare the integers; use the operations. `default(TruthValue)` is `False`, which suits fail-closed handling.
+> The `TruthValue` enum is declared in the order `Unknown = 0`, `False = 1`, `True = 2`, so the numeric order of its underlying integers is `U < F < T`. That is **not** the truth order below. Never compare the integers; use the operations. Do not store the integers; store the member name. `default(TruthValue)` is `Unknown`, so a value that was never set (a field, a new array element, the `out` value of a failed read) is never a definite answer.
 
 ## Truth order
 

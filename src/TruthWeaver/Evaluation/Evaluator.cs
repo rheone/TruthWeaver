@@ -427,6 +427,11 @@ internal sealed class Evaluator<TContext>(
         if (!this.registry.TryGetCollection(node.CollectionName, out ICollectionBinding<TContext>? binding))
         {
             // Defensive only: a successfully Strict-mode-compiled rule cannot reference an unregistered collection.
+            // If it ever runs, the fault is recorded against the collection name, as a throwing selector's is.
+            this.RecordFault(
+                new TermIdentity(node.CollectionName, []),
+                new KeyNotFoundException($"No collection named '{node.CollectionName}' is registered.")
+            );
             this.AddTraceEntry(description, TruthValue.Unknown, false);
             return new EvalResult(
                 TruthValue.Unknown,
@@ -572,8 +577,12 @@ internal sealed class Evaluator<TContext>(
     {
         if (!this.registry.TryGet(identity.PredicateName, out PredicateDescriptor<TContext>? descriptor))
         {
-            // Defensive only: a successfully Strict-mode-compiled rule cannot reference an
-            // unregistered predicate, so this path is unreachable in practice.
+            // Defensive only: a successfully Strict-mode-compiled rule cannot reference an unregistered predicate.
+            // If it ever runs, the fault says why the term is Unknown (ADR-0002).
+            this.RecordFault(
+                identity,
+                new KeyNotFoundException($"No predicate named '{identity.PredicateName}' is registered.")
+            );
             return TruthValue.Unknown;
         }
 
@@ -603,8 +612,12 @@ internal sealed class Evaluator<TContext>(
                 ? await lambda(this.context, args, this.cancellationToken).ConfigureAwait(false)
                 : await this.InvokeClassBasedAsync(descriptor, args).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException || !this.cancellationToken.IsCancellationRequested)
+        catch (Exception ex)
+            when (ex is not TestDoubleMisuseException
+                && (ex is not OperationCanceledException || !this.cancellationToken.IsCancellationRequested)
+            )
         {
+            // A misused test double (TruthWeaver.Testing) is not a predicate failure: it escapes so the test fails.
             this.RecordFault(identity, ex);
             return TruthValue.Unknown;
         }
@@ -695,7 +708,8 @@ internal sealed class Evaluator<TContext>(
             }
         }
 
-        this.state.VariableOutcomes[(this.scope, identity)] = outcomes;
+        // Keyed by the memoization scope, as Annotated reads it, so a term inside a quantifier body keeps its notes.
+        this.state.VariableOutcomes[(this.memoScope, identity)] = outcomes;
         return resolved;
     }
 

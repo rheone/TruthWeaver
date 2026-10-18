@@ -99,3 +99,29 @@ decision.Should().HaveResult(TruthValue.Unknown).HaveFaultForPredicate("isPaid")
 ```
 
 The `Subject` property of `DecisionAssertions` returns the decision under test, for checks that these assertions do not cover.
+
+## Fake predicates
+
+`FakePredicates` makes test doubles for predicates. Each factory returns a schema and an evaluation delegate for `PredicateRegistryBuilder<TContext>.Add`.
+
+| Factory | Each call |
+| --- | --- |
+| `Returning(name, bool)` | Returns `True` or `False`. |
+| `Returning(name, TruthValue)` | Returns the value. `Unknown` records no fault. |
+| `Faulting(name, exception)` | Throws the exception. The evaluator records a `Fault`, and the term is `Unknown`. |
+| `Scripted(name, answers)` | Returns the next answer in the list. |
+| `Scripted(name, steps)` | Runs the next `Func<TruthValue>` in the list. A step can return an answer or throw. |
+
+An exception that a scripted step throws is a predicate failure, as for any predicate: the term is `Unknown` and the decision has a `Fault` for it.
+
+A call after the last answer or step is a mistake in the test. The fake throws an `InvalidOperationException` that the evaluator does not catch, so `EvaluateAsync` throws and the test fails. The predicate harness also lets this exception through. Only a scripted fake can throw this exception, so every exception from a real predicate is still a `Fault`.
+
+```csharp
+Func<TruthValue> timeOut = () => throw new TimeoutException();
+(PredicateSchema schema, Func<Order, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+    FakePredicates.Scripted<Order>("isPaid", [timeOut]);
+builder.Add(schema, evaluate);
+
+// The first evaluation: Unknown, with a fault for isPaid.
+// A second evaluation calls isPaid again, so EvaluateAsync throws InvalidOperationException.
+```

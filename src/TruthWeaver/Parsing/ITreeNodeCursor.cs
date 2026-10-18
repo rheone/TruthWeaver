@@ -68,7 +68,7 @@ internal interface ITreeNodeCursor
     public bool TryGetInt32(out int value);
 
     /// <summary>Reads this node as a K3 constant in the format's accepted spellings.</summary>
-    /// <param name="value">The truth value when successful.</param>
+    /// <param name="value">The truth value when successful; otherwise <see cref="TruthValue.Unknown"/>.</param>
     /// <returns><see langword="true"/> when this node is a valid constant.</returns>
     public bool TryGetTruthValue(out TruthValue value);
 

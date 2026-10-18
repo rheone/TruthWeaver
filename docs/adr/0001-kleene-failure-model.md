@@ -57,6 +57,16 @@ context. A dedicated enum keeps `TruthValue` out of accidental boolean
 contexts, gives `switch` exhaustiveness, and reads correctly in logs and
 traces.
 
+> **Amendment (2026-10-17, the zero value):** the members are reordered to `Unknown = 0`, `False = 1`, `True = 2`, so
+> `default(TruthValue)`, an element of a new array, an unset field and the `out` value of a failed constant read are
+> `Unknown`. The first order made the zero value `False`, which reads as a definite answer that nobody gave.
+> `NullBehavior` made the same change. This breaks any code or stored data that uses the numeric values: a persisted
+> `0` that meant `False` now reads as `Unknown`, `1` (was `True`) reads as `False`, and `2` (was `Unknown`) reads as
+> `True`. Migration: name the members in code, and store and read a `TruthValue` by its name, not its number. The
+> engine's own formats (rule text, JSON and YAML trees, decision records, rule-test files) always use names, so they
+> are not affected. The underlying integers are still not the truth order (`False < Unknown < True`). Audit
+> `.scratch/repo-improvements-2026-10-17` item 05, decision D1.
+
 **Kleene truth tables** (`U` = `Unknown`):
 
 | `AND` | `False` | `True` | `U` |

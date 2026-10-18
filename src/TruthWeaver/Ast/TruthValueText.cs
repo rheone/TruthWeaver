@@ -37,7 +37,7 @@ internal static class TruthValueText
 
     /// <summary>Attempts to read a constant's letter (<c>T</c>, <c>F</c> or <c>U</c>) in either letter case, as the DSL parser does.</summary>
     /// <param name="text">The text to read.</param>
-    /// <param name="value">The constant's value when recognised.</param>
+    /// <param name="value">The constant's value when recognised; otherwise <see cref="TruthValue.Unknown"/>.</param>
     /// <returns><see langword="true"/> if <paramref name="text"/> is one of the three letters.</returns>
     public static bool TryParseLetter(string? text, out TruthValue value)
     {
@@ -59,13 +59,13 @@ internal static class TruthValueText
             return true;
         }
 
-        value = TruthValue.False;
+        value = TruthValue.Unknown;
         return false;
     }
 
     /// <summary>Attempts to read a constant's text (<c>true</c>, <c>false</c> or <c>unknown</c>) in any letter case.</summary>
     /// <param name="text">The text to read.</param>
-    /// <param name="value">The constant's value when recognised.</param>
+    /// <param name="value">The constant's value when recognised; otherwise <see cref="TruthValue.Unknown"/>.</param>
     /// <returns><see langword="true"/> if <paramref name="text"/> names a K3 constant.</returns>
     public static bool TryParse(string? text, out TruthValue value)
     {
@@ -87,7 +87,7 @@ internal static class TruthValueText
             return true;
         }
 
-        value = TruthValue.False;
+        value = TruthValue.Unknown;
         return false;
     }
 }

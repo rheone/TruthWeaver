@@ -29,6 +29,7 @@ Let the body give the values `v1` to `vn`, one for each element, in the order th
 | `null` | `Unknown` | `Unknown` | No. The collection is not known. |
 | The selector throws | `Unknown` | `Unknown` | One fault for the collection. |
 | More body runs than `EvaluationOptions.MaxElementEvaluations` allows | `Unknown` | `Unknown` | One fault, and the evaluation aborts. |
+| Not in the registry at evaluation (a compiled rule always finds its collection, so only a tree built by hand can do this) | `Unknown` | `Unknown` | One `KeyNotFoundException` fault for the collection. |
 
 ```mermaid
 flowchart TD
@@ -53,7 +54,7 @@ Because a `null` collection is `Unknown`, `FORALL(x IN c, True)` is not the cons
 
 ## Reading the element
 
-A body reads the element in two ways, and can mix both in one body. A typed element predicate, such as `inStock`, is registered on the collection. An untyped read, `from(line, "$.qty")`, treats the element as a data source of its own. The second way works only when the host registered the collection with an element source. Without one, the read is the undeclared data source diagnostic `TRE0024`.
+A body reads the element in two ways, and can mix both in one body. A typed element predicate, such as `inStock`, is registered on the collection. An untyped read, `from(line, "$.qty")`, treats the element as a data source of its own. The second way works only when the host registered the collection with an element source. Without one, the read is the undeclared data source diagnostic `TRE0024`. In the trace, a body term with a `from(...)` read ends with the outcome of each reference, for example `[from("line", "$.qty"): resolved]`, as a term outside a quantifier does.
 
 ## Analysis and rewrites
 
