@@ -43,7 +43,7 @@ string[] packages =
 ];
 string[] noSymbols = ["TruthWeaver.Generators"];
 
-// TruthWeaver.Tool.Tui is the .NET tool of the terminal UI; it is packed and checked, but a release does not publish it.
+// TruthWeaver.Tool.Tui is the .NET tool of the terminal UI; it is packed, checked and published like the other packages.
 // .NET tool packages carry the tool and its dependencies under tools/<tfm>/any/, not lib/.
 string[] toolPackages = ["TruthWeaver.Tool", "TruthWeaver.Tool.Tui"];
 const string ToolFolder = "tools/net11.0/any/";

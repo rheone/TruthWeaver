@@ -9,7 +9,7 @@ This page is the runbook to publish a TruthWeaver version to NuGet. Back to [Con
 > run. Each step below is marked *not run*. When you do a release, mark the steps as you do them, and correct this page
 > where it is wrong.
 
-All ten library packages and the `TruthWeaver.Tool` tool package share one version. MinVer reads the version from the Git tag. See
+All ten library packages and the two tool packages (`TruthWeaver.Tool` and `TruthWeaver.Tool.Tui`) share one version. MinVer reads the version from the Git tag. See
 [How a package version is made](contributing.md#how-a-package-version-is-made).
 
 ## Release workflow
@@ -20,7 +20,7 @@ jobs.
 | Job | What it does |
 | --- | --- |
 | `verify` | Checks that the tagged commit is on `main` and that MinVer makes the version from the tag. Then it restores in locked mode, builds, tests, and runs the formatter, analyzer, text and data checks of CI. |
-| `pack` | Packs in Release with `-warnaserror`, runs `scripts/check-packages.cs`, checks SourceLink and determinism with `dotnet-validate`, removes the packages that are not published (`TruthWeaver.Tool.Tui`), and uploads the other packages as an artifact. |
+| `pack` | Packs in Release with `-warnaserror`, runs `scripts/check-packages.cs`, checks SourceLink and determinism with `dotnet-validate`, and uploads the packages as an artifact. |
 | `publish` | Needs `verify` and `pack`. Runs in the `nuget` environment, which waits for a manual approval. Makes build provenance for the packages, gets a short-lived API key from NuGet.org trusted publishing, and pushes every `.nupkg` and `.snupkg` with `--skip-duplicate`. |
 | `release` | Creates a GitHub Release with generated notes and the package files. |
 
@@ -36,13 +36,13 @@ The workflow cannot publish until the owner has done these steps.
 
 1. Create the `nuget` environment in the repository settings and add a required reviewer.
 2. On NuGet.org, add a trusted publishing policy for this repository, the workflow file `release.yml` and the `nuget`
-   environment. Do this for each of the eleven package ids.
+   environment. Do this for each of the twelve package ids.
 3. Add the repository variable `NUGET_USER` with the NuGet.org profile name that owns the policy.
 
 | Part | Status |
 | --- | --- |
 | Manual run of `verify` and `pack` | Not run |
-| One-time setup | Not run |
+| One-time setup | The `nuget` environment exists (2026-10-18). The NuGet.org policy and `NUGET_USER` are open |
 | Tag run with `publish` and `release` | Not run |
 
 To release with the workflow, do steps 1 and 2 below, then push the tag (step 6). Do not run steps 3 to 5 yourself. The
@@ -135,10 +135,9 @@ references the `Microsoft.SourceLink.GitHub` package. The reason is in `Director
 ### 5. Push the packages (not run)
 
 Push each `.nupkg` and its `.snupkg`. The `--skip-duplicate` option makes a second run safe. Read the API key from an
-environment variable. First remove the terminal UI package, which is not published:
+environment variable:
 
 ```powershell
-Remove-Item "$env:TEMP/tw-release/TruthWeaver.Tool.Tui.*"
 dotnet nuget push "$env:TEMP/tw-release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
 ```
 
