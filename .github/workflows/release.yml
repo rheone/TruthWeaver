@@ -106,7 +106,7 @@ jobs:
 
       - name: Validate SourceLink and determinism
         run: |
-          dotnet tool install dotnet-validate --version 0.0.1 --tool-path "$RUNNER_TEMP/tools"
+          dotnet tool install dotnet-validate --version 0.0.1-preview.582 --tool-path "$RUNNER_TEMP/tools"
           for package in "$RUNNER_TEMP"/packages/*.nupkg; do
             # TruthWeaver.Generators is analyzer-only: it has no lib assembly for the tool to check.
             case "$package" in *TruthWeaver.Generators.*) continue ;; esac
