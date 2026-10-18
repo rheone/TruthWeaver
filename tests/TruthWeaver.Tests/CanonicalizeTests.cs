@@ -3,6 +3,7 @@ namespace TruthWeaver.Tests;
 using System.Text;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

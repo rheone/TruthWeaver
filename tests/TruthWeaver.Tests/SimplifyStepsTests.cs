@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tests;
 
 using TruthWeaver.Evaluation;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

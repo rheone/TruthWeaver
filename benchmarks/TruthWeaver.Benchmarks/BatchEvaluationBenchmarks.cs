@@ -6,7 +6,7 @@ using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.Fakes;
 
 /// <summary>
 /// Compares <see cref="CompiledRule{TContext}.EvaluateManyAsync(IEnumerable{TContext}, IServiceProvider?, DataSources?, EvaluationOptions?, int, CancellationToken)"/>

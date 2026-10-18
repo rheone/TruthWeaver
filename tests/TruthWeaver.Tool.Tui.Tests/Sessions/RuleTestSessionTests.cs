@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.Sessions;
 
 using TruthWeaver.Abstractions;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.RuleTests;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Sessions;

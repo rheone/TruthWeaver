@@ -18,7 +18,7 @@ public sealed class TryFirstConventionTests
         typeof(RuleCompiler<>).Assembly,
         typeof(TruthWeaver.Yaml.YamlRuleExtensions).Assembly,
         typeof(TruthWeaver.Predicates.StringPredicates).Assembly,
-        typeof(TruthWeaver.Testing.DecisionAssertions).Assembly,
+        typeof(TruthWeaver.Testing.Assertions.DecisionAssertions).Assembly,
         typeof(TruthWeaver.Tool.Core.Loading.RuleLoader).Assembly,
     ];
 

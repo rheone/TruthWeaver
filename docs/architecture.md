@@ -85,8 +85,8 @@ Start with these files for common tasks:
 | Find the smallest term changes that would give a rule a value | [`RuleCounterfactual`](../src/TruthWeaver/Analysis/RuleCounterfactual.cs) |
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](../src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](../src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](../src/TruthWeaver.Yaml/YamlTreeParser.cs) |
-| Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/FakePredicates.cs) |
-| Run declarative YAML rule tests with stub values | [`RuleTestFile`](../src/TruthWeaver.Testing/RuleTestFile.cs), [`StubRuleCompiler`](../src/TruthWeaver.Testing/StubRuleCompiler.cs) |
+| Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/Assertions/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/Fakes/FakePredicates.cs) |
+| Run declarative YAML rule tests with stub values | [`RuleTestFile`](../src/TruthWeaver.Testing/RuleTests/RuleTestFile.cs), [`StubRuleCompiler`](../src/TruthWeaver.Testing/Fakes/StubRuleCompiler.cs) |
 
 Beyond `src`, the repository holds these projects:
 

@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui.Sessions;
 
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.RuleTests;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;

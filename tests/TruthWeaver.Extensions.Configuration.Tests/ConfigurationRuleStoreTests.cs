@@ -7,7 +7,6 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.DependencyInjection;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Testing;
 
 /// <summary>
 /// The configuration rule store: loading named rules, caching by text hash, atomic swap on reload, keeping the last good

@@ -19,7 +19,7 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly Yaml = typeof(TruthWeaver.Yaml.YamlRuleExtensions).Assembly;
     private static readonly Assembly JsonDataSources = typeof(TruthWeaver.DataSources.Json.JsonDataSource).Assembly;
     private static readonly Assembly Predicates = typeof(TruthWeaver.Predicates.StringPredicates).Assembly;
-    private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
+    private static readonly Assembly Testing = typeof(TruthWeaver.Testing.Assertions.DecisionAssertions).Assembly;
     private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.Loading.RuleLoader).Assembly;
     private static readonly Assembly AspNetCore = typeof(TruthWeaver.AspNetCore.RuleRequirement).Assembly;
     private static readonly Assembly Policies = typeof(TruthWeaver.Policies.PolicySet<>).Assembly;

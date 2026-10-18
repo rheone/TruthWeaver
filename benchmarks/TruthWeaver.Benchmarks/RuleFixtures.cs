@@ -3,7 +3,7 @@ namespace TruthWeaver.Benchmarks;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Building;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.Fakes;
 
 /// <summary>
 /// Deterministic rule/registry generators shared by the compile-time and eval-time benchmarks, so

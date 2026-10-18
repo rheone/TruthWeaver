@@ -6,6 +6,7 @@ using TruthWeaver.Analysis;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>Feature backlog 21b-2 (ADR-0009): the pairwise joint-outcome check between two peer rules.</summary>

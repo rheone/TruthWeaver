@@ -3,7 +3,7 @@ namespace TruthWeaver.Tool.Commands;
 using System.CommandLine;
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.RuleTests;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Core.Output;

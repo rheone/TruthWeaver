@@ -4,7 +4,6 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 
 /// <summary>
 /// <see cref="RuleCoverage.FromDecisions{TContext}"/> rejects a decision whose trace tree does not belong to the rule,

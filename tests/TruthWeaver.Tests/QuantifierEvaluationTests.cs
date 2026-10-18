@@ -6,7 +6,6 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Yaml;
 using Arg = TruthWeaver.Building.Arg;
 

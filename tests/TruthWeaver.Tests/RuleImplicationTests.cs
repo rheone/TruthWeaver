@@ -7,6 +7,7 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>Feature backlog 13: rule implication and the looser/tighter relation between two rules.</summary>
