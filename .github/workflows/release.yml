@@ -113,11 +113,6 @@ jobs:
             "$RUNNER_TEMP/tools/dotnet-validate" package local "$package"
           done
 
-      - name: Hold back unpublished packages
-        # The terminal UI tool (TruthWeaver.Tool.Tui) is packed and checked above, but it is not published yet
-        # (docs/tui.md). Removing it here keeps it out of the uploaded packages, the provenance, the push and the GitHub release.
-        run: rm -f "$RUNNER_TEMP"/packages/TruthWeaver.Tool.Tui.*
-
       - name: Upload packages
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

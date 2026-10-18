@@ -503,7 +503,7 @@ The workbench uses [Terminal.Gui](https://github.com/tui-cs/Terminal.Gui) 2.5.0 
 
 ## Packaging
 
-CI packs `TruthWeaver.Tool.Tui` with the other packages and checks the package. A release does not publish it: the release workflow removes it before the upload and the push.
+CI packs `TruthWeaver.Tool.Tui` with the other packages and checks the package. A release publishes it with the other packages, so a pre-release tag such as `v1.0.0-alpha.20261018T201500Z` puts the alpha of the tool on NuGet.org.
 
 ## Extending the workbench
 
