@@ -13,13 +13,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
         with:
           # MinVer reads the Git tags and the commit history to derive the package version.
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -69,13 +69,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
         with:
           # MinVer reads the Git tags and the commit history to derive the package version.
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 

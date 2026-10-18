@@ -36,5 +36,17 @@ Multi-file projects, schema-driven completion, version history, automatic mutant
 | [06](issues/06-embedded-rules-in-documents.md) | Rules inside JSON and YAML documents | 01, C4 |
 | [08](issues/08-import-export-and-validation.md) | Import, convert, export and validation panel | 01, C2, C3 |
 | [07](issues/07-rule-test-integration.md) | Save cases and run rule tests | 02, 20 |
+| [09](issues/09-move-to-terminal-gui-editor-package.md) | Replace the obsolete `TextView` with `Terminal.Gui.Editor` (approved 2026-10-17) | none |
+| [10](issues/10-palette-predicates-catalog.md) | Offer the `TruthWeaver.Predicates` catalog in the palette (approved 2026-10-17) | none |
+| [11](issues/11-what-would-make-this-true-panel.md) | What would make this True panel | 20 |
+| [12](issues/12-apply-a-rewrite-to-the-editor.md) | Apply a rewrite to the editor | none |
+| [13](issues/13-compare-two-rules.md) | Compare two rules: looser, tighter, overlap | none |
+| [14](issues/14-coverage-over-saved-cases.md) | Coverage over saved cases | none |
+| [15](issues/15-definitions-in-the-tree-pane.md) | Definitions in the tree pane | none |
+| [16](issues/16-basic-mouse-support.md) | Basic mouse support | none |
+| [17](issues/17-color-independent-value-marks.md) | Color-independent value marks and `NO_COLOR` | none |
+| [18](issues/18-light-and-dark-theme.md) | Light and dark theme | 17 |
+| [19](issues/19-persist-theme-and-layout.md) | Persist the theme and the pane layout | 18 |
+| [20](issues/20-debounced-background-diagnostics.md) | Debounced, background diagnostics | none |
 
-Later (not ticketed yet): "what would make this True" panel (feature-backlog 01), looser-or-tighter comparison (13), definitions support (11), coverage over saved cases (04).
+Tickets 11 to 15 were the "later" list (counterfactuals, rewrite accept, comparison, definitions, coverage). Not ticketed: rule library references (feature-backlog 11b, on hold) and rule-set analysis (21c, not yet implemented).

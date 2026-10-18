@@ -18,13 +18,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
         with:
           # MinVer reads the Git tags and the commit history to derive the package version.
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v5
         with:
           name: mutation-report
           path: artifacts/stryker/reports

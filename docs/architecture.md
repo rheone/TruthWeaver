@@ -29,7 +29,7 @@ flowchart TD
         Printing["Printing<br/>CanonicalPrinter, RuleText, MermaidTreePrinter"]
         Diffing["Diffing<br/>RuleDiff, RuleDiffPrinter"]
         Logging["Logging<br/>structured log events"]
-        Metrics["Metrics<br/>TruthWeaverMetrics (Meter)"]
+        Metrics["Metrics<br/>TruthWeaverMetrics (Meter)<br/>TruthWeaverTracing (ActivitySource)"]
         DI["DependencyInjection<br/>AddTruthWeaver extension"]
 
         Parsing --> Ast
@@ -73,6 +73,7 @@ Start with these files for common tasks:
 | Understand the compiled tree shape | [`Expression`](../src/TruthWeaver/Ast/Expression.cs) |
 | Understand constant/contradiction detection | [`BddManager`](../src/TruthWeaver/Analysis/BddManager.cs), [`Analyzer`](../src/TruthWeaver/Analysis/Analyzer.cs) |
 | Understand evaluation and short-circuiting | [`Evaluator`](../src/TruthWeaver/Evaluation/Evaluator.cs), [`CompiledRule`](../src/TruthWeaver/Evaluation/CompiledRule.cs) |
+| Observe evaluation with metrics and traces | [Observability](observability.md), [`TruthWeaverTracing`](../src/TruthWeaver/Metrics/TruthWeaverTracing.cs) |
 | Assemble a rule without hand-writing text | [`RuleBuilder`](../src/TruthWeaver/Building/RuleBuilder.cs) |
 | Rewrite a rule (expand, compress, canonicalize, simplify) | [`CompiledRule`](../src/TruthWeaver/Evaluation/CompiledRule.cs) and [`Rewriting`](../src/TruthWeaver/Rewriting) |
 | Understand compile diagnostics and "did you mean" | [`Diagnostic`](../src/TruthWeaver/Diagnostics/Diagnostic.cs), [`DiagnosticFormatter`](../src/TruthWeaver/Diagnostics/DiagnosticFormatter.cs) |

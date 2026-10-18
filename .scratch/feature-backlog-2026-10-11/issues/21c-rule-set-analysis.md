@@ -15,7 +15,7 @@
 
 **Blocked by:** 21b-2, and 07 for shadowing only (the redundancy and pairwise-sweep parts could go first if the owner splits them).
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** ready (owner decision 2026-10-17: approved; 21b-2 is done)
 
 - [ ] Scope reconfirmed with the owner when ticket 07 is grilled
 - [ ] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass

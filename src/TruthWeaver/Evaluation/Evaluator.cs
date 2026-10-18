@@ -6,6 +6,7 @@ using TruthWeaver.Ast;
 using TruthWeaver.Logging;
 using TruthWeaver.Metrics;
 using TruthWeaver.Registry;
+using Activity = System.Diagnostics.Activity;
 
 /// <summary>
 /// Walks a compiled <see cref="Expression"/> tree once, implementing the three-valued Kleene truth
@@ -61,8 +62,13 @@ internal sealed class Evaluator<TContext>(
 
     public async Task<Decision> EvaluateAsync(Expression root)
     {
+        // The span ends when this method returns or throws; a cancelled or timed-out evaluation ends it untagged,
+        // like the evaluations counter, which does not count it either.
+        using Activity? span = TruthWeaverTracing.StartEvaluation();
         EvalResult result = await this.EvalAsync(root).ConfigureAwait(false);
         TruthWeaverMetrics.EvaluationPerformed();
+        span?.SetTag(TruthWeaverTracing.DecisionTag, result.Value.ToString());
+        span?.SetTag(TruthWeaverTracing.FaultCountTag, this.state.Faults.Count);
         return new Decision(
             result.Value,
             new EquatableArray<Fault>(this.state.Faults),
@@ -574,6 +580,23 @@ internal sealed class Evaluator<TContext>(
     }
 
     private async ValueTask<TruthValue> InvokeAsync(TermIdentity identity)
+    {
+        if (!this.options.TracePredicates)
+        {
+            return await this.InvokeCoreAsync(identity).ConfigureAwait(false);
+        }
+
+        // Opt-in child span of the evaluation span (or of the enclosing span, inside a quantifier). A memoized
+        // repeat of a term never reaches here, so the span count is the number of distinct invocations.
+        using Activity? span = TruthWeaverTracing.StartPredicate(identity.PredicateName);
+        int faultsBefore = this.state.Faults.Count;
+        TruthValue result = await this.InvokeCoreAsync(identity).ConfigureAwait(false);
+        span?.SetTag(TruthWeaverTracing.PredicateResultTag, result.ToString());
+        span?.SetTag(TruthWeaverTracing.PredicateFaultedTag, this.state.Faults.Count > faultsBefore);
+        return result;
+    }
+
+    private async ValueTask<TruthValue> InvokeCoreAsync(TermIdentity identity)
     {
         if (!this.registry.TryGet(identity.PredicateName, out PredicateDescriptor<TContext>? descriptor))
         {

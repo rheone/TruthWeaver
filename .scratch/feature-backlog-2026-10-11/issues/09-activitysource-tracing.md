@@ -6,8 +6,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** ready (owner decision 2026-10-17: approved)
 
-- [ ] Scope is confirmed with the owner before any work (standing rule for new packages, projects and dependencies)
-- [ ] The page that describes the new behavior is written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
+- [x] Scope is confirmed with the owner before any work (standing rule for new packages, projects and dependencies)
+- [x] The page that describes the new behavior is written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+
+## Comments
+
+- Implemented: `TruthWeaverTracing` (source `TruthWeaver`), `truthweaver.evaluate` span with decision and fault count tags, opt-in `EvaluationOptions.TracePredicates` child spans, `TracingTests`, `docs/observability.md`, CHANGELOG and ADR-0013 note. Full-validation box left unticked for the orchestrator.
