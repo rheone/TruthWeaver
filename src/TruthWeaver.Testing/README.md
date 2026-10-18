@@ -16,6 +16,16 @@ rules or a rewrite keep their meaning, and stand in for the predicates and the d
 | Fake predicates | `TruthWeaver.Testing.Fakes` | `FakePredicates`, `FakeDataSource` | Predicates with a fixed result, `Unknown` or a simulated fault, and a data source with canned answers. |
 | YAML rule tests | `TruthWeaver.Testing.RuleTests` and `TruthWeaver.Testing.Fakes` | `RuleTestFile`, `RuleTestFileReader`, `StubValues`, `StubRuleCompiler` | Read a rule test file and run its cases with stub values. See [Rule tests](../../docs/rule-tests.md). |
 
+The root namespace `TruthWeaver.Testing` holds no types. Add a `using` for each namespace in the table that you need, or
+add them as global usings in the test project:
+
+```xml
+<ItemGroup>
+  <Using Include="TruthWeaver.Testing.Assertions" />
+  <Using Include="TruthWeaver.Testing.Fakes" />
+</ItemGroup>
+```
+
 ## Depends on
 
 - [TruthWeaver.Abstractions](../TruthWeaver.Abstractions/README.md) for `TruthValue`, `Decision` and `IPredicate`.

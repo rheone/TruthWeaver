@@ -1,6 +1,6 @@
 # 03: TruthWeaver.Tool README
 
-**What to build:** `src/TruthWeaver.Tool/README.md` with a `## Use` section: install (`dotnet tool install --global TruthWeaver.Tool`), a first run on a sample rule with the expected output, a table of the nine commands (validate, convert, format, print, export, report, diff, evaluate, test), the input formats, exit codes, and a link to `docs/cli.md`.
+**What to build:** `src/TruthWeaver.Tool/README.md` with a `## Use` section: install (`dotnet tool install --global TruthWeaver.Tool`), a first run on a sample rule with the expected output, a table of the ten commands (validate, convert, format, print, export, report, diff, evaluate, test, import), the input formats, exit codes, and a link to `docs/cli.md`.
 
 **Blocked by:** 01
 
