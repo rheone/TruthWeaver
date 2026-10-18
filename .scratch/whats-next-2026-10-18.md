@@ -4,10 +4,11 @@ Written 2026-10-18 at the end of the dispatch run. Branch `docs/project-readmes-
 
 ## Done in this run
 
-- feature-backlog 21c (rule-set analysis: redundancy, removable set, pairwise sweep; BDD node budget). Shadowing is not built.
+- feature-backlog 21c (rule-set analysis: redundancy, removable set, pairwise sweep; BDD node budget). Shadowing is built (616d9ef).
 - project-readmes 01 to 08 (27 READMEs and the drift test `ProjectReadmeTests`).
 - tui-workbench 09 to 20 (Terminal.Gui.Editor, predicate catalog in the palette, Make True pane, rewrite accept with note carry-over, Compare pane, mouse, definitions in the tree pane, color-independent marks, light and dark theme, persisted theme and layout, debounced diagnostics, saved-case coverage).
 - Generators.Tests loads the generator analyzer from a copy under `obj/`, to avoid the editor lock on the dll.
+- Task queue after the CI fix: 21c shadowing, and the folder = namespace reorganization of Tool.Core, Tool.Tui and Testing (IDE0130 enforced by `dotnet format`). Samples refresh is ticketed in `.scratch/samples-refresh/`.
 
 ## 1. Close-out of this run (do first)
 
@@ -18,7 +19,7 @@ Written 2026-10-18 at the end of the dispatch run. Branch `docs/project-readmes-
 
 ## 2. Owner decisions waiting
 
-- **21c shadowing.** Decided: a rule is shadowed when an earlier rule that is `True` or `Unknown` always blocks it (consistent with ADR-0015). Build it in the next task; the ticket's implementation box is open.
+- **21c shadowing.** Done (commit 616d9ef): a rule is shadowed when no assignment makes it True while every earlier rule is False, so an earlier True or Unknown rule always blocks it (ADR-0015).
 - **Ticket 03.** The Tool README lists ten commands (`import` is the tenth); the ticket said nine.
 - **Tool.Tui README.** The install step follows `docs/tui.md` (pack from the repo), not the ticket's plain `dotnet tool install`.
 - **Follow-up F.** `.scratch/followups-2026-10-11/issues/F-owner-review-of-dispatch-notes.md` holds the open API and wording reviews from earlier dispatch notes.
