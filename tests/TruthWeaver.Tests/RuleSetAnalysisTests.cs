@@ -7,7 +7,9 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary>Feature backlog 21c (ADR-0009 decision 5): redundancy and the pairwise sweep over a set of peer rules.</summary>
+/// <summary>
+/// Feature backlog 21c (ADR-0009 decision 5): redundancy, shadowing and the pairwise sweep over a set of peer rules.
+/// </summary>
 public sealed class RuleSetAnalysisTests
 {
     private static readonly string[] TermNames = ["a", "b", "c"];
@@ -152,6 +154,131 @@ public sealed class RuleSetAnalysisTests
         Assert.InRange(redundantSeen, 1, (setsChecked * 4) - 1);
     }
 
+    /// <summary>
+    /// In <c>[a AND b, a, a AND c, d OR b, b AND d]</c> (design note section 9) rule 2 is shadowed by rule 1 and rule 4
+    /// by rule 3; every other rule can be reached, and its example makes it <c>True</c> with every earlier rule
+    /// <c>False</c>.
+    /// </summary>
+    [Fact]
+    public void Analyze_OrderedRulesCoveredByEarlierRules_ReportsThemShadowed_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        RuleSetAnalysisResult result = RuleSetAnalysis.Analyze(
+            Compile(compiler, "a AND b", "a", "a AND c", "d OR b", "b AND d")
+        );
+
+        Assert.Equal(RuleSetAnalysisOutcome.Decided, result.Outcome);
+        Assert.Equal([0, 1, 2, 3, 4], result.Shadowing.Select(rule => rule.Index));
+        Assert.Equal([false, false, true, false, true], result.Shadowing.Select(rule => rule.IsShadowed));
+        Assert.Null(result.Shadowing[2].Example);
+        RuleShadowing second = result.Shadowing[1];
+        Assert.NotNull(second.Example);
+        Assert.Equal(TruthValue.True, second.Example["a"]);
+        Assert.Equal(TruthValue.False, second.Example["b"]);
+    }
+
+    /// <summary>
+    /// An earlier rule that can be <c>Unknown</c> but never <c>False</c> blocks every later rule: <c>a OR NOT a</c> is
+    /// <c>Unknown</c> when <c>a</c> is, so <c>b</c> after it is shadowed, though the earlier rule is not always
+    /// <c>True</c>.
+    /// </summary>
+    [Fact]
+    public void Analyze_EarlierRuleThatIsNeverFalseButCanBeUnknown_ShadowsTheLaterRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        RuleSetAnalysisResult result = RuleSetAnalysis.Analyze(Compile(compiler, "a OR NOT a", "b"));
+
+        Assert.Equal(RuleSetAnalysisOutcome.Decided, result.Outcome);
+        Assert.False(result.Shadowing[0].IsShadowed);
+        Assert.True(result.Shadowing[1].IsShadowed);
+        Assert.Null(result.Shadowing[1].Example);
+    }
+
+    /// <summary>
+    /// Shadowing depends on the order: a later rule never shadows an earlier one, so <c>[b, a OR NOT a]</c> shadows
+    /// nothing, and a rule that is never <c>True</c> is shadowed even at index 0.
+    /// </summary>
+    [Fact]
+    public void Analyze_BlockingRuleLastAndNeverTrueRuleFirst_ShadowsOnlyTheNeverTrueRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        RuleSetAnalysisResult reordered = RuleSetAnalysis.Analyze(Compile(compiler, "b", "a OR NOT a"));
+        RuleSetAnalysisResult neverTrue = RuleSetAnalysis.Analyze(Compile(compiler, "a AND NOT a", "b"));
+
+        Assert.Equal([false, false], reordered.Shadowing.Select(rule => rule.IsShadowed));
+        Assert.Equal([true, false], neverTrue.Shadowing.Select(rule => rule.IsShadowed));
+    }
+
+    /// <summary>
+    /// Over generated sets of four rules (connectives and external operators), the shadowing of each rule and its
+    /// example agree with a brute force over every <c>{True, False, Unknown}</c> assignment of a, b, c by the
+    /// independent <see cref="K3Oracle"/>: a rule is shadowed when no assignment makes it <c>True</c> and every
+    /// earlier rule <c>False</c>.
+    /// </summary>
+    [Fact]
+    public void Analyze_GeneratedRuleSets_ShadowingAgreesWithK3Oracle_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        Random random = new(20261019);
+        List<string> failures = [];
+        int shadowedSeen = 0;
+        int setsChecked = 0;
+
+        for (int i = 0; i < 200; i++)
+        {
+            GeneratedRule[] generated =
+            [
+                .. Enumerable.Range(0, 4).Select(_ => K3RuleGenerator.GenerateRule(random, depth: 2, TermNames)),
+            ];
+            CompiledRule<RuleTestContext>?[] compiled = [.. generated.Select(rule => compiler.Compile(rule.Text).CompiledRule)];
+            if (compiled.Any(rule => rule is null))
+            {
+                // Out-of-range thresholds (TRE0008) are authoring errors, not analysis input.
+                continue;
+            }
+
+            setsChecked++;
+            string label = string.Join(" | ", generated.Select(rule => rule.Text));
+            TruthValue[][] assignments = [.. K3Oracle.Assignments(TermNames.Length)];
+            RuleSetAnalysisResult result = RuleSetAnalysis.Analyze([.. compiled.Select(rule => rule!)]);
+
+            for (int r = 0; r < generated.Length; r++)
+            {
+                GeneratedRule[] earlier = generated[..r];
+                bool expectedShadowed = !assignments.Any(assignment =>
+                    generated[r].Eval(assignment) == TruthValue.True
+                    && earlier.All(rule => rule.Eval(assignment) == TruthValue.False)
+                );
+                RuleShadowing reported = result.Shadowing[r];
+                shadowedSeen += reported.IsShadowed ? 1 : 0;
+                if (reported.IsShadowed != expectedShadowed)
+                {
+                    failures.Add($"{label}: rule {r} shadowed {reported.IsShadowed}, oracle {expectedShadowed}");
+                }
+                else if (reported.Example is not null)
+                {
+                    TruthValue[] example = [.. TermNames.Select(t => reported.Example.GetValueOrDefault(t))];
+                    bool reached =
+                        generated[r].Eval(example) == TruthValue.True
+                        && earlier.All(rule => rule.Eval(example) == TruthValue.False);
+                    if (!reached)
+                    {
+                        failures.Add($"{label}: the example of rule {r} does not reach it");
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(failures);
+
+        // Guard against a vacuous pass: enough sets ran, and both answers occurred.
+        Assert.True(setsChecked > 100, $"only {setsChecked} sets were checked");
+        Assert.InRange(shadowedSeen, 1, (setsChecked * 4) - 1);
+    }
+
     /// <summary>A set with more rules than the rule cap computes nothing and reports why, without throwing.</summary>
     [Fact]
     public void Analyze_MoreRulesThanTheCap_ReportsTooManyRulesWithEmptyLists_Test()
@@ -164,6 +291,7 @@ public sealed class RuleSetAnalysisTests
         Assert.Empty(result.Pairs);
         Assert.Empty(result.Rules);
         Assert.Empty(result.RemovableTogether);
+        Assert.Empty(result.Shadowing);
         Assert.Contains("3 rules", result.Reason, StringComparison.Ordinal);
     }
 
@@ -193,6 +321,7 @@ public sealed class RuleSetAnalysisTests
         Assert.Equal(RuleSetAnalysisOutcome.Undecided, result.Outcome);
         Assert.Contains("3 distinct terms", result.Reason, StringComparison.Ordinal);
         Assert.Empty(result.Rules);
+        Assert.Empty(result.Shadowing);
         Assert.Empty(result.RemovableTogether);
         Assert.Equal(3, result.Pairs.Count);
         Assert.All(result.Pairs, pair => Assert.Equal(RuleOverlapOutcome.Decided, pair.Overlap.Outcome));
@@ -217,6 +346,7 @@ public sealed class RuleSetAnalysisTests
         Assert.Equal(RuleSetAnalysisOutcome.Undecided, result.Outcome);
         Assert.Contains("budget of 2", result.Reason, StringComparison.Ordinal);
         Assert.Empty(result.Rules);
+        Assert.Empty(result.Shadowing);
         RuleSetPair pair = Assert.Single(result.Pairs);
         Assert.Equal(RuleOverlapOutcome.Decided, pair.Overlap.Outcome);
     }
@@ -231,6 +361,7 @@ public sealed class RuleSetAnalysisTests
         Assert.Empty(result.Pairs);
         Assert.Empty(result.Rules);
         Assert.Empty(result.RemovableTogether);
+        Assert.Empty(result.Shadowing);
     }
 
     /// <summary>The <see cref="RuleSet{TContext}"/> overload gives the same answers as the list overload.</summary>
@@ -245,6 +376,7 @@ public sealed class RuleSetAnalysisTests
         Assert.Equal(fromList.Outcome, fromSet.Outcome);
         Assert.Equal(fromList.RemovableTogether, fromSet.RemovableTogether);
         Assert.Equal(fromList.Rules.Select(r => r.IsRedundant), fromSet.Rules.Select(r => r.IsRedundant));
+        Assert.Equal(fromList.Shadowing.Select(r => r.IsShadowed), fromSet.Shadowing.Select(r => r.IsShadowed));
         Assert.Equal(fromList.Pairs.Count, fromSet.Pairs.Count);
     }
 
@@ -304,6 +436,7 @@ public sealed class RuleSetAnalysisTests
                 .AddConstant("a", true)
                 .AddConstant("b", true)
                 .AddConstant("c", true)
+                .AddConstant("d", true)
                 .Build(),
             new CompilerOptions(MaxDepth: 256, MaxNodeCount: 4096)
         );

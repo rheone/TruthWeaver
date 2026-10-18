@@ -256,8 +256,10 @@ internal static class Analyzer
     /// pairwise joint-outcome sweep (<see cref="JointOutcomeCells"/>, run once per pair without rebuilding a rule;
     /// design note section 4) and redundancy under the "any grants" reading, i.e. the set holds when any rule holds
     /// (ADR-0009 decision 5): rule <c>i</c> is redundant when its definitely-true rail is covered by the <c>OR</c>
-    /// of every other rule's definitely-true rail. Shadowing is not computed here: it needs a combining reading for
-    /// an <c>Unknown</c> rule, which ticket 07 (on hold) has not decided.
+    /// of every other rule's definitely-true rail. It also answers shadowing for the list read in order as "the first
+    /// rule that applies wins": an earlier rule that is <c>True</c> or <c>Unknown</c> blocks every later rule, as
+    /// <c>FirstApplicable</c> never skips an <c>Unknown</c> policy (ADR-0015 decision 5). Rule <c>j</c> is shadowed
+    /// when its definitely-true rail is covered by the <c>OR</c> of the possibly-true rails of the rules before it.
     /// </summary>
     /// <param name="roots">Each rule's compiled tree, in index order; the index is the rule's identity in the report.</param>
     /// <param name="maxBddNodes">The BDD node budget.</param>
@@ -266,7 +268,9 @@ internal static class Analyzer
     /// redundant (and, when it is not, one assignment where it alone is <c>True</c>, i.e. its unique contribution);
     /// and the indexes of one set of rules removable together, found by a greedy walk from the end of the list that
     /// drops a rule exactly when the rules still kept already cover it (design note section 4's pitfall: a rule
-    /// redundant on its own given every other rule is not always removable together with every other redundant rule).
+    /// redundant on its own given every other rule is not always removable together with every other redundant rule);
+    /// and for every rule, whether it is shadowed (and, when it is not, one assignment where it is <c>True</c> and
+    /// every earlier rule is <c>False</c>, i.e. where the walk reaches it and it decides).
     /// </returns>
     /// <exception cref="BddNodeBudgetExceededException">The shared build would exceed <paramref name="maxBddNodes"/> nodes.</exception>
     internal static (
@@ -284,7 +288,8 @@ internal static class Analyzer
             bool Redundant,
             IReadOnlyDictionary<TermIdentity, TruthValue>? UniqueContribution
         )> Redundancy,
-        IReadOnlyList<int> RemovableTogether
+        IReadOnlyList<int> RemovableTogether,
+        IReadOnlyList<(int Index, bool Shadowed, IReadOnlyDictionary<TermIdentity, TruthValue>? Reached)> Shadowing
     ) AnalyzeSet(IReadOnlyList<Expression> roots, int maxBddNodes)
     {
         Dictionary<TermIdentity, int> variableIndex = [];
@@ -345,7 +350,19 @@ internal static class Analyzer
         }
 
         removable.Sort();
-        return (pairs, redundancy, removable);
+
+        // Shadowing: "blocked" is the running OR of the possibly-true rails (True or Unknown) of the rules before j.
+        // Where j is True and nothing before it is blocking, every earlier rule is False, so the walk reaches j.
+        List<(int, bool, IReadOnlyDictionary<TermIdentity, TruthValue>?)> shadowing = [];
+        int blocked = BddManager.False;
+        for (int j = 0; j < n; j++)
+        {
+            int reached = bdd.And(rails[j].Definite, bdd.Not(blocked));
+            shadowing.Add(reached == BddManager.False ? (j, true, null) : (j, false, Witness(bdd, reached, variableIndex)));
+            blocked = bdd.Or(blocked, rails[j].Possible);
+        }
+
+        return (pairs, redundancy, removable, shadowing);
     }
 
     /// <summary>

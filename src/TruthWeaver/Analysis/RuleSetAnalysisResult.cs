@@ -17,6 +17,11 @@ namespace TruthWeaver.Analysis;
 /// that removes a rule when the rules still kept cover it, so it is not always the largest such group. Empty unless
 /// <paramref name="Outcome"/> is <see cref="RuleSetAnalysisOutcome.Decided"/>.
 /// </param>
+/// <param name="Shadowing">
+/// Whether each rule is shadowed, in index order, when the list is read in order as "the first rule that applies
+/// wins" and an earlier <c>True</c> or <c>Unknown</c> rule blocks every later rule. Empty unless
+/// <paramref name="Outcome"/> is <see cref="RuleSetAnalysisOutcome.Decided"/>.
+/// </param>
 /// <param name="Reason">
 /// For <see cref="RuleSetAnalysisOutcome.Undecided"/> and <see cref="RuleSetAnalysisOutcome.TooManyRules"/>, why the
 /// set-level answers are missing; otherwise <see langword="null"/>.
@@ -26,6 +31,7 @@ public sealed record RuleSetAnalysisResult(
     IReadOnlyList<RuleSetPair> Pairs,
     IReadOnlyList<RuleRedundancy> Rules,
     IReadOnlyList<int> RemovableTogether,
+    IReadOnlyList<RuleShadowing> Shadowing,
     string? Reason
 )
 {
