@@ -16,7 +16,15 @@ internal sealed partial class Workbench
     /// <param name="document">The document to start with.</param>
     /// <param name="settings">The resolved tool settings, used for every document the workbench opens.</param>
     /// <param name="prompts">The questions to the author.</param>
-    public Workbench(RuleDocument document, ToolSettings settings, IWorkbenchPrompts prompts)
+    /// <param name="theme">The color set to start with, or <see langword="null"/> to take the <c>theme</c> setting (<c>auto</c> then gives dark: only the program asks the terminal).</param>
+    /// <param name="noColor"><see langword="true"/> to draw without color (<c>NO_COLOR</c>).</param>
+    public Workbench(
+        RuleDocument document,
+        ToolSettings settings,
+        IWorkbenchPrompts prompts,
+        ThemeVariant? theme = null,
+        bool noColor = false
+    )
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(settings);
@@ -25,6 +33,8 @@ internal sealed partial class Workbench
         this.document = document;
         this.Settings = settings;
         this.Prompts = prompts;
+        this.Theme = theme ?? ThemeChoice.Resolve(settings.Theme, static () => null);
+        this.NoColor = noColor;
         this.document.Changed += this.OnDocumentChanged;
     }
 
@@ -41,7 +51,18 @@ internal sealed partial class Workbench
     public event EventHandler<SourceSpan>? SpanRequested;
 
     /// <summary>Gets the open document.</summary>
-    public RuleDocument Document => this.document;
+    /// <remarks>
+    /// Reading the document applies the text that waits for its background compile (see <see cref="EditText"/>), so the
+    /// caller always sees the text the author typed.
+    /// </remarks>
+    public RuleDocument Document
+    {
+        get
+        {
+            this.FlushPendingText();
+            return this.document;
+        }
+    }
 
     /// <summary>Gets the resolved tool settings.</summary>
     public ToolSettings Settings { get; }
@@ -64,6 +85,12 @@ internal sealed partial class Workbench
 
     /// <summary>Gets the sizes of the regions and the maximised region.</summary>
     public PaneLayout Layout { get; } = new();
+
+    /// <summary>
+    /// Gets or sets the file of the choices that outlive the session (the theme and the sizes of the regions), or
+    /// <see langword="null"/> to keep nothing. The program sets it; a test leaves it unset so no test writes a user file.
+    /// </summary>
+    public WorkbenchPreferences? Preferences { get; set; }
 
     /// <summary>Gets the last message for the status line, such as the result of a save, or an empty string.</summary>
     public string Status { get; private set; } = string.Empty;
@@ -100,6 +127,7 @@ internal sealed partial class Workbench
     /// <returns><see langword="true"/> when a file was opened.</returns>
     public bool Open()
     {
+        this.FlushPendingText();
         if (this.document.IsDirty && !this.Prompts.ConfirmDiscard("open another file"))
         {
             return false;
@@ -135,6 +163,7 @@ internal sealed partial class Workbench
         ArgumentNullException.ThrowIfNull(next);
         ArgumentNullException.ThrowIfNull(status);
 
+        this.DiscardPending();
         this.document.Changed -= this.OnDocumentChanged;
         this.document = next;
         this.document.Changed += this.OnDocumentChanged;
@@ -211,6 +240,8 @@ internal sealed partial class Workbench
 
     private void OnDocumentChanged(object? sender, EventArgs e)
     {
+        // Another change of the document makes an older edit stale; the result of its compile must not replace this change.
+        this.DiscardPending();
         this.DocumentChanged?.Invoke(this, EventArgs.Empty);
     }
 }

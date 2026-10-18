@@ -7,8 +7,9 @@ using TruthWeaver.Yaml;
 
 /// <summary>
 /// The palette of a structural editor: the operators and constants, which are always there, then the predicates that the
-/// predicate schema file declares, then the predicates that the open rule uses. A predicate is a template: its name and its
-/// arguments with their kinds. <see cref="Fill"/> makes an expression of a template and the values of a form.
+/// predicate schema file declares, then the predicates that the open rule uses, then the <c>let</c> definitions of the
+/// open rule. A predicate is a template: its name and its arguments with their kinds; a definition is a template with its
+/// parameters. <see cref="Fill"/> makes an expression of a template and the values of a form.
 /// </summary>
 public sealed class RulePalette
 {
@@ -48,14 +49,25 @@ public sealed class RulePalette
         this.Entries = entries;
     }
 
-    /// <summary>Gets the entries: the operators, the constants, the predicates of the schema file and those of the rule.</summary>
+    /// <summary>
+    /// Gets the entries: the operators, the constants, the predicates of the schema file and those of the rule, then the
+    /// definitions of the rule.
+    /// </summary>
     public IReadOnlyList<PaletteEntry> Entries { get; }
 
     /// <summary>Makes the palette for a rule and a schema file.</summary>
     /// <param name="rule">The open rule, or <see langword="null"/> when no text compiled yet.</param>
     /// <param name="schema">The predicate schema file, or <see langword="null"/> when there is none.</param>
+    /// <param name="definitions">
+    /// The definitions and uses of the open rule (<see cref="RuleDocument.Definitions"/>), or <see langword="null"/> (the
+    /// default) for none. Each definition is an entry of <see cref="PaletteSource.Definition"/>.
+    /// </param>
     /// <returns>The palette.</returns>
-    public static RulePalette Create(CompiledRule<StubAssignment>? rule, PredicateSchemaFile? schema)
+    public static RulePalette Create(
+        CompiledRule<StubAssignment>? rule,
+        PredicateSchemaFile? schema,
+        RuleDefinitions? definitions = null
+    )
     {
         List<PaletteEntry> entries =
         [
@@ -83,14 +95,36 @@ public sealed class RulePalette
             CollectTerms(JsonNode.Parse(rule.PrintJson(includeNotes: false)), entries, seen);
         }
 
+        foreach (DefinitionDeclaration definition in definitions?.Definitions ?? EquatableArray<DefinitionDeclaration>.Empty)
+        {
+            entries.Add(
+                new PaletteEntry(
+                    PaletteSource.Definition,
+                    definition.Name,
+                    "A definition of the open rule.",
+                    [
+                        .. definition.Parameters.Select(p => new PaletteArgument(
+                            p,
+                            LiteralKind.String,
+                            true,
+                            null,
+                            "An expression: rule text such as a term, a constant or a sub-expression."
+                        )),
+                    ]
+                )
+            );
+        }
+
         return new RulePalette(entries);
     }
 
     /// <summary>
-    /// Makes an expression of an entry: the constant itself, or a call of the predicate with the values of a form. A value
-    /// is JSON (<c>18</c>, <c>true</c>, <c>["a", "b"]</c>, or a <c>from</c> reference as a JSON object); for a string,
-    /// GUID or date and time argument, plain text is the string, and for an array of strings, plain text is a list separated
-    /// by commas. An empty value leaves out an argument that is not required.
+    /// Makes an expression of an entry: the constant itself, a call of the predicate with the values of a form, or a use of
+    /// a definition. A value of a predicate argument is JSON (<c>18</c>, <c>true</c>, <c>["a", "b"]</c>, or a <c>from</c>
+    /// reference as a JSON object); for a string, GUID or date and time argument, plain text is the string, and for an array
+    /// of strings, plain text is a list separated by commas. An empty value leaves out an argument that is not required. A
+    /// value of a definition parameter is rule text; the use (<c>name(a, b)</c>, or the bare name without parameters) is
+    /// not compiled here, because it compiles only in the document that has the definition.
     /// </summary>
     /// <param name="entry">A constant or a predicate entry.</param>
     /// <param name="values">The values, one for each argument of the entry, in order.</param>
@@ -120,6 +154,13 @@ public sealed class RulePalette
         if (entry.Source == PaletteSource.Constant)
         {
             return ToolResults.Success(entry.Name);
+        }
+
+        if (entry.Source == PaletteSource.Definition)
+        {
+            return ToolResults.Success(
+                values.Count == 0 ? entry.Name : $"{entry.Name}({string.Join(", ", values.Select(v => v.Trim()))})"
+            );
         }
 
         JsonObject args = [];

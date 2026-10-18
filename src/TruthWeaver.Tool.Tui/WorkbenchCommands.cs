@@ -28,11 +28,13 @@ internal static class WorkbenchCommands
         new(Key.CursorRight.WithAlt, "Move the vertical divider right", w => w.MoveVerticalDivider(1)),
         new(Key.CursorUp.WithAlt, "Move the horizontal divider up", w => w.MoveHorizontalDivider(-1)),
         new(Key.CursorDown.WithAlt, "Move the horizontal divider down", w => w.MoveHorizontalDivider(1)),
+        new(Key.F1.WithCtrl, "Switch between the light and the dark theme", w => w.Workbench.ToggleTheme()),
         new(Key.Q.WithCtrl, "Quit (asks first when there are unsaved changes)", w => w.Quit()),
         .. EmbeddedRuleCommands.All,
         .. ImportExportCommands.All,
         .. AssignmentCommands.Default,
         .. RuleTestCommands.Default,
         .. RewriteCommands.Default,
+        .. CompareCommands.Default,
     ];
 }

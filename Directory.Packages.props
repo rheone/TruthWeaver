@@ -86,6 +86,13 @@
   <ItemGroup>
     <PackageVersion Include="Terminal.Gui" Version="2.5.0" />
   </ItemGroup>
+  <!-- Terminal.Gui.Editor - the text editor view of the terminal UI (TruthWeaver.Tool.Tui) only. Terminal.Gui 2.5 marks its
+       TextView obsolete in favor of this package. 2.5.7 is the newest stable release (MIT, net10.0; it depends on
+       Terminal.Gui 2.4.17 or later and Microsoft.Extensions.Configuration.Abstractions). The owner approved it for the
+       terminal UI project only (2026-10-17). An architecture test keeps every other project free of it. -->
+  <ItemGroup>
+    <PackageVersion Include="Terminal.Gui.Editor" Version="2.5.7" />
+  </ItemGroup>
   <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
        invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->

@@ -30,6 +30,7 @@ public sealed class RuleDocument
     private readonly Stack<Snapshot> redo = new();
     private Snapshot current;
     private Snapshot saved;
+    private RuleDefinitions? definitions;
 
     private RuleDocument(string text, RuleFormat format, string? path, ToolSettings? settings)
     {
@@ -68,6 +69,13 @@ public sealed class RuleDocument
 
     /// <summary>Gets a value indicating whether <see cref="Rule"/> is the rule of the current <see cref="Text"/>.</summary>
     public bool IsRuleCurrent { get; private set; }
+
+    /// <summary>
+    /// Gets the <c>let</c> definitions and uses of the current <see cref="Text"/>, read without expanding them (see
+    /// <see cref="RuleDefinitions"/>). It is read when first asked for after a change. When the text has a syntax error,
+    /// <see cref="RuleDefinitions.Succeeded"/> is <see langword="false"/>.
+    /// </summary>
+    public RuleDefinitions Definitions => this.definitions ??= YamlRuleDefinitions.ReadAs(this.Text, this.Format);
 
     /// <summary>Gets a value indicating whether <see cref="Undo"/> has a step to undo.</summary>
     public bool CanUndo => this.undo.Count > 0;
@@ -132,6 +140,42 @@ public sealed class RuleDocument
         this.Apply(this.current with { Text = text });
     }
 
+    /// <summary>
+    /// Replaces the text with text that <see cref="Check"/> compiled, without compiling it again. It is the same change as
+    /// <see cref="SetText(string)"/>: one undo step that clears the redo steps. When the format of the document is no longer
+    /// the format that was checked, the text is compiled again.
+    /// </summary>
+    /// <param name="checkedText">The result of <see cref="Check"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="checkedText"/> is <see langword="null"/>.</exception>
+    public void SetText(CheckedText checkedText)
+    {
+        ArgumentNullException.ThrowIfNull(checkedText);
+
+        this.Apply(
+            this.current with
+            {
+                Text = checkedText.Text,
+            },
+            checkedText.Format == this.Format ? checkedText.Result : null
+        );
+    }
+
+    /// <summary>
+    /// Compiles text without changing the document, so a front end can compile off its UI thread and apply the result with
+    /// <see cref="SetText(CheckedText)"/>. The method reads no state of the document except the compiler, which keeps no
+    /// state between calls, so any thread may call it.
+    /// </summary>
+    /// <param name="text">The text to compile.</param>
+    /// <param name="format">The format of <paramref name="text"/>.</param>
+    /// <returns>The text with its format and compilation result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public CheckedText Check(string text, RuleFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        return new CheckedText(text, format, this.compiler.CompileAs(text, format));
+    }
+
     /// <summary>Goes back one step: the text and format before the last change.</summary>
     /// <returns><see langword="true"/> when a step was undone; <see langword="false"/> when there was none.</returns>
     public bool Undo()
@@ -178,9 +222,14 @@ public sealed class RuleDocument
             return ToolResults.Failure<string>(this.Diagnostics);
         }
 
-        string formatted = this.Print(this.Rule, this.Format, pretty);
-        this.Apply(this.current with { Text = formatted });
-        return ToolResults.Success(formatted, this.Diagnostics);
+        ToolResult<string> printed = this.PrintCurrent(this.Format, pretty);
+        if (!printed.Succeeded)
+        {
+            return printed;
+        }
+
+        this.Apply(this.current with { Text = printed.Value });
+        return ToolResults.Success(printed.Value, this.Diagnostics);
     }
 
     /// <summary>
@@ -204,7 +253,13 @@ public sealed class RuleDocument
                 return ToolResults.Failure<string>(this.Diagnostics);
             }
 
-            this.Apply(new Snapshot(this.Print(this.Rule, format, pretty: false), format));
+            ToolResult<string> converted = this.PrintCurrent(format, pretty: false);
+            if (!converted.Succeeded)
+            {
+                return converted;
+            }
+
+            this.Apply(new Snapshot(converted.Value, format));
         }
 
         ToolResult<string> written = OutputWriter.WriteFile(target, this.Text);
@@ -252,9 +307,14 @@ public sealed class RuleDocument
             return ToolResults.Failure<string>(this.Diagnostics);
         }
 
-        string converted = this.Print(this.Rule, format, pretty: false);
-        this.Apply(new Snapshot(converted, format));
-        return ToolResults.Success(converted, this.Diagnostics);
+        ToolResult<string> converted = this.PrintCurrent(format, pretty: false);
+        if (!converted.Succeeded)
+        {
+            return converted;
+        }
+
+        this.Apply(new Snapshot(converted.Value, format));
+        return ToolResults.Success(converted.Value, this.Diagnostics);
     }
 
     /// <summary>
@@ -281,14 +341,50 @@ public sealed class RuleDocument
         return ToolResults.Success(text, this.Diagnostics);
     }
 
-    // The format that an extension names, or null for an extension the loader does not know.
-    private static RuleFormat? FormatOf(string path)
+    /// <summary>
+    /// Puts the result of a structural edit in place of the text, as one undo step. An edit of a document with
+    /// <c>let</c> definitions (<see cref="RuleTreeEdit.Document"/> is set) is printed with its definitions and uses; any
+    /// other edit is put in as <see cref="ReplaceRule"/> puts a rule. The layout follows <see cref="ReplaceRule"/>: the
+    /// pretty form when the text has more than one line. The printed text must compile, or the text does not change.
+    /// </summary>
+    /// <param name="edit">An edit that succeeded.</param>
+    /// <returns>The new text, or no text and the diagnostics when the edit cannot be printed or the printed text does not compile.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="edit"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="edit"/> was refused: it has no rule.</exception>
+    public ToolResult<string> ApplyEdit(RuleTreeEdit edit)
     {
-        FormatDetection detection = FormatDetector.Detect(string.Empty, path);
-        return detection.Evidence == FormatEvidence.Extension ? detection.Format : null;
+        ArgumentNullException.ThrowIfNull(edit);
+        if (!edit.Succeeded)
+        {
+            throw new ArgumentException("A refused edit has no rule to put in.", nameof(edit));
+        }
+
+        if (edit.Document is null)
+        {
+            return this.ReplaceRule(edit.Rule);
+        }
+
+        bool pretty = this.Text.Trim().Contains('\n', StringComparison.Ordinal);
+        ToolResult<string> printed = this.PrintDefinitions(edit.Document, this.Format, pretty);
+        if (!printed.Succeeded)
+        {
+            return printed;
+        }
+
+        CompilationResult<StubAssignment> check = this.compiler.CompileAs(printed.Value, this.Format);
+        if (check.Rule is null)
+        {
+            return ToolResults.Failure<string>(check.Diagnostics);
+        }
+
+        this.Apply(this.current with { Text = printed.Value }, check);
+        return ToolResults.Success(printed.Value, this.Diagnostics);
     }
 
-    private static string IndentJson(string json)
+    /// <summary>Indents JSON by two spaces with line feeds, without escaping characters that JSON allows as they are.</summary>
+    /// <param name="json">The JSON text.</param>
+    /// <returns>The indented text.</returns>
+    internal static string IndentJson(string json)
     {
         JsonNode node = JsonNode.Parse(json) ?? throw new InvalidOperationException("The printer wrote JSON null.");
         using MemoryStream stream = new();
@@ -308,6 +404,32 @@ public sealed class RuleDocument
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    // The format that an extension names, or null for an extension the loader does not know.
+    private static RuleFormat? FormatOf(string path)
+    {
+        FormatDetection detection = FormatDetector.Detect(string.Empty, path);
+        return detection.Evidence == FormatEvidence.Extension ? detection.Format : null;
+    }
+
+    // Prints the current rule in a format: with its definitions and uses when the text has any, otherwise from the tree.
+    private ToolResult<string> PrintCurrent(RuleFormat format, bool pretty)
+    {
+        return this.Definitions is { Succeeded: true, HasDefinitions: true } read && read.PrintJson() is { } json
+            ? this.PrintDefinitions(json, format, pretty)
+            : ToolResults.Success(this.Print(this.Rule!, format, pretty));
+    }
+
+    private ToolResult<string> PrintDefinitions(string document, RuleFormat format, bool pretty)
+    {
+        string? printed = DefinitionsPrinter.Print((JsonObject)JsonNode.Parse(document)!, format, this.settings, pretty);
+        return printed is null
+            ? ToolResults.Failure<string>(
+                ToolDiagnosticCodes.WriteBackFailed,
+                "The rule cannot be printed with its definitions: a definition body or the rule does not compile on its own."
+            )
+            : ToolResults.Success(printed);
     }
 
     private string Print(CompiledRule<StubAssignment> rule, RuleFormat format, bool pretty)
@@ -331,7 +453,7 @@ public sealed class RuleDocument
     }
 
     // A change made by the author: one undo step, and no redo steps left.
-    private void Apply(Snapshot next)
+    private void Apply(Snapshot next, CompilationResult<StubAssignment>? precompiled = null)
     {
         if (next == this.current)
         {
@@ -345,19 +467,20 @@ public sealed class RuleDocument
         }
 
         this.redo.Clear();
-        this.MoveTo(next);
+        this.MoveTo(next, precompiled);
     }
 
-    private void MoveTo(Snapshot next)
+    private void MoveTo(Snapshot next, CompilationResult<StubAssignment>? precompiled = null)
     {
         this.current = next;
-        this.Compile();
+        this.Compile(precompiled);
         this.Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    private void Compile()
+    private void Compile(CompilationResult<StubAssignment>? precompiled = null)
     {
-        CompilationResult<StubAssignment> result = this.compiler.CompileAs(this.Text, this.Format);
+        this.definitions = null;
+        CompilationResult<StubAssignment> result = precompiled ?? this.compiler.CompileAs(this.Text, this.Format);
         this.Diagnostics = result.Diagnostics;
         this.IsRuleCurrent = result.Rule is not null;
         if (result.Rule is not null)

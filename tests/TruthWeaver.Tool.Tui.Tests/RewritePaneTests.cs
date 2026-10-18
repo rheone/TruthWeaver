@@ -42,4 +42,25 @@ public sealed class RewritePaneTests
         Assert.Equal("Rewrite", harness.Window.ActivePaneTitle(PaneSlot.Side));
         Assert.NotNull(RewriteController.For(harness.Workbench).Comparison);
     }
+
+    /// <summary>The second-rule key asks for a source, loads the clipboard and shows the Compare pane.</summary>
+    [Fact]
+    public void SecondRuleKey_FromTheEditor_ShowsTheComparePane_Test()
+    {
+        ScriptedServices services = new();
+        services.Dialogs.Choices.Enqueue(0);
+        services.Clipboard.Text = "a";
+        using WorkbenchHarness harness = new(
+            "a OR b",
+            [new RuleTextPane(), new CanonicalTextPane(), new ComparePane(services.Services)]
+        );
+
+        harness.Press(Key.F9.WithCtrl);
+
+        Assert.Equal("Compare", harness.Window.ActivePaneTitle(PaneSlot.Side));
+        Assert.Contains(
+            CompareController.For(harness.Workbench).Lines,
+            l => l.Text.StartsWith("The second rule is tighter", StringComparison.Ordinal)
+        );
+    }
 }

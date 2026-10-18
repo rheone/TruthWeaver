@@ -59,6 +59,28 @@ internal sealed partial class Workbench
     }
 
     /// <summary>
+    /// Puts the result of a structural edit into the document as one undo step (see <see cref="RuleDocument.ApplyEdit"/>),
+    /// with the <c>let</c> definitions of the text when the edit kept them, and reports the outcome on the status line.
+    /// </summary>
+    /// <param name="edit">An edit that succeeded.</param>
+    /// <param name="done">The message for the status line when the edit was put in.</param>
+    /// <returns><see langword="true"/> when the document changed.</returns>
+    public bool ApplyEdit(RuleTreeEdit edit, string done)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+
+        ToolResult<string> applied = this.document.ApplyEdit(edit);
+        if (!applied.Succeeded)
+        {
+            this.SetStatus(Describe(applied.Diagnostics, "Not applied: the printed rule does not compile."));
+            return false;
+        }
+
+        this.SetStatus(done);
+        return true;
+    }
+
+    /// <summary>
     /// Checks that the text of the document compiles, so a change of the tree starts from what the author sees. When it does
     /// not, the status line says so: an edit of the last valid tree would drop the text the author typed since.
     /// </summary>

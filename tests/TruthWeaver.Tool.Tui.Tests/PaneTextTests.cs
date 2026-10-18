@@ -39,14 +39,14 @@ public sealed class PaneTextTests
         Assert.EndsWith("F1 keys", status, StringComparison.Ordinal);
     }
 
-    /// <summary>The key help lists every command of the workbench with its key.</summary>
+    /// <summary>The key help lists every command of the workbench with its key, then one line about the mouse.</summary>
     [Fact]
     public void HelpText_DefaultCommands_ListsEveryKey_Test()
     {
         string help = WorkbenchWindow.HelpText(WorkbenchCommands.Default);
 
         string[] lines = help.Split('\n');
-        Assert.Equal(WorkbenchCommands.Default.Count, lines.Length);
+        Assert.Equal(WorkbenchCommands.Default.Count + 1, lines.Length);
         Assert.Contains(
             lines,
             line => line.StartsWith("Ctrl+S", StringComparison.Ordinal) && line.EndsWith("Save", StringComparison.Ordinal)

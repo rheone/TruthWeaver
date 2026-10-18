@@ -145,8 +145,16 @@ internal sealed class RewriteController
             return false;
         }
 
+        // A rewrite returns a rule with no notes: the notes on nodes the rewrite left as they were go back on them.
+        NotedRewrite noted = RewritePlayground.CarryNotes(preview.Before, after, this.workbench.Settings);
         string name = RewritePlayground.NameOf(preview.Kind);
-        if (!this.workbench.ReplaceRule(after, $"Accepted {name}. Ctrl+Z undoes it."))
+        string dropped = noted.DroppedNotes switch
+        {
+            0 => string.Empty,
+            1 => " 1 note was dropped: the rewrite changed the node it was on.",
+            int count => $" {count} notes were dropped: the rewrite changed the nodes they were on.",
+        };
+        if (!this.workbench.ReplaceRule(noted.Rule, $"Accepted {name}. Ctrl+Z undoes it.{dropped}"))
         {
             return false;
         }
@@ -190,6 +198,16 @@ internal sealed class RewriteController
         return true;
     }
 
+    /// <summary>Gets an assignment as text, such as <c>a = True, b = False</c>, ordered by term.</summary>
+    /// <param name="values">The values by term, or <see langword="null"/>.</param>
+    /// <returns>The text; empty for <see langword="null"/>.</returns>
+    internal static string Assignment(IReadOnlyDictionary<string, TruthValue>? values)
+    {
+        return values is null
+            ? string.Empty
+            : string.Join(", ", values.OrderBy(v => v.Key, StringComparer.Ordinal).Select(v => $"{v.Key} = {v.Value}"));
+    }
+
     private static string Verdict(RuleEquivalenceResult equivalence)
     {
         return equivalence.Outcome switch
@@ -198,13 +216,6 @@ internal sealed class RewriteController
             RuleEquivalenceOutcome.NotEquivalent => "not equivalent",
             _ => "undecided",
         };
-    }
-
-    private static string Assignment(IReadOnlyDictionary<string, TruthValue>? values)
-    {
-        return values is null
-            ? string.Empty
-            : string.Join(", ", values.OrderBy(v => v.Key, StringComparer.Ordinal).Select(v => $"{v.Key} = {v.Value}"));
     }
 
     private static void AddIndented(List<string> lines, string text)

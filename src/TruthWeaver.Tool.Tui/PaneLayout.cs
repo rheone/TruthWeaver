@@ -24,6 +24,15 @@ internal sealed class PaneLayout
     /// <summary>Gets the maximised region, or <see langword="null"/> when every region shows.</summary>
     public PaneSlot? Maximised { get; private set; }
 
+    /// <summary>Sets the sizes of the regions, for example from the choices of the last run. A size that is <see langword="null"/> stays as it is.</summary>
+    /// <param name="editorWidthPercent">The width of the editor region in percent, or <see langword="null"/>.</param>
+    /// <param name="topHeightPercent">The height of the top regions in percent, or <see langword="null"/>.</param>
+    public void Restore(int? editorWidthPercent, int? topHeightPercent)
+    {
+        this.EditorWidthPercent = Clamp(editorWidthPercent ?? this.EditorWidthPercent);
+        this.TopHeightPercent = Clamp(topHeightPercent ?? this.TopHeightPercent);
+    }
+
     /// <summary>Moves the line between the editor and side regions by <paramref name="steps"/> steps (negative is left).</summary>
     /// <param name="steps">The number of steps.</param>
     public void MoveVerticalDivider(int steps)

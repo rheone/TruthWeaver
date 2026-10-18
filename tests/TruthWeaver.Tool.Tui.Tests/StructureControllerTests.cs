@@ -7,6 +7,8 @@ using TruthWeaver.Tool.Tui.Tests.TestSupport;
 /// <summary>The structural editor of the workbench with no terminal: edits, the palette, the clipboard, undo and redo.</summary>
 public sealed class StructureControllerTests
 {
+    private const string DefinitionsText = "let both(x, y) = x AND y;\nboth(a, b) OR c";
+
     /// <summary>An edit changes the editor text and the decision at once.</summary>
     [Fact]
     public void WrapInNot_SelectedOperand_ChangesTheTextAndTheDecision_Test()
@@ -133,7 +135,7 @@ public sealed class StructureControllerTests
             "a AND hasRole(role: \"viewer\")"
         );
         List<PaletteEntry> entries = [.. controller.Palette().Entries.Where(e => e.Source != PaletteSource.Operator)];
-        services.Dialogs.Choices.Enqueue(1 + entries.FindIndex(e => e.Name == "hasRole"));
+        services.Dialogs.Choices.Enqueue(2 + entries.FindIndex(e => e.Name == "hasRole"));
         services.Dialogs.Texts.Enqueue("admin");
         workbench.SelectNode("$.operands[0]");
 
@@ -182,6 +184,88 @@ public sealed class StructureControllerTests
 
         Assert.Equal(["and", "  a", "  b"], controller.Lines);
         Assert.Equal("$", workbench.SelectedNode);
+    }
+
+    /// <summary>
+    /// With <c>let</c> definitions, the lines mark the node that a use expands to, show the body below it with the
+    /// arguments in place, and list the definition with its parameters after the rule.
+    /// </summary>
+    [Fact]
+    public void Lines_RuleWithDefinitions_ShowTheUseAndTheDefinition_Test()
+    {
+        (StructureController controller, _, _) = Create(DefinitionsText);
+
+        Assert.Equal(
+            [
+                "or",
+                "  use both(a, b) = and",
+                "    a",
+                "    b",
+                "  c",
+                "let both(x, y)",
+                "  and",
+                "    x (parameter)",
+                "    y (parameter)",
+            ],
+            controller.Lines
+        );
+    }
+
+    /// <summary>An edit of the root of a use changes the definition body, and the text keeps the definition and the use.</summary>
+    [Fact]
+    public void ReplaceOperator_RootOfAUse_EditsTheDefinitionAndKeepsIt_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create(DefinitionsText);
+        int or = controller
+            .Palette()
+            .Entries.Where(e => e.Source == PaletteSource.Operator)
+            .ToList()
+            .FindIndex(e => e.Name == "or");
+        services.Dialogs.Choices.Enqueue(or);
+        workbench.SelectNode("$.operands[0]");
+
+        bool changed = controller.ReplaceOperator();
+
+        Assert.True(changed);
+        Assert.Equal("let both(x, y) = x OR y;\nboth(a, b) OR c", workbench.Document.Text);
+        Assert.Equal("$.operands[0]", workbench.SelectedNode);
+    }
+
+    /// <summary>A definition of the palette asks for its arguments and puts a use of the definition in place of the node.</summary>
+    [Fact]
+    public void ReplaceFromPalette_Definition_PutsAUseIn_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create(DefinitionsText);
+        List<PaletteEntry> entries = [.. controller.Palette().Entries.Where(e => e.Source != PaletteSource.Operator)];
+        services.Dialogs.Choices.Enqueue(entries.FindIndex(e => e.Source == PaletteSource.Definition) + 2);
+        services.Dialogs.Texts.Enqueue("c");
+        services.Dialogs.Texts.Enqueue("d");
+        workbench.SelectNode("$.operands[1]");
+
+        bool changed = controller.ReplaceFromPalette();
+
+        Assert.True(changed);
+        Assert.Equal("let both(x, y) = x AND y;\nboth(a, b) OR both(c, d)", workbench.Document.Text);
+    }
+
+    /// <summary>An edit that would break the definition is refused with a message and changes nothing.</summary>
+    [Fact]
+    public void ChangeLiteral_ParameterOfADefinition_IsRefusedWithAMessage_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create(
+            "let one = both(a, b); let both(x, y) = x AND isAdmin(level: 1); one"
+        );
+        services.Dialogs.Texts.Enqueue("2");
+        workbench.SelectNode("$.definitions.both.body.operands[1]");
+        Assert.True(controller.ChangeLiteral());
+        workbench.SelectNode("$.definitions.both.body.operands[0]");
+
+        bool changed = controller.ChangeLiteral();
+
+        Assert.False(changed);
+        Assert.Equal("The selected node has no literal to change.", workbench.Status);
+        Assert.Contains("isAdmin(level: 2)", workbench.Document.Text, StringComparison.Ordinal);
+        Assert.StartsWith("let one = both(a, b);", workbench.Document.Text, StringComparison.Ordinal);
     }
 
     private static (StructureController Controller, ScriptedServices Services, Workbench Workbench) Create(string text)

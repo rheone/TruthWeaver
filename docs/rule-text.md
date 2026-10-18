@@ -119,7 +119,36 @@ deeper than `MaxDefinitionDepth` (`MaxDefinitionDepthExceeded`), a use with the 
 unused-definition lint (`UnusedDefinition`). A diagnostic's span always points at the use; one actually inside a
 definition's own body additionally names the definition.
 
-Printing a rule's `let` statements back out, rather than its expanded form, is not supported.
+### Read the definitions of a document
+
+A compiled rule has no definitions, so the printers above cannot print the `let` statements back. To get the
+definitions and uses of a document, read its source with `RuleDefinitions` (namespace `TruthWeaver.Compilation`).
+Reading only parses the text: it does not need a predicate registry and it does not expand the uses.
+
+| Member | What it gives |
+| --- | --- |
+| `RuleDefinitions.ReadText(text)`, `RuleDefinitions.ReadJson(json)` | The definitions and uses of rule text or JSON. `YamlRuleDefinitions.ReadYaml(yaml)` reads YAML, and `YamlRuleDefinitions.ReadAs(source, format)` reads any of the three formats (package `TruthWeaver.Yaml`). |
+| `Succeeded`, `Diagnostics` | `Succeeded` is `false` when the text has a syntax error. Reading does not throw for an authoring error: the diagnostics tell what is wrong. |
+| `Definitions` | Each `DefinitionDeclaration`: the name, the parameters, the path (`$.definitions.name`), and the spans of the declaration and its name. |
+| `Uses` | Each `DefinitionUse`: the name, the number of arguments, the definition whose body holds it (`null` in the rule), its path, its spans, and `ExpandedPaths`, the paths of its expansions in the compiled rule. |
+| `SourcesOf(path)` | The source paths of a node of the compiled rule, outermost first: the use, then the body node it expands to. A node in the place of a parameter gives the argument of the use. |
+| `PrintJson()`, `PrintYaml()` | The document in the tree format without expansion: a `definitions` section and a `use` node for each use. It compiles to the same rule as the source. `PrintYaml` is in `TruthWeaver.Yaml`. |
+
+Reading reports syntax errors only. Compile the text to find an unknown definition, a cycle, a name collision or a
+wrong number of arguments. All paths use the form of the [tree format](rule-formats.md#definitions-and-parameters),
+the same form as `CompiledRule.Notes`.
+
+```csharp
+RuleDefinitions read = RuleDefinitions.ReadText(
+    "let both(x, y) = x AND y;\nboth(isOwner, isEditor) OR isAdmin");
+
+DefinitionDeclaration both = read.Definitions[0]; // both(x, y), at $.definitions.both
+DefinitionUse use = read.Uses[0];                // both, 2 arguments, expands at $.operands[0]
+EquatableArray<string> sources = read.SourcesOf("$.operands[0].operands[1]"); // the argument isEditor
+```
+
+The [terminal UI](tui.md#definitions-in-the-tree-pane) uses this type to show the definitions in its Tree pane and
+to keep them when you edit the tree.
 
 ## Quantifiers
 

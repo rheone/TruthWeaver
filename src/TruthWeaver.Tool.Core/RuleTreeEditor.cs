@@ -15,9 +15,21 @@ using TruthWeaver.Yaml;
 /// result. An edit whose result does not compile is refused with the diagnostics of the compiler; the rule never changes.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The editor compiles permissively, as <see cref="RuleDocument"/> does, with the limits of the settings. The notes of the
 /// nodes that an edit keeps stay on them. It has no state beyond the rule: each edit gives a new rule, and
-/// <see cref="RuleDocument.ReplaceRule"/> puts it into the document as one undo step.
+/// <see cref="RuleDocument.ApplyEdit"/> puts it into the document as one undo step.
+/// </para>
+/// <para>
+/// Given the <see cref="RuleDefinitions"/> of a document with <c>let</c> definitions, the editor edits the source of the
+/// expanded rule instead, so the definitions stay. An edit of a node changes the node it comes from
+/// (<see cref="RuleDefinitions.SourcesOf"/>): a node inside an expanded use changes the definition body, so every use
+/// sees the change, and a node in the place of a parameter changes the argument of that use. Replace, wrap and negate act
+/// on the outermost source, so on the root of an expanded use they change the use itself; a change of the operator, a
+/// literal or the operands acts on the node that holds them. The edited document must compile, so an edit that would break
+/// a definition (such as an operand added to a use) is refused. The nodes of a definition (paths that start with
+/// <c>$.definitions</c>) can be edited directly, except a parameter, which only a replace can change.
+/// </para>
 /// </remarks>
 public sealed class RuleTreeEditor
 {
@@ -73,14 +85,29 @@ public sealed class RuleTreeEditor
     /// <summary>Initializes a new instance of the <see cref="RuleTreeEditor"/> class.</summary>
     /// <param name="rule">The rule to edit.</param>
     /// <param name="settings">The settings (limits and operator style), or <see langword="null"/> for <see cref="ToolSettings.Default"/>.</param>
+    /// <param name="definitions">
+    /// The definitions and uses of the text that <paramref name="rule"/> was compiled from (<see cref="RuleDocument.Definitions"/>),
+    /// or <see langword="null"/> (the default) to edit the expanded rule. With definitions, each edit keeps them and gives the
+    /// edited document in <see cref="RuleTreeEdit.Document"/>.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
-    public RuleTreeEditor(CompiledRule<StubAssignment> rule, ToolSettings? settings = null)
+    public RuleTreeEditor(CompiledRule<StubAssignment> rule, ToolSettings? settings = null, RuleDefinitions? definitions = null)
     {
         ArgumentNullException.ThrowIfNull(rule);
 
         this.settings = settings ?? ToolSettings.Default;
         this.compiler = RuleConverter.CreateCompiler(this.settings);
-        this.Tree = RuleTree.Of(rule, this.settings);
+        this.Tree = RuleTree.Of(rule, this.settings, definitions);
+    }
+
+    /// <summary>The part of the source of a node that an edit acts on, when the rule has definitions.</summary>
+    private enum Part
+    {
+        /// <summary>The outermost source: the use, when the node is the root of an expanded use. Replace, wrap and negate act here.</summary>
+        Source,
+
+        /// <summary>The innermost source, which holds the operator, the literals and the operands.</summary>
+        Content,
     }
 
     /// <summary>Gets the tree of the rule that the edits start from.</summary>
@@ -100,8 +127,14 @@ public sealed class RuleTreeEditor
 
         return this.Edit(
             path,
-            (_, node, _, _) =>
+            Part.Content,
+            (_, node, _) =>
             {
+                if (DefinitionsPrinter.IsUse(node))
+                {
+                    return "the node is a use of a definition. Edit the body of the definition, or replace the use.";
+                }
+
                 if (!node.ContainsKey("op"))
                 {
                     return "the node is not an operator. Replace it or wrap it instead.";
@@ -132,7 +165,12 @@ public sealed class RuleTreeEditor
     {
         return this.Edit(
             path,
-            (root, node, parent, index) => Put(root, parent, index, Not(node)),
+            Part.Source,
+            (_, node, put) =>
+            {
+                put(Not(node));
+                return null;
+            },
             path,
             "Wrapped the node in NOT."
         );
@@ -150,14 +188,19 @@ public sealed class RuleTreeEditor
     {
         return this.Edit(
             path,
-            (root, node, parent, index) =>
+            Part.Source,
+            (_, node, put) =>
             {
                 string? op = node["op"]?.GetValue<string>();
                 if (string.Equals(op, "not", StringComparison.OrdinalIgnoreCase))
                 {
-                    return node["operands"] is JsonArray { Count: 1 } operands && operands[0] is JsonObject operand
-                        ? Put(root, parent, index, (JsonObject)operand.DeepClone())
-                        : "the NOT has no single operand.";
+                    if (node["operands"] is not JsonArray { Count: 1 } operands || operands[0] is not JsonObject operand)
+                    {
+                        return "the NOT has no single operand.";
+                    }
+
+                    put((JsonObject)operand.DeepClone());
+                    return null;
                 }
 
                 if (op is not null && Duals.TryGetValue(op, out string? dual))
@@ -177,7 +220,8 @@ public sealed class RuleTreeEditor
                     return null;
                 }
 
-                return Put(root, parent, index, Not(node));
+                put(Not(node));
+                return null;
             },
             path,
             "Negated the node."
@@ -199,7 +243,8 @@ public sealed class RuleTreeEditor
         string selected = path;
         RuleTreeEdit edit = this.Edit(
             path,
-            (_, node, _, _) =>
+            Part.Content,
+            (_, node, _) =>
             {
                 if (node["operands"] is not JsonArray operands)
                 {
@@ -228,23 +273,29 @@ public sealed class RuleTreeEditor
         string? parentPath = RuleTree.ParentPath(path ?? string.Empty);
         return this.Edit(
             path!,
-            (root, _, parent, index) =>
+            Part.Source,
+            (workspace, _, _) =>
             {
-                if (parent is null || parentPath is null)
+                if (parentPath is null)
                 {
                     return "the root cannot be deleted. Replace it instead.";
                 }
 
-                parent.RemoveAt(index);
+                // The operands of the parent hold the node at the same index in the source as in the expanded rule.
                 if (
-                    parent.Count == 1
-                    && RuleTree.TryLocate(root, parentPath, out JsonObject? owner, out JsonArray? above, out int at)
-                    && owner["op"]?.GetValue<string>() is { } op
-                    && MultiOperand.Contains(op)
+                    !workspace.TryFind(parentPath, Part.Content, out JsonObject? owner, out Action<JsonObject>? putOwner)
+                    || owner["operands"] is not JsonArray operands
+                    || OperandIndex(path!) is not int index
+                    || index >= operands.Count
                 )
                 {
-                    JsonObject remaining = (JsonObject)parent[0]!.DeepClone();
-                    return Put(root, above, at, remaining);
+                    return "the node has no parent that holds it as an operand.";
+                }
+
+                operands.RemoveAt(index);
+                if (operands.Count == 1 && owner["op"]?.GetValue<string>() is { } op && MultiOperand.Contains(op))
+                {
+                    putOwner((JsonObject)operands[0]!.DeepClone());
                 }
 
                 return null;
@@ -264,10 +315,23 @@ public sealed class RuleTreeEditor
         string? selected = null;
         RuleTreeEdit edit = this.Edit(
             path!,
-            (_, _, parent, index) =>
+            Part.Source,
+            (workspace, _, _) =>
             {
+                JsonArray? parent =
+                    parentPath is not null && workspace.TryFind(parentPath, Part.Content, out JsonObject? owner, out _)
+                        ? owner["operands"] as JsonArray
+                        : null;
+                int index = OperandIndex(path!) ?? -1;
                 int other = index + Math.Sign(direction);
-                if (parent is null || parentPath is null || direction == 0 || other < 0 || other >= parent.Count)
+                if (
+                    parent is null
+                    || parentPath is null
+                    || direction == 0
+                    || index >= parent.Count
+                    || other < 0
+                    || other >= parent.Count
+                )
                 {
                     return "there is no operand on that side to swap with.";
                 }
@@ -296,7 +360,17 @@ public sealed class RuleTreeEditor
             return refused;
         }
 
-        return this.Edit(path, (root, _, parent, index) => Put(root, parent, index, replacement), path, "Replaced the node.");
+        return this.Edit(
+            path,
+            Part.Source,
+            (_, _, put) =>
+            {
+                put(replacement);
+                return null;
+            },
+            path,
+            "Replaced the node."
+        );
     }
 
     /// <summary>
@@ -317,8 +391,19 @@ public sealed class RuleTreeEditor
 
         return this.Edit(
             path,
-            (_, node, _, _) =>
+            Part.Content,
+            (workspace, node, _) =>
             {
+                if (workspace.IsParameter(path, node))
+                {
+                    return "the node is a parameter of the definition: a literal would make it a term. Replace it instead.";
+                }
+
+                if (DefinitionsPrinter.IsUse(node))
+                {
+                    return "the node is a use of a definition, which has no literals. Edit its arguments instead.";
+                }
+
                 if (node.ContainsKey("const"))
                 {
                     if (name != "const")
@@ -390,24 +475,21 @@ public sealed class RuleTreeEditor
         return new JsonObject { ["op"] = "not", ["operands"] = new JsonArray(node.DeepClone()) };
     }
 
-    // Puts a node in place of the node at a position: in its parent's operands, or as the root.
-    private static string? Put(JsonObject root, JsonArray? parent, int index, JsonObject replacement)
+    // The index of a node among the operands of its parent, read from the end of its path; null for the root.
+    private static int? OperandIndex(string path)
     {
-        if (parent is not null)
-        {
-            parent[index] = replacement;
-            return null;
-        }
-
-        // The root object stays the same instance, so its members are replaced in place.
-        root.Clear();
-        foreach ((string key, JsonNode? value) in replacement.ToList())
-        {
-            replacement.Remove(key);
-            root[key] = value;
-        }
-
-        return null;
+        int open = path.LastIndexOf('[');
+        return
+            path.EndsWith(']')
+            && open >= 0
+            && int.TryParse(
+                path.AsSpan(open + 1, path.Length - open - 2),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out int index
+            )
+            ? index
+            : null;
     }
 
     // Keeps a member that an operator needs (adding it with a start value) and removes it when the operator does not take it.
@@ -443,6 +525,11 @@ public sealed class RuleTreeEditor
         tree = null;
         refused = null;
         RuleFormat format = FormatDetector.Detect(expression).Format;
+        if (this.Tree.Document is { } document)
+        {
+            return this.TryParseSource(expression, format, document, out tree, out refused);
+        }
+
         CompilationResult<StubAssignment> compiled = this.compiler.CompileAs(expression, format);
         if (compiled.Rule is null)
         {
@@ -454,39 +541,173 @@ public sealed class RuleTreeEditor
         return true;
     }
 
-    // Applies a change to a copy of the tree and compiles the result. The change returns null when it applied, or the reason
-    // it cannot apply.
+    // Reads an expression for a document with definitions: rule text is read after the declarations of the document, so it
+    // can use them, and the source of the expression (with its uses) is what the edit puts in.
+    private bool TryParseSource(
+        string expression,
+        RuleFormat format,
+        JsonObject document,
+        [NotNullWhen(true)] out JsonObject? tree,
+        [NotNullWhen(false)] out RuleTreeEdit? refused
+    )
+    {
+        tree = null;
+        refused = null;
+        string declarations =
+            format == RuleFormat.Text
+                ? DefinitionsPrinter.PrintDeclarations(document, this.settings) ?? string.Empty
+                : string.Empty;
+        RuleDefinitions read = YamlRuleDefinitions.ReadAs(declarations + expression, format);
+        if (read.PrintJson() is not { } json)
+        {
+            refused = RuleTreeEdit.Refused($"Not a valid expression: {FirstError(read.Diagnostics)}", read.Diagnostics);
+            return false;
+        }
+
+        JsonObject source = (JsonObject)JsonNode.Parse(json)!;
+        source.Remove("definitions");
+
+        // The expression must compile with the definitions of the document, on its own.
+        JsonObject probe = [];
+        if (document["definitions"] is { } definitions)
+        {
+            probe["definitions"] = definitions.DeepClone();
+        }
+
+        foreach ((string key, JsonNode? value) in source)
+        {
+            probe[key] = value?.DeepClone();
+        }
+
+        CompilationResult<StubAssignment> compiled = this.compiler.CompileAs(probe.ToJsonString(), RuleFormat.Json);
+        if (compiled.Rule is null)
+        {
+            refused = RuleTreeEdit.Refused($"Not a valid expression: {FirstError(compiled.Diagnostics)}", compiled.Diagnostics);
+            return false;
+        }
+
+        tree = source;
+        return true;
+    }
+
+    // Applies a change to a copy of the tree (or of the source document, when the rule has definitions) and compiles the
+    // result. The change gets the node of the part it acts on and a way to put another node in its place; it returns null
+    // when it applied, or the reason it cannot apply.
     private RuleTreeEdit Edit(
         string path,
-        Func<JsonObject, JsonObject, JsonArray?, int, string?> change,
+        Part part,
+        Func<Workspace, JsonObject, Action<JsonObject>, string?> change,
         string? selected,
         string done
     )
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        JsonObject root = this.Tree.CopyJson();
-        if (!RuleTree.TryLocate(root, path, out JsonObject? node, out JsonArray? parent, out int index))
+        Workspace workspace = new(this.Tree.CopyDocument() ?? this.Tree.CopyJson(), this.Tree.Definitions);
+        if (!workspace.TryFind(path, part, out JsonObject? node, out Action<JsonObject>? put))
         {
             return RuleTreeEdit.Refused($"Not applied: the path '{path}' names no node of the rule.");
         }
 
-        if (change(root, node, parent, index) is { } problem)
+        if (workspace.IsDeclaration(path))
+        {
+            return RuleTreeEdit.Refused("Not applied: select the body of the definition, or a node in it, to edit it.");
+        }
+
+        if (change(workspace, node, put) is { } problem)
         {
             return RuleTreeEdit.Refused("Not applied: " + problem);
         }
 
-        CompilationResult<StubAssignment> compiled = this.compiler.CompileAs(root.ToJsonString(), RuleFormat.Json);
+        string edited = workspace.Root.ToJsonString();
+        CompilationResult<StubAssignment> compiled = this.compiler.CompileAs(edited, RuleFormat.Json);
         if (compiled.Rule is null)
         {
+            string what = workspace.HasDefinitions ? "an invalid rule or definition" : "an invalid rule";
             return RuleTreeEdit.Refused(
-                $"Not applied: the edit would make an invalid rule. {FirstError(compiled.Diagnostics)}",
+                $"Not applied: the edit would make {what}. {FirstError(compiled.Diagnostics)}",
                 compiled.Diagnostics
             );
         }
 
+        RuleDefinitions? definitions = workspace.HasDefinitions ? RuleDefinitions.ReadJson(edited) : null;
         string? target =
-            selected is not null && RuleTree.Of(compiled.Rule, this.settings).Find(selected) is not null ? selected : "$";
-        return new RuleTreeEdit(compiled.Rule, target, done, compiled.Diagnostics);
+            selected is not null && RuleTree.Of(compiled.Rule, this.settings, definitions).Find(selected) is not null
+                ? selected
+                : "$";
+        return new RuleTreeEdit(compiled.Rule, target, done, compiled.Diagnostics)
+        {
+            Document = workspace.HasDefinitions ? edited : null,
+        };
+    }
+
+    /// <summary>
+    /// The JSON that an edit changes: the tree of the rule, or the source document with its definitions. It finds the node
+    /// that a path of the tree names, in the part an edit acts on.
+    /// </summary>
+    /// <param name="Root">The JSON being edited.</param>
+    /// <param name="Definitions">The definitions of the source, or <see langword="null"/> when the tree of the rule is edited.</param>
+    private sealed record Workspace(JsonObject Root, RuleDefinitions? Definitions)
+    {
+        private const string DefinitionsPrefix = "$.definitions";
+
+        [MemberNotNullWhen(true, nameof(Definitions))]
+        public bool HasDefinitions => this.Definitions is not null;
+
+        public bool TryFind(
+            string path,
+            Part part,
+            [NotNullWhen(true)] out JsonObject? node,
+            [NotNullWhen(true)] out Action<JsonObject>? put
+        )
+        {
+            node = null;
+            put = null;
+            if (!this.HasDefinitions)
+            {
+                if (!RuleTree.TryLocate(this.Root, path, out node, out JsonArray? parent, out int index))
+                {
+                    return false;
+                }
+
+                JsonObject root = this.Root;
+                put = parent is null
+                    ? replacement => RuleTree.ReplaceMembers(root, replacement)
+                    : replacement => parent[index] = replacement;
+                return true;
+            }
+
+            // A node of a definition is named by its own path; a node of the rule by the sources of its expansion.
+            EquatableArray<string> sources = path.StartsWith(DefinitionsPrefix, StringComparison.Ordinal)
+                ? new EquatableArray<string>([path])
+                : this.Definitions.SourcesOf(path);
+            if (sources.Count == 0)
+            {
+                return false;
+            }
+
+            return RuleTree.TryLocatePath(this.Root, part == Part.Source ? sources[0] : sources[^1], out node, out put);
+        }
+
+        // The entry of a definition itself, such as $.definitions.both, which is not a node of the rule.
+        public bool IsDeclaration(string path)
+        {
+            return this.HasDefinitions
+                && this.Definitions.Definitions.Any(d => string.Equals(d.Path, path, StringComparison.Ordinal));
+        }
+
+        // A parameter inside the body of a definition: a bare predicate, with no arguments, that names a parameter.
+        public bool IsParameter(string path, JsonObject node)
+        {
+            if (!this.HasDefinitions || node.ContainsKey("args") || node["predicate"]?.ToString() is not { } name)
+            {
+                return false;
+            }
+
+            return this.Definitions.Definitions.Any(d =>
+                path.StartsWith(d.Path + ".", StringComparison.Ordinal)
+                && d.Parameters.Contains(name, StringComparer.OrdinalIgnoreCase)
+            );
+        }
     }
 }

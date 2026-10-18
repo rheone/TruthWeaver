@@ -4,12 +4,40 @@ namespace TruthWeaver.Tool.Tui;
 internal sealed partial class Workbench
 {
     private RuleTestSession? ruleTests;
+    private CaseCoverage? coverage;
+    private object? coverageRule;
+    private IReadOnlyList<RuleTestRow>? coverageRows;
 
     /// <summary>Occurs after the rule test session changed (its path, its name, its cases or its message).</summary>
     public event EventHandler? RuleTestsChanged;
 
     /// <summary>Gets the rule test file of the workbench. After a change, call <see cref="NotifyRuleTestsChanged"/>.</summary>
     public RuleTestSession RuleTests => this.ruleTests ??= new RuleTestSession();
+
+    /// <summary>
+    /// Gets the coverage of the open rule over the cases of the rule test file. It is measured again when the rule or the
+    /// list of cases changed, and kept otherwise.
+    /// </summary>
+    public CaseCoverage Coverage
+    {
+        get
+        {
+            object? rule = this.Document.Rule;
+            IReadOnlyList<RuleTestRow> rows = this.RuleTests.Rows;
+            if (this.coverage is null || !ReferenceEquals(this.coverageRule, rule) || !ReferenceEquals(this.coverageRows, rows))
+            {
+                // VSTHRD002 cannot deadlock here: the stand-in predicates answer at once, so the task is complete, and
+                // the Terminal.Gui loop has no synchronization context to wait for (see Outcome).
+#pragma warning disable VSTHRD002
+                this.coverage = CaseCoverage.MeasureAsync(this.Document, rows, this.Settings).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+                this.coverageRule = rule;
+                this.coverageRows = rows;
+            }
+
+            return this.coverage;
+        }
+    }
 
     /// <summary>Tells the panes that the rule test session changed.</summary>
     public void NotifyRuleTestsChanged()

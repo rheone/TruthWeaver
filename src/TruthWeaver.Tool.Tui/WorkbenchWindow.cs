@@ -14,6 +14,10 @@ using TruthWeaver.Tool.Core;
 /// </summary>
 internal sealed class WorkbenchWindow : Window
 {
+    /// <summary>The last line of the key help: the mouse is an extra way to do what the keys do.</summary>
+    private const string MouseHelp =
+        "Mouse: click a pane to focus it or a tree node to select it, turn the wheel to scroll. Every action has a key.";
+
     private static readonly PaneSlot[] SlotOrder = [PaneSlot.Editor, PaneSlot.Side, PaneSlot.Bottom];
 
     private readonly Dictionary<PaneSlot, Region> regions = [];
@@ -79,6 +83,14 @@ internal sealed class WorkbenchWindow : Window
         workbench.DocumentChanged += (_, _) => this.ShowStatus();
         workbench.StatusChanged += (_, _) => this.ShowStatus();
 
+        // The theme is process-wide in Terminal.Gui, so one call restyles every pane and every dialog; the window then draws again.
+        WorkbenchAppearance.Apply(workbench.Theme, workbench.NoColor);
+        workbench.ThemeChanged += (_, _) =>
+        {
+            WorkbenchAppearance.Apply(workbench.Theme, workbench.NoColor);
+            this.SetNeedsDraw();
+        };
+
         this.ApplyLayout();
         this.ShowStatus();
     }
@@ -96,7 +108,7 @@ internal sealed class WorkbenchWindow : Window
     public IReadOnlyDictionary<PaneSlot, View> ActivePaneViews =>
         this.regions.ToDictionary(pair => pair.Key, pair => pair.Value.Active.View);
 
-    /// <summary>Gets the text of the key help overlay: one line per command, the key and what it does.</summary>
+    /// <summary>Gets the text of the key help overlay: one line per command, the key and what it does, then a line about the mouse.</summary>
     /// <param name="commands">The commands.</param>
     /// <returns>The text.</returns>
     public static string HelpText(IEnumerable<WorkbenchCommand> commands)
@@ -105,7 +117,8 @@ internal sealed class WorkbenchWindow : Window
 
         WorkbenchCommand[] list = [.. commands];
         int width = list.Length == 0 ? 0 : list.Max(c => c.Key.ToString().Length);
-        return string.Join('\n', list.Select(c => $"{c.Key.ToString().PadRight(width)}  {c.Description}"));
+        string[] lines = [.. list.Select(c => $"{c.Key.ToString().PadRight(width)}  {c.Description}"), MouseHelp];
+        return string.Join('\n', lines);
     }
 
     /// <summary>Gets the status line for the state of a workbench: file, format, unsaved changes, diagnostics and the last message.</summary>
@@ -115,7 +128,8 @@ internal sealed class WorkbenchWindow : Window
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
-        RuleDocument document = workbench.Document;
+        // The committed document: reading Document would apply the pending text and end the pause.
+        RuleDocument document = workbench.CommittedDocument;
         string name = workbench.DocumentLabel ?? (document.Path is null ? "(new rule)" : Path.GetFileName(document.Path));
         int errors = document.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
         int warnings = document.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
@@ -124,6 +138,11 @@ internal sealed class WorkbenchWindow : Window
             $"{name} [{Workbench.FormatName(document.Format)}]{(document.IsDirty ? " *" : string.Empty)}",
             $"{errors} error{(errors == 1 ? string.Empty : "s")}, {warnings} warning{(warnings == 1 ? string.Empty : "s")}",
         ];
+        if (workbench.IsChecking)
+        {
+            parts.Add("checking...");
+        }
+
         if (!document.IsRuleCurrent)
         {
             parts.Add(document.Rule is null ? "no valid tree" : "showing the last valid tree");
@@ -247,6 +266,7 @@ internal sealed class WorkbenchWindow : Window
     public void MoveVerticalDivider(int steps)
     {
         this.Workbench.Layout.MoveVerticalDivider(steps);
+        this.Workbench.Preferences?.SaveLayout(this.Workbench.Layout);
         this.ApplyLayout();
     }
 
@@ -255,6 +275,7 @@ internal sealed class WorkbenchWindow : Window
     public void MoveHorizontalDivider(int steps)
     {
         this.Workbench.Layout.MoveHorizontalDivider(steps);
+        this.Workbench.Preferences?.SaveLayout(this.Workbench.Layout);
         this.ApplyLayout();
     }
 

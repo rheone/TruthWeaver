@@ -9,6 +9,7 @@ internal sealed class TreePaneView : View
 {
     private readonly StructureController controller;
     private readonly Label header;
+    private readonly Label coverage;
     private readonly ObservableCollection<string> lines = [];
     private bool showing;
 
@@ -27,10 +28,17 @@ internal sealed class TreePaneView : View
             Width = Dim.Fill(),
             Height = 1,
         };
-        this.List = new ListView
+        this.coverage = new Label
         {
             X = 0,
             Y = 1,
+            Width = Dim.Fill(),
+            Height = 1,
+        };
+        this.List = new ListView
+        {
+            X = 0,
+            Y = 2,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
         };
@@ -38,7 +46,7 @@ internal sealed class TreePaneView : View
 
         // The letters are the edit keys of the pane, not a search in the list.
         this.List.KeystrokeNavigator = null;
-        this.Add(this.header, this.List);
+        this.Add(this.header, this.coverage, this.List);
 
         // Moving in the list selects the node for the edits; a refresh of the list does not.
         this.List.ValueChanged += (_, _) =>
@@ -55,6 +63,9 @@ internal sealed class TreePaneView : View
 
     /// <summary>Gets the line above the list.</summary>
     public string HeaderText => this.header.Text;
+
+    /// <summary>Gets the line under the header: the coverage of the saved cases, or the reason there is none.</summary>
+    public string CoverageText => this.coverage.Text;
 
     /// <summary>Gets the lines of the list.</summary>
     public IReadOnlyList<string> Lines => this.lines;
@@ -77,6 +88,7 @@ internal sealed class TreePaneView : View
             }
 
             this.header.Text = this.controller.Header;
+            this.coverage.Text = this.controller.CoverageSummary;
         }
         finally
         {
@@ -92,6 +104,7 @@ internal sealed class TreePaneView : View
         if (disposing)
         {
             this.header.Dispose();
+            this.coverage.Dispose();
             this.List.Dispose();
         }
     }
