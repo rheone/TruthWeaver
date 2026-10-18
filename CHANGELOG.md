@@ -554,6 +554,7 @@ copyright line reads 2026.
 - `CHANGELOG.md` and `docs/predicate-conventions.md` held a stray Windows-1252 byte (0x85) in place of an ellipsis, so they were not valid UTF-8. Both are UTF-8 now, and `TextFileEncodingTests` fails for any Markdown, MSBuild, C#, JSON or YAML file that is not valid UTF-8 or starts with a byte order mark. No migration step.
 - `RuleBuilder.Predicate` accepts `long[]`, `decimal[]`, `bool[]`, `Guid[]` and `DateTimeOffset[]` (and any other `IEnumerable` of
   supported values) as an array-valued argument. Before, these value-type arrays threw `ArgumentException`.
+- A reserved word used as a term (for example `a AND OR`, or a JSON term named `T`, `F` or `U`) compiles to an `UnknownPredicate` error that names the word under `CompilationMode.Lenient`, as it does in strict mode. Before, Lenient accepted the term as an unregistered predicate, and the tool (`RuleConverter`, `StubEvaluator`, the workbench and the command line) then threw `ArgumentException` from `PredicateRegistryBuilder` while it built stand-in predicates. No migration step. `docs/tool-core.md` covers it.
 
 ### Breaking changes: naming cleanup (ADR-0007)
 

@@ -318,4 +318,13 @@ public sealed class RuleDocumentTests
         Assert.True(document.IsRuleCurrent);
         Assert.Equal("a OR b", document.Rule!.CanonicalText);
     }
+
+    /// <summary>A document whose text uses a reserved word as a term shows a diagnostic and does not throw.</summary>
+    [Fact]
+    public void Create_ReservedWordAsTerm_HasDiagnostic_Test()
+    {
+        RuleDocument document = RuleDocument.Create("a AND OR");
+
+        Assert.Contains(document.Diagnostics, d => d.Severity == DiagnosticSeverity.Error && d.Message.Contains("'OR'"));
+    }
 }
