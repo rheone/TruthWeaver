@@ -4,11 +4,11 @@
 
 **Blocked by:** 02, 03, 04, 05, 06, 07
 
-**Status:** done (format-all box left open, see Comments)
+**Status:** done
 
 - [x] No README links to an ADR, `.scratch` or `CHANGELOG.md`
 - [x] The drift test, `DocumentationLint` and the doc example tests pass
-- [ ] `dotnet run scripts/format-all.cs` is clean
+- [x] `dotnet run scripts/format-all.cs` is clean
 
 ## Comments
 
@@ -16,3 +16,4 @@
 - Passing: `ProjectReadmeTests` (34), `DocumentationLint`, `K3Reference` and `DocExample` (115), `csharpier check .`, `normalize-text` and `format-data` scoped to the READMEs. No README links to an ADR, `.scratch` or `CHANGELOG.md`.
 - Fixed in `ProjectReadmeTests.cs`: two xUnit2033 findings (use the `Assert.Single` return value).
 - Open, not from this ticket: `dotnet format --verify-no-changes --severity info` and Roslynator report SA1204 (static after instance) in `AssignmentPaneTests.cs` and `ThemeTests.cs`, and SA1623 in `Workbench.Theme.cs`. These are tui files edited by other tickets. `format-all` stays unticked until they are fixed. `dotnet format` also lists pre-existing CA1822/IDE0060 findings in unrelated test files.
+- 2026-10-18: Full validation passed on the combined result 2026-10-18 (6660 tests; csharpier, dotnet format, roslynator and normalize-text clean). The SA1204/SA1623 findings listed above no longer reproduce, and the CA1822/IDE0060 findings did not reproduce (owner decision: dropped).

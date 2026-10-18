@@ -11,16 +11,14 @@ Written 2026-10-18 at the end of the dispatch run. Branch `docs/project-readmes-
 
 ## 1. Close-out of this run (do first)
 
-- The full validation from `CLAUDE.md` has **not** been run on the combined result. Run it: `dotnet restore --locked-mode`, `dotnet build`, `dotnet test`, `dotnet csharpier check .`, `dotnet format --verify-no-changes --severity info`, `dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics`. Per-project builds and tests passed (TruthWeaver.Tests 4411, Yaml.Tests 77, Tool.Core.Tests 505, Tool.Tui.Tests 272, Architecture.Tests 63).
-- Tickets still showing open boxes: tui 12 and 13 ("in progress, only the full validation run is open"); project-readmes 08 (format-all box open); feature-backlog 21c (the owner-scope box). Tick them after validation.
-- feature-backlog 08 and 09 still say "ready" but were delivered (commits `36eec79`, `d06628c`). Set them to done.
+- Done 2026-10-18: the full validation from `CLAUDE.md` passed on the combined result (6660 tests passed; csharpier, dotnet format, roslynator and normalize-text clean). The CI failure (S8970 in Generators.Tests) was fixed in commit `5539512`.
+- Done 2026-10-18: tickets tui 12 and 13 and project-readmes 08 are ticked and done; feature-backlog 21c has the owner-scope box ticked and a new open box for the shadowing implementation; feature-backlog 08 and 09 are set to done.
 - Not tried on a real terminal: NO_COLOR scheme swap, OSC 11 background detection, mouse support, the Terminal.Gui.Editor swap, `workbench.json` persistence.
 - Check whether the Generators.Tests fix removes the editor lock: do a plain Debug `dotnet build` with the editor open.
 
 ## 2. Owner decisions waiting
 
-- **Formatter gate.** `dotnet format --verify-no-changes --severity info` fails on pre-existing CA1822 (test methods that could be static) and IDE0060 findings in about 68 test files. Options: fix them in one dedicated change, or relax the rules with a documented reason. Do not let a worker run `format-all.cs` in apply mode.
-- **21c shadowing.** Ticket 07 is done; ADR-0015 says the first-applicable algorithm never skips an Unknown policy. Choose: shadowing reads "blocked by True or Unknown"; the reading is a parameter; or shadowing stays out.
+- **21c shadowing.** Decided: a rule is shadowed when an earlier rule that is `True` or `Unknown` always blocks it (consistent with ADR-0015). Build it in the next task; the ticket's implementation box is open.
 - **Ticket 03.** The Tool README lists ten commands (`import` is the tenth); the ticket said nine.
 - **Tool.Tui README.** The install step follows `docs/tui.md` (pack from the repo), not the ticket's plain `dotnet tool install`.
 - **Follow-up F.** `.scratch/followups-2026-10-11/issues/F-owner-review-of-dispatch-notes.md` holds the open API and wording reviews from earlier dispatch notes.
