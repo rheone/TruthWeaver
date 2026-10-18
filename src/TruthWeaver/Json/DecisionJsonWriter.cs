@@ -136,6 +136,7 @@ internal static class DecisionJsonWriter
         }
 
         json.WriteBoolean(DecisionJsonNames.IncludeResolvedValues, options.IncludeResolvedValues);
+        json.WriteBoolean(DecisionJsonNames.IncludeTrace, options.IncludeTrace);
         json.WriteEndObject();
     }
 

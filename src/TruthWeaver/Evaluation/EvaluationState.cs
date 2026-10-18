@@ -9,12 +9,12 @@ namespace TruthWeaver.Evaluation;
 /// log whole-evaluation concepts rather than per-quantifier ones: a fault raised three levels into nested
 /// quantifiers counts against the same budget as one raised at the rule's root.
 /// </summary>
-internal sealed class EvaluationState
+internal sealed class EvaluationState(bool collectTrace = true)
 {
     /// <summary>Gets every fault recorded anywhere in this evaluation, in the order they were raised.</summary>
     public List<Fault> Faults { get; } = [];
 
-    /// <summary>Gets the flat trace log, in evaluation order.</summary>
+    /// <summary>Gets the flat trace log, in evaluation order. Stays empty when the caller did not request a trace.</summary>
     public List<TraceEntry> Trace { get; } = [];
 
     /// <summary>
@@ -36,6 +36,12 @@ internal sealed class EvaluationState
     /// <summary>Gets the trace text of a term whose variables resolved, with the values shown, keyed the same way as <see cref="Memo"/>.</summary>
     public Dictionary<(string? Scope, TermIdentity Identity), string> ValueDescriptions { get; } = [];
 
+    /// <summary>
+    /// Gets the outcome note of each variable reference of a term (<c>from("user", "$.age"): resolved</c>), keyed the same
+    /// way as <see cref="Memo"/>, in the order the term's references were resolved.
+    /// </summary>
+    public Dictionary<(string? Scope, TermIdentity Identity), List<string>> VariableOutcomes { get; } = [];
+
     /// <summary>Gets the zero-match array references of a term, keyed the same way as <see cref="Memo"/>.</summary>
     public Dictionary<(string? Scope, TermIdentity Identity), List<VariableReference>> ZeroMatchReferences { get; } = [];
 
@@ -51,4 +57,14 @@ internal sealed class EvaluationState
     /// <c>IReadOnlyList&lt;TItem&gt;</c>, the type it stored.
     /// </summary>
     public Dictionary<(string? Scope, string Binding), CollectionMaterialization> CollectionMaterializations { get; } = [];
+
+    /// <summary>Appends <paramref name="entry"/> to the flat trace log, unless the caller did not request a trace (<see cref="EvaluationOptions.IncludeTrace"/>).</summary>
+    /// <param name="entry">The entry to record.</param>
+    public void AddTrace(TraceEntry entry)
+    {
+        if (collectTrace)
+        {
+            this.Trace.Add(entry);
+        }
+    }
 }

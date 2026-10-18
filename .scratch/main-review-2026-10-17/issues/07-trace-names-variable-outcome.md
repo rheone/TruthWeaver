@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** done
+
+**Owner decision (2026-10-17):** Implement ADR-0006 decision 13: trace entries for variable terms name the reference and the outcome (resolved, missing, ambiguous).
 
 **What to build:** Decide whether to implement ADR-0006 decision 13 (trace and faults name the reference and the outcome: resolved, missing, ambiguous) or amend the ADR.
 

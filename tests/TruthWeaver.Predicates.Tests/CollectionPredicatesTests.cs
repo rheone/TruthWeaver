@@ -118,6 +118,50 @@ public class CollectionPredicatesTests
         Assert.Equal(TruthValue.False, result);
     }
 
+    /// <summary>
+    /// <c>IsNullOrEmpty</c> and <c>IsNotNullOrEmpty</c> answer a definite value for null, empty and non-empty collections.
+    /// </summary>
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    public async Task IsNullOrEmpty_NullEmptyAndNonEmpty_AnswerDefinitely_Test(int? count, bool expectedNullOrEmpty)
+    {
+        (PredicateSchema schema, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> positive) =
+            CollectionPredicates.IsNullOrEmpty<TestContext>("p", c => c.Values);
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> twin) =
+            CollectionPredicates.IsNotNullOrEmpty<TestContext>("t", c => c.Values);
+        TestContext context = new(null, count is null ? null : Enumerable.Repeat("a", count.Value).ToArray());
+
+        TruthValue positiveResult = await positive(context, PredicateArguments.Empty, CancellationToken.None);
+        TruthValue twinResult = await twin(context, PredicateArguments.Empty, CancellationToken.None);
+
+        Assert.Equal(expectedNullOrEmpty ? TruthValue.True : TruthValue.False, positiveResult);
+        Assert.Equal(expectedNullOrEmpty ? TruthValue.False : TruthValue.True, twinResult);
+        Assert.Empty(schema.Arguments);
+    }
+
+    /// <summary>A selector that throws propagates the exception, so the evaluator records a fault and the answer is Unknown.</summary>
+    [Fact]
+    public async Task IsNullOrEmpty_FaultingSelector_Throws_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> positive) =
+            CollectionPredicates.IsNullOrEmpty<TestContext>("p", _ => throw new InvalidOperationException("selector failed"));
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> twin) =
+            CollectionPredicates.IsNotNullOrEmpty<TestContext>(
+                "t",
+                _ => throw new InvalidOperationException("selector failed")
+            );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await positive(new TestContext(null, null), PredicateArguments.Empty, CancellationToken.None)
+        );
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await twin(new TestContext(null, null), PredicateArguments.Empty, CancellationToken.None)
+        );
+    }
+
     private static PredicateArguments Args(string name, params string[] values)
     {
         LiteralValue array = LiteralValue.OfArray(LiteralKind.String, values.Select(LiteralValue.OfString));

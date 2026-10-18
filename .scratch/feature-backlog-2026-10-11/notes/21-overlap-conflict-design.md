@@ -1,7 +1,7 @@
 # 21: Overlap and conflict analysis between rules: design note
 
 **Ticket:** [21 spike](../issues/21-spike-overlap-and-conflict-analysis.md). **Builds on:** [13](../issues/13-compare-rules-looser-or-tighter.md) (done, commit `cb6926e`). **Touches later:** [07](../issues/07-policy-sets-and-combining-algorithms.md) (on hold).
-**Status:** spike output, 2026-10-11. This note decides nothing. The owner schedules a grilling on it; the open questions at the end are written for that session.
+**Status:** done. Spike output of 2026-10-11, grilled 2026-10-16; the owner's answers to the open questions are recorded in [ADR-0009](../../../docs/adr/0009-overlap-and-conflict-definitions.md). This note is kept as the design background.
 **Read with:** [ADR-0005](../../../docs/adr/0005-strong-k3-language-surface.md) (decisions 17 and 18), `CONTEXT.md` (Connective, External operator, Term identity), [Looser or tighter](../../../docs/rewriting-rules.md#looser-or-tighter).
 
 ## Recommendation

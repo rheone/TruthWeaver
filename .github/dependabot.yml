@@ -1,0 +1,56 @@
+# Dependabot version updates. Docs/contributing.md ("How updates arrive") describes the flow.
+#
+# Notes on what Dependabot reads:
+# - The nuget ecosystem reads Directory.Packages.props (central package management), including the PackageVersion and
+#   GlobalPackageReference items, and updates the version in place.
+# - This repository has no packages.lock.json files, so there is no lock file for Dependabot to update.
+# - Local tools in dotnet-tools.json are not covered here. The owner checks them by hand.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    # One pull request per group, so the first run opens grouped pull requests only. The "other" group catches every
+    # package that the first three groups do not match.
+    groups:
+      analyzers:
+        patterns:
+          - "Roslynator.*"
+          - "StyleCop.*"
+          - "SonarAnalyzer.*"
+          - "AsyncFixer"
+          - "Microsoft.VisualStudio.Threading.Analyzers"
+          - "IDisposableAnalyzers"
+      test-packages:
+        patterns:
+          - "xunit*"
+          - "Microsoft.Testing.Platform*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+          - "NSubstitute*"
+      # Empty while the ignore entry below holds the RC pin. It takes effect when that entry is removed at .NET 11 GA.
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+      other:
+        patterns:
+          - "*"
+    ignore:
+      # Deliberate pin: the Microsoft.Extensions.* packages stay on the .NET 11 RC line until .NET 11 GA.
+      - dependency-name: "Microsoft.Extensions.*"
+      # Deliberate pin: StyleCop.Analyzers 1.2.0-beta is needed for record support (see Directory.Packages.props).
+      - dependency-name: "StyleCop.Analyzers"
+      # Deliberate pins: Roslyn 4.14.0 is the oldest compiler API that the generator needs, and the analyzers package
+      # goes with it. .scratch/package-updates-2026-10-11 ticket 04 owns rechecking them.
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

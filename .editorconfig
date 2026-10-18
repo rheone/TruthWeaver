@@ -109,9 +109,6 @@ indent_size = 2
 [*.{json,jsonc,yml,yaml}]
 indent_size = 2
 
-[*.ps1]
-indent_size = 4
-
 # Trailing double spaces are a hard line break in Markdown, so they must survive.
 [*.md]
 trim_trailing_whitespace = false

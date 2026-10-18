@@ -11,6 +11,7 @@
 - [ ] Diagrams are made with the `mermaid-diagram-generator` skill, only where a diagram adds something a table or prose does not
 - [ ] Markdown dialect is checked with the `github-markdown` skill
 - [ ] Prose passes the `humanizer` and `voice-of-robert` skills
+- [ ] No ADR, ticket, PRD or `.scratch` reference remains in the package's XML docs and comments; each was replaced by a plain description of the behavior or reason (see `../../documentation-modernization/spec.md`)
 - [ ] Every runnable block has a `<!-- doctest:... -->` marker; `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExample*"`, `"*DocumentationLint*"` and `"*K3Reference*"` pass
 - [ ] The page follows `docs/agents/documentation-standard.md`
 - [ ] The full validation set from `CLAUDE.md` passes

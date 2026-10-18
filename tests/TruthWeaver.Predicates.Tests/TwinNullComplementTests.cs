@@ -425,6 +425,10 @@ public sealed class TwinNullComplementTests
                 StringPredicates.IsNullOrEmpty<Selections>("p", c => c.Text),
                 StringPredicates.IsNotNullOrEmpty<Selections>("t", c => c.Text)
             ),
+            ["Collection.IsNullOrEmpty/IsNotNullOrEmpty"] = (
+                CollectionPredicates.IsNullOrEmpty<Selections>("p", c => c.Items),
+                CollectionPredicates.IsNotNullOrEmpty<Selections>("t", c => c.Items)
+            ),
             ["String.IsNullOrWhiteSpace/IsNotNullOrWhiteSpace"] = (
                 StringPredicates.IsNullOrWhiteSpace<Selections>("p", c => c.Text),
                 StringPredicates.IsNotNullOrWhiteSpace<Selections>("t", c => c.Text)

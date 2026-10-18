@@ -13,7 +13,7 @@ A rule is written as rule text (the DSL), as JSON, as YAML or with the `RuleBuil
 | YAML | The same keys as JSON: `op: and` with an `operands:` list |
 | `RuleBuilder` | One static member per Operation, such as `RuleBuilder.And` |
 
-A constant is `True`, `False` or `Unknown` in rule text, and `{"const": true}`, `{"const": false}` or `{"const": "unknown"}` in JSON. YAML uses `const: unknown`. A predicate reference is `{"predicate": "name", "args": { ... }}`.
+A constant is `True`, `False` or `Unknown` in rule text, and `{"const": true}`, `{"const": false}` or `{"const": "unknown"}` in JSON. The letters `T`, `F` and `U` also work there, as in `{"const": "U"}`. YAML uses `const: unknown` or `const: U`. A predicate reference is `{"predicate": "name", "args": { ... }}`.
 
 A JSON or YAML node has only the keys of its kind: `const`; `predicate` and `args`; or `op`, `operands` and, for the threshold Operations, `k` (or `min` and `max` for `BETWEEN`). Any other key is the compile error `MalformedTree` (`TRE0014`). A predicate argument that is named twice is the compile error `DuplicateArgument` (`TRE0032`) in every format.
 

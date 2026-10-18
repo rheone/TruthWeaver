@@ -1,6 +1,7 @@
 namespace TruthWeaver.Architecture.Tests;
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using NetArchTest.Rules;
 using TruthWeaver.Compilation;
 
@@ -21,6 +22,9 @@ public sealed class PackageBoundaryTests
     private static readonly Assembly Testing = typeof(TruthWeaver.Testing.DecisionAssertions).Assembly;
     private static readonly Assembly ToolCore = typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly;
     private static readonly Assembly AspNetCore = typeof(TruthWeaver.AspNetCore.RuleRequirement).Assembly;
+    private static readonly Assembly Policies = typeof(TruthWeaver.Policies.PolicySet<>).Assembly;
+    private static readonly Assembly ExtensionsConfiguration =
+        typeof(TruthWeaver.Extensions.Configuration.RuleReloadReport).Assembly;
 
     // NetArchTest matches a forbidden namespace as a plain string prefix, so the bare "TruthWeaver"
     // string below would also match "TruthWeaver.Abstractions" itself (a false self-dependency) -
@@ -249,6 +253,54 @@ public sealed class PackageBoundaryTests
         }
     }
 
+    /// <summary>
+    /// The terminal UI is the only project with <c>Terminal.Gui</c>, and it builds on the tool core, never on the command
+    /// line. No package, not the tool core and not the command line references the terminal UI or <c>Terminal.Gui</c>.
+    /// </summary>
+    [Fact]
+    public void ToolTui_References_ToolCoreAndTerminalGuiOnlyThere_Test()
+    {
+        // Loaded by name: the terminal UI is an executable, and its types are internal.
+        Assembly tui = Assembly.Load("TruthWeaver.Tool.Tui");
+        Assembly tool = Assembly.Load("TruthWeaver.Tool");
+
+        string[] referenced = [.. tui.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Tool.Core", referenced);
+        Assert.Contains("Terminal.Gui", referenced);
+
+        // Approved by the owner (ADR-0017): the rule-test runner lives in TruthWeaver.Testing, as for the command line.
+        Assert.Contains("TruthWeaver.Testing", referenced);
+        Assert.DoesNotContain("TruthWeaver.Tool", referenced);
+        Assert.DoesNotContain("System.CommandLine", referenced);
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, tool })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain("TruthWeaver.Tool.Tui", names);
+            Assert.DoesNotContain("Terminal.Gui", names);
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver</c> grants <c>InternalsVisibleTo</c> only to an explicit allow-list (ADR-0018). The shipped
+    /// <c>TruthWeaver.Testing</c> package is on it, so the two packages ship together; a new entry is a deliberate change
+    /// to this list.
+    /// </summary>
+    [Fact]
+    public void Core_InternalsVisibleTo_IsTheAllowList_Test()
+    {
+        string[] allowed = ["TruthWeaver.Benchmarks", "TruthWeaver.Testing", "TruthWeaver.Tests", "TruthWeaver.Yaml"];
+
+        string[] granted =
+        [
+            .. Core.GetCustomAttributes<InternalsVisibleToAttribute>()
+                .Select(a => a.AssemblyName)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Equal(allowed, granted);
+    }
+
     /// <summary>No shipping package depends on the tool core: the tools build on the packages, never the reverse.</summary>
     [Fact]
     public void ShippedPackages_References_ExcludeToolCore_Test()
@@ -295,6 +347,89 @@ public sealed class PackageBoundaryTests
             string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
             Assert.DoesNotContain(AspNetCore.GetName().Name, names);
             Assert.DoesNotContain(names, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Policies</c> takes the runtime, the core package and the abstractions, and nothing else: it adds
+    /// no third-party dependency.
+    /// </summary>
+    [Fact]
+    public void Policies_References_RuntimeCoreAndAbstractionsOnly_Test()
+    {
+        string[] referenced = [.. Policies.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        string[] unexpected =
+        [
+            .. referenced.Where(name =>
+                !name.StartsWith("System.", StringComparison.Ordinal)
+                && name is not ("TruthWeaver" or "TruthWeaver.Abstractions")
+            ),
+        ];
+
+        Assert.Empty(unexpected);
+        Assert.Contains("TruthWeaver", referenced);
+    }
+
+    /// <summary>No other package and not the tool core references <c>TruthWeaver.Policies</c>: a host opts into it.</summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludePolicies_Test()
+    {
+        foreach (
+            Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, AspNetCore }
+        )
+        {
+            Assert.DoesNotContain(
+                Policies.GetName().Name,
+                assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)
+            );
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver.Extensions.Configuration</c> references the core package, the abstractions, the runtime and the
+    /// <c>Microsoft.Extensions.*</c> packages (configuration, primitives, logging), and nothing else.
+    /// </summary>
+    [Fact]
+    public void ExtensionsConfiguration_References_CoreAndMicrosoftExtensionsOnly_Test()
+    {
+        string[] referenced = [.. ExtensionsConfiguration.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        string[] unexpected =
+        [
+            .. referenced.Where(name =>
+                !name.StartsWith("System.", StringComparison.Ordinal)
+                && !name.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
+                && name is not ("TruthWeaver" or "TruthWeaver.Abstractions")
+            ),
+        ];
+
+        Assert.Empty(unexpected);
+        Assert.Contains("Microsoft.Extensions.Configuration.Abstractions", referenced);
+    }
+
+    /// <summary>
+    /// No other package references <c>TruthWeaver.Extensions.Configuration</c>, and the core and the abstractions take no
+    /// <c>Microsoft.Extensions.Configuration</c> assembly: a host opts into the rule store.
+    /// </summary>
+    [Fact]
+    public void ShippedPackages_References_ExcludeExtensionsConfiguration_Test()
+    {
+        foreach (
+            Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, AspNetCore }
+        )
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(ExtensionsConfiguration.GetName().Name, names);
+        }
+
+        foreach (Assembly assembly in new[] { Abstractions, Core })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain(
+                names,
+                name => name.StartsWith("Microsoft.Extensions.Configuration", StringComparison.Ordinal)
+            );
         }
     }
 

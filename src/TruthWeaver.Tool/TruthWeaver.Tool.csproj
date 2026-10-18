@@ -5,9 +5,9 @@
     <RootNamespace>TruthWeaver.Tool</RootNamespace>
     <PackageId>TruthWeaver.Tool</PackageId>
     <Description>The truthweaver command line: validate, convert, format, print, export, report, diff, evaluate and test TruthWeaver rules in rule text, JSON or YAML, with stub values for the predicates.</Description>
-    <PackageTags>rules engine;kleene;k3;cli;dotnet tool;truthweaver</PackageTags>
-    <!-- A .NET tool package: `dotnet tool install TruthWeaver.Tool` gives the `truthweaver` command. CI packs and checks
-         it with the other packages and never publishes it (docs/releasing.md). -->
+    <PackageTags>rules engine;kleene;k3;cli;dotnet-tool;truthweaver</PackageTags>
+    <!-- A .NET tool package: `dotnet tool install TruthWeaver.Tool` gives the `truthweaver` command. A release publishes it
+         with the other packages (docs/releasing.md). -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>truthweaver</ToolCommandName>
   </PropertyGroup>

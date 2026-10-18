@@ -143,6 +143,18 @@ One redundant construct can produce several findings. For example, an `If` whose
 
 The semantic lints (`TRE0017` to `TRE0019` and `TRE0021`) use the analyzer's BDD. They are skipped for a sub-expression with more than `CompilerOptions.MaxAnalysisTerms` distinct terms. The structural lints (`TRE0020`, `TRE0022` and `TRE0023`) always run. The [diagnostic code catalog](strong-k3/specification/diagnostics.md) lists each code.
 
+## Term independence
+
+The analyzer treats each distinct term as an independent variable. Two terms are the same variable only when their predicate name and arguments match. It cannot know that two different predicates read the same value, or that `ageAtLeast(min: 21)` being `True` makes `ageAtLeast(min: 18)` `True`.
+
+The effect on the results:
+
+- **Tautology and contradiction warnings stay sound, and some are missed.** A sub-expression is reported only when it is `True` (or `False`) for every assignment, including the assignments that cannot occur. A rule that is constant only because two terms are related is not reported.
+- **A counter-example, an overlap pair or a lint finding can name an assignment that cannot occur.** Two terms that read the same missing value are both `Unknown` at run time, but the analyzer also allows `A = True` with `B = Unknown`. A pair that is not reachable is a proof. A reachable pair is a candidate only. See [Overlap and conflict](rewriting-rules.md#overlap-and-conflict) and [Counterfactuals](counterfactuals.md).
+- **A term that never answers `Unknown` counts as possibly `Unknown`.** `IsNull`, and any predicate under `NullBehavior.False`, cannot answer `Unknown`, but the analyzer does not know that. `IsUnknown(IsNull(x))` is therefore not linted.
+
+A host can reduce the noise in three ways. Use one predicate for a condition that two terms would express, so the analyzer sees one variable. Compare rules only when their terms are unrelated, or treat a reachable pair as a question for a person. Test the cases that matter with [rule tests](rule-tests.md), which evaluate real assignments.
+
 ## Limits
 
 Each limit has one setting and one outcome. The compile limits are `CompilerOptions` values. The evaluation limits are `EvaluationOptions` values.

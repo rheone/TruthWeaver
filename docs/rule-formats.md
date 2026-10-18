@@ -69,13 +69,17 @@ A rule-authoring UI can use this to offer "export as JSON or YAML" or "paste JSO
 
 The conversion keeps the [notes](#notes) of the rule. `PrintRuleText()`, `PrintJson()` and `PrintYaml()` write them. `CanonicalText` does not.
 
+### Constants
+
+A constant is `true`, `false` or `unknown` in any letter case, or the letter `T`, `F` or `U` in either case, the same letters as the rule text. In JSON a `const` is a boolean or a string (`{"const": "U"}`); in YAML it is a scalar (`const: U`). The words and the letters give the same tree. The JSON and YAML writers keep writing `true`, `false` and `"unknown"`.
+
 ### The conversion guarantee
 
 For every rule that compiles, a conversion in any of the six directions (text to JSON, text to YAML, JSON to text, JSON to YAML, YAML to text and YAML to JSON) gives a document that compiles to a tree equal to the tree of the source, with the same notes. A property test checks this for generated rules that use every operator, every literal kind, variable references (`from("source", "query")`) and notes, over many seeds.
 
 The guarantee is about the compiled rule, not the source text. A conversion does not keep these:
 
-- **The layout and spelling of the source.** Whitespace, delimiter choice, operator aliases and symbols, letter case and the constant letters `T`, `F` and `U` are not in the tree. The printer writes its own spelling.
+- **The layout and spelling of the source.** Whitespace, delimiter choice, operator aliases and symbols, letter case and the spelling of a constant (`True`, `T`, `true`) are not in the tree. The printer writes its own spelling.
 - **YAML `#` comments.** They are not notes. Use a `note` key to keep a comment.
 - **Note text outside the normal form.** A note is normalized when it is read (see [Notes](#notes)), so trailing spaces and blank space around it are not kept.
 - **Notes, after a rewrite.** A rewrite such as `Simplify` returns a rule with no notes, so a rewritten rule converts without them. `CanonicalText`, and a print with `includeNotes: false`, also leave the notes out.

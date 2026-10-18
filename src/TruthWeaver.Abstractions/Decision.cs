@@ -13,7 +13,7 @@ using System.Diagnostics;
 /// </param>
 /// <param name="Faults">Every fault absorbed during this evaluation, in the order they occurred.</param>
 /// <param name="Trace">
-/// The evaluation trace, present only when requested via <c>EvaluationOptions</c>.
+/// The flat evaluation trace. It is <see langword="null"/> unless the caller set <c>EvaluationOptions.IncludeTrace</c>.
 /// </param>
 /// <param name="TraceTree">
 /// A structural mirror of the compiled expression tree from this evaluation, with every node

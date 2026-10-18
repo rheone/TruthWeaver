@@ -12,6 +12,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `FormatDetector` | Finds the format of an input: rule text, JSON or YAML. |
 | `RuleLoader` | Loads a rule from a file, a stream or a string, and selects a rule inside a larger document by a path. |
 | `RuleConverter` | Compiles a loaded rule and converts it to another format. |
+| `JsonLogicImporter` | Imports a JsonLogic rule as a rule tree (JSON). See [JsonLogic import](#jsonlogic-import). |
 | `ToolConfigurationFile`, `ToolConfiguration`, `ToolSettings` | Find and read `truthweaver.json`, and resolve the settings. |
 | `StubAssignment` | Loads stub values: one truth value for each term. |
 | `DataSourceFiles` | Loads JSON and YAML data files for `from("source", "query")` references. |
@@ -26,6 +27,9 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
 | `RulePatcher` | Writes an edited rule back into its document, and keeps the comments and layout of the document. |
 | `StubEvaluator` | Evaluates a rule with stub values in place of the predicates, and with data files. |
+| `RuleDocument` | Holds one rule open for editing: compiles each change, keeps the last valid tree, undo and redo, format, open and save. See [Editing a rule](#editing-a-rule). |
+| `AssignmentSession`, `AssignmentVariables` | Try a rule with values: a value for each term, data for `from(...)` references, and a policy. They give the decision, the trace with a reason for each node, and the faults. See [Trying a rule with values](#trying-a-rule-with-values). |
+| `RuleTestCaseText` | Adds, replaces, removes and reads the cases of a rule test file as text, and swaps its rule. See [Editing a rule test file](#editing-a-rule-test-file). |
 
 Each operation returns a `ToolResult<T>`: the value, or no value, and every diagnostic. An operation does not throw for an expected failure, such as a missing file, a malformed document or a rule that does not compile. It throws `ArgumentNullException` for a `null` argument and `ArgumentOutOfRangeException` for an undefined `RuleFormat`, because those are programming errors. `ToolResult<T>.Succeeded` is `true` when the value is present and no diagnostic is an error. `TryGetValue` gives the value and the diagnostics without the result object.
 
@@ -92,11 +96,158 @@ The path `rules.publish` selects a YAML rule. The path `rules.review` selects ru
 
 A path that selects nothing is a `TWT0005` error that names the first segment that is missing. A path that selects a number, a Boolean, `null` or a sequence is a `TWT0006` error. A path on rule text is a `TWT0006` error, because rule text has no paths.
 
+`DocumentOutline` helps a front end to find the places of a document where a rule can be. `DocumentOutline.Read(path)` and `DocumentOutline.Browse(text, format)` list the objects, arrays and strings of a JSON or YAML document in document order, as `DocumentNode` values with the normalized path, the depth, a kind and a short label. An object with a `const`, `predicate` or `op` key is a rule (`DocumentNodeKind.Rule`) and is one entry: the nodes inside it are not listed. A string is `DocumentNodeKind.Text`. Rule text has no paths, so `Read` reports a `TWT0006` error for it. `DocumentOutline.Match(nodes, pattern)` finds the entries that a path names. In a pattern, `.*` or `[*]` matches every key or index at that place, so a pattern can name none, one or many entries.
+
 ## Compiling and converting
 
 The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name and every argument as written. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors and limits are still diagnostics. The limits come from the [settings](#configuration-file).
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
+
+## Editing a rule
+
+`RuleDocument` is the model of an editor, such as the [terminal UI](tui.md). It holds the text of one rule, its format, its file and the result of compiling the text.
+
+| Member | Behavior |
+| --- | --- |
+| `Create(text, format, settings)` | Makes a document with no file. The default is an empty rule text. |
+| `Open(path, settings)` | Reads a file with `RuleLoader` and finds its format. A file that is read but does not compile still opens, with its diagnostics. A file that cannot be read gives the diagnostics and no document. |
+| `SetText(text)` | Replaces the text and compiles it. The change is one undo step and clears the redo steps. The same text changes nothing. |
+| `Diagnostics` | The diagnostics of the current text. Their spans point into `Text`. |
+| `Rule`, `IsRuleCurrent` | The last rule that compiled. When the current text has an error, `IsRuleCurrent` is `false` and `Rule` stays the rule of an earlier text. `Rule` is `null` until a text compiles. |
+| `Undo()`, `Redo()`, `CanUndo`, `CanRedo` | Move through the history of text and format. The document keeps the last 1000 steps (`UndoLimit`). |
+| `FormatText(pretty)` | Formats the text in its own format as one undo step: canonical (one line for rule text and JSON) or pretty (rule text at most 80 characters wide, JSON indented by two spaces). YAML is one node on each line in both forms. Rule text uses the operator style of the settings. Text with an error does not change, and the result holds the diagnostics. |
+| `Save(path)` | Writes the file as `OutputWriter` does. The extension selects the format (`.rule`, `.tw`, `.txt`, `.json`, `.yaml`, `.yml`); another extension keeps the format. A save in another format converts the rule first, as one undo step, and needs text that compiles. |
+| `ConvertTo(format)` | Converts the text to rule text, JSON or YAML as one undo step. The tree and the notes stay; the layout, the spelling and YAML comments do not. Text with an error does not change. |
+| `ReplaceRule(rule)` | Puts a compiled rule in place of the text, as one undo step: a structural edit or an accepted rewrite. The rule is printed in the format of the document with its notes, pretty when the text has more than one line and canonical otherwise. The printed text must compile with the limits of the settings, or the text does not change and the result holds the diagnostics. |
+| `MarkSaved()` | Makes the current text the saved text. A front end calls it after it wrote the rule somewhere else, such as into a larger document. |
+| `IsDirty`, `Path`, `Changed` | Unsaved changes, the full path of the file, and the event after each change of the text, format, path or saved state. |
+
+The document compiles with the permissive compiler of [Compiling and converting](#compiling-and-converting). It is not thread-safe: call it from one thread.
+
+## Editing the tree
+
+`RuleTree`, `RuleTreeEditor` and `RulePalette` are the model of a structural editor, such as the Tree pane of the [terminal UI](tui.md#structural-editing).
+
+`RuleTree.Of(rule, settings)` lists the nodes of a compiled rule in tree order. Each `RuleTreeNode` has a `Path`, a `Depth`, a `Kind` (`Constant`, `Term` or `Operator`), a `Label`, an `OperandCount`, its `Literals` (the values that an edit can change, as JSON) and its `Note`. The path is the path of the node in the JSON tree format, the same form as the keys of `CompiledRule.Notes`: `$` is the root and `$.operands[1]` is its second operand. `TextOf(path)` gives the rule text of a node with its notes, which compiles back to the same subtree.
+
+`RuleTreeEditor` takes a compiled rule and the settings. Each edit names a node by its path and returns a `RuleTreeEdit`: the edited rule, the path of the node to select next and a message, or no rule, the reason and the compiler diagnostics.
+
+| Edit | Behavior |
+| --- | --- |
+| `ReplaceOperator(path, op)` | Puts another operator in place of the operator of the node and keeps the operands. A count or range that the new operator needs starts at 1 (`max` at the number of operands); a member that it does not take is removed. |
+| `WrapInNot(path)` | Wraps the node in `NOT`. |
+| `Negate(path)` | Removes a `NOT`, swaps `True` and `False`, swaps `AND` and `NAND`, `OR` and `NOR`, `XOR` and `EQUIVALENT`, and wraps any other node in `NOT`. A negation of `Unknown` is refused. |
+| `InsertOperand(path, expression, index)` | Inserts an operand into an operator, at the end when the index is `null`. |
+| `Delete(path)` | Removes the node from its parent. An operator that needs two operands and keeps one is replaced by that operand. The root cannot be deleted. |
+| `Swap(path, direction)` | Swaps the node with the next (1) or the previous (-1) operand. |
+| `Replace(path, expression)` | Puts an expression in place of the node. |
+| `ChangeLiteral(path, name, value)` | Changes `const` of a constant, an argument of a term (a new name adds it, an empty value removes it), or `k`, `min` or `max` of an operator. The value is JSON; text that is not JSON is a string. |
+
+An expression is rule text, JSON or YAML; its content selects the format. An expression that does not compile is refused with its diagnostics. Every edit compiles the result with the permissive compiler and the limits of the settings, and a result that does not compile is refused: the rule never changes. The notes of the nodes that an edit keeps stay on those nodes. `RuleDocument.ReplaceRule` puts an edited rule into the document.
+
+`RulePalette.Create(rule, schema)` lists the operators, the constants, the predicates of a [predicate schema file](#predicate-schema-file) and the predicates of the rule (with the values of their first use as defaults). A `PaletteEntry` has a `Source`, a `Name`, a `Description` and its `Arguments` (`PaletteArgument`: name, `LiteralKind`, required, default, description). `RulePalette.Fill(entry, values, settings)` makes the rule text of a constant or of a call of a predicate with the values of a form, or gives the diagnostics when the call does not compile.
+
+## Rewrites
+
+`RewritePlayground` applies the rewrites of the library to a compiled rule and does not change it, so a front end can show the result before the author accepts it.
+
+`RewritePlayground.Preview(rule, kind, settings)` applies one `RuleRewriteKind`: `Simplify` (with `SimplifyWithSteps`), `Canonicalize`, `NegationNormalForm` (`ToNnf`), `ConjunctiveNormalForm` (`ToCnf`), `DisjunctiveNormalForm` (`ToDnf`), `Compress` (`CompressToDerived`), `ExpandToPrimitives` or `OptimizeOrder`. `MaxRewriteNodeCount` of the settings caps the normal forms and the expansion. The `RewritePreview` holds the rule before and after (`After` is `null` when the rewrite gives no rule, such as for `TRE0016`), the steps of `Simplify`, the diagnostics of the rewrite, `Changed` (the tree after differs from the tree before), and the rule text and the plain text tree before and after. `RewritePlayground.NameOf(kind)` gives the name of the library method. A front end puts an accepted result into the document with `RuleDocument.ReplaceRule`.
+
+`RewritePlayground.Compare(earlier, current, settings)` gives a `RuleComparison`: `Equivalence` from `RuleEquivalence.Compare` and `Relation` (equivalent, tighter, looser, overlapping, disjoint) from `RuleImplication.Compare`. Both stop at `MaxAnalysisTerms` of the settings distinct terms across the two rules, and are then undecided.
+
+## Trying a rule with values
+
+`AssignmentSession` is the model of the assignment pane of the [terminal UI](tui.md#assign-values). It keeps a value for each term, the data for the `from("source", "query")` references and the policy for an `Unknown` result. It evaluates the rule of a `RuleDocument` through `StubEvaluator`, so the decision equals the decision of `truthweaver evaluate` for the same values.
+
+| Member | Behavior |
+| --- | --- |
+| `Set(key, value)`, `ValueOf(key)`, `Values` | Give a term a value, read it, and list the terms that have a definite value. A key is the canonical text of the term. `Unknown` removes the value. A term with no value is `Unknown`. |
+| `Cycle(key)` | Moves a term to the next value: `Unknown`, `True`, `False`, and `Unknown` again. |
+| `ClearValues()`, `Load(values, variablesText)` | Remove every value, or replace the values and the variables, for example with a saved case. |
+| `SetVariables(text)`, `LoadVariablesFile(path)`, `VariablesText`, `VariableDiagnostics` | Set the data. See [the variables document](#the-variables-document). |
+| `Policy`, `CyclePolicy()` | The policy for the answers of `Collapse` and `Project`: `UnknownAsFalse` (the default), `UnknownAsTrue` or `UnknownIsError`. |
+| `EvaluateAsync(document)` | Evaluates the last tree of the document that compiled and gives an `AssignmentOutcome`. |
+
+The values stay when the rule changes. A value applies again when its term comes back.
+
+An `AssignmentOutcome` has these members.
+
+| Member | Meaning |
+| --- | --- |
+| `Terms` | The distinct terms of the rule, in the order of their first use, each with its value. |
+| `Decision`, `IsSatisfied` | The decision, and whether it is satisfied. Only `True` is satisfied. |
+| `Trace` | A tree of `TraceLine` nodes. Each node has its text, its value (`null` when short-circuiting skipped it) and a plain reason. |
+| `Faults` | One line for each fault: the term and the cause. |
+| `Collapsed`, `Projected` | The decision under the policy: `Collapse(policy)`, and `Project` with the value that the policy names. `Projected` is `null` for `UnknownIsError`. |
+| `VariableDiagnostics` | The problems of the variables document. |
+| `Evaluation` | The `StubEvaluation` behind the decision: the rule compiled over the stand-in predicates, the decision and the options. A view that marks the decision on the rule prints it from this rule. It is `null` when no rule was evaluated. |
+
+A term with a `from(...)` argument takes the value of the term with the value that the data gives. Its key is the canonical text of that resolved term, such as `inRegion(region: "EU")`, and it is `null` while the data does not resolve the reference. A reference that does not resolve is a fault, and the term is `Unknown`.
+
+The reason of a node says why it has its value. For `AND`, `OR` and `NOT` it also says how an `Unknown` operand acts: `False` wins in `AND`, `True` wins in `OR`, and `NOT` of `Unknown` stays `Unknown`.
+
+### The variables document
+
+The variables are one JSON or YAML object. Each key is a source name, and its value is the data of that source.
+
+<!-- doctest:skip variables document, not a rule -->
+```yaml
+user:
+  region: EU
+  age: 42
+```
+
+With this document, `from("user", "$.region")` is `"EU"`. A YAML plain scalar is read as in JSON: `null`, `true` or `false`, a whole number, a decimal number, or a string. A quoted scalar is a string. A document with an error gives a `TWT0003` diagnostic without the content of the document, and the session keeps the data of the last document that was well-formed. `AssignmentVariables.Parse(text)` makes the data sources from the text.
+
+## Editing a rule test file
+
+`RuleTestCaseText` edits the text of a [rule test file](rule-tests.md) one case at a time. It does not depend on `TruthWeaver.Testing`. A case is a `RuleTestCaseSpec`: the name, the value of each term, the variables, and the expected result and number of faults.
+
+| Member | Behavior |
+| --- | --- |
+| `NewFile(ruleText, firstCase)` | Makes the text of a file with the rule inline and one case. |
+| `ReadCases(fileText, baseDirectory)` | Reads the cases. A `variableFiles` path is relative to `baseDirectory`. The `trace` expectation is not read. |
+| `AddOrReplaceCase(fileText, spec)` | Adds the case at the end, or replaces the case with the same name. The rest of the file stays as it is, with its comments. |
+| `RemoveCase(fileText, name)` | Removes a case. The last case stays. |
+| `WithRule(fileText, ruleText)` | Replaces `rule` or `ruleFile` with an inline rule, to run the cases on another rule. Do not write the result back. |
+
+Each operation gives `TWT0022` diagnostics when the file is not usable. The cases must be a block list, and each case must start on the line of its dash. A replaced case loses the keys that the class does not write: `trace`, `variableFiles` and comments.
+
+## JsonLogic import
+
+`JsonLogicImporter.Import(jsonLogic)` reads a [JsonLogic](https://jsonlogic.com) rule and returns the rule tree as compact JSON. Load the result with `RuleLoader.LoadString` in the JSON format to compile or convert it. The importer uses `System.Text.Json` only.
+
+JsonLogic is two-valued, so a mapped rule can answer `Unknown` where JsonLogic answers `false`. The import reports each such place as a `TWT0024` warning. An operator or shape without a mapping fails the import with a `TWT0023` error for each occurrence, and the result has no value.
+
+| JsonLogic | TruthWeaver |
+| --- | --- |
+| `true`, `false` | The constants `True` and `False`. |
+| `null` as a condition | The constant `Unknown`, with a `TWT0024` warning. |
+| `{"and": [...]}`, `{"or": [...]}` | `AND`, `OR`. One operand gives that operand. No operand is a `TWT0023` error. |
+| `{"!": x}` | `NOT`. |
+| `{"!!": x}` | The operand `x`. |
+| `{"if": [c, a, b]}` | `If(c, a, b)`. A longer list `[c1, a1, c2, a2, e]` nests in the else position. A list with no else branch uses `Unknown` for it, with a `TWT0024` warning. |
+| `{"var": "a.b"}` as a condition | The term `aB`, with a `TWT0024` warning: JsonLogic reads the value by truthiness. |
+| `{"==": [{"var": "a"}, v]}`, `===` | The term `aIsEqualTo(value: v)`. With `null` for `v`: `aIsNull`. |
+| `{"!=": ...}`, `!==` | `aIsNotEqualTo(value: v)`. With `null`: `aIsNotNull`. |
+| `<`, `<=`, `>`, `>=` | `aIsLessThan`, `aIsLessThanOrEqualTo`, `aIsGreaterThan`, `aIsGreaterThanOrEqualTo`, each with `value`. A literal on the left flips the comparison. |
+| `{"<=": [lo, {"var": "a"}, hi]}` | `aIsBetween(lower: lo, upper: hi)`. |
+| `{"<": [lo, {"var": "a"}, hi]}` | `aIsGreaterThan(value: lo) AND aIsLessThan(value: hi)`. |
+| `{"in": [{"var": "a"}, [..]]}` | `aIsIn(values: [..])`. |
+| `{"in": [v, {"var": "a"}]}` | `aContains(value: v)`. |
+
+A term name is the variable path in camel case, followed by the catalog member: `user.age` with `>` gives `userAgeIsGreaterThan`. The host registers a predicate with that name that selects the value. A character that a name cannot hold becomes `_`.
+
+The importer warns about these differences:
+
+- A `var` that is read by truthiness, in `and`, `or`, `!`, `if` or at the root.
+- A missing variable. JsonLogic reads it as `null`, so the comparison is `false`. The term answers `Unknown`. The warning appears once for each variable.
+- `==` and `!=`. They convert types in JsonLogic. The terms compare without conversion, like `===` and `!==`.
+- A default value of `var`. The importer ignores it.
+- An `if` with no else branch, and a `null` condition.
+
+These have no mapping and fail the import: every other operator (`+`, `cat`, `map`, `reduce`, `missing`, `some` and the rest), a comparison between two variables or two literals, a comparison of a literal with an operation, a literal that is not `true`, `false` or `null` where a condition is expected, and a `var` path that is not a non-empty string.
 
 ## Writing a rule back
 
@@ -215,7 +366,7 @@ isActive: True
 | --- | --- | --- |
 | `Stubs` | The [stub values](#stub-values). | `StubAssignment.Empty`: every term is `Unknown`. |
 | `DataSources` | The [data files](#data-files) for the `from("source", "query")` references. | None. |
-| `Evaluation` | The mode, the fault budget, the timeout and the resolved values in the trace. | `EvaluationOptions.Default` |
+| `Evaluation` | The mode, the fault budget, the timeout, the flat trace and the resolved values in the trace. | `EvaluationOptions.Default` |
 | `Settings` | The compile limits and the schema file. | `ToolSettings.Default` |
 | `PredicateSchema` | A [predicate schema file](#predicate-schema-file) that is already read. Otherwise the evaluator reads the file of `Settings.SchemaFile`, when one is set. | None. |
 
@@ -321,7 +472,7 @@ For `AtLeast(2, isActive, hasRole(role: "editor"), NOT isActive) OR (isLocked AN
 | --- | --- | --- |
 | `Success` | 0 | No error, and no warning in strict mode. |
 | `Failed` | 1 | An error, or a warning in strict mode. |
-| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a write-back or a rule test file. This code wins over `Failed`. |
+| `Unusable` | 2 | The tool could not do its work: a `TWT` error about the input, the configuration, the stub values, the data files, the schema file, an output file, an artifact id, an image renderer, a write-back, a rule test file or a JsonLogic document that the importer cannot map. This code wins over `Failed`. |
 
 ## Diagnostics output
 
@@ -462,9 +613,11 @@ The tool core reports a problem outside the rule with a `TWT` code. Compiler dia
 | `TWT0020` | `RoundTripWriteBack` | Warning | A round-trip write-back serialized the whole document again; YAML comments and layout can be lost. |
 | `TWT0021` | `WriteBackFailed` | Error | An edited rule cannot be written back into its document. |
 | `TWT0022` | `InvalidRuleTestFile` | Error | A rule test file is not usable. |
+| `TWT0023` | `UnsupportedJsonLogic` | Error | A JsonLogic document uses an operator or a shape that the importer cannot map. |
+| `TWT0024` | `JsonLogicBehaviorDiffers` | Warning | An imported JsonLogic construct can give a different answer in TruthWeaver. |
 
 ## Packaging
 
-`TruthWeaver.Tool.Core` has `IsPackable` set to `false`, so `dotnet pack` makes no package for it. The command line and terminal UI tools carry the assembly in their own tool packages. The project is in `TruthWeaver.slnx`, so the CI build, test and analysis steps include it and its test project, `TruthWeaver.Tool.Core.Tests`.
+`TruthWeaver.Tool.Core` has `IsPackable` set to `false`, so `dotnet pack` makes no package for it. The command line and [terminal UI](tui.md) tools carry the assembly in their own tool packages. The project is in `TruthWeaver.slnx`, so the CI build, test and analysis steps include it and its test project, `TruthWeaver.Tool.Core.Tests`.
 
 The library references `TruthWeaver`, `TruthWeaver.Yaml` and `TruthWeaver.DataSources.Json`, and no other package. It takes no command-line or terminal UI library. The architecture tests check both rules.

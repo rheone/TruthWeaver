@@ -1,5 +1,7 @@
 namespace TruthWeaver.Testing;
 
+using TruthWeaver.Evaluation;
+
 /// <summary>
 /// Runs standard checks against a real predicate and reports what held: a deterministic answer, robust handling of
 /// boundary argument values, conformance to the declared schema, and the response to cancellation.
@@ -141,10 +143,13 @@ public static class PredicateHarness
             TruthValue value = await evaluate(context, args, cancellationToken).ConfigureAwait(false);
             return new(value, null);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        catch (Exception ex)
+            when (ex is not TestDoubleMisuseException
+                && (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            )
         {
             // The same filter as the evaluator: an exception becomes Unknown plus a fault, except a cancellation of the
-            // caller's own token, which stops the run.
+            // caller's own token, which stops the run, and a misused test double, which fails the test.
             return new(TruthValue.Unknown, ex);
         }
     }
@@ -251,8 +256,9 @@ public static class PredicateHarness
                 ex
             );
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not TestDoubleMisuseException)
         {
+            // A misused test double fails the test here too, as it does in CallAsync.
             return new(
                 PredicateHarnessCheck.Cancellation,
                 PredicateHarnessStatus.Observed,

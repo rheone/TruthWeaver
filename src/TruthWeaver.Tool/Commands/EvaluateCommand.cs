@@ -92,7 +92,8 @@ internal static class EvaluateCommand
                 EvaluationOptions evaluation = new(
                     FaultBudget: parse.GetValue(faultBudget),
                     Mode: parse.GetValue(exhaustive) ? EvaluationMode.Exhaustive : EvaluationMode.ShortCircuit,
-                    IncludeResolvedValues: parse.GetValue(showValues)
+                    IncludeResolvedValues: parse.GetValue(showValues),
+                    IncludeTrace: true
                 );
                 StubEvaluationOptions stubOptions = new()
                 {

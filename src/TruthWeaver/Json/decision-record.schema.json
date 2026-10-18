@@ -71,6 +71,10 @@
         "includeResolvedValues": {
           "description": "Whether the trace shows the values that data sources resolved.",
           "type": "boolean"
+        },
+        "includeTrace": {
+          "description": "Whether the evaluation requested the flat trace. A record without this member reads as false.",
+          "type": "boolean"
         }
       },
       "required": ["faultBudget", "mode", "timeout", "includeResolvedValues"],

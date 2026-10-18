@@ -36,6 +36,9 @@ internal static class DecisionJsonNames
     /// <summary>The options member that says whether the trace shows resolved values.</summary>
     public const string IncludeResolvedValues = "includeResolvedValues";
 
+    /// <summary>The options member that says whether the evaluation requested the flat trace.</summary>
+    public const string IncludeTrace = "includeTrace";
+
     /// <summary>The root member that says whether literal argument values are in the record.</summary>
     public const string ArgumentValues = "argumentValues";
 

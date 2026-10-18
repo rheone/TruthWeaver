@@ -149,6 +149,31 @@ void Print(OutlineNode node, int depth = 0)
 }
 ```
 
+## Explaining a decision
+
+`rule.Explain(decision)` returns one sentence of fixed English for a decision of the same rule. It names only the terms that decided the result, in the order they occur in the rule. Each term appears as the label of its predicate, its argument values and its value:
+
+```csharp
+Decision decision = await rule.EvaluateAsync(order, serviceProvider, cancellationToken: ct);
+string sentence = rule.Explain(decision);
+// Satisfied because Order Type (kind: "takeout") is true and Over Limit is true.
+```
+
+The sentence starts with `Satisfied`, `Not satisfied` or `Unknown`, for the result `True`, `False` or `Unknown`. A term is `is true`, `is false`, `is unknown` or `could not be evaluated`. The last form is for a term whose predicate faulted. The sentence never includes the text of the exception.
+
+When the result is `Unknown`, no term decided it. The sentence then names the terms that were `Unknown` or that could not be evaluated. A rule with no deciding term, such as a constant, gives the head and a period only.
+
+The decided terms are the terms that [rule coverage](rule-coverage.md#when-a-node-decides) counts as deciding, read from the one decision. A decision made in `EvaluationMode.ShortCircuit` mode can name fewer terms than one made in `EvaluationMode.Exhaustive` mode, because a skipped operand cannot decide.
+
+The wording is fixed. There is no template engine and no localization surface. Pass an `ExplainOptions` to change the output:
+
+| Option | Effect |
+| --- | --- |
+| `Labels` | A label for a predicate name, used instead of the label in its schema. The names are not case-sensitive. |
+| `IncludeDescriptions` | Adds the description of the predicate in square brackets after each term. The default is `false`. |
+
+A decision without a `TraceTree`, or with a trace tree that does not match the rule, throws `ArgumentException`.
+
 ## Rendering a rule as a diagram
 
 `OutlineNode` also feeds [`MermaidTreePrinter`](../src/TruthWeaver/Printing/MermaidTreePrinter.cs) and [`PlainTextTreePrinter`](../src/TruthWeaver/Printing/PlainTextTreePrinter.cs). They render it as a Mermaid `flowchart` and as an indented text tree. Each can show the structure only, or add the result and short-circuit path of one evaluation:

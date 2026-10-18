@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** done
+
+**Owner decision (2026-10-17):** Amend ADR-0005 decision 14 to allow TRE0016 to be reused for RewriteTooLarge. No code change.
 
 **What to build:** Decide: amend ADR-0005 decision 14 to allow reuse, or move the rewrite-size code to a new TRE number.
 

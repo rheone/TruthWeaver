@@ -17,9 +17,10 @@ internal static class TruthWeaverCli
     {
         return
         [
-            with("Validate, convert, format, print, export, report, compare, evaluate and test TruthWeaver rules."),
+            with("Validate, convert, import, format, print, export, report, compare, evaluate and test TruthWeaver rules."),
             ValidateCommand.Create(console),
             ConvertCommand.Create(console),
+            ImportCommand.Create(console),
             FormatCommand.Create(console),
             PrintCommand.Create(console),
             ExportCommand.Create(console),

@@ -103,6 +103,7 @@ NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "
 | Predicate | Twin | Argument | `True` when |
 | --- | --- | --- | --- |
 | `IsEmpty` | `IsNotEmpty` | none | The collection has no elements. |
+| `IsNullOrEmpty` | `IsNotNullOrEmpty` | none | The collection is null or has no elements. A null test: it never answers `Unknown`. |
 | `SetEquals` | `NotSetEquals` | `values` (`StringArray`) | The collection and the array hold the same set of strings. |
 | `Contains` | `NotContains` | `value` (`String`) | The collection contains the value. |
 | `ContainsAny` | `NotContainsAny` | `values` (`StringArray`) | At least one element is in the array. |
@@ -116,7 +117,7 @@ NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "
 
 To test one string against several candidates, use `StringPredicates.IsIn` and `StringPredicates.IsNotIn`.
 
-Every predicate in this table, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. A null collection is a missing value, not an empty one.
+Every predicate in this table except `IsNullOrEmpty` and `IsNotNullOrEmpty`, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. The two null tests have no option: a null collection is `True` for `IsNullOrEmpty` and `False` for `IsNotNullOrEmpty`. A null collection is a missing value, not an empty one.
 
 ### Date and time predicates
 

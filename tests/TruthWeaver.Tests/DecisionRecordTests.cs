@@ -45,6 +45,23 @@ public sealed class DecisionRecordTests
         Assert.Equal(written, record);
     }
 
+    /// <summary>The IncludeTrace option is written and read back, and a record without the member reads as <see langword="false"/>.</summary>
+    [Fact]
+    public async Task TryParseJson_IncludeTraceOption_RoundTripsAndDefaultsToFalseWhenAbsent_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(FaultingRule);
+        EvaluationOptions options = new(IncludeTrace: true);
+        string json = new DecisionRecord(await EvaluateAsync(rule, options), RuleIdentity.Of(rule), options).PrintJson();
+
+        DecisionRecord record = Read(json);
+        JsonObject root = JsonNode.Parse(json)!.AsObject();
+        _ = root["options"]!.AsObject().Remove("includeTrace");
+        DecisionRecord withoutMember = Read(root.ToJsonString());
+
+        Assert.True(record.Options!.IncludeTrace);
+        Assert.False(withoutMember.Options!.IncludeTrace);
+    }
+
     /// <summary>A short-circuited decision keeps its skipped nodes (no result, no children) through the round trip.</summary>
     [Fact]
     public async Task TryParseJson_ShortCircuitedDecision_KeepsTheSkippedNodes_Test()
@@ -169,7 +186,7 @@ public sealed class DecisionRecordTests
             [
                 "hasRole(role: <omitted>)",
                 "check(at: <omitted>, b: <omitted>, d: <omitted>, id: <omitted>, list: <omitted>, n: <omitted>, names: <omitted>)",
-                "takesInt64(v: from(\"user\", \"$.age\"))",
+                "takesInt64(v: from(\"user\", \"$.age\")) [from(\"user\", \"$.age\"): unsupplied source]",
             ],
             record.Decision.Trace!.Entries.Select(entry => entry.Text)
         );
@@ -451,7 +468,10 @@ public sealed class DecisionRecordTests
     {
         return rule.EvaluateAsync(
             new RuleTestContext(),
-            options: options,
+            options: options with
+            {
+                IncludeTrace = true,
+            },
             cancellationToken: TestContext.Current.CancellationToken
         );
     }

@@ -159,6 +159,17 @@ already gives any other name nothing declared.
 FORALL(line IN lines, qtyAbove(n: from("line", "$.qty")))
 ```
 
+A `let` definition may be used inside a quantifier's body. The use expands in the body, so the definition's terms
+resolve in that collection's element registry, not in the outer registry. A use outside the body is checked against the
+outer registry, so the same definition can compile in one place and give an unknown-predicate diagnostic in the other.
+The quantifier variable is a label only and no term can read it, so a definition cannot refer to it.
+
+<!-- doctest:rule forall-definition -->
+```text
+let inStockLine = inStock;
+FORALL(line IN lines, inStockLine)
+```
+
 ## Case
 
 Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. Rule text also reads the letters `T`, `F` and `U` (any case) as the constants, so `T AND f` and `True AND False` compile to the same tree. JSON and YAML read the words only. `and`, `And` and `AND` compile to the same node.

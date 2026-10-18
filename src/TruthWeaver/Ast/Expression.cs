@@ -78,8 +78,8 @@ public sealed record ConstantExpression(TruthValue Value) : Expression;
 /// <param name="Identity">This term's identity: the unit of memoization and structural equality.</param>
 /// <param name="IsUnknownPredicate">
 /// <see langword="true"/> when this term was compiled under <c>CompilationMode.Lenient</c> against an
-/// unregistered predicate name; such a term always evaluates to <see cref="TruthValue.Unknown"/> and
-/// never invokes anything.
+/// unregistered predicate name; such a term always evaluates to <see cref="TruthValue.Unknown"/>, never invokes
+/// anything, and records one <see cref="Fault"/> (ADR-0002) so the decision says why it is Unknown.
 /// </param>
 public sealed record TermExpression(TermIdentity Identity, bool IsUnknownPredicate = false) : Expression;
 

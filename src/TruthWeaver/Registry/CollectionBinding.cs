@@ -68,12 +68,12 @@ internal sealed class CollectionBinding<TContext, TItem>(
         CancellationToken cancellationToken
     )
     {
-        string label = kind == QuantifierKind.ForAll ? "FORALL" : "EXISTS";
+        string label = QuantifierText.Label(kind);
         string description = $"{label}({variable} IN {name})";
 
         void AddFlat(TruthValue? value, bool notEvaluated)
         {
-            state.Trace.Add(
+            state.AddTrace(
                 new TraceEntry(outerScope is null ? description : $"{outerScope}: {description}", value, notEvaluated)
             );
         }

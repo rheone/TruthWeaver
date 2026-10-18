@@ -324,6 +324,16 @@ public static class DiagnosticCodeTable
             nameof(ToolDiagnosticCodes.InvalidRuleTestFile),
             "A rule test file is not usable."
         ),
+        Error(
+            ToolDiagnosticCodes.UnsupportedJsonLogic,
+            nameof(ToolDiagnosticCodes.UnsupportedJsonLogic),
+            "A JsonLogic document uses an operator or a shape that the importer cannot map."
+        ),
+        Warning(
+            ToolDiagnosticCodes.JsonLogicBehaviorDiffers,
+            nameof(ToolDiagnosticCodes.JsonLogicBehaviorDiffers),
+            "An imported JsonLogic construct can give a different answer in TruthWeaver."
+        ),
     ];
 
     private static readonly FrozenDictionary<string, DiagnosticCodeInfo> ByCode = Rows.ToFrozenDictionary(

@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-decision
+**Status:** done
+
+**Owner decision (2026-10-17):** Add an EvaluationOptions flag to request the trace, off by default. Decision.Trace stays nullable and is null unless requested.
 
 **What to build:** Decide: add the EvaluationOptions flag the ADR and docs promise, or change the docs and the nullable shape to match the always-on behavior.
 

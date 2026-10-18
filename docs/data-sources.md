@@ -17,6 +17,7 @@ changes per request, or lives in a JSON or YAML document you do not want to writ
 - [How a result becomes an argument](#how-a-result-becomes-an-argument)
 - [Using variables in `RuleBuilder`](#using-variables-in-rulebuilder)
 - [Failures](#failures)
+- [Missing, null and empty values](#missing-null-and-empty-values)
 - [Testing with `FakeDataSource`](#testing-with-fakedatasource)
 - [Writing your own data source](#writing-your-own-data-source)
 - [Packages](#packages)
@@ -210,7 +211,7 @@ The predicate's argument declares a `LiteralKind`, and that decides what a query
 
 An array query that matches no node is not a failure, so no fault is recorded. The trace marks the term instead, so a mistyped
 path does not pass unseen. The trace text of the term ends with `[no match for from("user", "$.rolez[*]")]`, with or without
-`IncludeResolvedValues`. The note names the query and never a value.
+`IncludeResolvedValues`, after the outcome note described in [Failures](#failures). The note names the query and never a value.
 
 Conversions are deliberately the same as for literals written in a rule:
 
@@ -276,7 +277,13 @@ A validator checks syntax only. It cannot know whether the data holds a match, s
 be missing at evaluation.
 
 Faults and the evaluation trace name the reference and the outcome, but not the resolved value, because the
-data may be sensitive. To include values in the trace while debugging:
+data may be sensitive. The trace text of a term with variables ends with one note for each reference, in the form
+`[from("user", "$.age"): resolved]`. The outcome word is `resolved`, `missing`, `ambiguous`, `type mismatch`,
+`source error` or `unsupplied source`, so a reference that resolved is visible as well as one that failed. A term
+inside a `FORALL` or `EXISTS` body has the same notes, in the trace tree and in the flat trace. A missing
+`$.age` gives `ageAtLeast(min: from("user", "$.age")) [from("user", "$.age"): missing]`.
+
+To include values in the trace while debugging:
 
 ```csharp
 Decision decision = await rule.EvaluateAsync(
@@ -288,6 +295,23 @@ Decision decision = await rule.EvaluateAsync(
 ```
 
 Faults never include values, even then.
+
+## Missing, null and empty values
+
+"No value" has three forms, and they get different answers on purpose. A value that is not there is a failure of the lookup, so it records a fault. A `null` that a selector returns is data, so it is `Unknown` with no fault. An empty collection is a value, so it is not `Unknown`.
+
+| Case | Where | Answer | Fault |
+| --- | --- | --- | --- |
+| Missing: a scalar query matches no node | Scalar argument | `Unknown`; the predicate is not called | Yes (`Missing`) |
+| Missing: a scalar query matches several nodes | Scalar argument | `Unknown` | Yes (`Ambiguous`) |
+| Null: the match is a JSON `null`, an object or an array node | Scalar or array argument | `Unknown`; a `null` is reported as an unsupported type | Yes (`TypeMismatch`, or `UnsupportedType` for `null`) |
+| Null: one element of an array query is a JSON `null` | Array argument | `Unknown` | Yes |
+| Empty: an array query matches no node, or a path to a missing property | Array argument | An empty array, which is a valid value. The trace adds `[no match for ...]` | No |
+| Null: a selector (`select` or `test`) returns `null` | Predicate that reads a selected value | `Unknown`, or `False` under `NullBehavior.False` | No |
+| Null: the collection of a `FORALL` or `EXISTS` is `null` | Quantifier | `Unknown`; the trace adds `[no collection]` | No |
+| Empty: the collection of a quantifier has no element | Quantifier | `FORALL` is `True`, `EXISTS` is `False` | No |
+
+`NullBehavior` changes only the selector row. It never changes a fault. See [When a predicate answers Unknown](predicate-conventions.md#when-a-predicate-answers-unknown) for the predicates that read a selected value.
 
 ## Testing with `FakeDataSource`
 

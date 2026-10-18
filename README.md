@@ -127,6 +127,8 @@ operator set and a worked example in rule text, JSON and YAML.
 | `TruthWeaver.Predicates` | Use ready-made predicates for common checks. |
 | `TruthWeaver.Testing` | Assert on decisions and fake predicates in tests, and run YAML rule tests. |
 | `TruthWeaver.AspNetCore` | Decide ASP.NET Core authorization policies with rules. |
+| `TruthWeaver.Policies` | Combine many rules into policy sets with deny-overrides, permit-overrides or first-applicable. |
+| `TruthWeaver.Extensions.Configuration` | Load named rules from `IConfiguration` and reload them without a restart. |
 | `TruthWeaver.Generators` | Generate predicate registration code from `[Predicate]` methods at compile time. |
 
 The dependencies and contents of each package are in [Packages](docs/packages.md).
@@ -173,16 +175,20 @@ The dependencies and contents of each package are in [Packages](docs/packages.md
 - [Data sources](docs/data-sources.md): supply variable values to a rule.
 - [Batch evaluation](docs/batch-evaluation.md): evaluate one rule against many contexts, in order, with bounded parallelism.
 - [Rule coverage](docs/rule-coverage.md): find the terms and branches of a rule that never decide, are always `Unknown` or fault, over many decisions.
+- [Shadow replay](docs/shadow-replay.md): run contexts through two versions of a rule and list the contexts whose decision changed, with both traces.
 - [What would change a decision](docs/counterfactuals.md): the smallest sets of term changes that would make a rule `True` (or `False`), for a "what to fix" list.
 - [Decision records](docs/decision-records.md): store a decision as JSON for an audit log, with the rule identity and the evaluation options, and read it back for replay.
 - [ASP.NET Core authorization](docs/aspnetcore.md): decide authorization policies and resource-based checks with rules, fail-closed, with the decision for logs and problem-details responses.
+- [Policy sets](docs/policies.md): combine policies with a target, an effect and a priority by deny-overrides, permit-overrides or first-applicable, fail-closed on `Unknown`.
+- [Rule store](docs/rule-store.md): load named rules from `IConfiguration`, compile once, cache by hash and swap on reload, keeping the last good rule.
 - [Command line](docs/cli.md): the `truthweaver` .NET tool: validate, convert, format, print, export, report, diff, evaluate and test rules from the shell, with JSON output, SARIF and documented exit codes.
+- [Terminal UI](docs/tui.md): the `truthweaver-tui` .NET tool: edit a rule in rule text, JSON or YAML with live diagnostics, the last valid tree on an error, undo and redo, format, open and save, in linked panes; then give each term a value and see the decision, the colored trace and the reason for each node, edit the tree with checked structural edits and a palette, and try the rewrites (Simplify with its steps, the normal forms) before you accept one, with an equivalence check against the saved version.
 - [Tool core](docs/tool-core.md): the library under the command line and the terminal UI: load, detect, extract and convert rules, validate them in levels with statistics, write diagnostics as text, JSON or SARIF, export every artifact with a manifest, write a Markdown report, render images with Graphviz or the Mermaid CLI, the `truthweaver.json` file, stub values, data files and deterministic output.
 - [Examples](docs/examples.md): eight worked examples, from one predicate to a full rule. [Which printer to use](docs/examples.md#which-printer-to-use) lists the printers for each job, [the same rule side by side](docs/examples.md#the-same-rule-in-each-notation-side-by-side) compares the notations, and [operator styles](docs/examples.md#operator-styles-and-simple-variables) shows the symbol sets.
 - [Reading diagnostics](docs/diagnostics.md): the `Diagnostic` members, lint rules and diagnostics for JSON and YAML rules.
 - [Benchmarks](docs/benchmarks.md): the benchmark commands and the committed baseline.
 - [Documentation examples](docs/doc-examples.md): how the examples in the documentation are tested.
-- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.ps1` do, and how a package version is made.
+- [Contributing](docs/contributing.md): what the pre-commit hook and `scripts/format-all.cs` do, and how a package version is made.
 - [CONTEXT.md](CONTEXT.md): the domain vocabulary and the predicate-author contract.
 
 ## License

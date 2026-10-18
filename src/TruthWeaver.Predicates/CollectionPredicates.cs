@@ -170,6 +170,62 @@ public static class CollectionPredicates
         );
     }
 
+    /// <summary>
+    /// Creates a predicate that is true when the selected collection is <see langword="null"/> or has no elements. It is
+    /// a null test, like <see cref="StringPredicates.IsNullOrEmpty{TContext}"/>, so it is always definite: a
+    /// <see langword="null"/> collection is <see cref="TruthValue.True"/>, never <see cref="TruthValue.Unknown"/>.
+    /// </summary>
+    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) IsNullOrEmpty<TContext>(
+        string name,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        string label = "Is Null Or Empty"
+    )
+    {
+        PredicateSchema schema = PredicateSchema.NoArguments(
+            name,
+            label,
+            "True when the selected collection is null or has no elements. Always definite: null is true, never Unknown."
+        );
+
+        return (schema, (context, _, _) => PredicateResult.FromBoolAsync(IsNullOrEmptyCollection(selector(context))));
+    }
+
+    /// <summary>
+    /// Creates the <c>IsNotNullOrEmpty</c> twin of <see cref="IsNullOrEmpty{TContext}"/>: true when the selected
+    /// collection is non-null and has at least one element. A null test, so it is always definite (a
+    /// <see langword="null"/> collection is <see cref="TruthValue.False"/>).
+    /// </summary>
+    /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
+    /// <param name="name">The predicate's registered name.</param>
+    /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
+    /// <param name="label">A short, human-friendly display name for this predicate.</param>
+    /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    public static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) IsNotNullOrEmpty<TContext>(
+        string name,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        string label = "Is Not Null Or Empty"
+    )
+    {
+        PredicateSchema schema = PredicateSchema.NoArguments(
+            name,
+            label,
+            "True when the selected collection is not null and has at least one element. Always definite: null is false."
+        );
+
+        return (schema, (context, _, _) => PredicateResult.FromBoolAsync(!IsNullOrEmptyCollection(selector(context))));
+    }
+
     /// <summary>Creates a predicate that is true when the selected collection contains the argument value (ordinal, case-sensitive).</summary>
     /// <typeparam name="TContext">The application context type the selector reads from.</typeparam>
     /// <param name="name">The predicate's registered name.</param>
@@ -804,6 +860,12 @@ public static class CollectionPredicates
             "The element count to compare against.",
             static (selected, args, argument) => selected.Count >= args.GetInt64(argument)
         );
+    }
+
+    /// <summary>The test both null-test predicates share: a missing collection counts as empty.</summary>
+    private static bool IsNullOrEmptyCollection(IReadOnlyCollection<string>? collection)
+    {
+        return collection is null || collection.Count == 0;
     }
 
     /// <summary>

@@ -38,6 +38,18 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!-- NuGetAudit checks every direct and transitive package against the NuGet.org advisory database at restore time.
+       The mode and level take in every package and every severity, including low. In CI a vulnerability warning
+       (NU1901 low, NU1902 moderate, NU1903 high, NU1904 critical) and NU1900 (the audit could not run) fail the build.
+       A local build keeps them as warnings. To accept a known advisory, fix it with a transitive pin in
+       Directory.Packages.props, not by turning the audit off. -->
+  <PropertyGroup>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <WarningsAsErrors Condition="'$(CI)' == 'true'">$(WarningsAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+  </PropertyGroup>
+
   <!-- Package README - every packable project ships the repo root README as its NuGet readme. -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
@@ -66,6 +78,5 @@
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory).editorconfig" Link=".editorconfig" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)dictionary.dic" Link="dictionary.dic" />
   </ItemGroup>
 </Project>

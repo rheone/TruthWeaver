@@ -166,6 +166,20 @@ internal static class DefinitionExpander
                     ins,
                     new InspectionNode(ins.Kind, this.ExpandAll(ins.Operands, parameters, chain, unused), ins.Span)
                 ),
+
+                // The head's variable and collection name are plain strings; only the body holds uses (ADR-0010
+                // decision 10). Expanding the body here puts a definition's terms in the quantifier's element scope, where
+                // RuleNodeCompiler resolves them against that collection's element registry.
+                QuantifierNode q => Carry(
+                    q,
+                    new QuantifierNode(
+                        q.Kind,
+                        q.Variable,
+                        q.CollectionName,
+                        this.ExpandNode(q.Body, parameters, chain, unused),
+                        q.Span
+                    )
+                ),
                 _ => throw new InvalidOperationException(
                     $"Unhandled rule node type '{node.GetType()}' during definition expansion."
                 ),

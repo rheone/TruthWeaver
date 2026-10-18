@@ -57,6 +57,16 @@ context. A dedicated enum keeps `TruthValue` out of accidental boolean
 contexts, gives `switch` exhaustiveness, and reads correctly in logs and
 traces.
 
+> **Amendment (2026-10-17, the zero value):** the members are reordered to `Unknown = 0`, `False = 1`, `True = 2`, so
+> `default(TruthValue)`, an element of a new array, an unset field and the `out` value of a failed constant read are
+> `Unknown`. The first order made the zero value `False`, which reads as a definite answer that nobody gave.
+> `NullBehavior` made the same change. This breaks any code or stored data that uses the numeric values: a persisted
+> `0` that meant `False` now reads as `Unknown`, `1` (was `True`) reads as `False`, and `2` (was `Unknown`) reads as
+> `True`. Migration: name the members in code, and store and read a `TruthValue` by its name, not its number. The
+> engine's own formats (rule text, JSON and YAML trees, decision records, rule-test files) always use names, so they
+> are not affected. The underlying integers are still not the truth order (`False < Unknown < True`). Audit
+> `.scratch/repo-improvements-2026-10-17` item 05, decision D1.
+
 **Kleene truth tables** (`U` = `Unknown`):
 
 | `AND` | `False` | `True` | `U` |
@@ -118,6 +128,9 @@ public sealed record Decision(
 > `Result` or records a fault); `IsSatisfied` is still fail-closed. A rule cannot declare a
 > collapse and there is no `Decision.Outcome` (amended 2026-10-03). See
 > [ADR-0005](0005-strong-k3-language-surface.md) decision 14.
+>
+> `Decision.Trace` is `null` unless the caller sets `EvaluationOptions.IncludeTrace`; `TraceTree` is always filled
+> (amended 2026-10-17).
 
 `IsSatisfied` is `true` only for `TruthValue.True`. `Unknown` - whether from
 one absorbed fault or a hundred - reads as "not satisfied," which is the

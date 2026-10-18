@@ -7,6 +7,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 using TruthWeaver.Testing;
+using TruthWeaver.Yaml;
 using Arg = TruthWeaver.Building.Arg;
 
 /// <summary>
@@ -250,6 +251,7 @@ public sealed class QuantifierEvaluationTests
 
         Decision decision = await rule.EvaluateAsync(
             new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
         );
 
@@ -606,6 +608,42 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// Inside a <c>FORALL</c> or <c>EXISTS</c> body, a term that reads the element with <c>from(...)</c> shows the
+    /// outcome of the reference after the term in both the trace tree and the flat trace, as it does at the root of a
+    /// rule (ADR-0006 decision 13).
+    /// </summary>
+    /// <param name="exists"><see langword="true"/> for <c>EXISTS</c>; <see langword="false"/> for <c>FORALL</c>.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EvaluateAsync_FromReferenceInsideQuantifierBody_TraceShowsTheOutcome_Test(bool exists)
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler();
+        RuleBuilder body = RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty")));
+        CompilationResult<LinesContext> result = (
+            exists ? RuleBuilder.Exists("line", "lines", body) : RuleBuilder.ForAll("line", "lines", body)
+        ).Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(0)] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        const string Outcome = "[from(\"line\", \"$.qty\"): resolved]";
+        TraceNode element = Assert.Single(decision.TraceTree!.Children);
+        TraceNode term = Assert.Single(element.Children);
+        Assert.EndsWith(Outcome, term.Text, StringComparison.Ordinal);
+        Assert.Contains(
+            decision.Trace!.Entries,
+            entry =>
+                entry.Text.StartsWith("line[0]: qtyAbove", StringComparison.Ordinal)
+                && entry.Text.EndsWith(Outcome, StringComparison.Ordinal)
+        );
+    }
+
+    /// <summary>
     /// A query that matches no node in the element's projected source (ADR-0006 decision 6: a scalar argument with
     /// zero matches is missing) makes that element's body <c>Unknown</c> with a fault, not an exception, exactly as
     /// an undeclared-source or missing-match reference does outside a quantifier.
@@ -704,6 +742,69 @@ public sealed class QuantifierEvaluationTests
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UndeclaredDataSource);
+    }
+
+    /// <summary>
+    /// A <c>let</c> definition used in a quantifier body compiles and evaluates in every format: the use expands in
+    /// the body's element scope (ADR-0010 decision 10), so the definition's term resolves in the element registry.
+    /// </summary>
+    [Theory]
+    [InlineData("text")]
+    [InlineData("json")]
+    [InlineData("yaml")]
+    [InlineData("builder")]
+    public async Task Compile_DefinitionUsedInsideQuantifierBody_EvaluatesInEveryFormat_Test(string format)
+    {
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+
+        CompilationResult<QuantifierContext> result = format switch
+        {
+            "text" => compiler.Compile("let y = elementTrue; FORALL(x IN items, y)"),
+            "json" => compiler.CompileJson(
+                """{"definitions":{"y":{"body":{"predicate":"elementTrue"}}},"op":"forall","var":"x","in":"items","operands":[{"op":"use","name":"y"}]}"""
+            ),
+            "yaml" => compiler.CompileYaml(
+                """
+                definitions:
+                  y:
+                    body:
+                      predicate: elementTrue
+                op: forall
+                var: x
+                in: items
+                operands:
+                  - op: use
+                    name: y
+                """
+            ),
+            _ => RuleBuilder
+                .ForAll("x", "items", RuleBuilder.Use("y"))
+                .WithDefinitions(RuleBuilder.Define("y", RuleBuilder.Predicate("elementTrue")))
+                .Compile(compiler),
+        };
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal("FORALL(x IN items, elementTrue)", result.CompiledRule!.CanonicalText);
+        Decision decision = await result.CompiledRule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.False] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// A definition whose body holds an element-only term, used outside the quantifier, is checked against the outer
+    /// registry and gives the ordinary unknown-predicate diagnostic instead of throwing (ADR-0010 decision 10).
+    /// </summary>
+    [Fact]
+    public void Compile_QuantifierDefinitionUsedOutsideTheBody_ReportsUnknownPredicate_Test()
+    {
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+
+        CompilationResult<QuantifierContext> result = compiler.Compile("let y = elementTrue; FORALL(x IN items, y) AND y");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
     }
 
     private static RuleCompiler<LinesContext> CreateLinesCompiler()
