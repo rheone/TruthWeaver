@@ -42,7 +42,7 @@ The workflow cannot publish until the owner has done these steps.
 | Part | Status |
 | --- | --- |
 | Manual run of `verify` and `pack` | Not run |
-| One-time setup | The `nuget` environment exists (2026-10-18). The NuGet.org policy and `NUGET_USER` are open |
+| One-time setup | The `nuget` environment exists (2026-10-18). `NUGET_USER` is set. The NuGet.org policy is open |
 | Tag run with `publish` and `release` | Not run |
 
 To release with the workflow, do steps 1 and 2 below, then push the tag (step 6). Do not run steps 3 to 5 yourself. The
