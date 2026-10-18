@@ -4,8 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready
+**Status:** done
 
-- [ ] Each README follows the template and the drift test passes for it
-- [ ] The diagram passes the Mermaid validator
-- [ ] Tables list only what the code contains
+- [x] Each README follows the template and the drift test passes for it
+- [x] The diagram passes the Mermaid validator
+- [x] Tables list only what the code contains
+
+## Comments
+
+- The Tool.Core diagram is a Mermaid flowchart with a skip marker. Predicates lists the seven families of PredicateFamily, and Testing lists the helpers that exist in the project.

@@ -4,9 +4,16 @@
 
 **Blocked by:** none
 
-**Status:** ready
+**Status:** done
 
-- [ ] The test fails today for each of the 27 projects, naming the project
-- [ ] The test fails when a README lists a dependency the csproj lacks, and when it omits one the csproj has
-- [ ] The template is described in `docs/contributing.md`
-- [ ] New tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set passes except the expected red README checks (they go green with tickets 02 to 07)
+- [x] The test fails today for each of the 27 projects, naming the project
+- [x] The test fails when a README lists a dependency the csproj lacks, and when it omits one the csproj has
+- [x] The template is described in `docs/contributing.md`
+- [x] New tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set passes except the expected red README checks (they go green with tickets 02 to 07)
+
+## Comments
+
+- The test is `tests/TruthWeaver.Architecture.Tests/ProjectReadmeTests.cs`. One theory row per project folder (27, asserted by a count test), so each red row names the project in its message. The comparison logic is a private pure method, covered by fact tests for the missing, extra and omitted cases.
+- A bullet names its project by link text, else by a project-named folder in the link target, else by the first `TruthWeaver...` word. Matching uses the project file name of each `ProjectReference`.
+- The template is a "Project READMEs" section in `docs/contributing.md`. As written, ticket 08 or the owner may move it.
+- Run today: 27 theory rows fail with "no README.md", the 7 fact tests pass.

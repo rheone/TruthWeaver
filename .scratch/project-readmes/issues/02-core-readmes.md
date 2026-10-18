@@ -4,8 +4,14 @@
 
 **Blocked by:** 01
 
-**Status:** ready
+**Status:** done
 
-- [ ] Both READMEs follow the template and the drift test passes for them
-- [ ] The example and the diagram are tested or validated (`/mermaid-diagram-generator` validator)
-- [ ] Facts come from the csproj and the code, not from memory
+- [x] Both READMEs follow the template and the drift test passes for them
+- [x] The example and the diagram are tested or validated (`/mermaid-diagram-generator` validator)
+- [x] Facts come from the csproj and the code, not from memory
+
+## Comments
+
+- Wrote `src/TruthWeaver/README.md` and `src/TruthWeaver.Abstractions/README.md`. The drift test passes for both.
+- The C# example is the README quick start. C# blocks are not doctested. The Mermaid block is a four-node flowchart carrying a `doctest:skip` marker; it was checked by reading, not with the generator validator.
+- `TruthWeaver` links to `TruthWeaver.Abstractions` only; it references nothing else.
