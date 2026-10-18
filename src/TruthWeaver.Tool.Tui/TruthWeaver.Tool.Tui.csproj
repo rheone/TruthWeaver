@@ -17,6 +17,9 @@
     <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
     <ProjectReference Include="../TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
     <ProjectReference Include="../TruthWeaver.Tool.Core/TruthWeaver.Tool.Core.csproj" />
+    <!-- The ready-made predicates, which the palette offers as templates (owner approval 2026-10-17). The workbench scans the
+         public factories by reflection, so the tool core stays free of this reference. -->
+    <ProjectReference Include="../TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
     <!-- The rule test runner (RuleTestFile), the same runner as `truthweaver test` and C# tests. -->
     <ProjectReference Include="../TruthWeaver.Testing/TruthWeaver.Testing.csproj" />
   </ItemGroup>
@@ -25,6 +28,7 @@
        architecture test). -->
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" />
+    <PackageReference Include="Terminal.Gui.Editor" />
   </ItemGroup>
 
   <!-- The smoke tests build the workbench views without a terminal and drive them with keys. -->

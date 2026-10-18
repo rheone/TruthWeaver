@@ -18,8 +18,8 @@ public sealed class TryFirstConventionTests
         typeof(RuleCompiler<>).Assembly,
         typeof(TruthWeaver.Yaml.YamlRuleExtensions).Assembly,
         typeof(TruthWeaver.Predicates.StringPredicates).Assembly,
-        typeof(TruthWeaver.Testing.DecisionAssertions).Assembly,
-        typeof(TruthWeaver.Tool.Core.RuleLoader).Assembly,
+        typeof(TruthWeaver.Testing.Assertions.DecisionAssertions).Assembly,
+        typeof(TruthWeaver.Tool.Core.Loading.RuleLoader).Assembly,
     ];
 
     /// <summary>Every public OrThrow method in a shipped assembly has a Try sibling on the same type.</summary>

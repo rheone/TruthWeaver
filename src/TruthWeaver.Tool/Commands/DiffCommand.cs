@@ -7,7 +7,10 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Diffing;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// <c>truthweaver diff</c>: the structural changes between two rules, whether they are equivalent under Strong K3, and

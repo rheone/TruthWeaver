@@ -2,7 +2,11 @@ namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 using System.Drawing;
 using Terminal.Gui.Input;
-using TruthWeaver.Tool.Core;
+using Terminal.Gui.ViewBase;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Tui.Panes;
+using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
 /// A workbench window with no terminal: the views are initialized and laid out at a fixed size, the editor has the focus,
@@ -39,6 +43,55 @@ internal sealed class WorkbenchHarness : IDisposable
         foreach (Key key in keys)
         {
             this.Window.NewKeyDownEvent(key);
+        }
+
+        this.Window.Layout(new Size(100, 30));
+    }
+
+    /// <summary>Clicks a view with the left button, as the terminal reports it: a press, then a release and a click.</summary>
+    /// <param name="view">The view.</param>
+    /// <param name="x">The column inside the view.</param>
+    /// <param name="y">The row inside the view.</param>
+    public void Click(View view, int x, int y)
+    {
+        foreach (
+            MouseFlags flags in new[]
+            {
+                MouseFlags.LeftButtonPressed,
+                MouseFlags.LeftButtonReleased,
+                MouseFlags.LeftButtonClicked,
+            }
+        )
+        {
+            _ = view.NewMouseEvent(
+                new Mouse
+                {
+                    Flags = flags,
+                    Position = new Point(x, y),
+                    View = view,
+                }
+            );
+        }
+
+        this.Window.Layout(new Size(100, 30));
+    }
+
+    /// <summary>Turns the mouse wheel over a view.</summary>
+    /// <param name="view">The view.</param>
+    /// <param name="down"><see langword="true"/> to turn it down; <see langword="false"/> for up.</param>
+    /// <param name="steps">The number of wheel steps.</param>
+    public void Wheel(View view, bool down, int steps = 1)
+    {
+        for (int i = 0; i < steps; i++)
+        {
+            _ = view.NewMouseEvent(
+                new Mouse
+                {
+                    Flags = down ? MouseFlags.WheeledDown : MouseFlags.WheeledUp,
+                    Position = new Point(1, 1),
+                    View = view,
+                }
+            );
         }
 
         this.Window.Layout(new Size(100, 30));

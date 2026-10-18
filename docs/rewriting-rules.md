@@ -397,7 +397,7 @@ NOT IsTrue(isDineIn) OR NOT isTakeout
 | --- | --- |
 | `Equivalent` | Same value for every `True`/`False`/`Unknown` assignment of the terms. |
 | `NotEquivalent` | Some assignment differs. `CounterExample` maps every distinct term in either rule (keyed by its printed form, such as `hasRole(role: "Y")`) to the value it takes. |
-| `Undecided` | The rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms` (default 20). `Reason` says so. Nothing is guessed. |
+| `Undecided` | The rules have more distinct terms between them than `CompilerOptions.MaxAnalysisTerms` (default 20), or their shared BDD would grow past the [node budget](#the-node-budget). `Reason` says which. Nothing is guessed. |
 
 A quantifier (`FORALL`/`EXISTS`) compares as an opaque atom, keyed by its own canonical text (the variable, the collection and the body together): two rules with the same quantifier text compare correctly, but two quantifiers with equivalent yet differently written bodies count as different atoms. The check is still sound; it is incomplete across such rewordings.
 
@@ -438,7 +438,7 @@ Limits to know:
 | `Looser` | Every assignment that satisfies `before` satisfies `after`. Some assignment satisfies only `after`. | `SatisfiesOnlyAfter` |
 | `Overlapping` | Some assignment satisfies both rules, and each rule has an assignment that satisfies only it. | Both |
 | `Disjoint` | No assignment satisfies both rules, and each rule is satisfied by some assignment. | Both |
-| `Undecided` | The rules have more distinct terms between them than the term cap. `Reason` says so. | None. |
+| `Undecided` | The rules have more distinct terms between them than the term cap, or their shared BDD would grow past the [node budget](#the-node-budget). `Reason` says which. | None. |
 
 The term cap is the optional `maxAnalysisTerms` argument of `Implies` and `Compare`. When it is `null`, the cap is `CompilerOptions.Default.MaxAnalysisTerms` (20). The options of the compiler that compiled the rules do not apply.
 
@@ -486,4 +486,84 @@ Limits to know:
 
 - **External operators need an `Unknown` example.** `IsUnknown(a)` and `b` can both be `True` only when `a` is `Unknown`; the witness for that pair must then set `a` to `Unknown`. For rules built only from connectives, every reachable pair where neither side is `Unknown` has a witness with no `Unknown` term at all, because connectives are monotone in the information order: refining an `Unknown` term to `True` or `False` never flips a definite result. `RuleOverlap` prefers such a witness when one exists, and otherwise uses one that needs an `Unknown` term.
 - **Terms are opaque and independent, the cap is on distinct terms across both rules**, and the check does not compare evaluation order, short-circuiting or faults: the same limits as `RuleEquivalence` and `RuleImplication`. The term cap is the optional `maxAnalysisTerms` argument; `null` uses `CompilerOptions.Default.MaxAnalysisTerms` (20).
-- **Pairwise only.** `RuleOverlap.Compare` compares two rules. A rule set's redundancy, shadowing, or a caller-supplied assumption between terms are set-level questions outside this check's scope.
+- **Pairwise only.** `RuleOverlap.Compare` compares two rules. To compare every pair of a group of rules at once, and to find redundant or shadowed rules, use [rule set analysis](#rule-set-analysis).
+- **A node budget.** The check returns `Undecided` when the shared BDD of the two rules would grow past the [node budget](#the-node-budget).
+
+## Rule set analysis
+
+`RuleSetAnalysis.Analyze(rules)` analyzes a group of peer rules at once. It gives three answers:
+
+- **The pairwise sweep.** The joint-outcome table of every pair of rules, the same answer `RuleOverlap.Compare` gives for each pair.
+- **Redundancy.** For each rule, whether the other rules cover it, and one group of rules that you can remove together.
+- **Shadowing.** For each rule, whether the rules before it always block it when the list is read in order as "the first rule that applies wins".
+
+The input is an `IReadOnlyList<CompiledRule<TContext>>` or a `RuleSet<TContext>`. A `RuleSet<TContext>` is an immutable copy of a list of rules. It has no combining behavior and does not evaluate. To combine rules into one decision, use a [policy set](policies.md). The analysis identifies a rule by its index in the list, because TruthWeaver has no rule names. Your application maps the indexes to its own names.
+
+```csharp
+RuleSetAnalysisResult result = RuleSetAnalysis.Analyze(new[]
+{
+    compiler.Compile("isManager").GetRuleOrThrow(),
+    compiler.Compile("isManager AND isDepartmentHead").GetRuleOrThrow(),
+    compiler.Compile("isAuditor").GetRuleOrThrow(),
+    compiler.Compile("isAuditor").GetRuleOrThrow(),
+});
+// result.Outcome == RuleSetAnalysisOutcome.Decided
+// result.Rules[0].IsRedundant == false; rules 1, 2 and 3 are redundant
+// result.RemovableTogether is [1, 3]: rules 2 and 3 cover each other, so only one of them can go
+// result.FindPair(0, 1).Overlap.CanOverlap == true
+// result.Shadowing[1].IsShadowed == true: rule 0 is True wherever rule 1 is True
+// result.Shadowing[3].IsShadowed == true: rule 2 is True wherever rule 3 is True
+```
+
+The rules are built once, on one shared dual-rail BDD. The answers are exact, the same as for the other checks on this page.
+
+### Redundancy
+
+Redundancy uses the "any grants" reading: the group is satisfied when one or more of its rules is `True`. A rule is **redundant** when every assignment that makes it `True` also makes some other rule `True`. If you remove only that rule, the group is satisfied by the same assignments as before.
+
+`RuleSetAnalysisResult.Rules` has one `RuleRedundancy` for each rule, in index order:
+
+| Member | Meaning |
+| --- | --- |
+| `Index` | The index of the rule in the input list. |
+| `IsRedundant` | `true` when the other rules cover this rule. This is a proof. |
+| `Example` | When the rule is not redundant, an assignment where this rule is `True` and no other rule is `True`. It shows what only this rule lets in. This is a candidate only. It is `null` for a redundant rule. |
+
+Redundancy is a property of one rule, given all the other rules. Two redundant rules can cover each other, so you cannot always remove both. In `[isManager, isManager AND isDepartmentHead, isAuditor, isAuditor]`, rules 1, 2 and 3 are each redundant, but if you remove both `isAuditor` rules, nothing lets an auditor in. `RemovableTogether` gives the indexes of one group of rules that you can remove at the same time. The analysis walks the list from the last rule to the first, and it removes a rule when the rules that it still keeps cover that rule. The group is correct, but it is not always the largest possible group.
+
+### Shadowing
+
+Shadowing reads the list in order, as "the first rule that applies wins", the same as the `FirstApplicable` algorithm of a [policy set](policies.md). The walk stops at the first rule that is not `False`. A rule that is `True` decides, and a rule that is `Unknown` also stops the walk, because the walk never skips an `Unknown` rule. So an earlier rule that is `True` or `Unknown` blocks every later rule. A rule is **shadowed** when, for every assignment that makes it `True`, some earlier rule is `True` or `Unknown`. The walk then never reaches the rule with its own `True`.
+
+`RuleSetAnalysisResult.Shadowing` has one `RuleShadowing` for each rule, in index order:
+
+| Member | Meaning |
+| --- | --- |
+| `Index` | The index of the rule in the input list. |
+| `IsShadowed` | `true` when the earlier rules always block this rule. This is a proof. |
+| `Example` | When the rule is not shadowed, an assignment where this rule is `True` and every earlier rule is `False`. It shows where the walk reaches this rule and the rule decides. This is a candidate only. It is `null` for a shadowed rule. |
+
+An earlier rule that is never `False` blocks every later rule, even when it is not always `True`. In `[a OR NOT a, b]`, the first rule is `Unknown` when `a` is `Unknown`, and `True` for every other value of `a`, so rule 1 is shadowed. Shadowing depends on the order: in `[b, a OR NOT a]`, no rule is shadowed. A rule that is never `True` is shadowed, also at index 0, because it never decides with its own `True`.
+
+Shadowing and redundancy answer different questions. Redundancy reads the group as "any grants" and looks at every other rule. Shadowing reads the list in order and looks only at the earlier rules, and an earlier `Unknown` rule counts as a block.
+
+### The pairwise sweep
+
+`RuleSetAnalysisResult.Pairs` has one `RuleSetPair` for each unordered pair of rules: `First` (the smaller index), `Second` and `Overlap`, a `RuleOverlapResult`. The pairs are in index order, so n rules give n(n-1)/2 entries. `FindPair(first, second)` finds one pair, in either order. Each example names only the terms of its two rules. The rules for [overlap and conflict](#overlap-and-conflict) apply to each pair without change. A pair that is not reachable is a proof, and a reachable pair is a candidate.
+
+### Outcomes and limits
+
+| `Outcome` | Meaning |
+| --- | --- |
+| `Decided` | All answers are present. |
+| `Undecided` | The rules have more distinct terms between them than the term cap, or the shared BDD of the group would grow past the [node budget](#the-node-budget). `Rules`, `RemovableTogether` and `Shadowing` are empty. `Pairs` is still present: each pair is checked on its own, with the term cap counted over its two rules and its own node budget, and has its own `Outcome`. `Reason` says why. |
+| `TooManyRules` | The group has more rules than the rule cap. The analysis did not start, and every list is empty. `Reason` says why. |
+
+- **The rule cap** is the optional `maxRules` argument. `null` uses `RuleSetAnalysis.DefaultMaxRules` (50). The number of pairs grows with the square of the number of rules.
+- **The term cap** is the optional `maxAnalysisTerms` argument. `null` uses `CompilerOptions.Default.MaxAnalysisTerms` (20). It counts the distinct terms of the whole group for redundancy and shadowing, and the distinct terms of each pair for that pair. A group of many rules usually has more distinct terms than one rule, so a large group can be `Undecided` with the default cap.
+- **No exception for a limit.** A limit gives an outcome and a `Reason`. Only a `null` list, a `null` rule or a `maxRules` value below 1 throws.
+- **The other limits are the same as for the checks above.** Terms are opaque and independent, no predicate runs, and the analysis does not compare evaluation order, short-circuiting or faults.
+
+## The node budget
+
+`RuleEquivalence`, `RuleImplication`, `RuleOverlap` and `RuleSetAnalysis` build their BDD with an internal budget of 100,000 decision nodes. The size of a BDD depends on the shape of the rules and on the order of their terms, not only on the number of terms. A small number of terms can still make a very large BDD. The budget makes sure that a check stops in a bounded time. When a build would grow past the budget, the check stops and returns its `Undecided` outcome with a `Reason` that names the budget. It does not throw. The budget is not an option. `RuleDiff.Compare` reads a stopped check the same way as a term cap: `PreservesMeaning` is `null` and `Relation` is `Undecided`.

@@ -31,6 +31,9 @@ public enum RuleRelation
     /// <summary>No assignment satisfies both rules, and each rule is satisfied by some assignment.</summary>
     Disjoint,
 
-    /// <summary>The check was not run because the rules have more distinct terms than the configured cap.</summary>
+    /// <summary>
+    /// No verdict was reached: the rules have more distinct terms than the configured cap, or their shared BDD would
+    /// exceed the internal node budget. The result's <c>Reason</c> says which.
+    /// </summary>
     Undecided,
 }

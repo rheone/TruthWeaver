@@ -29,7 +29,8 @@ public static class RuleImplication
     /// <returns>
     /// <see cref="RuleImplicationOutcome.Holds"/>, <see cref="RuleImplicationOutcome.DoesNotHold"/> with a counter-example,
     /// or <see cref="RuleImplicationOutcome.Undecided"/> when the rules have more distinct terms than
-    /// <paramref name="maxAnalysisTerms"/>. It never throws for a normal rule.
+    /// <paramref name="maxAnalysisTerms"/> or their shared BDD would exceed the internal node budget. It never throws
+    /// for a normal rule.
     /// </returns>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     public static RuleImplicationResult Implies<TContext>(
@@ -47,9 +48,16 @@ public static class RuleImplication
             return new RuleImplicationResult(RuleImplicationOutcome.Undecided, null, reason);
         }
 
-        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyFirst = Analyzer
-            .CompareSatisfaction(first.Root, second.Root)
-            .OnlyLeft;
+        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyFirst;
+        try
+        {
+            onlyFirst = Analyzer.CompareSatisfaction(first.Root, second.Root).OnlyLeft;
+        }
+        catch (BddNodeBudgetExceededException exception)
+        {
+            return new RuleImplicationResult(RuleImplicationOutcome.Undecided, null, exception.Message);
+        }
+
         return onlyFirst is null
             ? new RuleImplicationResult(RuleImplicationOutcome.Holds, null, null)
             : new RuleImplicationResult(RuleImplicationOutcome.DoesNotHold, Printed(onlyFirst), null);
@@ -66,7 +74,8 @@ public static class RuleImplication
     /// <returns>
     /// The relation of <paramref name="after"/> to <paramref name="before"/>, with an example assignment for each side that
     /// only one rule accepts, or <see cref="RuleRelation.Undecided"/> when the rules have more distinct terms than
-    /// <paramref name="maxAnalysisTerms"/>. It never throws for a normal rule.
+    /// <paramref name="maxAnalysisTerms"/> or their shared BDD would exceed the internal node budget. It never throws
+    /// for a normal rule.
     /// </returns>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     public static RuleRelationResult Compare<TContext>(
@@ -84,11 +93,17 @@ public static class RuleImplication
             return new RuleRelationResult(RuleRelation.Undecided, null, null, reason);
         }
 
-        (
-            IReadOnlyDictionary<TermIdentity, TruthValue>? onlyBefore,
-            IReadOnlyDictionary<TermIdentity, TruthValue>? onlyAfter,
-            bool shared
-        ) = Analyzer.CompareSatisfaction(before.Root, after.Root);
+        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyBefore;
+        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyAfter;
+        bool shared;
+        try
+        {
+            (onlyBefore, onlyAfter, shared) = Analyzer.CompareSatisfaction(before.Root, after.Root);
+        }
+        catch (BddNodeBudgetExceededException exception)
+        {
+            return new RuleRelationResult(RuleRelation.Undecided, null, null, exception.Message);
+        }
 
         // The subset checks come first, so a rule that is never True is tighter (or equivalent), not disjoint.
         RuleRelation relation = (onlyBefore, onlyAfter) switch

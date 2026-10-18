@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 using System.Diagnostics.CodeAnalysis;
+using TruthWeaver.Tool.Tui.Hosting;
 
 /// <summary>A clipboard held in memory.</summary>
 internal sealed class ScriptedClipboard : IClipboardAccess

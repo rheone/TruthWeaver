@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Export;
+using TruthWeaver.Tool.Core.Reports;
 
 /// <summary><c>truthweaver report</c>: the Markdown report of a rule.</summary>
 internal static class ReportCommand

@@ -1,7 +1,8 @@
 namespace TruthWeaver.Tool.Tests;
 
 using System.Runtime.Versioning;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Export;
 using TruthWeaver.Tool.Tests.TestSupport;
 
 public sealed class ExportCommandTests

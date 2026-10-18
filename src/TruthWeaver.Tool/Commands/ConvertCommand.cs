@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
 using TruthWeaver.Compilation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary><c>truthweaver convert</c>: rule text, JSON and YAML to each other, with the notes kept.</summary>
 internal static class ConvertCommand

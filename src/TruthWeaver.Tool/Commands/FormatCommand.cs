@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary><c>truthweaver format</c>: print a rule in its own format, canonical or pretty, or check that it already is.</summary>
 internal static class FormatCommand

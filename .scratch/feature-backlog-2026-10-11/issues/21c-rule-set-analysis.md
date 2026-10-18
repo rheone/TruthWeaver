@@ -11,12 +11,37 @@
 - Redundancy reports per rule plus one greedy removable set.
 - An internal BDD node budget, also applied to ticket 13 and `RuleEquivalence`, returns `Undecided` with a reason.
 - Assumptions between terms are an optional argument added after slice 1.
-- Shadowing waits for ticket 07 to decide how an `Unknown` rule combines.
+- Shadowing waits for ticket 07 to decide how an `Unknown` rule combines. Decided 2026-10-18 (owner): a rule is shadowed when an earlier rule that is `True` or `Unknown` always blocks it, consistent with ADR-0015. Shadowing is built in a later task.
 
 **Blocked by:** 21b-2, and 07 for shadowing only (the redundancy and pairwise-sweep parts could go first if the owner splits them).
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** ready (owner decision 2026-10-17: approved; 21b-2 is done)
 
-- [ ] Scope reconfirmed with the owner when ticket 07 is grilled
-- [ ] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Scope reconfirmed with the owner when ticket 07 is grilled (2026-10-18: shadowing reads "blocked by True or Unknown"; the shadowing implementation is not built yet and stays open)
+- [x] Shadowing implemented with the "blocked by True or Unknown" reading, documented and tested
+- [x] The pages that describe the behavior are written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+
+## Comments
+
+2026-10-18, redundancy and pairwise sweep built; shadowing not built.
+
+- **Shadowing is out of this change.** It stays out until the owner reconfirms scope (first checkbox). Ticket 07 is now done, and ADR-0015 decision 5 says `FirstApplicable` never skips an `Unknown` policy. That matches the design note's "blocked by `True` or `Unknown`" reading, but the owner has not confirmed that this reading carries over to `RuleSetAnalysis`. Open question for the owner: build shadowing with that reading, take the reading as a parameter, or leave it out.
+- **Public API** (`TruthWeaver.Analysis`): `RuleSet<TContext>` (implements `IReadOnlyList<CompiledRule<TContext>>`, copies its input, rejects a `null` rule), `RuleSetAnalysis.Analyze(IReadOnlyList<CompiledRule<TContext>>, int? maxAnalysisTerms = null, int? maxRules = null)` and the same with a `RuleSet<TContext>`, `RuleSetAnalysis.DefaultMaxRules` (50), `RuleSetAnalysisResult` (`Outcome`, `Pairs`, `Rules`, `RemovableTogether`, `Reason`, `FindPair`), `RuleSetAnalysisOutcome` (`Decided`, `Undecided`, `TooManyRules`), `RuleSetPair` (`First`, `Second`, `Overlap` as a `RuleOverlapResult`), `RuleRedundancy` (`Index`, `IsRedundant`, `Example`).
+- **Redundancy reading.** Only "any grants" (the set holds when any rule is `True`) is built. The design note's "all required" reading is not built, because nothing asked for it and ticket 07's algorithms do not use it. No reading parameter yet.
+- **A pair reuses `RuleOverlapResult`**, so a pair can be `Undecided` on its own. A pair's examples are narrowed to the terms of its two rules, so they look like `RuleOverlap.Compare` output.
+- **Term cap or node budget over the set (conservative choice, design note section 5).** `Undecided`, with `Rules` and `RemovableTogether` empty. The pairs are still computed one at a time with `RuleOverlap.Compare`, each with the term cap counted over its pair and its own node budget. `TooManyRules` computes nothing.
+- **`maxRules` below 1** throws `ArgumentOutOfRangeException` (programming error, like a `null` rule). A set over the cap does not throw.
+- **Redundant rule example.** A rule that is not redundant carries one assignment where it alone is `True`. The covering indexes of a redundant rule (design note sketch) are not reported, because a minimal covering set costs extra BDD work and the ticket did not ask for it.
+- **Node budget.** `BddManager.DefaultMaxBddNodes` (100,000) is applied in `Analyzer.FindDifference`, `CompareSatisfaction`, `JointOutcomes` and `AnalyzeSet`. These are the only analyzer methods that `RuleEquivalence`, `RuleImplication`, `RuleOverlap` and `RuleSetAnalysis` call, and each public entry point catches `BddNodeBudgetExceededException` and returns its `Undecided` outcome with the exception message as `Reason`. `RuleDiff`, `RewritePlayground`, `RuleStatistics`, `RuleAssertions` and `RewriteAssertions` call those public entry points, so the exception cannot reach them. Compile-time analysis, `Profile`, `BddNodeCount` and `TargetFunction` (counterfactuals) keep a manager with no budget, as `BddManager`'s parameterless constructor says. The budget is internal and not an option; `RuleSetAnalysis.AnalyzeCore` takes it as a parameter for tests only. `BddNodeBudgetExceededException` now derives from `InvalidOperationException` (Sonar S3871 rejects an internal exception that derives from `Exception` directly).
+- **Docs.** New "Rule set analysis" and "The node budget" sections in `docs/rewriting-rules.md`, a row in `docs/architecture.md`, two `CHANGELOG.md` entries. Not done: glossary or `CONTEXT.md` entries for "redundant rule" or "rule set". The page defines them. Add them if the owner wants them as domain terms.
+- **Assumptions between terms** are still not built (owner decision: after slice 1, optional argument).
+- 2026-10-18 owner decision: shadowing reads "an earlier `True` or `Unknown` rule always blocks it" (ADR-0015 decision 5). This answers the open question above: no reading parameter, not left out. Full validation passed on the combined result for the part already built.
+
+2026-10-18, shadowing built.
+
+- **Public API:** new `RuleShadowing` (`Index`, `IsShadowed`, `Example`) and `RuleSetAnalysisResult.Shadowing`, a positional parameter before `Reason` (constructor break, recorded in `CHANGELOG.md`). No reading parameter.
+- **Reading:** rule *j* is shadowed when `True(Rj)` AND every earlier rule `False` is empty, i.e. its definitely-true rail is inside the `OR` of the possibly-true rails of the earlier rules. A rule that is never `True` is shadowed, also at index 0 (same convention as redundancy for a never-true rule). A rule that can only be reached as `Unknown` counts as shadowed: the design note's reading is "wherever *j* is `True`".
+- **Example:** a rule that is not shadowed carries an assignment where it is `True` and every earlier rule is `False`. Covering (shadowing) indexes are not reported, for the same reason as for redundancy.
+- **Limits:** computed in `Analyzer.AnalyzeSet` on the same shared BDD, so the term cap and node budget apply as for redundancy; empty for `Undecided` and `TooManyRules`.
+- **Docs:** "Shadowing" section in `docs/rewriting-rules.md` (the "No shadowing" limit is removed), the `docs/architecture.md` row and the `src/TruthWeaver/README.md` row. Tests in `RuleSetAnalysisTests` (design note example, `Unknown` earlier rule, order and never-true, K3 oracle, budget and term-cap paths).

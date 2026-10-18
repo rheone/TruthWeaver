@@ -12,6 +12,9 @@ public enum RuleImplicationOutcome
     /// </summary>
     DoesNotHold,
 
-    /// <summary>The check was not run because the rules have more distinct terms than the configured cap.</summary>
+    /// <summary>
+    /// No verdict was reached: the rules have more distinct terms than the configured cap, or their shared BDD would
+    /// exceed the internal node budget. The result's <c>Reason</c> says which.
+    /// </summary>
     Undecided,
 }

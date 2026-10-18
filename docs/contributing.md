@@ -111,7 +111,10 @@ is in `Directory.Packages.props`. Only projects that pack get MinVer.
 | Any commit, with a tag below `v1.0` | `1.0.0-preview.0.N` (`MinVerMinimumMajorMinor` is `1.0`) |
 
 To make a release version, put a tag with the prefix `v` on the commit, for example `v1.0.0`. A tag without the prefix
-is ignored. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
+is ignored. To make an alpha version, add a pre-release suffix with the UTC date and time in basic ISO 8601 form, for
+example `v1.0.0-alpha.20261018T201500Z`. A colon is not valid in a version or a tag, so the basic form is used, and the
+suffixes sort in time order. The release workflow marks a tag with a hyphen as a pre-release and the tag must be on a
+commit in `main`. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
 
 MinVer needs the tags and the commit history. CI checks out with `fetch-depth: 0` for this reason. In a shallow clone
 the version is wrong. After `git clone --depth`, run `git fetch --unshallow --tags`.
@@ -203,6 +206,27 @@ dotnet run scripts/format-data-staged.cs
 dotnet run scripts/format-all.cs
 dotnet run scripts/format-all.cs -- --check-only
 ```
+
+## Project READMEs
+
+Every project under `src/` and `tests/` has a `README.md` in its folder. The README states the purpose of the project and
+its direct TruthWeaver dependencies. Use these sections, in this order:
+
+| Section | Content | Required for |
+| --- | --- | --- |
+| `# <ProjectName>` | The project name and one sentence. | Every project |
+| `## Purpose` | What the project is for. | Every project |
+| `## Use` | How to use it: install, first run and a command or key table for the tools; a compile-and-evaluate example for the core library. | `TruthWeaver`, `TruthWeaver.Tool`, `TruthWeaver.Tool.Tui` |
+| `## Depends on` | One bullet for each direct `ProjectReference`: a link to the README of that project and half a sentence on why. | Every project |
+| `## Key types` | The main public types. | `src/` projects |
+| `## Notes` | A gotcha that a reader needs to know. | Only when one exists |
+
+A project with no `ProjectReference` holds the single line `No TruthWeaver packages.` under `## Depends on`. List a new
+reference only after the change that adds it has landed.
+
+`TruthWeaver.Architecture.Tests` checks the rule (`ProjectReadmeTests`). It fails for a project that has no README. It also
+fails when the `## Depends on` bullets differ from the `ProjectReference` items of the project file, and the failure names
+the project. A bullet names its project by the link text or the link target.
 
 ## Releasing
 

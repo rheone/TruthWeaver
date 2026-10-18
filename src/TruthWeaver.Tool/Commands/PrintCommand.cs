@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Export;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary><c>truthweaver print</c>: one artifact of a rule on standard output.</summary>
 internal static class PrintCommand

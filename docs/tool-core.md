@@ -2,6 +2,8 @@
 
 `TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, writes edited rules back into their documents, validates them, measures them, exports them as artifacts and reports, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
 
+The types are in one namespace for each folder of the project, `TruthWeaver.Tool.Core.<Folder>`. The [project README](../src/TruthWeaver.Tool.Core/README.md) lists the folders.
+
 The front ends parse options and draw output. The behavior is in this library, so the command line and the terminal UI behave the same way. The library is not a NuGet package (see [Packaging](#packaging)).
 
 ## Operations
@@ -113,13 +115,16 @@ The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive
 | `Create(text, format, settings)` | Makes a document with no file. The default is an empty rule text. |
 | `Open(path, settings)` | Reads a file with `RuleLoader` and finds its format. A file that is read but does not compile still opens, with its diagnostics. A file that cannot be read gives the diagnostics and no document. |
 | `SetText(text)` | Replaces the text and compiles it. The change is one undo step and clears the redo steps. The same text changes nothing. |
+| `Check(text, format)`, `SetText(checkedText)` | `Check` compiles text without changing the document and returns a `CheckedText`; any thread may call it. `SetText(checkedText)` applies that result as `SetText(text)` does, without a second compile. A front end uses the pair to compile off its UI thread. |
 | `Diagnostics` | The diagnostics of the current text. Their spans point into `Text`. |
+| `Definitions` | The `let` definitions and uses of the current text, read without expansion ([`RuleDefinitions`](rule-text.md#read-the-definitions-of-a-document)). It is read again after each change. |
 | `Rule`, `IsRuleCurrent` | The last rule that compiled. When the current text has an error, `IsRuleCurrent` is `false` and `Rule` stays the rule of an earlier text. `Rule` is `null` until a text compiles. |
 | `Undo()`, `Redo()`, `CanUndo`, `CanRedo` | Move through the history of text and format. The document keeps the last 1000 steps (`UndoLimit`). |
-| `FormatText(pretty)` | Formats the text in its own format as one undo step: canonical (one line for rule text and JSON) or pretty (rule text at most 80 characters wide, JSON indented by two spaces). YAML is one node on each line in both forms. Rule text uses the operator style of the settings. Text with an error does not change, and the result holds the diagnostics. |
+| `FormatText(pretty)` | Formats the text in its own format as one undo step: canonical (one line for rule text and JSON) or pretty (rule text at most 80 characters wide, JSON indented by two spaces). YAML is one node on each line in both forms. Rule text uses the operator style of the settings. The `let` definitions of the text stay. Text with an error does not change, and the result holds the diagnostics. |
 | `Save(path)` | Writes the file as `OutputWriter` does. The extension selects the format (`.rule`, `.tw`, `.txt`, `.json`, `.yaml`, `.yml`); another extension keeps the format. A save in another format converts the rule first, as one undo step, and needs text that compiles. |
-| `ConvertTo(format)` | Converts the text to rule text, JSON or YAML as one undo step. The tree and the notes stay; the layout, the spelling and YAML comments do not. Text with an error does not change. |
+| `ConvertTo(format)` | Converts the text to rule text, JSON or YAML as one undo step. The tree, the notes and the `let` definitions stay (a `definitions` section and `use` nodes in JSON and YAML); the layout, the spelling and YAML comments do not. A save in another format converts the same way. Text with an error does not change. |
 | `ReplaceRule(rule)` | Puts a compiled rule in place of the text, as one undo step: a structural edit or an accepted rewrite. The rule is printed in the format of the document with its notes, pretty when the text has more than one line and canonical otherwise. The printed text must compile with the limits of the settings, or the text does not change and the result holds the diagnostics. |
+| `ApplyEdit(edit)` | Puts the result of a structural edit in place of the text, as one undo step. An edit with a `Document` (a rule with `let` definitions) is printed with its definitions and uses; any other edit is put in as `ReplaceRule` puts a rule. The layout and the compile check are those of `ReplaceRule`. |
 | `MarkSaved()` | Makes the current text the saved text. A front end calls it after it wrote the rule somewhere else, such as into a larger document. |
 | `IsDirty`, `Path`, `Changed` | Unsaved changes, the full path of the file, and the event after each change of the text, format, path or saved state. |
 
@@ -129,9 +134,11 @@ The document compiles with the permissive compiler of [Compiling and converting]
 
 `RuleTree`, `RuleTreeEditor` and `RulePalette` are the model of a structural editor, such as the Tree pane of the [terminal UI](tui.md#structural-editing).
 
-`RuleTree.Of(rule, settings)` lists the nodes of a compiled rule in tree order. Each `RuleTreeNode` has a `Path`, a `Depth`, a `Kind` (`Constant`, `Term` or `Operator`), a `Label`, an `OperandCount`, its `Literals` (the values that an edit can change, as JSON) and its `Note`. The path is the path of the node in the JSON tree format, the same form as the keys of `CompiledRule.Notes`: `$` is the root and `$.operands[1]` is its second operand. `TextOf(path)` gives the rule text of a node with its notes, which compiles back to the same subtree.
+`RuleTree.Of(rule, settings, definitions)` lists the nodes of a compiled rule in tree order. Each `RuleTreeNode` has a `Path`, a `Depth`, a `Kind` (`Constant`, `Term`, `Operator`, `Definition`, `Use` or `Parameter`), a `Label`, an `OperandCount`, its `Literals` (the values that an edit can change, as JSON), its `Note` and its `Uses`. The path is the path of the node in the JSON tree format, the same form as the keys of `CompiledRule.Notes`: `$` is the root and `$.operands[1]` is its second operand. `TextOf(path)` gives the rule text of a node of the rule with its notes, which compiles back to the same subtree.
 
-`RuleTreeEditor` takes a compiled rule and the settings. Each edit names a node by its path and returns a `RuleTreeEdit`: the edited rule, the path of the node to select next and a message, or no rule, the reason and the compiler diagnostics.
+`definitions` is optional: the `RuleDefinitions` of the text that the rule was compiled from (`RuleDocument.Definitions`). With them, a node of the rule that a use expands to has the use in `Uses` (such as `both(a, b)`) and in front of its label, and each definition follows the rule: a `Definition` node at `$.definitions.name` labeled `let name(parameters)`, then its body, where a parameter is a `Parameter` node and a use is a `Use` node with its arguments as operands. `Definitions` gives them back.
+
+`RuleTreeEditor` takes a compiled rule, the settings and the optional definitions. Each edit names a node by its path and returns a `RuleTreeEdit`: the edited rule, the path of the node to select next and a message, or no rule, the reason and the compiler diagnostics. With definitions, an edit changes the source of the node and keeps the definitions: `ReplaceOperator`, `ChangeLiteral` and `InsertOperand` change the node that holds the operator (the body of the definition for an expanded use), `WrapInNot`, `Negate` and `Replace` change the outermost source (the use itself at the root of an expanded use), and `Delete` and `Swap` change the operands of the parent. A node in the place of a parameter changes the argument of that use. A node with a `$.definitions` path is changed in place; the entry of a definition itself and a literal on a parameter are refused. The edited document must compile, so an edit that would break a definition is refused. `RuleTreeEdit.Document` holds the edited document in the JSON tree format with its definitions, and an expression in rule text may use the definitions.
 
 | Edit | Behavior |
 | --- | --- |
@@ -144,15 +151,15 @@ The document compiles with the permissive compiler of [Compiling and converting]
 | `Replace(path, expression)` | Puts an expression in place of the node. |
 | `ChangeLiteral(path, name, value)` | Changes `const` of a constant, an argument of a term (a new name adds it, an empty value removes it), or `k`, `min` or `max` of an operator. The value is JSON; text that is not JSON is a string. |
 
-An expression is rule text, JSON or YAML; its content selects the format. An expression that does not compile is refused with its diagnostics. Every edit compiles the result with the permissive compiler and the limits of the settings, and a result that does not compile is refused: the rule never changes. The notes of the nodes that an edit keeps stay on those nodes. `RuleDocument.ReplaceRule` puts an edited rule into the document.
+An expression is rule text, JSON or YAML; its content selects the format. An expression that does not compile is refused with its diagnostics. Every edit compiles the result with the permissive compiler and the limits of the settings, and a result that does not compile is refused: the rule never changes. The notes of the nodes that an edit keeps stay on those nodes. `RuleDocument.ApplyEdit` puts an edit into the document.
 
-`RulePalette.Create(rule, schema)` lists the operators, the constants, the predicates of a [predicate schema file](#predicate-schema-file) and the predicates of the rule (with the values of their first use as defaults). A `PaletteEntry` has a `Source`, a `Name`, a `Description` and its `Arguments` (`PaletteArgument`: name, `LiteralKind`, required, default, description). `RulePalette.Fill(entry, values, settings)` makes the rule text of a constant or of a call of a predicate with the values of a form, or gives the diagnostics when the call does not compile.
+`RulePalette.Create(rule, schema, definitions)` lists the operators, the constants, the predicates of a [predicate schema file](#predicate-schema-file), the predicates of the rule (with the values of their first use as defaults) and, when `definitions` is given, each `let` definition (source `Definition`, its parameters as arguments). A `PaletteEntry` has a `Source`, a `Name`, a `Description` and its `Arguments` (`PaletteArgument`: name, `LiteralKind`, required, default, description). `RulePalette.Fill(entry, values, settings)` makes the rule text of a constant or of a call of a predicate with the values of a form, or gives the diagnostics when the call does not compile. For a definition it makes the use, `name(value, ...)`, without a compile: only the document that has the definition can compile it.
 
 ## Rewrites
 
 `RewritePlayground` applies the rewrites of the library to a compiled rule and does not change it, so a front end can show the result before the author accepts it.
 
-`RewritePlayground.Preview(rule, kind, settings)` applies one `RuleRewriteKind`: `Simplify` (with `SimplifyWithSteps`), `Canonicalize`, `NegationNormalForm` (`ToNnf`), `ConjunctiveNormalForm` (`ToCnf`), `DisjunctiveNormalForm` (`ToDnf`), `Compress` (`CompressToDerived`), `ExpandToPrimitives` or `OptimizeOrder`. `MaxRewriteNodeCount` of the settings caps the normal forms and the expansion. The `RewritePreview` holds the rule before and after (`After` is `null` when the rewrite gives no rule, such as for `TRE0016`), the steps of `Simplify`, the diagnostics of the rewrite, `Changed` (the tree after differs from the tree before), and the rule text and the plain text tree before and after. `RewritePlayground.NameOf(kind)` gives the name of the library method. A front end puts an accepted result into the document with `RuleDocument.ReplaceRule`.
+`RewritePlayground.Preview(rule, kind, settings)` applies one `RuleRewriteKind`: `Simplify` (with `SimplifyWithSteps`), `Canonicalize`, `NegationNormalForm` (`ToNnf`), `ConjunctiveNormalForm` (`ToCnf`), `DisjunctiveNormalForm` (`ToDnf`), `Compress` (`CompressToDerived`), `ExpandToPrimitives` or `OptimizeOrder`. `MaxRewriteNodeCount` of the settings caps the normal forms and the expansion. The `RewritePreview` holds the rule before and after (`After` is `null` when the rewrite gives no rule, such as for `TRE0016`), the steps of `Simplify`, the diagnostics of the rewrite, `Changed` (the tree after differs from the tree before), and the rule text and the plain text tree before and after. `RewritePlayground.NameOf(kind)` gives the name of the library method. A rewrite returns a rule with no notes. `RewritePlayground.CarryNotes(before, after, settings)` puts the notes back: a note stays when the node at its path has the same subtree after the rewrite, and the `NotedRewrite` it returns holds the rule with those notes and the number of notes it dropped. A front end puts an accepted result into the document with `RuleDocument.ReplaceRule`.
 
 `RewritePlayground.Compare(earlier, current, settings)` gives a `RuleComparison`: `Equivalence` from `RuleEquivalence.Compare` and `Relation` (equivalent, tighter, looser, overlapping, disjoint) from `RuleImplication.Compare`. Both stop at `MaxAnalysisTerms` of the settings distinct terms across the two rules, and are then undecided.
 
@@ -308,6 +315,7 @@ The patcher reads every result back and compiles it. When the result does not co
   "operatorStyle": "symbolic",
   "constantStyle": "letters",
   "dialect": "latex",
+  "theme": "dark",
   "limits": {
     "maxDepth": 16,
     "maxNodeCount": 256,
@@ -323,6 +331,7 @@ The patcher reads every result back and compiles it. When the result does not co
 | `operatorStyle` | `word`, `symbolic`, `cstyle` | `word` |
 | `constantStyle` | `word`, `letters`, `logicsymbols` | The default of each printer: `letters` for equations and truth tables, `word` for rule text and trees. |
 | `dialect` | `unicode`, `latex`, `asciimath`, `cstyle`, `mathml`, `typst`, `ascii` | `unicode` |
+| `theme` | `auto`, `light`, `dark`. Only the [terminal workbench](tui.md#themes-and-colors) reads it. | `auto` |
 | `limits.maxDepth` | A whole number from 1 | 32 |
 | `limits.maxNodeCount` | A whole number from 1 | 512 |
 | `limits.maxAnalysisTerms` | A whole number from 1 | 20 |

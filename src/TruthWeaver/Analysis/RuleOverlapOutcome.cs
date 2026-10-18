@@ -9,6 +9,9 @@ public enum RuleOverlapOutcome
     /// </summary>
     Decided,
 
-    /// <summary>The check was not run because the rules have more distinct terms than the configured cap.</summary>
+    /// <summary>
+    /// No verdict was reached: the rules have more distinct terms than the configured cap, or their shared BDD would
+    /// exceed the internal node budget. <see cref="RuleOverlapResult.Reason"/> says which.
+    /// </summary>
     Undecided,
 }

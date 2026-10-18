@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary>Builds <see cref="ToolResult{T}"/> values for the logic of the workbench, which has no access to the tool core helpers.</summary>
 internal static class Results

@@ -26,6 +26,7 @@ public sealed partial class CompiledRule<TContext>
     private readonly ILogger logger;
     private readonly Lazy<string> canonicalText;
     private readonly Lazy<IReadOnlySet<string>> predicateNames;
+    private readonly Lazy<IReadOnlySet<TermIdentity>> termIdentities;
     private readonly Lazy<RuleMetrics> metrics;
     private readonly CompilerOptions options;
     private readonly Lazy<NoteLookup?> noteLookup;
@@ -54,6 +55,7 @@ public sealed partial class CompiledRule<TContext>
         this.Notes = notes is { Count: > 0 } ? notes.ToFrozenDictionary(StringComparer.Ordinal) : [];
         this.canonicalText = new Lazy<string>(() => CanonicalPrinter.Print(this.Root));
         this.predicateNames = new Lazy<IReadOnlySet<string>>(() => CollectPredicateNames(this.Root));
+        this.termIdentities = new Lazy<IReadOnlySet<TermIdentity>>(() => CollectTermIdentities(this.Root));
         this.metrics = new Lazy<RuleMetrics>(() => RuleMetrics.Measure(this.Root, this.options.MaxAnalysisTerms));
         this.noteLookup = new Lazy<NoteLookup?>(() => NoteLookup.Create(this.Root, this.Notes));
     }
@@ -105,6 +107,15 @@ public sealed partial class CompiledRule<TContext>
     /// </summary>
     internal NoteLookup? NoteLookup => this.noteLookup.Value;
 
+    /// <summary>
+    /// Gets the identity of each term this rule references, once each. Internal: visible to
+    /// <c>TruthWeaver.Policies</c> via <c>InternalsVisibleTo</c>, which attributes a fault recorded for a shared
+    /// <see cref="EvaluationState"/> back to every rule of a policy set whose own terms include it, since a term
+    /// evaluated once for a shared state records its fault once there, not once per rule that references it
+    /// (feature backlog 08).
+    /// </summary>
+    internal IReadOnlySet<TermIdentity> TermIdentities => this.termIdentities.Value;
+
     /// <inheritdoc />
     public override string ToString()
     {
@@ -131,5 +142,27 @@ public sealed partial class CompiledRule<TContext>
         }
 
         return names;
+    }
+
+    private static HashSet<TermIdentity> CollectTermIdentities(Expression root)
+    {
+        HashSet<TermIdentity> identities = [];
+        Stack<Expression> pending = new([root]);
+        while (pending.TryPop(out Expression? node))
+        {
+            if (node is TermExpression term)
+            {
+                identities.Add(term.Identity);
+            }
+            else if (node is not ConstantExpression)
+            {
+                foreach (Expression operand in ExpressionShape.Of(node).Operands)
+                {
+                    pending.Push(operand);
+                }
+            }
+        }
+
+        return identities;
     }
 }

@@ -102,6 +102,11 @@ dotnet_diagnostic.IDE0028.severity = suggestion
 # 11.0.100-rc.1.26425.128, which reports 38 sites of the shared-return-type shape.
 dotnet_diagnostic.CA1859.severity = none
 
+# A namespace matches its folder under the project's root namespace, as in the main TruthWeaver project. IDE0130 keeps
+# the two from drifting. It applies to every C# file; a flat project passes because its files sit in the root namespace.
+dotnet_style_namespace_match_folder = true
+dotnet_diagnostic.IDE0130.severity = warning
+
 # MSBuild, solution and data files conventionally indent two spaces.
 [*.{csproj,props,targets,slnx,xml,resx}]
 indent_size = 2

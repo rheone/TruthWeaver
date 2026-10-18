@@ -7,7 +7,7 @@ using TruthWeaver.Evaluation;
 /// An immutable set of <see cref="Policy{TContext}"/> values and the <see cref="CombiningAlgorithm"/> that combines
 /// them. Build it once and evaluate it for many contexts. Evaluation is Strong Kleene (ADR-0015): a policy whose
 /// applicability is <see cref="TruthValue.Unknown"/> never becomes a silent permit, and a fault in a rule is an
-/// Unknown, as in <see cref="CompiledRule{TContext}.EvaluateAsync"/>.
+/// Unknown, as in <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/>.
 /// </summary>
 /// <typeparam name="TContext">The context type of the rules.</typeparam>
 public sealed class PolicySet<TContext>
@@ -74,7 +74,7 @@ public sealed class PolicySet<TContext>
     /// <summary>
     /// Evaluates the set for a context. Policies run one at a time in priority order, and the evaluation stops at the first
     /// result that the algorithm cannot change. The arguments after <paramref name="context"/> are passed to every rule
-    /// as for <see cref="CompiledRule{TContext}.EvaluateAsync"/>.
+    /// as for <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/>.
     /// </summary>
     /// <param name="context">The application-supplied evaluation context.</param>
     /// <param name="services">The service provider for class-based predicates, or <see langword="null"/> for none.</param>
@@ -94,10 +94,25 @@ public sealed class PolicySet<TContext>
         List<Fault> faults = [];
         List<PolicyResult> results = [];
 
+        // One EvaluationState for the whole set's evaluation: the set's target, every policy's target and every
+        // policy's condition share it, so a term common to several of those rules runs once (feature backlog 08). The
+        // fault budget and the per-term memo are then whole-set concepts, like EvaluationState already is for one
+        // rule's own nested quantifiers.
+        EvaluationState sharedState = new((options ?? EvaluationOptions.Default).IncludeTrace);
+
         TruthValue setTarget = TruthValue.True;
         if (this.Target is not null)
         {
-            setTarget = await RunAsync(this.Target, context, services, dataSources, options, faults, cancellationToken)
+            setTarget = await RunAsync(
+                    this.Target,
+                    context,
+                    services,
+                    dataSources,
+                    options,
+                    sharedState,
+                    faults,
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
             if (setTarget == TruthValue.False)
             {
@@ -107,7 +122,16 @@ public sealed class PolicySet<TContext>
 
         foreach (Policy<TContext> policy in this.ordered)
         {
-            TruthValue applies = await AppliesAsync(policy, context, services, dataSources, options, faults, cancellationToken)
+            TruthValue applies = await AppliesAsync(
+                    policy,
+                    context,
+                    services,
+                    dataSources,
+                    options,
+                    sharedState,
+                    faults,
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
             results.Add(new PolicyResult(policy.Id, policy.Effect, applies));
 
@@ -128,19 +152,26 @@ public sealed class PolicySet<TContext>
         return Build(outcome, faults, results);
     }
 
+    // Evaluates one rule against the set's shared state and attributes to the caller's aggregate fault list only
+    // the faults of the terms this rule itself references. A term shared with an earlier rule in the set faults at
+    // most once there (the memo answers a repeat without invoking the predicate again), but every rule that
+    // references it still lists that one fault in its own decision, exactly as it would if the rules did not share
+    // state (feature backlog 08).
     private static async Task<TruthValue> RunAsync(
         CompiledRule<TContext> rule,
         TContext context,
         IServiceProvider? services,
         DataSources? dataSources,
         EvaluationOptions? options,
+        EvaluationState sharedState,
         List<Fault> faults,
         CancellationToken cancellationToken
     )
     {
-        Decision decision = await rule.EvaluateAsync(context, services, dataSources, options, cancellationToken)
+        Decision decision = await rule.EvaluateAsync(context, sharedState, services, dataSources, options, cancellationToken)
             .ConfigureAwait(false);
-        faults.AddRange(decision.Faults);
+        IReadOnlySet<TermIdentity> ownTerms = rule.TermIdentities;
+        faults.AddRange(decision.Faults.Where(fault => ownTerms.Contains(fault.Term)));
         return decision.Result;
     }
 
@@ -167,6 +198,7 @@ public sealed class PolicySet<TContext>
         IServiceProvider? services,
         DataSources? dataSources,
         EvaluationOptions? options,
+        EvaluationState sharedState,
         List<Fault> faults,
         CancellationToken cancellationToken
     )
@@ -174,7 +206,16 @@ public sealed class PolicySet<TContext>
         TruthValue target = TruthValue.True;
         if (policy.Target is not null)
         {
-            target = await RunAsync(policy.Target, context, services, dataSources, options, faults, cancellationToken)
+            target = await RunAsync(
+                    policy.Target,
+                    context,
+                    services,
+                    dataSources,
+                    options,
+                    sharedState,
+                    faults,
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
             if (target == TruthValue.False)
             {
@@ -188,6 +229,7 @@ public sealed class PolicySet<TContext>
                 services,
                 dataSources,
                 options,
+                sharedState,
                 faults,
                 cancellationToken
             )

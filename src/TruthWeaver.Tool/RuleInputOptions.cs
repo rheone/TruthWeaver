@@ -5,7 +5,8 @@ using System.CommandLine.Parsing;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>
 /// The options that every command that reads a rule shares: the input format and path, the configuration file, the

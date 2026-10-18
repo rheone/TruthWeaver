@@ -1,6 +1,6 @@
 namespace TruthWeaver.Tool.Tests;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Tests.TestSupport;
 
 public sealed class PrintCommandTests

@@ -63,7 +63,7 @@ public sealed class RuleCoverage
     /// <summary>Measures the coverage of <paramref name="rule"/> over decisions that it made. No predicate is called.</summary>
     /// <typeparam name="TContext">The context type of the rule.</typeparam>
     /// <param name="rule">The rule that made the decisions.</param>
-    /// <param name="decisions">The decisions, each from <see cref="CompiledRule{TContext}.EvaluateAsync"/> or <c>EvaluateManyAsync</c> of <paramref name="rule"/>.</param>
+    /// <param name="decisions">The decisions, each from <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> or <c>EvaluateManyAsync</c> of <paramref name="rule"/>.</param>
     /// <returns>The coverage.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/>, <paramref name="decisions"/> or one decision is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A decision has no trace tree, or its trace tree does not match <paramref name="rule"/>.</exception>

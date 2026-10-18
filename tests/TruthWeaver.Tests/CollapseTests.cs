@@ -6,6 +6,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 

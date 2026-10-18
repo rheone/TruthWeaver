@@ -8,7 +8,6 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Json;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 using TruthWeaver.Tests.TestSupport;
 using EvaluationResults = global::Json.Schema.EvaluationResults;
 using JsonSchema = global::Json.Schema.JsonSchema;

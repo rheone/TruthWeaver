@@ -1,5 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
+using TruthWeaver.Tool.Tui.Hosting;
+
 /// <summary>Answers the extra workbench questions from queued values, so no dialog opens.</summary>
 internal sealed class ScriptedDialogs : IWorkbenchDialogs
 {

@@ -18,3 +18,9 @@ using System.Runtime.CompilerServices;
 // pipeline stages individually (RuleNodeCompiler, Analyzer, Linter), which RuleCompiler otherwise
 // runs as one opaque call, so compile-cost regressions can be attributed to a stage.
 [assembly: InternalsVisibleTo("TruthWeaver.Benchmarks")]
+
+// TruthWeaver.Policies shares one internal EvaluationState (the term memo and the fault budget) across the
+// rules of a policy set evaluated for the same context (feature backlog 08), through an internal
+// CompiledRule.EvaluateAsync overload that takes the caller-supplied state. No public API exposes
+// EvaluationState.
+[assembly: InternalsVisibleTo("TruthWeaver.Policies")]

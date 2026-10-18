@@ -63,6 +63,12 @@ A policy with a higher priority is evaluated first. Equal priorities keep the or
 
 Evaluation stops early. The overriding algorithms stop at the first definite result of the overriding effect. `FirstApplicable` stops at the first policy that is not `False`. A policy that was not reached is not in `PolicyDecision.Results`.
 
+## Shared predicates
+
+A set evaluates the target, every policy's target and every policy's condition against one shared evaluation state for a context, so a predicate common to several of those rules runs once, not once per rule that references it. Two terms share this way when their predicate name and arguments are the same, whichever rule compiled them.
+
+This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a whole-set concept: once the Nth fault is recorded anywhere in the set's evaluation, every rule still to run answers `Unknown` for the rest of its own evaluation, the same way a fault budget aborts within one rule. A shared term that faults still counts once, not once per rule, so a budget is not spent faster by two rules naming the same predicate; each rule that references the faulting term still lists that one fault in `PolicyDecision.Decision.Faults`.
+
 ## The decision
 
 `PolicyDecision` has these members.

@@ -2,6 +2,7 @@ namespace TruthWeaver.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Ast;
+using TruthWeaver.Testing.Fuzzing;
 
 /// <summary>
 /// The internal K3 scalar truth functions, checked over every input (3 single values, 9 pairs) against the independent

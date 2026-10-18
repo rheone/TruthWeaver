@@ -29,7 +29,7 @@ flowchart TD
         Printing["Printing<br/>CanonicalPrinter, RuleText, MermaidTreePrinter"]
         Diffing["Diffing<br/>RuleDiff, RuleDiffPrinter"]
         Logging["Logging<br/>structured log events"]
-        Metrics["Metrics<br/>TruthWeaverMetrics (Meter)"]
+        Metrics["Metrics<br/>TruthWeaverMetrics (Meter)<br/>TruthWeaverTracing (ActivitySource)"]
         DI["DependencyInjection<br/>AddTruthWeaver extension"]
 
         Parsing --> Ast
@@ -73,6 +73,7 @@ Start with these files for common tasks:
 | Understand the compiled tree shape | [`Expression`](../src/TruthWeaver/Ast/Expression.cs) |
 | Understand constant/contradiction detection | [`BddManager`](../src/TruthWeaver/Analysis/BddManager.cs), [`Analyzer`](../src/TruthWeaver/Analysis/Analyzer.cs) |
 | Understand evaluation and short-circuiting | [`Evaluator`](../src/TruthWeaver/Evaluation/Evaluator.cs), [`CompiledRule`](../src/TruthWeaver/Evaluation/CompiledRule.cs) |
+| Observe evaluation with metrics and traces | [Observability](observability.md), [`TruthWeaverTracing`](../src/TruthWeaver/Metrics/TruthWeaverTracing.cs) |
 | Assemble a rule without hand-writing text | [`RuleBuilder`](../src/TruthWeaver/Building/RuleBuilder.cs) |
 | Rewrite a rule (expand, compress, canonicalize, simplify) | [`CompiledRule`](../src/TruthWeaver/Evaluation/CompiledRule.cs) and [`Rewriting`](../src/TruthWeaver/Rewriting) |
 | Understand compile diagnostics and "did you mean" | [`Diagnostic`](../src/TruthWeaver/Diagnostics/Diagnostic.cs), [`DiagnosticFormatter`](../src/TruthWeaver/Diagnostics/DiagnosticFormatter.cs) |
@@ -80,11 +81,12 @@ Start with these files for common tasks:
 | Diff two compiled rules | [`RuleDiff`](../src/TruthWeaver/Diffing/RuleDiff.cs) |
 | Check two rules for Strong K3 equivalence | [`RuleEquivalence`](../src/TruthWeaver/Analysis/RuleEquivalence.cs) |
 | Check whether one rule is looser or tighter than another | [`RuleImplication`](../src/TruthWeaver/Analysis/RuleImplication.cs) |
+| Find redundant or shadowed rules and compare every pair of a group of rules | [`RuleSetAnalysis`](../src/TruthWeaver/Analysis/RuleSetAnalysis.cs) |
 | Find the smallest term changes that would give a rule a value | [`RuleCounterfactual`](../src/TruthWeaver/Analysis/RuleCounterfactual.cs) |
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](../src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](../src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](../src/TruthWeaver.Yaml/YamlTreeParser.cs) |
-| Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/FakePredicates.cs) |
-| Run declarative YAML rule tests with stub values | [`RuleTestFile`](../src/TruthWeaver.Testing/RuleTestFile.cs), [`StubRuleCompiler`](../src/TruthWeaver.Testing/StubRuleCompiler.cs) |
+| Write a unit test against a `Decision` | [`DecisionAssertions`](../src/TruthWeaver.Testing/Assertions/DecisionAssertions.cs), [`FakePredicates`](../src/TruthWeaver.Testing/Fakes/FakePredicates.cs) |
+| Run declarative YAML rule tests with stub values | [`RuleTestFile`](../src/TruthWeaver.Testing/RuleTests/RuleTestFile.cs), [`StubRuleCompiler`](../src/TruthWeaver.Testing/Fakes/StubRuleCompiler.cs) |
 
 Beyond `src`, the repository holds these projects:
 

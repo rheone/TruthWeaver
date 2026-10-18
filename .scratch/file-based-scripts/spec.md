@@ -1,6 +1,6 @@
 # File-based repository scripts
 
-**Status:** tickets 01 to 08 are done. Two acceptance items of ticket 08 need the owner: a real commit through the Husky hook, and a CI run on a pushed branch.
+**Status:** tickets 01 to 08 are done.
 
 ## Goal
 
@@ -33,4 +33,4 @@ Replace the eight PowerShell repository scripts with .NET file-based apps (`scri
 | 05 | `format-staged` | done |
 | 06 | The staged wrappers | done |
 | 07 | `format-all` | done |
-| 08 | Cut over and delete the `.ps1` files | needs-owner-action (Husky commit and CI run) |
+| 08 | Cut over and delete the `.ps1` files | done |

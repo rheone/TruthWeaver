@@ -3,6 +3,7 @@
   "operatorStyle": "symbolic",
   "constantStyle": "letters",
   "dialect": "latex",
+  "theme": "dark",
   "limits": {
     "maxDepth": 16,
     "maxNodeCount": 256,

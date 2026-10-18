@@ -169,7 +169,7 @@ public sealed partial class CompiledRule<TContext>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
     /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
@@ -210,7 +210,7 @@ public sealed partial class CompiledRule<TContext>
     /// <summary>
     /// Renders this rule's structure as Mermaid <c>flowchart</c> text, colored by one evaluation, using <paramref name="options"/>.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The diagram direction, node shapes, operator style and argument-value switch.</param>
     /// <returns>Mermaid <c>flowchart</c> text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -226,7 +226,7 @@ public sealed partial class CompiledRule<TContext>
     /// <see cref="PrintMermaid(Decision, bool, MermaidDirection, bool, bool, MermaidPalette?, Func{OutlineNode, NodeStyle?}?, int?)"/> returns.
     /// </summary>
     /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="direction">The layout direction. Defaults to <see cref="MermaidDirection.TopDown"/>.</param>
     /// <param name="nodeShapes">Whether each node role gets its own shape. Defaults to <see langword="false"/>.</param>
@@ -270,7 +270,7 @@ public sealed partial class CompiledRule<TContext>
     /// <paramref name="options"/>. The output is exactly the text that <see cref="PrintMermaid(Decision, MermaidOptions)"/> returns.
     /// </summary>
     /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The diagram options.</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
@@ -313,7 +313,7 @@ public sealed partial class CompiledRule<TContext>
     /// Renders this rule as an HTML fragment, with the state class <c>tw-true</c>, <c>tw-false</c>, <c>tw-unknown</c> or
     /// <c>tw-skipped</c> added to each node of one evaluation.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
     /// <returns>The HTML fragment.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -328,7 +328,7 @@ public sealed partial class CompiledRule<TContext>
     /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintHtml(Decision, HtmlOptions?)"/> returns.
     /// </summary>
     /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The HTML options, or <see langword="null"/> for <see cref="HtmlOptions.Default"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
@@ -370,7 +370,7 @@ public sealed partial class CompiledRule<TContext>
     /// Renders this rule as a Graphviz DOT <c>digraph</c>, with a fill color on each node of one evaluation: green for
     /// <c>True</c>, red for <c>False</c>, yellow for <c>Unknown</c> and gray for a node that short-circuiting skipped.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
     /// <returns>The DOT text.</returns>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>.</exception>
@@ -385,7 +385,7 @@ public sealed partial class CompiledRule<TContext>
     /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintDot(Decision, DotOptions?)"/> returns.
     /// </summary>
     /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The DOT options, or <see langword="null"/> for <see cref="DotOptions.Default"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="decision"/> has no <see cref="Decision.TraceTree"/>. Nothing is written in this case.</exception>
@@ -425,7 +425,7 @@ public sealed partial class CompiledRule<TContext>
     /// Renders this rule's structure as an indented plain-text tree, annotated by one evaluation's
     /// result and short-circuit path.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <returns>The indented tree text.</returns>
@@ -446,7 +446,7 @@ public sealed partial class CompiledRule<TContext>
     /// <paramref name="writer"/>. The output is exactly the text that <see cref="PrintPlainText(Decision, bool, ConstantFormat?)"/> returns.
     /// </summary>
     /// <param name="writer">The writer to write to. This method does not flush or dispose it.</param>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="showArgumentValues">Whether to include each term's rule-text argument values in its label. Defaults to <see langword="true"/>.</param>
     /// <param name="constants">How to write the constants, or <see langword="null"/> (the default) for <see cref="ConstantStyle.Word"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
@@ -472,7 +472,7 @@ public sealed partial class CompiledRule<TContext>
     /// could not be evaluated. The wording has no template engine and no localization surface; use
     /// <see cref="ExplainOptions.Labels"/> to change the label of a predicate.
     /// </summary>
-    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync"/> for this same rule.</param>
+    /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
     /// <param name="options">The options, or <see langword="null"/> for the schema labels and no descriptions.</param>
     /// <returns>The sentence, ending with a period.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="decision"/> is <see langword="null"/>.</exception>

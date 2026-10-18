@@ -35,13 +35,20 @@ namespace TruthWeaver.Evaluation;
 /// (ADR-0001). The default <see langword="false"/> leaves <c>Decision.Trace</c> <see langword="null"/>. <c>Decision.TraceTree</c>
 /// is always filled.
 /// </param>
+/// <param name="TracePredicates">
+/// <see langword="true"/> to start one child span (<c>truthweaver.predicate</c>) of the <c>TruthWeaver</c>
+/// <see cref="System.Diagnostics.ActivitySource"/> for each predicate invocation. The default <see langword="false"/>
+/// starts only the evaluation span, because a span for each predicate costs allocation and exporter volume. It has no
+/// effect while no <see cref="System.Diagnostics.ActivityListener"/> samples the source.
+/// </param>
 public sealed record EvaluationOptions(
     int? FaultBudget = null,
     EvaluationMode Mode = EvaluationMode.ShortCircuit,
     TimeSpan? Timeout = null,
     bool IncludeResolvedValues = false,
     int MaxElementEvaluations = 10_000,
-    bool IncludeTrace = false
+    bool IncludeTrace = false,
+    bool TracePredicates = false
 )
 {
     /// <summary>

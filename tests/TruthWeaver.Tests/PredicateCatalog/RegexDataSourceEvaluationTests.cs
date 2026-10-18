@@ -5,7 +5,6 @@ using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Predicates;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 
 /// <summary>
 /// The regular-expression predicates check a <c>pattern</c> or <c>flags</c> value that a data source supplies at

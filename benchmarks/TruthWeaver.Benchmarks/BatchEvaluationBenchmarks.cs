@@ -6,11 +6,11 @@ using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.Fakes;
 
 /// <summary>
 /// Compares <see cref="CompiledRule{TContext}.EvaluateManyAsync(IEnumerable{TContext}, IServiceProvider?, DataSources?, EvaluationOptions?, int, CancellationToken)"/>
-/// with a plain loop of <see cref="CompiledRule{TContext}.EvaluateAsync"/> calls over the same contexts. The loop is the
+/// with a plain loop of <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> calls over the same contexts. The loop is the
 /// baseline; the batch runs once with one evaluation at a time (the cost of the ordered window) and once with one
 /// evaluation per processor (the gain from parallelism). The rule mixes the binary connectives over predicates that
 /// answer synchronously, so the measurement is the engine and not a predicate's I/O.

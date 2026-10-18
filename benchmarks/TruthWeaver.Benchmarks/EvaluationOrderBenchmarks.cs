@@ -9,7 +9,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Measures whether operand order changes <see cref="CompiledRule{TContext}.EvaluateAsync"/>'s running
+/// Measures whether operand order changes <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/>'s running
 /// time on a realistic mixed-cost rule, for ticket 03's gating benchmark
 /// (<c>.scratch/rewrite-optimization/issues/03-evaluation-order-optimization.md</c>): "A benchmark shows
 /// that operand order changes evaluation time on a realistic rule with mixed-cost predicates; if it
