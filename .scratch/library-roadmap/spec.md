@@ -44,7 +44,7 @@ the reason given). The others are unchanged. Impact and complexity describe the 
 
 | Item | Impact | Complexity | Verdict | Re-score rationale |
 | --- | --- | --- | --- | --- |
-| Rule linting (style/hygiene pass) | Low–Medium | Low–Medium | **Done** (K3 lints); residual Do (sequenced) | K3 redundancy lints shipped as opt-in `CompilerOptions.Lints` (`Linter`, `BRE0017` to `BRE0023`, commit 8f388db, k3-hardening 09). Still missing: depth-near-limit and wide-chain style lints, and spans or paths on findings (tree nodes keep none). |
+| Rule linting (style/hygiene pass) | Low–Medium | Low–Medium | **Done** (K3 lints, `DeepNesting` and `WideChain` lints per rule-linting 02); residual Not now (spans and paths, rule-linting 04) | K3 redundancy lints shipped as opt-in `CompilerOptions.Lints` (`Linter`, `BRE0017` to `BRE0023`, commit 8f388db, k3-hardening 09). The depth-near-limit and wide-chain lints were added later (rule-linting 02). Still missing: spans or paths on findings (tree nodes keep none; rule-linting 04, deferred). |
 | Registry-wide unused-predicate audit | Low–Medium | Low | **Do now** | Unchanged; nothing in `src/` does it. Still a separate utility, not a compiler feature. |
 | Predicate deprecation marker + diagnostic | Medium | Low | **Do now** | Unchanged; `PredicateSchema` has no `Deprecated` or `ReplacedBy`. The next diagnostic code follows `BRE0023`. |
 | Source-generator predicate registration | Medium | Medium–High | Do (sequenced) | Unchanged. The AOT/trim analyzer gate is clean (k3-hardening 04), which keeps the compile-time-only argument valid. |
