@@ -3,7 +3,12 @@ namespace TruthWeaver.Tool.Tui;
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Testing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
+using TruthWeaver.Tool.Core.RuleCases;
 
 /// <summary>
 /// The rule test file of the workbench: its path, the name of the case to save, the cases it holds with the outcome of the

@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Compilation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The shared workbench state and its actions, with scripted answers in place of dialogs.</summary>

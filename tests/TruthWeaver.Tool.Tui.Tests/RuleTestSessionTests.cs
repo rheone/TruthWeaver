@@ -2,7 +2,8 @@ namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Testing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>

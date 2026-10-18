@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui.Tests;
 
 using Terminal.Gui.Input;
 using TruthWeaver.Abstractions;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>

@@ -1,6 +1,6 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary>Picks the theme at start-up from the <c>theme</c> setting.</summary>
 internal static class ThemeChoice

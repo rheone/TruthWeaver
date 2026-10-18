@@ -2,7 +2,11 @@ namespace TruthWeaver.Tool.Tui;
 
 using System.Runtime.CompilerServices;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Validation;
 
 /// <summary>
 /// The logic behind the validation panel: it runs every level of the tool core validation on the editor text and lays the

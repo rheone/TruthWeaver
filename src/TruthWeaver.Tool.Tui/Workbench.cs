@@ -1,7 +1,8 @@
 namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 
 /// <summary>
 /// The state that every pane shares: the open <see cref="RuleDocument"/>, the settings, the layout and the status message,

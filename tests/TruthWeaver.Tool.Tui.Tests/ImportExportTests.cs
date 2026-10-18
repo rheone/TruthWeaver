@@ -2,7 +2,12 @@ namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Export;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
+using TruthWeaver.Tool.Core.Validation;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>Import, conversion, export and validation in the workbench, tested through the UI-free layer.</summary>

@@ -4,7 +4,12 @@ using System.Runtime.CompilerServices;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Palette;
+using TruthWeaver.Tool.Core.Tree;
 
 /// <summary>
 /// The logic behind the Tree pane, with no view of its own: the lines of the tree, the selected node, the structural edits,

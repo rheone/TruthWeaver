@@ -18,6 +18,28 @@ flowchart LR
     Core --> Tui["TruthWeaver.Tool.Tui"]
 ```
 
+## Folders
+
+Each folder has the namespace `TruthWeaver.Tool.Core.<Folder>`. A build warning (IDE0130) shows a namespace that does not
+match its folder.
+
+| Folder | Holds |
+| --- | --- |
+| `Assignment` | Term values, stub evaluation and the trace lines of an evaluation. |
+| `Configuration` | The `truthweaver.json` settings, the exit codes and the result types. |
+| `Diagnostics` | Diagnostic codes, writers and the severity policy. |
+| `Documents` | The open rule document, its source nodes, outline and paths. |
+| `Export` | Artifacts, the exporter, the manifest and the image renderer. |
+| `Loading` | Reading, decoding, format detection and import of rules, data files and schemas. |
+| `Output` | Printed rules, format conversion and the output writer. |
+| `Palette` | The list of operators and predicates to insert into a rule. |
+| `Patching` | Writing an edited rule back into its document. |
+| `Reports` | Rule statistics and reports. |
+| `Rewriting` | The rewrite playground and the comparison of two rules. |
+| `RuleCases` | The rule test case file. |
+| `Tree` | The rule tree and its structural edits. |
+| `Validation` | Validation on every level, and the schema check of a tree. |
+
 ## Depends on
 
 - [TruthWeaver.Abstractions](../TruthWeaver.Abstractions/README.md) for `TruthValue` and `Decision`.

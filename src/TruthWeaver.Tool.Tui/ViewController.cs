@@ -2,7 +2,9 @@ namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// The logic behind the view pane, with no view of its own: the toggles, the printed output, and copy and save. The pane

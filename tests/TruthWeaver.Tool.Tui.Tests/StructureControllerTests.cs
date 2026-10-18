@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Abstractions;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The structural editor of the workbench with no terminal: edits, the palette, the clipboard, undo and redo.</summary>

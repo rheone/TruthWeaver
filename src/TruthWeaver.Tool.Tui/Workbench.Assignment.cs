@@ -1,6 +1,8 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>The part of the workbench state that tries the rule with values: the assignment, the decision and the trace.</summary>
 internal sealed partial class Workbench

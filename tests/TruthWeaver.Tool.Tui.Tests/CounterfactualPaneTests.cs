@@ -2,7 +2,8 @@ namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Analysis;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The What would make this True panel: its lines, applying a pick, the work limit and the background search.</summary>

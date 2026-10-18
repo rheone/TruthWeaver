@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 
 /// <summary>What <see cref="TuiStartup.Prepare"/> decided: run the workbench, or print a text and exit.</summary>
 /// <param name="Document">The first document, or <see langword="null"/> when the process exits without a workbench.</param>

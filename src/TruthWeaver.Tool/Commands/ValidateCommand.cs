@@ -2,7 +2,9 @@ namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
 using TruthWeaver.Compilation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Validation;
 
 /// <summary><c>truthweaver validate</c>: every validation level, the statistics, and the diagnostics as text, JSON or SARIF.</summary>
 internal static class ValidateCommand

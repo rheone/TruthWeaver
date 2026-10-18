@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using TruthWeaver.Predicates;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Palette;
 
 /// <summary>
 /// The ready-made predicates of the <c>TruthWeaver.Predicates</c> package as palette templates. The catalog scans the public

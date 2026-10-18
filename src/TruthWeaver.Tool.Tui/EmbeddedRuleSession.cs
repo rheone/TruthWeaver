@@ -2,7 +2,10 @@ namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Patching;
 
 /// <summary>
 /// One rule that lives inside a larger JSON or YAML document: the file, the path of the rule, and what the rule looked like

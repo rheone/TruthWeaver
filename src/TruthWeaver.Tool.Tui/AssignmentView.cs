@@ -5,7 +5,7 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 
 /// <summary>
 /// The view of the Assign pane: the result and policy lines on top, the term list on the left, the trace tree on the right

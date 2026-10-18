@@ -1,7 +1,8 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Compilation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>Opening, switching and saving a rule that lives inside a larger JSON or YAML document, with no terminal.</summary>

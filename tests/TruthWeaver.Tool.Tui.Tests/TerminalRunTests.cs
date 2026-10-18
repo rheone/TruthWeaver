@@ -3,7 +3,8 @@ namespace TruthWeaver.Tool.Tui.Tests;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Drivers;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>

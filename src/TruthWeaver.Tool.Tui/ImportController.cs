@@ -3,7 +3,9 @@ namespace TruthWeaver.Tool.Tui;
 using System.Runtime.CompilerServices;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>
 /// The logic behind the import and conversion keys: open a file or the clipboard in rule text, JSON or YAML (detected, or

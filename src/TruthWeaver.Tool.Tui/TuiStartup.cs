@@ -2,7 +2,9 @@ namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>
 /// Reads the command line of <c>truthweaver-tui</c> and prepares the first document and the settings, before any terminal

@@ -3,7 +3,11 @@ namespace TruthWeaver.Tool.Tui;
 using System.Text.Json.Nodes;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.RuleCases;
 using DataSourceSet = TruthWeaver.Abstractions.DataSources;
 
 /// <summary>

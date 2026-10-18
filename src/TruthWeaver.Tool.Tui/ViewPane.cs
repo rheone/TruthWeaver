@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui;
 
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 
 /// <summary>
 /// The view pane: the rule as a tree, rule text, equation, Mermaid, DOT, HTML, JSON or YAML, in the region at the right of

@@ -1,6 +1,6 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Export;
 
 /// <summary>What an entry of the export menu does.</summary>
 internal enum ExportEntryKind

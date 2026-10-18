@@ -3,7 +3,8 @@ namespace TruthWeaver.Tool.Tui;
 using System.Globalization;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Yaml;
 
 /// <summary>

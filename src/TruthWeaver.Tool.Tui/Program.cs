@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui;
 
 using Terminal.Gui.App;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary>The entry point of the <c>truthweaver-tui</c> command.</summary>
 internal static class Program
@@ -17,7 +18,7 @@ internal static class Program
         );
         if (startup.Document is not { } document)
         {
-            TextWriter writer = startup.ExitCode == Core.ToolExitCode.Success ? Console.Out : Console.Error;
+            TextWriter writer = startup.ExitCode == ToolExitCode.Success ? Console.Out : Console.Error;
             writer.WriteLine(startup.Message);
             return (int)startup.ExitCode;
         }

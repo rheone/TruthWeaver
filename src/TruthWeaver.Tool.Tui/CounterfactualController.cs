@@ -3,7 +3,7 @@ namespace TruthWeaver.Tool.Tui;
 using System.Runtime.CompilerServices;
 using TruthWeaver.Analysis;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 
 /// <summary>
 /// The logic behind the What would make this True panel: it asks the library for the smallest changes to the assigned

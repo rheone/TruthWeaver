@@ -4,7 +4,9 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Testing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// <c>truthweaver test</c>: run the cases of a rule test file (YAML) over stand-in predicates with stub values, list each

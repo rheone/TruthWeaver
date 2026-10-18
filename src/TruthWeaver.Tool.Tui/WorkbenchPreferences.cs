@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui;
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary>
 /// The choices of the author that the workbench keeps between runs: the theme after the author switched it, and the sizes of

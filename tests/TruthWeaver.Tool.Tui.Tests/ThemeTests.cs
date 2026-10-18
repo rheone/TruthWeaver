@@ -5,7 +5,9 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using Attribute = Terminal.Gui.Drawing.Attribute;
 

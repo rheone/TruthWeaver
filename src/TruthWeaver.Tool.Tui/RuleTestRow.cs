@@ -1,6 +1,6 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.RuleCases;
 
 /// <summary>One case of the open rule test file in the Tests pane, with the outcome of the last run.</summary>
 /// <param name="Name">The name of the case.</param>

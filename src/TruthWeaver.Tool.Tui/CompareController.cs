@@ -4,7 +4,9 @@ using System.Runtime.CompilerServices;
 using TruthWeaver.Analysis;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 
 /// <summary>
 /// The logic behind the Compare pane, with no view of its own: it holds a second rule beside the open rule, loaded from a

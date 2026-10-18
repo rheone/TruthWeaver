@@ -5,7 +5,9 @@ using System.Runtime.CompilerServices;
 using TruthWeaver.Analysis;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Rewriting;
 
 /// <summary>
 /// The logic behind the Rewrite pane, with no view of its own: it applies a rewrite to the rule and keeps the result as a

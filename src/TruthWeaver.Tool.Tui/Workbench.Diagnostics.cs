@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>
 /// The part of the workbench state that keeps typing responsive: the editor hands its text to <see cref="EditText"/>, and

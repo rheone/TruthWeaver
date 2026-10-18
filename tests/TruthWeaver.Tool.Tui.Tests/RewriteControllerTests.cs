@@ -3,7 +3,9 @@ namespace TruthWeaver.Tool.Tui.Tests;
 using TruthWeaver.Analysis;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Rewriting;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The rewrites and the comparison of the workbench with no terminal.</summary>

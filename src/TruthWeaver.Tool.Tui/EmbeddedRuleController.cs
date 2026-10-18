@@ -2,7 +2,9 @@ namespace TruthWeaver.Tool.Tui;
 
 using System.Runtime.CompilerServices;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Patching;
 
 /// <summary>
 /// The logic of editing a rule that lives inside a larger JSON or YAML document: pick the rule by a path or by browsing the

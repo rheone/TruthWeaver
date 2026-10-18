@@ -3,7 +3,9 @@ namespace TruthWeaver.Tool.Tui.Tests;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Analysis;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The second rule of the Compare pane, with no terminal.</summary>

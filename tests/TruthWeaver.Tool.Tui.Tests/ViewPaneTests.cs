@@ -4,7 +4,7 @@ using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>Smoke tests of the view pane inside the workbench window.</summary>

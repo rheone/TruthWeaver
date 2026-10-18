@@ -1,7 +1,9 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The toggles, copy and save of the view pane, with no terminal.</summary>

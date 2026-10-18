@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The palette of the structural editor with the ready-made predicates of the catalog.</summary>

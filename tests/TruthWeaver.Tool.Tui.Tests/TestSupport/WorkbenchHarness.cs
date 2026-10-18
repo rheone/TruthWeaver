@@ -3,7 +3,8 @@ namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 using System.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 
 /// <summary>
 /// A workbench window with no terminal: the views are initialized and laid out at a fixed size, the editor has the focus,

@@ -1,7 +1,10 @@
 namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Tree;
 
 /// <summary>
 /// The part of the workbench state that the structural editor and the rewrites share: the selected node of the tree, and

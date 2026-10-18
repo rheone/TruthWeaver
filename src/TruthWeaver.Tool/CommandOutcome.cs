@@ -4,7 +4,10 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// Collects what one command found (its text, its JSON result, its diagnostics and its own failure) and writes it in the

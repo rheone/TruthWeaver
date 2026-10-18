@@ -3,7 +3,9 @@ namespace TruthWeaver.Tool.Tui.Tests;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Yaml;
 
 /// <summary>The text of the view pane: it equals the library printer for the same options, or it gives the reason.</summary>

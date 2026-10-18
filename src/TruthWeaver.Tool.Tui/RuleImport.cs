@@ -2,7 +2,9 @@ namespace TruthWeaver.Tool.Tui;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary>Makes a document from text that did not come from a file the workbench opened: the clipboard or standard input.</summary>
 internal static class RuleImport

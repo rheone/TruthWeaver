@@ -1,6 +1,6 @@
 namespace TruthWeaver.Tool.Tui;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
 
 /// <summary>The text of the assignment pane: the decision lines, a line for each term and a line for each trace node. It has no view.</summary>
 internal static class AssignmentText

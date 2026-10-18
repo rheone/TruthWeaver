@@ -2,7 +2,8 @@ namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
 
 /// <summary>The command line of <c>truthweaver-tui</c>, before any terminal work.</summary>
 public sealed class TuiStartupTests : IDisposable

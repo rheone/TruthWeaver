@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The text that the canonical pane, the diagnostics pane, the status line and the key help show.</summary>

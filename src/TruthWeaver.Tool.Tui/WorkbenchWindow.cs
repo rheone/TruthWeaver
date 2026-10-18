@@ -4,7 +4,7 @@ using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Documents;
 
 /// <summary>
 /// The workbench window: three regions (editor on the left, side view on the right, a region below), a status line and
