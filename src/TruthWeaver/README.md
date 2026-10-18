@@ -50,6 +50,6 @@ flowchart LR
 | `CompiledRule<TContext>` | The immutable rule. It evaluates, rewrites and prints itself. |
 | `PredicateRegistry<TContext>` | The predicates that a rule can name. |
 | `RuleBuilder` | Builds a rule in code. |
-| `RuleEquivalence`, `RuleSet<TContext>` | The analyzer: equivalence, implication, overlap and redundancy of rules. |
+| `RuleEquivalence`, `RuleSet<TContext>` | The analyzer: equivalence, implication, overlap, redundancy and shadowing of rules. |
 | `RuleDiff` | The structural comparison of two rules. |
 | `MermaidTreePrinter` | One of the printers. `CompiledRule` also prints rule text, equations, truth tables, HTML and DOT. |

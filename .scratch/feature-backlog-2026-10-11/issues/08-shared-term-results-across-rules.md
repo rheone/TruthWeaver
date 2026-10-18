@@ -6,7 +6,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready (owner decision 2026-10-17: InternalsVisibleTo("TruthWeaver.Policies") plus an internal CompiledRule overload taking a caller-supplied EvaluationState; no public API change)
+**Status:** done (owner decision 2026-10-17: InternalsVisibleTo("TruthWeaver.Policies") plus an internal CompiledRule overload taking a caller-supplied EvaluationState; no public API change)
 
 - [x] Scope is confirmed with the owner before any work (standing rule for new packages, projects and dependencies)
 - [x] The page that describes the new behavior is written or updated in the same change (no "changed from" text), `CHANGELOG.md` has an entry, and the doc example and `K3ReferenceSyncChecker` tests pass

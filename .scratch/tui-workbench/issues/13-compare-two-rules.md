@@ -4,13 +4,13 @@
 
 **Blocked by:** none
 
-**Status:** in progress (only the full validation run is open)
+**Status:** done
 
 - [x] The pane shows the same relation and overlap as the library calls for the same two rules
 - [x] A second rule that does not compile shows its diagnostics and no comparison
 - [x] An example assignment from the pane can be loaded into the Assign pane
 - [x] The page for this feature is updated in the same change (`docs/tui.md`), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
 
 ## Comments
 
@@ -20,3 +20,4 @@
 - The existing Ctrl+G compare with the last saved version is unchanged.
 - Page updated: `docs/tui.md` (new section, layout table, key table) and the Tui `README.md` key list. Tests: `CompareControllerTests`, `RewritePaneTests`.
 - Not run: the full validation set of CLAUDE.md. `DocumentationLintTests` fails on `tests/TruthWeaver.Architecture.Tests/README.md:10` ('ADR-0'), which is not from this change.
+- 2026-10-18: Full validation passed on the combined result 2026-10-18 (6660 tests; csharpier, dotnet format, roslynator and normalize-text clean).

@@ -4,12 +4,12 @@
 
 **Blocked by:** none
 
-**Status:** in progress (only the full validation run is open)
+**Status:** done
 
 - [x] Accept replaces the editor text with the rewrite and one undo restores the earlier text and tree exactly
 - [x] The rule keeps its notes where the rewrite allows it, and the status line says when a note is dropped
 - [x] The page for this feature is updated in the same change (`docs/tui.md`, Rewrites and compare loses the sentence that says the editor does not change yet), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
 
 ## Comments
 
@@ -17,3 +17,4 @@
 - A rewrite that does not compile when printed is refused by `RuleDocument.ReplaceRule` with the first diagnostics on the status line (existing behavior, now stated in `docs/tui.md`).
 - Pages updated: `docs/tui.md`, `docs/tool-core.md`. Tests: `RewriteControllerTests`, `RewritePlaygroundTests`.
 - Full validation set of CLAUDE.md was not run; checked the Tui and Tool.Core rewrite tests, the doc lint tests and `dotnet format` on the changed files.
+- 2026-10-18: Full validation passed on the combined result 2026-10-18 (6660 tests; csharpier, dotnet format, roslynator and normalize-text clean).

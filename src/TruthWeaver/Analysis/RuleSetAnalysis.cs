@@ -6,8 +6,9 @@ using TruthWeaver.Evaluation;
 
 /// <summary>
 /// Analyzes a group of peer rules at once: the joint-outcome table of every pair of rules (the
-/// <see cref="RuleOverlap.Compare{TContext}"/> question for each pair) and the redundancy of each rule under the
-/// "any grants" reading, where the set is satisfied when any of its rules is <c>True</c>. Every rule is built once on
+/// <see cref="RuleOverlap.Compare{TContext}"/> question for each pair), the redundancy of each rule under the
+/// "any grants" reading, where the set is satisfied when any of its rules is <c>True</c>, and the shadowing of each
+/// rule when the list is read in order as "the first rule that applies wins". Every rule is built once on
 /// one shared dual-rail BDD, the same model <see cref="RuleEquivalence"/>, <see cref="RuleImplication"/> and
 /// <see cref="RuleOverlap"/> use, so the answers are exact (not sampled) and no truth table is enumerated.
 /// </summary>
@@ -20,8 +21,9 @@ using TruthWeaver.Evaluation;
 /// No predicate runs, and the analysis does not look at evaluation order, short-circuiting or faults.
 /// </para>
 /// <para>
-/// Shadowing in an ordered list ("the first rule that applies wins") is not reported: it needs a decision on whether an
-/// earlier <c>Unknown</c> rule blocks a later one, which this type does not make.
+/// Shadowing reads an earlier rule that is <c>True</c> or <c>Unknown</c> as a block on every later rule, the same as
+/// the <c>FirstApplicable</c> combining algorithm, which never skips an <c>Unknown</c> policy (ADR-0015 decision 5).
+/// A rule is shadowed when the earlier rules block it wherever it is <c>True</c>. There is no reading parameter.
 /// </para>
 /// <para>
 /// Three limits keep the cost bounded, and none of them throws. The rule cap stops the analysis before it starts
@@ -36,7 +38,7 @@ public static class RuleSetAnalysis
     /// <summary>The default rule cap: the most rules <see cref="Analyze{TContext}(IReadOnlyList{CompiledRule{TContext}}, int?, int?)"/> analyzes.</summary>
     public const int DefaultMaxRules = 50;
 
-    /// <summary>Analyzes the rules of <paramref name="rules"/>: every pair's joint outcomes, each rule's redundancy and one group of rules removable together.</summary>
+    /// <summary>Analyzes the rules of <paramref name="rules"/>: every pair's joint outcomes, each rule's redundancy and shadowing, and one group of rules removable together.</summary>
     /// <typeparam name="TContext">The application context type every rule was compiled for.</typeparam>
     /// <param name="rules">The rules. A rule's index in this list is its identity in the result. The same rule can appear more than once.</param>
     /// <param name="maxAnalysisTerms">
@@ -64,7 +66,7 @@ public static class RuleSetAnalysis
         return AnalyzeCore(rules, maxAnalysisTerms, maxRules, BddManager.DefaultMaxBddNodes);
     }
 
-    /// <summary>Analyzes the rules of <paramref name="rules"/>: every pair's joint outcomes, each rule's redundancy and one group of rules removable together.</summary>
+    /// <summary>Analyzes the rules of <paramref name="rules"/>: every pair's joint outcomes, each rule's redundancy and shadowing, and one group of rules removable together.</summary>
     /// <typeparam name="TContext">The application context type every rule was compiled for.</typeparam>
     /// <param name="rules">The rule set. A rule's index in the set is its identity in the result.</param>
     /// <param name="maxAnalysisTerms">
@@ -118,6 +120,7 @@ public static class RuleSetAnalysis
                 [],
                 [],
                 [],
+                [],
                 $"The set has {rules.Count} rules, which exceeds the configured cap of {ruleCap}."
             );
         }
@@ -156,7 +159,8 @@ public static class RuleSetAnalysis
                     bool Redundant,
                     IReadOnlyDictionary<TermIdentity, TruthValue>? UniqueContribution
                 )> setRedundancy,
-                IReadOnlyList<int> removable
+                IReadOnlyList<int> removable,
+                IReadOnlyList<(int Index, bool Shadowed, IReadOnlyDictionary<TermIdentity, TruthValue>? Reached)> setShadowing
             ) = Analyzer.AnalyzeSet([.. rules.Select(rule => rule.Root)], maxBddNodes);
 
             List<RuleSetPair> pairs =
@@ -185,7 +189,15 @@ public static class RuleSetAnalysis
                     rule.UniqueContribution?.ToDictionary(p => p.Key.ToString(), p => p.Value)
                 )),
             ];
-            return new RuleSetAnalysisResult(RuleSetAnalysisOutcome.Decided, pairs, redundancy, removable, null);
+            List<RuleShadowing> shadowing =
+            [
+                .. setShadowing.Select(rule => new RuleShadowing(
+                    rule.Index,
+                    rule.Shadowed,
+                    rule.Reached?.ToDictionary(p => p.Key.ToString(), p => p.Value)
+                )),
+            ];
+            return new RuleSetAnalysisResult(RuleSetAnalysisOutcome.Decided, pairs, redundancy, removable, shadowing, null);
         }
         catch (BddNodeBudgetExceededException exception)
         {
@@ -213,7 +225,7 @@ public static class RuleSetAnalysis
             }
         }
 
-        return new RuleSetAnalysisResult(RuleSetAnalysisOutcome.Undecided, pairs, [], [], reason);
+        return new RuleSetAnalysisResult(RuleSetAnalysisOutcome.Undecided, pairs, [], [], [], reason);
     }
 
     /// <summary>The printed form of each distinct term of a tree, the key every example uses.</summary>
