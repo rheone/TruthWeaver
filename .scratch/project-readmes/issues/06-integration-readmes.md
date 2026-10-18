@@ -4,7 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready
+**Status:** done
 
-- [ ] Each README follows the template and the drift test passes for it
-- [ ] Code examples match the real public API
+- [x] Each README follows the template and the drift test passes for it
+- [x] Code examples match the real public API
+
+## Comments
+
+Done. Four READMEs written. The examples use the real public API (checked against the source). `ProjectReadmeTests` passes (34 of 34).

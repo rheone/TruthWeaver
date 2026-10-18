@@ -204,6 +204,27 @@ dotnet run scripts/format-all.cs
 dotnet run scripts/format-all.cs -- --check-only
 ```
 
+## Project READMEs
+
+Every project under `src/` and `tests/` has a `README.md` in its folder. The README states the purpose of the project and
+its direct TruthWeaver dependencies. Use these sections, in this order:
+
+| Section | Content | Required for |
+| --- | --- | --- |
+| `# <ProjectName>` | The project name and one sentence. | Every project |
+| `## Purpose` | What the project is for. | Every project |
+| `## Use` | How to use it: install, first run and a command or key table for the tools; a compile-and-evaluate example for the core library. | `TruthWeaver`, `TruthWeaver.Tool`, `TruthWeaver.Tool.Tui` |
+| `## Depends on` | One bullet for each direct `ProjectReference`: a link to the README of that project and half a sentence on why. | Every project |
+| `## Key types` | The main public types. | `src/` projects |
+| `## Notes` | A gotcha that a reader needs to know. | Only when one exists |
+
+A project with no `ProjectReference` holds the single line `No TruthWeaver packages.` under `## Depends on`. List a new
+reference only after the change that adds it has landed.
+
+`TruthWeaver.Architecture.Tests` checks the rule (`ProjectReadmeTests`). It fails for a project that has no README. It also
+fails when the `## Depends on` bullets differ from the `ProjectReference` items of the project file, and the failure names
+the project. A bullet names its project by the link text or the link target.
+
 ## Releasing
 
 [Releasing](releasing.md) lists the steps to publish a version and the checks to make afterwards.

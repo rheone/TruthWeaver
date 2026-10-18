@@ -4,8 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready
+**Status:** done
 
-- [ ] Every key binding matches the code and `docs/tui.md`
-- [ ] Example blocks carry doctest markers and pass `dotnet test`
-- [ ] The drift test passes for this project
+- [x] Every key binding matches the code and `docs/tui.md`
+- [x] Example blocks carry doctest markers and pass `dotnet test`
+- [x] The drift test passes for this project
+
+## Comments
+
+- The README follows docs/tui.md for the install step (pack from the repository, not on NuGet) and for the key bindings, which match WorkbenchCommands and the command lists. The shell block has a skip marker because it is not a rule. The Predicates reference and Terminal.Gui.Editor change are left to their own tickets.
