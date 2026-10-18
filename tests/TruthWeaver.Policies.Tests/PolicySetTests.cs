@@ -281,6 +281,122 @@ public class PolicySetTests
         Assert.False(decision.IsPermitted);
     }
 
+    /// <summary>
+    /// A predicate shared by two policy conditions is evaluated once per context: the set shares one
+    /// <c>EvaluationState</c> across its rules, so the second rule's identical term hits the first rule's memo
+    /// entry instead of invoking the predicate again (feature backlog 08).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_PredicateSharedByTwoPolicyConditions_IsEvaluatedOnce_Test()
+    {
+        int[] calls = [0];
+        CompiledRule<object> first = CompileSharing(
+            "shared",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+        CompiledRule<object> second = CompileSharing(
+            "shared",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+
+        // DenyOverrides never stops early for a Permit policy (it only stops at a definite Deny), so both
+        // policies run and the sharing is actually exercised.
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("p1", first), Permit("p2", second)]
+        ).EvaluateAsync(new object(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, calls[0]);
+        Assert.Equal(PolicyOutcome.Permit, decision.Outcome);
+        Assert.Equal(2, decision.Results.Count);
+    }
+
+    /// <summary>
+    /// A faulting predicate shared by two policy conditions faults once (the second rule's term hits the memo
+    /// without invoking the predicate again), but each policy that references it still lists the fault in the
+    /// set's decision, exactly as it would without sharing (feature backlog 08).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultingPredicateSharedByTwoPolicyConditions_FaultsOnceButEachPolicyListsIt_Test()
+    {
+        int[] calls = [0];
+        CompiledRule<object> first = CompileSharing(
+            "sharedFault",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                throw new InvalidOperationException("The service is offline.");
+            }
+        );
+        CompiledRule<object> second = CompileSharing(
+            "sharedFault",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                throw new InvalidOperationException("The service is offline.");
+            }
+        );
+
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Deny("d1", first), Deny("d2", second)]
+        ).EvaluateAsync(new object(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, calls[0]);
+        Assert.Equal(2, decision.Decision.Faults.Count);
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+    }
+
+    /// <summary>
+    /// A fault shared by two policy conditions counts once against the set's fault budget, not once per policy
+    /// that references it: a third, unrelated policy still runs normally under a budget that only the doubled
+    /// count would have reached (feature backlog 08).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultSharedByTwoPolicyConditions_CountsOnceAgainstTheFaultBudget_Test()
+    {
+        int[] calls = [0];
+        CompiledRule<object> first = CompileSharing(
+            "sharedFault2",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                throw new InvalidOperationException("The service is offline.");
+            }
+        );
+        CompiledRule<object> second = CompileSharing(
+            "sharedFault2",
+            (_, _, _) =>
+            {
+                calls[0]++;
+                throw new InvalidOperationException("The service is offline.");
+            }
+        );
+
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Deny("d1", first), Deny("d2", second), Permit("p3", True)]
+        ).EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(FaultBudget: 2),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1, calls[0]);
+        Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "p3").Applies);
+    }
+
     /// <summary>The constructor rejects two policies with the same identifier.</summary>
     [Fact]
     public void Constructor_DuplicatePolicyIds_Throws_Test()
@@ -344,6 +460,19 @@ public class PolicySetTests
     )
     {
         builder.Add(fake.Schema, fake.Evaluate);
+    }
+
+    // Compiles a single-term rule over one named, no-argument predicate, so the same term identity (predicate
+    // name, no arguments) is produced by two different CompiledRule instances compiled from two different
+    // registries, and a shared PolicySet evaluation state can memoize across them.
+    private static CompiledRule<object> CompileSharing(
+        string predicateName,
+        Func<object, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
+    )
+    {
+        PredicateRegistryBuilder<object> builder = PredicateRegistry<object>.CreateBuilder();
+        builder.Add(PredicateSchema.NoArguments(predicateName, predicateName, "Registered for a test."), evaluate);
+        return new RuleCompiler<object>(builder.Build()).Compile(predicateName).GetRuleOrThrow();
     }
 
     private static Policy<object> Permit(

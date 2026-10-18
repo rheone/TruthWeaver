@@ -289,7 +289,14 @@ public sealed class PackageBoundaryTests
     [Fact]
     public void Core_InternalsVisibleTo_IsTheAllowList_Test()
     {
-        string[] allowed = ["TruthWeaver.Benchmarks", "TruthWeaver.Testing", "TruthWeaver.Tests", "TruthWeaver.Yaml"];
+        string[] allowed =
+        [
+            "TruthWeaver.Benchmarks",
+            "TruthWeaver.Policies",
+            "TruthWeaver.Testing",
+            "TruthWeaver.Tests",
+            "TruthWeaver.Yaml",
+        ];
 
         string[] granted =
         [
