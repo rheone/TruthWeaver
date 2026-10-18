@@ -136,11 +136,9 @@ jobs:
       attestations: write
 
     steps:
-      - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-
+      # This job has no checkout, so there is no global.json and no setup-dotnet step. `dotnet nuget push` runs with the
+      # .NET SDK that is on the runner image. Keeping the checkout out of this job also keeps the repository code out of
+      # the only job that can request an OIDC token.
       - name: Download packages
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
