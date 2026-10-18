@@ -14,10 +14,12 @@ internal static class WorkbenchPanes
         new DiagnosticsPane(),
         new ViewPane(),
         new ValidationPane(),
+        new CounterfactualPane(),
         new AssignmentPane(),
         new VariablesPane(),
         new RuleTestPane(),
         new TreePane(),
         new RewritePane(),
+        new ComparePane(),
     ];
 }

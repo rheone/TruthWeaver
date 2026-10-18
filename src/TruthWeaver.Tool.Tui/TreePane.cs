@@ -81,6 +81,9 @@ internal sealed class TreePane(WorkbenchServices? services) : IWorkbenchPane
         };
         workbench.DocumentChanged += (_, _) => view.Show();
         workbench.SelectedNodeChanged += (_, _) => view.Show();
+
+        // A case that is added, changed or removed changes the marks and the summary.
+        workbench.RuleTestsChanged += (_, _) => view.Show();
         view.Show();
         return view;
     }

@@ -10,7 +10,6 @@ using Terminal.Gui.Views;
 internal sealed class VariablesView : View
 {
     private readonly Workbench workbench;
-    private readonly VariablesEditorView editor;
     private readonly Label note;
     private bool syncing;
 
@@ -25,7 +24,7 @@ internal sealed class VariablesView : View
         this.Height = Dim.Fill();
         this.CanFocus = true;
 
-        this.editor = new VariablesEditorView
+        this.Editor = new VariablesEditorView
         {
             X = 0,
             Y = 0,
@@ -38,14 +37,14 @@ internal sealed class VariablesView : View
             Width = Dim.Fill(),
             Text = AssignmentText.VariablesNote(workbench.Assignment),
         };
-        this.Add(this.editor, this.note);
+        this.Add(this.Editor, this.note);
 
         // The editor to the assignment: every edit applies at once and the decision follows.
-        this.editor.ContentsChanged += (_, _) =>
+        this.Editor.ContentChanged += (_, _) =>
         {
             if (!this.syncing)
             {
-                _ = workbench.Assignment.SetVariables(Normalize(this.editor.Text));
+                _ = workbench.Assignment.SetVariables(Normalize(this.Editor.Text));
                 workbench.NotifyAssignmentChanged();
             }
         };
@@ -55,7 +54,7 @@ internal sealed class VariablesView : View
     }
 
     /// <summary>Gets the editor, for tests that type into it.</summary>
-    public View Editor => this.editor;
+    public VariablesEditorView Editor { get; }
 
     /// <summary>Gets the text under the editor.</summary>
     public string NoteText => this.note.Text;
@@ -67,7 +66,7 @@ internal sealed class VariablesView : View
         base.Dispose(disposing);
         if (disposing)
         {
-            this.editor.Dispose();
+            this.Editor.Dispose();
             this.note.Dispose();
         }
     }
@@ -80,7 +79,7 @@ internal sealed class VariablesView : View
     private void ShowAssignment()
     {
         this.note.Text = AssignmentText.VariablesNote(this.workbench.Assignment);
-        if (Normalize(this.editor.Text) == this.workbench.Assignment.VariablesText)
+        if (Normalize(this.Editor.Text) == this.workbench.Assignment.VariablesText)
         {
             return;
         }
@@ -88,7 +87,7 @@ internal sealed class VariablesView : View
         this.syncing = true;
         try
         {
-            this.editor.Text = this.workbench.Assignment.VariablesText;
+            this.Editor.Text = this.workbench.Assignment.VariablesText;
         }
         finally
         {

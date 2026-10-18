@@ -92,6 +92,43 @@ public sealed class RewritePlaygroundTests
         Assert.Equal(RuleRelation.Undecided, comparison.Relation.Relation);
     }
 
+    /// <summary>A note stays on a node that the rewrite leaves as it was, and a note on a node it changed is dropped and counted.</summary>
+    [Fact]
+    public void CarryNotes_NodeKeptAndNodeChanged_KeepsOneNoteAndDropsOne_Test()
+    {
+        CompiledRule<StubAssignment> before = CompileJson(
+            """{"op":"and","operands":[{"predicate":"a","note":"keep"},{"op":"not","operands":[{"op":"and","operands":[{"predicate":"b"},{"predicate":"c"}]}],"note":"drop"}]}"""
+        );
+        RewritePreview preview = RewritePlayground.Preview(before, RuleRewriteKind.NegationNormalForm);
+
+        NotedRewrite noted = RewritePlayground.CarryNotes(before, preview.After!);
+
+        Assert.Equal(1, noted.DroppedNotes);
+        Assert.Equal(["keep"], noted.Rule.Notes.Values);
+        Assert.Equal("$.operands[0]", Assert.Single(noted.Rule.Notes.Keys));
+        Assert.Equal(preview.After!.CanonicalText, noted.Rule.CanonicalText);
+    }
+
+    /// <summary>A rule with no notes comes back as it is, with nothing dropped.</summary>
+    [Fact]
+    public void CarryNotes_RuleWithoutNotes_ReturnsTheRewrittenRule_Test()
+    {
+        CompiledRule<StubAssignment> before = Compile("NOT (a AND b)");
+        RewritePreview preview = RewritePlayground.Preview(before, RuleRewriteKind.NegationNormalForm);
+
+        NotedRewrite noted = RewritePlayground.CarryNotes(before, preview.After!);
+
+        Assert.Same(preview.After, noted.Rule);
+        Assert.Equal(0, noted.DroppedNotes);
+    }
+
+    private static CompiledRule<StubAssignment> CompileJson(string json)
+    {
+        CompilationResult<StubAssignment> result = RuleConverter.CreateCompiler().CompileAs(json, RuleFormat.Json);
+        Assert.NotNull(result.Rule);
+        return result.Rule;
+    }
+
     private static CompiledRule<StubAssignment> Compile(string text)
     {
         CompilationResult<StubAssignment> result = RuleConverter.CreateCompiler().CompileAs(text, RuleFormat.Text);

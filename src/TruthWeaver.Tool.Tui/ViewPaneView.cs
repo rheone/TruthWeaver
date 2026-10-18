@@ -1,13 +1,10 @@
 namespace TruthWeaver.Tool.Tui;
 
+using Terminal.Gui.Editor;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
-// CS0618: Terminal.Gui 2.5 marks TextView obsolete in favour of the separate tui-cs/Editor package, a dependency the owner
-// has not approved. The read-only text view is the only scrollable text control in the approved package. The suppression
-// covers only the two TextView references below; .scratch/tui-workbench/issues/09-move-to-terminal-gui-editor-package.md records the follow-up.
-
-/// <summary>The view of <see cref="ViewPane"/>: a line of toggles above a read-only text view.</summary>
+/// <summary>The view of <see cref="ViewPane"/>: a line of toggles above a read-only editor view.</summary>
 internal sealed class ViewPaneView : View
 {
     private readonly ViewController controller;
@@ -29,8 +26,7 @@ internal sealed class ViewPaneView : View
             Height = 2,
         };
         this.header.TextFormatter.WordWrap = true;
-#pragma warning disable CS0618 // TextView is obsolete; see the comment at the top of the file.
-        this.Body = new TextView
+        this.Body = new Editor
         {
             X = 0,
             Y = 2,
@@ -38,17 +34,15 @@ internal sealed class ViewPaneView : View
             Height = Dim.Fill(),
             ReadOnly = true,
             WordWrap = false,
+            GutterOptions = GutterOptions.None,
         };
-#pragma warning restore CS0618
         this.Add(this.header, this.Body);
     }
 
-    /// <summary>Gets the text view that shows the printed rule.</summary>
-#pragma warning disable CS0618 // TextView is obsolete; see the comment at the top of the file.
-    public TextView Body { get; }
-#pragma warning restore CS0618
+    /// <summary>Gets the editor view that shows the printed rule.</summary>
+    public Editor Body { get; }
 
-    /// <summary>Gets the text that the text view shows.</summary>
+    /// <summary>Gets the text that the editor view shows.</summary>
     public string BodyText => this.Body.Text;
 
     /// <summary>Shows the header and the printed rule of the controller.</summary>

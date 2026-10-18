@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui;
 
 using System.Runtime.CompilerServices;
+using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Tool.Core;
@@ -9,12 +10,19 @@ using TruthWeaver.Tool.Core;
 /// The logic behind the Tree pane, with no view of its own: the lines of the tree, the selected node, the structural edits,
 /// the palette and the clipboard. Each edit acts on <see cref="Workbench.SelectedNode"/>, goes through
 /// <see cref="RuleTreeEditor"/>, and puts the result into the document as one undo step. An edit that the compiler refuses
-/// changes nothing and shows the reason on the status line.
+/// changes nothing and shows the reason on the status line. When the text has <c>let</c> definitions, the tree marks the
+/// uses and lists the definitions after the rule, and the edits keep the definitions.
 /// </summary>
 internal sealed class StructureController
 {
     /// <summary>The first entry of the palette list: type the expression instead of picking one.</summary>
     public const string TypeExpression = "Type an expression (rule text, JSON or YAML)";
+
+    /// <summary>The second entry of the palette list: search the ready-made predicates of the catalog.</summary>
+    public const string SearchCatalog = "Search the predicate catalog (name, label, family, words)";
+
+    /// <summary>The end of the line of a node that no saved case reaches. It is text, so it does not depend on the color.</summary>
+    public const string NoCaseMark = "  [no case]";
 
     private static readonly ConditionalWeakTable<Workbench, StructureController> Controllers = [];
 
@@ -23,6 +31,7 @@ internal sealed class StructureController
     private RuleTree? tree;
     private PredicateSchemaFile? schema;
     private bool schemaRead;
+    private string? schemaNotice;
 
     /// <summary>Initializes a new instance of the <see cref="StructureController"/> class.</summary>
     /// <param name="workbench">The shared state.</param>
@@ -52,7 +61,7 @@ internal sealed class StructureController
             if (this.tree is null || !ReferenceEquals(this.tree.Rule, this.workbench.Document.Rule))
             {
                 CompiledRule<StubAssignment>? rule = this.workbench.Document.Rule;
-                this.tree = rule is null ? null : RuleTree.Of(rule, this.workbench.Settings);
+                this.tree = rule is null ? null : RuleTree.Of(rule, this.workbench.Settings, this.Definitions());
             }
 
             return this.tree;
@@ -81,9 +90,31 @@ internal sealed class StructureController
         }
     }
 
-    /// <summary>Gets the lines of the tree: one for each node, indented by its depth.</summary>
-    public IReadOnlyList<string> Lines =>
-        this.Tree is { } current ? [.. current.Nodes.Select(n => new string(' ', n.Depth * 2) + n.Label)] : [];
+    /// <summary>
+    /// Gets the lines of the tree: one for each node, indented by its depth. When the saved cases are measured, a node that
+    /// no case reaches ends with <see cref="NoCaseMark"/>.
+    /// </summary>
+    public IReadOnlyList<string> Lines
+    {
+        get
+        {
+            if (this.Tree is not { } current)
+            {
+                return [];
+            }
+
+            CaseCoverage coverage = this.workbench.Coverage;
+            return
+            [
+                .. current.Nodes.Select(n =>
+                    new string(' ', n.Depth * 2) + n.Label + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
+                ),
+            ];
+        }
+    }
+
+    /// <summary>Gets the summary line of the coverage over the saved cases, or the reason there is none.</summary>
+    public string CoverageSummary => this.workbench.Coverage.Summary;
 
     /// <summary>Gets the index of the selected node in <see cref="Lines"/>, or -1.</summary>
     public int SelectedIndex
@@ -130,7 +161,7 @@ internal sealed class StructureController
     /// <returns>The palette.</returns>
     public RulePalette Palette()
     {
-        return RulePalette.Create(this.workbench.Document.Rule, this.Schema());
+        return RulePalette.Create(this.workbench.Document.Rule, this.Schema(), this.Definitions());
     }
 
     /// <summary>Asks for an operator from the palette and puts it in place of the operator of the selected node.</summary>
@@ -173,7 +204,7 @@ internal sealed class StructureController
             return false;
         }
 
-        return this.Apply(e => e.InsertOperand(this.workbench.SelectedNode, text));
+        return this.NoticeAfter(this.Apply(e => e.InsertOperand(this.workbench.SelectedNode, text)));
     }
 
     /// <summary>Deletes the selected node.</summary>
@@ -200,7 +231,7 @@ internal sealed class StructureController
             return false;
         }
 
-        return this.Apply(e => e.Replace(this.workbench.SelectedNode, text));
+        return this.NoticeAfter(this.Apply(e => e.Replace(this.workbench.SelectedNode, text)));
     }
 
     /// <summary>Asks for a literal of the selected node and its new value, and changes it.</summary>
@@ -277,6 +308,16 @@ internal sealed class StructureController
         return errors > 1 ? $"{edit.Message} ({errors} errors)" : edit.Message;
     }
 
+    private static string GroupLine(string family)
+    {
+        return $"--- {family} ---";
+    }
+
+    private static string CatalogLine(CatalogPredicate predicate)
+    {
+        return predicate.Entry.Display + " - " + predicate.Label;
+    }
+
     private bool Edit(Func<RuleTreeEditor, RuleTreeEdit> edit)
     {
         return this.workbench.RequireCurrentRule("edit the tree") && this.Apply(edit);
@@ -285,14 +326,16 @@ internal sealed class StructureController
     // Runs an edit on the rule of the document and puts the result in. A refused edit leaves the document as it was.
     private bool Apply(Func<RuleTreeEditor, RuleTreeEdit> edit, string? done = null)
     {
-        RuleTreeEdit result = edit(new RuleTreeEditor(this.workbench.Document.Rule!, this.workbench.Settings));
+        RuleTreeEdit result = edit(
+            new RuleTreeEditor(this.workbench.Document.Rule!, this.workbench.Settings, this.Definitions())
+        );
         if (!result.Succeeded)
         {
             this.workbench.SetStatus(Describe(result));
             return false;
         }
 
-        if (!this.workbench.ReplaceRule(result.Rule, done ?? result.Message + " Ctrl+Z undoes it."))
+        if (!this.workbench.ApplyEdit(result, done ?? result.Message + " Ctrl+Z undoes it."))
         {
             return false;
         }
@@ -327,22 +370,55 @@ internal sealed class StructureController
         return true;
     }
 
-    // Asks for an expression: a constant or a predicate of the palette (with a form for its arguments), or typed text.
+    // Asks for an expression: a constant or a predicate of the palette (with a form for its arguments), or typed text. The
+    // list holds the typed expression, the catalog search, the constants and the predicates of the schema file and of the
+    // rule, and then the ready-made predicates of the catalog in family groups.
     private string? PickExpression(string title)
     {
-        PaletteEntry[] entries = [.. this.Palette().Entries.Where(e => e.Source != PaletteSource.Operator)];
-        int? choice = this.Services.Dialogs.Choose(title, [TypeExpression, .. entries.Select(e => e.Display)]);
-        if (choice is not int index)
+        this.schemaNotice = null;
+        PaletteEntry[] own = [.. this.Palette().Entries.Where(e => e.Source != PaletteSource.Operator)];
+        List<string> items = [TypeExpression, SearchCatalog, .. own.Select(e => e.Display)];
+        List<PaletteEntry?> targets = [null, null, .. own];
+        string? family = null;
+        foreach (CatalogPredicate predicate in PredicateCatalog.All)
         {
-            return null;
+            if (predicate.Family != family)
+            {
+                family = predicate.Family;
+                items.Add(GroupLine(family));
+                targets.Add(null);
+            }
+
+            items.Add(CatalogLine(predicate));
+            targets.Add(predicate.Entry);
         }
 
-        if (index == 0)
+        PaletteEntry? picked = null;
+        while (picked is null)
         {
-            return this.Services.Dialogs.AskText(TypeExpression, string.Empty);
+            int? choice = this.Services.Dialogs.Choose(title, items);
+            switch (choice)
+            {
+                case null:
+                    return null;
+                case 0:
+                    return this.Services.Dialogs.AskText(TypeExpression, string.Empty);
+                case 1:
+                    picked = this.SearchCatalogEntry();
+                    if (picked is null)
+                    {
+                        return null;
+                    }
+
+                    break;
+                default:
+                    // A group line is not an entry; the list opens again.
+                    picked = targets[choice.Value];
+                    break;
+            }
         }
 
-        PaletteEntry entry = entries[index - 1];
+        PaletteEntry entry = picked;
         List<string> values = [];
         foreach (PaletteArgument argument in entry.Arguments)
         {
@@ -362,6 +438,7 @@ internal sealed class StructureController
         }
 
         ToolResult<string> filled = RulePalette.Fill(entry, values, this.workbench.Settings);
+        this.schemaNotice = filled.Succeeded ? this.SchemaGap(entry) : null;
         if (!filled.Succeeded)
         {
             Diagnostic? first = filled.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
@@ -372,6 +449,87 @@ internal sealed class StructureController
         }
 
         return filled.Value;
+    }
+
+    // Asks for words and lists the predicates of the catalog that match, in family groups. Returns the picked predicate, or
+    // null when the author cancels or nothing matches.
+    private PaletteEntry? SearchCatalogEntry()
+    {
+        if (this.Services.Dialogs.AskText("Search the predicate catalog", string.Empty) is not { } query)
+        {
+            return null;
+        }
+
+        IReadOnlyList<CatalogPredicate> found = PredicateCatalog.Search(query);
+        if (found.Count == 0)
+        {
+            this.workbench.SetStatus($"No predicate of the catalog matches '{query.Trim()}'.");
+            return null;
+        }
+
+        List<string> items = [];
+        List<PaletteEntry?> targets = [];
+        string? family = null;
+        foreach (CatalogPredicate predicate in found)
+        {
+            if (predicate.Family != family)
+            {
+                family = predicate.Family;
+                items.Add(GroupLine(family));
+                targets.Add(null);
+            }
+
+            items.Add(CatalogLine(predicate));
+            targets.Add(predicate.Entry);
+        }
+
+        while (this.Services.Dialogs.Choose($"Catalog: {query.Trim()}", items) is int choice)
+        {
+            // A group line is not an entry; the list opens again.
+            if (targets[choice] is { } entry)
+            {
+                return entry;
+            }
+        }
+
+        return null;
+    }
+
+    // The notice for a catalog predicate that the schema file of the settings does not declare. The file is never edited: the
+    // predicate goes into the rule, and the schema validation level reports it. Null when no schema file is set or readable.
+    private string? SchemaGap(PaletteEntry entry)
+    {
+        if (
+            entry.Source != PaletteSource.Catalog
+            || this.workbench.Settings.SchemaFile is null
+            || this.Schema() is not { } declared
+        )
+        {
+            return null;
+        }
+
+        return declared.Predicates.Any(p => p.Name == entry.Name)
+            ? null
+            : $"The schema file does not declare '{entry.Name}'; the schema validation level will flag it.";
+    }
+
+    // Adds the notice of the last pick to the status line, after the edit has put its own message there.
+    private bool NoticeAfter(bool changed)
+    {
+        if (changed && this.schemaNotice is { } notice)
+        {
+            this.workbench.SetStatus($"{this.workbench.Status} {notice}");
+        }
+
+        this.schemaNotice = null;
+        return changed;
+    }
+
+    // The definitions of the text, only when the text compiled: the tree and the edits start from that rule.
+    private RuleDefinitions? Definitions()
+    {
+        RuleDocument document = this.workbench.Document;
+        return document.IsRuleCurrent && document.Definitions.HasDefinitions ? document.Definitions : null;
     }
 
     private RuleTreeNode SelectedNodeOrRoot()

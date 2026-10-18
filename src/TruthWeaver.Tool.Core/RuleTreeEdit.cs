@@ -16,6 +16,13 @@ public sealed record RuleTreeEdit(
     EquatableArray<Diagnostic> Diagnostics
 )
 {
+    /// <summary>
+    /// Gets the edited document in the JSON tree format with its <c>let</c> definitions and uses (the form of
+    /// <c>RuleDefinitions.PrintJson</c>), when the edit was made on a document that has definitions; otherwise
+    /// <see langword="null"/>. <see cref="RuleDocument.ApplyEdit"/> prints it in the format of the document.
+    /// </summary>
+    public string? Document { get; init; }
+
     /// <summary>Gets a value indicating whether the edit gave a rule that compiles.</summary>
     [MemberNotNullWhen(true, nameof(Rule))]
     public bool Succeeded => this.Rule is not null;

@@ -83,16 +83,16 @@ public sealed class AssignmentPaneTests : IDisposable
         Assert.Equal("NOT is Unknown: NOT of Unknown stays Unknown.", root.Children[1].Reason);
     }
 
-    /// <summary>The trace colors True green, False red, Unknown yellow, and a skipped node gray.</summary>
+    /// <summary>The trace colors the four states of a node (True, False, Unknown, skipped) in four distinct colors.</summary>
     [Fact]
     public void Of_EachValue_GivesADistinctColor_Test()
     {
         Terminal.Gui.Drawing.Color[] colors =
         [
-            TruthColors.Of(TruthValue.True),
-            TruthColors.Of(TruthValue.False),
-            TruthColors.Of(TruthValue.Unknown),
-            TruthColors.Of(null),
+            ThemePalette.Dark.Of(TruthValue.True),
+            ThemePalette.Dark.Of(TruthValue.False),
+            ThemePalette.Dark.Of(TruthValue.Unknown),
+            ThemePalette.Dark.Of((TruthValue?)null),
         ];
 
         Assert.Equal(4, colors.Distinct().Count());

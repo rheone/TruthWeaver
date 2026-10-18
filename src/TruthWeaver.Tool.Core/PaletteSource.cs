@@ -14,4 +14,13 @@ public enum PaletteSource
 
     /// <summary>A predicate that the open rule uses.</summary>
     Document = 3,
+
+    /// <summary>A ready-made predicate of the <c>TruthWeaver.Predicates</c> package. A host (the terminal UI) adds these; <see cref="RulePalette.Create"/> does not.</summary>
+    Catalog = 4,
+
+    /// <summary>
+    /// A <c>let</c> definition of the open rule. Its arguments are its parameters, each an expression; the filled entry is
+    /// a use of the definition, which only a document with that definition can compile.
+    /// </summary>
+    Definition = 5,
 }

@@ -20,7 +20,13 @@ internal sealed class RuleTextPane : IWorkbenchPane
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
-        RuleEditorView editor = new() { Width = Dim.Fill(), Height = Dim.Fill() };
+        RuleEditorView editor = new()
+        {
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            Palette = workbench.Palette,
+        };
+        workbench.ThemeChanged += (_, _) => editor.Palette = workbench.Palette;
         bool syncing = false;
 
         // The document to the editor: replace the text only when it differs, so typing keeps the cursor where it is.
@@ -45,11 +51,11 @@ internal sealed class RuleTextPane : IWorkbenchPane
 
         // The editor to the document. The text view may report its lines with the platform line ending; the document
         // keeps line feeds, so diagnostic spans and saved files are the same on every platform.
-        editor.ContentsChanged += (_, _) =>
+        editor.ContentChanged += (_, _) =>
         {
             if (!syncing)
             {
-                workbench.Document.SetText(Normalize(editor.Text));
+                workbench.EditText(Normalize(editor.Text));
             }
         };
 

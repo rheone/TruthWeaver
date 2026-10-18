@@ -269,6 +269,24 @@ public sealed class PackageBoundaryTests
         Assert.Contains("TruthWeaver.Tool.Core", referenced);
         Assert.Contains("Terminal.Gui", referenced);
 
+        // Approved by the owner (2026-10-17): the editor view of the Terminal.Gui.Editor package, for this project only.
+        Assert.Contains("Terminal.Gui.Editor", referenced);
+
+        // Approved by the owner (2026-10-17): the palette offers the ready-made predicates, found by reflection. This is the
+        // only new reference; any other TruthWeaver package here is a deliberate change to this list.
+        Assert.Contains("TruthWeaver.Predicates", referenced);
+        string[] allowedPackages =
+        [
+            "TruthWeaver",
+            "TruthWeaver.Abstractions",
+            "TruthWeaver.Predicates",
+            "TruthWeaver.Testing",
+            "TruthWeaver.Tool.Core",
+            "TruthWeaver.Tool.Tui",
+            "TruthWeaver.Yaml",
+        ];
+        Assert.Empty(referenced.Where(n => n.StartsWith("TruthWeaver", StringComparison.Ordinal)).Except(allowedPackages));
+
         // Approved by the owner (ADR-0017): the rule-test runner lives in TruthWeaver.Testing, as for the command line.
         Assert.Contains("TruthWeaver.Testing", referenced);
         Assert.DoesNotContain("TruthWeaver.Tool", referenced);
@@ -278,6 +296,7 @@ public sealed class PackageBoundaryTests
             string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
             Assert.DoesNotContain("TruthWeaver.Tool.Tui", names);
             Assert.DoesNotContain("Terminal.Gui", names);
+            Assert.DoesNotContain("Terminal.Gui.Editor", names);
         }
     }
 

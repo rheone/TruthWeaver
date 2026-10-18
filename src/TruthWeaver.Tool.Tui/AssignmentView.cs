@@ -69,7 +69,11 @@ internal sealed class AssignmentView : View
             AspectGetter = AssignmentText.TraceLineText,
         };
         this.tree.ColorGetter = line =>
-            TruthColors.SchemeOf(line.Value, this.tree.GetAttributeForRole(VisualRole.Normal).Background);
+            TruthColors.SchemeOf(
+                line.Value,
+                this.workbench.Palette,
+                this.tree.GetAttributeForRole(VisualRole.Normal).Background
+            );
         this.reason = new Label
         {
             X = 0,
@@ -82,6 +86,7 @@ internal sealed class AssignmentView : View
         this.tree.SelectionChanged += (_, e) => this.reason.Text = e.NewValue?.Reason ?? this.rootLine?.Reason ?? string.Empty;
         workbench.DocumentChanged += (_, _) => this.Show();
         workbench.AssignmentChanged += (_, _) => this.Show();
+        workbench.ThemeChanged += (_, _) => this.tree.SetNeedsDraw();
         this.Show();
     }
 

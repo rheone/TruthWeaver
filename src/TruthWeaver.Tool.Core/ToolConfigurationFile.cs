@@ -11,7 +11,7 @@ using TruthWeaver.Printing;
 /// </summary>
 /// <remarks>
 /// The reader accepts the members of the schema: <c>operatorStyle</c>, <c>constantStyle</c>, <c>dialect</c>,
-/// <c>limits</c> (<c>maxDepth</c>, <c>maxNodeCount</c>, <c>maxAnalysisTerms</c>, <c>maxRewriteNodeCount</c>) and
+/// <c>theme</c>, <c>limits</c> (<c>maxDepth</c>, <c>maxNodeCount</c>, <c>maxAnalysisTerms</c>, <c>maxRewriteNodeCount</c>) and
 /// <c>schemaFile</c>, plus <c>$schema</c>. Property names match exactly. Enumeration values ignore case; the schema lists them in lower case. A value of the
 /// wrong type, an unknown enumeration value or a limit below 1 is a <see cref="ToolDiagnosticCodes.InvalidConfiguration"/>
 /// error. An unknown property is a <see cref="ToolDiagnosticCodes.UnknownConfigurationProperty"/> warning, and the reader
@@ -118,6 +118,7 @@ public static class ToolConfigurationFile
                         ConstantStyle = ReadEnum<ConstantStyle>(property.Value, path, diagnostics),
                     },
                     "dialect" => configuration with { Dialect = ReadEnum<EquationDialect>(property.Value, path, diagnostics) },
+                    "theme" => configuration with { Theme = ReadEnum<ToolTheme>(property.Value, path, diagnostics) },
                     "limits" => ReadLimits(configuration, property.Value, path, diagnostics),
                     "schemaFile" => configuration with
                     {

@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests;
 
 using TruthWeaver.Analysis;
+using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
@@ -56,6 +57,29 @@ public sealed class RewriteControllerTests
         Assert.Equal("NOT a OR NOT b", after);
         Assert.Null(controller.Preview);
         Assert.Equal("NOT (a AND b)", workbench.Document.Text);
+    }
+
+    /// <summary>Accept keeps the note of a node the rewrite leaves alone, says when it drops one, and one undo restores the text.</summary>
+    [Fact]
+    public void Accept_RuleWithNotes_KeepsWhatItCanAndSaysWhatItDrops_Test()
+    {
+        (RewriteController controller, _, Workbench workbench) = Create(
+            """{"op":"and","operands":[{"predicate":"a","note":"keep"},{"op":"not","operands":[{"op":"and","operands":[{"predicate":"b"},{"predicate":"c"}]}],"note":"drop"}]}""",
+            format: RuleFormat.Json
+        );
+        string earlier = workbench.Document.Text;
+        controller.Run(RuleRewriteKind.NegationNormalForm);
+
+        bool accepted = controller.Accept();
+        string after = workbench.Document.Text;
+        string status = workbench.Status;
+        workbench.Undo();
+
+        Assert.True(accepted);
+        Assert.Contains("keep", after, StringComparison.Ordinal);
+        Assert.DoesNotContain("drop", after, StringComparison.Ordinal);
+        Assert.Contains("1 note was dropped", status, StringComparison.Ordinal);
+        Assert.Equal(earlier, workbench.Document.Text);
     }
 
     /// <summary>A preview of a rule that changed since the rewrite ran is not accepted.</summary>
@@ -160,12 +184,13 @@ public sealed class RewriteControllerTests
 
     private static (RewriteController Controller, ScriptedServices Services, Workbench Workbench) Create(
         string text,
-        ToolSettings? settings = null
+        ToolSettings? settings = null,
+        RuleFormat format = RuleFormat.Text
     )
     {
         ScriptedServices services = new();
         ToolSettings resolved = settings ?? ToolSettings.Default;
-        Workbench workbench = new(RuleDocument.Create(text, settings: resolved), resolved, new ScriptedPrompts());
+        Workbench workbench = new(RuleDocument.Create(text, format, resolved), resolved, new ScriptedPrompts());
         return (new RewriteController(workbench, services.Services), services, workbench);
     }
 }

@@ -27,6 +27,8 @@ public sealed record PaletteEntry(
                 PaletteSource.Operator => "operator",
                 PaletteSource.Constant => "constant",
                 PaletteSource.SchemaFile => "schema",
+                PaletteSource.Catalog => "catalog",
+                PaletteSource.Definition => "let",
                 _ => "rule",
             };
             string arguments =

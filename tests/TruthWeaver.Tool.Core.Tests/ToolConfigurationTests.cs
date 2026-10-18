@@ -27,6 +27,7 @@ public sealed class ToolConfigurationTests
                 OperatorStyle = OperatorStyle.Symbolic,
                 ConstantStyle = ConstantStyle.Letters,
                 Dialect = EquationDialect.LaTeX,
+                Theme = ToolTheme.Dark,
                 MaxDepth = 16,
                 MaxNodeCount = 256,
                 MaxAnalysisTerms = 12,
@@ -53,6 +54,7 @@ public sealed class ToolConfigurationTests
     [Theory]
     [InlineData("""{"operatorStyle": "fancy"}""")]
     [InlineData("""{"dialect": 3}""")]
+    [InlineData("""{"theme": "blue"}""")]
     [InlineData("""{"limits": {"maxDepth": 0}}""")]
     [InlineData("""{"limits": {"maxNodeCount": 1.5}}""")]
     [InlineData("""{"limits": 32}""")]
@@ -80,6 +82,17 @@ public sealed class ToolConfigurationTests
 
         Assert.Equal(EquationDialect.LaTeX, result.Value?.Dialect);
         Assert.Equal(ConstantStyle.LogicSymbols, result.Value?.ConstantStyle);
+    }
+
+    /// <summary>The <c>theme</c> setting takes auto, light or dark in any case, and the settings default to auto.</summary>
+    [Fact]
+    public void Parse_Theme_IsReadAndDefaultsToAuto_Test()
+    {
+        ToolResult<ToolConfiguration> result = ToolConfigurationFile.Parse("""{"theme": "Light"}""");
+
+        Assert.Equal(ToolTheme.Light, result.Value?.Theme);
+        Assert.Equal(ToolTheme.Light, ToolSettings.Resolve(result.Value, null).Theme);
+        Assert.Equal(ToolTheme.Auto, ToolSettings.Resolve(null, null).Theme);
     }
 
     /// <summary>An unknown property is a warning, and the reader ignores it; the schema rejects it.</summary>

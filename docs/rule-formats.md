@@ -83,6 +83,7 @@ The guarantee is about the compiled rule, not the source text. A conversion does
 - **YAML `#` comments.** They are not notes. Use a `note` key to keep a comment.
 - **Note text outside the normal form.** A note is normalized when it is read (see [Notes](#notes)), so trailing spaces and blank space around it are not kept.
 - **Notes, after a rewrite.** A rewrite such as `Simplify` returns a rule with no notes, so a rewritten rule converts without them. `CanonicalText`, and a print with `includeNotes: false`, also leave the notes out.
+- **Definitions.** A compiled rule has no [definitions](#definitions-and-parameters), so a conversion writes out each use as the body of its definition. To keep the definitions, read the source with [`RuleDefinitions`](rule-text.md#read-the-definitions-of-a-document) and print it with `PrintJson()` or `PrintYaml()`.
 
 ## Definitions and parameters
 

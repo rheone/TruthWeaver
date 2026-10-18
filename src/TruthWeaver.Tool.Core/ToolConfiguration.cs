@@ -21,6 +21,9 @@ public sealed record ToolConfiguration
     /// <summary>Gets the notation of printed equations (<c>dialect</c>).</summary>
     public EquationDialect? Dialect { get; init; }
 
+    /// <summary>Gets the color set of the terminal workbench (<c>theme</c>).</summary>
+    public ToolTheme? Theme { get; init; }
+
     /// <summary>Gets the maximum tree depth (<c>limits.maxDepth</c>).</summary>
     public int? MaxDepth { get; init; }
 

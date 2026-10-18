@@ -25,6 +25,9 @@ public sealed record ToolSettings
     /// <summary>Gets the notation of printed equations. The default is <see cref="EquationDialect.Unicode"/>.</summary>
     public EquationDialect Dialect { get; init; } = EquationDialect.Unicode;
 
+    /// <summary>Gets the color set of the terminal workbench. The default is <see cref="ToolTheme.Auto"/>.</summary>
+    public ToolTheme Theme { get; init; } = ToolTheme.Auto;
+
     /// <summary>Gets the maximum tree depth. The default is the compiler default, 32.</summary>
     public int MaxDepth { get; init; } = CompilerOptions.Default.MaxDepth;
 
@@ -56,6 +59,7 @@ public sealed record ToolSettings
             OperatorStyle = command.OperatorStyle ?? file.OperatorStyle ?? Default.OperatorStyle,
             ConstantStyle = command.ConstantStyle ?? file.ConstantStyle ?? Default.ConstantStyle,
             Dialect = command.Dialect ?? file.Dialect ?? Default.Dialect,
+            Theme = command.Theme ?? file.Theme ?? Default.Theme,
             MaxDepth = command.MaxDepth ?? file.MaxDepth ?? Default.MaxDepth,
             MaxNodeCount = command.MaxNodeCount ?? file.MaxNodeCount ?? Default.MaxNodeCount,
             MaxAnalysisTerms = command.MaxAnalysisTerms ?? file.MaxAnalysisTerms ?? Default.MaxAnalysisTerms,

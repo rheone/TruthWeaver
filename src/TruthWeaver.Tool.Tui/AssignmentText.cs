@@ -48,7 +48,7 @@ internal static class AssignmentText
             return $"[?] {term.Display}  (no data yet)";
         }
 
-        return $"[{Letter(term.Value)}] {term.Display}";
+        return $"[{TruthColors.Letter(term.Value)}] {term.Display}";
     }
 
     /// <summary>The line of a trace node: the value, then the node.</summary>
@@ -58,7 +58,7 @@ internal static class AssignmentText
     {
         ArgumentNullException.ThrowIfNull(line);
 
-        return $"{(line.Value is { } value ? value.ToString() : "skipped")}  {line.Text}";
+        return $"{TruthColors.Mark(line.Value)}  {line.Text}";
     }
 
     /// <summary>The lines of the Variables pane under the editor: the problems of the text, or a hint.</summary>
@@ -71,15 +71,5 @@ internal static class AssignmentText
         return session.VariableDiagnostics.Count == 0
             ? "A JSON or YAML object: each source name maps to its data, such as {\"user\": {\"region\": \"EU\"}}. Ctrl+F4 loads a file."
             : string.Join(" | ", session.VariableDiagnostics.Select(d => d.Message)) + " (the last good data applies)";
-    }
-
-    private static char Letter(TruthValue value)
-    {
-        return value switch
-        {
-            TruthValue.True => 'T',
-            TruthValue.False => 'F',
-            _ => 'U',
-        };
     }
 }
