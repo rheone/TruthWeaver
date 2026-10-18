@@ -81,6 +81,7 @@ Start with these files for common tasks:
 | Diff two compiled rules | [`RuleDiff`](../src/TruthWeaver/Diffing/RuleDiff.cs) |
 | Check two rules for Strong K3 equivalence | [`RuleEquivalence`](../src/TruthWeaver/Analysis/RuleEquivalence.cs) |
 | Check whether one rule is looser or tighter than another | [`RuleImplication`](../src/TruthWeaver/Analysis/RuleImplication.cs) |
+| Find redundant rules and compare every pair of a group of rules | [`RuleSetAnalysis`](../src/TruthWeaver/Analysis/RuleSetAnalysis.cs) |
 | Find the smallest term changes that would give a rule a value | [`RuleCounterfactual`](../src/TruthWeaver/Analysis/RuleCounterfactual.cs) |
 | Wire into a DI container | [`TruthWeaverServiceCollectionExtensions`](../src/TruthWeaver/DependencyInjection/TruthWeaverServiceCollectionExtensions.cs) |
 | Compile JSON or YAML instead of the DSL | [`JsonTreeParser`](../src/TruthWeaver/Json/JsonTreeParser.cs), [`YamlTreeParser`](../src/TruthWeaver.Yaml/YamlTreeParser.cs) |

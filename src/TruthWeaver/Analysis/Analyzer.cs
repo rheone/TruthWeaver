@@ -79,7 +79,7 @@ internal static class Analyzer
     public static IReadOnlyDictionary<TermIdentity, TruthValue>? FindDifference(Expression left, Expression right)
     {
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         List<Diagnostic> ignored = [];
         DualRail leftRail = Build(left, bdd, variableIndex, ignored);
         DualRail rightRail = Build(right, bdd, variableIndex, ignored);
@@ -108,7 +108,7 @@ internal static class Analyzer
     ) CompareSatisfaction(Expression left, Expression right)
     {
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         List<Diagnostic> ignored = [];
         int leftTrue = Build(left, bdd, variableIndex, ignored).Definite;
         int rightTrue = Build(right, bdd, variableIndex, ignored).Definite;
@@ -244,42 +244,108 @@ internal static class Analyzer
     )> JointOutcomes(Expression left, Expression right)
     {
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         List<Diagnostic> ignored = [];
         DualRail leftRail = Build(left, bdd, variableIndex, ignored);
         DualRail rightRail = Build(right, bdd, variableIndex, ignored);
+        return JointOutcomeCells(bdd, leftRail, rightRail, variableIndex);
+    }
 
-        Dictionary<TruthValue, int> leftByValue = ValueNodesByTarget(bdd, leftRail);
-        Dictionary<TruthValue, int> rightByValue = ValueNodesByTarget(bdd, rightRail);
+    /// <summary>
+    /// Builds every rule of a set on one shared dual-rail BDD and answers ticket 21c's set-level questions: the
+    /// pairwise joint-outcome sweep (<see cref="JointOutcomeCells"/>, run once per pair without rebuilding a rule;
+    /// design note section 4) and redundancy under the "any grants" reading, i.e. the set holds when any rule holds
+    /// (ADR-0009 decision 5): rule <c>i</c> is redundant when its definitely-true rail is covered by the <c>OR</c>
+    /// of every other rule's definitely-true rail. Shadowing is not computed here: it needs a combining reading for
+    /// an <c>Unknown</c> rule, which ticket 07 (on hold) has not decided.
+    /// </summary>
+    /// <param name="roots">Each rule's compiled tree, in index order; the index is the rule's identity in the report.</param>
+    /// <param name="maxBddNodes">The BDD node budget.</param>
+    /// <returns>
+    /// For every unordered pair of indexes, its reachable joint-outcome cells; for every rule, whether it is
+    /// redundant (and, when it is not, one assignment where it alone is <c>True</c>, i.e. its unique contribution);
+    /// and the indexes of one set of rules removable together, found by a greedy walk from the end of the list that
+    /// drops a rule exactly when the rules still kept already cover it (design note section 4's pitfall: a rule
+    /// redundant on its own given every other rule is not always removable together with every other redundant rule).
+    /// </returns>
+    /// <exception cref="BddNodeBudgetExceededException">The shared build would exceed <paramref name="maxBddNodes"/> nodes.</exception>
+    internal static (
+        IReadOnlyList<(
+            int First,
+            int Second,
+            IReadOnlyList<(
+                TruthValue FirstValue,
+                TruthValue SecondValue,
+                IReadOnlyDictionary<TermIdentity, TruthValue> Example
+            )> Cells
+        )> Pairs,
+        IReadOnlyList<(
+            int Index,
+            bool Redundant,
+            IReadOnlyDictionary<TermIdentity, TruthValue>? UniqueContribution
+        )> Redundancy,
+        IReadOnlyList<int> RemovableTogether
+    ) AnalyzeSet(IReadOnlyList<Expression> roots, int maxBddNodes)
+    {
+        Dictionary<TermIdentity, int> variableIndex = [];
+        BddManager bdd = new(maxBddNodes);
+        List<Diagnostic> ignored = [];
+        List<DualRail> rails = [.. roots.Select(root => Build(root, bdd, variableIndex, ignored))];
+        int n = rails.Count;
 
-        // No term is Unknown: every term's "is Unknown" variable (2i + 1) is false. ANDing this into a cell gives a
-        // witness with no opaque Unknown term, when one exists.
-        int noTermIsUnknown = BddManager.True;
-        foreach (int index in variableIndex.Values)
+        // Pairwise sweep: the rules are already on one shared BDD, so each pair costs only the 9 cell operations.
+        List<(int, int, IReadOnlyList<(TruthValue, TruthValue, IReadOnlyDictionary<TermIdentity, TruthValue>)>)> pairs = [];
+        for (int i = 0; i < n; i++)
         {
-            noTermIsUnknown = bdd.And(noTermIsUnknown, bdd.Not(bdd.Variable((2 * index) + 1)));
-        }
-
-        List<(TruthValue, TruthValue, IReadOnlyDictionary<TermIdentity, TruthValue>)> results = [];
-        foreach (TruthValue firstValue in CellOrder)
-        {
-            foreach (TruthValue secondValue in CellOrder)
+            for (int j = i + 1; j < n; j++)
             {
-                int cell = bdd.And(leftByValue[firstValue], rightByValue[secondValue]);
-                if (cell == BddManager.False)
-                {
-                    continue;
-                }
-
-                int preferred = bdd.And(cell, noTermIsUnknown);
-                Dictionary<TermIdentity, TruthValue> example =
-                    Witness(bdd, preferred != BddManager.False ? preferred : cell, variableIndex)
-                    ?? throw new InvalidOperationException("A reachable cell must have a witness.");
-                results.Add((firstValue, secondValue, example));
+                pairs.Add((i, j, JointOutcomeCells(bdd, rails[i], rails[j], variableIndex)));
             }
         }
 
-        return results;
+        // Running prefix/suffix ORs of the definitely-true rails give "OR of every other rule" in O(n) Or calls
+        // instead of rebuilding the union per rule (design note section 5).
+        int[] prefixOr = new int[n + 1];
+        int[] suffixOr = new int[n + 1];
+        for (int i = 0; i < n; i++)
+        {
+            prefixOr[i + 1] = bdd.Or(prefixOr[i], rails[i].Definite);
+        }
+
+        for (int i = n - 1; i >= 0; i--)
+        {
+            suffixOr[i] = bdd.Or(suffixOr[i + 1], rails[i].Definite);
+        }
+
+        List<(int, bool, IReadOnlyDictionary<TermIdentity, TruthValue>?)> redundancy = [];
+        for (int i = 0; i < n; i++)
+        {
+            int orOfOthers = bdd.Or(prefixOr[i], suffixOr[i + 1]);
+            int uniqueToThis = bdd.And(rails[i].Definite, bdd.Not(orOfOthers));
+            redundancy.Add(
+                uniqueToThis == BddManager.False ? (i, true, null) : (i, false, Witness(bdd, uniqueToThis, variableIndex))
+            );
+        }
+
+        HashSet<int> kept = [.. Enumerable.Range(0, n)];
+        List<int> removable = [];
+        for (int i = n - 1; i >= 0; i--)
+        {
+            int orOfKeptOthers = BddManager.False;
+            foreach (int j in kept.Where(j => j != i))
+            {
+                orOfKeptOthers = bdd.Or(orOfKeptOthers, rails[j].Definite);
+            }
+
+            if (bdd.And(rails[i].Definite, bdd.Not(orOfKeptOthers)) == BddManager.False)
+            {
+                removable.Add(i);
+                kept.Remove(i);
+            }
+        }
+
+        removable.Sort();
+        return (pairs, redundancy, removable);
     }
 
     /// <summary>
@@ -415,6 +481,49 @@ internal static class Analyzer
         {
             CollectTerms(operand, terms);
         }
+    }
+
+    /// <summary>
+    /// The nine-cell joint-outcome table of two trees already built on the same shared BDD (the body
+    /// <see cref="JointOutcomes"/> and <see cref="AnalyzeSet"/> share).
+    /// </summary>
+    private static IReadOnlyList<(
+        TruthValue First,
+        TruthValue Second,
+        IReadOnlyDictionary<TermIdentity, TruthValue> Example
+    )> JointOutcomeCells(BddManager bdd, DualRail leftRail, DualRail rightRail, Dictionary<TermIdentity, int> variableIndex)
+    {
+        Dictionary<TruthValue, int> leftByValue = ValueNodesByTarget(bdd, leftRail);
+        Dictionary<TruthValue, int> rightByValue = ValueNodesByTarget(bdd, rightRail);
+
+        // No term is Unknown: every term's "is Unknown" variable (2i + 1) is false. ANDing this into a cell gives a
+        // witness with no opaque Unknown term, when one exists.
+        int noTermIsUnknown = BddManager.True;
+        foreach (int index in variableIndex.Values)
+        {
+            noTermIsUnknown = bdd.And(noTermIsUnknown, bdd.Not(bdd.Variable((2 * index) + 1)));
+        }
+
+        List<(TruthValue, TruthValue, IReadOnlyDictionary<TermIdentity, TruthValue>)> results = [];
+        foreach (TruthValue firstValue in CellOrder)
+        {
+            foreach (TruthValue secondValue in CellOrder)
+            {
+                int cell = bdd.And(leftByValue[firstValue], rightByValue[secondValue]);
+                if (cell == BddManager.False)
+                {
+                    continue;
+                }
+
+                int preferred = bdd.And(cell, noTermIsUnknown);
+                Dictionary<TermIdentity, TruthValue> example =
+                    Witness(bdd, preferred != BddManager.False ? preferred : cell, variableIndex)
+                    ?? throw new InvalidOperationException("A reachable cell must have a witness.");
+                results.Add((firstValue, secondValue, example));
+            }
+        }
+
+        return results;
     }
 
     /// <summary>Reads one satisfying assignment of <paramref name="node"/> back as a K3 value for every term.</summary>
