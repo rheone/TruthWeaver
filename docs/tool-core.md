@@ -2,6 +2,8 @@
 
 `TruthWeaver.Tool.Core` is the UI-free library that the `truthweaver` command line and the terminal UI share: it loads rules, finds their format, converts them, writes edited rules back into their documents, validates them, measures them, exports them as artifacts and reports, reads the configuration file, loads stub values and data files, and writes diagnostics and other output deterministically.
 
+The types are in one namespace for each folder of the project, `TruthWeaver.Tool.Core.<Folder>`. The [project README](../src/TruthWeaver.Tool.Core/README.md) lists the folders.
+
 The front ends parse options and draw output. The behavior is in this library, so the command line and the terminal UI behave the same way. The library is not a NuGet package (see [Packaging](#packaging)).
 
 ## Operations

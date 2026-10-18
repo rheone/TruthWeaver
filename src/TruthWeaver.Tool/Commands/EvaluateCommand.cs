@@ -3,7 +3,9 @@ namespace TruthWeaver.Tool.Commands;
 using System.CommandLine;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
 using DataSourceSet = TruthWeaver.Abstractions.DataSources;
 
 /// <summary>

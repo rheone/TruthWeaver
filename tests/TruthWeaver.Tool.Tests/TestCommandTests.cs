@@ -1,7 +1,7 @@
 namespace TruthWeaver.Tool.Tests;
 
 using System.Xml.Linq;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Tests.TestSupport;
 
 public sealed class TestCommandTests

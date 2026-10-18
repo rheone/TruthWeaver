@@ -4,7 +4,8 @@ using System.CommandLine;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Loading;
 
 /// <summary><c>truthweaver import</c>: a rule in another rule format (JsonLogic) to rule text, JSON or YAML.</summary>
 internal static class ImportCommand

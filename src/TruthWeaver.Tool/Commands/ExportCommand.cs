@@ -2,7 +2,10 @@ namespace TruthWeaver.Tool.Commands;
 
 using System.CommandLine;
 using System.Text.Json.Nodes;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Export;
+using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// <c>truthweaver export</c>: one artifact to a file (optionally rendered as an image), or every artifact to a folder

@@ -6,7 +6,7 @@ using TruthWeaver.Analysis;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

@@ -5,6 +5,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 
 /// <summary>

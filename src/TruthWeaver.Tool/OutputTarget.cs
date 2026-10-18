@@ -3,7 +3,8 @@ namespace TruthWeaver.Tool;
 using System.CommandLine;
 using System.Text.Json.Nodes;
 using TruthWeaver.Diagnostics;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// The <c>--output</c> and <c>--check</c> options of a command that makes one text, and the delivery of that text: to

@@ -4,7 +4,6 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 
 /// <summary>
 /// Pins <see cref="PolicySet{TContext}"/>: each combining algorithm over definite, Unknown and faulting policies, the

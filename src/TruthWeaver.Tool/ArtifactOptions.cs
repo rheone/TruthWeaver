@@ -2,7 +2,8 @@ namespace TruthWeaver.Tool;
 
 using System.CommandLine;
 using TruthWeaver.Printing;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Export;
 
 /// <summary>
 /// The <c>--artifact</c> and <c>--allow-large-truth-table</c> options of <c>print</c> and <c>export</c>. An artifact is

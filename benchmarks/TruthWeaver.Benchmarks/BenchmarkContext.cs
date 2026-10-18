@@ -2,7 +2,7 @@ namespace TruthWeaver.Benchmarks;
 
 /// <summary>
 /// The application context type every benchmark rule evaluates against. Empty: every predicate in
-/// this suite is a stateless, argument-driven lambda (<see cref="Testing.FakePredicates"/>) that
+/// this suite is a stateless, argument-driven lambda (<see cref="Testing.Fakes.FakePredicates"/>) that
 /// ignores the context entirely, so no benchmark-specific context data is needed. Public: BenchmarkDotNet
 /// requires benchmark classes to be public, and this type appears in their public members' signatures
 /// (e.g. <see cref="Compilation.CompilationResult{TContext}"/>).

@@ -1,0 +1,181 @@
+namespace TruthWeaver.Tool.Tui.Views;
+
+using Terminal.Gui.Drawing;
+using Terminal.Gui.Editor;
+using Terminal.Gui.Editor.Document;
+using Terminal.Gui.Editor.Rendering;
+using Terminal.Gui.Input;
+using TruthWeaver.Diagnostics;
+using TruthWeaver.Tool.Tui.Theme;
+using Attribute = Terminal.Gui.Drawing.Attribute;
+using Point = System.Drawing.Point;
+
+/// <summary>
+/// The rule text editor: a Terminal.Gui editor view that colors the characters a diagnostic marks (errors red, warnings
+/// yellow, information cyan, all underlined; the colors follow the theme, and with no color the severities differ by
+/// style). Undo and redo are not the editor's own: the workbench binds those keys to
+/// the document history, so one history covers typing, formatting and conversion.
+/// </summary>
+internal sealed class RuleEditorView : Editor
+{
+    private EditorMarks marks = EditorMarks.None;
+    private ThemePalette palette = ThemePalette.Dark;
+
+    /// <summary>Initializes a new instance of the <see cref="RuleEditorView"/> class.</summary>
+    public RuleEditorView()
+    {
+        // The document keeps the history. The editor's own Ctrl+Z and Ctrl+Y would undo behind its back, so its undo
+        // and redo commands report "not handled" and the keys go on to the workbench window.
+        this.AddCommand(Command.Undo, () => false);
+        this.AddCommand(Command.Redo, () => false);
+        this.GutterOptions = GutterOptions.None;
+        this.LineTransformers.Add(new MarkTransformer(this));
+    }
+
+    /// <summary>Gets or sets the marks to color, computed from the current text.</summary>
+    public EditorMarks Marks
+    {
+        get => this.marks;
+        set
+        {
+            this.marks = value;
+            this.SetNeedsDraw();
+        }
+    }
+
+    /// <summary>Gets or sets the colors of the marks. The workbench sets it from the theme.</summary>
+    public ThemePalette Palette
+    {
+        get => this.palette;
+        set
+        {
+            this.palette = value;
+            this.SetNeedsDraw();
+        }
+    }
+
+    /// <summary>Gets the cursor as a 0-based column (X) and line (Y).</summary>
+    public Point InsertionPoint
+    {
+        get
+        {
+            TextLocation location = this.Document!.GetLocation(this.CaretOffset);
+            return new Point(location.Column - 1, location.Line - 1);
+        }
+    }
+
+    /// <summary>Moves the cursor to an offset of the text and scrolls it into view.</summary>
+    /// <param name="offset">The offset.</param>
+    public void MoveTo(int offset)
+    {
+        this.CaretOffset = Math.Clamp(offset, 0, this.Document!.TextLength);
+    }
+
+    /// <summary>Colors the marked characters of a visual line: the editor calls it for each line before it draws.</summary>
+    private sealed class MarkTransformer(RuleEditorView owner) : IVisualLineTransformer
+    {
+        /// <inheritdoc />
+        public void Transform(CellVisualLine line)
+        {
+            EditorMarks marks = owner.marks;
+            int row = line.DocumentLine.LineNumber - 1;
+            int lineStart = line.DocumentLine.Offset;
+            List<CellVisualLineElement> result = [];
+            bool changed = false;
+            foreach (CellVisualLineElement element in line.Elements)
+            {
+                // Only a run of plain text is split per character. A run with wide characters has more cells than
+                // characters, so it takes the most severe mark of its characters as a whole.
+                if (element is TextRunElement run)
+                {
+                    changed |= ColorRun(run, marks, owner.palette, row, lineStart, result);
+                }
+                else
+                {
+                    result.Add(element);
+                }
+            }
+
+            if (changed)
+            {
+                line.ReplaceElements(result);
+            }
+        }
+
+        private static bool ColorRun(
+            TextRunElement run,
+            EditorMarks marks,
+            ThemePalette palette,
+            int row,
+            int lineStart,
+            List<CellVisualLineElement> result
+        )
+        {
+            DiagnosticSeverity?[] severities = new DiagnosticSeverity?[run.Text.Length];
+            bool any = false;
+            for (int i = 0; i < severities.Length; i++)
+            {
+                severities[i] = marks.At(row, run.DocumentOffset - lineStart + i);
+                any |= severities[i] is not null;
+            }
+
+            if (!any)
+            {
+                result.Add(run);
+                return false;
+            }
+
+            bool simple = run.Text.Length == run.VisualLength && run.Text.Length == run.DocumentLength;
+            if (!simple)
+            {
+                DiagnosticSeverity worst = severities.Where(s => s is not null).Max()!.Value;
+                result.Add(
+                    new TextRunElement(
+                        run.DocumentOffset,
+                        run.DocumentLength,
+                        run.VisualColumn,
+                        run.Text,
+                        Marked(run.Attribute, worst, palette)
+                    )
+                );
+                return true;
+            }
+
+            // Split the run where the severity changes, so each piece has one color.
+            int start = 0;
+            while (start < severities.Length)
+            {
+                int end = start + 1;
+                while (end < severities.Length && severities[end] == severities[start])
+                {
+                    end++;
+                }
+
+                Attribute attribute = severities[start] is { } severity
+                    ? Marked(run.Attribute, severity, palette)
+                    : run.Attribute;
+                result.Add(
+                    new TextRunElement(
+                        run.DocumentOffset + start,
+                        end - start,
+                        run.VisualColumn + start,
+                        run.Text[start..end],
+                        attribute
+                    )
+                );
+                start = end;
+            }
+
+            return true;
+        }
+
+        private static Attribute Marked(Attribute normal, DiagnosticSeverity severity, ThemePalette palette)
+        {
+            return new Attribute(
+                palette.Of(severity),
+                palette.HasColor ? normal.Background : Color.None,
+                palette.StyleOf(severity)
+            );
+        }
+    }
+}

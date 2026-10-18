@@ -68,6 +68,23 @@ F1 shows the full list in the window.
 Some panes have their own keys, such as Space, T, F and U in the term list of the Assign pane. [Terminal UI](../../docs/tui.md)
 lists them.
 
+## Folders
+
+Each folder has the namespace `TruthWeaver.Tool.Tui.<Folder>`. A build warning (IDE0130) shows a namespace that does not
+match its folder. `Program` and `Results` stay at the root.
+
+| Folder | Holds |
+| --- | --- |
+| `Commands` | The key commands of the workbench, one list for each feature. |
+| `Controllers` | The logic behind a pane: compare, counterfactual, embedded rule, export, import, rewrite, structure, validation and view. |
+| `Hosting` | The start of the application, and the dialogs, prompts and clipboard of the terminal. |
+| `Panes` | The panes of the regions, the pane interface and the layout of the regions. |
+| `Predicates` | The ready-made predicates that the palette offers as templates. |
+| `Sessions` | The state and the text lines that the panes share: values, rule tests, imports, exports and coverage. |
+| `Theme` | The colors, the theme choice and the editor marks. |
+| `Views` | The Terminal.Gui views of the panes and the rule renderer. |
+| `Workbench` | The workbench state, its window, the lists of panes and commands, and the preferences. |
+
 ## Depends on
 
 - [TruthWeaver.Abstractions](../TruthWeaver.Abstractions/README.md) for `TruthValue` and `Decision`.

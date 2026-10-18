@@ -9,6 +9,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Parsing;
 using TruthWeaver.Printing;
 using TruthWeaver.Registry;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tests.TestSupport;
 using TruthWeaver.Yaml;
 

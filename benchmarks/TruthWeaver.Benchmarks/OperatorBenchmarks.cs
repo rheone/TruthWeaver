@@ -6,7 +6,7 @@ using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
+using TruthWeaver.Testing.Fakes;
 
 /// <summary>
 /// Measures <see cref="CompiledRule{TContext}.EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for each operator family the Strong K3

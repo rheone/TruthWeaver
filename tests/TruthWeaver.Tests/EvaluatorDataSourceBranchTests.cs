@@ -4,7 +4,6 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
-using TruthWeaver.Testing;
 
 /// <summary>
 /// How the evaluator resolves a variable reference when the data source answers in an unusual way: an empty array

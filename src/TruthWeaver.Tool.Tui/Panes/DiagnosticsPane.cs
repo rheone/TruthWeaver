@@ -1,0 +1,96 @@
+namespace TruthWeaver.Tool.Tui.Panes;
+
+using System.Collections.ObjectModel;
+using Terminal.Gui.Input;
+using Terminal.Gui.ViewBase;
+using Terminal.Gui.Views;
+using TruthWeaver.Diagnostics;
+using TruthWeaver.Tool.Tui.Workbench;
+
+/// <summary>
+/// The diagnostics of the editor text, one per line with severity, code, line and column. Enter on a diagnostic puts the
+/// editor cursor at its span.
+/// </summary>
+internal sealed class DiagnosticsPane : IWorkbenchPane
+{
+    /// <summary>The line the pane shows when the text has no diagnostics.</summary>
+    public const string NoDiagnostics = "No diagnostics.";
+
+    /// <inheritdoc />
+    public string Title => "Diagnostics";
+
+    /// <inheritdoc />
+    public PaneSlot Slot => PaneSlot.Bottom;
+
+    /// <summary>Gets the lines the pane shows for a document: one per diagnostic, most severe first.</summary>
+    /// <param name="text">The text the spans point into.</param>
+    /// <param name="diagnostics">The diagnostics.</param>
+    /// <returns>The lines.</returns>
+    public static IReadOnlyList<string> LinesOf(string text, IReadOnlyList<Diagnostic> diagnostics)
+    {
+        if (diagnostics.Count == 0)
+        {
+            return [NoDiagnostics];
+        }
+
+        return [.. Order(diagnostics).Select(d => Describe(text, d))];
+    }
+
+    /// <inheritdoc />
+    public View CreateView(Workbench workbench)
+    {
+        ArgumentNullException.ThrowIfNull(workbench);
+
+        ObservableCollection<string> lines = [];
+        ListView list = new() { Width = Dim.Fill(), Height = Dim.Fill() };
+        list.SetSource(lines);
+        List<Diagnostic> shown = [];
+
+        void Show()
+        {
+            shown.Clear();
+            shown.AddRange(Order(workbench.Document.Diagnostics));
+            lines.Clear();
+            foreach (string line in LinesOf(workbench.Document.Text, workbench.Document.Diagnostics))
+            {
+                lines.Add(line);
+            }
+        }
+
+        list.KeyDown += (_, key) =>
+        {
+            if (key == Key.Enter && list.Value is int index && index < shown.Count && shown[index].Span != SourceSpan.None)
+            {
+                workbench.RequestSpan(shown[index].Span);
+                key.Handled = true;
+            }
+        };
+
+        workbench.DocumentChanged += (_, _) => Show();
+        Show();
+        return list;
+    }
+
+    private static IEnumerable<Diagnostic> Order(IEnumerable<Diagnostic> diagnostics)
+    {
+        return diagnostics.OrderByDescending(d => d.Severity).ThenBy(d => d.Span.Start);
+    }
+
+    private static string Describe(string text, Diagnostic diagnostic)
+    {
+        string severity = diagnostic.Severity switch
+        {
+            DiagnosticSeverity.Error => "error",
+            DiagnosticSeverity.Warning => "warning",
+            _ => "info",
+        };
+        string location = string.Empty;
+        if (diagnostic.Span != SourceSpan.None)
+        {
+            SourceLocation at = diagnostic.Span.GetLocation(text);
+            location = $" {at.Line}:{at.Column}";
+        }
+
+        return $"{severity} {diagnostic.Code}{location}: {diagnostic.Message}";
+    }
+}

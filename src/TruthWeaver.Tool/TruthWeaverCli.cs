@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool;
 
 using System.CommandLine;
 using TruthWeaver.Tool.Commands;
-using TruthWeaver.Tool.Core;
+using TruthWeaver.Tool.Core.Configuration;
 
 /// <summary>
 /// The <c>truthweaver</c> command line: the root command, its subcommands, and one run over a console. The commands are
