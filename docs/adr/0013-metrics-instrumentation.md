@@ -51,6 +51,10 @@ A host that needs a breakdown by rule counts in its own code, around `EvaluateAs
 
 ### 5. Traces (`Activity`) stay deferred
 
+Update (2026-10-17, feature backlog 09): the owner approved traces, and the library now owns an `ActivitySource`
+named `TruthWeaver` (see [Observability](../observability.md)). It keeps decision 4: tags carry the decision, the fault
+count and a registered predicate name, never rule text, arguments or resolved data. Per-term events remain deferred.
+
 This ADR does not add an `ActivitySource`. The per-evaluation `Activity`, the per-term event and the fault attributes
 that ADR-0004 describes as deferred remain deferred. The `Decision` trace and the
 logs cover "why this answer" today; a span model would need its own decision about attributes, because of the
