@@ -528,12 +528,12 @@ An evaluation result (a decision) is not an artifact, because it needs stub valu
 `ArtifactExporter.Render(rule, id)` gives the text of one artifact. `ArtifactExporter.Export(rule, artifact, writer)` writes it to a `TextWriter`, such as standard output, and `ArtifactExporter.Export(rule, artifact, path)` writes it to a file. Both write through `OutputWriter`, so the output has LF line endings and one final newline.
 
 - A rule that does not compile gives no artifact, and the result has the compile diagnostics. The diagnostics artifacts are the exception: they show why the rule does not compile.
-- A truth table over the cap of 8 terms is refused with a `TRE0035` error. With `ExportOptions.AllowLargerTruthTable`, the table is printed up to 12 terms with a `TRE0034` warning.
+- A truth table over the cap of 8 terms is refused with a `TRE0035` error. With `ExportOptions.AllowLargerTruthTable`, the table is printed up to 12 terms with a `TRE0034` warning. `ExportOptions.TruthTableTermLimit` sets the most terms a table can have, with no ceiling (you own the 3^n cost). A number allows a table above 8 terms by itself, up to that number, and a number below 8 lowers the cap. A number below 1 throws `ArgumentOutOfRangeException`. `AllowLargerTruthTable` stays as the switch for the default limit of 12.
 - An id that is not in the catalog is a `TWT0018` error that lists the ids.
 
 ### Export of every artifact
 
-`ArtifactExporter.ExportAll(rule, folder, options)` writes every artifact to a folder, one file each, and then writes `manifest.json`. The rule is compiled and validated one time. A truth table over the cap is left out with a `TWT0015` warning, and the manifest lists it as skipped, so a large rule still exports. A rule that does not compile writes nothing. The export does not delete other files of the folder.
+`ArtifactExporter.ExportAll(rule, folder, options)` writes every artifact to a folder, one file each, and then writes `manifest.json`. The rule is compiled and validated one time. A truth table over the cap (or over `TruthTableTermLimit`) is left out with a `TWT0015` warning that names the term limit of the export, and the manifest lists it as skipped, so a large rule still exports. A rule that does not compile writes nothing. The export does not delete other files of the folder.
 
 <!-- doctest:skip a manifest, not a rule -->
 ```json
@@ -588,7 +588,7 @@ With `ExportOptions.Images`, `ExportAll` also renders `mermaid.mmd` and `dot.dot
 2. **Rule**: the rule text, broken to a width of 80 characters, in a `text` code block.
 3. **Equation**: the LaTeX equation in the `` $`...`$ `` form, which GitHub draws with MathJax.
 4. **Diagram**: the Mermaid flowchart in a `mermaid` code block, which GitHub draws.
-5. **Truth table**: the Strong K3 table in Markdown. A rule over the cap gets a note in place of the table, with the term count and the row count. `ExportOptions.AllowLargerTruthTable` puts the table in and adds the `TRE0034` warning.
+5. **Truth table**: the Strong K3 table in Markdown. A rule over the cap gets a note in place of the table, with the term count and the row count. `ExportOptions.AllowLargerTruthTable` or `ExportOptions.TruthTableTermLimit` puts the table in and adds the `TRE0034` warning.
 6. **Statistics**: a table of the [statistics](#statistics).
 7. **Analysis**: the findings of the analysis level, each with its severity, code, tree path and message.
 

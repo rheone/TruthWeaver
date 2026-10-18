@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] `TruthTableOptions` has a settable term limit. The warning threshold (`DefaultTermCap`, 8) and the refusal limit (default 12) behave as before when the caller sets nothing.
-- [ ] `TRE0034` (cap raised, warning) and `TRE0035` (refused, error) report the configured values.
-- [ ] A limit below 1 is rejected.
-- [ ] The page that describes truth tables is updated to the current behavior, and `CHANGELOG.md` has an entry.
-- [ ] Tests cover a raised limit, a lowered limit, the default and both diagnostics.
+- [x] `TruthTableOptions` has a settable term limit. The warning threshold (`DefaultTermCap`, 8) and the refusal limit (default 12) behave as before when the caller sets nothing.
+- [x] `TRE0034` (cap raised, warning) and `TRE0035` (refused, error) report the configured values.
+- [x] A limit below 1 is rejected.
+- [x] The page that describes truth tables is updated to the current behavior, and `CHANGELOG.md` has an entry.
+- [x] Tests cover a raised limit, a lowered limit, the default and both diagnostics.

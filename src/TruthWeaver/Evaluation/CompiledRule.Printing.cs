@@ -566,7 +566,7 @@ public sealed partial class CompiledRule<TContext>
     /// <returns>The table text.</returns>
     /// <exception cref="InvalidOperationException">
     /// The rule has more terms than <see cref="TruthTableOptions.DefaultTermCap"/> and <see cref="TruthTableOptions.AllowLargerTable"/>
-    /// is not set, or it has more terms than <see cref="TruthTableOptions.HardTermLimit"/>. Call
+    /// is not set, or it has more terms than <see cref="TruthTableOptions.TermLimit"/>. Call
     /// <see cref="TryPrintTruthTable(TruthTableOptions?, out string?, out IReadOnlyList{Diagnostic})"/> to avoid the exception.
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">The <see cref="TruthTableOptions.Format"/> is not a defined value.</exception>

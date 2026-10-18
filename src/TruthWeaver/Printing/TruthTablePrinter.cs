@@ -45,13 +45,13 @@ internal static class TruthTablePrinter
         }
 
         int termCount = Analyzer.DistinctTerms(root).Count;
-        if (termCount > TruthTableOptions.HardTermLimit)
+        if (termCount > options.TermLimit)
         {
             diagnostics =
             [
                 Diagnostic.Error(
                     DiagnosticCodes.TruthTableTooLarge,
-                    $"The truth table was not printed: the rule has {termCount} distinct terms, more than the hard limit of {TruthTableOptions.HardTermLimit}.",
+                    $"The truth table was not printed: the rule has {termCount} distinct terms, more than the limit of {options.TermLimit}.",
                     SourceSpan.None
                 ),
             ];
@@ -62,7 +62,8 @@ internal static class TruthTablePrinter
         long rowCount = 1;
         for (int i = 0; i < termCount; i++)
         {
-            rowCount *= states.Length;
+            // Saturate: the count is only a message and a JSON field, and a caller may set a very large limit.
+            rowCount = rowCount > long.MaxValue / states.Length ? long.MaxValue : rowCount * states.Length;
         }
 
         string rows = rowCount.ToString("N0", CultureInfo.InvariantCulture);
@@ -74,7 +75,7 @@ internal static class TruthTablePrinter
                 [
                     Diagnostic.Error(
                         DiagnosticCodes.TruthTableTooLarge,
-                        $"The truth table was not printed: the rule has {termCount} distinct terms, more than the cap of {TruthTableOptions.DefaultTermCap} ({rows} rows). Set AllowLargerTable to print it, up to {TruthTableOptions.HardTermLimit} terms.",
+                        $"The truth table was not printed: the rule has {termCount} distinct terms, more than the cap of {TruthTableOptions.DefaultTermCap} ({rows} rows). Set AllowLargerTable to print it, up to {options.TermLimit} terms.",
                         SourceSpan.None
                     ),
                 ];

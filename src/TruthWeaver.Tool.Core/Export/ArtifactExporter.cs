@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Core.Export;
 
 using System.Security.Cryptography;
 using TruthWeaver.Diagnostics;
+using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Core.Loading;
@@ -145,7 +146,10 @@ public static class ArtifactExporter
             string reason = string.Join(" ", result.Diagnostics.Select(d => d.Message));
             skipped.Add(new SkippedArtifact(artifact.Id, reason));
             diagnostics.Add(
-                ToolResults.Warning(ToolDiagnosticCodes.ArtifactSkipped, $"The artifact '{artifact.Id}' is left out: {reason}")
+                ToolResults.Warning(
+                    ToolDiagnosticCodes.ArtifactSkipped,
+                    $"The artifact '{artifact.Id}' is left out: {reason} The truth-table term limit of this export is {source.Options.EffectiveTruthTableTermLimit}."
+                )
             );
         }
 

@@ -336,7 +336,75 @@ public sealed class TruthTableTests
         Assert.Null(none);
         Diagnostic error = Assert.Single(diagnostics);
         Assert.Equal(DiagnosticCodes.TruthTableTooLarge, error.Code);
-        Assert.Contains("hard limit of 12", error.Message, StringComparison.Ordinal);
+        Assert.Contains("limit of 12", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A raised term limit prints a table above 12 terms, and the <c>TRE0034</c> warning reports the row count.</summary>
+    [Fact]
+    public void TryPrintTruthTable_RaisedTermLimit_PrintsThirteenTermsWithAWarning_Test()
+    {
+        TruthTableOptions options = new()
+        {
+            AllowLargerTable = true,
+            Classical = true,
+            TermLimit = 13,
+        };
+
+        bool printed = CompileTerms(13)
+            .TryPrintTruthTable(options, out string? text, out IReadOnlyList<Diagnostic> diagnostics);
+
+        Assert.True(printed);
+        Assert.Equal(2 + 8192, text!.Split('\n').Length);
+        Diagnostic warning = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticCodes.TruthTableCapRaised, warning.Code);
+        Assert.Contains("8,192 rows", warning.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A lowered term limit refuses a rule above it with a <c>TRE0035</c> error that names the configured limit.</summary>
+    [Fact]
+    public void TryPrintTruthTable_LoweredTermLimit_RefusesAboveTheLimitAndNamesIt_Test()
+    {
+        TruthTableOptions options = new() { AllowLargerTable = true, TermLimit = 10 };
+
+        bool printed = CompileTerms(11)
+            .TryPrintTruthTable(options, out string? text, out IReadOnlyList<Diagnostic> diagnostics);
+
+        Assert.False(printed);
+        Assert.Null(text);
+        Diagnostic error = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticCodes.TruthTableTooLarge, error.Code);
+        Assert.Contains("limit of 10", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A term limit below the default cap refuses a rule above it even without the larger-table option.</summary>
+    [Fact]
+    public void TryPrintTruthTable_TermLimitBelowTheCap_RefusesAboveTheLimit_Test()
+    {
+        bool five = CompileTerms(5)
+            .TryPrintTruthTable(new TruthTableOptions { TermLimit = 4 }, out _, out IReadOnlyList<Diagnostic>? diagnostics);
+        bool four = CompileTerms(4).TryPrintTruthTable(new TruthTableOptions { TermLimit = 4 }, out _, out _);
+
+        Assert.False(five);
+        Assert.Equal(DiagnosticCodes.TruthTableTooLarge, Assert.Single(diagnostics).Code);
+        Assert.True(four);
+    }
+
+    /// <summary>The default term limit is 12, so the options behave as before when the caller sets nothing.</summary>
+    [Fact]
+    public void TermLimit_Default_IsTheHardTermLimit_Test()
+    {
+        Assert.Equal(TruthTableOptions.HardTermLimit, new TruthTableOptions().TermLimit);
+        Assert.Equal(12, TruthTableOptions.HardTermLimit);
+        Assert.Equal(8, TruthTableOptions.DefaultTermCap);
+    }
+
+    /// <summary>A term limit below 1 is rejected.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TermLimit_BelowOne_IsRejected_Test(int limit)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TruthTableOptions { TermLimit = limit });
     }
 
     /// <summary>The throwing form reports a refused table as an <see cref="InvalidOperationException"/> that carries the diagnostic message.</summary>

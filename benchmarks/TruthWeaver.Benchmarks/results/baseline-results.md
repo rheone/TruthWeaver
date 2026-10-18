@@ -1,6 +1,6 @@
 # Baseline results
 
-Captured 2026-10-03 (after the Strong K3 language surface, the rewrite size cap and the JSON/YAML parser
+Captured 2026-10-03; batch evaluation and a full re-run added 2026-10-18 (after the Strong K3 language surface, the rewrite size cap and the JSON/YAML parser
 rewrites) on:
 
 ```
@@ -172,6 +172,113 @@ New in this baseline. `CompilationResult.FormatDiagnostics` on a DSL rule that p
 |-------------------- |-----------:|---------:|---------:|----------:|
 | FormatWithoutSource |   888.7 ns | 366.7 ns | 20.10 ns |   6.88 KB |
 | FormatWithSource    | 1,852.4 ns | 254.3 ns | 13.94 ns |  11.69 KB |
+
+## Batch evaluation (`BatchEvaluationBenchmarks`)
+
+New in this baseline. `CompiledRule.EvaluateManyAsync` over 100 and 1,000 contexts, against a `foreach` loop of
+`EvaluateAsync` calls over the same contexts (`LoopAsync`, the baseline row, ratio 1.00). `EvaluateManySequentialAsync`
+runs one evaluation at a time; `EvaluateManyParallelAsync` runs one evaluation for each processor.
+
+| Method                      | ContextCount | Mean       | Error       | StdDev    | Ratio | RatioSD | Gen0     | Gen1    | Allocated  | Alloc Ratio |
+|---------------------------- |------------- |-----------:|------------:|----------:|------:|--------:|---------:|--------:|-----------:|------------:|
+| LoopAsync                   | 100          |   285.7 μs |   801.65 μs |  43.94 μs |  1.02 |    0.20 |  21.4844 |       - |  357.81 KB |        1.00 |
+| EvaluateManySequentialAsync | 100          |   364.8 μs |   346.85 μs |  19.01 μs |  1.30 |    0.19 |  21.9727 |       - |  364.68 KB |        1.02 |
+| EvaluateManyParallelAsync   | 100          |   103.2 μs |    22.98 μs |   1.26 μs |  0.37 |    0.05 |  24.1699 |  1.5869 |  393.24 KB |        1.10 |
+|                             |              |            |             |           |       |         |          |         |            |             |
+| LoopAsync                   | 1000         | 2,623.9 μs | 5,735.24 μs | 314.37 μs |  1.01 |    0.15 | 218.7500 |       - | 3578.13 KB |        1.00 |
+| EvaluateManySequentialAsync | 1000         | 3,274.5 μs | 1,648.26 μs |  90.35 μs |  1.26 |    0.14 | 222.6563 |       - | 3641.25 KB |        1.02 |
+| EvaluateManyParallelAsync   | 1000         |   864.0 μs |    86.53 μs |   4.74 μs |  0.33 |    0.04 | 241.2109 | 15.6250 | 3922.94 KB |        1.10 |
+
+The sequential batch costs about 1.3x the loop (within the noise of the Error column at this iteration count, with 2%
+more allocation for the batch machinery). The parallel batch takes about 0.35x of the loop time on this 12-thread host,
+with 10% more allocation.
+
+## Operand order (`EvaluationOrderBenchmarks`)
+
+`CheapFirstAsync` and `ExpensiveFirstAsync` compile the same four predicates and differ only in operand order, so the
+short-circuit can skip the expensive predicate only in the first.
+
+| Method              | Mean         | Error      | StdDev    | Ratio    | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|-------------------- |-------------:|-----------:|----------:|---------:|--------:|-------:|----------:|------------:|
+| CheapFirstAsync     |     1.292 μs |   3.729 μs | 0.2044 μs |     1.02 |    0.20 | 0.1202 |   1.99 KB |        1.00 |
+| ExpensiveFirstAsync | 1,542.653 μs | 149.700 μs | 8.2055 μs | 1,214.04 |  168.63 |      - |   2.19 KB |        1.10 |
+
+## Re-run 2026-10-18 of the other benchmarks
+
+Captured 2026-10-18 on the same machine with the same job (ShortRun, in-process), after the batch evaluation benchmarks
+were added. The host now runs .NET SDK 11.0.100-rc.2.26504.105 and BenchmarkDotNet 0.15.8, so the sections above (captured
+on rc.1 and 0.16.0-preview.2) are not a like-for-like comparison. Time moved by about 1.3x to 2x in this session on code
+that has not changed, which is the noise of a three-iteration job. Allocation moved more than noise on some rows (for
+example `Lint` on the Large rule: 68 KB then, 480 KB now; `ParseJson` Large: 100 KB then, 167 KB now). Those changes are
+not root-caused in this capture. Treat the 2026-10-03 and 2026-10-04 figures as the history and these as the current baseline.
+
+```
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26300.9711)
+AMD Ryzen 5 5600 3.50GHz, 1 CPU, 12 logical and 6 physical cores
+.NET SDK 11.0.100-rc.2.26504.105
+  [Host] : .NET 11.0.0 (11.0.0-rc.2.26504.105, 11.0.26.50505), X64 RyuJIT x86-64-v3
+
+Job=ShortRun  Toolchain=InProcessEmitToolchain  IterationCount=3  LaunchCount=1  WarmupCount=3
+```
+
+### Compile-time cost
+
+| Method  | Size  | Mean      | Error       | StdDev    | Gen0    | Gen1    | Gen2    | Allocated |
+|-------- |------ |----------:|------------:|----------:|--------:|--------:|--------:|----------:|
+| Compile | Small |  25.52 μs |    40.75 μs |  2.234 μs |  2.6550 |  0.1221 |       - |  43.56 KB |
+| Compile | Large | 588.57 μs | 1,540.83 μs | 84.458 μs | 79.1016 | 39.0625 | 39.0625 | 972.01 KB |
+
+### Compile cost by stage
+
+| Method           | Size  | Mean       | Error        | StdDev     | Gen0    | Gen1    | Gen2    | Allocated |
+|----------------- |------ |-----------:|-------------:|-----------:|--------:|--------:|--------:|----------:|
+| ParseJson        | Small |  10.308 μs |    31.150 μs |  1.7075 μs |  0.7019 |       - |       - |  11.54 KB |
+| ParseYaml        | Small |  38.968 μs |   110.875 μs |  6.0774 μs |  2.9297 |  0.1221 |       - |  48.47 KB |
+| ValidateAndBuild | Small |   3.164 μs |     4.345 μs |  0.2382 μs |  0.6027 |       - |       - |   9.86 KB |
+| Analyze          | Small |   7.016 μs |     5.675 μs |  0.3111 μs |  1.2054 |       - |       - |   19.8 KB |
+| Lint             | Small |   9.714 μs |    11.580 μs |  0.6347 μs |  1.1902 |       - |       - |  19.61 KB |
+| ParseJson        | Large | 140.197 μs |   435.735 μs | 23.8841 μs | 10.0098 |  1.2207 |       - | 166.59 KB |
+| ParseYaml        | Large | 609.920 μs | 1,302.110 μs | 71.3730 μs | 37.1094 | 11.7188 |       - | 617.69 KB |
+| ValidateAndBuild | Large |  59.486 μs |   110.883 μs |  6.0778 μs | 11.9019 |  0.7935 |       - | 195.41 KB |
+| Analyze          | Large | 335.880 μs |   265.653 μs | 14.5613 μs | 39.5508 | 39.5508 | 39.5508 | 585.71 KB |
+| Lint             | Large | 296.816 μs |   623.597 μs | 34.1814 μs | 29.2969 |  2.9297 |       - | 479.78 KB |
+
+### Eval-time memoized term lookup
+
+| Method        | BranchCount | Mean       | Error      | StdDev    | Gen0   | Gen1   | Allocated |
+|-------------- |------------ |-----------:|-----------:|----------:|-------:|-------:|----------:|
+| EvaluateAsync | 10          |   9.628 μs |  21.248 μs |  1.165 μs | 0.4883 |      - |   8.06 KB |
+| EvaluateAsync | 50          |  46.335 μs | 110.103 μs |  6.035 μs | 2.1362 | 0.0610 |  35.41 KB |
+| EvaluateAsync | 200         | 187.656 μs | 310.544 μs | 17.022 μs | 8.5449 | 1.2207 | 143.13 KB |
+
+### Operator families
+
+| Method        | Family      | Mean      | Error     | StdDev    | Gen0   | Allocated |
+|-------------- |------------ |----------:|----------:|----------:|-------:|----------:|
+| EvaluateAsync | Cardinality | 13.091 μs | 11.440 μs | 0.6271 μs | 0.5646 |    9.3 KB |
+| EvaluateAsync | Connectives |  5.667 μs |  6.342 μs | 0.3476 μs | 0.3738 |   6.15 KB |
+| EvaluateAsync | External    |  3.865 μs | 10.931 μs | 0.5992 μs | 0.2136 |   3.59 KB |
+| EvaluateAsync | If          |  1.421 μs |  3.071 μs | 0.1683 μs | 0.1202 |   1.97 KB |
+| EvaluateAsync | Parity      |  3.579 μs |  3.775 μs | 0.2069 μs | 0.2861 |   4.71 KB |
+| EvaluateAsync | Threshold   | 13.191 μs | 31.575 μs | 1.7308 μs | 0.5646 |   9.46 KB |
+
+### Rewrites
+
+| Method             | Mean      | Error      | StdDev     | Gen0   | Gen1   | Allocated |
+|------------------- |----------:|-----------:|-----------:|-------:|-------:|----------:|
+| ExpandToPrimitives |  6.079 μs |  18.085 μs |  0.9913 μs | 0.7935 | 0.0076 |  13.07 KB |
+| ExpandToNand       | 67.150 μs | 212.031 μs | 11.6221 μs | 7.8125 | 0.1221 | 129.31 KB |
+| ExpandToNor        | 64.681 μs |  36.263 μs |  1.9877 μs | 8.9111 | 0.3662 | 146.62 KB |
+| CompressToDerived  |  2.840 μs |   6.590 μs |  0.3612 μs | 0.3510 |      - |   5.74 KB |
+| Canonicalize       | 18.090 μs |  27.519 μs |  1.5084 μs | 1.6632 | 0.0153 |   27.4 KB |
+| Simplify           | 40.319 μs |  23.724 μs |  1.3004 μs | 3.5400 |      - |  58.28 KB |
+
+### Diagnostics formatting
+
+| Method              | Mean     | Error    | StdDev    | Gen0   | Gen1   | Allocated |
+|-------------------- |---------:|---------:|----------:|-------:|-------:|----------:|
+| FormatWithoutSource | 1.544 μs | 2.802 μs | 0.1536 μs | 0.4234 |      - |   6.92 KB |
+| FormatWithSource    | 2.636 μs | 6.320 μs | 0.3464 μs | 0.7172 | 0.0038 |  11.73 KB |
 
 ## AOT and trim gate
 

@@ -198,7 +198,7 @@ public static class DiagnosticCodes
 
     /// <summary>
     /// Error: <c>PrintTruthTable</c> refused to print a table. The rule has more terms than the default cap of 8 and the options
-    /// do not set <c>AllowLargerTable</c>, or it has more terms than the hard limit of 12. Nothing was written.
+    /// do not set <c>AllowLargerTable</c>, or it has more terms than <c>TruthTableOptions.TermLimit</c> (12 by default). Nothing was written.
     /// </summary>
     public const string TruthTableTooLarge = "TRE0035";
 

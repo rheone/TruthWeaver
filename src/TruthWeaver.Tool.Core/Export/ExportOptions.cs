@@ -25,8 +25,57 @@ public sealed record ExportOptions
     public bool AllowLargerTruthTable { get; init; }
 
     /// <summary>
+    /// Gets the most distinct terms that a truth table can have, or <see langword="null"/> for
+    /// <see cref="TruthTableOptions.TermLimit"/>'s default of <see cref="TruthTableOptions.HardTermLimit"/>. A number sets
+    /// <see cref="TruthTableOptions.TermLimit"/> and also allows a table above <see cref="TruthTableOptions.DefaultTermCap"/>,
+    /// as if <see cref="AllowLargerTruthTable"/> were set, so <c>TruthTableTermLimit = 14</c> is enough to print a rule of
+    /// 14 terms. There is no ceiling: the caller owns the 3<sup>n</sup> cost. A number below
+    /// <see cref="TruthTableOptions.DefaultTermCap"/> lowers the cap too. The default is <see langword="null"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int? TruthTableTermLimit
+    {
+        get;
+        init
+        {
+            if (value is { } limit)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+            }
+
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets the image options for <see cref="ArtifactExporter.ExportAll"/>: when set, the export also renders the Mermaid
     /// and DOT diagrams as images with the external renderers. The default is <see langword="null"/>, no images.
     /// </summary>
     public ImageRenderOptions? Images { get; init; }
+
+    /// <summary>
+    /// Gets the most terms a truth table has in this export: the default cap unless a larger table is allowed, otherwise
+    /// the term limit.
+    /// </summary>
+    internal int EffectiveTruthTableTermLimit
+    {
+        get
+        {
+            TruthTableOptions table = this.ToTruthTableOptions(TruthTableFormat.Markdown);
+            return table.AllowLargerTable ? table.TermLimit : Math.Min(TruthTableOptions.DefaultTermCap, table.TermLimit);
+        }
+    }
+
+    /// <summary>Gets the <see cref="TruthTableOptions"/> for a truth table in <paramref name="format"/>.</summary>
+    /// <param name="format">The table format.</param>
+    /// <returns>The table options that carry <see cref="AllowLargerTruthTable"/> and <see cref="TruthTableTermLimit"/>.</returns>
+    internal TruthTableOptions ToTruthTableOptions(TruthTableFormat format)
+    {
+        return new TruthTableOptions
+        {
+            Format = format,
+            AllowLargerTable = this.AllowLargerTruthTable || this.TruthTableTermLimit is not null,
+            TermLimit = this.TruthTableTermLimit ?? TruthTableOptions.HardTermLimit,
+        };
+    }
 }

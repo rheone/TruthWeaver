@@ -6,6 +6,6 @@
 
 **Status:** ready-for-agent
 
-- [ ] The baseline file is regenerated with the repository's benchmark procedure and checked in.
-- [ ] The batch evaluation benchmarks (sequential and parallel) appear in the baseline.
+- [x] The baseline file is regenerated with the repository's benchmark procedure and checked in.
+- [x] The batch evaluation benchmarks (sequential and parallel) appear in the baseline.
 - [ ] No other benchmark result changes by more than run-to-run noise, or the change is explained in the ticket comments.
