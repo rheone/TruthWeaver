@@ -27,7 +27,8 @@ public static class RuleEquivalence
     /// <returns>
     /// The verdict: <see cref="RuleEquivalenceOutcome.Equivalent"/>, <see cref="RuleEquivalenceOutcome.NotEquivalent"/> with
     /// a counter-example, or <see cref="RuleEquivalenceOutcome.Undecided"/> when the rules have more distinct terms
-    /// (counted across both rules) than <paramref name="maxAnalysisTerms"/>. It never throws for a normal rule.
+    /// (counted across both rules) than <paramref name="maxAnalysisTerms"/> or their shared BDD would exceed the
+    /// internal node budget. It never throws for a normal rule.
     /// </returns>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     public static RuleEquivalenceResult Compare<TContext>(
@@ -51,7 +52,16 @@ public static class RuleEquivalence
             );
         }
 
-        IReadOnlyDictionary<TermIdentity, TruthValue>? difference = Analyzer.FindDifference(first.Root, second.Root);
+        IReadOnlyDictionary<TermIdentity, TruthValue>? difference;
+        try
+        {
+            difference = Analyzer.FindDifference(first.Root, second.Root);
+        }
+        catch (BddNodeBudgetExceededException exception)
+        {
+            return new RuleEquivalenceResult(RuleEquivalenceOutcome.Undecided, null, exception.Message);
+        }
+
         if (difference is null)
         {
             return new RuleEquivalenceResult(RuleEquivalenceOutcome.Equivalent, null, null);

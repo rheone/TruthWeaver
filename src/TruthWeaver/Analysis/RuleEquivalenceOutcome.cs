@@ -9,6 +9,9 @@ public enum RuleEquivalenceOutcome
     /// <summary>Some assignment gives the rules different values; see <see cref="RuleEquivalenceResult.CounterExample"/>.</summary>
     NotEquivalent,
 
-    /// <summary>The check was not run because the rules have more distinct terms than the configured cap.</summary>
+    /// <summary>
+    /// No verdict was reached: the rules have more distinct terms than the configured cap, or their shared BDD would
+    /// exceed the internal node budget. The result's <c>Reason</c> says which.
+    /// </summary>
     Undecided,
 }

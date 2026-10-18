@@ -34,7 +34,8 @@ public static class RuleOverlap
     /// </param>
     /// <returns>
     /// The reachable pairs with an example each, or <see cref="RuleOverlapOutcome.Undecided"/> with a reason when the
-    /// rules have more distinct terms than <paramref name="maxAnalysisTerms"/>. It never throws for a normal rule.
+    /// rules have more distinct terms than <paramref name="maxAnalysisTerms"/> or their shared BDD would exceed the
+    /// internal node budget. It never throws for a normal rule.
     /// </returns>
     /// <exception cref="ArgumentNullException">A rule is <see langword="null"/>.</exception>
     public static RuleOverlapResult Compare<TContext>(
@@ -58,13 +59,20 @@ public static class RuleOverlap
             );
         }
 
-        List<JointOutcome> reachable =
-        [
-            .. Analyzer
-                .JointOutcomes(first.Root, second.Root)
-                .Select(cell => new JointOutcome(cell.First, cell.Second, Printed(cell.Example))),
-        ];
-        return new RuleOverlapResult(RuleOverlapOutcome.Decided, reachable, null);
+        try
+        {
+            List<JointOutcome> reachable =
+            [
+                .. Analyzer
+                    .JointOutcomes(first.Root, second.Root)
+                    .Select(cell => new JointOutcome(cell.First, cell.Second, Printed(cell.Example))),
+            ];
+            return new RuleOverlapResult(RuleOverlapOutcome.Decided, reachable, null);
+        }
+        catch (BddNodeBudgetExceededException exception)
+        {
+            return new RuleOverlapResult(RuleOverlapOutcome.Undecided, [], exception.Message);
+        }
     }
 
     /// <summary>Keys an assignment by the printed term (such as <c>hasRole(role: "Y")</c>), so callers need no internal identity type.</summary>

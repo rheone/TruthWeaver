@@ -10,7 +10,9 @@ namespace TruthWeaver.Analysis;
 /// id against the <see cref="True"/>/<see cref="False"/> terminal) without repeated brute-force
 /// truth-table enumeration per sub-expression.
 /// </summary>
-internal sealed class BddManager
+/// <remarks>Initializes a new instance of the <see cref="BddManager"/> class that aborts a build which would exceed <paramref name="maxNodes"/> decision nodes.</remarks>
+/// <param name="maxNodes">The node budget, or <see langword="null"/> for none.</param>
+internal sealed class BddManager(int? maxNodes)
 {
     /// <summary>The terminal representing structural <see langword="false"/>.</summary>
     public const int False = 0;
@@ -18,14 +20,23 @@ internal sealed class BddManager
     /// <summary>The terminal representing structural <see langword="true"/>.</summary>
     public const int True = 1;
 
-    private readonly List<(int Var, int Low, int High)> nodes;
+    /// <summary>
+    /// The node budget the set-level and pairwise analysis tools use by default (ticket 21c, ADR-0009 decision 5):
+    /// <see cref="RuleEquivalence"/>, <see cref="RuleImplication"/>, <see cref="RuleOverlap"/> and
+    /// <see cref="RuleSetAnalysis"/> each build their shared BDD with this cap, so a pathological rule shape aborts
+    /// with <see cref="BddNodeBudgetExceededException"/> instead of running unbounded. It is the only guard in that
+    /// family that bounds time rather than distinct-term count.
+    /// </summary>
+    public const int DefaultMaxBddNodes = 100_000;
+
+    private readonly List<(int Var, int Low, int High)> nodes = [(int.MinValue, -1, -1), (int.MinValue, -1, -1)];
     private readonly Dictionary<(int Var, int Low, int High), int> uniqueTable = [];
     private readonly Dictionary<(int I, int T, int E), int> iteCache = [];
+    private readonly int? maxNodes = maxNodes;
 
+    /// <summary>Initializes a new instance of the <see cref="BddManager"/> class with no node budget: every other internal caller (compile-time analysis, counterfactual search, the truth table) bounds size through the existing distinct-term caps instead.</summary>
     public BddManager()
-    {
-        this.nodes = [(int.MinValue, -1, -1), (int.MinValue, -1, -1)];
-    }
+        : this(null) { }
 
     /// <summary>
     /// Gets the number of decision nodes the manager holds, not counting the two terminals. Sub-graphs shared between
@@ -237,6 +248,11 @@ internal sealed class BddManager
         if (this.uniqueTable.TryGetValue(key, out int existing))
         {
             return existing;
+        }
+
+        if (this.maxNodes is int budget && this.NodeCount >= budget)
+        {
+            throw new BddNodeBudgetExceededException(budget);
         }
 
         int id = this.nodes.Count;
