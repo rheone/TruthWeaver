@@ -20,9 +20,9 @@ Written 2026-10-18 at the end of the dispatch run. Branch `docs/project-readmes-
 ## 2. Owner decisions waiting
 
 - **21c shadowing.** Done (commit 616d9ef): a rule is shadowed when no assignment makes it True while every earlier rule is False, so an earlier True or Unknown rule always blocks it (ADR-0015).
-- **Ticket 03.** The Tool README lists ten commands (`import` is the tenth); the ticket said nine.
-- **Tool.Tui README.** The install step follows `docs/tui.md` (pack from the repo), not the ticket's plain `dotnet tool install`.
-- **Follow-up F.** `.scratch/followups-2026-10-11/issues/F-owner-review-of-dispatch-notes.md` holds the open API and wording reviews from earlier dispatch notes.
+- **Ticket 03.** Resolved: the Tool README lists ten commands and the ticket text now says ten.
+- **Tool.Tui alpha.** The release workflow now publishes Tool.Tui (commit 29aa456). Owner steps: create the `nuget` environment and the `NUGET_USER` variable in the repository settings, add the NuGet.org trusted publishing policy, merge to main, then tag `v1.0.0-alpha.<UTC basic ISO 8601>` (for example `v1.0.0-alpha.20261018T201500Z`). After the alpha is on NuGet, switch the Tool.Tui README and `docs/tui.md` install step to `dotnet tool install --global TruthWeaver.Tool.Tui --prerelease` and keep the pack-from-repo steps as the manual route.
+- **Follow-up F (grill in its own /grilling session).** `.scratch/followups-2026-10-11/issues/F-owner-review-of-dispatch-notes.md` holds the open API and wording reviews from earlier dispatch notes.
 
 ## 3. Still on hold or deferred (do not start without the owner)
 
