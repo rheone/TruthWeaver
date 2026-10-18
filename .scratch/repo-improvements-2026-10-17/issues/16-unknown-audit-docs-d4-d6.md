@@ -4,10 +4,10 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 **What to build:** (D4) Add one table to `docs/data-sources.md` that lists missing, null and empty values and the answer each data-source predicate gives. (D6) State in the analysis docs that the analyzer treats distinct terms as independent, what that means for tautology/implication/overlap results, and what a host can do about correlated terms. No behavior change.
 
-- [ ] The table and the independence note are written to current truth
-- [ ] `DocumentationLint` and `DocExample` pass
-- [ ] `CHANGELOG.md` has an entry if the docs commit needs one
+- [x] The table and the independence note are written to current truth
+- [x] `DocumentationLint` and `DocExample` pass
+- [x] `CHANGELOG.md` has an entry if the docs commit needs one

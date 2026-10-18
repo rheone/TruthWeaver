@@ -75,7 +75,7 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 | `codeIsMatch(pattern: "^ab", flags: "ii")` | `code = "ABC"` | Compile error | A flag letter occurs twice, so the rule does not compile (`TRE0026`). |
 | `codeIsMatch(pattern: "(")` | `code = "anything"` | Compile error | The pattern is a literal and is not valid, so the rule does not compile (`TRE0026`). |
 | `codeIsMatch(pattern: from("request", "$.pattern"))` | `code = "anything"`, `request.pattern = "("` | `Unknown` | The pattern comes from a data source and is not valid. The predicate faults, and a fault answers `Unknown`. |
-| `codeIsMatch(pattern: from("request", "$.pattern"))` | `code = null`, `request.pattern = "("` | `Unknown` | A null selected value answers `Unknown` before the engine reads the pattern, so there is no fault. |
+| `codeIsMatch(pattern: from("request", "$.pattern"))` | `code = null`, `request.pattern = "("` | `Unknown` | The engine reads and checks the pattern before it looks at the selected value. The pattern is not valid, so the predicate faults even though the selected value is null. |
 | `NOT codeIsMatch(pattern: "^[A-Z]{2}[0-9]{4}$")` | `code = null` | `Unknown` | A null selected value is `Unknown`, and `NOT` keeps `Unknown`. |
 
 ## Edge cases
@@ -83,7 +83,7 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 - The match is a search, not a full match. Add `^` and `$` to require the whole string to match.
 - Case is significant unless the rule sets the flag `i` or the pattern starts with the inline option `(?i)`. An inline option in the pattern, such as `(?-i)`, takes effect after the flags.
 - The compiler checks `flags` and `pattern` when they are literals. An unknown flag letter, a repeated flag letter and an invalid pattern are each a `TRE0026` error, and the rule does not compile. The compiler checks the pattern with the options that `flags` names, so a pattern that is valid only with the flag `x` compiles. When the flags are not valid, the compiler reports only the flags.
-- A `flags` or `pattern` value from a data source is checked when the rule evaluates. An invalid value faults: the answer is `Unknown` and the decision records one fault. `IsMatch` and `IsNotMatch` both answer `Unknown` in this case.
+- A `flags` or `pattern` value from a data source is checked when the rule evaluates, before the selected value is read, so a null selected value does not hide an invalid value. An invalid value faults: the answer is `Unknown` and the decision records one fault. `IsMatch` and `IsNotMatch` both answer `Unknown` in this case.
 - A match attempt that takes longer than one second faults in the same way.
 - The engine compiles each distinct pair of pattern and options once and reuses it for every later evaluation. The cache keeps at most 256 pairs. When it is full, the next new pair clears it, and the pairs it held are compiled again when they are used.
 

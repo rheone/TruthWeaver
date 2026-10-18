@@ -264,6 +264,17 @@ internal static class NotXTwinTable
             )
         );
         yield return new TwinPair(
+            "CollectionPredicates.IsNullOrEmpty(IReadOnlyCollection<String>)",
+            "CollectionPredicates.IsNotNullOrEmpty(IReadOnlyCollection<String>)",
+            n => CollectionPredicates.IsNullOrEmpty<TwinProbeContext>(n, c => c.Items),
+            n => CollectionPredicates.IsNotNullOrEmpty<TwinProbeContext>(n, c => c.Items),
+            [],
+            Missing,
+            Items("a"),
+            null,
+            Definite
+        );
+        yield return new TwinPair(
             "CollectionPredicates.Contains(IReadOnlyCollection<String>)",
             "CollectionPredicates.NotContains(IReadOnlyCollection<String>)",
             n => CollectionPredicates.Contains<TwinProbeContext>(n, c => c.Items, nullBehavior: unknown),

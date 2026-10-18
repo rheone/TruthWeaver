@@ -63,6 +63,7 @@ Every predicate in these families has a twin. The twin is the Strong Kleene comp
 | `Contains` | `NotContains` |
 | `IsEmpty` | `IsNotEmpty` |
 | `IsNullOrEmpty` | `IsNotNullOrEmpty` |
+| `IsNullOrEmpty` (collection) | `IsNotNullOrEmpty` (collection) |
 | `IsNullOrWhiteSpace` | `IsNotNullOrWhiteSpace` |
 | `IsMatch` | `IsNotMatch` |
 | `ContainsAny` | `NotContainsAny` |
@@ -189,7 +190,8 @@ The `RegexPredicates` factories select a `string?` value and take a regular expr
 
 The `CollectionPredicates` factories select a collection of strings (`IReadOnlyCollection<string>?`). The element type is `string`. Every comparison is ordinal and case-sensitive. An array argument has the kind `StringArray`. A count argument has the kind `Int64`.
 
-- Every collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
+- `IsNullOrEmpty` and `IsNotNullOrEmpty` are null tests. They never answer `Unknown` and have no `nullBehavior` option.
+- Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - To test a single string against several candidates, use `IsIn` and `IsNotIn` in the [string predicates](#string-predicates).
 - A repeated element and a `null` element count as elements in the `HasCount` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
 
@@ -197,6 +199,8 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 | --- | --- | --- |
 | [IsEmpty](collection-isempty.md) | [IsNotEmpty](collection-isnotempty.md) | `IsEmpty` is `True` when the selected collection has no elements. |
 | [IsNotEmpty](collection-isnotempty.md) | [IsEmpty](collection-isempty.md) | `IsNotEmpty` is `True` when the selected collection has at least one element. |
+| [IsNullOrEmpty](collection-isnullorempty.md) | [IsNotNullOrEmpty](collection-isnotnullorempty.md) | `IsNullOrEmpty` is `True` when the selected collection is `null` or has no elements. |
+| [IsNotNullOrEmpty](collection-isnotnullorempty.md) | [IsNullOrEmpty](collection-isnullorempty.md) | `IsNotNullOrEmpty` is `True` when the selected collection is not `null` and has at least one element. |
 | [Contains](collection-contains.md) | [NotContains](collection-notcontains.md) | `Contains` is `True` when one element equals the argument. |
 | [NotContains](collection-notcontains.md) | [Contains](collection-contains.md) | `NotContains` is `True` when no element equals the argument. |
 | [ContainsAny](collection-containsany.md) | [NotContainsAny](collection-notcontainsany.md) | `ContainsAny` is `True` when at least one element is in the argument array. |

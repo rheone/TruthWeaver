@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Same files formatted and same files parse-checked as the `.ps1`
-- [ ] `--check-only` exits 1 when a file needs formatting
-- [ ] A missing Node produces a clear message and a non-zero exit
-- [ ] All build and format gates pass for the new file
+- [x] Same files formatted and same files parse-checked as the `.ps1`
+- [x] `--check-only` exits 1 when a file needs formatting
+- [x] A missing Node produces a clear message and a non-zero exit
+- [x] All build and format gates pass for the new file

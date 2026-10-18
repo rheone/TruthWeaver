@@ -6,11 +6,11 @@ Scope decisions (owner, 2026-10-11) are in the spec. The worker adds no project,
 
 **Blocked by:** 01, C2, C3 (tool-platform)
 
-**Status:** on-hold until the tool-platform Core tickets and tickets 16 and 20 are done; then ready-for-agent
+**Status:** done
 
-- [ ] Every Core artifact is reachable from the Export menu and the output equals Core's (tested through the UI-free layer)
-- [ ] Conversion between the three forms keeps the compiled tree equal and notes intact (tested)
-- [ ] The validation panel shows all levels and statistics, and selecting a diagnostic moves the cursor to its span
-- [ ] A missing image tool is reported with what to install; no dialog blocks the editor
-- [ ] The page for this feature is written or updated in the same change (`docs/tui.md`), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Every Core artifact is reachable from the Export menu and the output equals Core's (tested through the UI-free layer)
+- [x] Conversion between the three forms keeps the compiled tree equal and notes intact (tested)
+- [x] The validation panel shows all levels and statistics, and selecting a diagnostic moves the cursor to its span
+- [x] A missing image tool is reported with what to install; no dialog blocks the editor
+- [x] The page for this feature is written or updated in the same change (`docs/tui.md`), and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

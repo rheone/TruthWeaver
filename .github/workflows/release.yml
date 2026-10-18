@@ -73,10 +73,10 @@ jobs:
         run: dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 
       - name: Text normalization
-        run: pwsh -NoProfile -File scripts/normalize-text.ps1 -CheckOnly
+        run: dotnet run scripts/normalize-text.cs -- --check-only
 
       - name: JSON and YAML formatting
-        run: pwsh -NoProfile -File scripts/format-data.ps1 -CheckOnly
+        run: dotnet run scripts/format-data.cs -- --check-only
 
   pack:
     runs-on: ubuntu-latest
@@ -102,7 +102,7 @@ jobs:
         run: dotnet pack TruthWeaver.slnx --configuration Release --no-restore -warnaserror --output "$RUNNER_TEMP/packages"
 
       - name: Check packages
-        run: pwsh scripts/check-packages.ps1 -PackageDirectory "$RUNNER_TEMP/packages"
+        run: dotnet run scripts/check-packages.cs -- "$RUNNER_TEMP/packages"
 
       - name: Validate SourceLink and determinism
         run: |
@@ -112,6 +112,11 @@ jobs:
             case "$package" in *TruthWeaver.Generators.*) continue ;; esac
             "$RUNNER_TEMP/tools/dotnet-validate" package local "$package"
           done
+
+      - name: Hold back unpublished packages
+        # The terminal UI tool (TruthWeaver.Tool.Tui) is packed and checked above, but it is not published yet
+        # (docs/tui.md). Removing it here keeps it out of the uploaded packages, the provenance, the push and the GitHub release.
+        run: rm -f "$RUNNER_TEMP"/packages/TruthWeaver.Tool.Tui.*
 
       - name: Upload packages
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

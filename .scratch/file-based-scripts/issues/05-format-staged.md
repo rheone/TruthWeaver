@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A fully staged file is formatted and re-staged without staging unstaged edits in other files
-- [ ] A partly staged file is checked, not rewritten, and a formatting problem fails the run
-- [ ] Non-ASCII paths work (`core.quotepath=off`)
-- [ ] All build and format gates pass for the new file
+- [x] A fully staged file is formatted and re-staged without staging unstaged edits in other files
+- [x] A partly staged file is checked, not rewritten, and a formatting problem fails the run
+- [x] Non-ASCII paths work (`core.quotepath=off`)
+- [x] All build and format gates pass for the new file

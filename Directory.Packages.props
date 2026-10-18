@@ -77,6 +77,15 @@
   <ItemGroup>
     <PackageVersion Include="System.CommandLine" Version="2.0.13" />
   </ItemGroup>
+  <!-- Terminal.Gui - the terminal UI (TruthWeaver.Tool.Tui) only: windows, the text editor, dialogs and key bindings.
+       2.5.0 is the newest stable release (MIT, a net10.0 build that marks itself IsTrimmable and IsAotCompatible); the
+       owner approved it for the terminal UI project only (2026-10-17). Its own packages (Markdig, TextMateSharp,
+       ColorHelper, Wcwidth, System.IO.Abstractions, Microsoft.Extensions.Configuration/Options, JetBrains.Annotations)
+       come in transitively and reach no other project. docs/tui.md records the check. An architecture test keeps the tool
+       core and the command line free of it. -->
+  <ItemGroup>
+    <PackageVersion Include="Terminal.Gui" Version="2.5.0" />
+  </ItemGroup>
   <!-- Roslyn - TruthWeaver.Generators builds against these, and its test project drives the generator with them.
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
        invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->

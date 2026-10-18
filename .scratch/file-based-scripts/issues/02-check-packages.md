@@ -4,8 +4,8 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Passes on real `dotnet pack` output and exits 1 with the same messages on a package set with a missing README, a missing symbol package and an unexpected file
-- [ ] Uses `System.IO.Compression` only (no new dependency)
-- [ ] All build and format gates pass for the new file
+- [x] Passes on real `dotnet pack` output and exits 1 with the same messages on a package set with a missing README, a missing symbol package and an unexpected file
+- [x] Uses `System.IO.Compression` only (no new dependency)
+- [x] All build and format gates pass for the new file

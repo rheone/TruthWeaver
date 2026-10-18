@@ -1,6 +1,9 @@
 namespace TruthWeaver.Testing.Tests;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Compilation;
+using TruthWeaver.Evaluation;
+using TruthWeaver.Registry;
 
 public sealed class FakePredicatesTests
 {
@@ -105,7 +108,7 @@ public sealed class FakePredicatesTests
         Assert.Equal(TruthValue.Unknown, third);
     }
 
-    /// <summary>Scripted throws when called more often than it has answers.</summary>
+    /// <summary>Scripted throws an <see cref="InvalidOperationException"/> when called more often than it has answers.</summary>
     [Fact]
     public async Task Scripted_MoreCallsThanScriptedAnswers_Throws_Test()
     {
@@ -114,7 +117,7 @@ public sealed class FakePredicatesTests
 
         await evaluate(null, PredicateArguments.Empty, CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(async () =>
             await evaluate(null, PredicateArguments.Empty, CancellationToken.None)
         );
     }
@@ -123,6 +126,113 @@ public sealed class FakePredicatesTests
     [Fact]
     public void Scripted_EmptyScript_Throws_Test()
     {
-        Assert.Throws<ArgumentException>(() => FakePredicates.Scripted<object?>("flapping", []));
+        Assert.Throws<ArgumentException>(() => FakePredicates.Scripted<object?>("flapping", Array.Empty<TruthValue>()));
+    }
+
+    /// <summary>
+    /// An exhausted script inside a rule is test misuse: the exception escapes <c>EvaluateAsync</c>, so the test fails
+    /// instead of passing on an <c>Unknown</c> result.
+    /// </summary>
+    [Fact]
+    public async Task Scripted_ExhaustedInsideARule_EscapesTheEvaluation_Test()
+    {
+        CompiledRule<object?> rule = Compile(FakePredicates.Scripted<object?>("flapping", [TruthValue.True]));
+        await rule.EvaluateAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+
+        InvalidOperationException thrown = await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
+            rule.EvaluateAsync(null, cancellationToken: TestContext.Current.CancellationToken)
+        );
+        Assert.Contains("'flapping' was called 2 times", thrown.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>Scripted steps answer in order, and a step that throws on purpose is a predicate failure, not misuse.</summary>
+    [Fact]
+    public async Task Scripted_Steps_AnswerInOrderAndThrowOnPurpose_Test()
+    {
+        TimeoutException timeout = new("service timed out");
+        (_, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            FakePredicates.Scripted<object?>("flapping", [AnswerTrue, TimeOut]);
+
+        static TruthValue AnswerTrue()
+        {
+            return TruthValue.True;
+        }
+
+        TruthValue TimeOut()
+        {
+            throw timeout;
+        }
+
+        TruthValue first = await evaluate(null, PredicateArguments.Empty, CancellationToken.None);
+        TimeoutException thrown = await Assert.ThrowsAsync<TimeoutException>(async () =>
+            await evaluate(null, PredicateArguments.Empty, CancellationToken.None)
+        );
+
+        Assert.Equal(TruthValue.True, first);
+        Assert.Same(timeout, thrown);
+    }
+
+    /// <summary>
+    /// An exception the script throws on purpose is absorbed by the evaluator like any predicate failure (ADR-0001): the
+    /// term is <c>Unknown</c> plus a Fault that carries that exception.
+    /// </summary>
+    [Fact]
+    public async Task Scripted_DeliberateExceptionInsideARule_IsUnknownWithFault_Test()
+    {
+        TimeoutException timeout = new("service timed out");
+        CompiledRule<object?> rule = Compile(FakePredicates.Scripted<object?>("flapping", [TimeOut]));
+
+        TruthValue TimeOut()
+        {
+            throw timeout;
+        }
+
+        Decision decision = await rule.EvaluateAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Fault fault = Assert.Single(decision.Faults);
+        Assert.Same(timeout, fault.Exception);
+    }
+
+    /// <summary>
+    /// An exhausted script is test misuse in <see cref="PredicateHarness"/> too: the exception escapes the run instead of
+    /// becoming an <c>Unknown</c> case result.
+    /// </summary>
+    [Fact]
+    public async Task Scripted_ExhaustedInsideTheHarness_EscapesTheRun_Test()
+    {
+        (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            FakePredicates.Scripted<object?>("flapping", [TruthValue.True]);
+        await evaluate(null, PredicateArguments.Empty, CancellationToken.None);
+
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
+            PredicateHarness.RunAsync(schema, evaluate, null, cancellationToken: TestContext.Current.CancellationToken)
+        );
+    }
+
+    /// <summary>
+    /// A script that runs out on the harness's cancelled-token call is test misuse too: the exception escapes the run
+    /// instead of becoming an observed cancellation outcome.
+    /// </summary>
+    [Fact]
+    public Task Scripted_ExhaustedOnTheHarnessCancellationCall_EscapesTheRun_Test()
+    {
+        // Two answers cover the two baseline calls of the determinism check, so the cancellation call is the third.
+        (PredicateSchema schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            FakePredicates.Scripted<object?>("flapping", [TruthValue.True, TruthValue.True]);
+
+        return Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
+            PredicateHarness.RunAsync(schema, evaluate, null, cancellationToken: TestContext.Current.CancellationToken)
+        );
+    }
+
+    private static CompiledRule<object?> Compile(
+        (PredicateSchema Schema, Func<object?, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate) fake
+    )
+    {
+        RuleCompiler<object?> compiler = new(
+            PredicateRegistry<object?>.CreateBuilder().Add(fake.Schema, fake.Evaluate).Build()
+        );
+        return compiler.Compile(fake.Schema.Name).CompiledRule!;
     }
 }

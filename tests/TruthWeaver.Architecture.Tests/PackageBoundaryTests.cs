@@ -1,6 +1,7 @@
 namespace TruthWeaver.Architecture.Tests;
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using NetArchTest.Rules;
 using TruthWeaver.Compilation;
 
@@ -250,6 +251,54 @@ public sealed class PackageBoundaryTests
             Assert.DoesNotContain("TruthWeaver.Tool", names);
             Assert.DoesNotContain("System.CommandLine", names);
         }
+    }
+
+    /// <summary>
+    /// The terminal UI is the only project with <c>Terminal.Gui</c>, and it builds on the tool core, never on the command
+    /// line. No package, not the tool core and not the command line references the terminal UI or <c>Terminal.Gui</c>.
+    /// </summary>
+    [Fact]
+    public void ToolTui_References_ToolCoreAndTerminalGuiOnlyThere_Test()
+    {
+        // Loaded by name: the terminal UI is an executable, and its types are internal.
+        Assembly tui = Assembly.Load("TruthWeaver.Tool.Tui");
+        Assembly tool = Assembly.Load("TruthWeaver.Tool");
+
+        string[] referenced = [.. tui.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+
+        Assert.Contains("TruthWeaver.Tool.Core", referenced);
+        Assert.Contains("Terminal.Gui", referenced);
+
+        // Approved by the owner (ADR-0017): the rule-test runner lives in TruthWeaver.Testing, as for the command line.
+        Assert.Contains("TruthWeaver.Testing", referenced);
+        Assert.DoesNotContain("TruthWeaver.Tool", referenced);
+        Assert.DoesNotContain("System.CommandLine", referenced);
+        foreach (Assembly assembly in new[] { Abstractions, Core, Yaml, JsonDataSources, Predicates, Testing, ToolCore, tool })
+        {
+            string[] names = [.. assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
+            Assert.DoesNotContain("TruthWeaver.Tool.Tui", names);
+            Assert.DoesNotContain("Terminal.Gui", names);
+        }
+    }
+
+    /// <summary>
+    /// <c>TruthWeaver</c> grants <c>InternalsVisibleTo</c> only to an explicit allow-list (ADR-0018). The shipped
+    /// <c>TruthWeaver.Testing</c> package is on it, so the two packages ship together; a new entry is a deliberate change
+    /// to this list.
+    /// </summary>
+    [Fact]
+    public void Core_InternalsVisibleTo_IsTheAllowList_Test()
+    {
+        string[] allowed = ["TruthWeaver.Benchmarks", "TruthWeaver.Testing", "TruthWeaver.Tests", "TruthWeaver.Yaml"];
+
+        string[] granted =
+        [
+            .. Core.GetCustomAttributes<InternalsVisibleToAttribute>()
+                .Select(a => a.AssemblyName)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Equal(allowed, granted);
     }
 
     /// <summary>No shipping package depends on the tool core: the tools build on the packages, never the reverse.</summary>

@@ -4,9 +4,9 @@
 
 **Blocked by:** 03, 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Order and commands match the `.ps1` and `.github/workflows/ci.yml`
-- [ ] `--check-only` skips the apply step
-- [ ] A failing step exits 1 with the step name in the message
-- [ ] All build and format gates pass for the new file
+- [x] Order and commands match the `.ps1` and `.github/workflows/ci.yml`
+- [x] `--check-only` skips the apply step
+- [x] A failing step exits 1 with the step name in the message
+- [x] All build and format gates pass for the new file

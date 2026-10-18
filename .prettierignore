@@ -1,6 +1,6 @@
 # Prettier formats JSON, YAML and YML outside the paths below. Dot folders (.claude, .scratch, .github, ...) and
 # build output stay untouched. Test fixtures feed tests that check exact text and line/column spans, so they are not
-# formatted; scripts/format-data.ps1 only checks that they parse.
+# formatted; scripts/format-data.cs only checks that they parse.
 .*/
 **/bin/
 **/obj/

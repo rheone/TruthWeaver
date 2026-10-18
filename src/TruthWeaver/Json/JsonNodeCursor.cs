@@ -98,7 +98,7 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
     public bool TryGetTruthValue(out TruthValue value)
     {
         // A constant is a JSON boolean (the original True/False form) or a string naming a K3 value, so
-        // Unknown (which JSON has no literal for) can be written as "unknown" in any letter case.
+        // Unknown (which JSON has no literal for) can be written as "unknown"; the DSL letters T, F and U work too, in either case.
         switch (element.ValueKind)
         {
             case JsonValueKind.True:
@@ -108,9 +108,10 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
                 value = TruthValue.False;
                 return true;
             case JsonValueKind.String:
-                return TruthValueText.TryParse(element.GetString(), out value);
+                string? text = element.GetString();
+                return TruthValueText.TryParse(text, out value) || TruthValueText.TryParseLetter(text, out value);
             default:
-                value = default;
+                value = TruthValue.Unknown;
                 return false;
         }
     }

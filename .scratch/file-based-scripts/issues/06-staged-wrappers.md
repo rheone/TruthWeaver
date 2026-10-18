@@ -4,8 +4,8 @@
 
 **Blocked by:** 03, 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Both apps handle fully staged, partly staged and no staged files as the `.ps1` wrappers do
-- [ ] They reuse the staged-file helper from ticket 01
-- [ ] All build and format gates pass for the new files
+- [x] Both apps handle fully staged, partly staged and no staged files as the `.ps1` wrappers do
+- [x] They reuse the staged-file helper from ticket 01
+- [x] All build and format gates pass for the new files

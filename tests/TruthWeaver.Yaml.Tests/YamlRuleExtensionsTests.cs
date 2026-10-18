@@ -25,6 +25,23 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal("isManager", result.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>A YAML <c>const</c> written as the letter T, F or U (either case) compiles to the same tree as the DSL text.</summary>
+    [Theory]
+    [InlineData("T", "T")]
+    [InlineData("f", "F")]
+    [InlineData("U", "U")]
+    [InlineData("\"u\"", "U")]
+    public void CompileYaml_ConstantLetter_EqualsDslConstant_Test(string letter, string dslText)
+    {
+        RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
+
+        CompilationResult<YamlTestContext> fromYaml = compiler.CompileYaml($"const: {letter}");
+        CompilationResult<YamlTestContext> fromDsl = compiler.Compile(dslText);
+
+        Assert.True(fromYaml.Succeeded);
+        Assert.Equal(fromDsl.CompiledRule!.CanonicalText, fromYaml.CompiledRule!.CanonicalText);
+    }
+
     /// <summary>TryCompileYaml returns the rule for valid YAML text and false with diagnostics for an unknown predicate.</summary>
     [Fact]
     public void TryCompileYaml_ValidAndUnknownPredicate_ReturnsRuleOrFailure_Test()

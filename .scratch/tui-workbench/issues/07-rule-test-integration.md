@@ -6,9 +6,9 @@ Scope decisions (owner, 2026-10-11) are in the spec; the worker adds no project,
 
 **Blocked by:** 02, 20
 
-**Status:** on-hold until tickets 16 and 20 (feature-backlog-2026-10-11) are done; then ready-for-agent
+**Status:** done
 
-- [ ] Saving a case writes valid ticket-20 format; the file passes `truthweaver test`
-- [ ] Running shows per-case pass or fail with expected and actual values; selecting a failure loads its assignment
-- [ ] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Saving a case writes valid ticket-20 format; the file passes `truthweaver test`
+- [x] Running shows per-case pass or fail with expected and actual values; selecting a failure loads its assignment
+- [x] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

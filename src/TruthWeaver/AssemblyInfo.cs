@@ -9,6 +9,11 @@ using System.Runtime.CompilerServices;
 // BddManager, etc.) so unit tests aren't forced through the public RuleCompiler pipeline.
 [assembly: InternalsVisibleTo("TruthWeaver.Tests")]
 
+// TruthWeaver.Testing throws the internal TestDoubleMisuseException when a test double is misused (an exhausted
+// FakePredicates.Scripted script). The evaluator lets only that type escape, and keeping it internal means no
+// production predicate can throw it, so every other predicate exception is still a fault (ADR-0001).
+[assembly: InternalsVisibleTo("TruthWeaver.Testing")]
+
 // TruthWeaver.Benchmarks measures the Parse/Validate+Build/Analyze/Lint
 // pipeline stages individually (RuleNodeCompiler, Analyzer, Linter), which RuleCompiler otherwise
 // runs as one opaque call, so compile-cost regressions can be attributed to a stage.

@@ -20,7 +20,7 @@ jobs.
 | Job | What it does |
 | --- | --- |
 | `verify` | Checks that the tagged commit is on `main` and that MinVer makes the version from the tag. Then it restores in locked mode, builds, tests, and runs the formatter, analyzer, text and data checks of CI. |
-| `pack` | Packs in Release with `-warnaserror`, runs `scripts/check-packages.ps1`, checks SourceLink and determinism with `dotnet-validate`, and uploads the packages as an artifact. |
+| `pack` | Packs in Release with `-warnaserror`, runs `scripts/check-packages.cs`, checks SourceLink and determinism with `dotnet-validate`, removes the packages that are not published (`TruthWeaver.Tool.Tui`), and uploads the other packages as an artifact. |
 | `publish` | Needs `verify` and `pack`. Runs in the `nuget` environment, which waits for a manual approval. Makes build provenance for the packages, gets a short-lived API key from NuGet.org trusted publishing, and pushes every `.nupkg` and `.snupkg` with `--skip-duplicate`. |
 | `release` | Creates a GitHub Release with generated notes and the package files. |
 
@@ -107,7 +107,7 @@ dotnet pack TruthWeaver.slnx --configuration Release --no-build -warnaserror -p:
 Run the package check from CI on the output directory.
 
 ```powershell
-pwsh scripts/check-packages.ps1 -PackageDirectory $env:TEMP/tw-release
+dotnet run scripts/check-packages.cs -- $env:TEMP/tw-release
 ```
 
 Then check SourceLink on each package with the `sourcelink` or `dotnet-validate` tool. Install the tool outside the
@@ -135,13 +135,14 @@ references the `Microsoft.SourceLink.GitHub` package. The reason is in `Director
 ### 5. Push the packages (not run)
 
 Push each `.nupkg` and its `.snupkg`. The `--skip-duplicate` option makes a second run safe. Read the API key from an
-environment variable.
+environment variable. First remove the terminal UI package, which is not published:
 
 ```powershell
+Remove-Item "$env:TEMP/tw-release/TruthWeaver.Tool.Tui.*"
 dotnet nuget push "$env:TEMP/tw-release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
 ```
 
-`TruthWeaver.Tool` is the .NET tool package of the [command line](cli.md). The push publishes it with the other packages, and the pack step and the package check treat it like them.
+`TruthWeaver.Tool` is the .NET tool package of the [command line](cli.md). The push publishes it with the other packages, and the pack step and the package check treat it like them. `TruthWeaver.Tool.Tui` is the .NET tool package of the [terminal UI](tui.md).
 
 `dotnet nuget push` of a `.nupkg` also pushes the `.snupkg` that is next to it. NuGet.org cannot unpublish a version.
 After a push you can only unlist it. Do this step last, after all the checks pass.

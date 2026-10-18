@@ -6,10 +6,10 @@ Scope decisions (owner, 2026-10-11) are in the spec; the worker adds no project,
 
 **Blocked by:** 01
 
-**Status:** on-hold until tickets 16 and 20 (feature-backlog-2026-10-11) are done; then ready-for-agent
+**Status:** done
 
-- [ ] Flipping any term updates the decision and trace at once; results equal `CompiledRule.EvaluateAsync` with the same stubs (tested)
-- [ ] Unknown handling is visible: an `Unknown` leaf shows how `AND`, `OR` and `NOT` respond
-- [ ] Variables load, edit and a missing or ambiguous variable shows as `Unknown` with its fault
-- [ ] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
-- [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+- [x] Flipping any term updates the decision and trace at once; results equal `CompiledRule.EvaluateAsync` with the same stubs (tested)
+- [x] Unknown handling is visible: an `Unknown` leaf shows how `AND`, `OR` and `NOT` respond
+- [x] Variables load, edit and a missing or ambiguous variable shows as `Unknown` with its fault
+- [x] The page for this feature is written or updated in the same change (`docs/tui.md`, linked from the README and `docs/cli.md`), and the doc example tests pass
+- [x] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

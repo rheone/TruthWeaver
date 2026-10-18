@@ -1,0 +1,371 @@
+namespace TruthWeaver.Tool.Core;
+
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using TruthWeaver.Compilation;
+using TruthWeaver.Diagnostics;
+using TruthWeaver.Evaluation;
+using TruthWeaver.Printing;
+using TruthWeaver.Yaml;
+
+/// <summary>
+/// One rule open for editing: its text and format, the file it belongs to, and the result of compiling the text. Every
+/// change compiles the text again. When the new text does not compile, the document keeps the last tree that compiled
+/// (<see cref="Rule"/>) and reports the errors of the new text (<see cref="Diagnostics"/>), so a view of the tree stays
+/// usable while the author types. Each change is one step of undo and redo.
+/// </summary>
+/// <remarks>
+/// This is the UI-free model of the terminal UI editor. It has no thread affinity and no locks: call it from one thread.
+/// It compiles permissively, as <see cref="RuleConverter"/> does, so any predicate name and any argument compiles.
+/// </remarks>
+public sealed class RuleDocument
+{
+    /// <summary>The number of undo steps the document keeps. The oldest step is dropped first.</summary>
+    public const int UndoLimit = 1000;
+
+    private readonly ToolSettings settings;
+    private readonly RuleCompiler<StubAssignment> compiler;
+    private readonly LinkedList<Snapshot> undo = new();
+    private readonly Stack<Snapshot> redo = new();
+    private Snapshot current;
+    private Snapshot saved;
+
+    private RuleDocument(string text, RuleFormat format, string? path, ToolSettings? settings)
+    {
+        this.settings = settings ?? ToolSettings.Default;
+        this.compiler = RuleConverter.CreateCompiler(this.settings);
+        this.current = new Snapshot(text, format);
+        this.saved = this.current;
+        this.Path = path;
+        this.Compile();
+    }
+
+    /// <summary>Occurs after the text, the format, the path or the saved state changes.</summary>
+    public event EventHandler? Changed;
+
+    /// <summary>Gets the text of the rule as the author wrote it.</summary>
+    public string Text => this.current.Text;
+
+    /// <summary>Gets the format of <see cref="Text"/>.</summary>
+    public RuleFormat Format => this.current.Format;
+
+    /// <summary>Gets the full path of the file of the document, or <see langword="null"/> for a document that was never saved.</summary>
+    public string? Path { get; private set; }
+
+    /// <summary>Gets a value indicating whether the text or format differs from the last open or save.</summary>
+    public bool IsDirty => this.current != this.saved;
+
+    /// <summary>Gets the diagnostics of the current <see cref="Text"/>. Their spans point into <see cref="Text"/>.</summary>
+    public EquatableArray<Diagnostic> Diagnostics { get; private set; } = new([]);
+
+    /// <summary>
+    /// Gets the last rule that compiled: the rule of the current text when <see cref="IsRuleCurrent"/> is
+    /// <see langword="true"/>, otherwise the rule of an earlier text. It is <see langword="null"/> when no text of this
+    /// document compiled yet.
+    /// </summary>
+    public CompiledRule<StubAssignment>? Rule { get; private set; }
+
+    /// <summary>Gets a value indicating whether <see cref="Rule"/> is the rule of the current <see cref="Text"/>.</summary>
+    public bool IsRuleCurrent { get; private set; }
+
+    /// <summary>Gets a value indicating whether <see cref="Undo"/> has a step to undo.</summary>
+    public bool CanUndo => this.undo.Count > 0;
+
+    /// <summary>Gets a value indicating whether <see cref="Redo"/> has a step to redo.</summary>
+    public bool CanRedo => this.redo.Count > 0;
+
+    /// <summary>Creates a document that has no file yet.</summary>
+    /// <param name="text">The rule text, or an empty string.</param>
+    /// <param name="format">The format of <paramref name="text"/>.</param>
+    /// <param name="settings">The settings (limits and operator style), or <see langword="null"/> for <see cref="ToolSettings.Default"/>.</param>
+    /// <returns>The document, compiled.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
+    public static RuleDocument Create(string text = "", RuleFormat format = RuleFormat.Text, ToolSettings? settings = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(format))
+        {
+            throw new ArgumentOutOfRangeException(nameof(format), format, "Not a defined rule format.");
+        }
+
+        return new RuleDocument(text, format, null, settings);
+    }
+
+    /// <summary>
+    /// Opens a rule file. <see cref="RuleLoader"/> reads it and finds its format (the extension, then the content). A file
+    /// that is read but does not compile still opens, with its diagnostics.
+    /// </summary>
+    /// <param name="path">The file path.</param>
+    /// <param name="settings">The settings, or <see langword="null"/> for <see cref="ToolSettings.Default"/>.</param>
+    /// <param name="format">The format of the file, or <see langword="null"/> (the default) to find it from the extension and the content.</param>
+    /// <returns>The document, or the diagnostics when the file cannot be read.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    public static ToolResult<RuleDocument> Open(string path, ToolSettings? settings = null, RuleFormat? format = null)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        if (
+            !RuleLoader
+                .LoadFile(path, new RuleLoadOptions { Format = format })
+                .TryGetValue(out LoadedRule? loaded, out EquatableArray<Diagnostic> diagnostics)
+        )
+        {
+            return ToolResults.Failure<RuleDocument>(diagnostics);
+        }
+
+        RuleDocument document = new(loaded.Text, loaded.Format, System.IO.Path.GetFullPath(path), settings);
+        return ToolResults.Success(document, diagnostics);
+    }
+
+    /// <summary>
+    /// Replaces the text and compiles it. The change is one undo step and clears the redo steps. Text equal to the
+    /// current text changes nothing.
+    /// </summary>
+    /// <param name="text">The new text.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public void SetText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        this.Apply(this.current with { Text = text });
+    }
+
+    /// <summary>Goes back one step: the text and format before the last change.</summary>
+    /// <returns><see langword="true"/> when a step was undone; <see langword="false"/> when there was none.</returns>
+    public bool Undo()
+    {
+        if (this.undo.Last is not { } last)
+        {
+            return false;
+        }
+
+        this.undo.RemoveLast();
+        this.redo.Push(this.current);
+        this.MoveTo(last.Value);
+        return true;
+    }
+
+    /// <summary>Goes forward one step that <see cref="Undo"/> went back.</summary>
+    /// <returns><see langword="true"/> when a step was redone; <see langword="false"/> when there was none.</returns>
+    public bool Redo()
+    {
+        if (!this.redo.TryPop(out Snapshot next))
+        {
+            return false;
+        }
+
+        this.undo.AddLast(this.current);
+        this.MoveTo(next);
+        return true;
+    }
+
+    /// <summary>
+    /// Formats the text in its own format, as one undo step. The canonical form is one line for rule text and JSON; the
+    /// pretty form breaks rule text at <see cref="ArtifactCatalog.PrettyWidth"/> characters and indents JSON by two
+    /// spaces. YAML is one node per line in both forms. Rule text uses the operator style of the settings. Notes are kept.
+    /// </summary>
+    /// <param name="pretty"><see langword="true"/> for the pretty form; <see langword="false"/> for the canonical form.</param>
+    /// <returns>
+    /// The formatted text, or no text and the diagnostics when the current text does not compile. The text does not change
+    /// then: formatting from the last valid tree would drop the edits that broke it.
+    /// </returns>
+    public ToolResult<string> FormatText(bool pretty)
+    {
+        if (!this.IsRuleCurrent || this.Rule is null)
+        {
+            return ToolResults.Failure<string>(this.Diagnostics);
+        }
+
+        string formatted = this.Print(this.Rule, this.Format, pretty);
+        this.Apply(this.current with { Text = formatted });
+        return ToolResults.Success(formatted, this.Diagnostics);
+    }
+
+    /// <summary>
+    /// Saves the document. The extension of the path selects the format (<c>.json</c>, <c>.yaml</c> or <c>.yml</c>,
+    /// <c>.rule</c>, <c>.tw</c> or <c>.txt</c>); another extension keeps the current format. Saving in another format
+    /// converts the rule first, which needs text that compiles, and the conversion is one undo step. The file is written
+    /// as <see cref="OutputWriter"/> writes: UTF-8 with no byte order mark, line feeds and one final newline.
+    /// </summary>
+    /// <param name="path">The file path, or <see langword="null"/> to save to <see cref="Path"/>.</param>
+    /// <returns>The full path of the file, or the diagnostics.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="path"/> is <see langword="null"/> and the document has no <see cref="Path"/>.</exception>
+    public ToolResult<string> Save(string? path = null)
+    {
+        string target =
+            path ?? this.Path ?? throw new InvalidOperationException("The document has no file; pass the path to save to.");
+        RuleFormat format = FormatOf(target) ?? this.Format;
+        if (format != this.Format)
+        {
+            if (!this.IsRuleCurrent || this.Rule is null)
+            {
+                return ToolResults.Failure<string>(this.Diagnostics);
+            }
+
+            this.Apply(new Snapshot(this.Print(this.Rule, format, pretty: false), format));
+        }
+
+        ToolResult<string> written = OutputWriter.WriteFile(target, this.Text);
+        if (written.Succeeded)
+        {
+            this.Path = written.Value;
+            this.saved = this.current;
+            this.Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        return written;
+    }
+
+    /// <summary>
+    /// Marks the current text as saved, so <see cref="IsDirty"/> is <see langword="false"/> until the next change. A front end
+    /// calls this after it wrote the text somewhere other than <see cref="Path"/>, such as into a larger document.
+    /// </summary>
+    public void MarkSaved()
+    {
+        this.saved = this.current;
+        this.Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Converts the text to another format, as one undo step. The tree and the notes stay the same; the layout, the spelling
+    /// (operator case and aliases) and YAML comments of the old text do not. A conversion needs text that compiles.
+    /// </summary>
+    /// <param name="format">The format to convert to. The current format changes nothing.</param>
+    /// <returns>The converted text, or no text and the diagnostics when the current text does not compile. The text does not change then.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
+    public ToolResult<string> ConvertTo(RuleFormat format)
+    {
+        if (!Enum.IsDefined(format))
+        {
+            throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not a defined RuleFormat.");
+        }
+
+        if (format == this.Format)
+        {
+            return ToolResults.Success(this.Text);
+        }
+
+        if (!this.IsRuleCurrent || this.Rule is null)
+        {
+            return ToolResults.Failure<string>(this.Diagnostics);
+        }
+
+        string converted = this.Print(this.Rule, format, pretty: false);
+        this.Apply(new Snapshot(converted, format));
+        return ToolResults.Success(converted, this.Diagnostics);
+    }
+
+    /// <summary>
+    /// Puts another rule in place of the text, as one undo step: a structural edit or an accepted rewrite. The rule is
+    /// printed in the format of the document with its notes, in the pretty form when the text has more than one line and in
+    /// the canonical form otherwise; the layout and spelling of the old text are not kept. The printed text must compile
+    /// with the limits of the settings, or the text does not change.
+    /// </summary>
+    /// <param name="rule">The rule.</param>
+    /// <returns>The new text, or no text and the diagnostics of the printed text when it does not compile.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
+    public ToolResult<string> ReplaceRule(CompiledRule<StubAssignment> rule)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+
+        string text = this.Print(rule, this.Format, pretty: this.Text.Trim().Contains('\n', StringComparison.Ordinal));
+        CompilationResult<StubAssignment> check = this.compiler.CompileAs(text, this.Format);
+        if (check.Rule is null)
+        {
+            return ToolResults.Failure<string>(check.Diagnostics);
+        }
+
+        this.Apply(this.current with { Text = text });
+        return ToolResults.Success(text, this.Diagnostics);
+    }
+
+    // The format that an extension names, or null for an extension the loader does not know.
+    private static RuleFormat? FormatOf(string path)
+    {
+        FormatDetection detection = FormatDetector.Detect(string.Empty, path);
+        return detection.Evidence == FormatEvidence.Extension ? detection.Format : null;
+    }
+
+    private static string IndentJson(string json)
+    {
+        JsonNode node = JsonNode.Parse(json) ?? throw new InvalidOperationException("The printer wrote JSON null.");
+        using MemoryStream stream = new();
+        using (
+            Utf8JsonWriter writer = new(
+                stream,
+                new JsonWriterOptions
+                {
+                    Indented = true,
+                    NewLine = "\n",
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            )
+        )
+        {
+            node.WriteTo(writer);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    private string Print(CompiledRule<StubAssignment> rule, RuleFormat format, bool pretty)
+    {
+        return format switch
+        {
+            RuleFormat.Text => rule.PrintRuleText(
+                new RuleTextOptions
+                {
+                    OperatorStyle = this.settings.OperatorStyle,
+                    IncludeNotes = true,
+                    Width = pretty ? ArtifactCatalog.PrettyWidth : null,
+                }
+            ),
+            RuleFormat.Json when pretty => IndentJson(rule.PrintAs(RuleFormat.Json)),
+
+            // The YAML printer may write CRLF on Windows; the document keeps line feeds, as the output writer does.
+            RuleFormat.Yaml => rule.PrintAs(RuleFormat.Yaml).ReplaceLineEndings("\n"),
+            _ => rule.PrintAs(format),
+        };
+    }
+
+    // A change made by the author: one undo step, and no redo steps left.
+    private void Apply(Snapshot next)
+    {
+        if (next == this.current)
+        {
+            return;
+        }
+
+        this.undo.AddLast(this.current);
+        if (this.undo.Count > UndoLimit)
+        {
+            this.undo.RemoveFirst();
+        }
+
+        this.redo.Clear();
+        this.MoveTo(next);
+    }
+
+    private void MoveTo(Snapshot next)
+    {
+        this.current = next;
+        this.Compile();
+        this.Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void Compile()
+    {
+        CompilationResult<StubAssignment> result = this.compiler.CompileAs(this.Text, this.Format);
+        this.Diagnostics = result.Diagnostics;
+        this.IsRuleCurrent = result.Rule is not null;
+        if (result.Rule is not null)
+        {
+            this.Rule = result.Rule;
+        }
+    }
+
+    /// <summary>One state of the undo history: the text and its format.</summary>
+    private readonly record struct Snapshot(string Text, RuleFormat Format);
+}

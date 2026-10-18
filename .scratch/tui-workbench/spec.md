@@ -1,6 +1,6 @@
 # Terminal UI workbench
 
-**Status:** planned 2026-10-11; on hold until the tool-platform Core tickets (C1 to C4) and tickets 16 and 20 of [feature-backlog-2026-10-11](../feature-backlog-2026-10-11/spec.md) are done. Replaces the placeholder ticket `t1` there.
+**Status:** planned 2026-10-11; blockers cleared (tool-platform C1 to C4 and feature-backlog 16 and 20 are done). Tickets 01 to 08 are done (2026-10-17). Replaces the placeholder ticket `t1` there.
 
 ## Purpose
 
