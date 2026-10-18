@@ -18,3 +18,4 @@ Scope decisions (owner, 2026-10-11) are in the spec; the worker adds no project,
 ## Comments
 
 - 2026-10-17: the palette does not yet offer the `TruthWeaver.Predicates` catalog as templates. That needs a new reference from `TruthWeaver.Tool.Tui` to `TruthWeaver.Predicates`, which needs owner approval. `docs/tui.md` says so.
+- 2026-10-17: the owner approved the reference. The work is ticket [10](10-palette-predicates-catalog.md).

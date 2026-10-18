@@ -36,5 +36,7 @@ Multi-file projects, schema-driven completion, version history, automatic mutant
 | [06](issues/06-embedded-rules-in-documents.md) | Rules inside JSON and YAML documents | 01, C4 |
 | [08](issues/08-import-export-and-validation.md) | Import, convert, export and validation panel | 01, C2, C3 |
 | [07](issues/07-rule-test-integration.md) | Save cases and run rule tests | 02, 20 |
+| [09](issues/09-move-to-terminal-gui-editor-package.md) | Replace the obsolete `TextView` with `Terminal.Gui.Editor` (approved 2026-10-17) | none |
+| [10](issues/10-palette-predicates-catalog.md) | Offer the `TruthWeaver.Predicates` catalog in the palette (approved 2026-10-17) | none |
 
 Later (not ticketed yet): "what would make this True" panel (feature-backlog 01), looser-or-tighter comparison (13), definitions support (11), coverage over saved cases (04).
