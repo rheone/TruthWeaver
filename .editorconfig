@@ -104,7 +104,7 @@ dotnet_diagnostic.CA1859.severity = none
 
 # A namespace matches its folder under the project's root namespace, as in the main TruthWeaver project. IDE0130 keeps
 # the two from drifting. Enabled per project as each project is reorganized; the other projects are still flat.
-[{src/TruthWeaver.Tool.Core,tests/TruthWeaver.Tool.Core.Tests}/**.cs]
+[{src/TruthWeaver.Tool.Core,tests/TruthWeaver.Tool.Core.Tests,src/TruthWeaver.Tool.Tui,tests/TruthWeaver.Tool.Tui.Tests}/**.cs]
 dotnet_style_namespace_match_folder = true
 dotnet_diagnostic.IDE0130.severity = warning
 

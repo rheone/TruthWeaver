@@ -5,6 +5,8 @@ using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Tui.Panes;
+using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
 /// A workbench window with no terminal: the views are initialized and laid out at a fixed size, the editor has the focus,

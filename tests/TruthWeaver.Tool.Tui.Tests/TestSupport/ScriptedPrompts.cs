@@ -1,5 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
+using TruthWeaver.Tool.Tui.Hosting;
+
 /// <summary>Answers the workbench questions from fixed values and counts the questions, so no dialog opens.</summary>
 internal sealed class ScriptedPrompts : IWorkbenchPrompts
 {

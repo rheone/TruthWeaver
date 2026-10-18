@@ -507,7 +507,7 @@ CI packs `TruthWeaver.Tool.Tui` with the other packages and checks the package. 
 
 ## Extending the workbench
 
-This section is for developers of the workbench. The window gets its panes and keys from two lists in `src/TruthWeaver.Tool.Tui`:
+This section is for developers of the workbench. The window gets its panes and keys from two lists in `src/TruthWeaver.Tool.Tui`, in the namespace `TruthWeaver.Tool.Tui.Workbench`. The types are in one namespace for each folder of the project, `TruthWeaver.Tool.Tui.<Folder>`; the [project README](../src/TruthWeaver.Tool.Tui/README.md) lists the folders:
 
 - A pane implements `IWorkbenchPane`: a title, a region (`PaneSlot.Editor`, `PaneSlot.Side` or `PaneSlot.Bottom`) and `CreateView(Workbench)`. Add an instance to `WorkbenchPanes.Default`. The view follows the shared state through `Workbench.DocumentChanged`, and reads the rule from `Workbench.Document`.
 - A key is a `WorkbenchCommand`: a key, a description and an action on the window. Add it to `WorkbenchCommands.Default`. The key help lists it.
