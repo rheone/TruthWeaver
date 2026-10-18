@@ -1,6 +1,6 @@
 # Project organization plan
 
-Status: proposal, not started. Written 2026-10-18.
+Status: done 2026-10-18 for Tool.Core (9db9d31), Tool.Tui (00d1248) and Testing (e61cacc). Abstractions, Predicates and AspNetCore stay flat. Written 2026-10-18.
 
 ## Rule
 

@@ -111,7 +111,10 @@ is in `Directory.Packages.props`. Only projects that pack get MinVer.
 | Any commit, with a tag below `v1.0` | `1.0.0-preview.0.N` (`MinVerMinimumMajorMinor` is `1.0`) |
 
 To make a release version, put a tag with the prefix `v` on the commit, for example `v1.0.0`. A tag without the prefix
-is ignored. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
+is ignored. To make an alpha version, add a pre-release suffix with the UTC date and time in basic ISO 8601 form, for
+example `v1.0.0-alpha.20261018T201500Z`. A colon is not valid in a version or a tag, so the basic form is used, and the
+suffixes sort in time order. The release workflow marks a tag with a hyphen as a pre-release and the tag must be on a
+commit in `main`. To override the version for one build, pass `-p:MinVerVersionOverride=1.2.3`.
 
 MinVer needs the tags and the commit history. CI checks out with `fetch-depth: 0` for this reason. In a shallow clone
 the version is wrong. After `git clone --depth`, run `git fetch --unshallow --tags`.
