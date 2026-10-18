@@ -3,6 +3,8 @@
 [![CI](https://github.com/rheone/TruthWeaver/actions/workflows/ci.yml/badge.svg)](https://github.com/rheone/TruthWeaver/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-11.0-512BD4)](global.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/TruthWeaver.svg?label=nuget)](https://www.nuget.org/packages/TruthWeaver)
+[![NuGet pre-release](https://img.shields.io/nuget/vpre/TruthWeaver.svg?label=nuget%20pre-release)](https://www.nuget.org/packages/TruthWeaver)
 
 A general-purpose **Strong Kleene (K3)** expression engine for .NET. Every
 expression evaluates to one of three values: `True`, `False` or `Unknown`. The
