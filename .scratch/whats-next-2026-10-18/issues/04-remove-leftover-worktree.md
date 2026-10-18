@@ -6,6 +6,6 @@
 
 **Status:** ready-for-agent
 
-- [ ] The worktree's branch and uncommitted changes are inspected, and anything unmerged is reported to the owner before removal.
-- [ ] The worktree and its branch are removed.
-- [ ] `git worktree list` shows only the main working tree.
+- [x] The worktree's branch and uncommitted changes are inspected, and anything unmerged is reported to the owner before removal.
+- [x] The worktree and its branch are removed.
+- [x] `git worktree list` shows only the main working tree.
