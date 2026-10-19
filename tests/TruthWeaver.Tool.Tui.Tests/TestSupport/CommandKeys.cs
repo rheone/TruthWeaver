@@ -13,13 +13,29 @@ internal static class CommandKeys
     public static Key Inspect => Copy(Of("Inspect").Key);
 
     /// <summary>Gets the second key of the Inspect command.</summary>
-    public static Key InspectSecond => Second("Inspect");
+    public static Key InspectSecond => SecondOf("Inspect");
 
     /// <summary>Gets the key of the Next evaluation step command.</summary>
     public static Key NextStep => Copy(Of("Next evaluation step").Key);
 
     /// <summary>Gets the key of the Previous evaluation step command.</summary>
     public static Key PreviousStep => Copy(Of("Previous evaluation step").Key);
+
+    /// <summary>Gets a copy of the key of the default command with this title, which a test may press without changing the command.</summary>
+    /// <param name="title">The title of the command.</param>
+    /// <returns>A new key event for the key.</returns>
+    public static Key PrimaryOf(string title)
+    {
+        return Copy(Of(title).Key);
+    }
+
+    /// <summary>Gets a copy of the second key of the default command with this title; the command must have a second key.</summary>
+    /// <param name="title">The title of the command.</param>
+    /// <returns>A new key event for the second key.</returns>
+    public static Key SecondOf(string title)
+    {
+        return Copy(Of(title).SecondKey ?? throw new InvalidOperationException($"The command '{title}' has no second key."));
+    }
 
     /// <summary>Gets a copy of the second key of a command, which a test may press without changing the command.</summary>
     /// <param name="command">The command; it must have a second key.</param>
@@ -37,11 +53,6 @@ internal static class CommandKeys
     private static WorkbenchCommand Of(string title)
     {
         return WorkbenchCommands.Default.Single(c => c.Title == title);
-    }
-
-    private static Key Second(string title)
-    {
-        return Copy(Of(title).SecondKey ?? throw new InvalidOperationException($"The command '{title}' has no second key."));
     }
 
     // A key event is mutable (the window marks it handled), so a test gets its own copy and never changes the key that the

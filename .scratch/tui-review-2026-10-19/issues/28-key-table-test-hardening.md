@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A duplicated group heading fails with a message that names the heading.
-- [ ] Each group heading, renamed in turn, fails with a message that names it.
-- [ ] The failure tests build their changed document from the parsed tables, with no hard-coded row text.
-- [ ] One helper returns the documented keys of a command, and the repeated inline lookup is gone.
-- [ ] The test names follow `{MemberUnderTest}_{Scenario}_{Expectation}_Test` with a real member or type first, and the architecture naming test passes.
+- [x] A duplicated group heading fails with a message that names the heading.
+- [x] Each group heading, renamed in turn, fails with a message that names it.
+- [x] The failure tests build their changed document from the parsed tables, with no hard-coded row text.
+- [x] One helper returns the documented keys of a command, and the repeated inline lookup is gone.
+- [x] The test names follow `{MemberUnderTest}_{Scenario}_{Expectation}_Test` with a real member or type first, and the architecture naming test passes.

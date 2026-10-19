@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The summaries of `NameOf` and its tests use one description of the rule.
-- [ ] The `SameCall` summary says what it compares and why the display text and the typed text need it.
-- [ ] The `SameCall` test is split into tests that assert one result each.
-- [ ] All tests pass without changes to their expectations.
+- [x] The summaries of `NameOf` and its tests use one description of the rule.
+- [x] The `SameCall` summary says what it compares and why the display text and the typed text need it.
+- [x] The `SameCall` test is split into tests that assert one result each.
+- [x] All tests pass without changes to their expectations.

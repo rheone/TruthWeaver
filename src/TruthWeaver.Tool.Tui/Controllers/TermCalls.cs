@@ -72,9 +72,9 @@ internal static class TermCalls
     }
 
     /// <summary>
-    /// Tells whether two call texts are the same call when spacing is ignored. It is named, not inlined, because the rule
-    /// (the display of a term is normalized, the text in the editor is as typed) is shared by the cursor status and needs
-    /// one test.
+    /// Tells whether two call texts are the same call when white space is ignored. The display of a term is normalized
+    /// (one canonical spacing), but the call at the editor cursor is the text as typed, so a plain string comparison would
+    /// call the same call different. White space is removed everywhere, also inside string arguments.
     /// </summary>
     /// <param name="first">The first call text, such as the display of a term.</param>
     /// <param name="second">The second call text, such as the call at the cursor.</param>

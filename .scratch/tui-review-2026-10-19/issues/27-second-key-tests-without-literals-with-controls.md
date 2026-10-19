@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No test in `SecondKeyTests` hard-codes a command key or second key.
-- [ ] The swallow test has a control that runs the command with the same key and no extra binding.
-- [ ] The clash helper is tested against a binding in the editor, in a list and in a text field.
-- [ ] The window-owned keys have one named list with a summary that gives the reason.
-- [ ] All tests pass.
+- [x] No test in `SecondKeyTests` hard-codes a command key or second key.
+- [x] The swallow test has a control that runs the command with the same key and no extra binding.
+- [x] The clash helper is tested against a binding in the editor, in a list and in a text field.
+- [x] The window-owned keys have one named list with a summary that gives the reason.
+- [x] All tests pass.

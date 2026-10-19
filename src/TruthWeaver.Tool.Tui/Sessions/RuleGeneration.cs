@@ -33,12 +33,10 @@ internal static class RuleGeneration
 
     /// <summary>
     /// Gets the choices of the operator families dialog: the title and the families it stands for. The titles are the
-    /// groups of the Insert menu, in its order, so the menu is the one source. The Other group stands for <c>If</c> and
-    /// <c>COALESCE</c>. A group that this class does not know gets <see cref="RuleOperatorFamilies.None"/> (a test fails
-    /// then); reading this property never throws for it.
+    /// groups of the Insert menu, in its order, and each group declares its own families, so the menu is the one source.
     /// </summary>
     public static IReadOnlyList<(string Title, RuleOperatorFamilies Families)> FamilyChoices { get; } =
-    [.. InsertItems.Operators.Select(g => (g.Title, FamiliesOf(g.Id)))];
+    [.. InsertItems.Operators.Select(g => (g.Title, g.Families))];
 
     /// <summary>Combines the families of the chosen entries of <see cref="FamilyChoices"/>.</summary>
     /// <param name="indexes">The indexes into <see cref="FamilyChoices"/>.</param>
@@ -85,20 +83,6 @@ internal static class RuleGeneration
         }
 
         return null;
-    }
-
-    // None for an unlisted group, not an exception: this runs in a static initializer, where a throw would make the type
-    // unusable on first access. A test asserts that every group has a family.
-    internal static RuleOperatorFamilies FamiliesOf(InsertGroupId group)
-    {
-        return group switch
-        {
-            InsertGroupId.Connectives => RuleOperatorFamilies.Connectives,
-            InsertGroupId.Cardinality => RuleOperatorFamilies.Cardinality,
-            InsertGroupId.Inspection => RuleOperatorFamilies.Inspection,
-            InsertGroupId.Other => RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
-            _ => RuleOperatorFamilies.None,
-        };
     }
 
     private static string[] PickTerms(Random random, ToolSettings settings)

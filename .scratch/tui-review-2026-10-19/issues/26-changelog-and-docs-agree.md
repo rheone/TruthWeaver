@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The older Export parity entry matches the current behavior (image formats are listed only when the renderer is found, and one note line names what to install).
-- [ ] The Generate entry describes the check for a group with no generator family in the words of the current code, or leaves that detail out because users do not see it.
-- [ ] The "(tui-feedback NN)" tags are consistent in the Unreleased list (all kept or all dropped).
-- [ ] `docs/tui.md` says that OK with no box ticked keeps the Generate rule dialog open.
-- [ ] The documentation tests pass.
+- [x] The older Export parity entry matches the current behavior (image formats are listed only when the renderer is found, and one note line names what to install).
+- [x] The Generate entry describes the check for a group with no generator family in the words of the current code, or leaves that detail out because users do not see it.
+- [x] The "(tui-feedback NN)" tags are consistent in the Unreleased list (all kept or all dropped).
+- [x] `docs/tui.md` says that OK with no box ticked keeps the Generate rule dialog open.
+- [x] The documentation tests pass.

@@ -16,9 +16,12 @@ using TruthWeaver.Tool.Tui.Workbench;
 [Collection(TerminalCollection.Name)]
 public sealed class CommandKeyClashTests
 {
-    // The keys the window owns on purpose: the document keeps the history, so the editor reports its own undo and redo as
-    // not handled and the keys go on to the window.
-    private static readonly Key[] OwnedByTheWindow = [Key.Z.WithCtrl, Key.Y.WithCtrl];
+    /// <summary>
+    /// The keys the window owns on purpose: Ctrl+Z (undo) and Ctrl+Y (redo). The document keeps the history, so the editor
+    /// reports its own undo and redo as not handled and the keys go on to the window. A view may bind these keys without a
+    /// clash.
+    /// </summary>
+    private static readonly Key[] WindowOwnedKeys = [Key.Z.WithCtrl, Key.Y.WithCtrl];
 
     /// <summary>
     /// No command key (primary or second) is also a key binding of the editor, a list or a text field, except the keys the
@@ -38,18 +41,27 @@ public sealed class CommandKeyClashTests
     }
 
     /// <summary>
-    /// The clash check finds a key that a view binds: an Alt+letter second key added to a view is reported with the key and
-    /// the view. This shows that the clash test would fail for such a key, which no view binds today.
+    /// The clash check finds a key that a view binds: a command key added as a binding to the editor, a list or a text field
+    /// is reported with the key and the view. This shows that the clash test would fail for such a key, which no view binds
+    /// today. The key is read from a command. The test also passes a window-owned key, which these views bind themselves, and
+    /// shows that it is not reported.
     /// </summary>
     [Fact]
-    public void ClashesOf_AltLetterSecondKeyBoundByAView_IsReported_Test()
+    public void ClashesOf_CommandKeyBoundByTheEditorAListAndATextField_IsReportedForEachView_Test()
     {
+        Key key = CommandKeys.SecondOf("Switch theme");
+        using RuleEditorView editor = new();
+        using ListView list = new();
         using TextField field = new();
-        field.KeyBindings.Add(Key.G.WithAlt, Command.Accept);
+        View[] views = [editor, list, field];
+        foreach (View view in views)
+        {
+            view.KeyBindings.Add(key, Command.Accept);
+        }
 
-        string[] clashes = ClashesOf([field], [Key.G.WithAlt]);
+        string[] clashes = ClashesOf(views, [key, WindowOwnedKeys[0]]);
 
-        Assert.Equal(["Alt+G is bound by TextField"], clashes);
+        Assert.Equal([.. views.Select(v => $"{key} is bound by {v.GetType().Name}")], clashes);
     }
 
     /// <summary>
@@ -101,7 +113,7 @@ public sealed class CommandKeyClashTests
         [
             .. from view in views
             from binding in view.KeyBindings.GetBindings()
-            where keys.Contains(binding.Key) && !OwnedByTheWindow.Contains(binding.Key)
+            where keys.Contains(binding.Key) && !WindowOwnedKeys.Contains(binding.Key)
             select $"{binding.Key} is bound by {view.GetType().Name}",
         ];
     }

@@ -5,7 +5,7 @@ using TruthWeaver.Tool.Tui.Controllers;
 /// <summary>How <see cref="TermCalls"/> names a predicate call and compares two calls.</summary>
 public sealed class TermCallsTests
 {
-    /// <summary>The name of a call is the text before its opening parenthesis.</summary>
+    /// <summary>The name of a call is the run of predicate marks at the start of the text, so it ends before the opening parenthesis.</summary>
     [Fact]
     public void NameOf_Call_ReturnsTheNameBeforeTheParenthesis_Test()
     {
@@ -31,6 +31,12 @@ public sealed class TermCallsTests
     public void SameCall_CallsDifferingInSpacing_AreTheSame_Test()
     {
         Assert.True(TermCalls.SameCall("hasRole(role: \"admin\")", "hasRole( role:\"admin\" )"));
+    }
+
+    /// <summary>Calls with different arguments are not the same call, even when the spacing is equal.</summary>
+    [Fact]
+    public void SameCall_CallsDifferingInArgument_AreNotTheSame_Test()
+    {
         Assert.False(TermCalls.SameCall("hasRole(role: \"admin\")", "hasRole(role: \"editor\")"));
     }
 }

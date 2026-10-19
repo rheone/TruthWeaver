@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Insert group declares its generator family; there is no second list of groups.
-- [ ] A group cannot exist without a family (the type requires it).
-- [ ] The assertion that the enum order equals the menu order is gone, and the Generate dialog still lists the groups in menu order.
-- [ ] Generated rules for each tick are unchanged, and the existing generate tests pass without changes to their expectations.
-- [ ] `docs/tui.md` still matches the dialog.
+- [x] The Insert group declares its generator family; there is no second list of groups.
+- [x] A group cannot exist without a family (the type requires it).
+- [x] The assertion that the enum order equals the menu order is gone, and the Generate dialog still lists the groups in menu order.
+- [x] Generated rules for each tick are unchanged, and the existing generate tests pass without changes to their expectations.
+- [x] `docs/tui.md` still matches the dialog.

@@ -17,78 +17,78 @@ using TruthWeaver.Tool.Tui.Workbench;
 [Collection(TerminalCollection.Name)]
 public sealed class SecondKeyTests
 {
-    /// <summary>Alt+G, the second key of Switch theme (Ctrl+F1), switches the theme the same way the primary key does.</summary>
+    /// <summary>The second key of Switch theme switches the theme the same way the primary key does.</summary>
     [Fact]
-    public void Default_AltGSecondKeyOfSwitchTheme_SwitchesTheThemeLikeCtrlF1_Test()
+    public void Default_SecondKeyOfSwitchTheme_SwitchesTheThemeLikeThePrimaryKey_Test()
     {
         using WorkbenchHarness harness = new("a");
         ThemeVariant before = harness.Workbench.Theme;
 
-        harness.Press(Key.G.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Switch theme"));
 
         Assert.NotEqual(before, harness.Workbench.Theme);
     }
 
-    /// <summary>Alt+W, the second key of Next pane (Ctrl+PageDown), switches the pane the same way the primary key does.</summary>
+    /// <summary>The second key of Next pane switches the pane the same way the primary key does.</summary>
     [Fact]
-    public void Default_AltWSecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeCtrlPageDown_Test()
+    public void Default_SecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeThePrimaryKey_Test()
     {
         // Two Side panes, so switching the pane has somewhere to go.
         IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
         using WorkbenchHarness harness = new("a", panes);
         harness.Window.FocusRegion(PaneSlot.Side);
 
-        harness.Press(Key.W.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Next pane"));
 
         Assert.Equal("View", harness.Window.ActivePaneTitle(PaneSlot.Side));
         Assert.Equal(PaneSlot.Side, harness.Window.FocusedSlot());
     }
 
-    /// <summary>Alt+Q, the second key of Previous pane (Ctrl+PageUp), switches back to the pane before, like the primary key.</summary>
+    /// <summary>The second key of Previous pane switches back to the pane before, like the primary key.</summary>
     [Fact]
-    public void Default_AltQSecondKeyOfPreviousPane_SwitchesToThePaneBeforeLikeCtrlPageUp_Test()
+    public void Default_SecondKeyOfPreviousPane_SwitchesToThePaneBeforeLikeThePrimaryKey_Test()
     {
         IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
         using WorkbenchHarness harness = new("a", panes);
         harness.Window.FocusRegion(PaneSlot.Side);
-        harness.Press(Key.W.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Next pane"));
         string? after = harness.Window.ActivePaneTitle(PaneSlot.Side);
 
-        harness.Press(Key.Q.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Previous pane"));
 
         Assert.NotEqual(after, harness.Window.ActivePaneTitle(PaneSlot.Side));
         Assert.Equal(PaneSlot.Side, harness.Window.FocusedSlot());
     }
 
-    /// <summary>Alt+C, the second key of Editor wider (Alt+Right), widens the editor region the same way the primary key does.</summary>
+    /// <summary>The second key of Editor wider widens the editor region the same way the primary key does.</summary>
     [Fact]
-    public void Default_AltCSecondKeyOfEditorWider_WidensTheEditorRegionLikeAltRight_Test()
+    public void Default_SecondKeyOfEditorWider_WidensTheEditorRegionLikeThePrimaryKey_Test()
     {
         using WorkbenchHarness harness = new("a");
         int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
 
-        harness.Press(Key.C.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Editor wider"));
 
         Assert.Equal(60, harness.Workbench.Layout.EditorWidthPercent);
         Assert.True(harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width > before);
     }
 
-    /// <summary>Alt+Z, the second key of Editor narrower (Alt+Left), narrows the editor region the same way the primary key does.</summary>
+    /// <summary>The second key of Editor narrower narrows the editor region the same way the primary key does.</summary>
     [Fact]
-    public void Default_AltZSecondKeyOfEditorNarrower_NarrowsTheEditorRegionLikeAltLeft_Test()
+    public void Default_SecondKeyOfEditorNarrower_NarrowsTheEditorRegionLikeThePrimaryKey_Test()
     {
         using WorkbenchHarness harness = new("a");
         int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
 
-        harness.Press(Key.Z.WithAlt);
+        harness.Press(CommandKeys.SecondOf("Editor narrower"));
 
         Assert.Equal(50, harness.Workbench.Layout.EditorWidthPercent);
         Assert.True(harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width < before);
     }
 
-    /// <summary>Alt+M, the second key of Inspect (Ctrl+F8), opens the inspect box the same way the primary key does.</summary>
+    /// <summary>The second key of Inspect opens the inspect box the same way the primary key does.</summary>
     [Fact]
-    public void Default_AltMSecondKeyOfInspect_OpensTheInspectBoxLikeCtrlF8_Test()
+    public void Default_SecondKeyOfInspect_OpensTheInspectBoxLikeThePrimaryKey_Test()
     {
         using WorkbenchHarness harness = new("isActive");
 
@@ -125,23 +125,27 @@ public sealed class SecondKeyTests
 
     /// <summary>
     /// A second key that the focused editor binds is swallowed before the window sees it, and the recorder test reports that
-    /// the command did not run. This shows that the every-second-key test fails on a clash: it adds a binding for Alt+G to
-    /// the editor, as a temporary clash would.
+    /// the command did not run. This shows that the every-second-key test fails on a clash: the same key runs its command
+    /// when the editor does not bind it (the control), and runs nothing when a temporary clash adds a binding for it.
     /// </summary>
     [Fact]
     public void RunCommand_SecondKeyBoundByTheFocusedEditor_DoesNotRunItsCommand_Test()
     {
-        string[] ran = RanByKeyInTheEditor(Key.G.WithAlt, extraEditorBinding: true);
+        const string title = "Switch theme";
 
-        Assert.Empty(ran);
+        string[] control = RanByKeyInTheEditor(CommandKeys.SecondOf(title), extraEditorBinding: false);
+        string[] clash = RanByKeyInTheEditor(CommandKeys.SecondOf(title), extraEditorBinding: true);
+
+        Assert.Equal([title], control);
+        Assert.Empty(clash);
     }
 
     /// <summary>
-    /// Ctrl+F12 with the editor focused runs Save into the document: after the author agrees to the warning, the rule goes
+    /// The key of Save into the document, pressed with the editor focused, runs it: after the author agrees to the warning, the rule goes
     /// into the document file.
     /// </summary>
     [Fact]
-    public void Default_CtrlF12InTheEditor_SavesTheRuleIntoTheDocument_Test()
+    public void Default_PrimaryKeyOfSaveIntoTheDocumentInTheEditor_SavesTheRuleIntoTheDocument_Test()
     {
         string folder = Directory.CreateTempSubdirectory("tw-ctrlf12-").FullName;
         WorkbenchServices previous = WorkbenchServices.Current;
@@ -157,7 +161,7 @@ public sealed class SecondKeyTests
             harness.Workbench.Document.SetText("isActive AND isOwner");
             harness.Window.FocusRegion(PaneSlot.Editor);
 
-            harness.Press(Key.F12.WithCtrl);
+            harness.Press(CommandKeys.PrimaryOf("Save into the document"));
 
             Assert.Contains("isOwner", File.ReadAllText(file), StringComparison.Ordinal);
             Assert.False(harness.Workbench.Document.IsDirty);
@@ -180,10 +184,9 @@ public sealed class SecondKeyTests
         string help = WorkbenchWindow.HelpText(WorkbenchCommands.Default);
         string[] lines = help.Split('\n');
 
-        string themeLine = lines.Single(line =>
-            line.EndsWith("Switch between the light and the dark theme", StringComparison.Ordinal)
-        );
-        Assert.StartsWith("  Ctrl+F1 or Alt+G", themeLine, StringComparison.Ordinal);
+        WorkbenchCommand theme = WorkbenchCommands.Default.Single(c => c.Title == "Switch theme");
+        string themeLine = lines.Single(line => line.EndsWith(theme.Description, StringComparison.Ordinal));
+        Assert.StartsWith($"  {theme.Key} or {theme.SecondKey}", themeLine, StringComparison.Ordinal);
     }
 
     /// <summary>The menu entry of a command with a second key shows that key, so the menu names both ways to run it.</summary>
@@ -194,8 +197,9 @@ public sealed class SecondKeyTests
 
         MenuItem item = harness.Window.MenuBar.GetMenuItemsWith(i => i.Title == "Switch theme").Single();
 
-        Assert.Equal("or Alt+G", item.HelpText);
-        Assert.Equal(Key.F1.WithCtrl, item.Key);
+        WorkbenchCommand theme = WorkbenchCommands.Default.Single(c => c.Title == "Switch theme");
+        Assert.Equal($"or {theme.SecondKey}", item.HelpText);
+        Assert.Equal(theme.Key, item.Key);
     }
 
     /// <summary>No two keys of the default commands, primary or second, are the same key.</summary>
