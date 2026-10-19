@@ -4,7 +4,7 @@ namespace TruthWeaver.Testing.Fuzzing;
 /// <param name="Text">The rule text. Each compound node is in parentheses.</param>
 /// <param name="Eval">
 /// The expected value for one assignment, built only from <see cref="K3Oracle"/>. Entry <c>i</c> of the assignment is
-/// the value of term <c>i</c> of the term list given to <see cref="K3RuleGenerator.GenerateRule"/>.
+/// the value of term <c>i</c> of the term list given to <see cref="K3RuleGenerator.GenerateRule(Random, int, IReadOnlyList{string})"/>.
 /// </param>
 /// <param name="Children">The operands, or empty for a term or a constant.</param>
 public sealed record GeneratedRule(

@@ -215,7 +215,7 @@ public static class ArtifactCatalog
                 name,
                 $"The Strong K3 truth table in {name}.",
                 [Option("format", name)],
-                source => source.PrintOrRefuse(rule => PrintTruthTable(rule, format, source.Options.AllowLargerTruthTable))
+                source => source.PrintOrRefuse(rule => PrintTruthTable(rule, source.Options.ToTruthTableOptions(format)))
             );
         }
 
@@ -307,13 +307,8 @@ public static class ArtifactCatalog
     }
 
     // A truth table, or the TRE0035 error when the rule has too many terms.
-    private static ToolResult<string> PrintTruthTable(
-        CompiledRule<StubAssignment> rule,
-        TruthTableFormat format,
-        bool allowLargerTable
-    )
+    private static ToolResult<string> PrintTruthTable(CompiledRule<StubAssignment> rule, TruthTableOptions options)
     {
-        TruthTableOptions options = new() { Format = format, AllowLargerTable = allowLargerTable };
         return rule.TryPrintTruthTable(
             options,
             out string? text,

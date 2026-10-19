@@ -59,7 +59,7 @@ public static class RuleReport
         report.Append(Fenced("mermaid", compiled.PrintMermaid()));
 
         report.Append("\n\n## Truth table\n\n");
-        TruthTableOptions table = new() { AllowLargerTable = source.Options.AllowLargerTruthTable };
+        TruthTableOptions table = source.Options.ToTruthTableOptions(TruthTableFormat.Markdown);
         if (compiled.TryPrintTruthTable(table, out string? text, out IReadOnlyList<Diagnostic> tableDiagnostics))
         {
             report.Append("The Strong K3 truth table: every combination of `F`, `U` and `T` for the terms.\n\n");
@@ -77,7 +77,7 @@ public static class RuleReport
             report.Append(
                 string.Create(
                     CultureInfo.InvariantCulture,
-                    $"more than the cap of {TruthTableOptions.DefaultTermCap} terms allows."
+                    $"more than the cap of {source.Options.EffectiveTruthTableTermLimit} terms allows."
                 )
             );
         }

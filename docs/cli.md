@@ -191,12 +191,13 @@ The JSON result has `format`, and `text`, `output` or `check`.
 | --- | --- |
 | `--artifact <id>`, `-a <id>` | The artifact. The default is `rule-text`. `equation` is the equation in the `--dialect` and `--constant-style` of the settings (`letters` by default). [Artifacts and export](tool-core.md#artifacts-and-export) lists every id. |
 | `--allow-large-truth-table` | Prints a truth table with more than 8 terms, up to 12, with a `TRE0034` warning. |
+| `--truth-table-limit <n>` | Prints a truth table with up to `n` terms (1 or more), with a `TRE0034` warning above 8. There is no ceiling, and the table grows by 3^n rows. A number below 8 lowers the cap. `--allow-large-truth-table` means a limit of 12. A number below 1 is a usage error. |
 
 An id that is not in the catalog is a `TWT0018` error. The JSON result has `artifact` (the catalog id) and `text`.
 
 ## export
 
-`truthweaver export [input]` writes artifacts to files. It takes `--artifact` and `--allow-large-truth-table` as `print` does.
+`truthweaver export [input]` writes artifacts to files. It takes `--artifact`, `--allow-large-truth-table` and `--truth-table-limit` as `print` does.
 
 | Form | Writes |
 | --- | --- |
@@ -208,6 +209,8 @@ An id that is not in the catalog is a `TWT0018` error. The JSON result has `arti
 | `--render svg\|png` | Renders the diagram as an image with Graphviz `dot` or the Mermaid CLI `mmdc` from the `PATH`. With `--artifact`, the artifact must be `mermaid` or `dot`, and `--output` is the image file. With `--all`, the folder also gets `mermaid.svg` and `dot.svg` (or `.png`). A missing program is a `TWT0016` error. See [Images](tool-core.md#images). |
 | `--check` | Compares the files with the export and writes nothing. With `--all`, it checks every file and the manifest. It cannot go with `--render`. |
 
+The [workbench export dialog](tui.md#export) has the same artifacts and the same truth-table options. Only the command line has `--output`, `--all` with `--check`, and the JSON result. Only the workbench has the clipboard as a destination. `--render` writes the images that the dialog offers: Mermaid and DOT as SVG and PNG. A test keeps the two lists level.
+
 The JSON result has `artifact` and `output` for one artifact, or `folder` and `manifest` for `--all`. A check has `check`, or `checks` (one item for each file) for `--all`.
 
 ## report
@@ -217,6 +220,7 @@ The JSON result has `artifact` and `output` for one artifact, or `folder` and `m
 | Option | Meaning |
 | --- | --- |
 | `--allow-large-truth-table` | Puts a truth table with more than 8 terms, up to 12, in the report, with a `TRE0034` warning. |
+| `--truth-table-limit <n>` | Puts a truth table with up to `n` terms in the report, as for `print`. |
 
 The JSON result has `text` or `output`, and `check` for `--check`.
 

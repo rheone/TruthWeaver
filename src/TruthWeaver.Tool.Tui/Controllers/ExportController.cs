@@ -14,7 +14,7 @@ using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
-/// The logic behind the export menu: every artifact of the tool core catalog for the open rule, to the clipboard or to a file,
+/// The logic behind the export dialog: every artifact of the tool core catalog for the open rule, to the clipboard or to a file,
 /// every artifact to a folder with a manifest, and the diagrams as images when Graphviz or the Mermaid CLI is installed. The
 /// text of an artifact is what <see cref="ArtifactExporter"/> makes, so it equals the output of the command line. It has no
 /// view, and a missing image program is a message on the status line, never a dialog.
@@ -46,6 +46,13 @@ internal sealed class ExportController
     /// </summary>
     public bool AllowLargerTruthTable { get; set; }
 
+    /// <summary>
+    /// Gets or sets the most distinct terms of a truth table (<see cref="ExportOptions.TruthTableTermLimit"/>), or
+    /// <see langword="null"/> for the cap and <see cref="AllowLargerTruthTable"/>. A number allows a larger table. The default is
+    /// <see langword="null"/>.
+    /// </summary>
+    public int? TruthTableTermLimit { get; set; }
+
     private WorkbenchServices Services => this.services ?? WorkbenchServices.Current;
 
     private ExportOptions Options =>
@@ -53,6 +60,7 @@ internal sealed class ExportController
         {
             Settings = this.workbench.Settings,
             AllowLargerTruthTable = this.AllowLargerTruthTable,
+            TruthTableTermLimit = this.TruthTableTermLimit,
             Images = null,
         };
 
@@ -66,7 +74,7 @@ internal sealed class ExportController
         return Controllers.GetValue(workbench, key => new ExportController(key));
     }
 
-    /// <summary>Gets the entries of the menu: every artifact of the catalog, then the four images.</summary>
+    /// <summary>Gets the entries of the dialog: every artifact of the catalog, then the four images.</summary>
     /// <returns>The entries.</returns>
     public IReadOnlyList<ExportEntry> Entries()
     {
@@ -75,7 +83,9 @@ internal sealed class ExportController
             .. ArtifactCatalog.All.Select(a => new ExportEntry(
                 ExportEntryKind.Artifact,
                 $"{a.Id}  ({a.Format}): {a.Description}",
-                a
+                a,
+                Group: GroupOf(a),
+                FileName: a.FileName
             )),
         ];
         foreach (DiagramLanguage language in new[] { DiagramLanguage.Mermaid, DiagramLanguage.Dot })
@@ -83,16 +93,18 @@ internal sealed class ExportController
             foreach (ImageFormat format in new[] { ImageFormat.Svg, ImageFormat.Png })
             {
                 string program = ImageRenderer.ProgramName(language);
-                string state = ImageRenderer.FindProgram(language, this.ImageSearchPath) is null
-                    ? $"needs {program}, not found"
-                    : $"with {program}";
+                bool missing = ImageRenderer.FindProgram(language, this.ImageSearchPath) is null;
+                string state = missing ? $"needs {program}, not found" : $"with {program}";
                 entries.Add(
                     new ExportEntry(
                         ExportEntryKind.Image,
                         $"image-{language.ToString().ToLowerInvariant()}-{ImageRenderer.Extension(format)[1..]}: the diagram as {format.ToString().ToUpperInvariant()} ({state})",
                         null,
                         language,
-                        format
+                        format,
+                        ExportGroups.Images,
+                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format),
+                        missing ? this.MissingProgram(language) : string.Empty
                     )
                 );
             }
@@ -136,10 +148,11 @@ internal sealed class ExportController
         return true;
     }
 
-    /// <summary>Asks for a path and writes one artifact there.</summary>
+    /// <summary>Writes one artifact to a file, and asks for the path through the save dialog when none is given.</summary>
     /// <param name="artifact">The artifact.</param>
+    /// <param name="path">The file path, or <see langword="null"/> to ask.</param>
     /// <returns><see langword="true"/> when the file was written.</returns>
-    public bool SaveArtifact(ArtifactDefinition artifact)
+    public bool SaveArtifact(ArtifactDefinition artifact, string? path = null)
     {
         ToolResult<string> rendered = this.Render(artifact);
         if (!rendered.TryGetValue(out string? text, out EquatableArray<Diagnostic> diagnostics))
@@ -148,16 +161,12 @@ internal sealed class ExportController
             return false;
         }
 
-        string suggested = Path.Combine(
-            Path.GetDirectoryName(this.workbench.Document.Path) ?? Environment.CurrentDirectory,
-            artifact.FileName
-        );
-        if (this.workbench.Prompts.AskSavePath(suggested) is not { } path)
+        if (this.PathOrAsk(path, artifact.FileName) is not { } target)
         {
             return false;
         }
 
-        ToolResult<string> written = OutputWriter.WriteFile(path, text);
+        ToolResult<string> written = OutputWriter.WriteFile(target, text);
         if (!written.TryGetValue(out string? file, out diagnostics))
         {
             this.workbench.SetStatus("Not saved: " + First(diagnostics));
@@ -174,8 +183,9 @@ internal sealed class ExportController
     /// </summary>
     /// <param name="language">The diagram language.</param>
     /// <param name="format">The image format.</param>
+    /// <param name="path">The file path, or <see langword="null"/> to ask through the save dialog.</param>
     /// <returns><see langword="true"/> when the image file was written.</returns>
-    public bool SaveImage(DiagramLanguage language, ImageFormat format)
+    public bool SaveImage(DiagramLanguage language, ImageFormat format, string? path = null)
     {
         // The program check comes first, so a missing program never asks for a path.
         if (ImageRenderer.FindProgram(language, this.ImageSearchPath) is null)
@@ -193,11 +203,7 @@ internal sealed class ExportController
             return false;
         }
 
-        string suggested = Path.Combine(
-            Path.GetDirectoryName(this.workbench.Document.Path) ?? Environment.CurrentDirectory,
-            id + ImageRenderer.Extension(format)
-        );
-        if (this.workbench.Prompts.AskSavePath(suggested) is not { } path)
+        if (this.PathOrAsk(path, id + ImageRenderer.Extension(format)) is not { } target)
         {
             return false;
         }
@@ -205,7 +211,7 @@ internal sealed class ExportController
         ToolResult<string> image = ImageRenderer.Render(
             text,
             language,
-            path,
+            target,
             new ImageRenderOptions { Format = format, SearchPath = this.ImageSearchPath }
         );
         if (!image.TryGetValue(out string? file, out diagnostics))
@@ -222,8 +228,9 @@ internal sealed class ExportController
     /// Asks for a folder and writes every artifact there, with <c>manifest.json</c>. The images join the export when both image
     /// programs are installed; otherwise the status line names the missing program and the export goes on without images.
     /// </summary>
+    /// <param name="folder">The folder, or <see langword="null"/> to ask.</param>
     /// <returns><see langword="true"/> when the folder was written.</returns>
-    public bool ExportAll()
+    public bool ExportAll(string? folder = null)
     {
         ToolResult<LoadedRule> rule = this.CurrentRule();
         if (!rule.TryGetValue(out LoadedRule? loaded, out EquatableArray<Diagnostic> diagnostics))
@@ -232,7 +239,8 @@ internal sealed class ExportController
             return false;
         }
 
-        if (this.Services.Dialogs.AskFolder("Export every artifact to a folder") is not { } folder)
+        folder ??= this.Services.Dialogs.AskFolder("Export every artifact to a folder");
+        if (folder is null)
         {
             return false;
         }
@@ -270,47 +278,41 @@ internal sealed class ExportController
         return true;
     }
 
-    /// <summary>Shows the export menu: the two actions at the top, then every entry. Choosing the cap entry switches it and shows the menu again.</summary>
+    /// <summary>
+    /// Shows the export dialog and does what it asks: copies or saves one artifact or image, or writes every artifact to a
+    /// folder. The larger-table option of the dialog stays for the next export.
+    /// </summary>
     /// <returns><see langword="true"/> when something was exported.</returns>
     public bool ShowMenu()
     {
-        IWorkbenchDialogs dialogs = this.Services.Dialogs;
-        while (true)
+        string directory = Path.GetDirectoryName(this.workbench.Document.Path) ?? Environment.CurrentDirectory;
+        ExportDialogModel model = new(
+            this.Entries(),
+            directory,
+            this.AllowLargerTruthTable,
+            $"Make truth tables over {TruthTableOptions.DefaultTermCap} terms (up to {TruthTableOptions.HardTermLimit})",
+            this.TruthTableTermLimit
+        );
+        if (this.Services.Dialogs.AskExport(model) is not { } request)
         {
-            IReadOnlyList<ExportEntry> entries = this.Entries();
-            string cap =
-                $"Truth tables over {TruthTableOptions.DefaultTermCap} terms: {(this.AllowLargerTruthTable ? $"allowed up to {TruthTableOptions.HardTermLimit}" : "left out")} (choose to switch)";
-            string[] items = ["All artifacts to a folder, with manifest.json", cap, .. entries.Select(e => e.Label)];
-            if (dialogs.Choose("Export", items) is not { } choice)
-            {
-                return false;
-            }
-
-            if (choice == 0)
-            {
-                return this.ExportAll();
-            }
-
-            if (choice == 1)
-            {
-                this.AllowLargerTruthTable = !this.AllowLargerTruthTable;
-                continue;
-            }
-
-            ExportEntry entry = entries[choice - 2];
-            if (entry.Kind == ExportEntryKind.Image)
-            {
-                return this.SaveImage(entry.Language, entry.Format);
-            }
-
-            int? destination = dialogs.Choose($"Export {entry.Artifact!.Id} to", ["The clipboard", "A file"]);
-            return destination switch
-            {
-                0 => this.CopyArtifact(entry.Artifact),
-                1 => this.SaveArtifact(entry.Artifact),
-                _ => false,
-            };
+            return false;
         }
+
+        this.AllowLargerTruthTable = request.AllowLargerTruthTable;
+        this.TruthTableTermLimit = request.TruthTableTermLimit;
+        if (request.Entry is null)
+        {
+            return this.ExportAll(request.Path);
+        }
+
+        if (request.Entry.Kind == ExportEntryKind.Image)
+        {
+            return this.SaveImage(request.Entry.Language, request.Entry.Format, request.Path);
+        }
+
+        return request.Action == ExportAction.Copy
+            ? this.CopyArtifact(request.Entry.Artifact!)
+            : this.SaveArtifact(request.Entry.Artifact!, request.Path);
     }
 
     private static string First(IEnumerable<Diagnostic> diagnostics)
@@ -328,6 +330,20 @@ internal sealed class ExportController
         return warnings.Length == 0 ? string.Empty : " (" + string.Join(" ", warnings) + ")";
     }
 
+    // The group of the export dialog that holds an artifact.
+    private static string GroupOf(ArtifactDefinition artifact)
+    {
+        return artifact.Id switch
+        {
+            "rule-text" or "rule-text-symbolic" or "rule-text-pretty" or "json" or "yaml" => ExportGroups.Rule,
+            "tree" or "mermaid" or "dot" or "html" => ExportGroups.Diagram,
+            "report" => ExportGroups.Report,
+            string id when id.StartsWith("equation-", StringComparison.Ordinal) => ExportGroups.Equation,
+            string id when id.StartsWith("truth-table-", StringComparison.Ordinal) => ExportGroups.TruthTable,
+            _ => ExportGroups.Analysis,
+        };
+    }
+
     // The editor text as a loaded rule in the format of the document, so the artifacts are made from what the author sees.
     private ToolResult<LoadedRule> CurrentRule()
     {
@@ -339,12 +355,34 @@ internal sealed class ExportController
     private string Failure(ArtifactDefinition artifact, IEnumerable<Diagnostic> diagnostics)
     {
         string message = $"Cannot make {artifact.Id}: {First(diagnostics)}";
-        if (artifact.Id.StartsWith("truth-table", StringComparison.Ordinal) && !this.AllowLargerTruthTable)
+        if (
+            artifact.Id.StartsWith("truth-table", StringComparison.Ordinal)
+            && !this.AllowLargerTruthTable
+            && this.TruthTableTermLimit is null
+        )
         {
-            message += " Open the export menu (F5) and choose the \"Truth tables over\" entry to allow a larger table.";
+            message += " Open the export dialog (F5) and tick the larger truth tables option or set a term limit.";
         }
 
         return message;
+    }
+
+    // A path from the export dialog is final, except that a file that exists needs a yes. No path means the save dialog, which
+    // asks about an existing file itself.
+    private string? PathOrAsk(string? path, string fileName)
+    {
+        if (path is null)
+        {
+            string suggested = Path.Combine(
+                Path.GetDirectoryName(this.workbench.Document.Path) ?? Environment.CurrentDirectory,
+                fileName
+            );
+            return this.workbench.Prompts.AskSavePath(suggested);
+        }
+
+        return File.Exists(path) && !this.Services.Dialogs.Confirm("Overwrite file", $"{path} exists. Replace it?", "Replace")
+            ? null
+            : path;
     }
 
     // Core's own words name the program and where to get it.

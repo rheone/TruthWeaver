@@ -186,7 +186,7 @@ public sealed class StructureControllerTests
 
         workbench.Document.SetText("a AND b");
 
-        Assert.Equal(["and", "  a", "  b"], controller.Lines);
+        Assert.Equal(["and", "  a  [Unknown]", "  b  [Unknown]"], controller.Lines);
         Assert.Equal("$", workbench.SelectedNode);
     }
 
@@ -203,9 +203,9 @@ public sealed class StructureControllerTests
             [
                 "or",
                 "  use both(a, b) = and",
-                "    a",
-                "    b",
-                "  c",
+                "    a  [Unknown]",
+                "    b  [Unknown]",
+                "  c  [Unknown]",
                 "let both(x, y)",
                 "  and",
                 "    x (parameter)",

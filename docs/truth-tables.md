@@ -178,7 +178,13 @@ A table grows fast: 8 terms give 6,561 rows and 12 terms give 531,441 rows. Two 
 | Limit | Value | What happens |
 | --- | --- | --- |
 | Default cap | 8 terms (`TruthTableOptions.DefaultTermCap`) | The table is refused. Set `AllowLargerTable` to print it. |
-| Hard limit | 12 terms (`TruthTableOptions.HardTermLimit`) | The table is refused, whatever the options say. |
+| Term limit | 12 terms by default (`TruthTableOptions.TermLimit`) | The table is refused, whatever else the options say. |
+
+`TermLimit` is yours to set. It has no ceiling: a table of n terms has 3^n rows (2^n when `Classical`), and you own that time and memory cost. Write to a `TextWriter` to keep memory flat. A value below 1 throws `ArgumentOutOfRangeException`. A `TermLimit` below the default cap lowers the cap too, so a table above it is refused even with `AllowLargerTable`. A table above the default cap still needs `AllowLargerTable`, however high `TermLimit` is.
+
+```csharp
+TruthTableOptions options = new() { AllowLargerTable = true, TermLimit = 14, Classical = true };
+```
 
 The limits count distinct terms. They apply to the classical table too, but a classical table is smaller: 12 terms give 4,096 rows.
 

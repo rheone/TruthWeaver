@@ -102,7 +102,7 @@ A path that selects nothing is a `TWT0005` error that names the first segment th
 
 ## Compiling and converting
 
-The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name and every argument as written. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors and limits are still diagnostics. The limits come from the [settings](#configuration-file).
+The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name and every argument as written. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors, limits and a reserved word used as a predicate name (such as `OR` or `T`) are still diagnostics. The limits come from the [settings](#configuration-file).
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
 
@@ -122,7 +122,7 @@ The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive
 | `Undo()`, `Redo()`, `CanUndo`, `CanRedo` | Move through the history of text and format. The document keeps the last 1000 steps (`UndoLimit`). |
 | `FormatText(pretty)` | Formats the text in its own format as one undo step: canonical (one line for rule text and JSON) or pretty (rule text at most 80 characters wide, JSON indented by two spaces). YAML is one node on each line in both forms. Rule text uses the operator style of the settings. The `let` definitions of the text stay. Text with an error does not change, and the result holds the diagnostics. |
 | `Save(path)` | Writes the file as `OutputWriter` does. The extension selects the format (`.rule`, `.tw`, `.txt`, `.json`, `.yaml`, `.yml`); another extension keeps the format. A save in another format converts the rule first, as one undo step, and needs text that compiles. |
-| `ConvertTo(format)` | Converts the text to rule text, JSON or YAML as one undo step. The tree, the notes and the `let` definitions stay (a `definitions` section and `use` nodes in JSON and YAML); the layout, the spelling and YAML comments do not. A save in another format converts the same way. Text with an error does not change. |
+| `ConvertTo(format)`, `ConvertTo(format, pretty)` | Converts the text to rule text, JSON or YAML as one undo step. The tree, the notes and the `let` definitions stay (a `definitions` section and `use` nodes in JSON and YAML); the layout, the spelling and YAML comments do not. `pretty: true` gives the formatted rule text, also when the document is rule text already. A save in another format converts the same way. Text with an error does not change. |
 | `ReplaceRule(rule)` | Puts a compiled rule in place of the text, as one undo step: a structural edit or an accepted rewrite. The rule is printed in the format of the document with its notes, pretty when the text has more than one line and canonical otherwise. The printed text must compile with the limits of the settings, or the text does not change and the result holds the diagnostics. |
 | `ApplyEdit(edit)` | Puts the result of a structural edit in place of the text, as one undo step. An edit with a `Document` (a rule with `let` definitions) is printed with its definitions and uses; any other edit is put in as `ReplaceRule` puts a rule. The layout and the compile check are those of `ReplaceRule`. |
 | `MarkSaved()` | Makes the current text the saved text. A front end calls it after it wrote the rule somewhere else, such as into a larger document. |
@@ -528,12 +528,12 @@ An evaluation result (a decision) is not an artifact, because it needs stub valu
 `ArtifactExporter.Render(rule, id)` gives the text of one artifact. `ArtifactExporter.Export(rule, artifact, writer)` writes it to a `TextWriter`, such as standard output, and `ArtifactExporter.Export(rule, artifact, path)` writes it to a file. Both write through `OutputWriter`, so the output has LF line endings and one final newline.
 
 - A rule that does not compile gives no artifact, and the result has the compile diagnostics. The diagnostics artifacts are the exception: they show why the rule does not compile.
-- A truth table over the cap of 8 terms is refused with a `TRE0035` error. With `ExportOptions.AllowLargerTruthTable`, the table is printed up to 12 terms with a `TRE0034` warning.
+- A truth table over the cap of 8 terms is refused with a `TRE0035` error. With `ExportOptions.AllowLargerTruthTable`, the table is printed up to 12 terms with a `TRE0034` warning. `ExportOptions.TruthTableTermLimit` sets the most terms a table can have, with no ceiling (you own the 3^n cost). A number allows a table above 8 terms by itself, up to that number, and a number below 8 lowers the cap. A number below 1 throws `ArgumentOutOfRangeException`. `AllowLargerTruthTable` stays as the switch for the default limit of 12.
 - An id that is not in the catalog is a `TWT0018` error that lists the ids.
 
 ### Export of every artifact
 
-`ArtifactExporter.ExportAll(rule, folder, options)` writes every artifact to a folder, one file each, and then writes `manifest.json`. The rule is compiled and validated one time. A truth table over the cap is left out with a `TWT0015` warning, and the manifest lists it as skipped, so a large rule still exports. A rule that does not compile writes nothing. The export does not delete other files of the folder.
+`ArtifactExporter.ExportAll(rule, folder, options)` writes every artifact to a folder, one file each, and then writes `manifest.json`. The rule is compiled and validated one time. A truth table over the cap (or over `TruthTableTermLimit`) is left out with a `TWT0015` warning that names the term limit of the export, and the manifest lists it as skipped, so a large rule still exports. A rule that does not compile writes nothing. The export does not delete other files of the folder.
 
 <!-- doctest:skip a manifest, not a rule -->
 ```json
@@ -588,7 +588,7 @@ With `ExportOptions.Images`, `ExportAll` also renders `mermaid.mmd` and `dot.dot
 2. **Rule**: the rule text, broken to a width of 80 characters, in a `text` code block.
 3. **Equation**: the LaTeX equation in the `` $`...`$ `` form, which GitHub draws with MathJax.
 4. **Diagram**: the Mermaid flowchart in a `mermaid` code block, which GitHub draws.
-5. **Truth table**: the Strong K3 table in Markdown. A rule over the cap gets a note in place of the table, with the term count and the row count. `ExportOptions.AllowLargerTruthTable` puts the table in and adds the `TRE0034` warning.
+5. **Truth table**: the Strong K3 table in Markdown. A rule over the cap gets a note in place of the table, with the term count and the row count. `ExportOptions.AllowLargerTruthTable` or `ExportOptions.TruthTableTermLimit` puts the table in and adds the `TRE0034` warning.
 6. **Statistics**: a table of the [statistics](#statistics).
 7. **Analysis**: the findings of the analysis level, each with its severity, code, tree path and message.
 

@@ -90,6 +90,15 @@ internal sealed partial class Workbench
         this.NotifyAssignmentChanged();
     }
 
+    /// <summary>Sets the policy that the decision is collapsed under, as the policy choice of the Rule menu does.</summary>
+    /// <param name="policy">The policy.</param>
+    public void SetPolicy(CollapsePolicy policy)
+    {
+        this.Assignment.Policy = policy;
+        this.SetStatus($"Policy: {PolicyText(policy)}.");
+        this.NotifyAssignmentChanged();
+    }
+
     /// <summary>Asks for a JSON or YAML file and uses it as the variables of the <c>from(...)</c> references.</summary>
     /// <returns><see langword="true"/> when a file was loaded.</returns>
     public bool LoadVariables()

@@ -363,6 +363,18 @@ public sealed class RuleValidatorTests
         Assert.Equal(ValidationStatus.Off, result.Value[ValidationLevels.ConversionCheck].Status);
     }
 
+    /// <summary>A reserved word used as a term is reported as a failed validation and does not throw.</summary>
+    [Fact]
+    public void Validate_ReservedWordAsTerm_FailsWithDiagnostic_Test()
+    {
+        LoadedRule rule = RuleLoader.LoadString("a AND OR").Value!;
+
+        ToolResult<ValidationReport> result = RuleValidator.Validate(rule);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Message.Contains("'OR'"));
+    }
+
     private static LoadedRule Text(string text)
     {
         return Load(text, RuleFormat.Text);

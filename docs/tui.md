@@ -38,7 +38,7 @@ The settings (operator style, theme and limits) come from the nearest `truthweav
 
 ## Layout
 
-The window has three regions and a status line.
+The window has a menu bar on the first row, three regions, a status line and a hint line.
 
 | Region | Pane | Shows |
 | --- | --- | --- |
@@ -55,7 +55,9 @@ The window has three regions and a status line.
 | Bottom | Variables | The data for `from(...)` references. See [Variables](#variables). |
 | Bottom | Tests | The rule test file and its cases. See [Rule tests](#rule-tests). |
 
-The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the last message, and `F1 keys`.
+The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the value of the selected term of the Tree pane (see [Structural editing](#structural-editing)), and the last message.
+
+The hint line below it shows the most common keys: `F1 Menus`, `Ctrl+O Open`, `Ctrl+S Save`, `Ctrl+Z Undo`, `F6 Region`, `F5 Export`, `F7 Validate` and `Ctrl+Q Quit`. The menu bar holds every command. See [Menus and keys](#menus-and-keys).
 
 A region can hold more than one pane and shows one at a time. Its border shows the title of the pane and, for more than one pane, its position, such as `Canonical (1/2)`.
 
@@ -66,10 +68,61 @@ The sizes of the regions, as you move the dividers, and the theme, as you switch
 The rule compiles again after you stop typing. The compile waits 300 ms after the last key and runs on a background task, so a large rule never blocks the editor. While it waits or runs, the status line shows `checking...` and the diagnostics, the panes and the last valid tree still show the previous result. A new key restarts the wait and drops the result of the older text, so an old result never replaces newer text. An action that needs the current text, such as save, format, undo, export or a structural edit, compiles the typed text first.
 
 - The editor colors the characters of each diagnostic span and underlines them: red for an error, yellow for a warning, cyan for information. With `NO_COLOR` the underline stays, an error is bold, and information is faint.
+- The editor also colors each kind of rule text in its own color: predicates, operators, variables, constants and comments (the description text). See [Syntax colors](#syntax-colors). A diagnostic mark wins over a syntax color where the two overlap. The colors follow the compile: they update when the compile after a pause in typing finishes, never on a single key, and they also show for a rule that has errors.
 - When the text has an error, the workbench keeps the last tree that compiled. The Canonical pane shows that tree under the line `Last valid tree (the rule text has errors):`, and the status line says `showing the last valid tree`. When no text compiled yet, the pane says `No valid tree yet: the rule text has errors.`
 - In the Diagnostics pane, Enter on a diagnostic moves the editor cursor to the start of its span.
+- An empty rule, or a rule with only white space, shows a hint in the Diagnostics pane in place of the `TRE0001` error: type a rule, or press Shift+F9 to choose a sample rule. F10 opens the menus. As soon as the rule has text, its real diagnostics show again.
 
-Undo and redo work on one history for the document. Each change is one step: the typing between two pauses, formatting, and the conversion that a save in another format does. The workbench keeps the last 1000 steps.
+Undo and redo work on one history for the document. Ctrl+Z undoes and Ctrl+Y redoes; the Edit menu shows both keys. Each change is one step, whether it comes from the editor or from a pane: the typing between two pauses, a structural edit of the Tree pane (insert, delete, replace, wrap, swap), an accepted rewrite, formatting, a conversion with F4 or Shift+F4, the conversion that a save in another format does, and a sample rule. Undo gives back the text and the format together. Opening a file, importing and opening a rule inside a document start a new document with a new history. The workbench keeps the last 1000 steps.
+
+## Sample rules
+
+The File menu has a **Samples** submenu, and Shift+F9 opens the same list in a dialog. Each sample has a name and a one line description, and its rule text carries notes (comments) that explain the logic. Choose a sample to put it in place of the rule. Unsaved changes need your consent first, as for Ctrl+O. The sample is one undo step, so Ctrl+Z gives back the rule you had, in its format. A sample is rule text: when the open rule is JSON or YAML, the editor changes to rule text.
+
+| Sample | Shows |
+| --- | --- |
+| Predicates with arguments | Named arguments of text, number and boolean values. |
+| AND, OR and NOT | The basic connectives and how `Unknown` passes through. |
+| XOR and EQUIVALENT | Exclusive or, and two values that must agree. |
+| IMPLIES | The implication, False only for True then False. |
+| NAND and NOR | Negated AND and negated OR. |
+| PARITY | An odd number of True operands. |
+| AtLeast, AtMost and Exactly | Counting True operands against a number. |
+| ExactlyOne | Exactly one True operand. |
+| ANY, ALL and NONE | Some, every or no operand is True. |
+| BETWEEN | The count of True operands lies in a range. |
+| If | One of two results chosen by a condition. |
+| IsTrue and IsUnknown | Questions about the value itself. |
+| COALESCE | The first operand that is not `Unknown`. |
+| let definitions | A named sub-expression with parameters. |
+| Quantifiers | `FORALL` and `EXISTS` over a collection. It reports `TRE0042` on purpose. |
+| from(...) variables | An argument read from a data source at run time. |
+| Notes | Line and block comments as notes of nodes. |
+
+The workbench compiles with an empty registry, so it has no collection to range over. A rule with `FORALL` or `EXISTS` reports `UnknownCollection` (`TRE0042`) here. The Quantifiers sample shows this diagnostic on purpose: its notes explain that a host must declare the collection. Every other sample compiles. See [Quantifiers](rule-text.md#quantifiers) for the syntax.
+
+## Generate a rule
+
+Rule > Generate rule (Shift+F5) replaces the rule with a semi-random rule that compiles, so you can try the panes without writing a rule. Three questions come one after the other: the seed (blank is a random seed), the depth (1 to 5, default 3) and the operator families. The families are all of them (the default), the connectives, the cardinality family, `If`, the inspections with `COALESCE`, the connectives with the cardinality family, or none (a single predicate). The terms are calls of predicates from the catalog with sample arguments, so the rule reads like a real rule.
+
+The same seed, depth and families give the same rule text. The status line shows the seed, so you can repeat or share a rule. Some generated rules do not compile; the action then tries again, up to 50 times, and says so on the status line if none compiles (try another seed). It never changes the rule in that case. Unsaved changes need your consent first, as for Ctrl+O. The generated rule is one undo step, so Ctrl+Z gives back the rule you had. A generated rule is rule text: when the open rule is JSON or YAML, the editor changes to rule text.
+
+## Insert menu
+
+The Insert menu puts rule text into the editor at the cursor. If text is selected, the insert replaces the selection. The cursor goes after the inserted text, and the insert is one step in the undo history (Ctrl+Z). No entry has a key; open the menu with Alt+I.
+
+| Entry | Inserts |
+| --- | --- |
+| Predicate... | A call of a predicate with a placeholder for each argument. A search list shows the predicates of the rule, of the schema file and of the catalog, each with its description. Type words to narrow the list. |
+| Operators | A submenu for each group: Connectives (`NOT`, `AND`, `OR`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`), Cardinality (`ANY`, `ALL`, `NONE`, `ExactlyOne`, `AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`, `BETWEEN`), Inspection (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and Other (`If`, `COALESCE`). The operands are the placeholder terms `a`, `b` and `c`. An infix operator is in parentheses. |
+| Constants | `True`, `False`, `Unknown`, and the letters `T`, `F` and `U`. |
+| Variable... | A `from("source", "query")` reference. The workbench asks for the data source and the query. Put the cursor where a predicate argument value goes. |
+| New definition | A `let` definition with two parameters. Put the cursor at the start of the rule, and give the definition a name and a body. |
+| Use definition... | A use of one of the `let` definitions of the open rule, with its parameter names as placeholders. A list shows the definitions. |
+
+Each entry shows its name in the color of its kind (operators, constants, predicates and variables) and its description in the description color; the name of the entry or of its submenu also says the kind. See [Syntax colors](#syntax-colors). Each operator and constant shows a one-line description next to its name. The description is the one the library gives for the operator, the same text that the Tree pane shows. The description of a predicate comes from its catalog entry.
+
+Insert adds rule text, so the menu works only when the open rule is rule text. If the rule is JSON or YAML, no entry inserts anything, and the status line says that Insert is not available. Convert the rule to rule text with F4 to use it.
 
 ## Format
 
@@ -93,24 +146,38 @@ The file is UTF-8 with no byte order mark and LF line endings, and it ends with 
 
 When the rule has unsaved changes, opening another file and quitting ask first.
 
+The title of the window shows the file name and, in front of it, a `*` while the rule has unsaved changes: `* rule.rule - TruthWeaver workbench`. The `*` appears after an edit and goes away after a save. A rule with no file yet shows `(new rule)`.
+
+### Recent files
+
+The File menu has an **Open recent** submenu under **Open**. It lists the last ten files that you opened, newest first, each with its number and path. A long path keeps its end. A file that opened again moves to the top, and the eleventh file pushes out the oldest. A file that you gave on the command line counts as opened.
+
+Choose an entry to open that file. Unsaved changes need your consent first, as for Ctrl+O. A file that no longer exists shows `(missing, choose to remove)`. Choosing it takes it out of the list, shows a message on the status line, and keeps the open rule. The list is in the [preferences file](#preferences-file) and holds paths only.
+
 ## Import and convert
 
 F9 imports a rule. A dialog asks for the source (the clipboard or a file) and the format (detect it, rule text, JSON or YAML). A file that does not compile still opens, with its diagnostics. The clipboard takes only a valid expression: text that does not compile reports its first error and the open rule stays. Unsaved changes need your consent first.
 
-F4 converts the open rule to the next format in the order rule text, JSON, YAML. Shift+F4 goes the other way. The conversion is one undo step. The tree, the notes and the `let` definitions stay the same: rule text `let` statements become a `definitions` section and `use` nodes in JSON and YAML, and the other way. The status line shows a banner that says what is not kept: the layout and spelling of the old text, and the number of YAML `#` comments when you convert YAML to another format. Text that does not compile is not converted.
+F4 opens the Convert dialog: a list of the forms to convert to, and the buttons Convert and Cancel. The list has canonical rule text, formatted (pretty) rule text, JSON and YAML. Formatted rule text wraps a long rule over several lines at 80 characters and keeps the notes, like Shift+F8 does. Shift+F4 converts to the next format in the order rule text, JSON, YAML without a dialog. A conversion is one undo step. The tree, the notes and the `let` definitions stay the same: rule text `let` statements become a `definitions` section and `use` nodes in JSON and YAML, and the other way. The status line shows a banner that says what is not kept: the layout and spelling of the old text, and the number of YAML `#` comments when you convert YAML to another format. Text that does not compile is not converted.
 
 ## Export
 
-F5 opens the export menu. It lists:
+F5 opens the export dialog. One dialog holds all the choices, so no second dialog opens.
 
-- All artifacts to a folder, with `manifest.json`.
-- A switch for truth tables over the cap of 8 terms. A rule with more terms gets no truth table until you allow it, up to 12 terms, and the table then carries a `TRE0034` warning. A refused table says how to allow it.
-- Every artifact of the [tool core catalog](tool-core.md): rule text in each operator style, JSON, YAML, each equation dialect and constant style (with the double dollar and MathJax envelopes), the plain text tree, Mermaid, DOT, HTML, the truth table in each format, the statistics, the diagnostics (text, JSON, SARIF) and the Markdown report.
-- The Mermaid and DOT diagrams as SVG or PNG images.
+- **Output type.** A list of the kinds of output: rule, equation, tree and diagram, truth table, statistics and diagnostics, report, image, and every artifact to a folder. The chosen type stays highlighted.
+- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md), so every artifact of the catalog is in the dialog: rule text (canonical, symbolic and formatted), JSON and YAML under Rule; the text tree, Mermaid, DOT and HTML under Tree and diagram; the statistics and the diagnostics (text, JSON and SARIF) under Statistics and diagnostics; and the report. The chosen format stays highlighted. For the truth table it lists every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation it shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
+- **Options.** A box that allows truth tables over the cap of 8 terms, up to 12 terms, and a **term limit** field for the most terms of a truth table (empty for none). A number allows a table of that size, with no ceiling, and the table grows by 3^n rows. The field must be empty or a whole number of 1 or more, and the dialog stays open on it otherwise. Both options carry a `TRE0034` warning and stay for the next export. A refused table says how to allow it.
+- **File or folder.** A text field with a suggested path in the folder of the open rule. It follows the chosen format until you edit it.
 
-For an artifact you choose the clipboard or a file. The text equals the output of the matching command line export. The artifacts are made from the text in the editor. If the text has errors, only the diagnostics artifacts can be made.
+The buttons are **Copy**, **To File** and **Cancel**. Copy is the default action, so Enter in a list copies. To File writes to the path in the text field of the same dialog; a file that exists needs your confirmation. For the images and for every artifact to a folder, Copy is off and To File is the default. Cancel changes nothing.
 
-The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. A missing program is a message on the status line that names the program and where to get it. No dialog opens. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
+A click selects an entry. A double click also only selects it and never ends the dialog. Tab moves between the lists, the dropdowns, the box, the field and the buttons. Alt+C, Alt+T and Alt+L press Copy, To File and Cancel.
+
+The text of an artifact equals the output of the matching command line export. The artifacts are made from the text in the editor. If the text has errors, only the diagnostics artifacts can be made.
+
+The command line has the same artifacts and the same truth-table options (`--allow-large-truth-table` and `--truth-table-limit`); see [export](cli.md#export). The command line also has `--output`, `--check` and the JSON result, and the dialog also has the clipboard. The dialog offers the images that `export --render` writes: Mermaid and DOT as SVG and PNG.
+
+An image entry is always listed. When its program is missing, its label says `needs <program>, not found`, and a line under the lists says where to get the program. The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. A missing program is a message on the status line that names the program and where to get it. No dialog opens. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
 
 ## Validation panel
 
@@ -163,6 +230,38 @@ The tree, Mermaid, DOT and HTML views mark the decision for the values of the [A
 
 The Tree pane is the third pane of the right region. It lists the nodes of the rule, one on each line and indented by depth: each operator with its count or range (such as `atLeast k=2`), each term in its canonical text, and each constant. The line above the list shows the path of the selected node (`$` is the root, `$.operands[1]` its second operand), its literals and its note. Move in the list to select a node.
 
+Each term ends with a badge that gives its value under the [Assign pane](#assign-values), as a word: `[True]`, `[False]` or `[Unknown]`. A term that has no value there is `[Unknown]`. A term with a `from(...)` source shows the value of its resolved reference, or `[Unknown: <reason>]` while the reference has no value: the message of the fault, or `no data yet`. Operators and constants have no badge. When the selected node is a term, the status line adds its value, such as `isActive = True`. The badges and the status line follow each change of a value, of the variables or of the rule.
+
+### Inspect a part of the rule
+
+Analyze > Inspect (Ctrl+F8) describes the part of the rule at the cursor in the editor, or the selected node when another pane has the focus. The text shows in a box above the status line. Esc closes the box, and a change of the rule or of a value closes it too, because the text would describe the old rule.
+
+The mouse shows the same box: rest the pointer on a part of the editor text or on a line of the Tree pane for half a second. The box opens at the pointer and closes when the pointer moves to another part or you click. Both routes use one function for the text, so the key and the pointer always say the same. A terminal that sends no mouse movement (some SSH and tmux set-ups) shows no hover box; the key shows everything.
+
+What the text says depends on the part. Values are words (`True`, `False`, `Unknown`, `skipped`), never only a color.
+
+| Part | The text |
+| --- | --- |
+| Operator | The name and the number of operands, the description of the operator table, the value it returned now (`skipped` when short-circuiting never reached it), a truth table for `IMPLIES` and the three cases of `If`, and a mark for an external operator (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `COALESCE`). |
+| Cardinality operator | The threshold (`k`, `min` or `max`) and how many operands are True, False, Unknown and skipped now. |
+| Predicate or term | The description, the family and the arguments with their kinds from the predicate catalog, the schema file or the rule, what the predicate answers for a null value when it takes a null behavior, and its value now. |
+| Variable | For `from("source", "path")`: the source, the path, and the resolved term or the reason there is no data yet. For a parameter of a `let`: the definition it belongs to. |
+| Constant or letter | Which value `T`, `F` or `U` stands for, and its value. |
+| `let` definition or use | The parameters and the body of the definition, and how many times the rule uses it. |
+| Note | The full text of the comment. |
+| Error or finding in the editor | The severity and code, the full message, the expected and found text, the suggestion, and the page `docs/diagnostics.md`. |
+| Root of the tree | The findings of the analyzer for the whole rule, such as an operand that cannot change the result. |
+
+In a JSON or YAML document the editor text has no inspect text, except for errors; use the Tree pane. A name that appears more than once as an operator (two `AND`) shows the description only, because the editor cannot tell which one you mean; select the node in the Tree pane for its value.
+
+### Step through an evaluation
+
+Analyze > Next evaluation step (Shift+F12) and Previous evaluation step (Shift+F11) walk through the evaluation of the rule under the values of the Assign pane, one node at a time. The steps use the trace of the evaluation, in evaluation order: the operands of an operator first, then the operator. The first press starts at the first step. Each step selects its node in the Tree pane and the status line says what happened, such as `Step 2 of 3: b = skipped`.
+
+The line of each node that a step has reached ends with `=> ` and the value as a word: `True`, `False` or `Unknown`. A node that short-circuiting never evaluated shows `=> skipped`; the operands under a skipped node have no steps. A term that faulted adds the message of the fault to its step, such as `Step 1 of 3: isActive = Unknown (fault: ...)`. Stepping back removes the mark of the step you leave. Stepping changes no result.
+
+Esc leaves the step mode and removes the marks. A change of a value or of the rule leaves it too, because the steps would describe the old evaluation.
+
 These keys work when the Tree pane has the focus. Each one acts on the selected node.
 
 | Key | Does |
@@ -205,6 +304,8 @@ An edit that would break a definition is refused with `Not applied:` and the fir
 
 ### Palette
 
+The palette opens with a search box above the list. Type to filter the list as you type: it shows the predicates whose name, label, family or description matches, and each match stays under its family line. Case does not matter, and every word must match. Clear the box to show the whole list again. Press Tab to move from the box to the list.
+
 The palette lists, in this order:
 
 - The first entry, `Type an expression`, and the second, `Search the predicate catalog`.
@@ -212,6 +313,8 @@ The palette lists, in this order:
 - The predicates of the predicate schema file of the settings (`schemaFile` in `truthweaver.json`), with their arguments and kinds.
 - The predicates that the open rule uses, with the arguments of their first use.
 - The ready-made predicates of the `TruthWeaver.Predicates` package, in family groups (String, Numeric, Date and time, and so on). A line with a family title is not an entry; picking it opens the list again. The workbench reads the factories of the package when it first needs the list, so a new factory appears with no change to the workbench.
+
+Every predicate list, in the palette and in the Predicate entry of the Insert menu, writes each row in the color of its kind. The first word of the row also names the kind: `operator` and `constant` are those kinds, and `schema`, `catalog`, `rule` and `let` are predicate sources. Under the list, a line shows the description of the chosen row in the description color, and a legend line names the five colors. See [Syntax colors](#syntax-colors).
 
 `Type an expression` takes rule text, JSON or YAML. A predicate is a template: after you pick it, a form asks for the value of each argument, starting from the value of its first use in the rule. A string, GUID or date takes plain text; a number, a boolean or an array takes JSON; an array of strings also takes a list separated by commas. An empty value leaves out an argument that is not required. The operators of the palette are the list that `o` shows.
 
@@ -328,7 +431,7 @@ The search treats the terms as independent, so an entry can name values that can
 
 ## Themes and colors
 
-The workbench has a light and a dark color set. The `theme` setting of `truthweaver.json` selects one at start-up:
+The workbench has a light and a dark color set. Each set paints its own background in every pane and dialog: the light set draws dark text on a light background, and the dark set draws light text on a dark background. The background of your terminal does not show through. The `theme` setting of `truthweaver.json` selects a set at start-up:
 
 | `theme` | Colors |
 | --- | --- |
@@ -338,9 +441,18 @@ The workbench has a light and a dark color set. The `theme` setting of `truthwea
 
 Ctrl+F1 switches between the light and the dark set, in every pane and dialog at once. The switch does not write the `theme` setting. The workbench keeps the choice in the [preferences file](#preferences-file), and the next start uses it in place of the setting.
 
-The value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) against the background that they were chosen for. The workbench draws on the background of your terminal, so a terminal with a very different background can lower the contrast.
+Each set has three backgrounds and one text color:
 
-| Mark | Light set (on white) | Dark set (on black) |
+| Color | Light set | Dark set |
+| --- | --- | --- |
+| Pane background | white `#FFFFFF` | black `#000000` |
+| Dialog and menu background | light gray `#F0F0F0` | dark gray `#202020` |
+| Focus and selection background | light blue `#D6E8FF` | dark blue `#102848` |
+| Text | near black `#181818` | light gray `#E6E6E6` |
+
+The text and the value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) against each of the three backgrounds of their set.
+
+| Mark | Light set | Dark set |
 | --- | --- | --- |
 | `True` | green `#006E00` | green `#50FF50` |
 | `False` | red `#B40000` | red `#FF5F5F` |
@@ -350,15 +462,31 @@ The value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) against the bac
 | Editor warning | amber `#8C5A00` | yellow `#FFD700` |
 | Editor information | blue `#005F87` | cyan `#5FD7FF` |
 
+### Syntax colors
+
+The rule text editor, the predicate lists and the Insert menu give each kind of text its own color. Each color keeps a contrast ratio of at least 4.5 : 1 (WCAG) against all three backgrounds of its set.
+
+| Kind | What it is | Light set | Dark set |
+| --- | --- | --- | --- |
+| predicate | A predicate call or a bare name, such as `isAdult(age: 18)`, and the name of a `let` definition | blue `#0040AA` | blue `#78AAFF` |
+| operator | A word such as `AND`, `NOT`, `AtLeast`, `let`, `FORALL` or `IN`, or a symbol such as `&&` or `!` | purple `#7028AA` | lilac `#CD96FF` |
+| variable | A `from(...)` read, a parameter of a `let` definition and the variable of a quantifier, in the head and in every use | teal `#00695F` | aqua `#50DCC8` |
+| constant | `True`, `False`, `Unknown`, and the letters `T`, `F` and `U` | rose `#A5005F` | pink `#FF8CC8` |
+| description | A `//` or `/* */` comment in the editor, and the description of an entry in a list or in the Insert menu | slate `#505A64` | gray-blue `#96A5B4` |
+
+The editor reads the words, symbols, strings and comments of the text. It does not need a rule that compiles. Names that a `let` or a quantifier binds count for the whole text, not by scope. The name of an argument (`age:` in `isAdult(age: 18)`), a string and a number keep the text color.
+
+Color is never the only mark of a kind. The legend line `predicate  operator  variable  constant  description` names the kinds in their colors at the bottom of the predicate lists and in the key reference (Shift+F1), and the lists write the kind as the first word of a row. With `NO_COLOR` the weight tells the kinds apart: an operator is bold, a predicate is italic, a variable is bold and italic, a constant is underlined and a description is faint. The underline of a constant looks like the underline of a diagnostic, but a diagnostic mark wins where they overlap, and an error is also bold.
+
 Color is never the only mark of a value. Every place that colors a value also writes it: `True`, `False`, `Unknown` or `skipped` in the trace, and `[T]`, `[F]` or `[U]` in the term list.
 
 ### NO_COLOR
 
-When the environment variable `NO_COLOR` is set and not empty (see [no-color.org](https://no-color.org)), the workbench draws with the colors of your terminal only. The panes and dialogs show focus and selection with reverse video, hot keys with an underline, and disabled text as faint. The text marks above carry the values. Ctrl+F1 still switches the theme, but the screen does not change.
+When the environment variable `NO_COLOR` is set and not empty (see [no-color.org](https://no-color.org)), the workbench draws with the colors of your terminal only. The panes and dialogs show focus and selection with reverse video, hot keys with an underline, and disabled text as faint. The text marks above carry the values, and the weights of the [syntax colors](#syntax-colors) carry the kinds. Ctrl+F1 still switches the theme, but the screen does not change.
 
 ## Preferences file
 
-The workbench keeps two choices between runs: the theme, after you switched it with Ctrl+F1, and the sizes of the regions, after you moved a divider. They are in one JSON file of the user, outside every project:
+The workbench keeps three choices between runs: the theme, after you switched it with Ctrl+F1, the sizes of the regions, after you moved a divider, and the recent files. They are in one JSON file of the user, outside every project:
 
 | System | Path |
 | --- | --- |
@@ -368,13 +496,15 @@ The workbench keeps two choices between runs: the theme, after you switched it w
 ```json
 {
   "theme": "dark",
-  "layout": { "editorWidthPercent": 60, "topHeightPercent": 70 }
+  "layout": { "editorWidthPercent": 60, "topHeightPercent": 70 },
+  "recentFiles": ["/home/ana/rules/publish.rule", "/home/ana/rules/policy.yaml"]
 }
 ```
 
-- **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). It holds no rule text and no file path. The maximised region is not kept.
+- **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). `recentFiles` lists up to ten full paths, newest first. The file holds no rule text, and no path except the recent files. The maximised region is not kept.
 - **Theme.** A `theme` in the file wins over the `theme` setting of `truthweaver.json`. Without a switch, the file has no `theme`, and the setting applies. To use the setting again, delete the `theme` line or the file.
-- **Layout.** The file is written when you move a divider, and the next start uses the sizes.
+- **Recent files.** The file is written each time you open a file or remove a missing one from the list. A path that is repeated or is not text is dropped when the file is read, and so is every path after the tenth.
+- **Layout.** The file is written when you move a divider with the Alt+arrow keys or at the end of a mouse drag, and the next start uses the sizes.
 - **Problems.** A missing file, a file that is not valid JSON, or a file that is not an object gives the defaults and no message. A value that is not valid, such as `auto` or a size outside 15 to 85, is ignored and the other values stay. A file that cannot be written is ignored; the choice then lasts for the session only.
 
 ## Variables
@@ -441,52 +571,134 @@ F3 writes with the round-trip write-back: it reads the whole document and writes
 
 The document file is never written without a confirmation. The file keeps its encoding, its byte order mark and its line endings. A rule whose text has errors is not written.
 
-## Keys
+## Menus and keys
 
-The workbench is used with the keyboard. F1 shows this list in the window; F1 or Esc closes it.
+The menu bar on the first row holds every command of the workbench, in one menu for each type of operation. Each entry shows its key on the right. The key runs the command without the menu.
+
+| To | Do |
+| --- | --- |
+| Open the menu bar | Press F1 or F10. The File menu opens. |
+| Open one menu | Press Alt and the underlined letter: Alt+F (File), Alt+E (Edit), Alt+I (Insert), Alt+R (Rule), Alt+A (Analyze), Alt+X (Export), Alt+V (View) or Alt+H (Help). Or click the title of the menu. |
+| Move in the menus | Up and Down move to an entry. Left and Right move to the next menu, and Right opens a submenu. |
+| Run an entry | Press Enter, or click the entry. |
+| Close the menus | Press Esc. The focus goes back to the pane that had it. |
+| See every key | Press Shift+F1. The key reference lists every key by menu, and scrolls with the arrows and the wheel. Shift+F1 or Esc closes it. |
+
+Two settings have a small, fixed set of values. Each is a submenu with one entry for each value, and `(*)` marks the current value. Choose a value to set it in one step.
+
+| Submenu | Values |
+| --- | --- |
+| Rule > Unknown policy | Unknown counts as False, Unknown counts as True, Unknown is an error. Ctrl+F3 moves to the next one. |
+| View > Theme | Light and dark. Ctrl+F1 switches between them. |
+
+### File
 
 | Key | Does |
 | --- | --- |
-| F1 | Shows or hides the key help. |
 | Ctrl+O | Opens a rule file. |
+| File > Open recent | Lists the last ten files that you opened. Choose one to open it. |
 | Ctrl+S | Saves. For a rule inside a document, it patches the rule into the document. |
 | F12 | Saves to a new path. The extension selects the format. |
+| F2 | Opens a rule inside a JSON or YAML document. |
+| Shift+F2 | Switches to another rule of the open document. |
+| F3 | Saves the open rule into its document with the round-trip write-back. |
+| F9 | Imports a rule from the clipboard or a file. |
+| Shift+F9 | Opens the list of sample rules. File > Samples has the same samples. |
+| Ctrl+Q | Quits. Esc, the quit key of Terminal.Gui, also quits when no menu is open. Both ask first when the rule has unsaved changes. |
+
+### Edit
+
+| Key | Does |
+| --- | --- |
 | Ctrl+Z | Undo. |
 | Ctrl+Y | Redo. |
 | F8 | Formats the rule: canonical. |
 | Shift+F8 | Formats the rule: pretty. |
+
+### Rule
+
+| Key | Does |
+| --- | --- |
+| F4 | Opens the Convert dialog: canonical rule text, formatted rule text, JSON or YAML. |
+| Shift+F4 | Converts the rule to the next format: rule text, JSON, YAML. |
+| Shift+F5 | Opens the Generate rule dialogs: seed, depth and operator families. |
+| Ctrl+F2 | Gives every term the value `Unknown`. |
+| Ctrl+F3 | Moves the policy for `Unknown` to the next one. |
+| Ctrl+F4 | Loads a variables file (JSON or YAML). |
+| Ctrl+R | Chooses a rewrite and shows the result in the Rewrite pane. |
+| (menu only) | Unknown policy: sets the policy for `Unknown`. |
+
+### Analyze
+
+| Key | Does |
+| --- | --- |
+| F7 | Validates every level. |
+| Shift+F7 | Turns strict validation on or off. |
+| Ctrl+F5 | Saves the assignment as a case of the rule test file. |
+| Ctrl+F7 | Runs the rule test file on the open rule. |
+| Shift+F12, Shift+F11 | Goes to the next or previous step of the evaluation in the Tree pane. Esc leaves the step mode. |
+| Ctrl+F8 | Describes the part of the rule at the cursor or the selected node, in a box. Esc closes it. The mouse shows the same box on hover. |
+| Ctrl+G | Compares the rule with the last saved or accepted version. |
+| Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
+
+### Export
+
+| Key | Does |
+| --- | --- |
+| F5 | Opens the export dialog. |
+
+### View
+
+| Key | Does |
+| --- | --- |
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
 | Ctrl+PageDown, Ctrl+PageUp | Shows the next or previous pane of the region. |
 | F11 | Maximises the region with the focus, or shows every region again. |
-| Alt+Left, Alt+Right | Moves the line between the left and right regions. |
-| Alt+Up, Alt+Down | Moves the line above the bottom region. |
-| F4, Shift+F4 | Converts the rule to the next or previous format. |
-| F5 | Opens the export menu. |
-| F7 | Validates every level. |
-| Shift+F7 | Turns strict validation on or off. |
-| F9 | Imports a rule from the clipboard or a file. |
-| F2 | Opens a rule inside a JSON or YAML document. |
-| Shift+F2 | Switches to another rule of the open document. |
-| F3 | Saves the open rule into its document with the round-trip write-back. |
+| Alt+Left, Alt+Right | Moves the vertical divider: makes the Rule region narrower or wider, in steps of 5 percent. |
+| Alt+Up, Alt+Down | Moves the horizontal divider: makes the top regions lower or higher, in steps of 5 percent. |
 | Ctrl+F1 | Switches between the light and the dark theme for this session. |
-| Ctrl+F2 | Gives every term the value `Unknown`. |
-| Ctrl+F3 | Moves the policy for `Unknown`. |
-| Ctrl+F4 | Loads a variables file (JSON or YAML). |
+| (menu only) | Theme: sets the light or the dark theme. |
+
+### Help
+
+| Key | Does |
+| --- | --- |
+| F1 | Opens the menu bar. F10 also opens it. |
+| Shift+F1 | Shows or hides the key reference. |
+
+### Pane keys
+
+Some panes have their own keys. They work while the pane has the focus, and they are not in the menus.
+
+| Key | Does |
+| --- | --- |
 | Space, T, F, U | In the term list of the Assign pane: moves the selected term to the next value, or sets it to `True`, `False` or `Unknown`. |
 | `t`, `r`, Enter | In the Make True pane: change the target, search again, or apply the entry. See [What would make this True](#what-would-make-this-true). |
-| Ctrl+F5 | Saves the assignment as a case of the rule test file. |
-| Ctrl+F7 | Runs the rule test file on the open rule. |
 | `o`, `w`, `n`, `i`, Delete, `[`, `]`, `p`, `l`, `y`, `Y`, `v` | In the Tree pane: edit the selected node, copy or paste. See [Structural editing](#structural-editing). |
-| Ctrl+R | Chooses a rewrite and shows the result in the Rewrite pane. |
-| Ctrl+G | Compares the rule with the last saved or accepted version. |
-| Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
 | `o`, Enter, `x` | In the Compare pane: load another rule, load the example on the line into the Assign pane, or close the second rule. See [Compare two rules](#compare-two-rules). |
 | `r`, `a`, `x`, `c` | In the Rewrite pane: choose a rewrite, accept it, discard it, or compare. See [Rewrites and compare](#rewrites-and-compare). |
-| Ctrl+Q | Quits. Esc, the quit key of Terminal.Gui, also quits. Both ask first when the rule has unsaved changes. |
 
 The editor has the usual editing keys of the Terminal.Gui editor view, such as Ctrl+C, Ctrl+X and Ctrl+V for the clipboard and Ctrl+A to select all.
 
-The mouse also works, and F1 says so. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. A drag on the right or bottom border of the Rule region resizes it. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. Resting the pointer on a part of the rule shows its description. A right click opens a context menu. See [Context menus](#context-menus). The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+
+A drag on a divider resizes the regions:
+
+- **Dividers.** The vertical divider is between the Rule region and the right region. The horizontal divider is above the bottom region and runs across the whole window. Each divider is two border lines side by side, and a press on either line grabs it.
+- **Drag.** The divider follows the pointer while you hold the left button, in steps of 1 percent and between 15 and 85 percent of the window. When you release the button, the sizes are saved as for the Alt+arrow keys. See [Preferences file](#preferences-file).
+- **No pointer moves.** Some terminals report only the press and the release. In such a terminal, press on a divider and release where you want it: the divider moves to the release position.
+- **Maximised region.** While a region is maximised (F11), there are no dividers to drag.
+
+### Context menus
+
+A right click in the editor, the Tree pane, the term list of the Assign pane or the Diagnostics pane opens a menu of the common actions of that pane. Each entry shows its shortcut, and the entry does what the shortcut does. In the Tree pane and the term list, the click first selects the line under the pointer, so the menu acts on that line. Esc closes the menu.
+
+| Pane | Entries (shortcut) |
+| --- | --- |
+| Editor | Undo (Ctrl+Z), Redo (Ctrl+Y), Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), Select all (Ctrl+A), Format: canonical (F8), Format: pretty (Shift+F8), Save (Ctrl+S) |
+| Tree | Replace operator (`o`), Wrap in NOT (`w`), Negate (`n`), Insert operand (`i`), Delete node (Delete), Copy node (`y`), Copy rule (`Y`), Paste (`v`) |
+| Term list | Set True (`T`), Set False (`F`), Set Unknown (`U`), Next value (Space), All terms Unknown (Ctrl+F2), Load variables (Ctrl+F4) |
+| Diagnostics | Go to location (Enter), Validate (F7), Format: canonical (F8) |
 
 ## Terminal.Gui
 
@@ -510,6 +722,8 @@ CI packs `TruthWeaver.Tool.Tui` with the other packages and checks the package. 
 This section is for developers of the workbench. The window gets its panes and keys from two lists in `src/TruthWeaver.Tool.Tui`, in the namespace `TruthWeaver.Tool.Tui.Workbench`. The types are in one namespace for each folder of the project, `TruthWeaver.Tool.Tui.<Folder>`; the [project README](../src/TruthWeaver.Tool.Tui/README.md) lists the folders:
 
 - A pane implements `IWorkbenchPane`: a title, a region (`PaneSlot.Editor`, `PaneSlot.Side` or `PaneSlot.Bottom`) and `CreateView(Workbench)`. Add an instance to `WorkbenchPanes.Default`. The view follows the shared state through `Workbench.DocumentChanged`, and reads the rule from `Workbench.Document`.
-- A key is a `WorkbenchCommand`: a key, a description and an action on the window. Add it to `WorkbenchCommands.Default`. The key help lists it.
+- A command is a `WorkbenchCommand`: a key (or `Key.Empty` for a command that only the menu runs), a `CommandGroup` (the menu that holds it), a short title for the menu, a description for the key reference and an action on the window. Set `Hint` to show it on the hint line. Add it to `WorkbenchCommands.Default`, or to the list of its feature in the `Commands` folder. The menu of its group, the key reference and, with a key, the key itself then run it. A test fails when a command names no defined group or is not in exactly one menu.
+- A setting with a small, fixed set of values is a `WorkbenchChoice`: a group, a title, the values, and the functions that read and set the current one. Add it to `WorkbenchCommands.Choices`. Its menu shows it as a submenu after the commands, with `(*)` on the current value.
+- `WorkbenchMenus` builds the menu bar: one menu for each `CommandGroup` value with at least one entry, in the order of the enum (File, Edit, Insert, Rule, Analyze, Export, View, Help). A group with no entry has no menu until an entry names it. The Insert menu also builds its Operators and Constants submenus from `InsertItems`.
 
 The state that the panes share has no view: `AssignmentSession` in the tool core holds the values, the variables and the policy (see [Trying a rule with values](tool-core.md#trying-a-rule-with-values)), `Workbench.Outcome` is its result for the open document, and `Workbench.NotifyAssignmentChanged()` tells the panes after a change. `RuleTestSession` holds the rule test file of the workbench, and `RuleTestCaseText` in the tool core edits the text of that file. `RuleDocument` in the tool core holds the text, the compiled rule, the diagnostics and the history (see [Editing a rule](tool-core.md#editing-a-rule)), and `Workbench` holds the document, the layout and the status line. `Workbench.SelectedNode` is the path of the selected node of the tree, and `Workbench.SelectedNodeChanged` tells the panes after `Workbench.SelectNode(path)`. `Workbench.ReplaceRule(rule, message)` puts an edited rule into the document as one undo step; `RuleTreeEditor` and `RulePalette` in the tool core make the edits (see [Editing the tree](tool-core.md#editing-the-tree)). `RewritePlayground` in the tool core applies a rewrite without a change to the rule and compares two versions (see [Rewrites](tool-core.md#rewrites)). `WorkbenchWindow.ShowPane(title)` shows a pane and gives it the focus. The tests in `tests/TruthWeaver.Tool.Tui.Tests` drive the window with keys without a terminal, and run the application loop once with the ANSI driver of Terminal.Gui.

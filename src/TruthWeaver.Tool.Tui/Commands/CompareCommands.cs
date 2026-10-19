@@ -12,6 +12,8 @@ internal static class CompareCommands
     [
         new(
             Key.F9.WithCtrl,
+            CommandGroup.Analyze,
+            "Compare with a second rule...",
             "Load a second rule (file or clipboard, read-only) and compare it with the open rule",
             w =>
             {

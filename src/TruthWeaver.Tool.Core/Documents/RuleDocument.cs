@@ -148,6 +148,25 @@ public sealed class RuleDocument
     }
 
     /// <summary>
+    /// Replaces the text and its format together and compiles the text in the new format. The change is one undo step and
+    /// clears the redo steps, so undo gives back both the text and the format. Equal text in the same format changes nothing.
+    /// </summary>
+    /// <param name="text">The new text.</param>
+    /// <param name="format">The format of <paramref name="text"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
+    public void SetText(string text, RuleFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(format))
+        {
+            throw new ArgumentOutOfRangeException(nameof(format), format, "Not a defined rule format.");
+        }
+
+        this.Apply(new Snapshot(text, format));
+    }
+
+    /// <summary>
     /// Replaces the text with text that <see cref="Check"/> compiled, without compiling it again. It is the same change as
     /// <see cref="SetText(string)"/>: one undo step that clears the redo steps. When the format of the document is no longer
     /// the format that was checked, the text is compiled again.
@@ -299,12 +318,27 @@ public sealed class RuleDocument
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
     public ToolResult<string> ConvertTo(RuleFormat format)
     {
+        return this.ConvertTo(format, pretty: false);
+    }
+
+    /// <summary>
+    /// Converts the text to another format, or to the pretty form of the same format, as one undo step. The pretty form is a
+    /// property of rule text: it wraps the text at the page width of the <c>rule-text-pretty</c> artifact and keeps the notes.
+    /// The tree, the notes and the definitions stay the same, as for <see cref="ConvertTo(RuleFormat)"/>.
+    /// </summary>
+    /// <param name="format">The format to convert to.</param>
+    /// <param name="pretty"><see langword="true"/> for the pretty form of rule text; JSON and YAML have one form and ignore it.</param>
+    /// <returns>The converted text, or no text and the diagnostics when the current text does not compile. The text does not change then.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
+    public ToolResult<string> ConvertTo(RuleFormat format, bool pretty)
+    {
         if (!Enum.IsDefined(format))
         {
             throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not a defined RuleFormat.");
         }
 
-        if (format == this.Format)
+        bool formatted = pretty && format == RuleFormat.Text;
+        if (format == this.Format && !formatted)
         {
             return ToolResults.Success(this.Text);
         }
@@ -314,7 +348,7 @@ public sealed class RuleDocument
             return ToolResults.Failure<string>(this.Diagnostics);
         }
 
-        ToolResult<string> converted = this.PrintCurrent(format, pretty: false);
+        ToolResult<string> converted = this.PrintCurrent(format, formatted);
         if (!converted.Succeeded)
         {
             return converted;

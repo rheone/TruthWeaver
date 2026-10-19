@@ -23,6 +23,7 @@ internal static class ReportCommand
         {
             Description = "Put a truth table with more than 8 terms, up to 12, in the report, with a TRE0034 warning.",
         };
+        Option<int?> limit = ArtifactOptions.NewLimitOption();
 
         Command command = new(
             "report",
@@ -33,6 +34,7 @@ internal static class ReportCommand
         };
         options.AddTo(command);
         command.Add(allowLarger);
+        command.Add(limit);
         target.AddTo(command);
 
         command.SetAction(parse =>
@@ -45,7 +47,12 @@ internal static class ReportCommand
                 return outcome.Write(console, options.ModeOf(parse));
             }
 
-            ExportOptions export = new() { Settings = settings, AllowLargerTruthTable = parse.GetValue(allowLarger) };
+            ExportOptions export = new()
+            {
+                Settings = settings,
+                AllowLargerTruthTable = parse.GetValue(allowLarger),
+                TruthTableTermLimit = parse.GetValue(limit),
+            };
             ToolResult<string> report = RuleReport.Format(rule, export);
             outcome.Add(rule, report.Diagnostics);
             if (report.Value is { } text)

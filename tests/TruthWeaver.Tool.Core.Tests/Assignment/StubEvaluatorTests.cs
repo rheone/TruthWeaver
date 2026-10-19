@@ -300,4 +300,22 @@ public sealed class StubEvaluatorTests
         Assert.NotNull(trace);
         Assert.DoesNotContain(trace.Entries, e => e.NotEvaluated);
     }
+
+    /// <summary>A reserved word used as a term is refused with a diagnostic and does not throw.</summary>
+    /// <param name="text">The rule in the format its content selects.</param>
+    [Theory]
+    [InlineData("a AND OR")]
+    [InlineData("{\"predicate\": \"T\"}")]
+    public async Task EvaluateAsync_ReservedWordAsTerm_FailsWithDiagnostic_Test(string text)
+    {
+        LoadedRule rule = RuleLoader.LoadString(text).Value!;
+
+        ToolResult<StubEvaluation> result = await StubEvaluator.EvaluateAsync(
+            rule,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
 }

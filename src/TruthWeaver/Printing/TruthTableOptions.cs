@@ -10,10 +10,12 @@ public sealed record TruthTableOptions
     public const int DefaultTermCap = 8;
 
     /// <summary>
-    /// The most terms that a table can ever have: 12. A Strong K3 table of 12 terms has 531,441 rows. A rule with more
-    /// terms is refused, whatever the options say.
+    /// The default value of <see cref="TermLimit"/>: 12. A Strong K3 table of 12 terms has 531,441 rows. A rule with more
+    /// terms is refused, whatever else the options say.
     /// </summary>
     public const int HardTermLimit = 12;
+
+    private readonly int termLimit = HardTermLimit;
 
     /// <summary>Gets the default options: a Strong K3 table in Markdown, with the terms as calls and the constants as letters.</summary>
     public static TruthTableOptions Default { get; } = new();
@@ -30,9 +32,27 @@ public sealed record TruthTableOptions
 
     /// <summary>
     /// Gets a value indicating whether a rule with more than <see cref="DefaultTermCap"/> terms is printed anyway, up to
-    /// <see cref="HardTermLimit"/>. The result then carries a <c>TRE0034</c> warning. The default is <see langword="false"/>.
+    /// <see cref="TermLimit"/>. The result then carries a <c>TRE0034</c> warning. The default is <see langword="false"/>.
     /// </summary>
     public bool AllowLargerTable { get; init; }
+
+    /// <summary>
+    /// Gets the most distinct terms that a table can have. A rule with more terms is refused with a <c>TRE0035</c> error,
+    /// whatever <see cref="AllowLargerTable"/> says. The default is <see cref="HardTermLimit"/> (12). There is no ceiling:
+    /// a larger value is allowed, and the caller owns the cost, because a Strong K3 table of n terms has 3<sup>n</sup>
+    /// rows (2<sup>n</sup> when <see cref="Classical"/>). Write to a <see cref="TextWriter"/> to keep memory flat. A value
+    /// below the <see cref="DefaultTermCap"/> lowers the cap that applies without <see cref="AllowLargerTable"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int TermLimit
+    {
+        get => this.termLimit;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            this.termLimit = value;
+        }
+    }
 
     /// <summary>
     /// Gets a value indicating whether each term is a letter (<c>p</c>, <c>q</c>, <c>r</c>) in the header instead of its call.

@@ -176,6 +176,56 @@ public sealed class CatalogPaletteTests : IDisposable
         Assert.DoesNotContain("schema validation level", workbench.Status, StringComparison.Ordinal);
     }
 
+    /// <summary>The search box matches the name, so typing part of a name keeps that predicate and its family line.</summary>
+    [Fact]
+    public void InsertOperand_SearchBoxWithNameText_ShowsTheNameMatchUnderItsFamily_Test()
+    {
+        (IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter) = OpenPalette();
+
+        List<string> shown = [.. filter("startswith").Select(i => items[i])];
+
+        Assert.Contains(shown, i => i.StartsWith("catalog  StartsWith(", StringComparison.Ordinal));
+        Assert.Contains("--- String ---", shown);
+        Assert.DoesNotContain(shown, i => i.StartsWith("catalog  EndsWith(", StringComparison.Ordinal));
+    }
+
+    /// <summary>The search box matches a word of the description that is not in the name, label or family.</summary>
+    [Fact]
+    public void InsertOperand_SearchBoxWithDescriptionWord_ShowsThePredicate_Test()
+    {
+        (IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter) = OpenPalette();
+        char[] separators = [' ', ',', '.', '(', ')', ';', ':', '-', '/'];
+        (CatalogPredicate predicate, string word) = PredicateCatalog
+            .All.SelectMany(p =>
+                p.Entry.Description.Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(w =>
+                        w.Length >= 5
+                        && !p.Entry.Name.Contains(w, StringComparison.OrdinalIgnoreCase)
+                        && !p.Label.Contains(w, StringComparison.OrdinalIgnoreCase)
+                        && !p.Family.Contains(w, StringComparison.OrdinalIgnoreCase)
+                    )
+                    .Select(w => (p, w))
+            )
+            .First();
+
+        IEnumerable<string> shown = filter(word).Select(i => items[i]);
+
+        Assert.Contains(shown, i => i.StartsWith("catalog  " + predicate.Entry.Name + "(", StringComparison.Ordinal));
+    }
+
+    /// <summary>A search without a match shows no entry, and an empty box shows the whole list again.</summary>
+    [Fact]
+    public void InsertOperand_SearchBoxWithNoMatchThenCleared_ShowsNothingThenEverything_Test()
+    {
+        (IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter) = OpenPalette();
+
+        IReadOnlyList<int> none = filter("zzzqqq");
+        IReadOnlyList<int> all = filter(string.Empty);
+
+        Assert.Empty(none);
+        Assert.Equal(Enumerable.Range(0, items.Count), all);
+    }
+
     private static (StructureController Controller, ScriptedServices Services, Workbench Workbench) Create(
         string text,
         string? schemaFile = null
@@ -185,6 +235,13 @@ public sealed class CatalogPaletteTests : IDisposable
         ToolSettings settings = ToolSettings.Default with { SchemaFile = schemaFile };
         Workbench workbench = new(RuleDocument.Create(text), settings, new ScriptedPrompts());
         return (new StructureController(workbench, services.Services), services, workbench);
+    }
+
+    private static (IReadOnlyList<string> Items, Func<string, IReadOnlyList<int>> Filter) OpenPalette()
+    {
+        (StructureController controller, ScriptedServices services, _) = Create("a AND b");
+        controller.InsertOperand();
+        return (services.Dialogs.LastItems, services.Dialogs.LastFilter!);
     }
 
     private string WriteSchema(string yaml)
