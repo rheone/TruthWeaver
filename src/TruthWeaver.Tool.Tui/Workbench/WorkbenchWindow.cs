@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tool.Tui.Workbench;
 
+using System.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -12,13 +13,13 @@ using TruthWeaver.Tool.Tui.Panes;
 /// The workbench window: three regions (editor on the left, side view on the right, a region below), a status line and
 /// the key help overlay. Each region holds the panes that <see cref="WorkbenchPanes"/> registers for it and shows one at a
 /// time. The keys come from <see cref="WorkbenchCommands"/>. Every region can take focus, be maximised and be resized with
-/// the keys or by dragging its border with the mouse.
+/// the keys or by dragging a divider (the borders between the regions) with the mouse.
 /// </summary>
 internal sealed class WorkbenchWindow : Window
 {
     /// <summary>The last line of the key help: the mouse is an extra way to do what the keys do.</summary>
     private const string MouseHelp =
-        "Mouse: click a pane to focus it or a tree node to select it, turn the wheel to scroll. Every action has a key.";
+        "Mouse: click a pane to focus it or a tree node to select it, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
 
     private static readonly PaneSlot[] SlotOrder = [PaneSlot.Editor, PaneSlot.Side, PaneSlot.Bottom];
 
@@ -27,6 +28,11 @@ internal sealed class WorkbenchWindow : Window
     private readonly Label status;
     private readonly FrameView help;
     private readonly Label helpText;
+
+    // The divider that a mouse drag moves, and the distance from the pointer to the divider line when the drag started,
+    // so a grab on either of the two border lines of a divider does not make it jump.
+    private Divider dragging;
+    private int dragOffset;
 
     /// <summary>Initializes a new instance of the <see cref="WorkbenchWindow"/> class.</summary>
     /// <param name="workbench">The shared state.</param>
@@ -101,6 +107,19 @@ internal sealed class WorkbenchWindow : Window
 
         this.ApplyLayout();
         this.ShowStatus();
+    }
+
+    /// <summary>A line between the regions that a mouse drag moves.</summary>
+    private enum Divider
+    {
+        /// <summary>No divider: no drag is in progress.</summary>
+        None,
+
+        /// <summary>The line between the editor and side regions; it sets the width of the editor region.</summary>
+        Vertical,
+
+        /// <summary>The line above the bottom region; it sets the height of the top regions.</summary>
+        Horizontal,
     }
 
     /// <summary>Gets the shared state.</summary>
@@ -342,8 +361,56 @@ internal sealed class WorkbenchWindow : Window
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The window moves the dividers itself. A press on a divider reaches the window because the region borders do not
+    /// handle it. The window then holds the mouse, so every move goes to it until the release, which saves the sizes as the
+    /// divider keys do. The release position also moves the divider, so a terminal that reports no moves while a button is
+    /// held still resizes on press and release.
+    /// </remarks>
+    protected override bool OnMouseEvent(Mouse mouse)
+    {
+        ArgumentNullException.ThrowIfNull(mouse);
+
+        Point point = this.ScreenToViewport(mouse.ScreenPosition);
+        if (this.dragging != Divider.None)
+        {
+            if (mouse.IsReleased || mouse.IsSingleDoubleOrTripleClicked)
+            {
+                this.DragTo(point);
+                this.EndDrag();
+            }
+            else if (mouse.Flags.HasFlag(MouseFlags.PositionReport))
+            {
+                this.DragTo(point);
+            }
+
+            return true;
+        }
+
+        if (
+            mouse.Flags.HasFlag(MouseFlags.LeftButtonPressed)
+            && !mouse.Flags.HasFlag(MouseFlags.PositionReport)
+            && this.DividerAt(point) is { } hit
+        )
+        {
+            this.dragging = hit.Divider;
+            this.dragOffset = (hit.Divider == Divider.Vertical ? point.X : point.Y) - hit.Line;
+            this.App?.Mouse.GrabMouse(this);
+            return true;
+        }
+
+        return base.OnMouseEvent(mouse);
+    }
+
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
+        // A drag that is still in progress holds the mouse; let it go so no event goes to a disposed window.
+        if (disposing && this.App?.Mouse.IsGrabbed(this) is true)
+        {
+            this.App.Mouse.UngrabMouse();
+        }
+
         // The base class disposes the subviews; disposing a view twice does nothing, so the fields are disposed after it.
         base.Dispose(disposing);
         if (disposing)
@@ -419,6 +486,68 @@ internal sealed class WorkbenchWindow : Window
         this.SetNeedsLayout();
     }
 
+    // Finds the divider under a point of the viewport, with the position of its line: the last column or row of the editor
+    // region. Each divider is two border lines side by side (the border of the region on each side), and both grab it.
+    // The vertical divider runs down the top regions; the horizontal divider runs across the whole window.
+    private (Divider Divider, int Line)? DividerAt(Point point)
+    {
+        if (this.Workbench.Layout.Maximised is not null || !this.regions.TryGetValue(PaneSlot.Editor, out Region? editor))
+        {
+            return null;
+        }
+
+        Rectangle frame = editor.Frame.Frame;
+        int right = frame.Right - 1;
+        int bottom = frame.Bottom - 1;
+        if (this.regions.ContainsKey(PaneSlot.Bottom) && (point.Y == bottom || point.Y == bottom + 1))
+        {
+            return (Divider.Horizontal, bottom);
+        }
+
+        if (
+            this.regions.ContainsKey(PaneSlot.Side)
+            && (point.X == right || point.X == right + 1)
+            && point.Y >= frame.Y
+            && point.Y < bottom
+        )
+        {
+            return (Divider.Vertical, right);
+        }
+
+        return null;
+    }
+
+    // Moves the dragged divider so that its line is under the pointer, as a whole percent of the window, inside the limits of
+    // the layout. The editor region has the width or height of the line plus one.
+    private void DragTo(Point point)
+    {
+        Size size = this.Viewport.Size;
+        if (this.dragging == Divider.Vertical && size.Width > 0)
+        {
+            int width = point.X - this.dragOffset + 1;
+            this.Workbench.Layout.Restore((int)Math.Round(width * 100.0 / size.Width), null);
+        }
+        else if (this.dragging == Divider.Horizontal && size.Height > 0)
+        {
+            int height = point.Y - this.dragOffset + 1;
+            this.Workbench.Layout.Restore(null, (int)Math.Round(height * 100.0 / size.Height));
+        }
+
+        this.ApplyLayout();
+    }
+
+    // Ends a drag: the window lets the mouse go and saves the sizes, as the divider keys do.
+    private void EndDrag()
+    {
+        this.dragging = Divider.None;
+        if (this.App?.Mouse.IsGrabbed(this) is true)
+        {
+            this.App.Mouse.UngrabMouse();
+        }
+
+        this.Workbench.Preferences?.SaveLayout(this.Workbench.Layout);
+    }
+
     /// <summary>One region: its frame, its panes and the pane it shows.</summary>
     private sealed class Region : IDisposable
     {
@@ -432,12 +561,10 @@ internal sealed class WorkbenchWindow : Window
             {
                 CanFocus = true,
 
-                // The editor region can be resized with the mouse by dragging its right or bottom border; the other
-                // regions follow it.
-                Arrangement =
-                    slot == PaneSlot.Editor
-                        ? ViewArrangement.RightResizable | ViewArrangement.BottomResizable
-                        : ViewArrangement.Fixed,
+                // Fixed: the window moves the dividers itself (OnMouseEvent), so the sizes stay percentages of the
+                // layout and are saved. The resize of Terminal.Gui would set an absolute size that is never saved,
+                // would take only the border of the editor region, and would take Ctrl+F5 for its arrange mode.
+                Arrangement = ViewArrangement.Fixed,
             };
             foreach ((IWorkbenchPane _, View view) in panes)
             {

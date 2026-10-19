@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Dragging a divider changes the region sizes, and the new sizes persist in `workbench.json` as they do for key resizing today.
-- [ ] Keys resize the editor width and the top height, and their shortcuts are shown.
-- [ ] A test drives a divider drag with mouse events.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] Dragging a divider changes the region sizes, and the new sizes persist in `workbench.json` as they do for key resizing today.
+- [x] Keys resize the editor width and the top height, and their shortcuts are shown.
+- [x] A test drives a divider drag with mouse events.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

@@ -387,7 +387,7 @@ The workbench keeps two choices between runs: the theme, after you switched it w
 
 - **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). It holds no rule text and no file path. The maximised region is not kept.
 - **Theme.** A `theme` in the file wins over the `theme` setting of `truthweaver.json`. Without a switch, the file has no `theme`, and the setting applies. To use the setting again, delete the `theme` line or the file.
-- **Layout.** The file is written when you move a divider, and the next start uses the sizes.
+- **Layout.** The file is written when you move a divider with the Alt+arrow keys or at the end of a mouse drag, and the next start uses the sizes.
 - **Problems.** A missing file, a file that is not valid JSON, or a file that is not an object gives the defaults and no message. A value that is not valid, such as `auto` or a size outside 15 to 85, is ignored and the other values stay. A file that cannot be written is ignored; the choice then lasts for the session only.
 
 ## Variables
@@ -471,8 +471,8 @@ The workbench is used with the keyboard. F1 shows this list in the window; F1 or
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
 | Ctrl+PageDown, Ctrl+PageUp | Shows the next or previous pane of the region. |
 | F11 | Maximises the region with the focus, or shows every region again. |
-| Alt+Left, Alt+Right | Moves the line between the left and right regions. |
-| Alt+Up, Alt+Down | Moves the line above the bottom region. |
+| Alt+Left, Alt+Right | Moves the vertical divider: makes the Rule region narrower or wider, in steps of 5 percent. |
+| Alt+Up, Alt+Down | Moves the horizontal divider: makes the top regions lower or higher, in steps of 5 percent. |
 | F4, Shift+F4 | Converts the rule to the next or previous format. |
 | F5 | Opens the export menu. |
 | F7 | Validates every level. |
@@ -499,7 +499,14 @@ The workbench is used with the keyboard. F1 shows this list in the window; F1 or
 
 The editor has the usual editing keys of the Terminal.Gui editor view, such as Ctrl+C, Ctrl+X and Ctrl+V for the clipboard and Ctrl+A to select all.
 
-The mouse also works, and F1 says so. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. A drag on the right or bottom border of the Rule region resizes it. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+The mouse also works, and F1 says so. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+
+A drag on a divider resizes the regions:
+
+- **Dividers.** The vertical divider is between the Rule region and the right region. The horizontal divider is above the bottom region and runs across the whole window. Each divider is two border lines side by side, and a press on either line grabs it.
+- **Drag.** The divider follows the pointer while you hold the left button, in steps of 1 percent and between 15 and 85 percent of the window. When you release the button, the sizes are saved as for the Alt+arrow keys. See [Preferences file](#preferences-file).
+- **No pointer moves.** Some terminals report only the press and the release. In such a terminal, press on a divider and release where you want it: the divider moves to the release position.
+- **Maximised region.** While a region is maximised (F11), there are no dividers to drag.
 
 ## Terminal.Gui
 
