@@ -46,6 +46,13 @@ internal sealed class ExportController
     /// </summary>
     public bool AllowLargerTruthTable { get; set; }
 
+    /// <summary>
+    /// Gets or sets the most distinct terms of a truth table (<see cref="ExportOptions.TruthTableTermLimit"/>), or
+    /// <see langword="null"/> for the cap and <see cref="AllowLargerTruthTable"/>. A number allows a larger table. The default is
+    /// <see langword="null"/>.
+    /// </summary>
+    public int? TruthTableTermLimit { get; set; }
+
     private WorkbenchServices Services => this.services ?? WorkbenchServices.Current;
 
     private ExportOptions Options =>
@@ -53,6 +60,7 @@ internal sealed class ExportController
         {
             Settings = this.workbench.Settings,
             AllowLargerTruthTable = this.AllowLargerTruthTable,
+            TruthTableTermLimit = this.TruthTableTermLimit,
             Images = null,
         };
 
@@ -85,9 +93,8 @@ internal sealed class ExportController
             foreach (ImageFormat format in new[] { ImageFormat.Svg, ImageFormat.Png })
             {
                 string program = ImageRenderer.ProgramName(language);
-                string state = ImageRenderer.FindProgram(language, this.ImageSearchPath) is null
-                    ? $"needs {program}, not found"
-                    : $"with {program}";
+                bool missing = ImageRenderer.FindProgram(language, this.ImageSearchPath) is null;
+                string state = missing ? $"needs {program}, not found" : $"with {program}";
                 entries.Add(
                     new ExportEntry(
                         ExportEntryKind.Image,
@@ -96,7 +103,8 @@ internal sealed class ExportController
                         language,
                         format,
                         ExportGroups.Images,
-                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format)
+                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format),
+                        missing ? this.MissingProgram(language) : string.Empty
                     )
                 );
             }
@@ -282,7 +290,8 @@ internal sealed class ExportController
             this.Entries(),
             directory,
             this.AllowLargerTruthTable,
-            $"Make truth tables over {TruthTableOptions.DefaultTermCap} terms (up to {TruthTableOptions.HardTermLimit})"
+            $"Make truth tables over {TruthTableOptions.DefaultTermCap} terms (up to {TruthTableOptions.HardTermLimit})",
+            this.TruthTableTermLimit
         );
         if (this.Services.Dialogs.AskExport(model) is not { } request)
         {
@@ -290,6 +299,7 @@ internal sealed class ExportController
         }
 
         this.AllowLargerTruthTable = request.AllowLargerTruthTable;
+        this.TruthTableTermLimit = request.TruthTableTermLimit;
         if (request.Entry is null)
         {
             return this.ExportAll(request.Path);
@@ -345,9 +355,13 @@ internal sealed class ExportController
     private string Failure(ArtifactDefinition artifact, IEnumerable<Diagnostic> diagnostics)
     {
         string message = $"Cannot make {artifact.Id}: {First(diagnostics)}";
-        if (artifact.Id.StartsWith("truth-table", StringComparison.Ordinal) && !this.AllowLargerTruthTable)
+        if (
+            artifact.Id.StartsWith("truth-table", StringComparison.Ordinal)
+            && !this.AllowLargerTruthTable
+            && this.TruthTableTermLimit is null
+        )
         {
-            message += " Open the export dialog (F5) and tick the larger truth tables option.";
+            message += " Open the export dialog (F5) and tick the larger truth tables option or set a term limit.";
         }
 
         return message;

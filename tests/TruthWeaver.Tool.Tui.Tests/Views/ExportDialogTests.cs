@@ -8,6 +8,7 @@ using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Export;
 using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
@@ -212,6 +213,106 @@ public sealed class ExportDialogTests
         Assert.True(session.Dialog.Request!.AllowLargerTruthTable);
     }
 
+    /// <summary>Every artifact of the catalog can be chosen in the dialog, through the lists or the equation dropdowns.</summary>
+    [Fact]
+    public void Open_EveryCatalogArtifact_CanBeChosen_Test()
+    {
+        using DialogSession session = new();
+        HashSet<string> reached = [];
+
+        for (int type = 0; type < session.Dialog.Types.Source!.Count; type++)
+        {
+            session.Dialog.Types.Value = type;
+            if (session.Dialog.ChosenType == ExportGroups.Equation)
+            {
+                foreach (
+                    ArtifactDefinition equation in ArtifactCatalog.All.Where(a =>
+                        a.Id.StartsWith("equation-", StringComparison.Ordinal)
+                    )
+                )
+                {
+                    session.Dialog.Dialect.Text = OptionOf(equation, "dialect");
+                    session.Dialog.Envelope.Text = OptionOf(equation, "latexWrap") is { Length: > 0 } wrap ? wrap : "none";
+                    session.Dialog.Constants.Text = OptionOf(equation, "constants");
+                    reached.Add(session.Dialog.ChosenEntry!.Artifact!.Id);
+                }
+            }
+            else if (session.Dialog.ChosenType != ExportDialog.FolderType)
+            {
+                for (int format = 0; format < session.Dialog.Variants.Source!.Count; format++)
+                {
+                    session.Dialog.Variants.Value = format;
+                    if (session.Dialog.ChosenEntry!.Artifact is { } artifact)
+                    {
+                        reached.Add(artifact.Id);
+                    }
+                }
+            }
+        }
+
+        string[] missing = [.. ArtifactCatalog.All.Select(a => a.Id).Where(id => !reached.Contains(id))];
+        Assert.Empty(missing);
+        Assert.Contains("mermaid", reached);
+    }
+
+    /// <summary>The term limit field starts from the model, and a number in it is part of the request.</summary>
+    [Fact]
+    public void TermLimit_Number_IsPartOfTheRequest_Test()
+    {
+        using DialogSession session = new(termLimit: 10);
+        Assert.Equal("10", session.Dialog.TermLimit.Text);
+
+        session.Dialog.TermLimit.Text = "14";
+        session.Click(session.Dialog.CopyButton, 2, 0);
+
+        Assert.Equal(14, session.Dialog.Request!.TruthTableTermLimit);
+    }
+
+    /// <summary>An empty term limit field means no limit of its own.</summary>
+    [Fact]
+    public void TermLimit_Empty_IsNoLimitInTheRequest_Test()
+    {
+        using DialogSession session = new();
+
+        session.Click(session.Dialog.CopyButton, 2, 0);
+
+        Assert.Null(session.Dialog.Request!.TruthTableTermLimit);
+    }
+
+    /// <summary>A term limit that is not a whole number of 1 or more keeps the dialog open on the field.</summary>
+    /// <param name="text">The text of the field.</param>
+    [Theory]
+    [InlineData("0")]
+    [InlineData("abc")]
+    [InlineData("-3")]
+    public void TermLimit_NotAPositiveNumber_StaysOpenAndFocusesTheField_Test(string text)
+    {
+        using DialogSession session = new();
+        session.Dialog.TermLimit.Text = text;
+
+        session.Click(session.Dialog.CopyButton, 2, 0);
+
+        Assert.Null(session.Dialog.Request);
+        Assert.False(session.Closed);
+        Assert.Same(session.Dialog.TermLimit, session.Dialog.MostFocused);
+    }
+
+    /// <summary>An image entry whose program is missing says what to install, in its label and in the hint under the lists.</summary>
+    [Fact]
+    public void ImageEntry_ProgramMissing_ShowsWhatToInstall_Test()
+    {
+        Workbench workbench = new(RuleDocument.Create("a AND b"), ToolSettings.Default, new ScriptedPrompts());
+        ExportController controller = new(workbench, new ScriptedServices().Services)
+        {
+            ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-renderers"),
+        };
+
+        ExportEntry image = controller.Entries().First(e => e.Kind == ExportEntryKind.Image);
+
+        Assert.Contains("not found", image.Label, StringComparison.Ordinal);
+        Assert.Contains(ImageRenderer.ProgramName(image.Language), image.Hint, StringComparison.Ordinal);
+    }
+
     /// <summary>On the headless ANSI driver the dialog draws its headings, the chosen format and the three buttons.</summary>
     [Fact]
     public void Run_OneIteration_DrawsTheHeadingsAndTheButtons_Test()
@@ -257,15 +358,20 @@ public sealed class ExportDialogTests
         }
     }
 
+    private static string OptionOf(ArtifactDefinition artifact, string name)
+    {
+        return artifact.Options.FirstOrDefault(o => o.Key == name).Value ?? string.Empty;
+    }
+
     /// <summary>An export dialog in a window of 100 by 30 cells, with the keys and the mouse sent as a terminal sends them.</summary>
     private sealed class DialogSession : IDisposable
     {
-        public DialogSession(bool allowLarger = false)
+        public DialogSession(bool allowLarger = false, int? termLimit = null)
         {
             Workbench workbench = new(RuleDocument.Create("a AND b"), ToolSettings.Default, new ScriptedPrompts());
             ExportController controller = new(workbench, new ScriptedServices().Services);
             this.Dialog = new ExportDialog(
-                new ExportDialogModel(controller.Entries(), Path.GetTempPath(), allowLarger, "Make big truth tables")
+                new ExportDialogModel(controller.Entries(), Path.GetTempPath(), allowLarger, "Make big truth tables", termLimit)
             );
             this.Dialog.Closed += (_, _) => this.Closed = true;
             this.Dialog.BeginInit();

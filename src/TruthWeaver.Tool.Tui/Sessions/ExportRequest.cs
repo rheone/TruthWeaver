@@ -15,4 +15,11 @@ internal enum ExportAction
 /// <param name="Action">Where the output goes.</param>
 /// <param name="Path">The file or folder path for <see cref="ExportAction.ToFile"/>; empty for <see cref="ExportAction.Copy"/>.</param>
 /// <param name="AllowLargerTruthTable">Whether truth tables over the term cap are made.</param>
-internal sealed record ExportRequest(ExportEntry? Entry, ExportAction Action, string Path, bool AllowLargerTruthTable);
+/// <param name="TruthTableTermLimit">The most terms of a truth table, or <see langword="null"/> for the default limits.</param>
+internal sealed record ExportRequest(
+    ExportEntry? Entry,
+    ExportAction Action,
+    string Path,
+    bool AllowLargerTruthTable,
+    int? TruthTableTermLimit = null
+);

@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] The command line has an option that sets the truth-table term limit (for example `--truth-table-limit <n>`), shown in `export` and `print` help, and it keeps `--allow-large-truth-table` working (it means the default limit of 12).
-- [ ] The export dialog has a control for the same limit, kept for the next export like the "allow larger truth tables" choice.
-- [ ] Every artifact id that the catalog offers is accepted by the command line `--artifact` option and listed in the export dialog. A test fails when either front end lacks one.
-- [ ] The image formats the dialog offers (Mermaid and DOT as SVG and PNG) match what `export --render` can write, or the difference is listed in the docs.
-- [ ] Every export option of `ExportOptions` is either exposed by both front ends or listed in a test as deliberately front-end specific (for example the clipboard destination, which only the workbench has).
-- [ ] `docs/cli.md` and `docs/tui.md` are updated to the current behavior, with no "changed from" text, and each says which export options the other front end has.
+- [x] The command line has an option that sets the truth-table term limit (for example `--truth-table-limit <n>`), shown in `export` and `print` help, and it keeps `--allow-large-truth-table` working (it means the default limit of 12).
+- [x] The export dialog has a control for the same limit, kept for the next export like the "allow larger truth tables" choice.
+- [x] Every artifact id that the catalog offers is accepted by the command line `--artifact` option and listed in the export dialog. A test fails when either front end lacks one.
+- [x] The image formats the dialog offers (Mermaid and DOT as SVG and PNG) match what `export --render` can write, or the difference is listed in the docs.
+- [x] Every export option of `ExportOptions` is either exposed by both front ends or listed in a test as deliberately front-end specific (for example the clipboard destination, which only the workbench has).
+- [x] `docs/cli.md` and `docs/tui.md` are updated to the current behavior, with no "changed from" text, and each says which export options the other front end has.

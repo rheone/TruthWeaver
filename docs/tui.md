@@ -159,8 +159,8 @@ F4 opens the Convert dialog: a list of the forms to convert to, and the buttons 
 F5 opens the export dialog. One dialog holds all the choices, so no second dialog opens.
 
 - **Output type.** A list of the kinds of output: rule, equation, tree and diagram, truth table, statistics and diagnostics, report, image, and every artifact to a folder. The chosen type stays highlighted.
-- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md). The chosen format stays highlighted. For the truth table it lists every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation it shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
-- **Options.** A box that allows truth tables over the cap of 8 terms, up to 12 terms. The table then carries a `TRE0034` warning. A refused table says how to allow it.
+- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md), so every artifact of the catalog is in the dialog: rule text (canonical, symbolic and formatted), JSON and YAML under Rule; the text tree, Mermaid, DOT and HTML under Tree and diagram; the statistics and the diagnostics (text, JSON and SARIF) under Statistics and diagnostics; and the report. The chosen format stays highlighted. For the truth table it lists every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation it shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
+- **Options.** A box that allows truth tables over the cap of 8 terms, up to 12 terms, and a **term limit** field for the most terms of a truth table (empty for none). A number allows a table of that size, with no ceiling, and the table grows by 3^n rows. The field must be empty or a whole number of 1 or more, and the dialog stays open on it otherwise. Both options carry a `TRE0034` warning and stay for the next export. A refused table says how to allow it.
 - **File or folder.** A text field with a suggested path in the folder of the open rule. It follows the chosen format until you edit it.
 
 The buttons are **Copy**, **To File** and **Cancel**. Copy is the default action, so Enter in a list copies. To File writes to the path in the text field of the same dialog; a file that exists needs your confirmation. For the images and for every artifact to a folder, Copy is off and To File is the default. Cancel changes nothing.
@@ -169,7 +169,9 @@ A click selects an entry. A double click also only selects it and never ends the
 
 The text of an artifact equals the output of the matching command line export. The artifacts are made from the text in the editor. If the text has errors, only the diagnostics artifacts can be made.
 
-The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. A missing program is a message on the status line that names the program and where to get it. No dialog opens. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
+The command line has the same artifacts and the same truth-table options (`--allow-large-truth-table` and `--truth-table-limit`); see [export](cli.md#export). The command line also has `--output`, `--check` and the JSON result, and the dialog also has the clipboard. The dialog offers the images that `export --render` writes: Mermaid and DOT as SVG and PNG.
+
+An image entry is always listed. When its program is missing, its label says `needs <program>, not found`, and a line under the lists says where to get the program. The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. A missing program is a message on the status line that names the program and where to get it. No dialog opens. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
 
 ## Validation panel
 

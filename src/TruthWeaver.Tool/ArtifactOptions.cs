@@ -6,7 +6,8 @@ using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Export;
 
 /// <summary>
-/// The <c>--artifact</c> and <c>--allow-large-truth-table</c> options of <c>print</c> and <c>export</c>. An artifact is
+/// The <c>--artifact</c>, <c>--allow-large-truth-table</c> and <c>--truth-table-limit</c> options of <c>print</c> and
+/// <c>export</c>. An artifact is
 /// an id of the artifact catalog, or <c>equation</c> for the equation in the dialect and constant style of the settings.
 /// </summary>
 internal sealed class ArtifactOptions
@@ -43,6 +44,30 @@ internal sealed class ArtifactOptions
             Description = "Print a truth table with more than 8 terms, up to 12, with a TRE0034 warning.",
         };
 
+    /// <summary>Gets the option that sets the most terms of a truth table.</summary>
+    public Option<int?> TruthTableLimit { get; } = NewLimitOption();
+
+    /// <summary>Creates the <c>--truth-table-limit</c> option. <c>report</c> uses it too.</summary>
+    /// <returns>The option.</returns>
+    public static Option<int?> NewLimitOption()
+    {
+        Option<int?> option = new("--truth-table-limit")
+        {
+            Description =
+                "Print a truth table with up to this many terms (1 or more), with a TRE0034 warning above 8. "
+                + "There is no ceiling, and the table grows by 3^n rows.",
+            HelpName = "n",
+        };
+        option.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<int?>() is < 1)
+            {
+                result.AddError("--truth-table-limit must be 1 or more.");
+            }
+        });
+        return option;
+    }
+
     /// <summary>Gets the catalog id of an artifact, with <c>equation</c> resolved through the settings.</summary>
     /// <param name="id">The id as given.</param>
     /// <param name="settings">The settings.</param>
@@ -60,6 +85,7 @@ internal sealed class ArtifactOptions
     {
         command.Add(this.Artifact);
         command.Add(this.AllowLargerTruthTable);
+        command.Add(this.TruthTableLimit);
     }
 
     /// <summary>Gets the export options of a command.</summary>
@@ -68,6 +94,11 @@ internal sealed class ArtifactOptions
     /// <returns>The options.</returns>
     public ExportOptions ExportOptions(ParseResult parse, ToolSettings settings)
     {
-        return new ExportOptions { Settings = settings, AllowLargerTruthTable = parse.GetValue(this.AllowLargerTruthTable) };
+        return new ExportOptions
+        {
+            Settings = settings,
+            AllowLargerTruthTable = parse.GetValue(this.AllowLargerTruthTable),
+            TruthTableTermLimit = parse.GetValue(this.TruthTableLimit),
+        };
     }
 }

@@ -417,6 +417,25 @@ public sealed class ImportExportTests : IDisposable
         Assert.NotNull(services.Clipboard.Text);
     }
 
+    /// <summary>A term limit from the dialog is kept, starts the dialog the next time, and lets a table of that size through.</summary>
+    [Fact]
+    public void ShowMenu_TermLimit_IsKeptAndAllowsTheTable_Test()
+    {
+        (ExportController controller, _, ScriptedServices services, _) = CreateExport(
+            "p1 AND p2 AND p3 AND p4 AND p5 AND p6 AND p7 AND p8 AND p9"
+        );
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "truth-table-csv");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.Copy, string.Empty, false, 9));
+
+        bool done = controller.ShowMenu();
+        _ = controller.ShowMenu();
+
+        Assert.True(done);
+        Assert.Equal(9, controller.TruthTableTermLimit);
+        Assert.Equal(9, services.Dialogs.LastExportModel!.TruthTableTermLimit);
+        Assert.NotNull(services.Clipboard.Text);
+    }
+
     /// <summary>Cancel in the dialog exports nothing and changes nothing.</summary>
     [Fact]
     public void ShowMenu_Cancelled_ChangesNothing_Test()

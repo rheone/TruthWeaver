@@ -23,6 +23,8 @@ internal sealed class ExportDialog : Dialog
     private readonly List<ExportEntry> equations;
     private readonly Label typeHeading;
     private readonly Label optionsHeading;
+    private readonly Label hint;
+    private readonly Label limitLabel;
     private readonly Label destinationHeading;
     private readonly Label formatHeading;
     private readonly Label[] equationLabels;
@@ -103,6 +105,13 @@ internal sealed class ExportDialog : Dialog
             },
         ];
 
+        this.hint = new Label
+        {
+            X = 0,
+            Y = 9,
+            Width = Dim.Fill(),
+            Text = string.Empty,
+        };
         this.optionsHeading = new Label
         {
             Text = "Options",
@@ -116,16 +125,29 @@ internal sealed class ExportDialog : Dialog
             Y = 11,
             Value = model.AllowLargerTruthTable ? CheckState.Checked : CheckState.UnChecked,
         };
+        this.limitLabel = new Label
+        {
+            Text = "Truth table term limit (empty for none)",
+            X = 0,
+            Y = 12,
+        };
+        this.TermLimit = new TextField
+        {
+            X = 40,
+            Y = 12,
+            Width = 6,
+            Text = model.TruthTableTermLimit?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+        };
         this.destinationHeading = new Label
         {
             Text = "File or folder for To File",
             X = 0,
-            Y = 13,
+            Y = 14,
         };
         this.PathField = new TextField
         {
             X = 0,
-            Y = 14,
+            Y = 15,
             Width = Dim.Fill(),
         };
 
@@ -185,7 +207,8 @@ internal sealed class ExportDialog : Dialog
         }
 
         this.Add(this.Dialect, this.Envelope, this.Constants);
-        this.Add(this.optionsHeading, this.AllowLarger, this.destinationHeading, this.PathField);
+        this.Add(this.hint, this.optionsHeading, this.AllowLarger, this.limitLabel, this.TermLimit);
+        this.Add(this.destinationHeading, this.PathField);
         this.AddButton(this.CopyButton);
         this.AddButton(this.FileButton);
         this.AddButton(this.CancelButton);
@@ -213,6 +236,9 @@ internal sealed class ExportDialog : Dialog
 
     /// <summary>Gets the option that allows truth tables over the term cap.</summary>
     public CheckBox AllowLarger { get; }
+
+    /// <summary>Gets the field for the most terms of a truth table. Empty means no limit of its own.</summary>
+    public TextField TermLimit { get; }
 
     /// <summary>Gets the field for the file or folder path of To File.</summary>
     public TextField PathField { get; }
@@ -256,6 +282,9 @@ internal sealed class ExportDialog : Dialog
         {
             this.typeHeading.Dispose();
             this.formatHeading.Dispose();
+            this.hint.Dispose();
+            this.limitLabel.Dispose();
+            this.TermLimit.Dispose();
             this.optionsHeading.Dispose();
             this.destinationHeading.Dispose();
             foreach (Label label in this.equationLabels)
@@ -344,6 +373,7 @@ internal sealed class ExportDialog : Dialog
 
         this.Envelope.Enabled = string.Equals(this.Dialect.Text, "latex", StringComparison.Ordinal);
         ExportEntry? entry = this.ChosenEntry;
+        this.hint.Text = entry?.Hint ?? string.Empty;
         bool canCopy = entry is { Kind: ExportEntryKind.Artifact };
         this.CopyButton.Enabled = canCopy;
         this.CopyButton.IsDefault = canCopy;
@@ -361,6 +391,22 @@ internal sealed class ExportDialog : Dialog
 
     private void Finish(ExportAction action)
     {
+        string limitText = (this.TermLimit.Text ?? string.Empty).Trim();
+        int? limit = null;
+        if (limitText.Length > 0)
+        {
+            if (!int.TryParse(limitText, NumberStyles.None, CultureInfo.InvariantCulture, out int parsed) || parsed < 1)
+            {
+                // A limit that is not a whole number of 1 or more keeps the dialog open on the field, like an empty path does.
+                this.hint.Text = "The term limit must be a whole number of 1 or more, or empty.";
+                _ = this.TermLimit.SetFocus();
+                this.App?.Invoke(() => this.TermLimit.SetFocus());
+                return;
+            }
+
+            limit = parsed;
+        }
+
         string path = action == ExportAction.ToFile ? (this.PathField.Text ?? string.Empty).Trim() : string.Empty;
         if (action == ExportAction.ToFile && path.Length == 0)
         {
@@ -371,7 +417,7 @@ internal sealed class ExportDialog : Dialog
             return;
         }
 
-        this.Request = new ExportRequest(this.ChosenEntry, action, path, this.AllowLarger.Value == CheckState.Checked);
+        this.Request = new ExportRequest(this.ChosenEntry, action, path, this.AllowLarger.Value == CheckState.Checked, limit);
         this.Closed?.Invoke(this, EventArgs.Empty);
     }
 }
