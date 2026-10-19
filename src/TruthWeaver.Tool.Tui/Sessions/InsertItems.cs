@@ -71,6 +71,26 @@ internal static class InsertItems
         return RulePalette.Fill(entry, values, settings);
     }
 
+    /// <summary>Gets a value of an argument kind that the palette accepts: the placeholder of the Insert menu.</summary>
+    /// <param name="kind">The kind of the argument.</param>
+    /// <returns>The value as palette form text.</returns>
+    public static string Placeholder(LiteralKind kind)
+    {
+        return kind switch
+        {
+            LiteralKind.String => "text",
+            LiteralKind.Boolean => "true",
+            LiteralKind.DateTimeOffset => "2026-01-01T00:00:00Z",
+            LiteralKind.Guid => "00000000-0000-0000-0000-000000000000",
+            LiteralKind.StringArray => "a, b",
+            LiteralKind.Int64Array or LiteralKind.DecimalArray => "[0]",
+            LiteralKind.BooleanArray => "[true]",
+            LiteralKind.DateTimeOffsetArray => "[\"2026-01-01T00:00:00Z\"]",
+            LiteralKind.GuidArray => "[\"00000000-0000-0000-0000-000000000000\"]",
+            _ => "0",
+        };
+    }
+
     private static string ValueOf(PaletteEntry entry, PaletteArgument argument)
     {
         if (entry.Source == PaletteSource.Definition)
@@ -91,23 +111,6 @@ internal static class InsertItems
         return "\""
             + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)
             + "\"";
-    }
-
-    private static string Placeholder(LiteralKind kind)
-    {
-        return kind switch
-        {
-            LiteralKind.String => "text",
-            LiteralKind.Boolean => "true",
-            LiteralKind.DateTimeOffset => "2026-01-01T00:00:00Z",
-            LiteralKind.Guid => "00000000-0000-0000-0000-000000000000",
-            LiteralKind.StringArray => "a, b",
-            LiteralKind.Int64Array or LiteralKind.DecimalArray => "[0]",
-            LiteralKind.BooleanArray => "[true]",
-            LiteralKind.DateTimeOffsetArray => "[\"2026-01-01T00:00:00Z\"]",
-            LiteralKind.GuidArray => "[\"00000000-0000-0000-0000-000000000000\"]",
-            _ => "0",
-        };
     }
 
     private static List<InsertGroup> CreateOperators()

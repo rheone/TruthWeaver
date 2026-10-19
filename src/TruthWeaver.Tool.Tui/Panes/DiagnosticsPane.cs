@@ -53,7 +53,8 @@ internal sealed class DiagnosticsPane : IWorkbenchPane
         return
         [
             "The rule is empty. Type a rule in the editor,",
-            $"or press {SampleCommands.SamplesKey} to choose a sample rule. {WorkbenchMenus.MenuBarKey} opens the menus.",
+            $"or press {SampleCommands.SamplesKey} to choose a sample rule, or {GenerateCommands.GenerateKey} to generate one.",
+            $"{WorkbenchMenus.MenuBarKey} opens the menus.",
         ];
     }
 

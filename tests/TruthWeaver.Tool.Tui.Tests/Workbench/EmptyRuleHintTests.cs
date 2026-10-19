@@ -38,15 +38,18 @@ public sealed class EmptyRuleHintTests
         Assert.DoesNotContain(DiagnosticsPane.EmptyRuleHint()[0], lines);
     }
 
-    /// <summary>The hint names the keys of the Samples command and of the menu bar, as the command list binds them.</summary>
+    /// <summary>The hint names the keys of the Samples command, the Generate rule command and the menu bar, as the command list binds them.</summary>
     [Fact]
     public void EmptyRuleHint_Keys_MatchTheKeyBindings_Test()
     {
         Key samples = WorkbenchCommands.Default.Single(c => c.Title == "Samples...").Key;
+        Key generate = WorkbenchCommands.Default.Single(c => c.Title == "Generate rule...").Key;
 
         string hint = string.Join('\n', DiagnosticsPane.EmptyRuleHint());
 
         Assert.Contains(samples.ToString(), hint, StringComparison.Ordinal);
+        Assert.Contains(generate.ToString(), hint, StringComparison.Ordinal);
+        Assert.NotEqual(Key.Empty, generate);
         Assert.Contains(WorkbenchMenus.MenuBarKey.ToString(), hint, StringComparison.Ordinal);
         Assert.NotEqual(Key.Empty, samples);
     }

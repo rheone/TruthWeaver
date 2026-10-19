@@ -101,6 +101,12 @@ The File menu has a **Samples** submenu, and Shift+F9 opens the same list in a d
 
 The workbench compiles with an empty registry, so it has no collection to range over. A rule with `FORALL` or `EXISTS` reports `UnknownCollection` (`TRE0042`) here. The Quantifiers sample shows this diagnostic on purpose: its notes explain that a host must declare the collection. Every other sample compiles. See [Quantifiers](rule-text.md#quantifiers) for the syntax.
 
+## Generate a rule
+
+Rule > Generate rule (Shift+F5) replaces the rule with a semi-random rule that compiles, so you can try the panes without writing a rule. Three questions come one after the other: the seed (blank is a random seed), the depth (1 to 5, default 3) and the operator families. The families are all of them (the default), the connectives, the cardinality family, `If`, the inspections with `COALESCE`, the connectives with the cardinality family, or none (a single predicate). The terms are calls of predicates from the catalog with sample arguments, so the rule reads like a real rule.
+
+The same seed, depth and families give the same rule text. The status line shows the seed, so you can repeat or share a rule. Some generated rules do not compile; the action then tries again, up to 50 times, and says so on the status line if none compiles (try another seed). It never changes the rule in that case. Unsaved changes need your consent first, as for Ctrl+O. The generated rule is one undo step, so Ctrl+Z gives back the rule you had. A generated rule is rule text: when the open rule is JSON or YAML, the editor changes to rule text.
+
 ## Insert menu
 
 The Insert menu puts rule text into the editor at the cursor. If text is selected, the insert replaces the selection. The cursor goes after the inserted text, and the insert is one step in the undo history (Ctrl+Z). No entry has a key; open the menu with Alt+I.
@@ -585,6 +591,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 | --- | --- |
 | F4 | Opens the Convert dialog: canonical rule text, formatted rule text, JSON or YAML. |
 | Shift+F4 | Converts the rule to the next format: rule text, JSON, YAML. |
+| Shift+F5 | Opens the Generate rule dialogs: seed, depth and operator families. |
 | Ctrl+F2 | Gives every term the value `Unknown`. |
 | Ctrl+F3 | Moves the policy for `Unknown` to the next one. |
 | Ctrl+F4 | Loads a variables file (JSON or YAML). |
