@@ -463,6 +463,13 @@ internal sealed class WorkbenchWindow : Window
             return true;
         }
 
+        // Esc leaves the step mode of the evaluation. Outside the mode it is not a command key.
+        if (key == Key.Esc && EvaluationStepController.For(this.Workbench) is { IsActive: true } stepping)
+        {
+            stepping.Exit();
+            return true;
+        }
+
         // A command with no key is in the menus only.
         WorkbenchCommand? command = this.commands.FirstOrDefault(c => c.Key != Key.Empty && c.Key == key);
         if (command is null)

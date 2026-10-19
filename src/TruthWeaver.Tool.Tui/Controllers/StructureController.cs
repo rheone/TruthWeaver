@@ -113,12 +113,14 @@ internal sealed class StructureController
             }
 
             CaseCoverage coverage = this.workbench.Coverage;
+            EvaluationStepController stepping = EvaluationStepController.For(this.workbench);
             return
             [
                 .. current.Nodes.Select(n =>
                     new string(' ', n.Depth * 2)
                     + n.Label
                     + this.BadgeOf(n)
+                    + stepping.MarkOf(n.Path)
                     + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
                 ),
             ];

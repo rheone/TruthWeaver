@@ -232,6 +232,14 @@ The Tree pane is the third pane of the right region. It lists the nodes of the r
 
 Each term ends with a badge that gives its value under the [Assign pane](#assign-values), as a word: `[True]`, `[False]` or `[Unknown]`. A term that has no value there is `[Unknown]`. A term with a `from(...)` source shows the value of its resolved reference, or `[Unknown: <reason>]` while the reference has no value: the message of the fault, or `no data yet`. Operators and constants have no badge. When the selected node is a term, the status line adds its value, such as `isActive = True`. The badges and the status line follow each change of a value, of the variables or of the rule.
 
+### Step through an evaluation
+
+Analyze > Next evaluation step (Shift+F12) and Previous evaluation step (Shift+F11) walk through the evaluation of the rule under the values of the Assign pane, one node at a time. The steps use the trace of the evaluation, in evaluation order: the operands of an operator first, then the operator. The first press starts at the first step. Each step selects its node in the Tree pane and the status line says what happened, such as `Step 2 of 3: b = skipped`.
+
+The line of each node that a step has reached ends with `=> ` and the value as a word: `True`, `False` or `Unknown`. A node that short-circuiting never evaluated shows `=> skipped`; the operands under a skipped node have no steps. A term that faulted adds the message of the fault to its step, such as `Step 1 of 3: isActive = Unknown (fault: ...)`. Stepping back removes the mark of the step you leave. Stepping changes no result.
+
+Esc leaves the step mode and removes the marks. A change of a value or of the rule leaves it too, because the steps would describe the old evaluation.
+
 These keys work when the Tree pane has the focus. Each one acts on the selected node.
 
 | Key | Does |
@@ -606,6 +614,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 | Shift+F7 | Turns strict validation on or off. |
 | Ctrl+F5 | Saves the assignment as a case of the rule test file. |
 | Ctrl+F7 | Runs the rule test file on the open rule. |
+| Shift+F12, Shift+F11 | Goes to the next or previous step of the evaluation in the Tree pane. Esc leaves the step mode. |
 | Ctrl+G | Compares the rule with the last saved or accepted version. |
 | Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
 

@@ -82,6 +82,7 @@ internal static class WorkbenchCommands
         .. EmbeddedRuleCommands.All,
         .. ImportExportCommands.All,
         .. AssignmentCommands.Default,
+        .. StepCommands.All,
         .. RuleTestCommands.Default,
         .. RewriteCommands.Default,
         .. CompareCommands.Default,

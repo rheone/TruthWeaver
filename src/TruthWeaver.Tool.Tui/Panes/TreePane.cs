@@ -92,6 +92,9 @@ internal sealed class TreePane(WorkbenchServices? services) : IWorkbenchPane
 
         // A case that is added, changed or removed changes the marks and the summary.
         workbench.RuleTestsChanged += (_, _) => view.Show();
+
+        // A step of the evaluation marks the nodes it has reached.
+        EvaluationStepController.For(workbench).Changed += (_, _) => view.Show();
         view.Show();
         return view;
     }

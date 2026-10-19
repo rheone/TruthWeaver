@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] Next and Previous keys move the highlight through the trace.
-- [ ] Each step shows the node, its value as a word and, for a skipped node, the word `skipped`.
-- [ ] A fault shows its message at the node.
-- [ ] A test steps a rule with an `AND` short-circuit and a skipped node.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] Next and Previous keys move the highlight through the trace.
+- [x] Each step shows the node, its value as a word and, for a skipped node, the word `skipped`.
+- [x] A fault shows its message at the node.
+- [x] A test steps a rule with an `AND` short-circuit and a skipped node.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
