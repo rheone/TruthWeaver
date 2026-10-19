@@ -332,7 +332,7 @@ The search treats the terms as independent, so an entry can name values that can
 
 ## Themes and colors
 
-The workbench has a light and a dark color set. The `theme` setting of `truthweaver.json` selects one at start-up:
+The workbench has a light and a dark color set. Each set paints its own background in every pane and dialog: the light set draws dark text on a light background, and the dark set draws light text on a dark background. The background of your terminal does not show through. The `theme` setting of `truthweaver.json` selects a set at start-up:
 
 | `theme` | Colors |
 | --- | --- |
@@ -342,9 +342,18 @@ The workbench has a light and a dark color set. The `theme` setting of `truthwea
 
 Ctrl+F1 switches between the light and the dark set, in every pane and dialog at once. The switch does not write the `theme` setting. The workbench keeps the choice in the [preferences file](#preferences-file), and the next start uses it in place of the setting.
 
-The value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) against the background that they were chosen for. The workbench draws on the background of your terminal, so a terminal with a very different background can lower the contrast.
+Each set has three backgrounds and one text color:
 
-| Mark | Light set (on white) | Dark set (on black) |
+| Color | Light set | Dark set |
+| --- | --- | --- |
+| Pane background | white `#FFFFFF` | black `#000000` |
+| Dialog and menu background | light gray `#F0F0F0` | dark gray `#202020` |
+| Focus and selection background | light blue `#D6E8FF` | dark blue `#102848` |
+| Text | near black `#181818` | light gray `#E6E6E6` |
+
+The text and the value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) against each of the three backgrounds of their set.
+
+| Mark | Light set | Dark set |
 | --- | --- | --- |
 | `True` | green `#006E00` | green `#50FF50` |
 | `False` | red `#B40000` | red `#FF5F5F` |

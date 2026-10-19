@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] The light set paints a light background in every pane and dialog; the dark set paints a dark one.
-- [ ] The value marks keep a contrast ratio of at least 4.5 : 1 against the background chosen for each set.
-- [ ] `auto` still follows the terminal background (OSC 11) and falls back to dark; Ctrl+F1 and the persisted theme still work.
-- [ ] `NO_COLOR` still draws with the terminal colors only.
-- [ ] Tests check the palette contrast for both sets.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] The light set paints a light background in every pane and dialog; the dark set paints a dark one.
+- [x] The value marks keep a contrast ratio of at least 4.5 : 1 against the background chosen for each set.
+- [x] `auto` still follows the terminal background (OSC 11) and falls back to dark; Ctrl+F1 and the persisted theme still work.
+- [x] `NO_COLOR` still draws with the terminal colors only.
+- [x] Tests check the palette contrast for both sets.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
