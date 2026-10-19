@@ -3,6 +3,7 @@ namespace TruthWeaver.Tool.Tui.Tests.Theme;
 using Terminal.Gui.Configuration;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
+using Terminal.Gui.ViewBase;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Assignment;
@@ -11,6 +12,7 @@ using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Theme;
+using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
 using Attribute = Terminal.Gui.Drawing.Attribute;
 
@@ -135,16 +137,20 @@ public sealed class ThemeTests
         Assert.Equal(expected, result);
     }
 
-    /// <summary>Every color of both palettes keeps the contrast the page promises against the reference background.</summary>
+    /// <summary>
+    /// Every text color of both palettes keeps the contrast the page promises against each background of its set: the
+    /// panes, the dialogs and the selection.
+    /// </summary>
     /// <param name="theme">The name of the theme.</param>
     [Theory]
     [InlineData("Light")]
     [InlineData("Dark")]
-    public void Palette_EveryColor_KeepsTheMinimumContrast_Test(string theme)
+    public void Palette_EveryColor_KeepsTheMinimumContrastOnEveryBackground_Test(string theme)
     {
         ThemePalette palette = ThemePalette.For(Enum.Parse<ThemeVariant>(theme), noColor: false);
         Color[] colors =
         [
+            palette.Text,
             palette.True,
             palette.False,
             palette.Unknown,
@@ -152,12 +158,96 @@ public sealed class ThemeTests
             palette.Error,
             palette.Warning,
             palette.Info,
+            palette.Predicate,
+            palette.Operator,
+            palette.Variable,
+            palette.Constant,
+            palette.Description,
         ];
+        Color[] backgrounds = [palette.Background, palette.Surface, palette.Selection];
 
         Assert.All(
-            colors,
-            color => Assert.True(ThemePalette.ContrastRatio(color, palette.Background) >= ThemePalette.MinimumContrast)
+            backgrounds,
+            background =>
+                Assert.All(
+                    colors,
+                    color => Assert.True(ThemePalette.ContrastRatio(color, background) >= ThemePalette.MinimumContrast)
+                )
         );
+    }
+
+    /// <summary>The light set paints light backgrounds with dark text, and the dark set paints dark backgrounds with light text.</summary>
+    /// <param name="theme">The name of the theme.</param>
+    /// <param name="light">Whether the backgrounds of the set are light.</param>
+    [Theory]
+    [InlineData("Light", true)]
+    [InlineData("Dark", false)]
+    public void Palette_Backgrounds_MatchTheSet_Test(string theme, bool light)
+    {
+        ThemePalette palette = ThemePalette.For(Enum.Parse<ThemeVariant>(theme), noColor: false);
+        Color black = new(0, 0, 0);
+        Color white = new(255, 255, 255);
+
+        Assert.All(
+            [palette.Background, palette.Surface, palette.Selection],
+            background =>
+                Assert.Equal(
+                    light,
+                    ThemePalette.ContrastRatio(background, black) > ThemePalette.ContrastRatio(background, white)
+                )
+        );
+        Assert.Equal(light, ThemePalette.ContrastRatio(palette.Text, white) > ThemePalette.ContrastRatio(palette.Text, black));
+    }
+
+    /// <summary>
+    /// Applying a set replaces every Terminal.Gui scheme with one that paints the background of the set, so no pane or
+    /// dialog takes the background of the terminal.
+    /// </summary>
+    /// <param name="theme">The name of the theme.</param>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Apply_Theme_PaintsTheBackgroundOfTheSetInEveryScheme_Test(string theme)
+    {
+        ThemeVariant variant = Enum.Parse<ThemeVariant>(theme);
+        ThemePalette palette = ThemePalette.For(variant, noColor: false);
+
+        WorkbenchAppearance.Apply(variant, noColor: false);
+        IReadOnlyCollection<string> names = [.. SchemeManager.GetSchemeNames()];
+        Dictionary<string, Scheme> schemes = names.ToDictionary(name => name, SchemeManager.GetScheme);
+        WorkbenchAppearance.Apply(ThemeVariant.Dark, noColor: false);
+
+        Assert.Contains("Base", names);
+        Assert.Contains("Dialog", names);
+        Assert.Equal(palette.Background, schemes["Base"].Normal.Background);
+        Assert.Equal(palette.Text, schemes["Base"].Normal.Foreground);
+        Assert.Equal(palette.Surface, schemes["Dialog"].Normal.Background);
+        Assert.All(
+            schemes.Values,
+            scheme =>
+            {
+                Assert.Contains(scheme.Normal.Background, new[] { palette.Background, palette.Surface });
+                Assert.Equal(palette.Selection, scheme.Focus.Background);
+                Assert.NotEqual(Color.None, scheme.Normal.Foreground);
+            }
+        );
+    }
+
+    /// <summary>With NO_COLOR, applying either set leaves every Terminal.Gui scheme with the terminal colors only.</summary>
+    /// <param name="theme">The name of the theme.</param>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Apply_NoColor_LeavesEverySchemeMonochrome_Test(string theme)
+    {
+        WorkbenchAppearance.Apply(Enum.Parse<ThemeVariant>(theme), noColor: true);
+        Scheme[] schemes = [.. SchemeManager.GetSchemeNames().Select(SchemeManager.GetScheme)];
+
+        // The schemes are process-wide; the other tests in the collection expect the default dark set.
+        WorkbenchAppearance.Apply(ThemeVariant.Dark, noColor: false);
+
+        Assert.NotEmpty(schemes);
+        Assert.All(schemes, scheme => Assert.Equal(WorkbenchAppearance.MonochromeScheme(), scheme));
     }
 
     /// <summary>The setting picks the color set, and auto asks the terminal and falls back to dark when it cannot tell.</summary>
@@ -251,6 +341,26 @@ public sealed class ThemeTests
         Assert.Same(ThemePalette.Dark, harness.Workbench.Palette);
     }
 
+    /// <summary>
+    /// After Ctrl+F1 every view of the window draws on a background of the light set, and after the second Ctrl+F1 on a
+    /// background of the dark set; none takes the background of the terminal. A text field shows the selection background.
+    /// </summary>
+    [Fact]
+    public void CtrlF1_Theme_EveryViewDrawsOnTheBackgroundOfTheSet_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b");
+
+        harness.Press(Key.F1.WithCtrl);
+        Attribute[] light = [.. Descendants(harness.Window).Select(view => view.GetAttributeForRole(VisualRole.Normal))];
+        harness.Press(Key.F1.WithCtrl);
+        Attribute[] dark = [.. Descendants(harness.Window).Select(view => view.GetAttributeForRole(VisualRole.Normal))];
+
+        Assert.All(light, role => Assert.Contains(role.Background, Backgrounds(ThemePalette.Light)));
+        Assert.All(dark, role => Assert.Contains(role.Background, Backgrounds(ThemePalette.Dark)));
+        Assert.Equal(ThemePalette.Light.Background, light[0].Background);
+        Assert.Equal(ThemePalette.Light.Text, light[0].Foreground);
+    }
+
     /// <summary>The key help lists the key that switches the theme.</summary>
     [Fact]
     public void HelpText_DefaultCommands_ListsTheThemeKey_Test()
@@ -259,5 +369,82 @@ public sealed class ThemeTests
 
         Assert.Contains("Ctrl+F1", help, StringComparison.Ordinal);
         Assert.Contains("theme", help, StringComparison.Ordinal);
+    }
+
+    /// <summary>The four syntax kinds and the description text each have a color of their own in both sets.</summary>
+    /// <param name="theme">The name of the theme.</param>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Palette_EverySyntaxKind_HasItsOwnColor_Test(string theme)
+    {
+        ThemePalette palette = ThemePalette.For(Enum.Parse<ThemeVariant>(theme), noColor: false);
+
+        Color[] colors = [.. SyntaxKinds.All.Select(palette.Of)];
+
+        Assert.Equal(5, colors.Distinct().Count());
+        Assert.DoesNotContain(palette.Text, colors);
+        Assert.All(colors, color => Assert.NotEqual(Color.None, color));
+    }
+
+    /// <summary>With NO_COLOR the five kinds have no color and differ by weight; with color the style stays plain.</summary>
+    [Fact]
+    public void StyleOf_NoColorSyntaxKind_DiffersForEachKind_Test()
+    {
+        ThemePalette palette = ThemePalette.Plain;
+
+        TextStyle[] styles = [.. SyntaxKinds.All.Select(palette.StyleOf)];
+
+        Assert.Equal(5, styles.Distinct().Count());
+        Assert.DoesNotContain(TextStyle.None, styles);
+        Assert.All(SyntaxKinds.All, kind => Assert.Equal(Color.None, palette.Of(kind)));
+        Assert.All(SyntaxKinds.All, kind => Assert.Equal(TextStyle.None, ThemePalette.Dark.StyleOf(kind)));
+    }
+
+    /// <summary>The key help writes the name of every syntax kind, so the colors are never the only mark.</summary>
+    [Fact]
+    public void HelpText_DefaultCommands_NamesEverySyntaxKind_Test()
+    {
+        string help = WorkbenchWindow.HelpText(WorkbenchCommands.Default);
+
+        Assert.Contains(SyntaxKinds.LegendText(), help, StringComparison.Ordinal);
+        Assert.Contains("NO_COLOR", help, StringComparison.Ordinal);
+    }
+
+    /// <summary>The legend names each kind in the scheme of that kind, with a style of its own when there is no color.</summary>
+    /// <param name="noColor">Whether the palette has no color.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SyntaxLegend_EveryKind_IsNamedInItsOwnScheme_Test(bool noColor)
+    {
+        ThemePalette palette = ThemePalette.For(ThemeVariant.Dark, noColor);
+        using SyntaxLegend legend = new(palette);
+
+        View[] labels = [.. legend.SubViews];
+
+        Assert.Equal(SyntaxKinds.All.Select(SyntaxKinds.NameOf), labels.Select(l => l.Text));
+        Assert.Equal(
+            SyntaxKinds.All.Select(k => SyntaxLegend.SchemeOf(k, palette).Normal),
+            labels.Select(l => l.GetAttributeForRole(VisualRole.Normal))
+        );
+    }
+
+    private static Color[] Backgrounds(ThemePalette palette)
+    {
+        return [palette.Background, palette.Surface, palette.Selection];
+    }
+
+    // The view itself first, then every view inside it, depth first.
+    private static IEnumerable<View> Descendants(View view)
+    {
+        yield return view;
+        foreach (View child in view.SubViews)
+        {
+            foreach (View descendant in Descendants(child))
+            {
+                yield return descendant;
+            }
+        }
     }
 }

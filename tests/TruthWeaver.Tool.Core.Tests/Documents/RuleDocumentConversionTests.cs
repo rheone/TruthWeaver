@@ -43,6 +43,24 @@ public sealed class RuleDocumentConversionTests
         Assert.Equal(RuleFormat.Text, document.Format);
     }
 
+    /// <summary>The pretty form of rule text is one undo step, keeps the notes and compiles back to an equal tree.</summary>
+    [Fact]
+    public void ConvertTo_PrettyRuleText_IsOneUndoStepAndKeepsTheTreeAndTheNotes_Test()
+    {
+        string rule = "/* All. */ (" + string.Join(" AND ", Enumerable.Range(0, 30).Select(i => $"/* N{i}. */ term{i}")) + ")";
+        RuleDocument document = RuleDocument.Create(rule);
+        string before = document.Rule!.PrintJson(includeNotes: true);
+
+        ToolResult<string> result = document.ConvertTo(RuleFormat.Text, pretty: true);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains('\n', document.Text);
+        Assert.Equal(before, document.Rule.PrintJson(includeNotes: true));
+        Assert.Equal(before, RuleDocument.Create(document.Text).Rule!.PrintJson(includeNotes: true));
+        document.Undo();
+        Assert.Equal(rule, document.Text);
+    }
+
     /// <summary>Text that does not compile is not converted, and the text stays.</summary>
     [Fact]
     public void ConvertTo_TextWithErrors_ChangesNothing_Test()

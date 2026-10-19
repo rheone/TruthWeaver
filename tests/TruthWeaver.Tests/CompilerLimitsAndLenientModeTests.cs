@@ -197,4 +197,45 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.False(result.Succeeded);
         Assert.Null(result.CompiledRule);
     }
+
+    /// <summary>Lenient mode reports a reserved word used as a term as a diagnostic that names the word, and never throws.</summary>
+    /// <param name="source">The rule text.</param>
+    /// <param name="word">The reserved word.</param>
+    [Theory]
+    [InlineData("a AND OR", "OR")]
+    [InlineData("a AND AND", "AND")]
+    public void Lenient_ReservedWordAsTerm_IsDiagnosticNamingTheWord_Test(string source, string word)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
+            new CompilerOptions(Mode: CompilationMode.Lenient)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(source);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error && d.Message.Contains(word));
+    }
+
+    /// <summary>Lenient mode reports a JSON term named with a reserved word as an UnknownPredicate error.</summary>
+    /// <param name="word">The reserved word.</param>
+    [Theory]
+    [InlineData("T")]
+    [InlineData("F")]
+    [InlineData("U")]
+    [InlineData("OR")]
+    public void Lenient_ReservedWordAsJsonTerm_IsUnknownPredicateError_Test(string word)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
+            new CompilerOptions(Mode: CompilationMode.Lenient)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson($"{{\"predicate\": \"{word}\"}}");
+
+        Assert.False(result.Succeeded);
+        Diagnostic error = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
+        Assert.Contains($"'{word}'", error.Message);
+    }
 }

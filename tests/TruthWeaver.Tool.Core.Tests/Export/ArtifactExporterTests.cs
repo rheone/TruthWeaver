@@ -271,6 +271,56 @@ public sealed class ArtifactExporterTests
         Assert.False(File.Exists(directory.File("truth-table-csv.csv")));
     }
 
+    /// <summary>With the default limit, the <c>TWT0015</c> warning names the cap of 8 terms that applies to the export.</summary>
+    [Fact]
+    public void RenderAll_DefaultLimit_SkipWarningNamesTheCap_Test()
+    {
+        ToolResult<ExportBundle> result = ArtifactExporter.RenderAll(RuleLoader.LoadString(NineTerms).Value!);
+
+        Assert.All(
+            result.Diagnostics.Where(d => d.Code == ToolDiagnosticCodes.ArtifactSkipped),
+            d => Assert.Contains("term limit of this export is 8.", d.Message, StringComparison.Ordinal)
+        );
+        Assert.Equal(5, result.Value!.Manifest.Skipped.Count);
+    }
+
+    /// <summary>A raised term limit exports the truth tables of a rule over the default cap and skips nothing.</summary>
+    [Fact]
+    public void RenderAll_RaisedTermLimit_ExportsTheTruthTables_Test()
+    {
+        ToolResult<ExportBundle> result = ArtifactExporter.RenderAll(
+            RuleLoader.LoadString(NineTerms).Value!,
+            new ExportOptions { TruthTableTermLimit = 9 }
+        );
+
+        Assert.Empty(result.Value!.Manifest.Skipped);
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == ToolDiagnosticCodes.ArtifactSkipped);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.TruthTableCapRaised);
+    }
+
+    /// <summary>A term limit below the rule's term count skips the tables, and the warning names that limit.</summary>
+    [Fact]
+    public void RenderAll_LowTermLimit_SkipWarningNamesTheConfiguredLimit_Test()
+    {
+        ToolResult<ExportBundle> result = ArtifactExporter.RenderAll(
+            RuleLoader.LoadString(NineTerms).Value!,
+            new ExportOptions { TruthTableTermLimit = 8 }
+        );
+
+        Assert.All(
+            result.Diagnostics.Where(d => d.Code == ToolDiagnosticCodes.ArtifactSkipped),
+            d => Assert.Contains("term limit of this export is 8.", d.Message, StringComparison.Ordinal)
+        );
+        Assert.NotEmpty(result.Value!.Manifest.Skipped);
+    }
+
+    /// <summary>A truth-table term limit below 1 is rejected.</summary>
+    [Fact]
+    public void ExportOptions_TruthTableTermLimitBelowOne_IsRejected_Test()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ExportOptions { TruthTableTermLimit = 0 });
+    }
+
     /// <summary>An export of a rule that does not compile writes nothing and gives the compile diagnostics.</summary>
     [Fact]
     public void ExportAll_RuleThatDoesNotCompile_WritesNothing_Test()

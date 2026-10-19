@@ -12,6 +12,8 @@ internal static class RewriteCommands
     [
         new(
             Key.R.WithCtrl,
+            CommandGroup.Rule,
+            "Rewrite...",
             "Rewrite the rule (Simplify, normal forms, ...) and show the result in the Rewrite pane",
             w =>
             {
@@ -23,6 +25,8 @@ internal static class RewriteCommands
         ),
         new(
             Key.G.WithCtrl,
+            CommandGroup.Analyze,
+            "Compare with the saved version",
             "Compare the rule with the last saved or accepted version",
             w =>
             {

@@ -13,6 +13,7 @@ using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
+using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
@@ -113,12 +114,40 @@ internal sealed class StructureController
             }
 
             CaseCoverage coverage = this.workbench.Coverage;
+            EvaluationStepController stepping = EvaluationStepController.For(this.workbench);
             return
             [
                 .. current.Nodes.Select(n =>
-                    new string(' ', n.Depth * 2) + n.Label + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
+                    new string(' ', n.Depth * 2)
+                    + n.Label
+                    + this.BadgeOf(n)
+                    + stepping.MarkOf(n.Path)
+                    + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
                 ),
             ];
+        }
+    }
+
+    /// <summary>
+    /// Gets the value of the selected node for the status line, such as <c>hasRole(role: "admin") = True</c>, or
+    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, the text has errors (the tree is then
+    /// the last valid one and may not match the text), or the rule has no values yet.
+    /// </summary>
+    public string? SelectedValueText
+    {
+        get
+        {
+            // The committed document: reading Document would apply the pending text and end the pause.
+            if (
+                this.workbench.CommittedDocument.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+                || this.Tree is null
+                || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node
+            )
+            {
+                return null;
+            }
+
+            return this.ValueTextOf(node) is { } value ? $"{node.Label} = {value}" : null;
         }
     }
 
@@ -154,6 +183,46 @@ internal sealed class StructureController
         ArgumentNullException.ThrowIfNull(workbench);
 
         return Controllers.GetValue(workbench, key => new StructureController(key, services));
+    }
+
+    /// <summary>
+    /// Gets the value of the term at an offset of the rule text, for the status line, such as
+    /// <c>hasRole(role: "admin") = True</c>. The cursor in a predicate call or in its arguments (a <c>from(...)</c> variable
+    /// too) names that term.
+    /// </summary>
+    /// <param name="offset">The cursor offset in the text of the committed document.</param>
+    /// <returns>
+    /// The text, or <see langword="null"/> when the cursor is in no term, the text has errors, the rule is not rule text, the
+    /// call is not a term of the rule, or no rule has compiled.
+    /// </returns>
+    public string? ValueTextAt(int offset)
+    {
+        // The committed document: reading Document would apply the pending text and end the pause.
+        RuleDocument document = this.workbench.CommittedDocument;
+        if (
+            document.Format != RuleFormat.Text
+            || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+            || TermCalls.CallTextAt(document.Text, offset) is not { } call
+        )
+        {
+            return null;
+        }
+
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (!outcome.HasRule)
+        {
+            return null;
+        }
+
+        // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
+        TermAssignment? term = outcome.Terms.FirstOrDefault(t => TermCalls.SameCall(t.Display, call));
+        if (term is null)
+        {
+            TermAssignment[] named = [.. outcome.Terms.Where(t => TermCalls.NameOf(t.Display) == TermCalls.NameOf(call))];
+            term = named.Length == 1 ? named[0] : null;
+        }
+
+        return term is not null && this.ValueTextOf(term) is { } value ? $"{term.Display} = {value}" : null;
     }
 
     /// <summary>Selects the node at an index of <see cref="Lines"/>.</summary>
@@ -319,12 +388,97 @@ internal sealed class StructureController
 
     private static string GroupLine(string family)
     {
-        return $"--- {family} ---";
+        return ChoiceDialog.HeaderLine(family);
     }
 
     private static string CatalogLine(CatalogPredicate predicate)
     {
         return predicate.Entry.Display + " - " + predicate.Label;
+    }
+
+    // The indexes of the palette list that a search shows. An empty search shows the whole list. Otherwise the entries are
+    // the matches of the catalog search (name, label, family, description words and aliases) and the own entries (schema
+    // file and rule) whose line holds every word, each catalog match under its family line.
+    private static List<int> FilterPalette(IReadOnlyList<PaletteEntry?> targets, string query)
+    {
+        string[] words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0)
+        {
+            return [.. Enumerable.Range(0, targets.Count)];
+        }
+
+        HashSet<PaletteEntry> found = [.. PredicateCatalog.Search(query).Select(p => p.Entry)];
+        List<int> shown = [];
+        int group = -1;
+
+        // The first two entries are the typed expression and the catalog search; they are not matches.
+        for (int i = 2; i < targets.Count; i++)
+        {
+            if (targets[i] is not { } entry)
+            {
+                group = i;
+            }
+            else if (entry.Source == PaletteSource.Catalog)
+            {
+                if (found.Contains(entry))
+                {
+                    if (group >= 0)
+                    {
+                        shown.Add(group);
+                        group = -1;
+                    }
+
+                    shown.Add(i);
+                }
+            }
+            else if (
+                words.All(w =>
+                    entry.Display.Contains(w, StringComparison.OrdinalIgnoreCase)
+                    || entry.Description.Contains(w, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                shown.Add(i);
+            }
+        }
+
+        return shown;
+    }
+
+    // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
+    private string? ValueTextOf(RuleTreeNode node)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (!outcome.HasRule || outcome.Terms.FirstOrDefault(t => t.Display == node.Label) is not { } term)
+        {
+            return null;
+        }
+
+        return this.ValueTextOf(term);
+    }
+
+    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
+    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    private string ValueTextOf(TermAssignment term)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (term.Key is not null)
+        {
+            return term.Value.ToString();
+        }
+
+        string? fault = outcome
+            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
+            .Select(f => f[(term.Display.Length + 1)..].Trim())
+            .FirstOrDefault();
+        return $"Unknown: {fault ?? "no data yet"}";
+    }
+
+    // The badge at the end of the line of a term in the tree. It is text, so it does not depend on the color. Other nodes
+    // have no badge.
+    private string BadgeOf(RuleTreeNode node)
+    {
+        return node.Kind == RuleTreeNodeKind.Term && this.ValueTextOf(node) is { } value ? $"  [{value}]" : string.Empty;
     }
 
     private bool Edit(Func<RuleTreeEditor, RuleTreeEdit> edit)
@@ -405,7 +559,7 @@ internal sealed class StructureController
         PaletteEntry? picked = null;
         while (picked is null)
         {
-            int? choice = this.Services.Dialogs.Choose(title, items);
+            int? choice = this.Services.Dialogs.ChooseFiltered(title, items, query => FilterPalette(targets, query));
             switch (choice)
             {
                 case null:
@@ -421,7 +575,7 @@ internal sealed class StructureController
 
                     break;
                 default:
-                    // A group line is not an entry; the list opens again.
+                    // The dialog never returns a group line; a null target is only a guard.
                     picked = targets[choice.Value];
                     break;
             }
@@ -494,7 +648,7 @@ internal sealed class StructureController
 
         while (this.Services.Dialogs.Choose($"Catalog: {query.Trim()}", items) is int choice)
         {
-            // A group line is not an entry; the list opens again.
+            // The dialog never returns a group line; the check is only a guard.
             if (targets[choice] is { } entry)
             {
                 return entry;

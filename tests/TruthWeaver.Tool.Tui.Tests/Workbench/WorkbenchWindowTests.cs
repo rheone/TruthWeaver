@@ -85,13 +85,13 @@ public sealed class WorkbenchWindowTests
         Assert.Contains("Formatted as canonical", harness.Window.StatusText, StringComparison.Ordinal);
     }
 
-    /// <summary>F1 shows the key help overlay, which lists every key; Esc closes it.</summary>
+    /// <summary>Shift+F1 shows the key reference overlay, which lists every key by menu; Esc closes it.</summary>
     [Fact]
-    public void F1_ThenEsc_ShowsAndClosesTheKeyHelp_Test()
+    public void ShiftF1_ThenEsc_ShowsAndClosesTheKeyReference_Test()
     {
         using WorkbenchHarness harness = new();
 
-        harness.Press(Key.F1);
+        harness.Press(Key.F1.WithShift);
         bool shown = harness.Window.IsHelpVisible;
         harness.Press(Key.Esc);
 

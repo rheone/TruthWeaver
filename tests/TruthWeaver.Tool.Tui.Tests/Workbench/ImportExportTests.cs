@@ -165,6 +165,73 @@ public sealed class ImportExportTests : IDisposable
         Assert.Equal(RuleFormat.Text, workbench.Document.Format);
     }
 
+    /// <summary>The Convert dialog is a list of canonical text, formatted text, JSON and YAML, with a button named Convert.</summary>
+    [Fact]
+    public void Convert_Opened_ListsTheFourTargetsAndNamesItsButton_Test()
+    {
+        (ImportController controller, _, ScriptedServices services, _) = Create("a AND b");
+
+        bool converted = controller.Convert();
+
+        Assert.False(converted);
+        Assert.Equal(["Rule text, canonical", "Rule text, formatted (pretty)", "JSON", "YAML"], services.Dialogs.LastItems);
+        Assert.Equal("_Convert", services.Dialogs.LastAccept);
+    }
+
+    /// <summary>Choosing JSON or YAML in the Convert dialog converts the rule and keeps the tree.</summary>
+    [Theory]
+    [InlineData(2, RuleFormat.Json)]
+    [InlineData(3, RuleFormat.Yaml)]
+    public void Convert_ChoosingAFormat_ConvertsTheRule_Test(int choice, RuleFormat expected)
+    {
+        (ImportController controller, Workbench workbench, ScriptedServices services, _) = Create("/* Note. */ (a AND b)");
+        string before = workbench.Document.Rule!.PrintJson(includeNotes: true);
+        services.Dialogs.Choices.Enqueue(choice);
+
+        bool converted = controller.Convert();
+
+        Assert.True(converted);
+        Assert.Equal(expected, workbench.Document.Format);
+        Assert.Equal(before, workbench.Document.Rule.PrintJson(includeNotes: true));
+    }
+
+    /// <summary>
+    /// The formatted target wraps a long rule over several lines, keeps the notes, and the result compiles back to an equal
+    /// tree.
+    /// </summary>
+    [Fact]
+    public void Convert_FormattedTarget_WrapsTheTextKeepsTheNotesAndCompilesBackEqual_Test()
+    {
+        string rule =
+            "/* All checks. */ ("
+            + string.Join(" AND ", Enumerable.Range(0, 30).Select(i => $"/* Check {i}. */ term{i}"))
+            + ")";
+        (ImportController controller, Workbench workbench, ScriptedServices services, _) = Create(rule);
+        string before = workbench.Document.Rule!.PrintJson(includeNotes: true);
+        services.Dialogs.Choices.Enqueue(1);
+
+        bool converted = controller.Convert();
+
+        string formatted = workbench.Document.Text;
+        Assert.True(converted);
+        Assert.Equal(RuleFormat.Text, workbench.Document.Format);
+        Assert.Contains('\n', formatted);
+        Assert.Contains("All checks.", formatted, StringComparison.Ordinal);
+        Assert.Contains("Check 29.", formatted, StringComparison.Ordinal);
+        Assert.Equal(before, RuleDocument.Create(formatted).Rule!.PrintJson(includeNotes: true));
+    }
+
+    /// <summary>Cancelling the Convert dialog changes nothing.</summary>
+    [Fact]
+    public void Convert_Cancelled_ChangesNothing_Test()
+    {
+        (ImportController controller, Workbench workbench, _, _) = Create("a   AND b");
+
+        Assert.False(controller.Convert());
+
+        Assert.Equal("a   AND b", workbench.Document.Text);
+    }
+
     /// <summary>Every artifact of the Core catalog is an entry of the menu, and its text equals the Core output.</summary>
     [Fact]
     public void Render_EveryCatalogArtifact_EqualsTheCoreOutput_Test()
@@ -263,33 +330,141 @@ public sealed class ImportExportTests : IDisposable
         Assert.Empty(services.Dialogs.Confirmations);
     }
 
-    /// <summary>The menu lists the artifacts, and a choice with a destination copies the artifact.</summary>
+    /// <summary>A Copy request from the export dialog puts the text of the artifact on the clipboard.</summary>
     [Fact]
-    public void ShowMenu_ChooseArtifactAndClipboard_CopiesIt_Test()
+    public void ShowMenu_CopyRequest_PutsTheArtifactOnTheClipboard_Test()
     {
-        (ExportController controller, Workbench workbench, ScriptedServices services, _) = CreateExport("a AND b");
-        int index = ArtifactCatalog.All.ToList().FindIndex(a => a.Id == "mermaid");
-        services.Dialogs.Choices.Enqueue(index + 2);
-        services.Dialogs.Choices.Enqueue(0);
+        (ExportController controller, _, ScriptedServices services, _) = CreateExport("a AND b");
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "mermaid");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.Copy, string.Empty, false));
 
         bool done = controller.ShowMenu();
 
         Assert.True(done);
-        Assert.Equal(controller.Render(ArtifactCatalog.All[index]).Value, services.Clipboard.Text);
-        Assert.NotNull(workbench);
+        Assert.Equal(controller.Render(entry.Artifact!).Value, services.Clipboard.Text);
+        Assert.Equal(ExportGroups.Diagram, entry.Group);
     }
 
-    /// <summary>Choosing the cap entry flips it and shows the menu again.</summary>
+    /// <summary>A To File request writes the path the dialog gave and opens no save dialog.</summary>
     [Fact]
-    public void ShowMenu_CapEntry_TogglesTheCapAndReopens_Test()
+    public void ShowMenu_ToFileRequest_WritesThePathWithoutASecondDialog_Test()
+    {
+        (ExportController controller, _, ScriptedServices services, ScriptedPrompts prompts) = CreateExport("a AND b");
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "json");
+        string path = Path.Combine(this.folder, "chosen.json");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.ToFile, path, false));
+        prompts.SavePath = Path.Combine(this.folder, "never.json");
+
+        bool done = controller.ShowMenu();
+
+        Assert.True(done);
+        Assert.Equal(OutputWriter.Normalize(controller.Render(entry.Artifact!).Value!), File.ReadAllText(path));
+        Assert.False(File.Exists(prompts.SavePath));
+        Assert.Empty(services.Dialogs.Confirmations);
+    }
+
+    /// <summary>A path that exists is replaced only after a yes.</summary>
+    [Fact]
+    public void ShowMenu_ToFileRequestOverAnExistingFile_NeedsAConfirmation_Test()
     {
         (ExportController controller, _, ScriptedServices services, _) = CreateExport("a AND b");
-        services.Dialogs.Choices.Enqueue(1);
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "json");
+        string path = Path.Combine(this.folder, "old.json");
+        File.WriteAllText(path, "old");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.ToFile, path, false));
+
+        Assert.False(controller.ShowMenu());
+        Assert.Equal("old", File.ReadAllText(path));
+
+        services.Dialogs.Agree = true;
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.ToFile, path, false));
+
+        Assert.True(controller.ShowMenu());
+        Assert.NotEqual("old", File.ReadAllText(path));
+    }
+
+    /// <summary>A request with no entry writes every artifact to the folder that the dialog gave.</summary>
+    [Fact]
+    public void ShowMenu_FolderRequest_WritesEveryArtifactWithoutAskingForAFolder_Test()
+    {
+        (ExportController controller, _, ScriptedServices services, _) = CreateExport("a AND b");
+        controller.ImageSearchPath = this.folder;
+        string target = Path.Combine(this.folder, "everything");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(null, ExportAction.ToFile, target, false));
+
+        bool done = controller.ShowMenu();
+
+        Assert.True(done);
+        Assert.True(File.Exists(Path.Combine(target, ExportManifest.FileName)));
+    }
+
+    /// <summary>The larger-table option of the dialog is kept, starts the dialog the next time, and lets a big table through.</summary>
+    [Fact]
+    public void ShowMenu_LargerTableOption_IsKeptAndAllowsTheTable_Test()
+    {
+        (ExportController controller, _, ScriptedServices services, _) = CreateExport(
+            "p1 AND p2 AND p3 AND p4 AND p5 AND p6 AND p7 AND p8 AND p9"
+        );
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "truth-table-csv");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.Copy, string.Empty, true));
+
+        bool done = controller.ShowMenu();
+        _ = controller.ShowMenu();
+
+        Assert.True(done);
+        Assert.True(controller.AllowLargerTruthTable);
+        Assert.True(services.Dialogs.LastExportModel!.AllowLargerTruthTable);
+        Assert.NotNull(services.Clipboard.Text);
+    }
+
+    /// <summary>A term limit from the dialog is kept, starts the dialog the next time, and lets a table of that size through.</summary>
+    [Fact]
+    public void ShowMenu_TermLimit_IsKeptAndAllowsTheTable_Test()
+    {
+        (ExportController controller, _, ScriptedServices services, _) = CreateExport(
+            "p1 AND p2 AND p3 AND p4 AND p5 AND p6 AND p7 AND p8 AND p9"
+        );
+        ExportEntry entry = controller.Entries().First(e => e.Artifact?.Id == "truth-table-csv");
+        services.Dialogs.ExportRequests.Enqueue(new ExportRequest(entry, ExportAction.Copy, string.Empty, false, 9));
+
+        bool done = controller.ShowMenu();
+        _ = controller.ShowMenu();
+
+        Assert.True(done);
+        Assert.Equal(9, controller.TruthTableTermLimit);
+        Assert.Equal(9, services.Dialogs.LastExportModel!.TruthTableTermLimit);
+        Assert.NotNull(services.Clipboard.Text);
+    }
+
+    /// <summary>Cancel in the dialog exports nothing and changes nothing.</summary>
+    [Fact]
+    public void ShowMenu_Cancelled_ChangesNothing_Test()
+    {
+        (ExportController controller, Workbench workbench, ScriptedServices services, _) = CreateExport("a AND b");
 
         bool done = controller.ShowMenu();
 
         Assert.False(done);
-        Assert.True(controller.AllowLargerTruthTable);
+        Assert.False(controller.AllowLargerTruthTable);
+        Assert.Null(services.Clipboard.Text);
+        Assert.Equal(string.Empty, workbench.Status);
+    }
+
+    /// <summary>The entries carry the heading, the five truth-table formats and the file name the dialog uses.</summary>
+    [Fact]
+    public void Entries_Catalog_AreGroupedUnderHeadingsWithFileNames_Test()
+    {
+        using FakeRenderers renderers = FakeRenderers.Both();
+        (ExportController controller, _, _, _) = CreateExport("a AND b");
+        controller.ImageSearchPath = renderers.Folder;
+
+        IReadOnlyList<ExportEntry> entries = controller.Entries();
+
+        Assert.Equal(5, entries.Count(e => e.Group == ExportGroups.TruthTable));
+        Assert.Equal(4, entries.Count(e => e.Group == ExportGroups.Images));
+        Assert.All(entries, e => Assert.NotEqual(string.Empty, e.Group));
+        Assert.All(entries, e => Assert.NotEqual(string.Empty, e.FileName));
+        Assert.Equal(ArtifactCatalog.All.Count + 4, entries.Count);
     }
 
     /// <summary>Validation shows every level and the statistics.</summary>

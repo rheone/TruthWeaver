@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 
 using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Tool.Tui.Hosting;
+using TruthWeaver.Tool.Tui.Sessions;
 
 /// <summary>
 /// The dialogs and the clipboard that the panes use. The program sets <see cref="Current"/> once the terminal runs; until
@@ -21,7 +22,22 @@ internal sealed record WorkbenchServices(IWorkbenchDialogs Dialogs, IClipboardAc
             return null;
         }
 
-        public int? Choose(string title, IReadOnlyList<string> items)
+        public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK")
+        {
+            return null;
+        }
+
+        public IReadOnlyList<int>? ChooseMany(
+            string title,
+            IReadOnlyList<string> items,
+            IReadOnlyList<int> initial,
+            string accept = "_OK"
+        )
+        {
+            return null;
+        }
+
+        public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
         {
             return null;
         }
@@ -34,6 +50,11 @@ internal sealed record WorkbenchServices(IWorkbenchDialogs Dialogs, IClipboardAc
         public bool Confirm(string title, string message, string confirm)
         {
             return false;
+        }
+
+        public ExportRequest? AskExport(ExportDialogModel model)
+        {
+            return null;
         }
     }
 

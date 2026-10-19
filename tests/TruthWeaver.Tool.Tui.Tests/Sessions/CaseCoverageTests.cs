@@ -31,7 +31,7 @@ public sealed class CaseCoverageTests : IDisposable
         TreePaneView view = Show(harness);
 
         Assert.Equal("No saved cases: coverage is not measured.", view.CoverageText);
-        Assert.Equal(["or", "  a", "  b"], view.Lines);
+        Assert.Equal(["or", "  a", "  b"], Plain(view.Lines));
         Assert.DoesNotContain("%", view.CoverageText, StringComparison.Ordinal);
     }
 
@@ -47,7 +47,7 @@ public sealed class CaseCoverageTests : IDisposable
         RuleCoverage coverage = Assert.IsType<RuleCoverage>(harness.Workbench.Coverage.Coverage);
         string[] unreached = [.. coverage.Nodes.Where(n => n.EvaluatedCount == 0).Select(n => n.Path)];
         Assert.Equal(["$.operands[1]"], unreached);
-        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], view.Lines);
+        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], Plain(view.Lines));
         Assert.Equal("Coverage: 2 of 3 node(s) reached by 1 case(s) (67%).", view.CoverageText);
     }
 
@@ -58,12 +58,12 @@ public sealed class CaseCoverageTests : IDisposable
         using WorkbenchHarness harness = Create("a OR b");
         this.SaveCase(harness, "a decides", ("a", TruthValue.True));
         TreePaneView view = Show(harness);
-        string[] before = [.. view.Lines];
+        string[] before = [.. Plain(view.Lines)];
 
         this.SaveCase(harness, "b is read", ("a", TruthValue.False), ("b", TruthValue.True));
 
         Assert.Equal("  b" + StructureController.NoCaseMark, before[2]);
-        Assert.Equal(["or", "  a", "  b"], view.Lines);
+        Assert.Equal(["or", "  a", "  b"], Plain(view.Lines));
         Assert.Equal("Coverage: 3 of 3 node(s) reached by 2 case(s) (100%).", view.CoverageText);
     }
 
@@ -74,12 +74,12 @@ public sealed class CaseCoverageTests : IDisposable
         using WorkbenchHarness harness = Create("a OR b");
         this.SaveCase(harness, "case", ("a", TruthValue.False), ("b", TruthValue.True));
         TreePaneView view = Show(harness);
-        string[] before = [.. view.Lines];
+        string[] before = [.. Plain(view.Lines)];
 
         this.SaveCase(harness, "case", ("a", TruthValue.True));
 
         Assert.Equal(["or", "  a", "  b"], before);
-        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], view.Lines);
+        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], Plain(view.Lines));
     }
 
     /// <summary>Removing a case brings back the marks that only it covered.</summary>
@@ -90,12 +90,12 @@ public sealed class CaseCoverageTests : IDisposable
         this.SaveCase(harness, "a decides", ("a", TruthValue.True));
         this.SaveCase(harness, "b is read", ("a", TruthValue.False), ("b", TruthValue.True));
         TreePaneView view = Show(harness);
-        string[] before = [.. view.Lines];
+        string[] before = [.. Plain(view.Lines)];
 
         harness.Workbench.DeleteCase(1);
 
         Assert.Equal(["or", "  a", "  b"], before);
-        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], view.Lines);
+        Assert.Equal(["or", "  a", "  b" + StructureController.NoCaseMark], Plain(view.Lines));
     }
 
     /// <summary>A change of the rule is measured again over the same cases.</summary>
@@ -109,7 +109,7 @@ public sealed class CaseCoverageTests : IDisposable
         harness.Workbench.Document.SetText("a AND b");
         view.Show();
 
-        Assert.Equal(["and", "  a", "  b"], view.Lines);
+        Assert.Equal(["and", "  a", "  b"], Plain(view.Lines));
         Assert.Equal("Coverage: 3 of 3 node(s) reached by 1 case(s) (100%).", view.CoverageText);
     }
 
@@ -123,6 +123,17 @@ public sealed class CaseCoverageTests : IDisposable
     {
         ScriptedServices services = new();
         return new WorkbenchHarness(text, [new RuleTextPane(), new TreePane(services.Services)]);
+    }
+
+    // The lines without the value badge of a term, which these tests do not check.
+    private static string[] Plain(IEnumerable<string> lines)
+    {
+        return
+        [
+            .. lines.Select(l =>
+                l.Replace("  [True]", string.Empty).Replace("  [False]", string.Empty).Replace("  [Unknown]", string.Empty)
+            ),
+        ];
     }
 
     private static TreePaneView Show(WorkbenchHarness harness)

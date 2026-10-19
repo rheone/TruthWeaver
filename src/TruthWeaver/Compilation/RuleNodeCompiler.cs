@@ -709,13 +709,17 @@ internal sealed class RuleNodeCompiler<TContext>
     {
         if (!this.registry.TryGet(node.PredicateName, out PredicateDescriptor<TContext>? descriptor))
         {
-            if (this.options.Mode == CompilationMode.Lenient)
+            bool reserved = DslParser.IsReservedWord(node.PredicateName);
+
+            // Lenient accepts a name that is not registered, but not a reserved word: no registry can hold one, so a
+            // later step that registers stand-ins for the terms would throw. Report it as a diagnostic here.
+            if (this.options.Mode == CompilationMode.Lenient && !reserved)
             {
                 return new TermExpression(BuildUnknownIdentity(node), IsUnknownPredicate: true);
             }
 
             // A reserved word can never be registered, so say that instead of suggesting a registration.
-            string message = DslParser.IsReservedWord(node.PredicateName)
+            string message = reserved
                 ? $"'{node.PredicateName}' is a reserved word and cannot be a predicate name."
                 : $"No predicate named '{node.PredicateName}' is registered.";
             this.diagnostics.Add(

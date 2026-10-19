@@ -174,7 +174,10 @@ internal static class PredicateCatalog
                         schema.Description,
                         [.. schema.Arguments.Select(a => new PaletteArgument(a.Name, a.Type, a.Required, null, a.Description))]
                     )
-                );
+                )
+                {
+                    TakesNullBehavior = method.GetParameters().Any(p => p.ParameterType == typeof(NullBehavior)),
+                };
 
                 // Overloads for several value types give the same template; keep one of each.
                 string key =

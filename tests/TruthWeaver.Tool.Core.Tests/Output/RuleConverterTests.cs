@@ -98,4 +98,24 @@ public sealed class RuleConverterTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
+
+    /// <summary>A reserved word used as a term gives a diagnostic that names the word, and no exception escapes.</summary>
+    /// <param name="text">The rule in the format its content selects.</param>
+    /// <param name="word">The reserved word.</param>
+    [Theory]
+    [InlineData("a AND OR", "OR")]
+    [InlineData("{\"predicate\": \"T\"}", "T")]
+    [InlineData("{\"predicate\": \"F\"}", "F")]
+    [InlineData("{\"predicate\": \"U\"}", "U")]
+    public void Compile_ReservedWordAsTerm_IsDiagnosticNamingTheWord_Test(string text, string word)
+    {
+        LoadedRule source = RuleLoader.LoadString(text).Value!;
+
+        CompilationResult<StubAssignment> result = RuleConverter.Compile(source);
+        ToolResult<string> converted = RuleConverter.Convert(source, RuleFormat.Json);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error && d.Message.Contains($"'{word}'"));
+        Assert.False(converted.Succeeded);
+    }
 }

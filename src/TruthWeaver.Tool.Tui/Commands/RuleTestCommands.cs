@@ -9,7 +9,25 @@ internal static class RuleTestCommands
     /// <summary>Gets the commands, for <see cref="WorkbenchCommands.Default"/>.</summary>
     public static IReadOnlyList<WorkbenchCommand> Default { get; } =
     [
-        new(Key.F5.WithCtrl, "Save the assignment as a case of the rule test file", w => w.Workbench.SaveCase()),
-        new(Key.F7.WithCtrl, "Run the cases of the rule test file on the open rule", w => _ = w.Workbench.RunRuleTestsAsync()),
+        new(
+            Key.F5.WithCtrl,
+            CommandGroup.Analyze,
+            "Save the values as a test case",
+            "Save the assignment as a case of the rule test file",
+            w => w.Workbench.SaveCase()
+        )
+        {
+            SecondKey = Key.S.WithAlt,
+        },
+        new(
+            Key.F7.WithCtrl,
+            CommandGroup.Analyze,
+            "Run the rule tests",
+            "Run the cases of the rule test file on the open rule",
+            w => _ = w.Workbench.RunRuleTestsAsync()
+        )
+        {
+            SecondKey = Key.N.WithAlt,
+        },
     ];
 }

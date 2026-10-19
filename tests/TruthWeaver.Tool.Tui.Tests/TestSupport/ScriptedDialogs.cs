@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 using TruthWeaver.Tool.Tui.Hosting;
+using TruthWeaver.Tool.Tui.Sessions;
 
 /// <summary>Answers the extra workbench questions from queued values, so no dialog opens.</summary>
 internal sealed class ScriptedDialogs : IWorkbenchDialogs
@@ -11,6 +12,12 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     /// <summary>Gets the answers to <see cref="Choose"/>, in order. An empty queue cancels.</summary>
     public Queue<int?> Choices { get; } = new();
 
+    /// <summary>Gets the answers to <see cref="ChooseMany"/>, in order. An empty queue cancels.</summary>
+    public Queue<int[]?> Ticks { get; } = new();
+
+    /// <summary>Gets the indexes that the last <see cref="ChooseMany"/> started ticked.</summary>
+    public IReadOnlyList<int> LastInitial { get; private set; } = [];
+
     /// <summary>Gets or sets the folder that <see cref="AskFolder"/> returns.</summary>
     public string? Folder { get; set; }
 
@@ -20,8 +27,20 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     /// <summary>Gets the entries of the last list that <see cref="Choose"/> showed.</summary>
     public IReadOnlyList<string> LastItems { get; private set; } = [];
 
+    /// <summary>Gets the text of the accept button of the last list that <see cref="Choose"/> showed.</summary>
+    public string LastAccept { get; private set; } = string.Empty;
+
+    /// <summary>Gets the filter that the last <see cref="ChooseFiltered"/> was given: the text of the search box to the indexes shown.</summary>
+    public Func<string, IReadOnlyList<int>>? LastFilter { get; private set; }
+
     /// <summary>Gets the messages of the questions that <see cref="Confirm"/> was asked.</summary>
     public List<string> Confirmations { get; } = [];
+
+    /// <summary>Gets the answers to <see cref="AskExport"/>, in order. An empty queue cancels.</summary>
+    public Queue<ExportRequest?> ExportRequests { get; } = new();
+
+    /// <summary>Gets what the last <see cref="AskExport"/> was given.</summary>
+    public ExportDialogModel? LastExportModel { get; private set; }
 
     /// <inheritdoc />
     public string? AskText(string title, string initial)
@@ -30,9 +49,32 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     }
 
     /// <inheritdoc />
-    public int? Choose(string title, IReadOnlyList<string> items)
+    public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK")
     {
         this.LastItems = items;
+        this.LastAccept = accept;
+        return this.Choices.TryDequeue(out int? choice) ? choice : null;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<int>? ChooseMany(
+        string title,
+        IReadOnlyList<string> items,
+        IReadOnlyList<int> initial,
+        string accept = "_OK"
+    )
+    {
+        this.LastItems = items;
+        this.LastInitial = initial;
+        this.LastAccept = accept;
+        return this.Ticks.TryDequeue(out int[]? ticked) ? ticked : null;
+    }
+
+    /// <inheritdoc />
+    public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
+    {
+        this.LastItems = items;
+        this.LastFilter = filter;
         return this.Choices.TryDequeue(out int? choice) ? choice : null;
     }
 
@@ -47,5 +89,12 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     {
         this.Confirmations.Add(message);
         return this.Agree;
+    }
+
+    /// <inheritdoc />
+    public ExportRequest? AskExport(ExportDialogModel model)
+    {
+        this.LastExportModel = model;
+        return this.ExportRequests.TryDequeue(out ExportRequest? request) ? request : null;
     }
 }

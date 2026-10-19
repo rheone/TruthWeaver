@@ -68,22 +68,86 @@ public static class K3RuleGenerator
             throw new ArgumentException("At least one term is necessary.", nameof(terms));
         }
 
-        return Generate(random, depth, terms);
+        return Generate(random, depth, terms, RuleOperatorFamilies.All);
     }
 
-    private static GeneratedRule Generate(Random random, int depth, IReadOnlyList<string> terms)
+    /// <summary>
+    /// Generates a random rule like <see cref="GenerateRule(Random, int, IReadOnlyList{string})"/>, but with operators only
+    /// from the chosen families. A rule that has no family gets only terms and constants.
+    /// </summary>
+    /// <param name="random">The seeded random source.</param>
+    /// <param name="depth">The maximum nesting depth. Zero gives a single term or constant.</param>
+    /// <param name="terms">The rule text of each term; see the other overload.</param>
+    /// <param name="families">The operator families the rule may use.</param>
+    /// <returns>The generated rule.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="random"/> or <paramref name="terms"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="terms"/> is empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="depth"/> is negative.</exception>
+    public static GeneratedRule GenerateRule(
+        Random random,
+        int depth,
+        IReadOnlyList<string> terms,
+        RuleOperatorFamilies families
+    )
     {
-        if (depth == 0 || random.Next(5) == 0)
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(terms);
+        ArgumentOutOfRangeException.ThrowIfNegative(depth);
+        if (terms.Count == 0)
+        {
+            throw new ArgumentException("At least one term is necessary.", nameof(terms));
+        }
+
+        return Generate(random, depth, terms, families);
+    }
+
+    // The case numbers of the switch in Generate, by family. Cases 7 and 8 fall to the default branch (the thresholds).
+    private static int[] CasesOf(RuleOperatorFamilies families)
+    {
+        List<int> cases = [];
+        if (families.HasFlag(RuleOperatorFamilies.Connectives))
+        {
+            cases.AddRange([0, 1, 2, 3, 4, 5, 9, 10, 11]);
+        }
+
+        if (families.HasFlag(RuleOperatorFamilies.Cardinality))
+        {
+            cases.AddRange([6, 7, 8, 12, 13, 14, 15]);
+        }
+
+        if (families.HasFlag(RuleOperatorFamilies.Conditional))
+        {
+            cases.Add(17);
+        }
+
+        if (families.HasFlag(RuleOperatorFamilies.Inspection))
+        {
+            cases.Add(18);
+        }
+
+        if (families.HasFlag(RuleOperatorFamilies.Coalescing))
+        {
+            cases.AddRange([16, 19]);
+        }
+
+        return [.. cases];
+    }
+
+    private static GeneratedRule Generate(Random random, int depth, IReadOnlyList<string> terms, RuleOperatorFamilies families)
+    {
+        int[] allowed = families == RuleOperatorFamilies.All ? [] : CasesOf(families);
+        if (depth == 0 || random.Next(5) == 0 || (allowed.Length == 0 && families != RuleOperatorFamilies.All))
         {
             return GenerateLeaf(random, terms);
         }
 
         GeneratedRule Child()
         {
-            return Generate(random, depth - 1, terms);
+            return Generate(random, depth - 1, terms, families);
         }
 
-        switch (random.Next(20))
+        // The full set keeps the original draw, so the rules of a seed do not change.
+        switch (families == RuleOperatorFamilies.All ? random.Next(20) : allowed[random.Next(allowed.Length)])
         {
             case 0:
                 GeneratedRule operand = Child();

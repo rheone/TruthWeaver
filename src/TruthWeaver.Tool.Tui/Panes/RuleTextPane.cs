@@ -8,7 +8,7 @@ using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
 /// The rule text editor pane. Every edit goes to <see cref="Workbench.Document"/>, which compiles it; every change of the
-/// document (undo, redo, format, open) comes back into the editor. The editor colors the spans of the diagnostics.
+/// document (undo, redo, format, open) comes back into the editor. The editor colors the spans of the diagnostics and the syntax kind of each word.
 /// </summary>
 internal sealed class RuleTextPane : IWorkbenchPane
 {
@@ -50,6 +50,9 @@ internal sealed class RuleTextPane : IWorkbenchPane
             }
 
             editor.Marks = EditorMarks.Compute(text, workbench.Document.Diagnostics);
+
+            // The syntax kinds are classified here, after the compile that follows a pause in typing, never on a key.
+            editor.Syntax = SyntaxMarks.Compute(text);
         }
 
         // The editor to the document. The text view may report its lines with the platform line ending; the document
@@ -62,10 +65,27 @@ internal sealed class RuleTextPane : IWorkbenchPane
             }
         };
 
+        // The cursor to the status line, which shows the value of the term under it. A replacement of the text by the
+        // document is not a move by the author.
+        editor.CaretChanged += (_, _) =>
+        {
+            if (!syncing)
+            {
+                workbench.MoveEditorCaret(editor.CaretOffset);
+            }
+        };
+
         workbench.DocumentChanged += (_, _) => ShowDocument();
         workbench.SpanRequested += (_, span) =>
         {
             editor.MoveTo(span.Start);
+            editor.SetFocus();
+        };
+
+        // The Insert menu: the editor puts the text at the cursor, in place of the selection.
+        workbench.InsertRequested += (_, text) =>
+        {
+            editor.InsertAtCaret(text);
             editor.SetFocus();
         };
 

@@ -39,34 +39,38 @@ When the text has an error, the workbench keeps the last tree that compiled and 
 
 ### Keys
 
-F1 shows the full list in the window.
+The menu bar holds every command, in the menus File, Edit, Rule, Analyze, Export, View and Help, and each entry shows its
+key. F1 or F10 opens the menu bar, and Alt with the underlined letter opens one menu. The hint line at the bottom shows the
+most common keys, and Shift+F1 shows the key reference with every key by menu.
 
 | Key | Does |
 | --- | --- |
-| F1 | Shows or hides the key help. |
+| F1, F10 | Opens the menu bar. |
+| Shift+F1 | Shows or hides the key reference. |
 | Ctrl+O | Opens a rule file. |
 | Ctrl+S | Saves. For a rule inside a JSON or YAML document, it patches the rule into the document. |
 | F12 | Saves to a new path. The extension selects the format. |
 | Ctrl+Z, Ctrl+Y | Undo and redo. |
 | F8, Shift+F8 | Formats the rule: canonical or pretty. |
-| F4, Shift+F4 | Converts the rule to the next or previous format. |
-| F5 | Opens the export menu. |
+| F4 | Opens the Convert dialog: canonical rule text, formatted rule text, JSON or YAML. |
+| Shift+F4 | Converts the rule to the next format: rule text, JSON, YAML. |
+| F5 | Opens the export dialog. |
 | F7, Shift+F7 | Validates every level, and turns strict validation on or off. |
 | F9 | Imports a rule from the clipboard or a file. |
 | F2, Shift+F2 | Opens a rule inside a JSON or YAML document, and switches to another rule of that document. |
-| F3 | Saves the open rule into its document with the round-trip write-back. |
+| Ctrl+F12 (or Alt+O) | Saves the open rule into its document with the round-trip write-back. |
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
-| Ctrl+PageDown, Ctrl+PageUp | Shows the next or previous pane of the region. |
+| Ctrl+PageDown (or Alt+W), Ctrl+PageUp (or Alt+Q) | Shows the next or previous pane of the region. |
 | F11 | Maximizes the region with the focus, or shows every region again. |
-| Alt+Left, Alt+Right, Alt+Up, Alt+Down | Moves the lines between the regions. |
+| Alt+Left (or Alt+Z), Alt+Right (or Alt+C), Alt+Up (or Ctrl+T), Alt+Down (or Alt+Y) | Moves the lines between the regions. |
 | Ctrl+R, Ctrl+G | Chooses a rewrite, and compares the rule with the last saved or accepted version. |
-| Ctrl+F9 | Loads a second rule from a file or the clipboard to compare with the open rule. |
-| Ctrl+F2, Ctrl+F3, Ctrl+F4 | In the Assign pane: sets every term to `Unknown`, moves the policy for `Unknown`, loads a variables file. |
-| Ctrl+F5, Ctrl+F7 | Saves the assignment as a rule test case, and runs the rule test file. |
+| Ctrl+F9 (or Alt+B) | Loads a second rule from a file or the clipboard to compare with the open rule. |
+| Ctrl+F2 (or Alt+U), Ctrl+F3 (or Alt+P), Ctrl+F4 (or Alt+D) | In the Assign pane: sets every term to `Unknown`, moves the policy for `Unknown`, loads a variables file. |
+| Ctrl+F5 (or Alt+S), Ctrl+F7 (or Alt+N) | Saves the assignment as a rule test case, and runs the rule test file. |
 | Ctrl+Q | Quits. It asks first when the rule has unsaved changes. |
 
 Some panes have their own keys, such as Space, T, F and U in the term list of the Assign pane. [Terminal UI](../../docs/tui.md)
-lists them.
+lists them, including the second key of a command whose primary key some terminals swallow.
 
 ## Folders
 
@@ -102,7 +106,8 @@ match its folder. `Program` and `Results` stay at the root.
 | `Workbench` | Holds the open document, the layout, the assignment and the status line. |
 | `WorkbenchWindow` | The Terminal.Gui window: the regions, the panes and the keys. |
 | `IWorkbenchPane` | One pane of a region. Add an instance to `WorkbenchPanes.Default`. |
-| `WorkbenchCommand` | One key, its description and its action. Add it to `WorkbenchCommands.Default`. |
+| `WorkbenchCommand` | One command: its key, its menu group, its title, its description and its action. Add it to `WorkbenchCommands.Default`. |
+| `WorkbenchMenus` | Builds the menu bar from the commands and the choices, one menu for each group. |
 
 ## Notes
 

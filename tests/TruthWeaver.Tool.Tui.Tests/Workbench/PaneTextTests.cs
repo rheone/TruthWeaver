@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 
+using Terminal.Gui.Input;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Panes;
@@ -39,31 +40,52 @@ public sealed class PaneTextTests
         string status = WorkbenchWindow.StatusOf(workbench);
 
         Assert.StartsWith("(new rule) [rule text] * | 1 error, 0 warnings", status, StringComparison.Ordinal);
-        Assert.EndsWith("F1 keys", status, StringComparison.Ordinal);
     }
 
-    /// <summary>The key help lists every command of the workbench with its key, then one line about the mouse.</summary>
+    /// <summary>
+    /// The key reference lists every command of the workbench with its key, under the name of its menu, then one line about
+    /// the mouse.
+    /// </summary>
     [Fact]
-    public void HelpText_DefaultCommands_ListsEveryKey_Test()
+    public void HelpText_DefaultCommands_ListsEveryKeyUnderItsMenu_Test()
     {
         string help = WorkbenchWindow.HelpText(WorkbenchCommands.Default);
 
         string[] lines = help.Split('\n');
-        Assert.Equal(WorkbenchCommands.Default.Count + 1, lines.Length);
-        Assert.Contains(
+        int file = Array.IndexOf(lines, "File");
+        int edit = Array.IndexOf(lines, "Edit");
+        int save = Array.FindIndex(
             lines,
-            line => line.StartsWith("Ctrl+S", StringComparison.Ordinal) && line.EndsWith("Save", StringComparison.Ordinal)
+            line =>
+                line.TrimStart().StartsWith("Ctrl+S", StringComparison.Ordinal)
+                && line.EndsWith("Save", StringComparison.Ordinal)
         );
+        Assert.Equal(WorkbenchCommands.Default.Count, lines.Count(line => line.StartsWith("  ", StringComparison.Ordinal)));
+        Assert.InRange(save, file + 1, edit - 1);
+        Assert.StartsWith("Mouse:", lines[^1], StringComparison.Ordinal);
     }
 
-    /// <summary>No two commands share a key.</summary>
+    /// <summary>The hint line shows the most common keys, the menu key first.</summary>
+    [Fact]
+    public void HintText_DefaultCommands_ShowsTheCommonKeys_Test()
+    {
+        string hint = WorkbenchWindow.HintText(WorkbenchCommands.Default);
+
+        Assert.StartsWith("F1 Menus", hint, StringComparison.Ordinal);
+        Assert.Contains("Ctrl+O Open", hint, StringComparison.Ordinal);
+        Assert.Contains("Ctrl+S Save", hint, StringComparison.Ordinal);
+        Assert.Contains("F7 Validate", hint, StringComparison.Ordinal);
+        Assert.Contains("Ctrl+Q Quit", hint, StringComparison.Ordinal);
+    }
+
+    /// <summary>No two commands share a key, and no command takes the key that opens the menu bar.</summary>
     [Fact]
     public void WorkbenchCommands_Default_HaveDistinctKeys_Test()
     {
-        Assert.Equal(
-            WorkbenchCommands.Default.Count,
-            WorkbenchCommands.Default.Select(c => c.Key.ToString()).Distinct(StringComparer.Ordinal).Count()
-        );
+        string[] keys = [.. WorkbenchCommands.Default.Where(c => c.Key != Key.Empty).Select(c => c.Key.ToString())];
+
+        Assert.Equal(keys.Length, keys.Distinct(StringComparer.Ordinal).Count());
+        Assert.DoesNotContain(WorkbenchMenus.MenuBarKey.ToString(), keys);
     }
 
     private static Workbench Create(string text)

@@ -15,7 +15,10 @@ using TruthWeaver.Tool.Tui.Workbench;
 [Collection(TerminalCollection.Name)]
 public sealed class TerminalRunTests
 {
-    /// <summary>One iteration of the application draws the regions, the rule and its canonical text, and the status line.</summary>
+    /// <summary>
+    /// One iteration of the application draws the menu bar, the regions, the rule and its canonical text, the status line and
+    /// the hint line.
+    /// </summary>
     [Fact]
     public void Run_OneIteration_DrawsTheRegionsAndTheRule_Test()
     {
@@ -33,7 +36,8 @@ public sealed class TerminalRunTests
         Assert.Contains("Diagnostics", screen, StringComparison.Ordinal);
         Assert.Contains("a   and b", screen, StringComparison.Ordinal);
         Assert.Contains("a AND b", screen, StringComparison.Ordinal);
-        Assert.Contains("F1 keys", screen, StringComparison.Ordinal);
+        Assert.Contains("File  Edit", screen, StringComparison.Ordinal);
+        Assert.Contains("F1 Menus", screen, StringComparison.Ordinal);
     }
 
     private static string ScreenText(IApplication app)
