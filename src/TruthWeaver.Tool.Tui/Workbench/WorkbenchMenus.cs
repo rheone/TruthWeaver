@@ -5,6 +5,8 @@ using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Tool.Tui.Commands;
 using TruthWeaver.Tool.Tui.Sessions;
+using TruthWeaver.Tool.Tui.Theme;
+using TruthWeaver.Tool.Tui.Views;
 
 /// <summary>
 /// Builds the menu bar of the workbench from the commands and choices: one menu for each <see cref="CommandGroup"/> that has
@@ -171,19 +173,43 @@ internal static class WorkbenchMenus
             entries.Insert(open + 2, CreateSubmenu(SamplesTitle, SampleItems(window)));
         }
 
-        // The operators and the constants are submenus of fixed entries; they follow the Predicate entry.
+        // The operators and the constants are submenus of fixed entries; they follow the Predicate entry. Each entry of the
+        // Insert menu has the color of its syntax kind; the title of the entry (or of its submenu) names the kind as well.
+        List<(MenuItem Item, SyntaxKind Kind)> kinded = [];
         if (menu.Group == CommandGroup.Insert)
         {
-            entries.Insert(1, CreateSubmenu(InsertCommands.OperatorsTitle, OperatorItems(window)));
-            entries.Insert(
-                2,
-                CreateSubmenu(InsertCommands.ConstantsTitle, [.. InsertItems.Constants.Select(i => InsertEntry(window, i))])
+            MenuItem operators = CreateSubmenu(InsertCommands.OperatorsTitle, OperatorItems(window, kinded));
+            MenuItem constants = CreateSubmenu(
+                InsertCommands.ConstantsTitle,
+                [.. InsertItems.Constants.Select(i => InsertEntry(window, i, SyntaxKind.Constant, kinded))]
             );
+            entries.Insert(1, operators);
+            entries.Insert(2, constants);
+            kinded.Add((operators, SyntaxKind.Operator));
+            kinded.Add((constants, SyntaxKind.Constant));
+            foreach (MenuItem entry in entries.OfType<MenuItem>())
+            {
+                SyntaxKind? kind = entry.Title switch
+                {
+                    "Predicate..." or "Use definition..." => SyntaxKind.Predicate,
+                    "Variable..." => SyntaxKind.Variable,
+                    _ => null,
+                };
+                if (kind is { } known)
+                {
+                    kinded.Add((entry, known));
+                }
+            }
         }
 
         MenuItem? recent = entries.OfType<MenuItem>().FirstOrDefault(e => e.Title == RecentTitle);
 
         MenuBarItem item = new(TitleOf(menu.Group), entries);
+        if (kinded.Count > 0)
+        {
+            ColorKinds(kinded, window.Workbench.Palette);
+            window.Workbench.ThemeChanged += (_, _) => ColorKinds(kinded, window.Workbench.Palette);
+        }
 
         // The marks of the choices follow the state, so they are set each time the menu opens.
         item.PopoverMenuOpenChanged += (_, args) =>
@@ -238,15 +264,46 @@ internal static class WorkbenchMenus
     }
 
     // The Operators submenu: one submenu for each group (connectives, cardinality, inspection, other).
-    private static MenuItem[] OperatorItems(WorkbenchWindow window)
+    private static MenuItem[] OperatorItems(WorkbenchWindow window, List<(MenuItem Item, SyntaxKind Kind)> kinded)
     {
-        return [.. InsertItems.Operators.Select(g => CreateSubmenu(g.Title, [.. g.Items.Select(i => InsertEntry(window, i))]))];
+        return
+        [
+            .. InsertItems.Operators.Select(g =>
+            {
+                MenuItem group = CreateSubmenu(
+                    g.Title,
+                    [.. g.Items.Select(i => InsertEntry(window, i, SyntaxKind.Operator, kinded))]
+                );
+                kinded.Add((group, SyntaxKind.Operator));
+                return group;
+            }),
+        ];
     }
 
-    // An entry of the Insert menu: the name, with its one-line description beside it.
-    private static MenuItem InsertEntry(WorkbenchWindow window, InsertItem item)
+    // An entry of the Insert menu: the name in the color of its kind, with its one-line description beside it.
+    private static MenuItem InsertEntry(
+        WorkbenchWindow window,
+        InsertItem item,
+        SyntaxKind kind,
+        List<(MenuItem Item, SyntaxKind Kind)> kinded
+    )
     {
-        return new MenuItem(item.Name, item.Description, () => window.Workbench.InsertText(item.Text, item.Name), Key.Empty);
+        MenuItem entry = new(item.Name, item.Description, () => window.Workbench.InsertText(item.Text, item.Name), Key.Empty);
+        kinded.Add((entry, kind));
+        return entry;
+    }
+
+    // Colors the name of each entry in the color of its kind, and its description in the color of descriptions.
+    private static void ColorKinds(List<(MenuItem Item, SyntaxKind Kind)> kinded, ThemePalette palette)
+    {
+        foreach ((MenuItem item, SyntaxKind kind) in kinded)
+        {
+            item.CommandView?.SetScheme(SyntaxLegend.SchemeOf(kind, palette));
+            if (!string.IsNullOrEmpty(item.HelpText))
+            {
+                item.HelpView?.SetScheme(SyntaxLegend.SchemeOf(SyntaxKind.Description, palette));
+            }
+        }
     }
 
     // An entry that opens a submenu; the entry owns the submenu.

@@ -12,6 +12,7 @@ using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Theme;
+using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
 using Attribute = Terminal.Gui.Drawing.Attribute;
 
@@ -157,6 +158,11 @@ public sealed class ThemeTests
             palette.Error,
             palette.Warning,
             palette.Info,
+            palette.Predicate,
+            palette.Operator,
+            palette.Variable,
+            palette.Constant,
+            palette.Description,
         ];
         Color[] backgrounds = [palette.Background, palette.Surface, palette.Selection];
 
@@ -363,6 +369,65 @@ public sealed class ThemeTests
 
         Assert.Contains("Ctrl+F1", help, StringComparison.Ordinal);
         Assert.Contains("theme", help, StringComparison.Ordinal);
+    }
+
+    /// <summary>The four syntax kinds and the description text each have a color of their own in both sets.</summary>
+    /// <param name="theme">The name of the theme.</param>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Palette_EverySyntaxKind_HasItsOwnColor_Test(string theme)
+    {
+        ThemePalette palette = ThemePalette.For(Enum.Parse<ThemeVariant>(theme), noColor: false);
+
+        Color[] colors = [.. SyntaxKinds.All.Select(palette.Of)];
+
+        Assert.Equal(5, colors.Distinct().Count());
+        Assert.DoesNotContain(palette.Text, colors);
+        Assert.All(colors, color => Assert.NotEqual(Color.None, color));
+    }
+
+    /// <summary>With NO_COLOR the five kinds have no color and differ by weight; with color the style stays plain.</summary>
+    [Fact]
+    public void StyleOf_NoColorSyntaxKind_DiffersForEachKind_Test()
+    {
+        ThemePalette palette = ThemePalette.Plain;
+
+        TextStyle[] styles = [.. SyntaxKinds.All.Select(palette.StyleOf)];
+
+        Assert.Equal(5, styles.Distinct().Count());
+        Assert.DoesNotContain(TextStyle.None, styles);
+        Assert.All(SyntaxKinds.All, kind => Assert.Equal(Color.None, palette.Of(kind)));
+        Assert.All(SyntaxKinds.All, kind => Assert.Equal(TextStyle.None, ThemePalette.Dark.StyleOf(kind)));
+    }
+
+    /// <summary>The key help writes the name of every syntax kind, so the colors are never the only mark.</summary>
+    [Fact]
+    public void HelpText_DefaultCommands_NamesEverySyntaxKind_Test()
+    {
+        string help = WorkbenchWindow.HelpText(WorkbenchCommands.Default);
+
+        Assert.Contains(SyntaxKinds.LegendText(), help, StringComparison.Ordinal);
+        Assert.Contains("NO_COLOR", help, StringComparison.Ordinal);
+    }
+
+    /// <summary>The legend names each kind in the scheme of that kind, with a style of its own when there is no color.</summary>
+    /// <param name="noColor">Whether the palette has no color.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SyntaxLegend_EveryKind_IsNamedInItsOwnScheme_Test(bool noColor)
+    {
+        ThemePalette palette = ThemePalette.For(ThemeVariant.Dark, noColor);
+        using SyntaxLegend legend = new(palette);
+
+        View[] labels = [.. legend.SubViews];
+
+        Assert.Equal(SyntaxKinds.All.Select(SyntaxKinds.NameOf), labels.Select(l => l.Text));
+        Assert.Equal(
+            SyntaxKinds.All.Select(k => SyntaxLegend.SchemeOf(k, palette).Normal),
+            labels.Select(l => l.GetAttributeForRole(VisualRole.Normal))
+        );
     }
 
     private static Color[] Backgrounds(ThemePalette palette)

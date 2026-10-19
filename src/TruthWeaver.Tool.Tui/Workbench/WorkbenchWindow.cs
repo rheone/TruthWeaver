@@ -24,6 +24,13 @@ internal sealed class WorkbenchWindow : Window
     private const string MouseHelp =
         "Mouse: click a menu to open it, a pane to focus it or a tree node to select it, right click a pane for its menu, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
 
+    /// <summary>
+    /// The legend line of the key reference. It names the syntax kinds, so the colors of the rule text and of the predicate
+    /// lists are never the only mark. With NO_COLOR the weight tells them apart.
+    /// </summary>
+    private const string SyntaxHelp =
+        "Syntax colors: predicate  operator  variable  constant  description. With NO_COLOR: operator bold, predicate italic, variable bold italic, constant underlined, description faint.";
+
     /// <summary>The first line of the key reference: how to reach the menus.</summary>
     private const string MenuHelp = "F1 or F10 opens the menus; Alt and the underlined letter opens one menu.";
 
@@ -194,6 +201,7 @@ internal sealed class WorkbenchWindow : Window
         }
 
         lines.Add(string.Empty);
+        lines.Add(SyntaxHelp);
         lines.Add(MouseHelp);
         return string.Join('\n', lines);
     }

@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Four syntax kinds plus descriptions have distinct colors in the light and the dark set.
-- [ ] Each color keeps a contrast ratio of at least 4.5 : 1 in its set.
-- [ ] Color is never the only mark: a legend or label names the kind.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] Four syntax kinds plus descriptions have distinct colors in the light and the dark set.
+- [x] Each color keeps a contrast ratio of at least 4.5 : 1 in its set.
+- [x] Color is never the only mark: a legend or label names the kind.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

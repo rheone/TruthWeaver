@@ -68,6 +68,7 @@ The sizes of the regions, as you move the dividers, and the theme, as you switch
 The rule compiles again after you stop typing. The compile waits 300 ms after the last key and runs on a background task, so a large rule never blocks the editor. While it waits or runs, the status line shows `checking...` and the diagnostics, the panes and the last valid tree still show the previous result. A new key restarts the wait and drops the result of the older text, so an old result never replaces newer text. An action that needs the current text, such as save, format, undo, export or a structural edit, compiles the typed text first.
 
 - The editor colors the characters of each diagnostic span and underlines them: red for an error, yellow for a warning, cyan for information. With `NO_COLOR` the underline stays, an error is bold, and information is faint.
+- The editor also colors each kind of rule text in its own color: predicates, operators, variables, constants and comments (the description text). See [Syntax colors](#syntax-colors). A diagnostic mark wins over a syntax color where the two overlap. The colors follow the compile: they update when the compile after a pause in typing finishes, never on a single key, and they also show for a rule that has errors.
 - When the text has an error, the workbench keeps the last tree that compiled. The Canonical pane shows that tree under the line `Last valid tree (the rule text has errors):`, and the status line says `showing the last valid tree`. When no text compiled yet, the pane says `No valid tree yet: the rule text has errors.`
 - In the Diagnostics pane, Enter on a diagnostic moves the editor cursor to the start of its span.
 - An empty rule, or a rule with only white space, shows a hint in the Diagnostics pane in place of the `TRE0001` error: type a rule, or press Shift+F9 to choose a sample rule. F10 opens the menus. As soon as the rule has text, its real diagnostics show again.
@@ -113,7 +114,7 @@ The Insert menu puts rule text into the editor at the cursor. If text is selecte
 | New definition | A `let` definition with two parameters. Put the cursor at the start of the rule, and give the definition a name and a body. |
 | Use definition... | A use of one of the `let` definitions of the open rule, with its parameter names as placeholders. A list shows the definitions. |
 
-Each operator and constant shows a one-line description next to its name. The description is the one the library gives for the operator, the same text that the Tree pane shows. The description of a predicate comes from its catalog entry.
+Each entry shows its name in the color of its kind (operators, constants, predicates and variables) and its description in the description color; the name of the entry or of its submenu also says the kind. See [Syntax colors](#syntax-colors). Each operator and constant shows a one-line description next to its name. The description is the one the library gives for the operator, the same text that the Tree pane shows. The description of a predicate comes from its catalog entry.
 
 Insert adds rule text, so the menu works only when the open rule is rule text. If the rule is JSON or YAML, no entry inserts anything, and the status line says that Insert is not available. Convert the rule to rule text with F4 to use it.
 
@@ -275,6 +276,8 @@ The palette lists, in this order:
 - The predicates that the open rule uses, with the arguments of their first use.
 - The ready-made predicates of the `TruthWeaver.Predicates` package, in family groups (String, Numeric, Date and time, and so on). A line with a family title is not an entry; picking it opens the list again. The workbench reads the factories of the package when it first needs the list, so a new factory appears with no change to the workbench.
 
+Every predicate list, in the palette and in the Predicate entry of the Insert menu, writes each row in the color of its kind. The first word of the row also names the kind: `operator` and `constant` are those kinds, and `schema`, `catalog`, `rule` and `let` are predicate sources. Under the list, a line shows the description of the chosen row in the description color, and a legend line names the five colors. See [Syntax colors](#syntax-colors).
+
 `Type an expression` takes rule text, JSON or YAML. A predicate is a template: after you pick it, a form asks for the value of each argument, starting from the value of its first use in the rule. A string, GUID or date takes plain text; a number, a boolean or an array takes JSON; an array of strings also takes a list separated by commas. An empty value leaves out an argument that is not required. The operators of the palette are the list that `o` shows.
 
 `Search the predicate catalog` asks for words and lists the ready-made predicates that match, in family groups. Case does not matter. Every word must match the name, the label, the family or the start of a word of the description. A short list of common phrases also finds a predicate: `older than` finds `IsBefore`, and `empty` finds `IsEmpty`.
@@ -421,11 +424,27 @@ The text and the value marks keep a contrast ratio of at least 4.5 : 1 (WCAG) ag
 | Editor warning | amber `#8C5A00` | yellow `#FFD700` |
 | Editor information | blue `#005F87` | cyan `#5FD7FF` |
 
+### Syntax colors
+
+The rule text editor, the predicate lists and the Insert menu give each kind of text its own color. Each color keeps a contrast ratio of at least 4.5 : 1 (WCAG) against all three backgrounds of its set.
+
+| Kind | What it is | Light set | Dark set |
+| --- | --- | --- | --- |
+| predicate | A predicate call or a bare name, such as `isAdult(age: 18)`, and the name of a `let` definition | blue `#0040AA` | blue `#78AAFF` |
+| operator | A word such as `AND`, `NOT`, `AtLeast`, `let`, `FORALL` or `IN`, or a symbol such as `&&` or `!` | purple `#7028AA` | lilac `#CD96FF` |
+| variable | A `from(...)` read, a parameter of a `let` definition and the variable of a quantifier, in the head and in every use | teal `#00695F` | aqua `#50DCC8` |
+| constant | `True`, `False`, `Unknown`, and the letters `T`, `F` and `U` | rose `#A5005F` | pink `#FF8CC8` |
+| description | A `//` or `/* */` comment in the editor, and the description of an entry in a list or in the Insert menu | slate `#505A64` | gray-blue `#96A5B4` |
+
+The editor reads the words, symbols, strings and comments of the text. It does not need a rule that compiles. Names that a `let` or a quantifier binds count for the whole text, not by scope. The name of an argument (`age:` in `isAdult(age: 18)`), a string and a number keep the text color.
+
+Color is never the only mark of a kind. The legend line `predicate  operator  variable  constant  description` names the kinds in their colors at the bottom of the predicate lists and in the key reference (Shift+F1), and the lists write the kind as the first word of a row. With `NO_COLOR` the weight tells the kinds apart: an operator is bold, a predicate is italic, a variable is bold and italic, a constant is underlined and a description is faint. The underline of a constant looks like the underline of a diagnostic, but a diagnostic mark wins where they overlap, and an error is also bold.
+
 Color is never the only mark of a value. Every place that colors a value also writes it: `True`, `False`, `Unknown` or `skipped` in the trace, and `[T]`, `[F]` or `[U]` in the term list.
 
 ### NO_COLOR
 
-When the environment variable `NO_COLOR` is set and not empty (see [no-color.org](https://no-color.org)), the workbench draws with the colors of your terminal only. The panes and dialogs show focus and selection with reverse video, hot keys with an underline, and disabled text as faint. The text marks above carry the values. Ctrl+F1 still switches the theme, but the screen does not change.
+When the environment variable `NO_COLOR` is set and not empty (see [no-color.org](https://no-color.org)), the workbench draws with the colors of your terminal only. The panes and dialogs show focus and selection with reverse video, hot keys with an underline, and disabled text as faint. The text marks above carry the values, and the weights of the [syntax colors](#syntax-colors) carry the kinds. Ctrl+F1 still switches the theme, but the screen does not change.
 
 ## Preferences file
 

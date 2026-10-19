@@ -13,12 +13,14 @@ using Point = System.Drawing.Point;
 /// <summary>
 /// The rule text editor: a Terminal.Gui editor view that colors the characters a diagnostic marks (errors red, warnings
 /// yellow, information cyan, all underlined; the colors follow the theme, and with no color the severities differ by
-/// style). Undo and redo are not the editor's own: the workbench binds those keys to
+/// style). It also colors each syntax kind (predicate, operator, variable, constant and comment) in its own color; where a
+/// diagnostic mark and a syntax kind overlap, the diagnostic mark wins. Undo and redo are not the editor's own: the workbench binds those keys to
 /// the document history, so one history covers typing, formatting and conversion.
 /// </summary>
 internal sealed class RuleEditorView : Editor
 {
     private EditorMarks marks = EditorMarks.None;
+    private SyntaxMarks syntax = SyntaxMarks.None;
     private ThemePalette palette = ThemePalette.Dark;
 
     /// <summary>Initializes a new instance of the <see cref="RuleEditorView"/> class.</summary>
@@ -39,6 +41,17 @@ internal sealed class RuleEditorView : Editor
         set
         {
             this.marks = value;
+            this.SetNeedsDraw();
+        }
+    }
+
+    /// <summary>Gets or sets the syntax kinds to color, computed from the current text after the compile.</summary>
+    public SyntaxMarks Syntax
+    {
+        get => this.syntax;
+        set
+        {
+            this.syntax = value;
             this.SetNeedsDraw();
         }
     }
@@ -100,6 +113,7 @@ internal sealed class RuleEditorView : Editor
         public void Transform(CellVisualLine line)
         {
             EditorMarks marks = owner.marks;
+            SyntaxMarks syntax = owner.syntax;
             int row = line.DocumentLine.LineNumber - 1;
             int lineStart = line.DocumentLine.Offset;
             List<CellVisualLineElement> result = [];
@@ -110,7 +124,7 @@ internal sealed class RuleEditorView : Editor
                 // characters, so it takes the most severe mark of its characters as a whole.
                 if (element is TextRunElement run)
                 {
-                    changed |= ColorRun(run, marks, owner.palette, row, lineStart, result);
+                    changed |= ColorRun(run, marks, syntax, owner.palette, row, lineStart, result);
                 }
                 else
                 {
@@ -127,18 +141,22 @@ internal sealed class RuleEditorView : Editor
         private static bool ColorRun(
             TextRunElement run,
             EditorMarks marks,
+            SyntaxMarks syntax,
             ThemePalette palette,
             int row,
             int lineStart,
             List<CellVisualLineElement> result
         )
         {
+            // Each character has a diagnostic severity, a syntax kind, both or neither. A severity wins over a kind.
             DiagnosticSeverity?[] severities = new DiagnosticSeverity?[run.Text.Length];
+            SyntaxKind?[] kinds = new SyntaxKind?[run.Text.Length];
             bool any = false;
             for (int i = 0; i < severities.Length; i++)
             {
                 severities[i] = marks.At(row, run.DocumentOffset - lineStart + i);
-                any |= severities[i] is not null;
+                kinds[i] = syntax.At(run.DocumentOffset + i);
+                any |= severities[i] is not null || kinds[i] is not null;
             }
 
             if (!any)
@@ -150,32 +168,35 @@ internal sealed class RuleEditorView : Editor
             bool simple = run.Text.Length == run.VisualLength && run.Text.Length == run.DocumentLength;
             if (!simple)
             {
-                DiagnosticSeverity worst = severities.Where(s => s is not null).Max()!.Value;
-                result.Add(
-                    new TextRunElement(
-                        run.DocumentOffset,
-                        run.DocumentLength,
-                        run.VisualColumn,
-                        run.Text,
-                        Marked(run.Attribute, worst, palette)
-                    )
-                );
+                // A run with wide characters has more cells than characters, so it takes the most severe mark of its
+                // characters as a whole, or else the first syntax kind.
+                Attribute whole = severities.Any(s => s is not null)
+                    ? Marked(run.Attribute, severities.Where(s => s is not null).Max()!.Value, palette)
+                    : Kinded(run.Attribute, kinds.First(k => k is not null)!.Value, palette);
+                result.Add(new TextRunElement(run.DocumentOffset, run.DocumentLength, run.VisualColumn, run.Text, whole));
                 return true;
             }
 
-            // Split the run where the severity changes, so each piece has one color.
+            // Split the run where the mark changes, so each piece has one color.
             int start = 0;
             while (start < severities.Length)
             {
                 int end = start + 1;
-                while (end < severities.Length && severities[end] == severities[start])
+                while (end < severities.Length && severities[end] == severities[start] && kinds[end] == kinds[start])
                 {
                     end++;
                 }
 
-                Attribute attribute = severities[start] is { } severity
-                    ? Marked(run.Attribute, severity, palette)
-                    : run.Attribute;
+                Attribute attribute = run.Attribute;
+                if (severities[start] is { } severity)
+                {
+                    attribute = Marked(run.Attribute, severity, palette);
+                }
+                else if (kinds[start] is { } kind)
+                {
+                    attribute = Kinded(run.Attribute, kind, palette);
+                }
+
                 result.Add(
                     new TextRunElement(
                         run.DocumentOffset + start,
@@ -189,6 +210,11 @@ internal sealed class RuleEditorView : Editor
             }
 
             return true;
+        }
+
+        private static Attribute Kinded(Attribute normal, SyntaxKind kind, ThemePalette palette)
+        {
+            return new Attribute(palette.Of(kind), palette.HasColor ? normal.Background : Color.None, palette.StyleOf(kind));
         }
 
         private static Attribute Marked(Attribute normal, DiagnosticSeverity severity, ThemePalette palette)

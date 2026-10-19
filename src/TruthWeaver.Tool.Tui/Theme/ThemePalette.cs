@@ -7,7 +7,7 @@ using TruthWeaver.Diagnostics;
 /// The colors of one theme: the backgrounds and the text of the panes and dialogs, the truth values in the trace and the
 /// diagnostic severities in the editor. Every text color keeps a contrast ratio of at least <see cref="MinimumContrast"/>
 /// against each of the three backgrounds. A palette made for <c>NO_COLOR</c> has no color at all: it draws with the terminal
-/// defaults, and <see cref="StyleOf"/> tells the severities apart.
+/// defaults, and <see cref="StyleOf(DiagnosticSeverity)"/> tells the severities apart.
 /// </summary>
 /// <param name="Background">The background that the workbench paints in every pane.</param>
 /// <param name="Surface">The background of the dialogs and the menus, a little apart from <paramref name="Background"/>.</param>
@@ -20,6 +20,11 @@ using TruthWeaver.Diagnostics;
 /// <param name="Error">The color of an error in the editor.</param>
 /// <param name="Warning">The color of a warning in the editor.</param>
 /// <param name="Info">The color of information in the editor.</param>
+/// <param name="Predicate">The color of a predicate in the rule text and in the predicate lists.</param>
+/// <param name="Operator">The color of an operator in the rule text and in the lists.</param>
+/// <param name="Variable">The color of a variable (a <c>from(...)</c> read, a definition parameter or a quantifier variable).</param>
+/// <param name="Constant">The color of a constant (<c>True</c>, <c>False</c>, <c>Unknown</c>).</param>
+/// <param name="Description">The color of description text: a comment in the rule text and the description of a list entry.</param>
 /// <param name="HasColor"><see langword="false"/> for the palette of <c>NO_COLOR</c>.</param>
 internal sealed record ThemePalette(
     Color Background,
@@ -33,6 +38,11 @@ internal sealed record ThemePalette(
     Color Error,
     Color Warning,
     Color Info,
+    Color Predicate,
+    Color Operator,
+    Color Variable,
+    Color Constant,
+    Color Description,
     bool HasColor
 )
 {
@@ -56,6 +66,11 @@ internal sealed record ThemePalette(
             Error: new Color(180, 0, 0),
             Warning: new Color(140, 90, 0),
             Info: new Color(0, 95, 135),
+            Predicate: new Color(0, 64, 170),
+            Operator: new Color(112, 40, 170),
+            Variable: new Color(0, 105, 95),
+            Constant: new Color(165, 0, 95),
+            Description: new Color(80, 90, 100),
             HasColor: true
         );
 
@@ -73,6 +88,11 @@ internal sealed record ThemePalette(
             Error: new Color(255, 95, 95),
             Warning: new Color(255, 215, 0),
             Info: new Color(95, 215, 255),
+            Predicate: new Color(120, 170, 255),
+            Operator: new Color(205, 150, 255),
+            Variable: new Color(80, 220, 200),
+            Constant: new Color(255, 140, 200),
+            Description: new Color(150, 165, 180),
             HasColor: true
         );
 
@@ -90,6 +110,11 @@ internal sealed record ThemePalette(
             Error: Color.None,
             Warning: Color.None,
             Info: Color.None,
+            Predicate: Color.None,
+            Operator: Color.None,
+            Variable: Color.None,
+            Constant: Color.None,
+            Description: Color.None,
             HasColor: false
         );
 
@@ -145,6 +170,21 @@ internal sealed record ThemePalette(
         };
     }
 
+    /// <summary>Gets the color of a syntax kind in the editor and in the lists.</summary>
+    /// <param name="kind">The kind.</param>
+    /// <returns>The color.</returns>
+    public Color Of(SyntaxKind kind)
+    {
+        return kind switch
+        {
+            SyntaxKind.Predicate => this.Predicate,
+            SyntaxKind.Operator => this.Operator,
+            SyntaxKind.Variable => this.Variable,
+            SyntaxKind.Constant => this.Constant,
+            _ => this.Description,
+        };
+    }
+
     /// <summary>
     /// Gets the text style of a marked span. It is an underline. Without color it also tells the severities apart: an error
     /// is bold and information is faint.
@@ -163,6 +203,30 @@ internal sealed record ThemePalette(
             DiagnosticSeverity.Error => TextStyle.Underline | TextStyle.Bold,
             DiagnosticSeverity.Warning => TextStyle.Underline,
             _ => TextStyle.Underline | TextStyle.Faint,
+        };
+    }
+
+    /// <summary>
+    /// Gets the text style of a syntax kind. With color it is none, because the color tells the kinds apart. Without color the
+    /// weight does: an operator is bold, a predicate is italic, a variable is bold and italic, a constant is underlined and a
+    /// description is faint. A diagnostic mark wins over these styles where the two overlap.
+    /// </summary>
+    /// <param name="kind">The kind.</param>
+    /// <returns>The style.</returns>
+    public TextStyle StyleOf(SyntaxKind kind)
+    {
+        if (this.HasColor)
+        {
+            return TextStyle.None;
+        }
+
+        return kind switch
+        {
+            SyntaxKind.Predicate => TextStyle.Italic,
+            SyntaxKind.Operator => TextStyle.Bold,
+            SyntaxKind.Variable => TextStyle.Bold | TextStyle.Italic,
+            SyntaxKind.Constant => TextStyle.Underline,
+            _ => TextStyle.Faint,
         };
     }
 

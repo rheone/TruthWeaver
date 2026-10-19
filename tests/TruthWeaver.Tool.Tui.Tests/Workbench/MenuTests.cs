@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 
 using System.Drawing;
 using Terminal.Gui.App;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.Drivers;
 using Terminal.Gui.Input;
 using Terminal.Gui.Views;
@@ -10,6 +11,7 @@ using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
+using TruthWeaver.Tool.Tui.Theme;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
@@ -57,6 +59,35 @@ public sealed class MenuTests
         MenuItem[] items = [.. harness.Window.MenuBar.GetMenuItemsWith(_ => true)];
 
         Assert.All(WorkbenchCommands.Default, c => Assert.Single(items, i => i.Title == c.Title && i.Key == c.Key));
+    }
+
+    /// <summary>
+    /// The entries of the Insert menu are drawn in the color of their kind, and a switch of the theme colors them again. The
+    /// title names the kind as well ("Operators", "Constants", "Predicate...", "Variable..."), so color is not the only mark.
+    /// </summary>
+    [Fact]
+    public void MenuBar_InsertEntries_AreColoredByKindAndFollowTheTheme_Test()
+    {
+        using WorkbenchHarness harness = new();
+        MenuItem[] items = [.. harness.Window.MenuBar.GetMenuItemsWith(_ => true)];
+        MenuItem Find(string title) => items.First(i => i.Title == title);
+
+        Assert.Equal(ThemePalette.Dark.Operator, Find("AND").CommandView!.GetAttributeForRole(VisualRole.Normal).Foreground);
+        Assert.Equal(ThemePalette.Dark.Constant, Find("True").CommandView!.GetAttributeForRole(VisualRole.Normal).Foreground);
+        Assert.Equal(
+            ThemePalette.Dark.Predicate,
+            Find("Predicate...").CommandView!.GetAttributeForRole(VisualRole.Normal).Foreground
+        );
+        Assert.Equal(
+            ThemePalette.Dark.Variable,
+            Find("Variable...").CommandView!.GetAttributeForRole(VisualRole.Normal).Foreground
+        );
+        Assert.Equal(ThemePalette.Dark.Description, Find("AND").HelpView.GetAttributeForRole(VisualRole.Normal).Foreground);
+
+        harness.Press(Key.F1.WithCtrl);
+
+        Assert.Equal(ThemePalette.Light.Operator, Find("AND").CommandView!.GetAttributeForRole(VisualRole.Normal).Foreground);
+        harness.Press(Key.F1.WithCtrl);
     }
 
     /// <summary>F1 opens the menu bar, and Esc closes it and gives the focus back to the editor.</summary>

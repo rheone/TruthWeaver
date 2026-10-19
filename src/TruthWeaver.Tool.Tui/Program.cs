@@ -40,13 +40,15 @@ internal static class Program
             );
         using IApplication app = Application.Create();
         app.Init();
-        WorkbenchServices.Current = new WorkbenchServices(new TerminalDialogs(app), new TerminalClipboard(app));
+        TerminalDialogs dialogs = new(app);
+        WorkbenchServices.Current = new WorkbenchServices(dialogs, new TerminalClipboard(app));
         Workbench.Workbench workbench = new(document, startup.Settings, new TerminalPrompts(app), theme, noColor)
         {
             DiagnosticsDelay = Workbench.Workbench.DefaultDiagnosticsDelay,
             Post = app.Invoke,
             Preferences = preferences,
         };
+        dialogs.Palette = () => workbench.Palette;
         if (document.Path is { } startFile)
         {
             workbench.RememberRecent(startFile);
