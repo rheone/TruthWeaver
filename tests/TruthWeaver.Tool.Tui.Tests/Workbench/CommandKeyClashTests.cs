@@ -43,8 +43,7 @@ public sealed class CommandKeyClashTests
     /// <summary>
     /// The clash check finds a key that a view binds: a command key added as a binding to the editor, a list or a text field
     /// is reported with the key and the view. This shows that the clash test would fail for such a key, which no view binds
-    /// today. The key is read from a command. The test also passes a window-owned key, which these views bind themselves, and
-    /// shows that it is not reported.
+    /// today. The key is read from a command.
     /// </summary>
     [Fact]
     public void ClashesOf_CommandKeyBoundByTheEditorAListAndATextField_IsReportedForEachView_Test()
@@ -59,9 +58,42 @@ public sealed class CommandKeyClashTests
             view.KeyBindings.Add(key, Command.Accept);
         }
 
-        string[] clashes = ClashesOf(views, [key, WindowOwnedKeys[0]]);
+        string[] clashes = ClashesOf(views, [key]);
 
         Assert.Equal([.. views.Select(v => $"{key} is bound by {v.GetType().Name}")], clashes);
+    }
+
+    /// <summary>
+    /// A view that binds a window-owned key (Ctrl+Z) is not reported, because the window owns the key on purpose. The test
+    /// binds the key itself, so it passes because of the owned-key list and not because a view binds the key by chance.
+    /// </summary>
+    [Fact]
+    public void ClashesOf_WindowOwnedKeyBoundByAView_IsNotReported_Test()
+    {
+        Key owned = new(WindowOwnedKeys[0].KeyCode);
+        using ListView list = new();
+        list.KeyBindings.Add(owned, Command.Accept);
+
+        string[] clashes = ClashesOf([list], [new Key(owned.KeyCode)]);
+
+        Assert.Empty(clashes);
+    }
+
+    /// <summary>
+    /// A view that binds a key which is not window-owned is reported, so the owned-key test above is not passing because the
+    /// helper skips every key.
+    /// </summary>
+    [Fact]
+    public void ClashesOf_KeyThatIsNotWindowOwnedBoundByAView_IsReported_Test()
+    {
+        Key notOwned = CommandKeys.SecondOf("Switch theme");
+        Assert.DoesNotContain(notOwned, WindowOwnedKeys);
+        using ListView list = new();
+        list.KeyBindings.Add(notOwned, Command.Accept);
+
+        string[] clashes = ClashesOf([list], [new Key(notOwned.KeyCode)]);
+
+        Assert.Equal([$"{notOwned} is bound by ListView"], clashes);
     }
 
     /// <summary>

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Creating an `InsertGroup` with `RuleOperatorFamilies.None` fails with a message that names the group title.
-- [ ] A test covers the failure and a test covers a valid group.
-- [ ] The Insert menu and the Generate dialog work as before, and the existing generate tests pass without changes to their expectations.
-- [ ] The temp-folder prefix in `SecondKeyTests` no longer names a key that the test does not use.
+- [x] Creating an `InsertGroup` with `RuleOperatorFamilies.None` fails with a message that names the group title.
+- [x] A test covers the failure and a test covers a valid group.
+- [x] The Insert menu and the Generate dialog work as before, and the existing generate tests pass without changes to their expectations.
+- [x] The temp-folder prefix in `SecondKeyTests` no longer names a key that the test does not use.

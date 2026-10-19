@@ -147,7 +147,7 @@ public sealed class SecondKeyTests
     [Fact]
     public void Default_PrimaryKeyOfSaveIntoTheDocumentInTheEditor_SavesTheRuleIntoTheDocument_Test()
     {
-        string folder = Directory.CreateTempSubdirectory("tw-ctrlf12-").FullName;
+        string folder = Directory.CreateTempSubdirectory("tw-save-into-document-").FullName;
         WorkbenchServices previous = WorkbenchServices.Current;
         try
         {

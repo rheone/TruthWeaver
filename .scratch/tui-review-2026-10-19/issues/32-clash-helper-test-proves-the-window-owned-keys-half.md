@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test binds a window-owned key in a view and checks that the helper does not report it.
-- [ ] A test binds a key that is not window-owned in the same way and checks that the helper reports it.
-- [ ] The two tests fail if the owned-key list is emptied (show it during development).
-- [ ] All tests pass.
+- [x] A test binds a window-owned key in a view and checks that the helper does not report it.
+- [x] A test binds a key that is not window-owned in the same way and checks that the helper reports it.
+- [x] The two tests fail if the owned-key list is emptied (show it during development).
+- [x] All tests pass.
