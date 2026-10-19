@@ -292,7 +292,7 @@ public sealed class InspectControllerTests
         TreePaneView tree = Assert.IsType<TreePaneView>(harness.Window.ActivePaneViews[PaneSlot.Side]);
         tree.List.SetFocus();
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
         string byKey = harness.Window.InspectText;
         harness.Window.HideInspect();
         Point onFirstLine = tree.List.ViewportToScreen(new Point(0, 0));
@@ -311,7 +311,7 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(3);
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
         string byKey = harness.Window.InspectText;
         harness.Window.HideInspect();
         bool shown = harness.Window.InspectAt(editor, editor.ViewportToScreen(new Point(3, 0)));
@@ -329,7 +329,7 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(3);
 
-        harness.Press(InspectCommands.InspectKey, Terminal.Gui.Input.Key.Esc);
+        harness.Press(CommandKeys.Inspect, Terminal.Gui.Input.Key.Esc);
 
         Assert.Empty(harness.Window.InspectText);
     }
@@ -390,7 +390,7 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(5);
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
 
         Assert.Contains("Operator AND", harness.Window.InspectText, StringComparison.Ordinal);
     }
@@ -426,7 +426,7 @@ public sealed class InspectControllerTests
         using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(2);
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
         string byKey = harness.Window.InspectText;
 
         harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(6, 0)));
@@ -443,7 +443,7 @@ public sealed class InspectControllerTests
         using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(2);
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
 
         harness.Window.HideInspect();
 
@@ -457,7 +457,7 @@ public sealed class InspectControllerTests
         using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(2);
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
 
         harness.Workbench.NotifyAssignmentChanged();
 
@@ -500,7 +500,7 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(2);
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
 
         Assert.Empty(harness.Window.InspectText);
         Assert.Contains("Nothing to inspect here", harness.Workbench.Status, StringComparison.Ordinal);

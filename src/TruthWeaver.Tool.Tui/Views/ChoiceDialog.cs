@@ -68,7 +68,7 @@ internal sealed class ChoiceDialog : Dialog
 
             args.Handled = true;
             int row = this.List.Viewport.Y + args.Position.GetValueOrDefault().Y;
-            if (row >= 0 && row < this.visible.Count)
+            if (row >= 0 && row < this.visible.Count && !IsHeader(this.items[this.visible[row]]))
             {
                 this.List.Value = row;
                 this.Activate();

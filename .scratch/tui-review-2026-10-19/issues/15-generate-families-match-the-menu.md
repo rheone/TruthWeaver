@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Ticking only Other can produce `If` and `COALESCE` in generated rules, and a test checks it.
-- [ ] A test fails when an Insert menu group has no generator family.
-- [ ] The real tick-box dialog (not the scripted one) is tested: with nothing ticked, OK does not end the dialog.
-- [ ] `docs/tui.md` describes the groups as the menu does.
+- [x] Ticking only Other can produce `If` and `COALESCE` in generated rules, and a test checks it.
+- [x] A test fails when an Insert menu group has no generator family.
+- [x] The real tick-box dialog (not the scripted one) is tested: with nothing ticked, OK does not end the dialog.
+- [x] `docs/tui.md` describes the groups as the menu does.

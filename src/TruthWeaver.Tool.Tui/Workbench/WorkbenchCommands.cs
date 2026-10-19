@@ -43,11 +43,11 @@ internal static class WorkbenchCommands
         new(Key.F6.WithShift, CommandGroup.View, "Previous region", "Previous region", w => w.FocusNextRegion(-1)),
         new(Key.PageDown.WithCtrl, CommandGroup.View, "Next pane", "Next pane in this region", w => w.SwitchPane(1))
         {
-            SecondKey = Key.J.WithCtrl,
+            SecondKey = Key.W.WithAlt,
         },
         new(Key.PageUp.WithCtrl, CommandGroup.View, "Previous pane", "Previous pane in this region", w => w.SwitchPane(-1))
         {
-            SecondKey = Key.L.WithCtrl,
+            SecondKey = Key.Q.WithAlt,
         },
         new(Key.F11, CommandGroup.View, "Maximise or restore", "Maximise or restore this region", w => w.ToggleMaximised()),
         new(
@@ -58,7 +58,7 @@ internal static class WorkbenchCommands
             w => w.MoveVerticalDivider(-1)
         )
         {
-            SecondKey = Key.I.WithCtrl,
+            SecondKey = Key.Z.WithAlt,
         },
         new(
             Key.CursorRight.WithAlt,
@@ -68,7 +68,7 @@ internal static class WorkbenchCommands
             w => w.MoveVerticalDivider(1)
         )
         {
-            SecondKey = Key.W.WithCtrl,
+            SecondKey = Key.C.WithAlt,
         },
         new(
             Key.CursorUp.WithAlt,

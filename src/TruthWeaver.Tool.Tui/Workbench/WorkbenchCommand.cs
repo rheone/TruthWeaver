@@ -33,7 +33,7 @@ internal sealed record WorkbenchCommand(
     /// </summary>
     public Key? SecondKey { get; init; }
 
-    /// <summary>Gets whether a key is the key or the <see cref="SecondKey"/> of this command.</summary>
+    /// <summary>Tells whether pressing a key runs this command: the key is the <see cref="Key"/> of the command (unless that is empty) or its <see cref="SecondKey"/>.</summary>
     /// <param name="key">The key.</param>
     /// <returns><see langword="true"/> when the key runs this command.</returns>
     public bool Matches(Key key)

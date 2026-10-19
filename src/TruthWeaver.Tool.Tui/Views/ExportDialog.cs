@@ -27,6 +27,7 @@ internal sealed class ExportDialog : Dialog
     private readonly List<ExportEntry> equations;
     private readonly Label typeHeading;
     private readonly Label optionsHeading;
+    private readonly Label imageNote;
     private readonly Label hint;
     private readonly Label limitLabel;
     private readonly Label limitNote;
@@ -110,10 +111,18 @@ internal sealed class ExportDialog : Dialog
             },
         ];
 
-        this.hint = new Label
+        // Row 9 holds the note about a missing image renderer, always shown; row 10 holds the hint of the chosen entry.
+        this.imageNote = new Label
         {
             X = 0,
             Y = 9,
+            Width = Dim.Fill(),
+            Text = model.ImageNote,
+        };
+        this.hint = new Label
+        {
+            X = 0,
+            Y = 10,
             Width = Dim.Fill(),
             Text = string.Empty,
         };
@@ -121,25 +130,25 @@ internal sealed class ExportDialog : Dialog
         {
             Text = "Options",
             X = 0,
-            Y = 10,
+            Y = 11,
         };
         this.AllowLarger = new CheckBox
         {
             Text = model.LargerTruthTableText,
             X = 0,
-            Y = 11,
+            Y = 12,
             Value = model.AllowLargerTruthTable ? CheckState.Checked : CheckState.UnChecked,
         };
         this.limitLabel = new Label
         {
             Text = "Truth table term limit (empty for none)",
             X = 0,
-            Y = 12,
+            Y = 13,
         };
         this.TermLimit = new TextField
         {
             X = 40,
-            Y = 12,
+            Y = 13,
             Width = 6,
             Text = model.TruthTableTermLimit?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
         };
@@ -147,18 +156,18 @@ internal sealed class ExportDialog : Dialog
         {
             Text = LimitNoteText,
             X = 0,
-            Y = 13,
+            Y = 14,
         };
         this.destinationHeading = new Label
         {
             Text = "File or folder for To File",
             X = 0,
-            Y = 14,
+            Y = 15,
         };
         this.PathField = new TextField
         {
             X = 0,
-            Y = 15,
+            Y = 16,
             Width = Dim.Fill(),
         };
 
@@ -174,8 +183,8 @@ internal sealed class ExportDialog : Dialog
             list.ValueChanged += (_, _) => this.Refresh();
         }
 
-        // Enter in the types moves on to the formats (or the dropdowns of the equation), and acts at once only when the type has
-        // nothing more to choose, as the folder export has not.
+        // Enter in the types moves on to the formats, the dropdowns of the equation or, for the folder export, which has neither,
+        // the path field. It never writes: Enter in the path field or To File does.
         this.Types.Accepting += (_, args) =>
         {
             args.Handled = true;
@@ -185,7 +194,7 @@ internal sealed class ExportDialog : Dialog
             }
             else if (this.ChosenType == FolderType)
             {
-                this.Finish(ExportAction.ToFile);
+                this.PathField.SetFocus();
             }
             else
             {
@@ -238,7 +247,15 @@ internal sealed class ExportDialog : Dialog
         }
 
         this.Add(this.Dialect, this.Envelope, this.Constants);
-        this.Add(this.hint, this.optionsHeading, this.AllowLarger, this.limitLabel, this.TermLimit, this.limitNote);
+        this.Add(
+            this.imageNote,
+            this.hint,
+            this.optionsHeading,
+            this.AllowLarger,
+            this.limitLabel,
+            this.TermLimit,
+            this.limitNote
+        );
         this.Add(this.destinationHeading, this.PathField);
         this.AddButton(this.CopyButton);
         this.AddButton(this.FileButton);
@@ -250,8 +267,11 @@ internal sealed class ExportDialog : Dialog
     /// <summary>Raised when the author chose Copy or To File with a usable path (<see cref="Request"/> is set) or Cancel (it is not).</summary>
     public event EventHandler? Closed;
 
-    /// <summary>Gets the line under the lists: the hint of the chosen entry, or the note about a missing image renderer.</summary>
+    /// <summary>Gets the line under the image note: the hint of the chosen entry, or a message about a refused term limit.</summary>
     public string HintText => this.hint.Text;
+
+    /// <summary>Gets the line under the lists that names the image renderers to install. It shows for every chosen entry; it is empty when none is missing.</summary>
+    public string ImageNoteText => this.imageNote.Text;
 
     /// <summary>Gets the list of output types.</summary>
     public ListView Types { get; }
@@ -316,6 +336,7 @@ internal sealed class ExportDialog : Dialog
         {
             this.typeHeading.Dispose();
             this.formatHeading.Dispose();
+            this.imageNote.Dispose();
             this.hint.Dispose();
             this.limitLabel.Dispose();
             this.limitNote.Dispose();
@@ -409,8 +430,8 @@ internal sealed class ExportDialog : Dialog
         this.Envelope.Enabled = string.Equals(this.Dialect.Text, "latex", StringComparison.Ordinal);
         ExportEntry? entry = this.ChosenEntry;
 
-        // The line under the lists: the hint of the chosen entry, or else the note about a missing image renderer.
-        this.hint.Text = entry is { Hint.Length: > 0 } ? entry.Hint : this.model.ImageNote;
+        // The hint line is the chosen entry's own; the image note has its own line, so no entry hides it.
+        this.hint.Text = entry is { Hint.Length: > 0 } ? entry.Hint : string.Empty;
         bool canCopy = entry is { Kind: ExportEntryKind.Artifact };
         this.CopyButton.Enabled = canCopy;
         this.CopyButton.IsDefault = canCopy;

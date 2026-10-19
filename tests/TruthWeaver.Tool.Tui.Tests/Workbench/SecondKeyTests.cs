@@ -3,6 +3,7 @@ namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 using Terminal.Gui.Input;
 using Terminal.Gui.Views;
 using TruthWeaver.Tool.Tui.Commands;
+using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Theme;
@@ -28,32 +29,61 @@ public sealed class SecondKeyTests
         Assert.NotEqual(before, harness.Workbench.Theme);
     }
 
-    /// <summary>Ctrl+J, the second key of Next pane (Ctrl+PageDown), switches the pane the same way the primary key does.</summary>
+    /// <summary>Alt+W, the second key of Next pane (Ctrl+PageDown), switches the pane the same way the primary key does.</summary>
     [Fact]
-    public void CtrlJ_SecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeCtrlPageDown_Test()
+    public void AltW_SecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeCtrlPageDown_Test()
     {
         // Two Side panes, so switching the pane has somewhere to go.
         IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
         using WorkbenchHarness harness = new("a", panes);
         harness.Window.FocusRegion(PaneSlot.Side);
 
-        harness.Press(Key.J.WithCtrl);
+        harness.Press(Key.W.WithAlt);
 
         Assert.Equal("View", harness.Window.ActivePaneTitle(PaneSlot.Side));
         Assert.Equal(PaneSlot.Side, harness.Window.FocusedSlot());
     }
 
-    /// <summary>Ctrl+W, the second key of Editor wider (Alt+Right), widens the editor region the same way the primary key does.</summary>
+    /// <summary>Alt+Q, the second key of Previous pane (Ctrl+PageUp), switches back to the pane before, like the primary key.</summary>
     [Fact]
-    public void CtrlW_SecondKeyOfEditorWider_WidensTheEditorRegionLikeAltRight_Test()
+    public void AltQ_SecondKeyOfPreviousPane_SwitchesToThePaneBeforeLikeCtrlPageUp_Test()
+    {
+        IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
+        using WorkbenchHarness harness = new("a", panes);
+        harness.Window.FocusRegion(PaneSlot.Side);
+        harness.Press(Key.W.WithAlt);
+        string? after = harness.Window.ActivePaneTitle(PaneSlot.Side);
+
+        harness.Press(Key.Q.WithAlt);
+
+        Assert.NotEqual(after, harness.Window.ActivePaneTitle(PaneSlot.Side));
+        Assert.Equal(PaneSlot.Side, harness.Window.FocusedSlot());
+    }
+
+    /// <summary>Alt+C, the second key of Editor wider (Alt+Right), widens the editor region the same way the primary key does.</summary>
+    [Fact]
+    public void AltC_SecondKeyOfEditorWider_WidensTheEditorRegionLikeAltRight_Test()
     {
         using WorkbenchHarness harness = new("a");
         int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
 
-        harness.Press(Key.W.WithCtrl);
+        harness.Press(Key.C.WithAlt);
 
         Assert.Equal(60, harness.Workbench.Layout.EditorWidthPercent);
         Assert.True(harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width > before);
+    }
+
+    /// <summary>Alt+Z, the second key of Editor narrower (Alt+Left), narrows the editor region the same way the primary key does.</summary>
+    [Fact]
+    public void AltZ_SecondKeyOfEditorNarrower_NarrowsTheEditorRegionLikeAltLeft_Test()
+    {
+        using WorkbenchHarness harness = new("a");
+        int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
+
+        harness.Press(Key.Z.WithAlt);
+
+        Assert.Equal(50, harness.Workbench.Layout.EditorWidthPercent);
+        Assert.True(harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width < before);
     }
 
     /// <summary>Alt+M, the second key of Inspect (Ctrl+F8), opens the inspect box the same way the primary key does.</summary>
@@ -62,10 +92,67 @@ public sealed class SecondKeyTests
     {
         using WorkbenchHarness harness = new("isActive");
 
-        bool ran = harness.Window.RunCommand(InspectCommands.InspectSecondKey);
+        harness.Press(CommandKeys.InspectSecond);
 
-        Assert.True(ran);
-        Assert.Equal(InspectCommands.InspectSecondKey, InspectCommands.All[0].SecondKey);
+        Assert.NotEmpty(harness.Window.InspectText);
+    }
+
+    /// <summary>
+    /// Every second key of every default command reaches the window from the focused editor and runs its command, so a key
+    /// that a terminal turns into another key, or that a view takes first, fails here.
+    /// </summary>
+    [Fact]
+    public void Default_EverySecondKeyPressedInTheEditor_RunsItsCommand_Test()
+    {
+        List<string> failures = [];
+        foreach (WorkbenchCommand command in WorkbenchCommands.Default.Where(c => c.SecondKey is not null))
+        {
+            using WorkbenchHarness harness = new("isActive");
+            Key second = command.SecondKey!;
+
+            bool handled = harness.Window.NewKeyDownEvent(second);
+
+            if (!handled)
+            {
+                failures.Add($"{second} ({command.Title}) was not handled");
+            }
+        }
+
+        Assert.Empty(failures);
+    }
+
+    /// <summary>
+    /// Ctrl+F12 with the editor focused runs Save into the document: after the author agrees to the warning, the rule goes
+    /// into the document file.
+    /// </summary>
+    [Fact]
+    public void CtrlF12_EditorFocused_SavesTheRuleIntoTheDocument_Test()
+    {
+        string folder = Directory.CreateTempSubdirectory("tw-ctrlf12-").FullName;
+        WorkbenchServices previous = WorkbenchServices.Current;
+        try
+        {
+            string file = Path.Combine(folder, "policies.json");
+            File.WriteAllText(file, "{\n  \"rules\": { \"review\": \"isActive AND isReviewer\" }\n}\n");
+            ScriptedServices services = new();
+            services.Dialogs.Agree = true;
+            WorkbenchServices.Current = services.Services;
+            using WorkbenchHarness harness = new();
+            Assert.True(EmbeddedRuleController.For(harness.Workbench).OpenAt(file, "$.rules.review"));
+            harness.Workbench.Document.SetText("isActive AND isOwner");
+            harness.Window.FocusRegion(PaneSlot.Editor);
+
+            harness.Press(Key.F12.WithCtrl);
+
+            Assert.Contains("isOwner", File.ReadAllText(file), StringComparison.Ordinal);
+            Assert.False(harness.Workbench.Document.IsDirty);
+            Assert.Single(services.Dialogs.Confirmations);
+        }
+        finally
+        {
+            WorkbenchServices.Current = previous;
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     /// <summary>

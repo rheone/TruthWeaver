@@ -24,7 +24,8 @@ public sealed class GenerateRuleTests
         ("Connectives", @"\b(NOT|AND|OR|XOR|EQUIVALENT|IMPLIES|NAND|NOR)\b|\bPARITY\("),
         ("Cardinality", @"\b(ANY|ALL|NONE|BETWEEN|ExactlyOne|AtLeast|AtMost|Exactly|GreaterThan|LessThan)\("),
         ("If", @"\bIf\("),
-        ("Inspection", @"\b(IsTrue|IsFalse|IsUnknown|IsKnown|COALESCE)\("),
+        ("Inspection", @"\b(IsTrue|IsFalse|IsUnknown|IsKnown)\("),
+        ("Coalesce", @"\bCOALESCE\("),
     ];
 
     /// <summary>The same seed, depth and families give the same text.</summary>
@@ -126,6 +127,31 @@ public sealed class GenerateRuleTests
         Assert.Equal([0], services.Dialogs.LastInitial);
     }
 
+    /// <summary>Every group of the Insert menu has a generator family, so a new group fails here instead of becoming <c>If</c>.</summary>
+    [Fact]
+    public void FamilyChoices_EveryInsertMenuGroup_HasAGeneratorFamily_Test()
+    {
+        Assert.Equal(InsertItems.Operators.Select(g => g.Title), RuleGeneration.FamilyChoices.Select(c => c.Title));
+        Assert.All(RuleGeneration.FamilyChoices, c => Assert.NotEqual(RuleOperatorFamilies.None, c.Families));
+    }
+
+    /// <summary>The Other group stands for every operator that the Insert menu lists under Other: <c>If</c> and <c>COALESCE</c>.</summary>
+    [Fact]
+    public void Generate_OtherTicked_CanProduceIfAndCoalesceAndNothingElse_Test()
+    {
+        string[] texts = [.. Enumerable.Range(0, 60).Select(seed => GenerateWith(seed, [3]))];
+
+        Assert.Contains(texts, t => Regex.IsMatch(t, Families[2].Pattern, RegexOptions.None, RegexTimeout));
+        Assert.Contains(texts, t => Regex.IsMatch(t, Families[4].Pattern, RegexOptions.None, RegexTimeout));
+        foreach (string text in texts)
+        {
+            foreach (int other in new[] { 0, 1, 3 })
+            {
+                Assert.DoesNotMatch(new Regex(Families[other].Pattern, RegexOptions.None, RegexTimeout), text);
+            }
+        }
+    }
+
     /// <summary>Two ticked families together draw on both and on nothing else, and the same choices repeat the rule.</summary>
     [Fact]
     public void Generate_Command_CardinalityAndOther_UsesOnlyThemAndRepeats_Test()
@@ -139,7 +165,7 @@ public sealed class GenerateRuleTests
             RuleGeneration.Generate(
                 77,
                 2,
-                RuleOperatorFamilies.Cardinality | RuleOperatorFamilies.Conditional,
+                RuleOperatorFamilies.Cardinality | RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
                 ToolSettings.Default
             ),
             texts[0]

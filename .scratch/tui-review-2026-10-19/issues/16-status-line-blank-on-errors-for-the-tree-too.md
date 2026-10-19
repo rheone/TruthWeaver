@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] With errors in the text, selecting a term in the Tree pane shows no value in the status line.
-- [ ] A test covers the tree path with errors, and a test covers a good rule.
-- [ ] The comment sits above the method it describes.
-- [ ] `docs/tui.md` still matches the behavior.
+- [x] With errors in the text, selecting a term in the Tree pane shows no value in the status line.
+- [x] A test covers the tree path with errors, and a test covers a good rule.
+- [x] The comment sits above the method it describes.
+- [x] `docs/tui.md` still matches the behavior.

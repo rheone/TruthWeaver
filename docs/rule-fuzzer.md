@@ -107,6 +107,9 @@ The fuzzer uses two public types that are also available for other property test
 - `K3RuleGenerator.GenerateRule(random, depth, terms)` returns a `GeneratedRule`. It has the rule text, the operands,
   and an `Eval` function that gives the expected value for an assignment of the terms. `Verdict(termCount)` tells
   whether the rule is `True` or `False` for every assignment.
+- An overload of `GenerateRule` takes a `RuleOperatorFamilies` value to choose which operators the rule may use:
+  `Connectives`, `Cardinality`, `Conditional` (`If`), `Inspection` (`IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`) and
+  `Coalescing` (`COALESCE`). `All` has every family. The same seed and families give the same rule.
 - `K3Oracle` computes the value of each operator from the primitive definitions of `NOT`, `AND`, `OR` and cardinality.
   It shares no code with the evaluator, so a defect in the engine cannot also hide in the expected value.
   `K3Oracle.Assignments(n)` gives all $3^n$ assignments of `n` terms.

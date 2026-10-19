@@ -57,6 +57,34 @@ public sealed class CommandKeyClashTests
         Assert.DoesNotContain(WorkbenchMenus.MenuBarKey, keys);
     }
 
+    /// <summary>
+    /// No command key (primary or second) is a key that a terminal sends as another key or that a host takes for itself:
+    /// Tab, Enter, Esc and Backspace, the Ctrl letters that are the same bytes (Ctrl+I, Ctrl+J, Ctrl+M, Ctrl+H and Ctrl+[),
+    /// Ctrl+L (redraw) and Ctrl+W (closes a tab in some hosts). Such a key never arrives as the key the command names.
+    /// </summary>
+    [Fact]
+    public void Default_CommandKeys_AreNotKeysATerminalSendsAsAnotherKey_Test()
+    {
+        Key[] ambiguous =
+        [
+            Key.Tab,
+            Key.Enter,
+            Key.Esc,
+            Key.Backspace,
+            Key.I.WithCtrl,
+            Key.J.WithCtrl,
+            Key.M.WithCtrl,
+            Key.H.WithCtrl,
+            new Key('[').WithCtrl,
+            Key.L.WithCtrl,
+            Key.W.WithCtrl,
+        ];
+
+        string[] found = [.. AllKeysOf(WorkbenchCommands.Default).Where(ambiguous.Contains).Select(k => k.ToString())];
+
+        Assert.Empty(found);
+    }
+
     // Every key a command binds: its Key (unless it has none) and its SecondKey (when it has one).
     private static IEnumerable<Key> AllKeysOf(IEnumerable<WorkbenchCommand> commands)
     {

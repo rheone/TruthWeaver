@@ -4,9 +4,9 @@
 
 **Blocked by:** 13 (Fallback keys that really arrive), because that ticket changes the section.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Inspect, "Terminals that swallow keys", Options and dialog paragraphs have sentences of about 25 words or fewer.
-- [ ] Passive and vague phrasings in those paragraphs are rewritten.
-- [ ] The "Terminals that swallow keys" section has no hard line wraps.
-- [ ] The documentation tests pass and the file keeps the project terms.
+- [x] The Inspect, "Terminals that swallow keys", Options and dialog paragraphs have sentences of about 25 words or fewer.
+- [x] Passive and vague phrasings in those paragraphs are rewritten.
+- [x] The "Terminals that swallow keys" section has no hard line wraps.
+- [x] The documentation tests pass and the file keeps the project terms.

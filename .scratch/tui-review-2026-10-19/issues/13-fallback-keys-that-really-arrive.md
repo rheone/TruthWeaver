@@ -7,10 +7,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The four commands have Alt-letter second keys, shown in the menu and the key reference.
-- [ ] The clash test also rejects a command key that a terminal sends as another key (Tab, Enter, Ctrl+L, Ctrl+W, Esc, Backspace and the Ctrl+letter that equal them), so this class of mistake fails the build.
-- [ ] A test runs every second key and checks that its command ran (Inspect checks that the box opens).
-- [ ] A test presses Ctrl+F12 with the editor focused and checks that Save into the document runs.
-- [ ] `docs/tui.md` and the Tui README show the new keys.
+- [x] The four commands have Alt-letter second keys, shown in the menu and the key reference.
+- [x] The clash test also rejects a command key that a terminal sends as another key (Tab, Enter, Ctrl+L, Ctrl+W, Esc, Backspace and the Ctrl+letter that equal them), so this class of mistake fails the build.
+- [x] A test runs every second key and checks that its command ran (Inspect checks that the box opens).
+- [x] A test presses Ctrl+F12 with the editor focused and checks that Save into the document runs.
+- [x] `docs/tui.md` and the Tui README show the new keys.

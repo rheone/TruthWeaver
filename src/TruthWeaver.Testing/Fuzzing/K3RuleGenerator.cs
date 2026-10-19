@@ -122,7 +122,12 @@ public static class K3RuleGenerator
 
         if (families.HasFlag(RuleOperatorFamilies.Inspection))
         {
-            cases.AddRange([16, 18, 19]);
+            cases.Add(18);
+        }
+
+        if (families.HasFlag(RuleOperatorFamilies.Coalescing))
+        {
+            cases.AddRange([16, 19]);
         }
 
         return [.. cases];

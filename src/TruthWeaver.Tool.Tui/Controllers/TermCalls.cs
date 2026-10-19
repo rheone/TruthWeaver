@@ -12,7 +12,7 @@ internal static class TermCalls
     /// <param name="text">The rule text.</param>
     /// <param name="offset">The cursor offset. The place right after the call counts as inside it.</param>
     /// <returns>The text of the call, such as <c>hasRole(role: "admin")</c>, or <see langword="null"/> when the offset is in no call.</returns>
-    public static string? At(string text, int offset)
+    public static string? CallTextAt(string text, int offset)
     {
         ArgumentNullException.ThrowIfNull(text);
 
@@ -33,7 +33,7 @@ internal static class TermCalls
                 nameEnd++;
             }
 
-            int end = nameEnd < text.Length && text[nameEnd] == '(' ? CloseOf(text, nameEnd) : nameEnd;
+            int end = nameEnd < text.Length && text[nameEnd] == '(' ? OffsetAfterCloseParen(text, nameEnd) : nameEnd;
             if (end < 0)
             {
                 // No closing parenthesis: the call is unfinished, so it names no term.
@@ -50,8 +50,42 @@ internal static class TermCalls
         return found;
     }
 
+    /// <summary>Gets the name of a predicate call: the run of predicate characters at its start.</summary>
+    /// <param name="call">The call text, such as <c>hasRole(role: "admin")</c>, or a bare name.</param>
+    /// <returns>The name, such as <c>hasRole</c>.</returns>
+    public static string NameOf(string call)
+    {
+        ArgumentNullException.ThrowIfNull(call);
+
+        SyntaxMarks marks = SyntaxMarks.Compute(call);
+        int end = 0;
+        while (end < call.Length && marks.At(end) == SyntaxKind.Predicate)
+        {
+            end++;
+        }
+
+        return call[..end];
+    }
+
+    /// <summary>Tells whether two call texts are the same call when spacing is ignored.</summary>
+    /// <param name="first">The first call text, such as the display of a term.</param>
+    /// <param name="second">The second call text, such as the call at the cursor.</param>
+    /// <returns><see langword="true"/> when the calls differ at most in white space.</returns>
+    public static bool SameCall(string first, string second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+
+        return WithoutSpaces(first) == WithoutSpaces(second);
+    }
+
+    private static string WithoutSpaces(string text)
+    {
+        return string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
+    }
+
     // The offset after the parenthesis that closes the one at an offset, or -1. Strings are skipped, with backslash escapes.
-    private static int CloseOf(string text, int open)
+    private static int OffsetAfterCloseParen(string text, int open)
     {
         int depth = 0;
         bool inString = false;

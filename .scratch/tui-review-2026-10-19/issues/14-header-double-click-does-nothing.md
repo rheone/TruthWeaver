@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A double-click on a header leaves the highlight and the dialog as they were.
-- [ ] Enter on a header still moves the highlight to the first entry of its group.
-- [ ] A test covers both, in the plain and the filtered dialog.
-- [ ] `docs/tui.md` still matches the behavior.
+- [x] A double-click on a header leaves the highlight and the dialog as they were.
+- [x] Enter on a header still moves the highlight to the first entry of its group.
+- [x] A test covers both, in the plain and the filtered dialog.
+- [x] `docs/tui.md` still matches the behavior.

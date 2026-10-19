@@ -33,8 +33,8 @@ internal static class RuleGeneration
 
     /// <summary>
     /// Gets the choices of the operator families dialog: the title and the families it stands for. The titles are the four
-    /// groups of the Insert menu, in its order, so the menu is the one source. The Other group stands for <c>If</c>; the
-    /// generator counts <c>COALESCE</c> with the Inspection group.
+    /// groups of the Insert menu, in its order, so the menu is the one source. The Other group stands for <c>If</c> and
+    /// <c>COALESCE</c>. A group that this class does not know makes the first read of this property throw.
     /// </summary>
     public static IReadOnlyList<(string Title, RuleOperatorFamilies Families)> FamilyChoices { get; } =
     [.. InsertItems.Operators.Select(g => (g.Title, FamiliesOf(g.Title)))];
@@ -93,7 +93,8 @@ internal static class RuleGeneration
             "Connectives" => RuleOperatorFamilies.Connectives,
             "Cardinality" => RuleOperatorFamilies.Cardinality,
             "Inspection" => RuleOperatorFamilies.Inspection,
-            _ => RuleOperatorFamilies.Conditional,
+            "Other" => RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
+            _ => throw new InvalidOperationException($"The Insert menu group '{group}' has no generator family."),
         };
     }
 

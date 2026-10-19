@@ -9,17 +9,11 @@ using TruthWeaver.Tool.Tui.Workbench;
 /// </summary>
 internal static class InspectCommands
 {
-    /// <summary>Gets the key of the Inspect command.</summary>
-    public static Key InspectKey => Key.F8.WithCtrl;
-
-    /// <summary>Gets the fallback key of the Inspect command, for a terminal that sends no Ctrl+F-keys.</summary>
-    public static Key InspectSecondKey => Key.M.WithAlt;
-
     /// <summary>Gets the commands. <see cref="WorkbenchCommands.Default"/> includes them.</summary>
     public static IReadOnlyList<WorkbenchCommand> All { get; } =
     [
         new(
-            InspectKey,
+            Key.F8.WithCtrl,
             CommandGroup.Analyze,
             "Inspect",
             "Describe the part of the rule at the cursor or the selected node: what it means and what it does now (Esc closes)",
@@ -27,7 +21,7 @@ internal static class InspectCommands
         )
         {
             Hint = "Inspect",
-            SecondKey = InspectSecondKey,
+            SecondKey = Key.M.WithAlt,
         },
     ];
 }

@@ -27,22 +27,22 @@ public sealed class EvaluationStepControllerTests
         EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
         TreePaneView view = Assert.IsType<TreePaneView>(harness.Window.ActivePaneViews[PaneSlot.Side]);
 
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
         Assert.Equal("$.operands[0]", harness.Workbench.SelectedNode);
         Assert.Contains("Step 1 of 3: a = False", harness.Workbench.Status, StringComparison.Ordinal);
         Assert.EndsWith("  => False", view.Lines[1], StringComparison.Ordinal);
         Assert.DoesNotContain("=>", view.Lines[2], StringComparison.Ordinal);
 
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
         Assert.Equal("$.operands[1]", harness.Workbench.SelectedNode);
         Assert.Contains("Step 2 of 3: b = skipped", harness.Workbench.Status, StringComparison.Ordinal);
         Assert.EndsWith("  => skipped", view.Lines[2], StringComparison.Ordinal);
 
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
         Assert.Equal("$", harness.Workbench.SelectedNode);
         Assert.EndsWith("  => False", view.Lines[0], StringComparison.Ordinal);
 
-        harness.Press(StepCommands.PreviousKey);
+        harness.Press(CommandKeys.PreviousStep);
         Assert.Equal(1, steps.Index);
         Assert.DoesNotContain("=>", view.Lines[0], StringComparison.Ordinal);
 
@@ -59,7 +59,7 @@ public sealed class EvaluationStepControllerTests
         using WorkbenchHarness harness = new("a AND b", [new RuleTextPane(), new TreePane(services.Services)]);
         EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
 
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
         harness.Workbench.Assignment.Set("a", TruthValue.True);
         harness.Workbench.NotifyAssignmentChanged();
 
@@ -80,7 +80,7 @@ public sealed class EvaluationStepControllerTests
         );
         EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
 
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
 
         EvaluationStep step = Assert.IsType<EvaluationStep>(steps.Current);
         Assert.Equal("Unknown", step.Result);
@@ -103,13 +103,13 @@ public sealed class EvaluationStepControllerTests
         harness.Workbench.NotifyAssignmentChanged();
         EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
         TreePaneView view = Assert.IsType<TreePaneView>(harness.Window.ActivePaneViews[PaneSlot.Side]);
-        harness.Press(StepCommands.NextKey);
-        harness.Press(StepCommands.NextKey);
-        harness.Press(StepCommands.NextKey);
+        harness.Press(CommandKeys.NextStep);
+        harness.Press(CommandKeys.NextStep);
+        harness.Press(CommandKeys.NextStep);
         Assert.Equal(2, steps.Index);
         Assert.EndsWith("  => True", view.Lines[0], StringComparison.Ordinal);
 
-        harness.Press(StepCommands.PreviousKey);
+        harness.Press(CommandKeys.PreviousStep);
 
         Assert.Equal(1, steps.Index);
         Assert.DoesNotContain("=>", view.Lines[0], StringComparison.Ordinal);
@@ -117,7 +117,7 @@ public sealed class EvaluationStepControllerTests
         Assert.EndsWith("  => True", view.Lines[2], StringComparison.Ordinal);
         Assert.Contains("Step 2 of 3", harness.Workbench.Status, StringComparison.Ordinal);
 
-        harness.Press(StepCommands.PreviousKey);
+        harness.Press(CommandKeys.PreviousStep);
 
         Assert.Equal(0, steps.Index);
         Assert.DoesNotContain("=>", view.Lines[0], StringComparison.Ordinal);
@@ -125,7 +125,7 @@ public sealed class EvaluationStepControllerTests
         Assert.DoesNotContain("=>", view.Lines[2], StringComparison.Ordinal);
         Assert.Equal("$.operands[0]", harness.Workbench.SelectedNode);
 
-        harness.Press(StepCommands.PreviousKey);
+        harness.Press(CommandKeys.PreviousStep);
 
         Assert.Equal(0, steps.Index);
     }

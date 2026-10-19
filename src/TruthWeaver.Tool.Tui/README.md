@@ -60,9 +60,9 @@ most common keys, and Shift+F1 shows the key reference with every key by menu.
 | F2, Shift+F2 | Opens a rule inside a JSON or YAML document, and switches to another rule of that document. |
 | Ctrl+F12 (or Alt+O) | Saves the open rule into its document with the round-trip write-back. |
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
-| Ctrl+PageDown (or Ctrl+J), Ctrl+PageUp (or Ctrl+L) | Shows the next or previous pane of the region. |
+| Ctrl+PageDown (or Alt+W), Ctrl+PageUp (or Alt+Q) | Shows the next or previous pane of the region. |
 | F11 | Maximizes the region with the focus, or shows every region again. |
-| Alt+Left (or Ctrl+I), Alt+Right (or Ctrl+W), Alt+Up (or Ctrl+T), Alt+Down (or Alt+Y) | Moves the lines between the regions. |
+| Alt+Left (or Alt+Z), Alt+Right (or Alt+C), Alt+Up (or Ctrl+T), Alt+Down (or Alt+Y) | Moves the lines between the regions. |
 | Ctrl+R, Ctrl+G | Chooses a rewrite, and compares the rule with the last saved or accepted version. |
 | Ctrl+F9 (or Alt+B) | Loads a second rule from a file or the clipboard to compare with the open rule. |
 | Ctrl+F2 (or Alt+U), Ctrl+F3 (or Alt+P), Ctrl+F4 (or Alt+D) | In the Assign pane: sets every term to `Unknown`, moves the policy for `Unknown`, loads a variables file. |

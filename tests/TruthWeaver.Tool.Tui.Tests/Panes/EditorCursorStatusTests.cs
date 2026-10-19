@@ -108,6 +108,36 @@ public sealed class EditorCursorStatusTests
         Assert.DoesNotContain("a = Unknown", status, StringComparison.Ordinal);
     }
 
+    /// <summary>A selected tree node shows its value when the rule is good.</summary>
+    [Fact]
+    public void StatusOf_TreeNodeSelectedAndRuleIsGood_ShowsItsValue_Test()
+    {
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane(), new TreePane(services.Services)]);
+        harness.Workbench.Assignment.Set("b", TruthValue.False);
+        harness.Workbench.NotifyAssignmentChanged();
+
+        harness.Workbench.SelectNode("$.operands[1]");
+
+        Assert.Contains("b = False", WorkbenchWindow.StatusOf(harness.Workbench), StringComparison.Ordinal);
+    }
+
+    /// <summary>While the text has errors, a selected tree node (of the last valid tree) shows no value.</summary>
+    [Fact]
+    public void StatusOf_TreeNodeSelectedAndTextHasErrors_ShowsNoValue_Test()
+    {
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane(), new TreePane(services.Services)]);
+        harness.Workbench.SelectNode("$.operands[1]");
+        harness.Workbench.EditText("a AND (b");
+        harness.Workbench.FlushPendingText();
+
+        string status = WorkbenchWindow.StatusOf(harness.Workbench);
+
+        Assert.Contains("1 error", status, StringComparison.Ordinal);
+        Assert.DoesNotContain(" = ", status, StringComparison.Ordinal);
+    }
+
     private static RuleEditorView Editor(WorkbenchHarness harness)
     {
         return Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);

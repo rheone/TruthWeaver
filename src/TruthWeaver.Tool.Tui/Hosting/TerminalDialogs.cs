@@ -61,7 +61,8 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         ArgumentNullException.ThrowIfNull(items);
 
         using ChoiceDialog dialog = new(title, items, accept, null, this.Palette);
-        return this.Run(dialog, dialog.List);
+        this.Run(dialog, h => dialog.Closed += h, dialog.List);
+        return dialog.Choice;
     }
 
     /// <inheritdoc />
@@ -75,71 +76,9 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(initial);
 
-        IReadOnlyList<int>? result = null;
-        using Dialog dialog = new()
-        {
-            Title = title,
-            Width = Dim.Percent(60),
-            Height = items.Count + 8,
-        };
-        CheckBox[] boxes =
-        [
-            .. items.Select(
-                (text, index) =>
-                    new CheckBox
-                    {
-                        Text = text,
-                        X = 1,
-                        Y = index,
-                        Value = initial.Contains(index) ? CheckState.Checked : CheckState.UnChecked,
-                    }
-            ),
-        ];
-        using Label hint = new()
-        {
-            Text = "Tick at least one.",
-            X = 1,
-            Y = items.Count + 1,
-        };
-        using Button ok = new() { Text = accept, IsDefault = true };
-        using Button cancel = new() { Text = "_Cancel" };
-        ok.Accepting += (_, args) =>
-        {
-            args.Handled = true;
-            int[] ticked = [.. Enumerable.Range(0, boxes.Length).Where(i => boxes[i].Value == CheckState.Checked)];
-
-            // Nothing ticked: the dialog stays open, as the hint says.
-            if (ticked.Length > 0)
-            {
-                result = ticked;
-                app.RequestStop();
-            }
-        };
-        cancel.Accepting += (_, args) =>
-        {
-            args.Handled = true;
-            app.RequestStop();
-        };
-        foreach (CheckBox box in boxes)
-        {
-            dialog.Add(box);
-        }
-
-        dialog.Add(hint);
-        dialog.AddButton(ok);
-        dialog.AddButton(cancel);
-        if (boxes.Length > 0)
-        {
-            boxes[0].SetFocus();
-        }
-
-        app.Run(dialog);
-        foreach (CheckBox box in boxes)
-        {
-            box.Dispose();
-        }
-
-        return result;
+        using TickBoxDialog dialog = new(title, items, initial, accept);
+        this.Run(dialog, h => dialog.Closed += h, dialog.Boxes.Count > 0 ? dialog.Boxes[0] : null);
+        return dialog.Ticked;
     }
 
     /// <inheritdoc />
@@ -149,7 +88,8 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         ArgumentNullException.ThrowIfNull(filter);
 
         using ChoiceDialog dialog = new(title, items, "_OK", filter, this.Palette);
-        return this.Run(dialog, dialog.SearchBox!);
+        this.Run(dialog, h => dialog.Closed += h, dialog.SearchBox);
+        return dialog.Choice;
     }
 
     /// <inheritdoc />
@@ -178,11 +118,12 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         return dialog.Request;
     }
 
-    private int? Run(ChoiceDialog dialog, View focus)
+    // The run steps that every list dialog shares: stop the app when the dialog reports that it closed, focus the first control
+    // and run the dialog. The caller reads the result from the dialog afterwards.
+    private void Run(Dialog dialog, Action<EventHandler> subscribeClosed, View? focus)
     {
-        dialog.Closed += (_, _) => app.RequestStop();
-        _ = focus.SetFocus();
+        subscribeClosed((_, _) => app.RequestStop());
+        _ = focus?.SetFocus();
         app.Run(dialog);
-        return dialog.Choice;
     }
 }

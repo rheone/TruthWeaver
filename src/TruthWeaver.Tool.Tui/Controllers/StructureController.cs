@@ -130,13 +130,19 @@ internal sealed class StructureController
 
     /// <summary>
     /// Gets the value of the selected node for the status line, such as <c>hasRole(role: "admin") = True</c>, or
-    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, or the rule has no values yet.
+    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, the text has errors (the tree is then
+    /// the last valid one and may not match the text), or the rule has no values yet.
     /// </summary>
     public string? SelectedValueText
     {
         get
         {
-            if (this.Tree is null || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node)
+            // The committed document: reading Document would apply the pending text and end the pause.
+            if (
+                this.workbench.CommittedDocument.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+                || this.Tree is null
+                || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node
+            )
             {
                 return null;
             }
@@ -196,7 +202,7 @@ internal sealed class StructureController
         if (
             document.Format != RuleFormat.Text
             || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
-            || TermCalls.At(document.Text, offset) is not { } call
+            || TermCalls.CallTextAt(document.Text, offset) is not { } call
         )
         {
             return null;
@@ -209,11 +215,10 @@ internal sealed class StructureController
         }
 
         // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
-        string squeezed = WithoutSpaces(call);
-        TermAssignment? term = outcome.Terms.FirstOrDefault(t => WithoutSpaces(t.Display) == squeezed);
+        TermAssignment? term = outcome.Terms.FirstOrDefault(t => TermCalls.SameCall(t.Display, call));
         if (term is null)
         {
-            TermAssignment[] named = [.. outcome.Terms.Where(t => NameOf(t.Display) == NameOf(call))];
+            TermAssignment[] named = [.. outcome.Terms.Where(t => TermCalls.NameOf(t.Display) == TermCalls.NameOf(call))];
             term = named.Length == 1 ? named[0] : null;
         }
 
@@ -440,19 +445,7 @@ internal sealed class StructureController
         return shown;
     }
 
-    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
-    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
-    private static string WithoutSpaces(string text)
-    {
-        return string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
-    }
-
-    private static string NameOf(string call)
-    {
-        int paren = call.IndexOf('(', StringComparison.Ordinal);
-        return paren < 0 ? call : call[..paren];
-    }
-
+    // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
     private string? ValueTextOf(RuleTreeNode node)
     {
         AssignmentOutcome outcome = this.workbench.Outcome;
@@ -464,7 +457,8 @@ internal sealed class StructureController
         return this.ValueTextOf(term);
     }
 
-    // The value of a term as a word, or Unknown with the reason when it reads data that has no value yet.
+    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
+    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
     private string ValueTextOf(TermAssignment term)
     {
         AssignmentOutcome outcome = this.workbench.Outcome;

@@ -7,9 +7,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The image note is visible when an entry with its own hint is chosen.
-- [ ] Enter in the Types list of the folder export writes nothing and focuses the path field.
-- [ ] Tests cover both.
-- [ ] `docs/tui.md` describes the current keys.
+- [x] The image note is visible when an entry with its own hint is chosen.
+- [x] Enter in the Types list of the folder export writes nothing and focuses the path field.
+- [x] Tests cover both.
+- [x] `docs/tui.md` describes the current keys.

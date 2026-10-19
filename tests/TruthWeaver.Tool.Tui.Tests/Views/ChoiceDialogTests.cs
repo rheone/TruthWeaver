@@ -37,7 +37,7 @@ public sealed class ChoiceDialogTests
         Assert.False(session.Closed);
     }
 
-    /// <summary>A double click on a group header does nothing: the dialog stays open and returns no choice.</summary>
+    /// <summary>A double click on a group header does nothing: the highlight stays on the header, the dialog stays open and returns no choice.</summary>
     /// <param name="filtered">Whether the dialog has a search box.</param>
     [Theory]
     [InlineData(false)]
@@ -46,8 +46,10 @@ public sealed class ChoiceDialogTests
     {
         using DialogSession session = new(filtered);
 
+        // The clicks of the pair select the header row, as a click on any row does; the double click must not go on to the entry.
         session.DoubleClick(session.Dialog.List, 2, 1);
 
+        Assert.Equal(1, session.Dialog.List.Value);
         Assert.Null(session.Dialog.Choice);
         Assert.False(session.Closed);
     }

@@ -103,7 +103,7 @@ The workbench compiles with an empty registry, so it has no collection to range 
 
 ## Generate a rule
 
-Rule > Generate rule (Shift+F5) replaces the rule with a semi-random rule that compiles, so you can try the panes without writing a rule. Three questions come one after the other: the seed (blank is a random seed), the depth (1 to 5, default 3) and the operator families. The families dialog has one tick box for each group of the Insert menu: Connectives (ticked at first), Cardinality, Inspection and Other (`If`). Tick any set of them; the dialog needs at least one. The Inspection group also brings `COALESCE`. The terms are calls of predicates from the catalog with sample arguments, so the rule reads like a real rule.
+Rule > Generate rule (Shift+F5) replaces the rule with a semi-random rule that compiles, so you can try the panes without writing a rule. Three questions come one after the other: the seed (blank is a random seed), the depth (1 to 5, default 3) and the operator families. The families dialog has one tick box for each group of the Insert menu: Connectives (ticked at first), Cardinality, Inspection (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and Other (`If`, `COALESCE`). Each box stands for the operators that the same group of the Insert menu lists. Tick any set of them; OK with no box ticked keeps the dialog open. The terms are calls of predicates from the catalog with sample arguments, so the rule reads like a real rule.
 
 The same seed, depth and set of families give the same rule text. The status line shows the seed, so you can repeat or share a rule. Some generated rules do not compile; the action then tries again, up to 50 times, and says so on the status line if none compiles (try another seed). It never changes the rule in that case. Unsaved changes need your consent first, as for Ctrl+O. The generated rule is one undo step, so Ctrl+Z gives back the rule you had. A generated rule is rule text: when the open rule is JSON or YAML, the editor changes to rule text.
 
@@ -165,11 +165,11 @@ F4 opens the Convert dialog: a list of the forms to convert to, and the buttons 
 F5 opens the export dialog. One dialog holds all the choices, so no second dialog opens.
 
 - **Output type.** A list of the kinds of output: rule, equation, tree and diagram, truth table, statistics and diagnostics, report, image, and every artifact to a folder. The chosen type stays highlighted.
-- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md), so every artifact of the catalog is in the dialog: rule text (canonical, symbolic and formatted), JSON and YAML under Rule; the text tree, Mermaid, DOT and HTML under Tree and diagram; the statistics and the diagnostics (text, JSON and SARIF) under Statistics and diagnostics; and the report. The chosen format stays highlighted. For the truth table it lists every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation it shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
-- **Options.** A box that allows truth tables over the cap of 8 terms, up to 12 terms, and a **term limit** field for the most terms of a truth table (empty for none). A number allows a table of that size, with no ceiling, and the table grows by 3^n rows. The field must be empty or a whole number of 1 or more, and the dialog stays open on it otherwise. Both options carry a `TRE0034` warning and stay for the next export. A refused table says how to allow it. When both are set, the term limit wins: the box only removes the default limit while the field is empty. A line under the field says so.
+- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md), so the dialog holds every artifact of the catalog. Under Rule: rule text (canonical, symbolic and formatted), JSON and YAML. Under Tree and diagram: the text tree, Mermaid, DOT and HTML. Under Statistics and diagnostics: the statistics and the diagnostics (text, JSON and SARIF). The report has its own format. The chosen format stays highlighted. For the truth table, the list shows every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation, the dialog shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
+- **Options.** A box allows truth tables over the cap of 8 terms, up to 12 terms. A **term limit** field sets the most terms of a truth table (empty for none). A number allows a table of that size with no ceiling, and the table grows by 3^n rows. The field must be empty or a whole number of 1 or more. Otherwise the dialog stays open on it. Both options carry a `TRE0034` warning, and both stay for the next export. A refused table says how to allow it. When both options are set, the term limit wins. The box only removes the default limit while the field is empty. A line under the field says so.
 - **File or folder.** A text field with a suggested path in the folder of the open rule. It follows the chosen format until you edit it.
 
-The buttons are **Copy**, **To File** and **Cancel**. Copy is the default action. Enter in the Output type list moves the focus to the formats (or to the dropdowns of the equation) and does not end the dialog. Enter in the Format list copies, or writes to the file when the entry cannot be copied. Enter in the Output type list of the folder export, which has no formats, writes to the folder. To File writes to the path in the text field of the same dialog; a file that exists needs your confirmation. For the images and for every artifact to a folder, Copy is off and To File is the default. Cancel changes nothing.
+The buttons are **Copy**, **To File** and **Cancel**. Copy is the default action. Enter in the Output type list moves the focus to the formats (or to the dropdowns of the equation) and does not end the dialog. Enter in the Format list copies, or writes to the file when the entry cannot be copied. In the folder export, the Output type list has no formats. There, Enter moves the focus to the path field and writes nothing. Enter in the path field writes to the folder. To File writes to the path in the text field of the same dialog. A file that exists needs your confirmation. For the images and for every artifact to a folder, Copy is off and To File is the default. Cancel changes nothing.
 
 A click selects an entry. A double click also only selects it and never ends the dialog. Tab moves between the lists, the dropdowns, the box, the field and the buttons. Alt+C, Alt+T and Alt+L press Copy, To File and Cancel.
 
@@ -177,7 +177,7 @@ The text of an artifact equals the output of the matching command line export. T
 
 The command line has the same artifacts and the same truth-table options (`--allow-large-truth-table` and `--truth-table-limit`); see [export](cli.md#export). The command line also has `--output`, `--check` and the JSON result, and the dialog also has the clipboard. The dialog offers the images that `export --render` writes: Mermaid and DOT as SVG and PNG.
 
-The dialog lists the image formats of a diagram language only when its program is found. The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. When a program is missing, the dialog has no entries for that language, and one line under the lists names the program and where to get it. When both programs are missing, the Image type is not in the list. A missing program is never a dead entry. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
+The dialog lists the image formats of a diagram language only when its program is found. DOT images need Graphviz (`dot`). Mermaid images need the Mermaid CLI (`mmdc`). When a program is missing, the dialog has no entries for that language. One line under the lists, always visible, names the program and where to get it. When both programs are missing, the Image type is not in the list. A missing program never leaves a dead entry. An export of all artifacts includes the images only when both programs are installed. Otherwise it says which program is missing.
 
 ## Validation panel
 
@@ -193,7 +193,7 @@ Shift+F7 also turns strict mode on or off. In strict mode a warning fails the va
 
 ## View pane
 
-The View pane is the second pane of the right region. Press Ctrl+PageDown (or Ctrl+J, for a terminal that swallows
+The View pane is the second pane of the right region. Press Ctrl+PageDown (or Alt+W, for a terminal that swallows
 Ctrl+PageDown; see [Terminals that swallow keys](#terminals-that-swallow-keys)) in that region to show it. It prints the last valid tree of the rule in one form at a time. Each form calls the library printer through its `TextWriter` overload, so the text equals the output of that printer for the same options.
 
 | Form | Printer |
@@ -235,9 +235,15 @@ Each term ends with a badge that gives its value under the [Assign pane](#assign
 
 ### Inspect a part of the rule
 
-Analyze > Inspect (Ctrl+F8 or Alt+M) describes the part of the rule at the cursor in the editor, or the selected node when another pane has the focus. The text shows in a box above the status line. In the editor, the character under the cursor decides. When that character has no description (a space, or the end of the text), the character before the cursor decides. So the key describes the word you just typed, and a cursor between two words describes the word that starts under it. The box stays open until you press Esc, click, or change the rule or a value. A change closes it because the text would describe the old rule. Moving the pointer does not close it.
+Analyze > Inspect (Ctrl+F8 or Alt+M) describes the part of the rule at the cursor in the editor. When another pane has the focus, it describes the selected node. The text shows in a box above the status line.
 
-The mouse shows the same box: rest the pointer on a part of the editor text or on a line of the Tree pane for half a second. The box opens at the pointer and closes when the pointer moves to another part or you click. After Esc closes it, the box stays closed while the pointer stays inside the same part; it opens again after the pointer moves to another part. Both routes use one function for the text, so the key and the pointer always say the same. A terminal that sends no mouse movement (some SSH and tmux set-ups) shows no hover box; the key shows everything.
+In the editor, the character under the cursor decides. When that character has no description (a space, or the end of the text), the character before the cursor decides. So the key describes the word you just typed. A cursor between two words describes the word that starts under it.
+
+The box stays open until you press Esc, click, or change the rule or a value. A change closes the box because its text would describe the old rule. Moving the pointer does not close it.
+
+The mouse shows the same box. Rest the pointer on a part of the editor text, or on a line of the Tree pane, for half a second. The box opens at the pointer. It closes when the pointer moves to another part or when you click. After Esc closes the box, it stays closed while the pointer stays inside the same part. It opens again after the pointer moves to another part.
+
+The key and the pointer use one function for the text, so they always say the same. Some terminals, such as some SSH and tmux set-ups, send no mouse movement. They show no hover box, but the key shows everything.
 
 What the text says depends on the part. Values are words (`True`, `False`, `Unknown`, `skipped`), never only a color.
 
@@ -253,7 +259,7 @@ What the text says depends on the part. Values are words (`True`, `False`, `Unkn
 | Error or finding in the editor | The severity and code, the full message, the expected and found text, the suggestion, and the page `docs/diagnostics.md`. |
 | Root of the tree | The findings of the analyzer for the whole rule, such as an operand that cannot change the result. |
 
-In a JSON or YAML document the editor text has no inspect text, except for errors; use the Tree pane. A name that appears more than once as an operator (two `AND`) shows the description only, because the editor cannot tell which one you mean; select the node in the Tree pane for its value.
+In a JSON or YAML document, the editor text has no inspect text, except for errors. Use the Tree pane instead. A name that appears more than once as an operator (two `AND`) shows the description only, because the editor cannot tell which one you mean. Select the node in the Tree pane to see its value.
 
 ### Step through an evaluation
 
@@ -410,7 +416,7 @@ Ctrl+F2 (or Alt+U) gives every term the value `Unknown`. Ctrl+F3 (or Alt+P) move
 
 ## What would make this True
 
-The Make True pane lists the smallest changes to the term values of the [Assign pane](#assign-values) that give the rule the target value. It calls the library search [`RuleCounterfactual.FindChanges`](counterfactuals.md) with the decision of the Assign pane, so it lists the same change sets as that call, fewest changes first. Press Ctrl+PageDown (or Ctrl+J) in the bottom region to show the pane.
+The Make True pane lists the smallest changes to the term values of the [Assign pane](#assign-values) that give the rule the target value. It calls the library search [`RuleCounterfactual.FindChanges`](counterfactuals.md) with the decision of the Assign pane, so it lists the same change sets as that call, fewest changes first. Press Ctrl+PageDown (or Alt+W) in the bottom region to show the pane.
 
 Each entry is one line that names the terms to change, such as `b: False -> True, c: False -> True`. `(not read)` means the decision did not evaluate the term, so it has no value to change from.
 
@@ -507,7 +513,7 @@ The workbench keeps three choices between runs: the theme, after you switched it
 - **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). `recentFiles` lists up to ten full paths, newest first. The file holds no rule text, and no path except the recent files. The maximised region is not kept.
 - **Theme.** A `theme` in the file wins over the `theme` setting of `truthweaver.json`. Without a switch, the file has no `theme`, and the setting applies. To use the setting again, delete the `theme` line or the file.
 - **Recent files.** The file is written each time you open a file or remove a missing one from the list. A path that is repeated or is not text is dropped when the file is read, and so is every path after the tenth.
-- **Layout.** The file is written when you move a divider with the Alt+arrow keys (or their second keys: Ctrl+I, Ctrl+W, Ctrl+T, Alt+Y; see [Terminals that swallow keys](#terminals-that-swallow-keys)) or at the end of a mouse drag, and the next start uses the sizes.
+- **Layout.** The file is written when you move a divider with the Alt+arrow keys (or their second keys: Alt+Z, Alt+C, Ctrl+T, Alt+Y; see [Terminals that swallow keys](#terminals-that-swallow-keys)) or at the end of a mouse drag, and the next start uses the sizes.
 - **Problems.** A missing file, a file that is not valid JSON, or a file that is not an object gives the defaults and no message. A value that is not valid, such as `auto` or a size outside 15 to 85, is ignored and the other values stay. A file that cannot be written is ignored; the choice then lasts for the session only.
 
 ## Variables
@@ -596,17 +602,9 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 
 ### Terminals that swallow keys
 
-Some terminals take a key before it reaches the workbench, or send none of the bytes for it. Windows Terminal, by default,
-binds Alt+Left, Alt+Right, Alt+Up and Alt+Down to its own tab and pane actions. An SSH session depends on the client and
-the server agreeing on which keys to forward, and some set-ups drop Ctrl+PageUp, Ctrl+PageDown or the Ctrl+F-keys. tmux
-reads many key chords itself, for its own prefix and pane commands, before passing the rest to the program running inside
-it, and some Ctrl and function-key combinations never reach that program unless the tmux configuration passes them
-through.
+Some terminals take a key before it reaches the workbench, or send none of the bytes for it. Windows Terminal, by default, binds Alt+Left, Alt+Right, Alt+Up and Alt+Down to its own tab and pane actions. An SSH session depends on the client and the server agreeing on which keys to forward. Some set-ups drop Ctrl+PageUp, Ctrl+PageDown or the Ctrl+F-keys. tmux reads many key chords itself, for its own prefix and pane commands, before it passes the rest to the program inside. Some Ctrl and function-key combinations never reach that program unless the tmux configuration passes them through.
 
-Every command on Alt+Left, Alt+Right, Alt+Up, Alt+Down, Ctrl+PageUp, Ctrl+PageDown, a Ctrl+F-key or Shift+F11 or Shift+F12
-has a second key, built from Ctrl or Alt and a letter, that still reaches the workbench in such a terminal. The two keys
-are not configurable. Both run the command, and both show in the menu, on the command's entry, and in the key reference
-(Shift+F1), as `Ctrl+F1 or Alt+G`. The tables below give both keys for every command that has one.
+Every command on Alt+Left, Alt+Right, Alt+Up, Alt+Down, Ctrl+PageUp, Ctrl+PageDown, a Ctrl+F-key, Shift+F11 or Shift+F12 has a second key. The second key is built from Ctrl or Alt and a letter, and it still reaches the workbench in such a terminal. You cannot configure the two keys. Both run the command. Both show on the command's entry in the menu and in the key reference (Shift+F1), as `Ctrl+F1 or Alt+G`. The tables below give both keys for every command that has one.
 
 ### File
 
@@ -669,9 +667,9 @@ are not configurable. Both run the command, and both show in the menu, on the co
 | Key | Does |
 | --- | --- |
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
-| Ctrl+PageDown or Ctrl+J, Ctrl+PageUp or Ctrl+L | Shows the next or previous pane of the region. |
+| Ctrl+PageDown or Alt+W, Ctrl+PageUp or Alt+Q | Shows the next or previous pane of the region. |
 | F11 | Maximises the region with the focus, or shows every region again. |
-| Alt+Left or Ctrl+I, Alt+Right or Ctrl+W | Moves the vertical divider: makes the Rule region narrower or wider, in steps of 5 percent. |
+| Alt+Left or Alt+Z, Alt+Right or Alt+C | Moves the vertical divider: makes the Rule region narrower or wider, in steps of 5 percent. |
 | Alt+Up or Ctrl+T, Alt+Down or Alt+Y | Moves the horizontal divider: makes the top regions lower or higher, in steps of 5 percent. |
 | Ctrl+F1 or Alt+G | Switches between the light and the dark theme for this session. |
 | (menu only) | Theme: sets the light or the dark theme. |

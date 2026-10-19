@@ -11,7 +11,7 @@ using TruthWeaver.Tool.Tui.Views;
 /// <summary>
 /// Builds the menu bar of the workbench from the commands and choices: one menu for each <see cref="CommandGroup"/> that has
 /// an entry, in the order of the enum. A menu entry runs the same action as the key, and shows the key on its right. A
-/// command with a <see cref="WorkbenchCommand.SecondKey"/> also shows that key, as <c>or Ctrl+J</c>, in the middle.
+/// command with a <see cref="WorkbenchCommand.SecondKey"/> also shows that key, as <c>or Alt+W</c>, in the middle.
 /// </summary>
 /// <remarks>
 /// The keys of the commands stay with the window (<see cref="WorkbenchWindow.RunCommand"/>): Terminal.Gui runs the key of a

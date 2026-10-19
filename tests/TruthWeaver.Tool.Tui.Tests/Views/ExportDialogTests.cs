@@ -88,17 +88,55 @@ public sealed class ExportDialogTests
         Assert.True(session.Dialog.Dialect.HasFocus);
     }
 
-    /// <summary>Enter in the Types list on the folder export, which has no formats, takes To File as the default action.</summary>
+    /// <summary>Enter in the Types list on the folder export, which has no formats, moves the focus to the path field and writes nothing.</summary>
     [Fact]
-    public void Keyboard_EnterInTheFolderType_ChoosesToFile_Test()
+    public void Keyboard_EnterInTheFolderType_FocusesThePathFieldAndWritesNothing_Test()
     {
         using DialogSession session = new();
         session.Dialog.Types.Value = session.Dialog.Types.Source!.Count - 1;
 
         session.Press(Key.Enter);
 
+        Assert.Null(session.Dialog.Request);
+        Assert.False(session.Closed);
+        Assert.Same(session.Dialog.PathField, session.Dialog.MostFocused);
+    }
+
+    /// <summary>Enter in the path field of the folder export writes to the folder.</summary>
+    [Fact]
+    public void Keyboard_EnterInThePathFieldOfTheFolderType_ChoosesToFile_Test()
+    {
+        using DialogSession session = new();
+        session.Dialog.Types.Value = session.Dialog.Types.Source!.Count - 1;
+        session.Dialog.PathField.SetFocus();
+
+        session.Press(Key.Enter);
+
         Assert.Equal(ExportAction.ToFile, session.Dialog.Request!.Action);
         Assert.True(session.Closed);
+    }
+
+    /// <summary>The image note stays visible on its own line when the chosen entry has a hint of its own.</summary>
+    [Fact]
+    public void ImageNote_EntryWithAHint_StaysVisibleBesideTheHint_Test()
+    {
+        ExportEntry entry = new(
+            ExportEntryKind.Artifact,
+            "x: an entry",
+            null,
+            Group: "Group",
+            FileName: "x.txt",
+            Hint: "Own hint."
+        );
+        using ExportDialog dialog = new(
+            new ExportDialogModel([entry], Path.GetTempPath(), false, "Make big truth tables", null, "Install dot.")
+        );
+        dialog.BeginInit();
+        dialog.EndInit();
+        dialog.Layout(new Size(100, 30));
+
+        Assert.Equal("Own hint.", dialog.HintText);
+        Assert.Equal("Install dot.", dialog.ImageNoteText);
     }
 
     /// <summary>Enter in the formats of an entry that cannot be copied takes To File as the default action.</summary>
@@ -377,7 +415,7 @@ public sealed class ExportDialogTests
         session.Dialog.Types.Value = images;
 
         Assert.Equal(4, session.Dialog.Variants.Source!.Count);
-        Assert.Equal(string.Empty, session.Dialog.HintText);
+        Assert.Equal(string.Empty, session.Dialog.ImageNoteText);
     }
 
     /// <summary>With a renderer missing, the dialog lists none of its image formats and one line says what to install.</summary>
@@ -394,7 +432,11 @@ public sealed class ExportDialogTests
             Enumerable.Range(0, session.Dialog.Variants.Source.Count),
             i => session.Dialog.Variants.Source.ToList()![i]?.ToString()!.Contains("mermaid", StringComparison.Ordinal) ?? false
         );
-        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Mermaid), session.Dialog.HintText, StringComparison.Ordinal);
+        Assert.Contains(
+            ImageRenderer.ProgramName(DiagramLanguage.Mermaid),
+            session.Dialog.ImageNoteText,
+            StringComparison.Ordinal
+        );
     }
 
     /// <summary>With no renderer found, the dialog has no image type, and the note names both programs under the lists.</summary>
@@ -405,8 +447,12 @@ public sealed class ExportDialogTests
         using DialogSession session = new(renderers: none);
 
         Assert.Equal(-1, session.TypeIndex(ExportGroups.Images));
-        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Mermaid), session.Dialog.HintText, StringComparison.Ordinal);
-        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Dot), session.Dialog.HintText, StringComparison.Ordinal);
+        Assert.Contains(
+            ImageRenderer.ProgramName(DiagramLanguage.Mermaid),
+            session.Dialog.ImageNoteText,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Dot), session.Dialog.ImageNoteText, StringComparison.Ordinal);
     }
 
     /// <summary>On the headless ANSI driver the dialog draws its headings, the chosen format and the three buttons.</summary>

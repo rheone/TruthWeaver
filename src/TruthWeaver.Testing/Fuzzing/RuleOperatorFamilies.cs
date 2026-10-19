@@ -16,9 +16,12 @@ public enum RuleOperatorFamilies
     /// <summary><c>If</c>.</summary>
     Conditional = 4,
 
-    /// <summary>The inspections <c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c> and <c>IsKnown</c>, and <c>COALESCE</c>.</summary>
+    /// <summary>The inspections <c>IsTrue</c>, <c>IsFalse</c>, <c>IsUnknown</c> and <c>IsKnown</c>.</summary>
     Inspection = 8,
 
+    /// <summary><c>COALESCE</c>, with a list of operands and with a replacement value.</summary>
+    Coalescing = 16,
+
     /// <summary>Every family.</summary>
-    All = Connectives | Cardinality | Conditional | Inspection,
+    All = Connectives | Cardinality | Conditional | Inspection | Coalescing,
 }
