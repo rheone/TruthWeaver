@@ -2,6 +2,9 @@
 
 **What to build:** A user who works the export dialog with the keyboard can choose a type, then a format, then act. Enter in the Types list moves to the formats instead of copying at once. The "allow larger" checkbox and the term-limit field have one stated rule when both are set.
 
+**Decisions (settled by grilling):**
+- When both the "allow larger" checkbox and the term-limit field are set, the term-limit field wins. The checkbox matters only when the field is empty, where it removes the default limit. The dialog says so in one line.
+
 **Blocked by:** None (can start immediately).
 
 **Status:** ready-for-agent

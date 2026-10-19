@@ -2,6 +2,9 @@
 
 **What to build:** A user in Windows Terminal, over SSH or in tmux can reach every command with a key that arrives. Some terminals take Alt+arrows and Ctrl+PageUp/PageDown, and many send no Ctrl+F-keys or Shift+F11/F12. Each affected command gets a second key that works there, and the key reference says which to use where.
 
+**Decisions (settled by grilling):**
+- Each affected command gets one second key built from Ctrl or Alt and a letter. Keys are not configurable. Both keys show in the menu and the key reference.
+
 **Blocked by:** 05 (Command keys never lost to the focused pane).
 
 **Status:** ready-for-agent

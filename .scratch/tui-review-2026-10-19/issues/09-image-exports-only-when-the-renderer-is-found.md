@@ -2,6 +2,9 @@
 
 **What to build:** The export dialog lists image formats only when the external renderer is found. When it is missing, the dialog says once what to install, and does not list four entries that cannot run.
 
+**Decisions (settled by grilling):**
+- With the renderer missing, the image formats are hidden and one note line under the format list names the renderer to install.
+
 **Blocked by:** None (can start immediately).
 
 **Status:** ready-for-agent

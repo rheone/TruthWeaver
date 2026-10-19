@@ -2,6 +2,9 @@
 
 **What to build:** The inspect code has one source for each fact and clear parts. Behavior does not change; the tests of ticket 20 of the feedback list and of tickets 02 and 03 here stay green. Operator facts (spellings, cardinality and external operators) come from the library instead of hand-written tables. The tree walk and the word-character test are shared. The hover target is a typed value, not a string. The panel owns its margins. The controller splits by reason to change (node text, token scanning, diagnostics text).
 
+**Decisions (settled by grilling):**
+- Operator facts are read from the compiled outline only (compile a one-operator snippet, as the Insert menu does). No library API change. A small symbol-to-name map stays, and a test checks it against the parser.
+
 **Blocked by:** 02 (Inspect works when the cursor is right after a word), 03 (Inspect box lifecycle and cleanup).
 
 **Status:** ready-for-agent
