@@ -5,6 +5,7 @@ using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Commands;
 using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
@@ -291,7 +292,7 @@ public sealed class InspectControllerTests
         TreePaneView tree = Assert.IsType<TreePaneView>(harness.Window.ActivePaneViews[PaneSlot.Side]);
         tree.List.SetFocus();
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
         string byKey = harness.Window.InspectText;
         harness.Window.HideInspect();
         Point onFirstLine = tree.List.ViewportToScreen(new Point(0, 0));
@@ -310,7 +311,7 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(3);
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
         string byKey = harness.Window.InspectText;
         harness.Window.HideInspect();
         bool shown = harness.Window.InspectAt(editor, editor.ViewportToScreen(new Point(3, 0)));
@@ -328,20 +329,178 @@ public sealed class InspectControllerTests
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
         editor.MoveTo(3);
 
-        harness.Press(InspectCommands.InspectKey, Terminal.Gui.Input.Key.Esc);
+        harness.Press(CommandKeys.Inspect, Terminal.Gui.Input.Key.Esc);
 
         Assert.Empty(harness.Window.InspectText);
+    }
+
+    /// <summary>A cursor right after an operator, as it is after typing the word, describes that operator.</summary>
+    [Fact]
+    public void DescribeCaret_RightAfterAnOperator_DescribesTheOperator_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+
+        string? text = InspectController.For(harness.Workbench).DescribeCaret(5);
+
+        Assert.Contains("Operator AND", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>A cursor right after a predicate, a variable or a constant describes that part.</summary>
+    [Theory]
+    [InlineData("a AND b", 1, "Predicate a")]
+    [InlineData("a AND T", 7, "Constant T")]
+    public void DescribeCaret_RightAfterAWord_DescribesTheWord_Test(string rule, int caret, string expected)
+    {
+        using WorkbenchHarness harness = new(rule, [new RuleTextPane()]);
+
+        string? text = InspectController.For(harness.Workbench).DescribeCaret(caret);
+
+        Assert.Contains(expected, text, StringComparison.Ordinal);
+    }
+
+    /// <summary>When the character under the cursor has a description, it wins over the character before it.</summary>
+    [Fact]
+    public void DescribeCaret_BetweenTwoWords_TheCharacterUnderTheCursorWins_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+
+        // Offset 2 is the start of AND, directly after the space that follows a.
+        string? text = InspectController.For(harness.Workbench).DescribeCaret(2);
+
+        Assert.Contains("Operator AND", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>A cursor at the end of the text after a word describes that word.</summary>
+    [Fact]
+    public void DescribeCaret_AtTheEndOfTheText_DescribesTheLastWord_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+
+        string? text = InspectController.For(harness.Workbench).DescribeCaret(7);
+
+        Assert.NotNull(text);
+        Assert.Contains("b", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>The inspect key describes the word before a cursor that sits in a space after it.</summary>
+    [Fact]
+    public void Inspect_CursorRightAfterAWord_ShowsTheWord_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        editor.MoveTo(5);
+
+        harness.Press(CommandKeys.Inspect);
+
+        Assert.Contains("Operator AND", harness.Window.InspectText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// After Esc, a pointer that stays or moves inside the same part does not open the box again; it opens after the pointer
+    /// moves to another part.
+    /// </summary>
+    [Fact]
+    public void Hover_AfterEsc_StaysClosedInsideTheSamePartAndOpensOnAnotherPart_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(2, 0)));
+        harness.Window.ShowPendingHover();
+        Assert.NotEmpty(harness.Window.InspectText);
+
+        harness.Press(Terminal.Gui.Input.Key.Esc);
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(2, 0)));
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(4, 0)));
+        harness.Window.ShowPendingHover();
+        Assert.Empty(harness.Window.InspectText);
+
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(6, 0)));
+        harness.Window.ShowPendingHover();
+        Assert.NotEmpty(harness.Window.InspectText);
+    }
+
+    /// <summary>A box that the inspect key opened is not closed or replaced when the pointer moves over other parts.</summary>
+    [Fact]
+    public void Hover_PointerMovesWhileTheKeyBoxShows_KeepsTheKeyBox_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        editor.MoveTo(2);
+        harness.Press(CommandKeys.Inspect);
+        string byKey = harness.Window.InspectText;
+
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(6, 0)));
+        harness.Window.ShowPendingHover();
+
+        Assert.NotEmpty(byKey);
+        Assert.Equal(byKey, harness.Window.InspectText);
+    }
+
+    /// <summary>Esc, a click or a change closes a box that the key opened; the close is <c>HideInspect</c>.</summary>
+    [Fact]
+    public void HideInspect_KeyBox_ClosesTheBox_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        editor.MoveTo(2);
+        harness.Press(CommandKeys.Inspect);
+
+        harness.Window.HideInspect();
+
+        Assert.Empty(harness.Window.InspectText);
+    }
+
+    /// <summary>A change of the values closes the box that the key opened.</summary>
+    [Fact]
+    public void Inspect_ChangeOfTheValues_ClosesTheKeyBox_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        editor.MoveTo(2);
+        harness.Press(CommandKeys.Inspect);
+
+        harness.Workbench.NotifyAssignmentChanged();
+
+        Assert.Empty(harness.Window.InspectText);
+    }
+
+    /// <summary>A hover box closes when the pointer moves to another part.</summary>
+    [Fact]
+    public void Hover_PointerMovesToAnotherPart_ClosesTheHoverBox_Test()
+    {
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(2, 0)));
+        harness.Window.ShowPendingHover();
+        Assert.NotEmpty(harness.Window.InspectText);
+
+        harness.Window.HoverAt(editor, editor.ViewportToScreen(new Point(6, 0)));
+
+        Assert.Empty(harness.Window.InspectText);
+    }
+
+    /// <summary>The operands of a node are its direct children in order, found for any node of the tree.</summary>
+    [Fact]
+    public void OperandPaths_NestedNode_ListsItsDirectOperandsInOrder_Test()
+    {
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new("a AND (b OR c)", [new RuleTextPane(), new TreePane(services.Services)]);
+        RuleTree tree = StructureController.For(harness.Workbench).Tree!;
+        RuleTreeNode or = tree.Find("$.operands[1]")!;
+
+        Assert.Equal(["$.operands[0]", "$.operands[1]"], InspectController.OperandPaths(tree, tree.Find("$")!));
+        Assert.Equal(["$.operands[1].operands[0]", "$.operands[1].operands[1]"], InspectController.OperandPaths(tree, or));
     }
 
     /// <summary>A place with nothing to describe leaves the box closed and says why on the status line.</summary>
     [Fact]
     public void Inspect_PlaceWithNothing_SaysSoOnTheStatusLine_Test()
     {
-        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane()]);
+        using WorkbenchHarness harness = new("a  AND b", [new RuleTextPane()]);
         RuleEditorView editor = Assert.IsType<RuleEditorView>(harness.Window.ActivePaneViews[PaneSlot.Editor]);
-        editor.MoveTo(1);
+        editor.MoveTo(2);
 
-        harness.Press(InspectCommands.InspectKey);
+        harness.Press(CommandKeys.Inspect);
 
         Assert.Empty(harness.Window.InspectText);
         Assert.Contains("Nothing to inspect here", harness.Workbench.Status, StringComparison.Ordinal);
@@ -355,6 +514,24 @@ public sealed class InspectControllerTests
 
         Assert.All(lines, line => Assert.True(line.Length <= 12, line));
         Assert.Equal("one two three four five six", string.Join(' ', lines));
+    }
+
+    /// <summary>
+    /// The panel owns its margins: they are given once at construction, not on every <c>ShowText</c> call. Two panels built
+    /// with different margins, shown with the same text and window and no pointer, land at different rows, because each
+    /// keeps its own top and bottom rows free.
+    /// </summary>
+    [Fact]
+    public void ShowText_PanelsWithDifferentMargins_PlaceTheBoxDifferently_Test()
+    {
+        using InspectPanel narrowMargins = new(topRows: 1, bottomRows: 1);
+        using InspectPanel wideMargins = new(topRows: 1, bottomRows: 5);
+        Size window = new(80, 24);
+
+        narrowMargins.ShowText("a short line", window, null);
+        wideMargins.ShowText("a short line", window, null);
+
+        Assert.NotEqual(narrowMargins.Frame.Y, wideMargins.Frame.Y);
     }
 
     private static string Describe(string rule, string path, Action<Workbench>? arrange = null)

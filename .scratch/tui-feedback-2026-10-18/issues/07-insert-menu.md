@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Each kind has its own entry; the predicate entry opens the predicate catalog and inserts a call with its argument placeholders.
 - [x] An insert replaces the selection when there is one.

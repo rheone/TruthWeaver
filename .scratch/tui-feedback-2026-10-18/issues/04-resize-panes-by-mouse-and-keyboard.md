@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Dragging a divider changes the region sizes, and the new sizes persist in `workbench.json` as they do for key resizing today.
 - [x] Keys resize the editor width and the top height, and their shortcuts are shown.

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Typing filters the list as you type; the match covers name, description and family.
 - [x] Clearing the box shows the whole catalog.

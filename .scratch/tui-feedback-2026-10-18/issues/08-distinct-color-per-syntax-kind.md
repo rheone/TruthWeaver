@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Four syntax kinds plus descriptions have distinct colors in the light and the dark set.
 - [x] Each color keeps a contrast ratio of at least 4.5 : 1 in its set.

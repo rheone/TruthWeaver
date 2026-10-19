@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] A double click never closes the dialog.
 - [x] Copy puts the output on the clipboard, To File asks for a path in the same dialog, Cancel changes nothing.

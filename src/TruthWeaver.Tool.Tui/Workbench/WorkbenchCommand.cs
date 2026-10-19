@@ -24,4 +24,22 @@ internal sealed record WorkbenchCommand(
     /// hint line does not show the command. Only the most common commands set it.
     /// </summary>
     public string? Hint { get; init; }
+
+    /// <summary>
+    /// Gets the fallback key, built from Ctrl or Alt and a letter, or <see langword="null"/> for a command that has only
+    /// one key. A terminal that swallows the primary key (Alt+arrows, Ctrl+PageUp/PageDown, a Ctrl+F-key or Shift+F11/F12)
+    /// still reaches the command through this key. Both keys run the command, and both show in the menu and the key
+    /// reference.
+    /// </summary>
+    public Key? SecondKey { get; init; }
+
+    /// <summary>Tells whether pressing a key runs this command: the key is the <see cref="Key"/> of the command (unless that is empty) or its <see cref="SecondKey"/>.</summary>
+    /// <param name="key">The key.</param>
+    /// <returns><see langword="true"/> when the key runs this command.</returns>
+    public bool Matches(Key key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return (this.Key != Key.Empty && this.Key == key) || (this.SecondKey is { } second && second == key);
+    }
 }

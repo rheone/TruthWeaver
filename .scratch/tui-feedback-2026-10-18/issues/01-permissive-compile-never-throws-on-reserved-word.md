@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] A rule that uses a reserved word as a term name compiles to a diagnostic in the workbench, the command line and `RuleConverter`; no exception escapes.
 - [x] A test per entry point covers `a AND OR b` and a term named `T`, `F` or `U`.

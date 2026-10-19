@@ -25,11 +25,14 @@ internal static class EmbeddedRuleCommands
             w => EmbeddedRuleController.For(w.Workbench).Switch()
         ),
         new(
-            Key.F3,
+            Key.F12.WithCtrl,
             CommandGroup.File,
             "Save into the document",
             "Save the rule into its document by writing the whole document again (warns first)",
             w => EmbeddedRuleController.For(w.Workbench).SaveRoundTrip()
-        ),
+        )
+        {
+            SecondKey = Key.O.WithAlt,
+        },
     ];
 }

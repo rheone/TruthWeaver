@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The action replaces the rule (after the same confirmation as Open or Paste when the rule has unsaved edits) with a rule that compiles.
 - [x] The same seed, depth and operator families give the same rule text.

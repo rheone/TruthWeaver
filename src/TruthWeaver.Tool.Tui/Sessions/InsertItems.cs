@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Tui.Sessions;
 
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Core.Palette;
@@ -120,6 +121,7 @@ internal static class InsertItems
         [
             new InsertGroup(
                 "Connectives",
+                RuleOperatorFamilies.Connectives,
                 Described(
                     ("NOT", "NOT a"),
                     ("AND", "(a AND b)"),
@@ -134,6 +136,7 @@ internal static class InsertItems
             ),
             new InsertGroup(
                 "Cardinality",
+                RuleOperatorFamilies.Cardinality,
                 Described(
                     ("ANY", "ANY(a, b)"),
                     ("ALL", "ALL(a, b)"),
@@ -149,6 +152,7 @@ internal static class InsertItems
             ),
             new InsertGroup(
                 "Inspection",
+                RuleOperatorFamilies.Inspection,
                 Described(
                     ("IsTrue", "IsTrue(a)"),
                     ("IsFalse", "IsFalse(a)"),
@@ -156,7 +160,11 @@ internal static class InsertItems
                     ("IsKnown", "IsKnown(a)")
                 )
             ),
-            new InsertGroup("Other", Described(("If", "If(a, b, c)"), ("COALESCE", "COALESCE(a, b)"))),
+            new InsertGroup(
+                "Other",
+                RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
+                Described(("If", "If(a, b, c)"), ("COALESCE", "COALESCE(a, b)"))
+            ),
         ];
     }
 

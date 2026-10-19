@@ -12,6 +12,12 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     /// <summary>Gets the answers to <see cref="Choose"/>, in order. An empty queue cancels.</summary>
     public Queue<int?> Choices { get; } = new();
 
+    /// <summary>Gets the answers to <see cref="ChooseMany"/>, in order. An empty queue cancels.</summary>
+    public Queue<int[]?> Ticks { get; } = new();
+
+    /// <summary>Gets the indexes that the last <see cref="ChooseMany"/> started ticked.</summary>
+    public IReadOnlyList<int> LastInitial { get; private set; } = [];
+
     /// <summary>Gets or sets the folder that <see cref="AskFolder"/> returns.</summary>
     public string? Folder { get; set; }
 
@@ -48,6 +54,20 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
         this.LastItems = items;
         this.LastAccept = accept;
         return this.Choices.TryDequeue(out int? choice) ? choice : null;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<int>? ChooseMany(
+        string title,
+        IReadOnlyList<string> items,
+        IReadOnlyList<int> initial,
+        string accept = "_OK"
+    )
+    {
+        this.LastItems = items;
+        this.LastInitial = initial;
+        this.LastAccept = accept;
+        return this.Ticks.TryDequeue(out int[]? ticked) ? ticked : null;
     }
 
     /// <inheritdoc />

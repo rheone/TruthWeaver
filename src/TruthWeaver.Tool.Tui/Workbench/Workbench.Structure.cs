@@ -13,9 +13,14 @@ using TruthWeaver.Tool.Core.Tree;
 internal sealed partial class Workbench
 {
     private string selectedNode = "$";
+    private int editorCaret;
+    private bool followsEditor;
 
     /// <summary>Occurs after <see cref="SelectedNode"/> changes.</summary>
     public event EventHandler? SelectedNodeChanged;
+
+    /// <summary>Occurs after the editor cursor moves, or after a selection of a node of the tree takes over from it.</summary>
+    public event EventHandler? ValueSourceChanged;
 
     /// <summary>
     /// Gets the path of the selected node of the tree, such as <c>$.operands[1]</c> (see <see cref="RuleTreeNode.Path"/>).
@@ -24,19 +29,49 @@ internal sealed partial class Workbench
     /// </summary>
     public string SelectedNode => this.selectedNode;
 
+    /// <summary>Gets the offset of the editor cursor in the text, as the editor last reported it.</summary>
+    public int EditorCaret => this.editorCaret;
+
+    /// <summary>
+    /// Gets a value indicating whether the status line shows the value of the term under the editor cursor
+    /// (<see langword="true"/>) or of the selected node of the tree. The one that moved last wins.
+    /// </summary>
+    public bool ValueFollowsEditor => this.followsEditor;
+
     /// <summary>Selects a node of the tree.</summary>
     /// <param name="path">The path of the node.</param>
     public void SelectNode(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
 
+        bool takesOver = this.followsEditor;
+        this.followsEditor = false;
         if (string.Equals(path, this.selectedNode, StringComparison.Ordinal))
         {
+            if (takesOver)
+            {
+                this.ValueSourceChanged?.Invoke(this, EventArgs.Empty);
+            }
+
             return;
         }
 
         this.selectedNode = path;
         this.SelectedNodeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Records that the editor cursor moved, so the status line shows the value of the term under it.</summary>
+    /// <param name="offset">The offset of the cursor in the text.</param>
+    public void MoveEditorCaret(int offset)
+    {
+        if (this.followsEditor && offset == this.editorCaret)
+        {
+            return;
+        }
+
+        this.editorCaret = offset;
+        this.followsEditor = true;
+        this.ValueSourceChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

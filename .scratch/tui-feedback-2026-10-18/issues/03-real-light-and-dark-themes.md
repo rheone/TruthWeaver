@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The light set paints a light background in every pane and dialog; the dark set paints a dark one.
 - [x] The value marks keep a contrast ratio of at least 4.5 : 1 against the background chosen for each set.

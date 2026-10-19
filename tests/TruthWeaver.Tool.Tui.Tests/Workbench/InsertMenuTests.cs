@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 
 using Terminal.Gui.Input;
 using TruthWeaver.Compilation;
+using TruthWeaver.Testing.Fuzzing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
@@ -210,5 +211,27 @@ public sealed class InsertMenuTests
 
         Assert.False(inserted);
         Assert.Equal("a", harness.Workbench.Document.Text);
+    }
+
+    /// <summary>An Insert group that stands for no generator family fails at creation, and the message names the group.</summary>
+    [Fact]
+    public void Constructor_GroupWithNoFamily_ThrowsAndNamesTheTitle_Test()
+    {
+        ArgumentException error = Assert.Throws<ArgumentException>(() =>
+            new InsertGroup("Odd group", RuleOperatorFamilies.None, [])
+        );
+
+        Assert.Contains("Odd group", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>An Insert group with a generator family is created and keeps its title, families and items.</summary>
+    [Fact]
+    public void Constructor_GroupWithAFamily_KeepsItsValues_Test()
+    {
+        InsertGroup group = new("Logic", RuleOperatorFamilies.Connectives, []);
+
+        Assert.Equal("Logic", group.Title);
+        Assert.Equal(RuleOperatorFamilies.Connectives, group.Families);
+        Assert.Empty(group.Items);
     }
 }

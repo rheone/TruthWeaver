@@ -22,6 +22,19 @@ internal interface IWorkbenchDialogs
     /// <returns>The index of the entry, or <see langword="null"/> when the author cancels.</returns>
     public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK");
 
+    /// <summary>Asks the author to tick any set of entries of a list. At least one entry must stay ticked.</summary>
+    /// <param name="title">The title of the question.</param>
+    /// <param name="items">The entries.</param>
+    /// <param name="initial">The indexes of the entries that start ticked.</param>
+    /// <param name="accept">The text of the button that takes the choice, with <c>_</c> before its hot key.</param>
+    /// <returns>The indexes of the ticked entries in ascending order, or <see langword="null"/> when the author cancels.</returns>
+    public IReadOnlyList<int>? ChooseMany(
+        string title,
+        IReadOnlyList<string> items,
+        IReadOnlyList<int> initial,
+        string accept = "_OK"
+    );
+
     /// <summary>
     /// Asks the author to choose one entry of a list, with a search box above it. The list shows the entries that
     /// <paramref name="filter"/> returns for the text of the box, and it updates as the author types.

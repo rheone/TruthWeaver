@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] At least one sample per family listed above, each compiling in the workbench's permissive mode. The Quantifiers sample is the one exception: it carries `UnknownCollection` (TRE0042) on purpose, declared in its record, and its notes say a host must declare the collection.
 - [x] Choosing a sample replaces the rule after the same confirmation as Open when there are unsaved edits.

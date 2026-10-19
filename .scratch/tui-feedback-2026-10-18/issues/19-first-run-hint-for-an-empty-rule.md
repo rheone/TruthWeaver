@@ -4,7 +4,7 @@
 
 **Blocked by:** 15
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] An empty or whitespace-only rule shows the hint and no `TRE0001` error in the diagnostics pane.
 - [x] A rule with text still shows its real diagnostics.

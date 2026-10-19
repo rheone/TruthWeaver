@@ -4,7 +4,7 @@
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Every catalog artifact appears in the dialog and exports through the same path as the command line.
 - [x] A test fails when a catalog artifact has no entry in the dialog.

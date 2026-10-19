@@ -13,6 +13,7 @@ using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
+using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
@@ -129,13 +130,19 @@ internal sealed class StructureController
 
     /// <summary>
     /// Gets the value of the selected node for the status line, such as <c>hasRole(role: "admin") = True</c>, or
-    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, or the rule has no values yet.
+    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, the text has errors (the tree is then
+    /// the last valid one and may not match the text), or the rule has no values yet.
     /// </summary>
     public string? SelectedValueText
     {
         get
         {
-            if (this.Tree is null || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node)
+            // The committed document: reading Document would apply the pending text and end the pause.
+            if (
+                this.workbench.CommittedDocument.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+                || this.Tree is null
+                || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node
+            )
             {
                 return null;
             }
@@ -176,6 +183,46 @@ internal sealed class StructureController
         ArgumentNullException.ThrowIfNull(workbench);
 
         return Controllers.GetValue(workbench, key => new StructureController(key, services));
+    }
+
+    /// <summary>
+    /// Gets the value of the term at an offset of the rule text, for the status line, such as
+    /// <c>hasRole(role: "admin") = True</c>. The cursor in a predicate call or in its arguments (a <c>from(...)</c> variable
+    /// too) names that term.
+    /// </summary>
+    /// <param name="offset">The cursor offset in the text of the committed document.</param>
+    /// <returns>
+    /// The text, or <see langword="null"/> when the cursor is in no term, the text has errors, the rule is not rule text, the
+    /// call is not a term of the rule, or no rule has compiled.
+    /// </returns>
+    public string? ValueTextAt(int offset)
+    {
+        // The committed document: reading Document would apply the pending text and end the pause.
+        RuleDocument document = this.workbench.CommittedDocument;
+        if (
+            document.Format != RuleFormat.Text
+            || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+            || TermCalls.CallTextAt(document.Text, offset) is not { } call
+        )
+        {
+            return null;
+        }
+
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (!outcome.HasRule)
+        {
+            return null;
+        }
+
+        // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
+        TermAssignment? term = outcome.Terms.FirstOrDefault(t => TermCalls.SameCall(t.Display, call));
+        if (term is null)
+        {
+            TermAssignment[] named = [.. outcome.Terms.Where(t => TermCalls.NameOf(t.Display) == TermCalls.NameOf(call))];
+            term = named.Length == 1 ? named[0] : null;
+        }
+
+        return term is not null && this.ValueTextOf(term) is { } value ? $"{term.Display} = {value}" : null;
     }
 
     /// <summary>Selects the node at an index of <see cref="Lines"/>.</summary>
@@ -341,7 +388,7 @@ internal sealed class StructureController
 
     private static string GroupLine(string family)
     {
-        return $"--- {family} ---";
+        return ChoiceDialog.HeaderLine(family);
     }
 
     private static string CatalogLine(CatalogPredicate predicate)
@@ -398,8 +445,7 @@ internal sealed class StructureController
         return shown;
     }
 
-    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
-    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
     private string? ValueTextOf(RuleTreeNode node)
     {
         AssignmentOutcome outcome = this.workbench.Outcome;
@@ -408,6 +454,14 @@ internal sealed class StructureController
             return null;
         }
 
+        return this.ValueTextOf(term);
+    }
+
+    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
+    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    private string ValueTextOf(TermAssignment term)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
         if (term.Key is not null)
         {
             return term.Value.ToString();
@@ -521,7 +575,7 @@ internal sealed class StructureController
 
                     break;
                 default:
-                    // A group line is not an entry; the list opens again.
+                    // The dialog never returns a group line; a null target is only a guard.
                     picked = targets[choice.Value];
                     break;
             }
@@ -594,7 +648,7 @@ internal sealed class StructureController
 
         while (this.Services.Dialogs.Choose($"Catalog: {query.Trim()}", items) is int choice)
         {
-            // A group line is not an entry; the list opens again.
+            // The dialog never returns a group line; the check is only a guard.
             if (targets[choice] is { } entry)
             {
                 return entry;

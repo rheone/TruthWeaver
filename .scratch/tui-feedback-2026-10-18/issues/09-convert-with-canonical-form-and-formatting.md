@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The user picks the target from a list that includes canonical text, formatted rule text, JSON and YAML.
 - [x] A formatted result compiles back to an equal tree.

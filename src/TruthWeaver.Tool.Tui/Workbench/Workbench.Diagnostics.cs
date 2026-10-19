@@ -24,6 +24,12 @@ internal sealed partial class Workbench
     public TimeSpan DiagnosticsDelay { get; set; } = TimeSpan.Zero;
 
     /// <summary>
+    /// Gets or sets the clock that times the pause. The default is the system clock. A test sets a clock that it advances by
+    /// hand, so the pause needs no real wait.
+    /// </summary>
+    public TimeProvider Clock { get; set; } = TimeProvider.System;
+
+    /// <summary>
     /// Gets or sets how a background result gets back to the thread of the editor. The terminal application sets it to the
     /// invoke method of its loop. The default runs the action on the calling thread.
     /// </summary>
@@ -100,7 +106,7 @@ internal sealed partial class Workbench
     {
         // SuppressThrowing waits without raising TaskCanceledException, so a superseded compile never produces a
         // first-chance exception in a debugger. Cancellation is read from the token and the task state instead.
-        await Task.Delay(delay, cancellation).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        await Task.Delay(delay, this.Clock, cancellation).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         if (cancellation.IsCancellationRequested)
         {
             return;

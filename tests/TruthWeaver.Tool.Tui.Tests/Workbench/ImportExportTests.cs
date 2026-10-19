@@ -454,7 +454,9 @@ public sealed class ImportExportTests : IDisposable
     [Fact]
     public void Entries_Catalog_AreGroupedUnderHeadingsWithFileNames_Test()
     {
+        using FakeRenderers renderers = FakeRenderers.Both();
         (ExportController controller, _, _, _) = CreateExport("a AND b");
+        controller.ImageSearchPath = renderers.Folder;
 
         IReadOnlyList<ExportEntry> entries = controller.Entries();
 
