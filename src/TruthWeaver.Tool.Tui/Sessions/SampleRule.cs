@@ -13,4 +13,10 @@ internal sealed record SampleRule
     /// Gets the rule text. It compiles in the permissive mode of the workbench, and its notes (comments) explain the logic.
     /// </summary>
     public required string Text { get; init; }
+
+    /// <summary>
+    /// Gets the diagnostic code that the sample reports on purpose, or <see langword="null"/> when the sample compiles
+    /// without an error. A sample may show a diagnostic only when its notes explain it.
+    /// </summary>
+    public string? ExpectedDiagnostic { get; init; }
 }

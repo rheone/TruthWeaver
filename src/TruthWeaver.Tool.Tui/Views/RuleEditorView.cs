@@ -71,6 +71,28 @@ internal sealed class RuleEditorView : Editor
         this.CaretOffset = Math.Clamp(offset, 0, this.Document!.TextLength);
     }
 
+    /// <summary>
+    /// Puts text at the cursor in place of the selection, and leaves the cursor after the text. The text is one change of the
+    /// document, so the editor reports one content change.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    public void InsertAtCaret(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        int start = this.CaretOffset;
+        int length = 0;
+        if (this.HasSelection)
+        {
+            start = Math.Min(this.SelectionStart, this.SelectionEnd);
+            length = Math.Abs(this.SelectionEnd - this.SelectionStart);
+            this.ClearSelection();
+        }
+
+        this.Document!.Replace(start, length, text);
+        this.MoveTo(start + text.Length);
+    }
+
     /// <summary>Colors the marked characters of a visual line: the editor calls it for each line before it draws.</summary>
     private sealed class MarkTransformer(RuleEditorView owner) : IVisualLineTransformer
     {

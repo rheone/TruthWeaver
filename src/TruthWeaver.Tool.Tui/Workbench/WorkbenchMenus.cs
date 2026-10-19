@@ -3,6 +3,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
+using TruthWeaver.Tool.Tui.Commands;
 using TruthWeaver.Tool.Tui.Sessions;
 
 /// <summary>
@@ -170,6 +171,16 @@ internal static class WorkbenchMenus
             entries.Insert(open + 2, CreateSubmenu(SamplesTitle, SampleItems(window)));
         }
 
+        // The operators and the constants are submenus of fixed entries; they follow the Predicate entry.
+        if (menu.Group == CommandGroup.Insert)
+        {
+            entries.Insert(1, CreateSubmenu(InsertCommands.OperatorsTitle, OperatorItems(window)));
+            entries.Insert(
+                2,
+                CreateSubmenu(InsertCommands.ConstantsTitle, [.. InsertItems.Constants.Select(i => InsertEntry(window, i))])
+            );
+        }
+
         MenuItem? recent = entries.OfType<MenuItem>().FirstOrDefault(e => e.Title == RecentTitle);
 
         MenuBarItem item = new(TitleOf(menu.Group), entries);
@@ -224,6 +235,18 @@ internal static class WorkbenchMenus
                 Key.Empty
             )),
         ];
+    }
+
+    // The Operators submenu: one submenu for each group (connectives, cardinality, inspection, other).
+    private static MenuItem[] OperatorItems(WorkbenchWindow window)
+    {
+        return [.. InsertItems.Operators.Select(g => CreateSubmenu(g.Title, [.. g.Items.Select(i => InsertEntry(window, i))]))];
+    }
+
+    // An entry of the Insert menu: the name, with its one-line description beside it.
+    private static MenuItem InsertEntry(WorkbenchWindow window, InsertItem item)
+    {
+        return new MenuItem(item.Name, item.Description, () => window.Workbench.InsertText(item.Text, item.Name), Key.Empty);
     }
 
     // An entry that opens a submenu; the entry owns the submenu.

@@ -69,6 +69,13 @@ internal sealed class RuleTextPane : IWorkbenchPane
             editor.SetFocus();
         };
 
+        // The Insert menu: the editor puts the text at the cursor, in place of the selection.
+        workbench.InsertRequested += (_, text) =>
+        {
+            editor.InsertAtCaret(text);
+            editor.SetFocus();
+        };
+
         ShowDocument();
         return editor;
     }

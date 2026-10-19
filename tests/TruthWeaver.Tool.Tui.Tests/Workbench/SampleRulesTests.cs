@@ -25,12 +25,32 @@ public sealed class SampleRulesTests
                 .CreateCompiler(ToolSettings.Default)
                 .CompileAs(sample.Text, RuleFormat.Text);
 
+            if (sample.ExpectedDiagnostic is not null)
+            {
+                // A sample that shows a diagnostic on purpose must report that code and explain it in a comment.
+                Assert.Contains(result.Diagnostics, d => d.Code == sample.ExpectedDiagnostic);
+                Assert.Contains("//", sample.Text, StringComparison.Ordinal);
+                continue;
+            }
+
             Assert.True(
                 result.Rule is not null,
                 $"{sample.Name}: {string.Join("; ", result.Diagnostics.Select(d => d.Message))}"
             );
             Assert.True(result.Rule.Notes.Count > 0, $"{sample.Name} has no note.");
         }
+    }
+
+    /// <summary>Exactly one sample shows a diagnostic on purpose: the quantifier sample, with TRE0042 (UnknownCollection).</summary>
+    [Fact]
+    public void All_SamplesWithAnExpectedDiagnostic_AreOnlyTheQuantifierSample_Test()
+    {
+        SampleRule[] expected = [.. SampleRules.All.Where(s => s.ExpectedDiagnostic is not null)];
+
+        SampleRule only = Assert.Single(expected);
+        Assert.Equal("Quantifiers", only.Name);
+        Assert.Equal("TRE0042", only.ExpectedDiagnostic);
+        Assert.Contains("host must declare", only.Text, StringComparison.Ordinal);
     }
 
     /// <summary>Every part of the language that the ticket names has at least one sample, and the check ignores the notes.</summary>

@@ -94,10 +94,28 @@ The File menu has a **Samples** submenu, and Shift+F9 opens the same list in a d
 | IsTrue and IsUnknown | Questions about the value itself. |
 | COALESCE | The first operand that is not `Unknown`. |
 | let definitions | A named sub-expression with parameters. |
+| Quantifiers | `FORALL` and `EXISTS` over a collection. It reports `TRE0042` on purpose. |
 | from(...) variables | An argument read from a data source at run time. |
 | Notes | Line and block comments as notes of nodes. |
 
-The workbench compiles with an empty registry, so it has no collection to range over. A rule with `FORALL` or `EXISTS` reports `UnknownCollection` (`TRE0042`) here, and there is no quantifier sample. See [Quantifiers](rule-text.md#quantifiers) for the syntax.
+The workbench compiles with an empty registry, so it has no collection to range over. A rule with `FORALL` or `EXISTS` reports `UnknownCollection` (`TRE0042`) here. The Quantifiers sample shows this diagnostic on purpose: its notes explain that a host must declare the collection. Every other sample compiles. See [Quantifiers](rule-text.md#quantifiers) for the syntax.
+
+## Insert menu
+
+The Insert menu puts rule text into the editor at the cursor. If text is selected, the insert replaces the selection. The cursor goes after the inserted text, and the insert is one step in the undo history (Ctrl+Z). No entry has a key; open the menu with Alt+I.
+
+| Entry | Inserts |
+| --- | --- |
+| Predicate... | A call of a predicate with a placeholder for each argument. A search list shows the predicates of the rule, of the schema file and of the catalog, each with its description. Type words to narrow the list. |
+| Operators | A submenu for each group: Connectives (`NOT`, `AND`, `OR`, `XOR`, `EQUIVALENT`, `IMPLIES`, `NAND`, `NOR`, `PARITY`), Cardinality (`ANY`, `ALL`, `NONE`, `ExactlyOne`, `AtLeast`, `AtMost`, `Exactly`, `GreaterThan`, `LessThan`, `BETWEEN`), Inspection (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and Other (`If`, `COALESCE`). The operands are the placeholder terms `a`, `b` and `c`. An infix operator is in parentheses. |
+| Constants | `True`, `False`, `Unknown`, and the letters `T`, `F` and `U`. |
+| Variable... | A `from("source", "query")` reference. The workbench asks for the data source and the query. Put the cursor where a predicate argument value goes. |
+| New definition | A `let` definition with two parameters. Put the cursor at the start of the rule, and give the definition a name and a body. |
+| Use definition... | A use of one of the `let` definitions of the open rule, with its parameter names as placeholders. A list shows the definitions. |
+
+Each operator and constant shows a one-line description next to its name. The description is the one the library gives for the operator, the same text that the Tree pane shows. The description of a predicate comes from its catalog entry.
+
+Insert adds rule text, so the menu works only when the open rule is rule text. If the rule is JSON or YAML, no entry inserts anything, and the status line says that Insert is not available. Convert the rule to rule text with F4 to use it.
 
 ## Format
 
@@ -503,7 +521,7 @@ The menu bar on the first row holds every command of the workbench, in one menu 
 | To | Do |
 | --- | --- |
 | Open the menu bar | Press F1 or F10. The File menu opens. |
-| Open one menu | Press Alt and the underlined letter: Alt+F (File), Alt+E (Edit), Alt+R (Rule), Alt+A (Analyze), Alt+X (Export), Alt+V (View) or Alt+H (Help). Or click the title of the menu. |
+| Open one menu | Press Alt and the underlined letter: Alt+F (File), Alt+E (Edit), Alt+I (Insert), Alt+R (Rule), Alt+A (Analyze), Alt+X (Export), Alt+V (View) or Alt+H (Help). Or click the title of the menu. |
 | Move in the menus | Up and Down move to an entry. Left and Right move to the next menu, and Right opens a submenu. |
 | Run an entry | Press Enter, or click the entry. |
 | Close the menus | Press Esc. The focus goes back to the pane that had it. |
@@ -646,6 +664,6 @@ This section is for developers of the workbench. The window gets its panes and k
 - A pane implements `IWorkbenchPane`: a title, a region (`PaneSlot.Editor`, `PaneSlot.Side` or `PaneSlot.Bottom`) and `CreateView(Workbench)`. Add an instance to `WorkbenchPanes.Default`. The view follows the shared state through `Workbench.DocumentChanged`, and reads the rule from `Workbench.Document`.
 - A command is a `WorkbenchCommand`: a key (or `Key.Empty` for a command that only the menu runs), a `CommandGroup` (the menu that holds it), a short title for the menu, a description for the key reference and an action on the window. Set `Hint` to show it on the hint line. Add it to `WorkbenchCommands.Default`, or to the list of its feature in the `Commands` folder. The menu of its group, the key reference and, with a key, the key itself then run it. A test fails when a command names no defined group or is not in exactly one menu.
 - A setting with a small, fixed set of values is a `WorkbenchChoice`: a group, a title, the values, and the functions that read and set the current one. Add it to `WorkbenchCommands.Choices`. Its menu shows it as a submenu after the commands, with `(*)` on the current value.
-- `WorkbenchMenus` builds the menu bar: one menu for each `CommandGroup` value with at least one entry, in the order of the enum (File, Edit, Insert, Rule, Analyze, Export, View, Help). A group with no entry, such as Insert, has no menu until an entry names it.
+- `WorkbenchMenus` builds the menu bar: one menu for each `CommandGroup` value with at least one entry, in the order of the enum (File, Edit, Insert, Rule, Analyze, Export, View, Help). A group with no entry has no menu until an entry names it. The Insert menu also builds its Operators and Constants submenus from `InsertItems`.
 
 The state that the panes share has no view: `AssignmentSession` in the tool core holds the values, the variables and the policy (see [Trying a rule with values](tool-core.md#trying-a-rule-with-values)), `Workbench.Outcome` is its result for the open document, and `Workbench.NotifyAssignmentChanged()` tells the panes after a change. `RuleTestSession` holds the rule test file of the workbench, and `RuleTestCaseText` in the tool core edits the text of that file. `RuleDocument` in the tool core holds the text, the compiled rule, the diagnostics and the history (see [Editing a rule](tool-core.md#editing-a-rule)), and `Workbench` holds the document, the layout and the status line. `Workbench.SelectedNode` is the path of the selected node of the tree, and `Workbench.SelectedNodeChanged` tells the panes after `Workbench.SelectNode(path)`. `Workbench.ReplaceRule(rule, message)` puts an edited rule into the document as one undo step; `RuleTreeEditor` and `RulePalette` in the tool core make the edits (see [Editing the tree](tool-core.md#editing-the-tree)). `RewritePlayground` in the tool core applies a rewrite without a change to the rule and compares two versions (see [Rewrites](tool-core.md#rewrites)). `WorkbenchWindow.ShowPane(title)` shows a pane and gives it the focus. The tests in `tests/TruthWeaver.Tool.Tui.Tests` drive the window with keys without a terminal, and run the application loop once with the ANSI driver of Terminal.Gui.

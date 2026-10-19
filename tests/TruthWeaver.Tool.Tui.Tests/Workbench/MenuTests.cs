@@ -37,6 +37,7 @@ public sealed class MenuTests
             [
                 CommandGroup.File,
                 CommandGroup.Edit,
+                CommandGroup.Insert,
                 CommandGroup.Rule,
                 CommandGroup.Analyze,
                 CommandGroup.Export,

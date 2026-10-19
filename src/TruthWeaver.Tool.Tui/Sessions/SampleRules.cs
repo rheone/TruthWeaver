@@ -1,10 +1,11 @@
 namespace TruthWeaver.Tool.Tui.Sessions;
 
 using System.Text.RegularExpressions;
+using TruthWeaver.Diagnostics;
 
 /// <summary>
 /// The sample rules of the workbench: a short list that together shows predicates with arguments, the connectives, the
-/// cardinality family, <c>If</c>, the inspections, <c>let</c> definitions, <c>from(...)</c> variables and notes.
+/// cardinality family, <c>If</c>, the inspections, <c>let</c> definitions, quantifiers, <c>from(...)</c> variables and notes.
 /// A sample is rule text, so it replaces the rule of the editor and goes through the undo history.
 /// </summary>
 internal static class SampleRules
@@ -38,6 +39,7 @@ internal static class SampleRules
         Feature("COALESCE", @"\bCOALESCE\("),
         Feature("let definitions", @"(?m)^let\s"),
         Feature("from(...) variables", @"\bfrom\("),
+        Feature("Quantifiers", @"\b(FORALL|EXISTS)\(\s*\w+\s+IN\b"),
     ];
 
     /// <summary>Gets the samples in the order of the menu.</summary>
@@ -184,6 +186,19 @@ internal static class SampleRules
                 // from("source", "query") takes the value from the data source when the rule runs.
                 hasRole(role: from("user", "$.role")) // the role of the user
                 AND inRegion(region: from("request", "$.region")) // the region of the request
+                """,
+        },
+        new()
+        {
+            Name = "Quantifiers",
+            Description = "FORALL and EXISTS range over a collection; here the collection is not declared, so TRE0042 shows.",
+            ExpectedDiagnostic = DiagnosticCodes.UnknownCollection,
+            Text = """
+                // FORALL is True when the body is True for every element; EXISTS when it is True for at least one.
+                // This workbench compiles with an empty registry, so it reports UnknownCollection (TRE0042) on purpose.
+                // A host must declare the collection (here "lines" and "details") on its predicate registry before the rule compiles.
+                FORALL(line IN lines, inStock)
+                AND EXISTS(order IN orders, FORALL(detail IN details, isShipped))
                 """,
         },
         new()

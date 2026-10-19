@@ -77,6 +77,7 @@ internal static class WorkbenchCommands
             w => w.Workbench.ToggleTheme()
         ),
         .. SampleCommands.All,
+        .. InsertCommands.All,
         .. EmbeddedRuleCommands.All,
         .. ImportExportCommands.All,
         .. AssignmentCommands.Default,
