@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Ctrl+Z and Ctrl+Y (or the keys the menu shows) undo and redo an editor change and a tree-pane change in one history.
-- [ ] A rewrite accept, a convert and a generated rule each undo in one step.
-- [ ] A test covers undo after each kind of edit.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] Ctrl+Z and Ctrl+Y (or the keys the menu shows) undo and redo an editor change and a tree-pane change in one history.
+- [x] A rewrite accept, a convert and a generated rule each undo in one step.
+- [x] A test covers undo after each kind of edit.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

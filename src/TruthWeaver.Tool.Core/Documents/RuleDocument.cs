@@ -148,6 +148,25 @@ public sealed class RuleDocument
     }
 
     /// <summary>
+    /// Replaces the text and its format together and compiles the text in the new format. The change is one undo step and
+    /// clears the redo steps, so undo gives back both the text and the format. Equal text in the same format changes nothing.
+    /// </summary>
+    /// <param name="text">The new text.</param>
+    /// <param name="format">The format of <paramref name="text"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a defined <see cref="RuleFormat"/>.</exception>
+    public void SetText(string text, RuleFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(format))
+        {
+            throw new ArgumentOutOfRangeException(nameof(format), format, "Not a defined rule format.");
+        }
+
+        this.Apply(new Snapshot(text, format));
+    }
+
+    /// <summary>
     /// Replaces the text with text that <see cref="Check"/> compiled, without compiling it again. It is the same change as
     /// <see cref="SetText(string)"/>: one undo step that clears the redo steps. When the format of the document is no longer
     /// the format that was checked, the text is compiled again.

@@ -76,6 +76,7 @@ internal static class WorkbenchCommands
             "Switch between the light and the dark theme",
             w => w.Workbench.ToggleTheme()
         ),
+        .. SampleCommands.All,
         .. EmbeddedRuleCommands.All,
         .. ImportExportCommands.All,
         .. AssignmentCommands.Default,

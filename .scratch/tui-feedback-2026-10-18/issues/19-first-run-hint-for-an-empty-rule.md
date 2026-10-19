@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] An empty or whitespace-only rule shows the hint and no `TRE0001` error in the diagnostics pane.
-- [ ] A rule with text still shows its real diagnostics.
-- [ ] The hint names the real shortcut keys (a test compares them with the key bindings).
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] An empty or whitespace-only rule shows the hint and no `TRE0001` error in the diagnostics pane.
+- [x] A rule with text still shows its real diagnostics.
+- [x] The hint names the real shortcut keys (a test compares them with the key bindings).
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

@@ -3,6 +3,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
+using TruthWeaver.Tool.Tui.Sessions;
 
 /// <summary>
 /// Builds the menu bar of the workbench from the commands and choices: one menu for each <see cref="CommandGroup"/> that has
@@ -19,6 +20,9 @@ internal static class WorkbenchMenus
 
     /// <summary>The title of the submenu that lists the recent files.</summary>
     public const string RecentTitle = "Open recent";
+
+    /// <summary>The title of the submenu that lists the sample rules.</summary>
+    public const string SamplesTitle = "Samples";
 
     /// <summary>The key that opens the menu bar. F9, the Terminal.Gui default, imports a rule.</summary>
     public static readonly Key MenuBarKey = Key.F10;
@@ -163,6 +167,7 @@ internal static class WorkbenchMenus
         {
             int open = entries.FindIndex(e => e is MenuItem { Title: "Open..." });
             entries.Insert(open + 1, CreateSubmenu(RecentTitle, RecentItems(window, [])));
+            entries.Insert(open + 2, CreateSubmenu(SamplesTitle, SampleItems(window)));
         }
 
         MenuItem? recent = entries.OfType<MenuItem>().FirstOrDefault(e => e.Title == RecentTitle);
@@ -202,6 +207,20 @@ internal static class WorkbenchMenus
                 entry.Title,
                 string.Empty,
                 () => window.Workbench.OpenRecent(entry.Path),
+                Key.Empty
+            )),
+        ];
+    }
+
+    // The entries of the Samples submenu: one for each sample, with what it shows beside its name.
+    private static MenuItem[] SampleItems(WorkbenchWindow window)
+    {
+        return
+        [
+            .. SampleRules.All.Select(sample => new MenuItem(
+                sample.Name,
+                sample.Description,
+                () => window.Workbench.OpenSample(sample),
                 Key.Empty
             )),
         ];

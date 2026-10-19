@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] At least one sample per family listed above, each compiling in the workbench's permissive mode.
-- [ ] Choosing a sample replaces the rule after the same confirmation as Open when there are unsaved edits.
-- [ ] A test compiles every sample and fails when a family has none.
-- [ ] Samples are rule text and carry notes that explain the logic.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [ ] At least one sample per family listed above, each compiling in the workbench's permissive mode. (Open: quantifiers cannot compile in permissive mode, `UnknownCollection` TRE0042, so there is no quantifier sample; every other family has one.)
+- [x] Choosing a sample replaces the rule after the same confirmation as Open when there are unsaved edits.
+- [x] A test compiles every sample and fails when a family has none.
+- [x] Samples are rule text and carry notes that explain the logic.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

@@ -70,8 +70,34 @@ The rule compiles again after you stop typing. The compile waits 300 ms after th
 - The editor colors the characters of each diagnostic span and underlines them: red for an error, yellow for a warning, cyan for information. With `NO_COLOR` the underline stays, an error is bold, and information is faint.
 - When the text has an error, the workbench keeps the last tree that compiled. The Canonical pane shows that tree under the line `Last valid tree (the rule text has errors):`, and the status line says `showing the last valid tree`. When no text compiled yet, the pane says `No valid tree yet: the rule text has errors.`
 - In the Diagnostics pane, Enter on a diagnostic moves the editor cursor to the start of its span.
+- An empty rule, or a rule with only white space, shows a hint in the Diagnostics pane in place of the `TRE0001` error: type a rule, or press Shift+F9 to choose a sample rule. F10 opens the menus. As soon as the rule has text, its real diagnostics show again.
 
-Undo and redo work on one history for the document. Each change is one step: the typing between two pauses, formatting, and the conversion that a save in another format does. The workbench keeps the last 1000 steps.
+Undo and redo work on one history for the document. Ctrl+Z undoes and Ctrl+Y redoes; the Edit menu shows both keys. Each change is one step, whether it comes from the editor or from a pane: the typing between two pauses, a structural edit of the Tree pane (insert, delete, replace, wrap, swap), an accepted rewrite, formatting, a conversion with F4 or Shift+F4, the conversion that a save in another format does, and a sample rule. Undo gives back the text and the format together. Opening a file, importing and opening a rule inside a document start a new document with a new history. The workbench keeps the last 1000 steps.
+
+## Sample rules
+
+The File menu has a **Samples** submenu, and Shift+F9 opens the same list in a dialog. Each sample has a name and a one line description, and its rule text carries notes (comments) that explain the logic. Choose a sample to put it in place of the rule. Unsaved changes need your consent first, as for Ctrl+O. The sample is one undo step, so Ctrl+Z gives back the rule you had, in its format. A sample is rule text: when the open rule is JSON or YAML, the editor changes to rule text.
+
+| Sample | Shows |
+| --- | --- |
+| Predicates with arguments | Named arguments of text, number and boolean values. |
+| AND, OR and NOT | The basic connectives and how `Unknown` passes through. |
+| XOR and EQUIVALENT | Exclusive or, and two values that must agree. |
+| IMPLIES | The implication, False only for True then False. |
+| NAND and NOR | Negated AND and negated OR. |
+| PARITY | An odd number of True operands. |
+| AtLeast, AtMost and Exactly | Counting True operands against a number. |
+| ExactlyOne | Exactly one True operand. |
+| ANY, ALL and NONE | Some, every or no operand is True. |
+| BETWEEN | The count of True operands lies in a range. |
+| If | One of two results chosen by a condition. |
+| IsTrue and IsUnknown | Questions about the value itself. |
+| COALESCE | The first operand that is not `Unknown`. |
+| let definitions | A named sub-expression with parameters. |
+| from(...) variables | An argument read from a data source at run time. |
+| Notes | Line and block comments as notes of nodes. |
+
+The workbench compiles with an empty registry, so it has no collection to range over. A rule with `FORALL` or `EXISTS` reports `UnknownCollection` (`TRE0042`) here, and there is no quantifier sample. See [Quantifiers](rule-text.md#quantifiers) for the syntax.
 
 ## Format
 
@@ -502,6 +528,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 | Shift+F2 | Switches to another rule of the open document. |
 | F3 | Saves the open rule into its document with the round-trip write-back. |
 | F9 | Imports a rule from the clipboard or a file. |
+| Shift+F9 | Opens the list of sample rules. File > Samples has the same samples. |
 | Ctrl+Q | Quits. Esc, the quit key of Terminal.Gui, also quits when no menu is open. Both ask first when the rule has unsaved changes. |
 
 ### Edit
