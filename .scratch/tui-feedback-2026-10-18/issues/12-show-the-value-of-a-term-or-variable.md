@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] The value comes from the current assignment and updates when the assignment changes.
-- [ ] A variable with a `from(...)` source shows its resolved value or the failure kind.
-- [ ] A test covers a term, a variable and a term with no assignment.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] The value comes from the current assignment and updates when the assignment changes.
+- [x] A variable with a `from(...)` source shows its resolved value or the failure kind.
+- [x] A test covers a term, a variable and a term with no assignment.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

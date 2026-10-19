@@ -71,6 +71,8 @@ internal sealed class TreePane(WorkbenchServices? services) : IWorkbenchPane
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
+        // Reading Assignment before the subscriptions below keeps the outcome fresh in their handlers (see Workbench.Outcome).
+        _ = workbench.Assignment;
         StructureController controller = StructureController.For(workbench, services);
         TreePaneView view = new(controller);
 
@@ -84,6 +86,9 @@ internal sealed class TreePane(WorkbenchServices? services) : IWorkbenchPane
         };
         workbench.DocumentChanged += (_, _) => view.Show();
         workbench.SelectedNodeChanged += (_, _) => view.Show();
+
+        // The badge of a term follows the assignment.
+        workbench.AssignmentChanged += (_, _) => view.Show();
 
         // A case that is added, changed or removed changes the marks and the summary.
         workbench.RuleTestsChanged += (_, _) => view.Show();

@@ -88,6 +88,68 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
     }
 
     /// <inheritdoc />
+    public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(filter);
+
+        int? result = null;
+        IReadOnlyList<int> visible = filter(string.Empty);
+        using Dialog dialog = new()
+        {
+            Title = title,
+            Width = Dim.Percent(80),
+            Height = Dim.Percent(80),
+        };
+        using Label prompt = new()
+        {
+            Text = "Search:",
+            X = 0,
+            Y = 0,
+        };
+        using TextField box = new()
+        {
+            X = 8,
+            Y = 0,
+            Width = Dim.Fill(),
+        };
+        using ListView list = new()
+        {
+            X = 0,
+            Y = 2,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(2),
+        };
+        list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>([.. visible.Select(i => items[i])]));
+        using Button ok = new() { Text = "_OK", IsDefault = true };
+        using Button cancel = new() { Text = "_Cancel" };
+
+        // Each change of the box rebuilds the list from the indexes the filter returns.
+        box.TextChanged += (_, _) =>
+        {
+            visible = filter(box.Text ?? string.Empty);
+            list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>([.. visible.Select(i => items[i])]));
+        };
+        ok.Accepting += (_, args) =>
+        {
+            result = list.Value is int row && row >= 0 && row < visible.Count ? visible[row] : null;
+            args.Handled = true;
+            app.RequestStop();
+        };
+        cancel.Accepting += (_, args) =>
+        {
+            args.Handled = true;
+            app.RequestStop();
+        };
+        dialog.Add(prompt, box, list);
+        dialog.AddButton(ok);
+        dialog.AddButton(cancel);
+        box.SetFocus();
+        app.Run(dialog);
+        return result;
+    }
+
+    /// <inheritdoc />
     public string? AskFolder(string title)
     {
         using OpenDialog dialog = new() { Title = title, OpenMode = OpenMode.Directory };

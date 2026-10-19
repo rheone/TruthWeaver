@@ -19,6 +19,16 @@ internal interface IWorkbenchDialogs
     /// <returns>The index of the entry, or <see langword="null"/> when the author cancels.</returns>
     public int? Choose(string title, IReadOnlyList<string> items);
 
+    /// <summary>
+    /// Asks the author to choose one entry of a list, with a search box above it. The list shows the entries that
+    /// <paramref name="filter"/> returns for the text of the box, and it updates as the author types.
+    /// </summary>
+    /// <param name="title">The title of the question.</param>
+    /// <param name="items">The entries.</param>
+    /// <param name="filter">Gets the text of the box and returns the indexes of <paramref name="items"/> to show, in order. An empty text must return every index.</param>
+    /// <returns>The index in <paramref name="items"/> of the entry, or <see langword="null"/> when the author cancels.</returns>
+    public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter);
+
     /// <summary>Asks for a folder.</summary>
     /// <param name="title">The title of the question.</param>
     /// <returns>The folder path, or <see langword="null"/> when the author cancels.</returns>

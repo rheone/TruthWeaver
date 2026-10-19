@@ -98,16 +98,26 @@ internal sealed partial class Workbench
         CancellationToken cancellation
     )
     {
-        try
+        // SuppressThrowing waits without raising TaskCanceledException, so a superseded compile never produces a
+        // first-chance exception in a debugger. Cancellation is read from the token and the task state instead.
+        await Task.Delay(delay, cancellation).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (cancellation.IsCancellationRequested)
         {
-            await Task.Delay(delay, cancellation).ConfigureAwait(false);
-            CheckedText result = await Task.Run(() => target.Check(text, format), cancellation).ConfigureAwait(false);
-            this.Post(() => this.Complete(version, target, result));
+            return;
         }
-        catch (OperationCanceledException)
+
+        Task<CheckedText> compile = Task.Run(() => target.Check(text, format), cancellation);
+
+        // SuppressThrowing is only valid on the non-generic Task.
+        await ((Task)compile).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (cancellation.IsCancellationRequested || compile.Status != TaskStatus.RanToCompletion)
         {
             // A newer edit, a flush or another document replaced this one; nothing to report.
+            return;
         }
+
+        CheckedText result = await compile.ConfigureAwait(false);
+        this.Post(() => this.Complete(version, target, result));
     }
 
     // A result applies only when it belongs to the newest edit of the document that is still open.

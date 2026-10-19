@@ -6,6 +6,6 @@
 
 **Status:** ready-for-agent
 
-- [ ] A superseded debounce or compile ends without an exception that a debugger reports.
-- [ ] Cancelling a pending compile when the user types again still works (existing tests stay green, one test added for the new path).
-- [ ] The timing of the diagnostics does not change.
+- [x] A superseded debounce or compile ends without an exception that a debugger reports.
+- [x] Cancelling a pending compile when the user types again still works (existing tests stay green, one test added for the new path).
+- [x] The timing of the diagnostics does not change.

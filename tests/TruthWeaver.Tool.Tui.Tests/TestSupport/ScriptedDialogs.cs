@@ -20,6 +20,9 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     /// <summary>Gets the entries of the last list that <see cref="Choose"/> showed.</summary>
     public IReadOnlyList<string> LastItems { get; private set; } = [];
 
+    /// <summary>Gets the filter that the last <see cref="ChooseFiltered"/> was given: the text of the search box to the indexes shown.</summary>
+    public Func<string, IReadOnlyList<int>>? LastFilter { get; private set; }
+
     /// <summary>Gets the messages of the questions that <see cref="Confirm"/> was asked.</summary>
     public List<string> Confirmations { get; } = [];
 
@@ -33,6 +36,14 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     public int? Choose(string title, IReadOnlyList<string> items)
     {
         this.LastItems = items;
+        return this.Choices.TryDequeue(out int? choice) ? choice : null;
+    }
+
+    /// <inheritdoc />
+    public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
+    {
+        this.LastItems = items;
+        this.LastFilter = filter;
         return this.Choices.TryDequeue(out int? choice) ? choice : null;
     }
 

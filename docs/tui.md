@@ -55,7 +55,7 @@ The window has three regions and a status line.
 | Bottom | Variables | The data for `from(...)` references. See [Variables](#variables). |
 | Bottom | Tests | The rule test file and its cases. See [Rule tests](#rule-tests). |
 
-The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the last message, and `F1 keys`.
+The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the value of the selected term of the Tree pane (see [Structural editing](#structural-editing)), the last message, and `F1 keys`.
 
 A region can hold more than one pane and shows one at a time. Its border shows the title of the pane and, for more than one pane, its position, such as `Canonical (1/2)`.
 
@@ -163,6 +163,8 @@ The tree, Mermaid, DOT and HTML views mark the decision for the values of the [A
 
 The Tree pane is the third pane of the right region. It lists the nodes of the rule, one on each line and indented by depth: each operator with its count or range (such as `atLeast k=2`), each term in its canonical text, and each constant. The line above the list shows the path of the selected node (`$` is the root, `$.operands[1]` its second operand), its literals and its note. Move in the list to select a node.
 
+Each term ends with a badge that gives its value under the [Assign pane](#assign-values), as a word: `[True]`, `[False]` or `[Unknown]`. A term that has no value there is `[Unknown]`. A term with a `from(...)` source shows the value of its resolved reference, or `[Unknown: <reason>]` while the reference has no value: the message of the fault, or `no data yet`. Operators and constants have no badge. When the selected node is a term, the status line adds its value, such as `isActive = True`. The badges and the status line follow each change of a value, of the variables or of the rule.
+
 These keys work when the Tree pane has the focus. Each one acts on the selected node.
 
 | Key | Does |
@@ -204,6 +206,8 @@ A structural edit keeps the definitions. It changes the place in the text that t
 An edit that would break a definition is refused with `Not applied:` and the first error. For example, an operand added to a use gives the wrong number of arguments, and `NOT` in place of a body operator with two operands is not valid. A parameter has no literals, so `l` cannot make it a term, and the `let` line itself cannot be edited: select its body. Pasted or typed rule text can use the definitions of the rule. A diagnostic about a node of a definition body points at that node in the text of the definition. The edit writes the definitions back in the format of the editor. Comments on a `let` statement as a whole are not kept.
 
 ### Palette
+
+The palette opens with a search box above the list. Type to filter the list as you type: it shows the predicates whose name, label, family or description matches, and each match stays under its family line. Case does not matter, and every word must match. Clear the box to show the whole list again. Press Tab to move from the box to the list.
 
 The palette lists, in this order:
 

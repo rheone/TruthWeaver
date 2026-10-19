@@ -26,6 +26,11 @@ internal sealed record WorkbenchServices(IWorkbenchDialogs Dialogs, IClipboardAc
             return null;
         }
 
+        public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
+        {
+            return null;
+        }
+
         public string? AskFolder(string title)
         {
             return null;

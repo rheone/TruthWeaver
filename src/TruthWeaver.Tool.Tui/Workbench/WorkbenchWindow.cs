@@ -5,6 +5,7 @@ using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
 
 /// <summary>
@@ -81,7 +82,13 @@ internal sealed class WorkbenchWindow : Window
         this.Add(this.status, this.help);
 
         this.KeyDown += this.OnWorkbenchKeyDown;
+
+        // The status line shows the value of the selected term. Reading Assignment first puts its reset of the outcome ahead
+        // of these handlers, so the value is never stale.
+        _ = workbench.Assignment;
         workbench.DocumentChanged += (_, _) => this.ShowStatus();
+        workbench.SelectedNodeChanged += (_, _) => this.ShowStatus();
+        workbench.AssignmentChanged += (_, _) => this.ShowStatus();
         workbench.StatusChanged += (_, _) => this.ShowStatus();
 
         // The theme is process-wide in Terminal.Gui, so one call restyles every pane and every dialog; the window then draws again.
@@ -147,6 +154,12 @@ internal sealed class WorkbenchWindow : Window
         if (!document.IsRuleCurrent)
         {
             parts.Add(document.Rule is null ? "no valid tree" : "showing the last valid tree");
+        }
+
+        // The value of the term under the cursor. Not while a compile waits: reading the tree would end the pause.
+        if (!workbench.IsChecking && StructureController.For(workbench).SelectedValueText is { } value)
+        {
+            parts.Add(value);
         }
 
         if (workbench.Status.Length > 0)

@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Typing filters the list as you type; the match covers name, description and family.
-- [ ] Clearing the box shows the whole catalog.
-- [ ] A test covers a name match, a description match and no match.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] Typing filters the list as you type; the match covers name, description and family.
+- [x] Clearing the box shows the whole catalog.
+- [x] A test covers a name match, a description match and no match.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

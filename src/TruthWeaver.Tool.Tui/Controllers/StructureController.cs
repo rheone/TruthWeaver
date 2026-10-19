@@ -116,9 +116,29 @@ internal sealed class StructureController
             return
             [
                 .. current.Nodes.Select(n =>
-                    new string(' ', n.Depth * 2) + n.Label + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
+                    new string(' ', n.Depth * 2)
+                    + n.Label
+                    + this.BadgeOf(n)
+                    + (coverage.IsUncovered(n.Path) ? NoCaseMark : string.Empty)
                 ),
             ];
+        }
+    }
+
+    /// <summary>
+    /// Gets the value of the selected node for the status line, such as <c>hasRole(role: "admin") = True</c>, or
+    /// <see langword="null"/> when the selected node is not a term, no rule has compiled, or the rule has no values yet.
+    /// </summary>
+    public string? SelectedValueText
+    {
+        get
+        {
+            if (this.Tree is null || this.SelectedNodeOrRoot() is not { Kind: RuleTreeNodeKind.Term } node)
+            {
+                return null;
+            }
+
+            return this.ValueTextOf(node) is { } value ? $"{node.Label} = {value}" : null;
         }
     }
 
@@ -327,6 +347,84 @@ internal sealed class StructureController
         return predicate.Entry.Display + " - " + predicate.Label;
     }
 
+    // The indexes of the palette list that a search shows. An empty search shows the whole list. Otherwise the entries are
+    // the matches of the catalog search (name, label, family, description words and aliases) and the own entries (schema
+    // file and rule) whose line holds every word, each catalog match under its family line.
+    private static List<int> FilterPalette(IReadOnlyList<PaletteEntry?> targets, string query)
+    {
+        string[] words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0)
+        {
+            return [.. Enumerable.Range(0, targets.Count)];
+        }
+
+        HashSet<PaletteEntry> found = [.. PredicateCatalog.Search(query).Select(p => p.Entry)];
+        List<int> shown = [];
+        int group = -1;
+
+        // The first two entries are the typed expression and the catalog search; they are not matches.
+        for (int i = 2; i < targets.Count; i++)
+        {
+            if (targets[i] is not { } entry)
+            {
+                group = i;
+            }
+            else if (entry.Source == PaletteSource.Catalog)
+            {
+                if (found.Contains(entry))
+                {
+                    if (group >= 0)
+                    {
+                        shown.Add(group);
+                        group = -1;
+                    }
+
+                    shown.Add(i);
+                }
+            }
+            else if (
+                words.All(w =>
+                    entry.Display.Contains(w, StringComparison.OrdinalIgnoreCase)
+                    || entry.Description.Contains(w, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                shown.Add(i);
+            }
+        }
+
+        return shown;
+    }
+
+    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
+    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    private string? ValueTextOf(RuleTreeNode node)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (!outcome.HasRule || outcome.Terms.FirstOrDefault(t => t.Display == node.Label) is not { } term)
+        {
+            return null;
+        }
+
+        if (term.Key is not null)
+        {
+            return term.Value.ToString();
+        }
+
+        string? fault = outcome
+            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
+            .Select(f => f[(term.Display.Length + 1)..].Trim())
+            .FirstOrDefault();
+        return $"Unknown: {fault ?? "no data yet"}";
+    }
+
+    // The badge at the end of the line of a term in the tree. It is text, so it does not depend on the color. Other nodes
+    // have no badge.
+    private string BadgeOf(RuleTreeNode node)
+    {
+        return node.Kind == RuleTreeNodeKind.Term && this.ValueTextOf(node) is { } value ? $"  [{value}]" : string.Empty;
+    }
+
     private bool Edit(Func<RuleTreeEditor, RuleTreeEdit> edit)
     {
         return this.workbench.RequireCurrentRule("edit the tree") && this.Apply(edit);
@@ -405,7 +503,7 @@ internal sealed class StructureController
         PaletteEntry? picked = null;
         while (picked is null)
         {
-            int? choice = this.Services.Dialogs.Choose(title, items);
+            int? choice = this.Services.Dialogs.ChooseFiltered(title, items, query => FilterPalette(targets, query));
             switch (choice)
             {
                 case null:

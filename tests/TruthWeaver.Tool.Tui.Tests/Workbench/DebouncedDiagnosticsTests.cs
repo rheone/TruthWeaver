@@ -121,6 +121,41 @@ public sealed class DebouncedDiagnosticsTests
         Assert.DoesNotContain("checking", harness.Window.StatusText, StringComparison.Ordinal);
     }
 
+    /// <summary>A superseded compile ends without a first-chance cancellation exception, and only the newest edit is applied.</summary>
+    [Fact]
+    public async Task EditText_SupersededEdit_RaisesNoFirstChanceCancellation_Test()
+    {
+        int cancellations = 0;
+        void OnFirstChance(object? sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs args)
+        {
+            if (args.Exception is OperationCanceledException)
+            {
+                Interlocked.Increment(ref cancellations);
+            }
+        }
+
+        Workbench workbench = this.Create("a");
+        workbench.DiagnosticsDelay = TimeSpan.FromMilliseconds(100);
+        AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
+        try
+        {
+            workbench.EditText("a AND");
+            workbench.EditText("a AND b");
+            this.RunNextPosted();
+
+            // The superseded task wakes after its own pause; give it time to end before counting.
+            await Task.Delay(300, TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.FirstChanceException -= OnFirstChance;
+        }
+
+        Assert.Equal(0, cancellations);
+        Assert.Equal("a AND b", workbench.CommittedDocument.Text);
+        Assert.Empty(this.posted);
+    }
+
     private Workbench Create(string text)
     {
         return new Workbench(RuleDocument.Create(text), ToolSettings.Default, new ScriptedPrompts())
