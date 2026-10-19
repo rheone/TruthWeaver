@@ -22,7 +22,7 @@ internal sealed record WorkbenchServices(IWorkbenchDialogs Dialogs, IClipboardAc
             return null;
         }
 
-        public int? Choose(string title, IReadOnlyList<string> items)
+        public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK")
         {
             return null;
         }

@@ -49,7 +49,7 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
     }
 
     /// <inheritdoc />
-    public int? Choose(string title, IReadOnlyList<string> items)
+    public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK")
     {
         ArgumentNullException.ThrowIfNull(items);
 
@@ -68,7 +68,7 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
             Height = Dim.Fill(2),
         };
         list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(items));
-        using Button ok = new() { Text = "_OK", IsDefault = true };
+        using Button ok = new() { Text = accept, IsDefault = true };
         using Button cancel = new() { Text = "_Cancel" };
         ok.Accepting += (_, args) =>
         {

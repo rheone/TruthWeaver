@@ -2,6 +2,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 
 using System.Collections.ObjectModel;
 using System.Drawing;
+using Terminal.Gui.App;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -21,7 +22,7 @@ internal sealed class WorkbenchWindow : Window
 {
     /// <summary>The last line of the key reference: the mouse is an extra way to do what the keys do.</summary>
     private const string MouseHelp =
-        "Mouse: click a menu to open it, a pane to focus it or a tree node to select it, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
+        "Mouse: click a menu to open it, a pane to focus it or a tree node to select it, right click a pane for its menu, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
 
     /// <summary>The first line of the key reference: how to reach the menus.</summary>
     private const string MenuHelp = "F1 or F10 opens the menus; Alt and the underlined letter opens one menu.";
@@ -43,6 +44,10 @@ internal sealed class WorkbenchWindow : Window
     // so a grab on either of the two border lines of a divider does not make it jump.
     private Divider dragging;
     private int dragOffset;
+
+    // The context menu that a right click opened last; the next one and the disposal of the window release it.
+    private PopoverMenu? contextMenu;
+    private IMouse? mouseHooked;
 
     /// <summary>Initializes a new instance of the <see cref="WorkbenchWindow"/> class.</summary>
     /// <param name="workbench">The shared state.</param>
@@ -151,6 +156,9 @@ internal sealed class WorkbenchWindow : Window
 
     /// <summary>Gets a value indicating whether the key reference overlay shows.</summary>
     public bool IsHelpVisible => this.help.Visible;
+
+    /// <summary>Gets a value indicating whether a context menu shows.</summary>
+    public bool IsContextMenuOpen => this.contextMenu?.Visible is true;
 
     /// <summary>Gets the text of the status line.</summary>
     public string StatusText => this.status.Text;
@@ -394,6 +402,39 @@ internal sealed class WorkbenchWindow : Window
         this.RequestStop();
     }
 
+    /// <summary>
+    /// Opens a context menu at a point of the screen. With no running application, such as in a test with no terminal, there
+    /// is nowhere to show a menu, and nothing happens.
+    /// </summary>
+    /// <param name="owner">The view that binds the pane keys of the entries.</param>
+    /// <param name="entries">The entries.</param>
+    /// <param name="screen">The screen position of the menu.</param>
+    public void ShowContextMenu(View owner, IReadOnlyList<ContextMenuEntry> entries, Point screen)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        ArgumentNullException.ThrowIfNull(entries);
+
+        if (this.App is not { } app)
+        {
+            return;
+        }
+
+        this.ReleaseContextMenu();
+        PopoverMenu menu = new(ContextMenus.ItemsOf(this, owner, entries));
+
+        // Registered only while it shows: a registered popover takes the keys of its items (such as W) from the whole window.
+        _ = app.Popovers?.Register(menu);
+        menu.VisibleChanged += (_, _) =>
+        {
+            if (!menu.Visible)
+            {
+                _ = app.Popovers?.DeRegister(menu);
+            }
+        };
+        this.contextMenu = menu;
+        menu.MakeVisible(screen);
+    }
+
     /// <summary>Asks for consent to close when the document has unsaved changes.</summary>
     /// <returns><see langword="true"/> when the window may close.</returns>
     public bool ConfirmClose()
@@ -480,6 +521,19 @@ internal sealed class WorkbenchWindow : Window
     }
 
     /// <inheritdoc />
+    protected override void OnIsRunningChanged(bool newIsRunning)
+    {
+        base.OnIsRunningChanged(newIsRunning);
+
+        // The mouse reaches the application before any view, which is where a right click in any pane is seen.
+        if (newIsRunning && this.App is { } app && !ReferenceEquals(this.mouseHooked, app.Mouse))
+        {
+            this.mouseHooked = app.Mouse;
+            app.Mouse.MouseEvent += this.OnApplicationMouse;
+        }
+    }
+
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         // A drag that is still in progress holds the mouse; let it go so no event goes to a disposed window.
@@ -492,6 +546,12 @@ internal sealed class WorkbenchWindow : Window
         base.Dispose(disposing);
         if (disposing)
         {
+            if (this.mouseHooked is { } mouse)
+            {
+                mouse.MouseEvent -= this.OnApplicationMouse;
+            }
+
+            this.ReleaseContextMenu();
             this.MenuBar.Dispose();
             this.status.Dispose();
             this.hint.Dispose();
@@ -515,6 +575,38 @@ internal sealed class WorkbenchWindow : Window
     {
         string? path = workbench.CommittedDocument.Path;
         return workbench.DocumentLabel ?? (path is null ? "(new rule)" : Path.GetFileName(path));
+    }
+
+    // A right click on a pane with a context menu opens it. The click also selects the line under the pointer, so the menu
+    // acts on what the author pointed at.
+    private void OnApplicationMouse(object? sender, Mouse mouse)
+    {
+        if (mouse.Handled || mouse.Flags != MouseFlags.RightButtonClicked || ContextMenus.For(mouse.View) is not { } menu)
+        {
+            return;
+        }
+
+        if (mouse.View is ListView { Source: { } source } list)
+        {
+            int row = list.Viewport.Y + list.ScreenToViewport(mouse.ScreenPosition).Y;
+            if (row >= 0 && row < source.Count && ReferenceEquals(list, menu.Owner))
+            {
+                list.Value = row;
+            }
+        }
+
+        mouse.Handled = true;
+        this.ShowContextMenu(menu.Owner, menu.Entries, mouse.ScreenPosition);
+    }
+
+    private void ReleaseContextMenu()
+    {
+        if (this.contextMenu is { } old)
+        {
+            this.contextMenu = null;
+            _ = this.App?.Popovers?.DeRegister(old);
+            old.Dispose();
+        }
     }
 
     // Keys reach the focused pane first; a key the pane does not take reaches the window and its commands.

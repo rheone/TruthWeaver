@@ -165,6 +165,73 @@ public sealed class ImportExportTests : IDisposable
         Assert.Equal(RuleFormat.Text, workbench.Document.Format);
     }
 
+    /// <summary>The Convert dialog is a list of canonical text, formatted text, JSON and YAML, with a button named Convert.</summary>
+    [Fact]
+    public void Convert_Opened_ListsTheFourTargetsAndNamesItsButton_Test()
+    {
+        (ImportController controller, _, ScriptedServices services, _) = Create("a AND b");
+
+        bool converted = controller.Convert();
+
+        Assert.False(converted);
+        Assert.Equal(["Rule text, canonical", "Rule text, formatted (pretty)", "JSON", "YAML"], services.Dialogs.LastItems);
+        Assert.Equal("_Convert", services.Dialogs.LastAccept);
+    }
+
+    /// <summary>Choosing JSON or YAML in the Convert dialog converts the rule and keeps the tree.</summary>
+    [Theory]
+    [InlineData(2, RuleFormat.Json)]
+    [InlineData(3, RuleFormat.Yaml)]
+    public void Convert_ChoosingAFormat_ConvertsTheRule_Test(int choice, RuleFormat expected)
+    {
+        (ImportController controller, Workbench workbench, ScriptedServices services, _) = Create("/* Note. */ (a AND b)");
+        string before = workbench.Document.Rule!.PrintJson(includeNotes: true);
+        services.Dialogs.Choices.Enqueue(choice);
+
+        bool converted = controller.Convert();
+
+        Assert.True(converted);
+        Assert.Equal(expected, workbench.Document.Format);
+        Assert.Equal(before, workbench.Document.Rule.PrintJson(includeNotes: true));
+    }
+
+    /// <summary>
+    /// The formatted target wraps a long rule over several lines, keeps the notes, and the result compiles back to an equal
+    /// tree.
+    /// </summary>
+    [Fact]
+    public void Convert_FormattedTarget_WrapsTheTextKeepsTheNotesAndCompilesBackEqual_Test()
+    {
+        string rule =
+            "/* All checks. */ ("
+            + string.Join(" AND ", Enumerable.Range(0, 30).Select(i => $"/* Check {i}. */ term{i}"))
+            + ")";
+        (ImportController controller, Workbench workbench, ScriptedServices services, _) = Create(rule);
+        string before = workbench.Document.Rule!.PrintJson(includeNotes: true);
+        services.Dialogs.Choices.Enqueue(1);
+
+        bool converted = controller.Convert();
+
+        string formatted = workbench.Document.Text;
+        Assert.True(converted);
+        Assert.Equal(RuleFormat.Text, workbench.Document.Format);
+        Assert.Contains('\n', formatted);
+        Assert.Contains("All checks.", formatted, StringComparison.Ordinal);
+        Assert.Contains("Check 29.", formatted, StringComparison.Ordinal);
+        Assert.Equal(before, RuleDocument.Create(formatted).Rule!.PrintJson(includeNotes: true));
+    }
+
+    /// <summary>Cancelling the Convert dialog changes nothing.</summary>
+    [Fact]
+    public void Convert_Cancelled_ChangesNothing_Test()
+    {
+        (ImportController controller, Workbench workbench, _, _) = Create("a   AND b");
+
+        Assert.False(controller.Convert());
+
+        Assert.Equal("a   AND b", workbench.Document.Text);
+    }
+
     /// <summary>Every artifact of the Core catalog is an entry of the menu, and its text equals the Core output.</summary>
     [Fact]
     public void Render_EveryCatalogArtifact_EqualsTheCoreOutput_Test()

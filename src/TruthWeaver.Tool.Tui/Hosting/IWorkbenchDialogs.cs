@@ -18,8 +18,9 @@ internal interface IWorkbenchDialogs
     /// <summary>Asks the author to choose one entry of a list.</summary>
     /// <param name="title">The title of the question.</param>
     /// <param name="items">The entries.</param>
+    /// <param name="accept">The text of the button that takes the choice, with <c>_</c> before its hot key. It names the action, such as <c>_Convert</c>.</param>
     /// <returns>The index of the entry, or <see langword="null"/> when the author cancels.</returns>
-    public int? Choose(string title, IReadOnlyList<string> items);
+    public int? Choose(string title, IReadOnlyList<string> items, string accept = "_OK");
 
     /// <summary>
     /// Asks the author to choose one entry of a list, with a search box above it. The list shows the entries that

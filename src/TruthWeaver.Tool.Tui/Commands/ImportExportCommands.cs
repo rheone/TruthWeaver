@@ -13,16 +13,16 @@ internal static class ImportExportCommands
         new(
             Key.F4,
             CommandGroup.Rule,
-            "Convert to the next format",
-            "Convert the rule to the next format: rule text, JSON, YAML",
-            w => ImportController.For(w.Workbench).CycleFormat(1)
+            "Convert...",
+            "Convert the rule: choose canonical rule text, formatted (pretty) rule text, JSON or YAML from a list",
+            w => ImportController.For(w.Workbench).Convert()
         ),
         new(
             Key.F4.WithShift,
             CommandGroup.Rule,
-            "Convert to the previous format",
-            "Convert the rule to the previous format",
-            w => ImportController.For(w.Workbench).CycleFormat(-1)
+            "Convert to the next format",
+            "Convert the rule to the next format: rule text, JSON, YAML",
+            w => ImportController.For(w.Workbench).CycleFormat(1)
         ),
         new(
             Key.F5,

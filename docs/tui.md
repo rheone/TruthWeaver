@@ -107,7 +107,7 @@ Choose an entry to open that file. Unsaved changes need your consent first, as f
 
 F9 imports a rule. A dialog asks for the source (the clipboard or a file) and the format (detect it, rule text, JSON or YAML). A file that does not compile still opens, with its diagnostics. The clipboard takes only a valid expression: text that does not compile reports its first error and the open rule stays. Unsaved changes need your consent first.
 
-F4 converts the open rule to the next format in the order rule text, JSON, YAML. Shift+F4 goes the other way. The conversion is one undo step. The tree, the notes and the `let` definitions stay the same: rule text `let` statements become a `definitions` section and `use` nodes in JSON and YAML, and the other way. The status line shows a banner that says what is not kept: the layout and spelling of the old text, and the number of YAML `#` comments when you convert YAML to another format. Text that does not compile is not converted.
+F4 opens the Convert dialog: a list of the forms to convert to, and the buttons Convert and Cancel. The list has canonical rule text, formatted (pretty) rule text, JSON and YAML. Formatted rule text wraps a long rule over several lines at 80 characters and keeps the notes, like Shift+F8 does. Shift+F4 converts to the next format in the order rule text, JSON, YAML without a dialog. A conversion is one undo step. The tree, the notes and the `let` definitions stay the same: rule text `let` statements become a `definitions` section and `use` nodes in JSON and YAML, and the other way. The status line shows a banner that says what is not kept: the layout and spelling of the old text, and the number of YAML `#` comments when you convert YAML to another format. Text that does not compile is not converted.
 
 ## Export
 
@@ -517,7 +517,8 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 
 | Key | Does |
 | --- | --- |
-| F4, Shift+F4 | Converts the rule to the next or previous format. |
+| F4 | Opens the Convert dialog: canonical rule text, formatted rule text, JSON or YAML. |
+| Shift+F4 | Converts the rule to the next format: rule text, JSON, YAML. |
 | Ctrl+F2 | Gives every term the value `Unknown`. |
 | Ctrl+F3 | Moves the policy for `Unknown` to the next one. |
 | Ctrl+F4 | Loads a variables file (JSON or YAML). |
@@ -574,7 +575,7 @@ Some panes have their own keys. They work while the pane has the focus, and they
 
 The editor has the usual editing keys of the Terminal.Gui editor view, such as Ctrl+C, Ctrl+X and Ctrl+V for the clipboard and Ctrl+A to select all.
 
-The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. A right click opens a context menu. See [Context menus](#context-menus). The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
 
 A drag on a divider resizes the regions:
 
@@ -582,6 +583,17 @@ A drag on a divider resizes the regions:
 - **Drag.** The divider follows the pointer while you hold the left button, in steps of 1 percent and between 15 and 85 percent of the window. When you release the button, the sizes are saved as for the Alt+arrow keys. See [Preferences file](#preferences-file).
 - **No pointer moves.** Some terminals report only the press and the release. In such a terminal, press on a divider and release where you want it: the divider moves to the release position.
 - **Maximised region.** While a region is maximised (F11), there are no dividers to drag.
+
+### Context menus
+
+A right click in the editor, the Tree pane, the term list of the Assign pane or the Diagnostics pane opens a menu of the common actions of that pane. Each entry shows its shortcut, and the entry does what the shortcut does. In the Tree pane and the term list, the click first selects the line under the pointer, so the menu acts on that line. Esc closes the menu.
+
+| Pane | Entries (shortcut) |
+| --- | --- |
+| Editor | Undo (Ctrl+Z), Redo (Ctrl+Y), Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), Select all (Ctrl+A), Format: canonical (F8), Format: pretty (Shift+F8), Save (Ctrl+S) |
+| Tree | Replace operator (`o`), Wrap in NOT (`w`), Negate (`n`), Insert operand (`i`), Delete node (Delete), Copy node (`y`), Copy rule (`Y`), Paste (`v`) |
+| Term list | Set True (`T`), Set False (`F`), Set Unknown (`U`), Next value (Space), All terms Unknown (Ctrl+F2), Load variables (Ctrl+F4) |
+| Diagnostics | Go to location (Enter), Validate (F7), Format: canonical (F8) |
 
 ## Terminal.Gui
 

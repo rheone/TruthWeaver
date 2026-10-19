@@ -16,6 +16,9 @@ internal sealed class DiagnosticsPane : IWorkbenchPane
     /// <summary>The line the pane shows when the text has no diagnostics.</summary>
     public const string NoDiagnostics = "No diagnostics.";
 
+    /// <summary>The <see cref="View.Id"/> of the list, so the context menu finds the pane.</summary>
+    public const string ViewId = "diagnostics";
+
     /// <inheritdoc />
     public string Title => "Diagnostics";
 
@@ -42,7 +45,12 @@ internal sealed class DiagnosticsPane : IWorkbenchPane
         ArgumentNullException.ThrowIfNull(workbench);
 
         ObservableCollection<string> lines = [];
-        ListView list = new() { Width = Dim.Fill(), Height = Dim.Fill() };
+        ListView list = new()
+        {
+            Id = ViewId,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+        };
         list.SetSource(lines);
         List<Diagnostic> shown = [];
 

@@ -16,6 +16,9 @@ using TruthWeaver.Tool.Tui.Workbench;
 /// </summary>
 internal sealed class ImportController
 {
+    /// <summary>The text of the accept button of the Convert dialog: it names the action.</summary>
+    public const string ConvertButton = "_Convert";
+
     private static readonly ConditionalWeakTable<Workbench, ImportController> Controllers = [];
     private static readonly RuleFormat[] Cycle = [RuleFormat.Text, RuleFormat.Json, RuleFormat.Yaml];
 
@@ -34,6 +37,15 @@ internal sealed class ImportController
     }
 
     /// <summary>Gets the text of the banner after the last conversion, or an empty string.</summary>
+    /// <summary>Gets the forms that the Convert dialog lists, in order: the title of each, its format, and whether rule text is formatted (pretty).</summary>
+    public static IReadOnlyList<(string Title, RuleFormat Format, bool Pretty)> ConvertTargets { get; } =
+    [
+        ("Rule text, canonical", RuleFormat.Text, false),
+        ("Rule text, formatted (pretty)", RuleFormat.Text, true),
+        ("JSON", RuleFormat.Json, false),
+        ("YAML", RuleFormat.Yaml, false),
+    ];
+
     public string Banner { get; private set; } = string.Empty;
 
     private WorkbenchServices Services => this.services ?? WorkbenchServices.Current;
@@ -161,6 +173,26 @@ internal sealed class ImportController
     }
 
     /// <summary>
+    /// Asks which form to convert the open rule to, from a list of canonical rule text, formatted (pretty) rule text, JSON
+    /// and YAML, and converts it.
+    /// </summary>
+    /// <returns><see langword="true"/> when the rule was converted; <see langword="false"/> when the author cancels or the rule does not compile.</returns>
+    public bool Convert()
+    {
+        int? choice = this.Services.Dialogs.Choose(
+            "Convert the rule to",
+            [.. ConvertTargets.Select(t => t.Title)],
+            ConvertButton
+        );
+        if (choice is not { } index || index < 0 || index >= ConvertTargets.Count)
+        {
+            return false;
+        }
+
+        return this.ConvertTo(ConvertTargets[index].Format, ConvertTargets[index].Pretty);
+    }
+
+    /// <summary>
     /// Converts the open rule to another format as one undo step. The tree and the notes stay; the banner says what does not.
     /// Text that does not compile is not converted.
     /// </summary>
@@ -168,10 +200,22 @@ internal sealed class ImportController
     /// <returns><see langword="true"/> when the rule was converted.</returns>
     public bool ConvertTo(RuleFormat format)
     {
+        return this.ConvertTo(format, pretty: false);
+    }
+
+    /// <summary>
+    /// Converts the open rule to a format, or to the pretty form of rule text, as one undo step. The tree and the notes stay;
+    /// the banner says what does not. Text that does not compile is not converted.
+    /// </summary>
+    /// <param name="format">The format to convert to.</param>
+    /// <param name="pretty"><see langword="true"/> for formatted (pretty) rule text; JSON and YAML ignore it.</param>
+    /// <returns><see langword="true"/> when the rule was converted.</returns>
+    public bool ConvertTo(RuleFormat format, bool pretty)
+    {
         RuleDocument document = this.workbench.Document;
         RuleFormat from = document.Format;
         string oldText = document.Text;
-        ToolResult<string> converted = document.ConvertTo(format);
+        ToolResult<string> converted = document.ConvertTo(format, pretty);
         if (!converted.Succeeded)
         {
             this.Banner = "Not converted: the rule text has errors. Fix them first, or undo to the last valid text.";
@@ -181,7 +225,10 @@ internal sealed class ImportController
 
         if (from == format)
         {
-            this.Banner = $"The rule is already {Workbench.FormatName(format)}.";
+            this.Banner =
+                pretty && format == RuleFormat.Text
+                    ? "Formatted the rule text (pretty): the tree and the notes are the same. The layout and spelling of the old text are not kept. Ctrl+Z undoes it."
+                    : $"The rule is already {Workbench.FormatName(format)}.";
             this.workbench.SetStatus(this.Banner);
             return true;
         }
