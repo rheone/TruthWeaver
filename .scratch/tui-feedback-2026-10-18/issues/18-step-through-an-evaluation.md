@@ -4,7 +4,7 @@
 
 **Blocked by:** 12
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Next and Previous keys move the highlight through the trace.
 - [x] Each step shows the node, its value as a word and, for a skipped node, the word `skipped`.

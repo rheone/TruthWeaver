@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Right click in the editor, tree, term list and diagnostics panes opens a pane-specific menu.
 - [x] The shortcuts shown match the real key bindings (a test compares them).

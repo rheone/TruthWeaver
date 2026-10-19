@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The value comes from the current assignment and updates when the assignment changes.
 - [x] A variable with a `from(...)` source shows its resolved value or the failure kind.

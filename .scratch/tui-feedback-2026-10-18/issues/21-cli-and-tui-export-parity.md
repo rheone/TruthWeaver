@@ -4,7 +4,7 @@
 
 **Blocked by:** 11
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The command line has an option that sets the truth-table term limit (for example `--truth-table-limit <n>`), shown in `export` and `print` help, and it keeps `--allow-large-truth-table` working (it means the default limit of 12).
 - [x] The export dialog has a control for the same limit, kept for the next export like the "allow larger truth tables" choice.

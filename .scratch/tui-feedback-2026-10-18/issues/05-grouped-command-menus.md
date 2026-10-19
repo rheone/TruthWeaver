@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Every command of the old list is reachable from exactly one menu group.
 - [x] Shortcut keys show next to each command, and a hint line shows the common ones.

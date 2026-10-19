@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] A superseded debounce or compile ends without an exception that a debugger reports.
 - [x] Cancelling a pending compile when the user types again still works (existing tests stay green, one test added for the new path).

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Ctrl+Z and Ctrl+Y (or the keys the menu shows) undo and redo an editor change and a tree-pane change in one history.
 - [x] A rewrite accept, a convert and a generated rule each undo in one step.

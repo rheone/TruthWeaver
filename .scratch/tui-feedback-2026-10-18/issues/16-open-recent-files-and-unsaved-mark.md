@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The File menu lists up to ten recent files; a missing file is shown as unavailable and can be removed.
 - [x] The unsaved mark appears after an edit and disappears after a save.
