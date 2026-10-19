@@ -12,16 +12,22 @@ internal static class EmbeddedRuleCommands
     [
         new(
             Key.F2,
+            CommandGroup.File,
+            "Open a rule in a document...",
             "Open a rule inside a JSON or YAML document (by path or by browsing)",
             w => EmbeddedRuleController.For(w.Workbench).Open()
         ),
         new(
             Key.F2.WithShift,
+            CommandGroup.File,
+            "Switch rule of the document...",
             "Switch to another rule of the open document",
             w => EmbeddedRuleController.For(w.Workbench).Switch()
         ),
         new(
             Key.F3,
+            CommandGroup.File,
+            "Save into the document",
             "Save the rule into its document by writing the whole document again (warns first)",
             w => EmbeddedRuleController.For(w.Workbench).SaveRoundTrip()
         ),

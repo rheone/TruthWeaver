@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tool.Tui.Workbench;
 
+using System.Collections.ObjectModel;
 using System.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
@@ -10,24 +11,33 @@ using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
 
 /// <summary>
-/// The workbench window: three regions (editor on the left, side view on the right, a region below), a status line and
-/// the key help overlay. Each region holds the panes that <see cref="WorkbenchPanes"/> registers for it and shows one at a
-/// time. The keys come from <see cref="WorkbenchCommands"/>. Every region can take focus, be maximised and be resized with
-/// the keys or by dragging a divider (the borders between the regions) with the mouse.
+/// The workbench window: the menu bar on the first row, three regions (editor on the left, side view on the right, a region
+/// below), a status line, a hint line with the most common keys, and the key reference overlay. Each region holds the panes
+/// that <see cref="WorkbenchPanes"/> registers for it and shows one at a time. The commands and their keys come from
+/// <see cref="WorkbenchCommands"/>, and <see cref="WorkbenchMenus"/> puts them in the menus. Every region can take focus, be
+/// maximised and be resized with the keys or by dragging a divider (the borders between the regions) with the mouse.
 /// </summary>
 internal sealed class WorkbenchWindow : Window
 {
-    /// <summary>The last line of the key help: the mouse is an extra way to do what the keys do.</summary>
+    /// <summary>The last line of the key reference: the mouse is an extra way to do what the keys do.</summary>
     private const string MouseHelp =
-        "Mouse: click a pane to focus it or a tree node to select it, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
+        "Mouse: click a menu to open it, a pane to focus it or a tree node to select it, turn the wheel to scroll, drag a divider to resize. Every action has a key.";
+
+    /// <summary>The first line of the key reference: how to reach the menus.</summary>
+    private const string MenuHelp = "F1 or F10 opens the menus; Alt and the underlined letter opens one menu.";
+
+    // The rows above the regions (the menu bar) and below them (the status line and the hint line).
+    private const int TopRows = 1;
+    private const int BottomRows = 2;
 
     private static readonly PaneSlot[] SlotOrder = [PaneSlot.Editor, PaneSlot.Side, PaneSlot.Bottom];
 
     private readonly Dictionary<PaneSlot, Region> regions = [];
     private readonly IReadOnlyList<WorkbenchCommand> commands;
     private readonly Label status;
+    private readonly Label hint;
     private readonly FrameView help;
-    private readonly Label helpText;
+    private readonly ListView helpList;
 
     // The divider that a mouse drag moves, and the distance from the pointer to the divider line when the drag started,
     // so a grab on either of the two border lines of a divider does not make it jump.
@@ -37,11 +47,13 @@ internal sealed class WorkbenchWindow : Window
     /// <summary>Initializes a new instance of the <see cref="WorkbenchWindow"/> class.</summary>
     /// <param name="workbench">The shared state.</param>
     /// <param name="panes">The panes, or <see langword="null"/> for <see cref="WorkbenchPanes.Default"/>.</param>
-    /// <param name="commands">The keys, or <see langword="null"/> for <see cref="WorkbenchCommands.Default"/>.</param>
+    /// <param name="commands">The commands, or <see langword="null"/> for <see cref="WorkbenchCommands.Default"/>.</param>
+    /// <param name="choices">The choices of the menus, or <see langword="null"/> for <see cref="WorkbenchCommands.Choices"/>.</param>
     public WorkbenchWindow(
         Workbench workbench,
         IReadOnlyList<IWorkbenchPane>? panes = null,
-        IReadOnlyList<WorkbenchCommand>? commands = null
+        IReadOnlyList<WorkbenchCommand>? commands = null,
+        IReadOnlyList<WorkbenchChoice>? choices = null
     )
     {
         ArgumentNullException.ThrowIfNull(workbench);
@@ -66,26 +78,38 @@ internal sealed class WorkbenchWindow : Window
             this.Add(region.Frame);
         }
 
+        this.MenuBar = WorkbenchMenus.Create(this, this.commands, choices ?? WorkbenchCommands.Choices);
         this.status = new Label
+        {
+            X = 0,
+            Y = Pos.AnchorEnd(BottomRows),
+            Width = Dim.Fill(),
+            Height = 1,
+        };
+        this.hint = new Label
         {
             X = 0,
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             Height = 1,
+            Text = HintText(this.commands),
         };
+
+        // The reference is longer than a small terminal, so it is a list that scrolls with the keys and the wheel.
         this.help = new FrameView
         {
-            Title = "Keys (F1 or Esc to close)",
+            Title = "Key reference (Shift+F1 or Esc to close)",
             X = Pos.Center(),
             Y = Pos.Center(),
-            Width = Dim.Auto(),
-            Height = Dim.Auto(),
+            Width = Dim.Percent(90),
+            Height = Dim.Percent(90),
             Visible = false,
             CanFocus = true,
         };
-        this.helpText = new Label { Text = HelpText(this.commands) };
-        this.help.Add(this.helpText);
-        this.Add(this.status, this.help);
+        this.helpList = new ListView { Width = Dim.Fill(), Height = Dim.Fill() };
+        this.helpList.SetSource(new ObservableCollection<string>(HelpText(this.commands).Split('\n')));
+        this.help.Add(this.helpList);
+        this.Add(this.MenuBar, this.status, this.hint, this.help);
 
         this.KeyDown += this.OnWorkbenchKeyDown;
 
@@ -125,17 +149,26 @@ internal sealed class WorkbenchWindow : Window
     /// <summary>Gets the shared state.</summary>
     public Workbench Workbench { get; }
 
-    /// <summary>Gets a value indicating whether the key help overlay shows.</summary>
+    /// <summary>Gets a value indicating whether the key reference overlay shows.</summary>
     public bool IsHelpVisible => this.help.Visible;
 
     /// <summary>Gets the text of the status line.</summary>
     public string StatusText => this.status.Text;
 
+    /// <summary>Gets the text of the hint line: the most common keys.</summary>
+    public string HintLineText => this.hint.Text;
+
+    /// <summary>Gets the menu bar on the first row of the window.</summary>
+    public MenuBar MenuBar { get; }
+
     /// <summary>Gets the view of the pane that each region shows. The window owns the views.</summary>
     public IReadOnlyDictionary<PaneSlot, View> ActivePaneViews =>
         this.regions.ToDictionary(pair => pair.Key, pair => pair.Value.Active.View);
 
-    /// <summary>Gets the text of the key help overlay: one line per command, the key and what it does, then a line about the mouse.</summary>
+    /// <summary>
+    /// Gets the text of the key reference overlay: a line about the menus, then for each menu its name and one line per
+    /// command (the key and what it does), then a line about the mouse.
+    /// </summary>
     /// <param name="commands">The commands.</param>
     /// <returns>The text.</returns>
     public static string HelpText(IEnumerable<WorkbenchCommand> commands)
@@ -143,9 +176,28 @@ internal sealed class WorkbenchWindow : Window
         ArgumentNullException.ThrowIfNull(commands);
 
         WorkbenchCommand[] list = [.. commands];
-        int width = list.Length == 0 ? 0 : list.Max(c => c.Key.ToString().Length);
-        string[] lines = [.. list.Select(c => $"{c.Key.ToString().PadRight(width)}  {c.Description}"), MouseHelp];
+        int width = list.Length == 0 ? 0 : list.Max(c => KeyText(c.Key).Length);
+        List<string> lines = [MenuHelp];
+        foreach (WorkbenchMenuGroup menu in WorkbenchMenus.GroupsOf(list, []))
+        {
+            lines.Add(string.Empty);
+            lines.Add(menu.Group.ToString());
+            lines.AddRange(menu.Commands.Select(c => $"  {KeyText(c.Key).PadRight(width)}  {c.Description}"));
+        }
+
+        lines.Add(string.Empty);
+        lines.Add(MouseHelp);
         return string.Join('\n', lines);
+    }
+
+    /// <summary>Gets the hint line: the key and the hint word of each command that has one, in the order of the commands.</summary>
+    /// <param name="commands">The commands.</param>
+    /// <returns>The text, such as <c>F1 Menus  Ctrl+S Save</c>.</returns>
+    public static string HintText(IEnumerable<WorkbenchCommand> commands)
+    {
+        ArgumentNullException.ThrowIfNull(commands);
+
+        return string.Join("  ", commands.Where(c => c.Hint is not null).Select(c => $"{KeyText(c.Key)} {c.Hint}"));
     }
 
     /// <summary>Gets the status line for the state of a workbench: file, format, unsaved changes, diagnostics and the last message.</summary>
@@ -186,7 +238,6 @@ internal sealed class WorkbenchWindow : Window
             parts.Add(workbench.Status);
         }
 
-        parts.Add("F1 keys");
         return string.Join(" | ", parts);
     }
 
@@ -223,7 +274,19 @@ internal sealed class WorkbenchWindow : Window
         }
     }
 
-    /// <summary>Shows or hides the key help overlay.</summary>
+    /// <summary>
+    /// Opens the menu bar on its first menu, as <see cref="WorkbenchMenus.MenuBarKey"/> does. With no running application,
+    /// such as in a test with no terminal, there is nowhere to show a menu, and nothing happens.
+    /// </summary>
+    public void OpenMenus()
+    {
+        if (this.App is not null && !this.MenuBar.IsOpen())
+        {
+            _ = this.MenuBar.NewKeyDownEvent(this.MenuBar.Key);
+        }
+    }
+
+    /// <summary>Shows or hides the key reference overlay.</summary>
     public void ToggleHelp()
     {
         this.help.Visible = !this.help.Visible;
@@ -338,7 +401,8 @@ internal sealed class WorkbenchWindow : Window
             return true;
         }
 
-        WorkbenchCommand? command = this.commands.FirstOrDefault(c => c.Key == key);
+        // A command with no key is in the menus only.
+        WorkbenchCommand? command = this.commands.FirstOrDefault(c => c.Key != Key.Empty && c.Key == key);
         if (command is null)
         {
             return false;
@@ -415,14 +479,22 @@ internal sealed class WorkbenchWindow : Window
         base.Dispose(disposing);
         if (disposing)
         {
+            this.MenuBar.Dispose();
             this.status.Dispose();
-            this.helpText.Dispose();
+            this.hint.Dispose();
+            this.helpList.Dispose();
             this.help.Dispose();
             foreach (Region region in this.regions.Values)
             {
                 region.Dispose();
             }
         }
+    }
+
+    // The text of a key for the hint line and the reference, such as "Ctrl+S"; a command with no key has none.
+    private static string KeyText(Key key)
+    {
+        return key == Key.Empty ? string.Empty : key.ToString();
     }
 
     // Keys reach the focused pane first; a key the pane does not take reaches the window and its commands.
@@ -445,7 +517,7 @@ internal sealed class WorkbenchWindow : Window
         PaneLayout layout = this.Workbench.Layout;
         bool hasSide = this.regions.ContainsKey(PaneSlot.Side);
         bool hasBottom = this.regions.ContainsKey(PaneSlot.Bottom);
-        Dim topHeight = hasBottom ? Dim.Percent(layout.TopHeightPercent) : Dim.Fill(1);
+        Dim topHeight = hasBottom ? Dim.Percent(layout.TopHeightPercent) : Dim.Fill(BottomRows);
 
         foreach (Region region in this.regions.Values)
         {
@@ -453,9 +525,9 @@ internal sealed class WorkbenchWindow : Window
             if (layout.Maximised == region.Slot)
             {
                 region.Frame.X = 0;
-                region.Frame.Y = 0;
+                region.Frame.Y = TopRows;
                 region.Frame.Width = Dim.Fill();
-                region.Frame.Height = Dim.Fill(1);
+                region.Frame.Height = Dim.Fill(BottomRows);
                 continue;
             }
 
@@ -464,21 +536,21 @@ internal sealed class WorkbenchWindow : Window
             {
                 case PaneSlot.Editor:
                     region.Frame.X = 0;
-                    region.Frame.Y = 0;
+                    region.Frame.Y = TopRows;
                     region.Frame.Width = hasSide ? Dim.Percent(layout.EditorWidthPercent) : Dim.Fill();
                     region.Frame.Height = topHeight;
                     break;
                 case PaneSlot.Side:
                     region.Frame.X = editor is null ? 0 : Pos.Right(editor);
-                    region.Frame.Y = 0;
+                    region.Frame.Y = TopRows;
                     region.Frame.Width = Dim.Fill();
                     region.Frame.Height = editor is null ? topHeight : Dim.Height(editor);
                     break;
                 default:
                     region.Frame.X = 0;
-                    region.Frame.Y = editor is null ? 0 : Pos.Bottom(editor);
+                    region.Frame.Y = editor is null ? TopRows : Pos.Bottom(editor);
                     region.Frame.Width = Dim.Fill();
-                    region.Frame.Height = Dim.Fill(1);
+                    region.Frame.Height = Dim.Fill(BottomRows);
                     break;
             }
         }
@@ -529,7 +601,8 @@ internal sealed class WorkbenchWindow : Window
         }
         else if (this.dragging == Divider.Horizontal && size.Height > 0)
         {
-            int height = point.Y - this.dragOffset + 1;
+            // The editor region starts below the menu bar.
+            int height = point.Y - this.dragOffset - TopRows + 1;
             this.Workbench.Layout.Restore(null, (int)Math.Round(height * 100.0 / size.Height));
         }
 

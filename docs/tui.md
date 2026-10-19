@@ -38,7 +38,7 @@ The settings (operator style, theme and limits) come from the nearest `truthweav
 
 ## Layout
 
-The window has three regions and a status line.
+The window has a menu bar on the first row, three regions, a status line and a hint line.
 
 | Region | Pane | Shows |
 | --- | --- | --- |
@@ -55,7 +55,9 @@ The window has three regions and a status line.
 | Bottom | Variables | The data for `from(...)` references. See [Variables](#variables). |
 | Bottom | Tests | The rule test file and its cases. See [Rule tests](#rule-tests). |
 
-The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the value of the selected term of the Tree pane (see [Structural editing](#structural-editing)), the last message, and `F1 keys`.
+The status line shows the file name, the format, a `*` for unsaved changes, the number of errors and warnings, the value of the selected term of the Tree pane (see [Structural editing](#structural-editing)), and the last message.
+
+The hint line below it shows the most common keys: `F1 Menus`, `Ctrl+O Open`, `Ctrl+S Save`, `Ctrl+Z Undo`, `F6 Region`, `F5 Export`, `F7 Validate` and `Ctrl+Q Quit`. The menu bar holds every command. See [Menus and keys](#menus-and-keys).
 
 A region can hold more than one pane and shows one at a time. Its border shows the title of the pane and, for more than one pane, its position, such as `Canonical (1/2)`.
 
@@ -454,52 +456,110 @@ F3 writes with the round-trip write-back: it reads the whole document and writes
 
 The document file is never written without a confirmation. The file keeps its encoding, its byte order mark and its line endings. A rule whose text has errors is not written.
 
-## Keys
+## Menus and keys
 
-The workbench is used with the keyboard. F1 shows this list in the window; F1 or Esc closes it.
+The menu bar on the first row holds every command of the workbench, in one menu for each type of operation. Each entry shows its key on the right. The key runs the command without the menu.
+
+| To | Do |
+| --- | --- |
+| Open the menu bar | Press F1 or F10. The File menu opens. |
+| Open one menu | Press Alt and the underlined letter: Alt+F (File), Alt+E (Edit), Alt+R (Rule), Alt+A (Analyze), Alt+X (Export), Alt+V (View) or Alt+H (Help). Or click the title of the menu. |
+| Move in the menus | Up and Down move to an entry. Left and Right move to the next menu, and Right opens a submenu. |
+| Run an entry | Press Enter, or click the entry. |
+| Close the menus | Press Esc. The focus goes back to the pane that had it. |
+| See every key | Press Shift+F1. The key reference lists every key by menu, and scrolls with the arrows and the wheel. Shift+F1 or Esc closes it. |
+
+Two settings have a small, fixed set of values. Each is a submenu with one entry for each value, and `(*)` marks the current value. Choose a value to set it in one step.
+
+| Submenu | Values |
+| --- | --- |
+| Rule > Unknown policy | Unknown counts as False, Unknown counts as True, Unknown is an error. Ctrl+F3 moves to the next one. |
+| View > Theme | Light and dark. Ctrl+F1 switches between them. |
+
+### File
 
 | Key | Does |
 | --- | --- |
-| F1 | Shows or hides the key help. |
 | Ctrl+O | Opens a rule file. |
 | Ctrl+S | Saves. For a rule inside a document, it patches the rule into the document. |
 | F12 | Saves to a new path. The extension selects the format. |
+| F2 | Opens a rule inside a JSON or YAML document. |
+| Shift+F2 | Switches to another rule of the open document. |
+| F3 | Saves the open rule into its document with the round-trip write-back. |
+| F9 | Imports a rule from the clipboard or a file. |
+| Ctrl+Q | Quits. Esc, the quit key of Terminal.Gui, also quits when no menu is open. Both ask first when the rule has unsaved changes. |
+
+### Edit
+
+| Key | Does |
+| --- | --- |
 | Ctrl+Z | Undo. |
 | Ctrl+Y | Redo. |
 | F8 | Formats the rule: canonical. |
 | Shift+F8 | Formats the rule: pretty. |
+
+### Rule
+
+| Key | Does |
+| --- | --- |
+| F4, Shift+F4 | Converts the rule to the next or previous format. |
+| Ctrl+F2 | Gives every term the value `Unknown`. |
+| Ctrl+F3 | Moves the policy for `Unknown` to the next one. |
+| Ctrl+F4 | Loads a variables file (JSON or YAML). |
+| Ctrl+R | Chooses a rewrite and shows the result in the Rewrite pane. |
+| (menu only) | Unknown policy: sets the policy for `Unknown`. |
+
+### Analyze
+
+| Key | Does |
+| --- | --- |
+| F7 | Validates every level. |
+| Shift+F7 | Turns strict validation on or off. |
+| Ctrl+F5 | Saves the assignment as a case of the rule test file. |
+| Ctrl+F7 | Runs the rule test file on the open rule. |
+| Ctrl+G | Compares the rule with the last saved or accepted version. |
+| Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
+
+### Export
+
+| Key | Does |
+| --- | --- |
+| F5 | Opens the export menu. |
+
+### View
+
+| Key | Does |
+| --- | --- |
 | F6, Shift+F6 | Moves the focus to the next or previous region. |
 | Ctrl+PageDown, Ctrl+PageUp | Shows the next or previous pane of the region. |
 | F11 | Maximises the region with the focus, or shows every region again. |
 | Alt+Left, Alt+Right | Moves the vertical divider: makes the Rule region narrower or wider, in steps of 5 percent. |
 | Alt+Up, Alt+Down | Moves the horizontal divider: makes the top regions lower or higher, in steps of 5 percent. |
-| F4, Shift+F4 | Converts the rule to the next or previous format. |
-| F5 | Opens the export menu. |
-| F7 | Validates every level. |
-| Shift+F7 | Turns strict validation on or off. |
-| F9 | Imports a rule from the clipboard or a file. |
-| F2 | Opens a rule inside a JSON or YAML document. |
-| Shift+F2 | Switches to another rule of the open document. |
-| F3 | Saves the open rule into its document with the round-trip write-back. |
 | Ctrl+F1 | Switches between the light and the dark theme for this session. |
-| Ctrl+F2 | Gives every term the value `Unknown`. |
-| Ctrl+F3 | Moves the policy for `Unknown`. |
-| Ctrl+F4 | Loads a variables file (JSON or YAML). |
+| (menu only) | Theme: sets the light or the dark theme. |
+
+### Help
+
+| Key | Does |
+| --- | --- |
+| F1 | Opens the menu bar. F10 also opens it. |
+| Shift+F1 | Shows or hides the key reference. |
+
+### Pane keys
+
+Some panes have their own keys. They work while the pane has the focus, and they are not in the menus.
+
+| Key | Does |
+| --- | --- |
 | Space, T, F, U | In the term list of the Assign pane: moves the selected term to the next value, or sets it to `True`, `False` or `Unknown`. |
 | `t`, `r`, Enter | In the Make True pane: change the target, search again, or apply the entry. See [What would make this True](#what-would-make-this-true). |
-| Ctrl+F5 | Saves the assignment as a case of the rule test file. |
-| Ctrl+F7 | Runs the rule test file on the open rule. |
 | `o`, `w`, `n`, `i`, Delete, `[`, `]`, `p`, `l`, `y`, `Y`, `v` | In the Tree pane: edit the selected node, copy or paste. See [Structural editing](#structural-editing). |
-| Ctrl+R | Chooses a rewrite and shows the result in the Rewrite pane. |
-| Ctrl+G | Compares the rule with the last saved or accepted version. |
-| Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
 | `o`, Enter, `x` | In the Compare pane: load another rule, load the example on the line into the Assign pane, or close the second rule. See [Compare two rules](#compare-two-rules). |
 | `r`, `a`, `x`, `c` | In the Rewrite pane: choose a rewrite, accept it, discard it, or compare. See [Rewrites and compare](#rewrites-and-compare). |
-| Ctrl+Q | Quits. Esc, the quit key of Terminal.Gui, also quits. Both ask first when the rule has unsaved changes. |
 
 The editor has the usual editing keys of the Terminal.Gui editor view, such as Ctrl+C, Ctrl+X and Ctrl+V for the clipboard and Ctrl+A to select all.
 
-The mouse also works, and F1 says so. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
 
 A drag on a divider resizes the regions:
 
@@ -530,6 +590,8 @@ CI packs `TruthWeaver.Tool.Tui` with the other packages and checks the package. 
 This section is for developers of the workbench. The window gets its panes and keys from two lists in `src/TruthWeaver.Tool.Tui`, in the namespace `TruthWeaver.Tool.Tui.Workbench`. The types are in one namespace for each folder of the project, `TruthWeaver.Tool.Tui.<Folder>`; the [project README](../src/TruthWeaver.Tool.Tui/README.md) lists the folders:
 
 - A pane implements `IWorkbenchPane`: a title, a region (`PaneSlot.Editor`, `PaneSlot.Side` or `PaneSlot.Bottom`) and `CreateView(Workbench)`. Add an instance to `WorkbenchPanes.Default`. The view follows the shared state through `Workbench.DocumentChanged`, and reads the rule from `Workbench.Document`.
-- A key is a `WorkbenchCommand`: a key, a description and an action on the window. Add it to `WorkbenchCommands.Default`. The key help lists it.
+- A command is a `WorkbenchCommand`: a key (or `Key.Empty` for a command that only the menu runs), a `CommandGroup` (the menu that holds it), a short title for the menu, a description for the key reference and an action on the window. Set `Hint` to show it on the hint line. Add it to `WorkbenchCommands.Default`, or to the list of its feature in the `Commands` folder. The menu of its group, the key reference and, with a key, the key itself then run it. A test fails when a command names no defined group or is not in exactly one menu.
+- A setting with a small, fixed set of values is a `WorkbenchChoice`: a group, a title, the values, and the functions that read and set the current one. Add it to `WorkbenchCommands.Choices`. Its menu shows it as a submenu after the commands, with `(*)` on the current value.
+- `WorkbenchMenus` builds the menu bar: one menu for each `CommandGroup` value with at least one entry, in the order of the enum (File, Edit, Insert, Rule, Analyze, Export, View, Help). A group with no entry, such as Insert, has no menu until an entry names it.
 
 The state that the panes share has no view: `AssignmentSession` in the tool core holds the values, the variables and the policy (see [Trying a rule with values](tool-core.md#trying-a-rule-with-values)), `Workbench.Outcome` is its result for the open document, and `Workbench.NotifyAssignmentChanged()` tells the panes after a change. `RuleTestSession` holds the rule test file of the workbench, and `RuleTestCaseText` in the tool core edits the text of that file. `RuleDocument` in the tool core holds the text, the compiled rule, the diagnostics and the history (see [Editing a rule](tool-core.md#editing-a-rule)), and `Workbench` holds the document, the layout and the status line. `Workbench.SelectedNode` is the path of the selected node of the tree, and `Workbench.SelectedNodeChanged` tells the panes after `Workbench.SelectNode(path)`. `Workbench.ReplaceRule(rule, message)` puts an edited rule into the document as one undo step; `RuleTreeEditor` and `RulePalette` in the tool core make the edits (see [Editing the tree](tool-core.md#editing-the-tree)). `RewritePlayground` in the tool core applies a rewrite without a change to the rule and compares two versions (see [Rewrites](tool-core.md#rewrites)). `WorkbenchWindow.ShowPane(title)` shows a pane and gives it the focus. The tests in `tests/TruthWeaver.Tool.Tui.Tests` drive the window with keys without a terminal, and run the application loop once with the ANSI driver of Terminal.Gui.

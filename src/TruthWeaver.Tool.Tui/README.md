@@ -39,11 +39,14 @@ When the text has an error, the workbench keeps the last tree that compiled and 
 
 ### Keys
 
-F1 shows the full list in the window.
+The menu bar holds every command, in the menus File, Edit, Rule, Analyze, Export, View and Help, and each entry shows its
+key. F1 or F10 opens the menu bar, and Alt with the underlined letter opens one menu. The hint line at the bottom shows the
+most common keys, and Shift+F1 shows the key reference with every key by menu.
 
 | Key | Does |
 | --- | --- |
-| F1 | Shows or hides the key help. |
+| F1, F10 | Opens the menu bar. |
+| Shift+F1 | Shows or hides the key reference. |
 | Ctrl+O | Opens a rule file. |
 | Ctrl+S | Saves. For a rule inside a JSON or YAML document, it patches the rule into the document. |
 | F12 | Saves to a new path. The extension selects the format. |
@@ -102,7 +105,8 @@ match its folder. `Program` and `Results` stay at the root.
 | `Workbench` | Holds the open document, the layout, the assignment and the status line. |
 | `WorkbenchWindow` | The Terminal.Gui window: the regions, the panes and the keys. |
 | `IWorkbenchPane` | One pane of a region. Add an instance to `WorkbenchPanes.Default`. |
-| `WorkbenchCommand` | One key, its description and its action. Add it to `WorkbenchCommands.Default`. |
+| `WorkbenchCommand` | One command: its key, its menu group, its title, its description and its action. Add it to `WorkbenchCommands.Default`. |
+| `WorkbenchMenus` | Builds the menu bar from the commands and the choices, one menu for each group. |
 
 ## Notes
 
