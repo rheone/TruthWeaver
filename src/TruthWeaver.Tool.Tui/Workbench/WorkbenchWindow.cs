@@ -10,6 +10,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
+using TruthWeaver.Tool.Tui.Views;
 
 /// <summary>
 /// The workbench window: the menu bar on the first row, three regions (editor on the left, side view on the right, a region
@@ -18,7 +19,7 @@ using TruthWeaver.Tool.Tui.Panes;
 /// <see cref="WorkbenchCommands"/>, and <see cref="WorkbenchMenus"/> puts them in the menus. Every region can take focus, be
 /// maximised and be resized with the keys or by dragging a divider (the borders between the regions) with the mouse.
 /// </summary>
-internal sealed class WorkbenchWindow : Window
+internal sealed partial class WorkbenchWindow : Window
 {
     /// <summary>The last line of the key reference: the mouse is an extra way to do what the keys do.</summary>
     private const string MouseHelp =
@@ -121,7 +122,7 @@ internal sealed class WorkbenchWindow : Window
         this.helpList = new ListView { Width = Dim.Fill(), Height = Dim.Fill() };
         this.helpList.SetSource(new ObservableCollection<string>(HelpText(this.commands).Split('\n')));
         this.help.Add(this.helpList);
-        this.Add(this.MenuBar, this.status, this.hint, this.help);
+        this.Add(this.MenuBar, this.status, this.hint, this.help, this.inspectPanel);
 
         this.KeyDown += this.OnWorkbenchKeyDown;
 
@@ -130,6 +131,10 @@ internal sealed class WorkbenchWindow : Window
         _ = workbench.Assignment;
         workbench.DocumentChanged += (_, _) => this.ShowStatus();
         workbench.SelectedNodeChanged += (_, _) => this.ShowStatus();
+
+        // The box describes the rule as it was; a change of the text or the values makes it stale.
+        workbench.DocumentChanged += (_, _) => this.HideInspect();
+        workbench.AssignmentChanged += (_, _) => this.HideInspect();
         workbench.AssignmentChanged += (_, _) => this.ShowStatus();
         workbench.StatusChanged += (_, _) => this.ShowStatus();
 
@@ -463,6 +468,13 @@ internal sealed class WorkbenchWindow : Window
             return true;
         }
 
+        // Esc closes the inspect box.
+        if (key == Key.Esc && this.inspectPanel.Visible)
+        {
+            this.HideInspect();
+            return true;
+        }
+
         // Esc leaves the step mode of the evaluation. Outside the mode it is not a command key.
         if (key == Key.Esc && EvaluationStepController.For(this.Workbench) is { IsActive: true } stepping)
         {
@@ -567,6 +579,8 @@ internal sealed class WorkbenchWindow : Window
             }
 
             this.ReleaseContextMenu();
+            this.CancelHover();
+            this.inspectPanel.Dispose();
             this.MenuBar.Dispose();
             this.status.Dispose();
             this.hint.Dispose();
@@ -596,6 +610,18 @@ internal sealed class WorkbenchWindow : Window
     // acts on what the author pointed at.
     private void OnApplicationMouse(object? sender, Mouse mouse)
     {
+        // A move of the pointer, with no button, rests on a part of the rule or not; a click or the wheel closes the box.
+        if (mouse.Flags == MouseFlags.PositionReport && this.dragging == Divider.None)
+        {
+            this.OnHover(mouse);
+            return;
+        }
+
+        if (mouse.Flags != MouseFlags.None && !mouse.Flags.HasFlag(MouseFlags.PositionReport))
+        {
+            this.HideInspect();
+        }
+
         if (mouse.Handled || mouse.Flags != MouseFlags.RightButtonClicked || ContextMenus.For(mouse.View) is not { } menu)
         {
             return;

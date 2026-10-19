@@ -55,6 +55,28 @@ internal sealed class EvaluationStepController
         return Controllers.GetValue(workbench, key => new EvaluationStepController(key));
     }
 
+    /// <summary>
+    /// Gets what the current evaluation returned at each node of the rule, by path, with no step mode: the value as a word or
+    /// <c>skipped</c>, and the fault of a term. The inspect text reads it.
+    /// </summary>
+    /// <param name="tree">The tree.</param>
+    /// <param name="outcome">The outcome of the current assignment.</param>
+    /// <returns>The results, or an empty dictionary when no rule was evaluated.</returns>
+    public static IReadOnlyDictionary<string, EvaluationStep> ResultsOf(RuleTree tree, AssignmentOutcome outcome)
+    {
+        ArgumentNullException.ThrowIfNull(tree);
+        ArgumentNullException.ThrowIfNull(outcome);
+
+        if (!outcome.HasRule || outcome.Trace is not { } trace || tree.Nodes.Count == 0)
+        {
+            return new Dictionary<string, EvaluationStep>();
+        }
+
+        return BuildSteps(tree.Nodes, trace, node => FaultOf(outcome, node))
+            .GroupBy(s => s.Path, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+    }
+
     /// <summary>Goes to the next step. When the mode is off, it starts at the first step.</summary>
     /// <returns><see langword="true"/> when a step is shown.</returns>
     public bool Next()

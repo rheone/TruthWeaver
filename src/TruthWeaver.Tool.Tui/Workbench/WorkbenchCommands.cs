@@ -83,6 +83,7 @@ internal static class WorkbenchCommands
         .. ImportExportCommands.All,
         .. AssignmentCommands.Default,
         .. StepCommands.All,
+        .. InspectCommands.All,
         .. RuleTestCommands.Default,
         .. RewriteCommands.Default,
         .. CompareCommands.Default,

@@ -232,6 +232,28 @@ The Tree pane is the third pane of the right region. It lists the nodes of the r
 
 Each term ends with a badge that gives its value under the [Assign pane](#assign-values), as a word: `[True]`, `[False]` or `[Unknown]`. A term that has no value there is `[Unknown]`. A term with a `from(...)` source shows the value of its resolved reference, or `[Unknown: <reason>]` while the reference has no value: the message of the fault, or `no data yet`. Operators and constants have no badge. When the selected node is a term, the status line adds its value, such as `isActive = True`. The badges and the status line follow each change of a value, of the variables or of the rule.
 
+### Inspect a part of the rule
+
+Analyze > Inspect (Ctrl+F8) describes the part of the rule at the cursor in the editor, or the selected node when another pane has the focus. The text shows in a box above the status line. Esc closes the box, and a change of the rule or of a value closes it too, because the text would describe the old rule.
+
+The mouse shows the same box: rest the pointer on a part of the editor text or on a line of the Tree pane for half a second. The box opens at the pointer and closes when the pointer moves to another part or you click. Both routes use one function for the text, so the key and the pointer always say the same. A terminal that sends no mouse movement (some SSH and tmux set-ups) shows no hover box; the key shows everything.
+
+What the text says depends on the part. Values are words (`True`, `False`, `Unknown`, `skipped`), never only a color.
+
+| Part | The text |
+| --- | --- |
+| Operator | The name and the number of operands, the description of the operator table, the value it returned now (`skipped` when short-circuiting never reached it), a truth table for `IMPLIES` and the three cases of `If`, and a mark for an external operator (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`, `COALESCE`). |
+| Cardinality operator | The threshold (`k`, `min` or `max`) and how many operands are True, False, Unknown and skipped now. |
+| Predicate or term | The description, the family and the arguments with their kinds from the predicate catalog, the schema file or the rule, what the predicate answers for a null value when it takes a null behavior, and its value now. |
+| Variable | For `from("source", "path")`: the source, the path, and the resolved term or the reason there is no data yet. For a parameter of a `let`: the definition it belongs to. |
+| Constant or letter | Which value `T`, `F` or `U` stands for, and its value. |
+| `let` definition or use | The parameters and the body of the definition, and how many times the rule uses it. |
+| Note | The full text of the comment. |
+| Error or finding in the editor | The severity and code, the full message, the expected and found text, the suggestion, and the page `docs/diagnostics.md`. |
+| Root of the tree | The findings of the analyzer for the whole rule, such as an operand that cannot change the result. |
+
+In a JSON or YAML document the editor text has no inspect text, except for errors; use the Tree pane. A name that appears more than once as an operator (two `AND`) shows the description only, because the editor cannot tell which one you mean; select the node in the Tree pane for its value.
+
 ### Step through an evaluation
 
 Analyze > Next evaluation step (Shift+F12) and Previous evaluation step (Shift+F11) walk through the evaluation of the rule under the values of the Assign pane, one node at a time. The steps use the trace of the evaluation, in evaluation order: the operands of an operator first, then the operator. The first press starts at the first step. Each step selects its node in the Tree pane and the status line says what happened, such as `Step 2 of 3: b = skipped`.
@@ -615,6 +637,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 | Ctrl+F5 | Saves the assignment as a case of the rule test file. |
 | Ctrl+F7 | Runs the rule test file on the open rule. |
 | Shift+F12, Shift+F11 | Goes to the next or previous step of the evaluation in the Tree pane. Esc leaves the step mode. |
+| Ctrl+F8 | Describes the part of the rule at the cursor or the selected node, in a box. Esc closes it. The mouse shows the same box on hover. |
 | Ctrl+G | Compares the rule with the last saved or accepted version. |
 | Ctrl+F9 | Loads a second rule from a file or the clipboard and shows how it relates to the open rule in the Compare pane. |
 
@@ -657,7 +680,7 @@ Some panes have their own keys. They work while the pane has the focus, and they
 
 The editor has the usual editing keys of the Terminal.Gui editor view, such as Ctrl+C, Ctrl+X and Ctrl+V for the clipboard and Ctrl+A to select all.
 
-The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. A right click opens a context menu. See [Context menus](#context-menus). The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
+The mouse also works, and the key reference says so. A click on a menu title opens the menu and a click on an entry runs it. A click on a pane gives the focus to its region, a click on a line of the Tree pane selects that node, and a click in the editor moves the cursor. The wheel scrolls the pane under the pointer. Resting the pointer on a part of the rule shows its description. A right click opens a context menu. See [Context menus](#context-menus). The mouse is never the only way: every action has a key above. A terminal that does not report the mouse works with the keys.
 
 A drag on a divider resizes the regions:
 

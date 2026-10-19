@@ -77,6 +77,18 @@ internal sealed class RuleEditorView : Editor
         }
     }
 
+    /// <summary>Finds the offset of the text under a point of the view.</summary>
+    /// <param name="viewport">The point, relative to the viewport of the editor.</param>
+    /// <returns>The offset, clamped to the text.</returns>
+    public int OffsetAt(Point viewport)
+    {
+        // The editor keeps its own hit test internal, so this reads the scroll position of the viewport. The rule editor has
+        // no gutter and shows a tab as the editor draws it, so a column is a character for the text of a rule.
+        int row = Math.Clamp(this.Viewport.Y + viewport.Y, 0, this.Document!.LineCount - 1);
+        DocumentLine line = this.Document.GetLineByNumber(row + 1);
+        return line.Offset + Math.Clamp(this.Viewport.X + viewport.X, 0, line.Length);
+    }
+
     /// <summary>Moves the cursor to an offset of the text and scrolls it into view.</summary>
     /// <param name="offset">The offset.</param>
     public void MoveTo(int offset)

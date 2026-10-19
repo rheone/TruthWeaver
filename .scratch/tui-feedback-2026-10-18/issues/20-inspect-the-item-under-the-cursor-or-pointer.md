@@ -16,12 +16,12 @@ The text depends on the part of the rule:
 
 **Blocked by:** 12 (value display)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] One description provider builds the text for each part of the rule, and the keyboard key and the hover use it, so the two never differ.
-- [ ] A keyboard inspect key (shown in the menu and the hint line) shows the text for the item under the cursor in a panel or the status area.
-- [ ] Mouse hover shows the same text in a tooltip after a short delay, in the editor and the tree pane. Where the terminal reports no mouse movement, the keyboard route still works and the docs say so.
-- [ ] Values are shown as words, not only as color.
-- [ ] Operator and predicate descriptions come from `OperatorDefinitions` and the predicate catalog (the sources ticket 07 uses), not copies.
-- [ ] A test covers each kind of part listed above, and checks that the keyboard and hover text are equal.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] One description provider builds the text for each part of the rule, and the keyboard key and the hover use it, so the two never differ.
+- [x] A keyboard inspect key (shown in the menu and the hint line) shows the text for the item under the cursor in a panel or the status area.
+- [x] Mouse hover shows the same text in a tooltip after a short delay, in the editor and the tree pane. Where the terminal reports no mouse movement, the keyboard route still works and the docs say so.
+- [x] Values are shown as words, not only as color.
+- [x] Operator and predicate descriptions come from `OperatorDefinitions` and the predicate catalog (the sources ticket 07 uses), not copies.
+- [x] A test covers each kind of part listed above, and checks that the keyboard and hover text are equal.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
