@@ -15,11 +15,19 @@ internal sealed class InspectPanel : FrameView
     /// <summary>The widest text, in columns, so a long description wraps and stays easy to read.</summary>
     private const int MaxTextWidth = 70;
 
+    // The rows at the top (the menu bar) and the bottom (the status and hint lines) of the window that the box keeps free.
+    // Fixed at construction: the box owns its margins, so a caller does not repeat them on every ShowText call.
+    private readonly int topRows;
+    private readonly int bottomRows;
     private readonly Label body;
 
     /// <summary>Initializes a new instance of the <see cref="InspectPanel"/> class. It starts hidden.</summary>
-    public InspectPanel()
+    /// <param name="topRows">The rows at the top of the window that the box keeps free (the menu bar).</param>
+    /// <param name="bottomRows">The rows at the bottom of the window that the box keeps free (the status and hint lines).</param>
+    public InspectPanel(int topRows, int bottomRows)
     {
+        this.topRows = topRows;
+        this.bottomRows = bottomRows;
         this.Title = "Inspect (Esc closes)";
         this.Visible = false;
         this.CanFocus = false;
@@ -78,16 +86,14 @@ internal sealed class InspectPanel : FrameView
     /// <summary>Shows the box with a text.</summary>
     /// <param name="text">The text.</param>
     /// <param name="window">The size of the window the box sits in.</param>
-    /// <param name="bottomRows">The rows at the bottom of the window that the box keeps free (the status and hint lines).</param>
-    /// <param name="topRows">The rows at the top of the window that the box keeps free (the menu bar).</param>
     /// <param name="pointer">The pointer in the window, or <see langword="null"/> for the box above the status line.</param>
-    public void ShowText(string text, Size window, int bottomRows, int topRows, Point? pointer)
+    public void ShowText(string text, Size window, Point? pointer)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         IReadOnlyList<string> lines = Wrap(text, Math.Min(MaxTextWidth, Math.Max(window.Width - 4, 8)));
         int width = Math.Min(lines.Max(l => l.Length) + 2, Math.Max(window.Width, 10));
-        int height = Math.Min(lines.Count + 2, Math.Max(window.Height - topRows - bottomRows, 3));
+        int height = Math.Min(lines.Count + 2, Math.Max(window.Height - this.topRows - this.bottomRows, 3));
         this.body.Text = string.Join('\n', lines.Take(height - 2));
         this.Width = width;
         this.Height = height;
@@ -96,12 +102,12 @@ internal sealed class InspectPanel : FrameView
             // Below the pointer, or above it when there is no room below.
             this.X = Math.Clamp(at.X, 0, Math.Max(window.Width - width, 0));
             int below = at.Y + 1;
-            this.Y = below + height <= window.Height - bottomRows ? below : Math.Max(at.Y - height, topRows);
+            this.Y = below + height <= window.Height - this.bottomRows ? below : Math.Max(at.Y - height, this.topRows);
         }
         else
         {
             this.X = Math.Max(window.Width - width, 0);
-            this.Y = Math.Max(window.Height - bottomRows - height, topRows);
+            this.Y = Math.Max(window.Height - this.bottomRows - height, this.topRows);
         }
 
         this.Visible = true;

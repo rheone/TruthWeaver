@@ -27,6 +27,16 @@ internal sealed record WorkbenchServices(IWorkbenchDialogs Dialogs, IClipboardAc
             return null;
         }
 
+        public IReadOnlyList<int>? ChooseMany(
+            string title,
+            IReadOnlyList<string> items,
+            IReadOnlyList<int> initial,
+            string accept = "_OK"
+        )
+        {
+            return null;
+        }
+
         public int? ChooseFiltered(string title, IReadOnlyList<string> items, Func<string, IReadOnlyList<int>> filter)
         {
             return null;

@@ -7,9 +7,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Save into the document runs from the editor, the tree and the other panes.
-- [ ] A test fails when a command key is also bound by the editor, a list or a text field, except the keys the window owns on purpose (Undo and Redo).
-- [ ] The comment on the commands names the test instead of a hand-written list.
-- [ ] `docs/tui.md` and the key reference show the current key.
+- [x] Save into the document runs from the editor, the tree and the other panes.
+- [x] A test fails when a command key is also bound by the editor, a list or a text field, except the keys the window owns on purpose (Undo and Redo).
+- [x] The comment on the commands names the test instead of a hand-written list.
+- [x] `docs/tui.md` and the key reference show the current key.

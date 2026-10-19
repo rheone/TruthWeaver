@@ -8,11 +8,14 @@ using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
 /// Live diagnostics: the editor text compiles after a pause, on a background task, and a result is dropped when newer text
-/// exists. A test replaces the thread hop of the terminal loop with a queue it drains by hand.
+/// exists. A test replaces the thread hop of the terminal loop with a queue it drains by hand and the system clock with a
+/// clock it advances by hand, so no test waits for real time.
 /// </summary>
 public sealed class DebouncedDiagnosticsTests
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan Pause = TimeSpan.FromMilliseconds(5);
+    private readonly ManualTimeProvider clock = new();
     private readonly BlockingCollection<Action> posted = [];
 
     /// <summary>The document keeps its text and the status line says checking until the background compile is applied.</summary>
@@ -105,7 +108,8 @@ public sealed class DebouncedDiagnosticsTests
     public void Typing_WithPause_LeavesTheDocumentUntilTheCompileIsApplied_Test()
     {
         using WorkbenchHarness harness = new("a");
-        harness.Workbench.DiagnosticsDelay = TimeSpan.FromMilliseconds(5);
+        harness.Workbench.DiagnosticsDelay = Pause;
+        harness.Workbench.Clock = this.clock;
         harness.Workbench.Post = this.posted.Add;
 
         harness.Type(" and b");
@@ -135,7 +139,6 @@ public sealed class DebouncedDiagnosticsTests
         }
 
         Workbench workbench = this.Create("a");
-        workbench.DiagnosticsDelay = TimeSpan.FromMilliseconds(100);
         AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
         try
         {
@@ -143,8 +146,8 @@ public sealed class DebouncedDiagnosticsTests
             workbench.EditText("a AND b");
             this.RunNextPosted();
 
-            // The superseded task wakes after its own pause; give it time to end before counting.
-            await Task.Delay(300, TestContext.Current.CancellationToken);
+            // The superseded task ended when its edit was replaced; let it finish before counting.
+            await Task.Yield();
         }
         finally
         {
@@ -156,11 +159,36 @@ public sealed class DebouncedDiagnosticsTests
         Assert.Empty(this.posted);
     }
 
+    /// <summary>The compile starts only when the whole pause has passed; an edit before that restarts the pause.</summary>
+    [Fact]
+    public void EditText_BeforeThePauseEnds_PostsNothingUntilTheFullPauseHasPassed_Test()
+    {
+        Workbench workbench = this.Create("a");
+        workbench.EditText("a AND");
+
+        this.clock.Advance(Pause - TimeSpan.FromMilliseconds(1));
+
+        Assert.Empty(this.posted);
+        Assert.True(workbench.IsChecking);
+
+        // A new edit cancels the first wait and starts a new one; the time already spent does not count.
+        workbench.EditText("a AND b");
+        this.clock.Advance(Pause - TimeSpan.FromMilliseconds(1));
+
+        Assert.Empty(this.posted);
+        Assert.Equal(1, this.clock.PendingTimers);
+
+        this.RunNextPosted();
+
+        Assert.Equal("a AND b", workbench.CommittedDocument.Text);
+    }
+
     private Workbench Create(string text)
     {
         return new Workbench(RuleDocument.Create(text), ToolSettings.Default, new ScriptedPrompts())
         {
-            DiagnosticsDelay = TimeSpan.FromMilliseconds(5),
+            DiagnosticsDelay = Pause,
+            Clock = this.clock,
             Post = this.posted.Add,
         };
     }
@@ -171,8 +199,10 @@ public sealed class DebouncedDiagnosticsTests
         this.TakePosted()();
     }
 
+    // Moves the manual clock past the pause, which lets the waiting compile run, then waits for its posted result.
     private Action TakePosted()
     {
+        this.clock.Advance(Pause);
         using CancellationTokenSource timeout = new(Wait);
         return this.posted.Take(timeout.Token);
     }

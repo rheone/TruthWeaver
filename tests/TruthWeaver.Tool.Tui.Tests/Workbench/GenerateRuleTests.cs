@@ -110,6 +110,71 @@ public sealed class GenerateRuleTests
         }
     }
 
+    /// <summary>The dialog offers the four groups of the Insert menu and ticks the connectives first.</summary>
+    [Fact]
+    public void Generate_Command_OffersTheInsertMenuGroupsWithConnectivesTicked_Test()
+    {
+        ScriptedServices services = new();
+        services.Dialogs.Texts.Enqueue("1");
+        services.Dialogs.Choices.Enqueue(1);
+        Workbench workbench = new(RuleDocument.Create("a"), ToolSettings.Default, new ScriptedPrompts());
+
+        GenerateCommands.Generate(workbench, services.Services);
+
+        Assert.Equal(["Connectives", "Cardinality", "Inspection", "Other"], InsertItems.Operators.Select(g => g.Title));
+        Assert.Equal(InsertItems.Operators.Select(g => g.Title), services.Dialogs.LastItems);
+        Assert.Equal([0], services.Dialogs.LastInitial);
+    }
+
+    /// <summary>Two ticked families together draw on both and on nothing else, and the same choices repeat the rule.</summary>
+    [Fact]
+    public void Generate_Command_CardinalityAndOther_UsesOnlyThemAndRepeats_Test()
+    {
+        string[] texts = [.. Enumerable.Range(0, 2).Select(_ => GenerateWith(77, [1, 3]))];
+
+        Assert.Equal(texts[0], texts[1]);
+        Assert.DoesNotMatch(new Regex(Families[0].Pattern, RegexOptions.None, RegexTimeout), texts[0]);
+        Assert.DoesNotMatch(new Regex(Families[3].Pattern, RegexOptions.None, RegexTimeout), texts[0]);
+        Assert.Equal(
+            RuleGeneration.Generate(
+                77,
+                2,
+                RuleOperatorFamilies.Cardinality | RuleOperatorFamilies.Conditional,
+                ToolSettings.Default
+            ),
+            texts[0]
+        );
+    }
+
+    /// <summary>Over many seeds the ticked families are the only ones in any rule.</summary>
+    [Fact]
+    public void Generate_Command_TickedFamilies_AreTheOnlyOnesUsed_Test()
+    {
+        for (int seed = 0; seed < 30; seed++)
+        {
+            string text = GenerateWith(seed, [0, 2]);
+
+            Assert.DoesNotMatch(new Regex(Families[1].Pattern, RegexOptions.None, RegexTimeout), text);
+            Assert.DoesNotMatch(new Regex(Families[2].Pattern, RegexOptions.None, RegexTimeout), text);
+        }
+    }
+
+    /// <summary>A dialog answer with nothing ticked changes nothing.</summary>
+    [Fact]
+    public void Generate_Command_NothingTicked_KeepsTheRule_Test()
+    {
+        ScriptedServices services = new();
+        services.Dialogs.Texts.Enqueue("5");
+        services.Dialogs.Choices.Enqueue(1);
+        services.Dialogs.Ticks.Enqueue([]);
+        Workbench workbench = new(RuleDocument.Create("a"), ToolSettings.Default, new ScriptedPrompts());
+
+        bool generated = GenerateCommands.Generate(workbench, services.Services);
+
+        Assert.False(generated);
+        Assert.Equal("a", workbench.Document.Text);
+    }
+
     /// <summary>The action asks for the seed, depth and families, replaces the rule, shows the seed and undo restores the old rule.</summary>
     [Fact]
     public void Generate_Command_ReplacesTheRuleShowsTheSeedAndUndoRestoresIt_Test()
@@ -117,7 +182,7 @@ public sealed class GenerateRuleTests
         ScriptedServices services = new();
         services.Dialogs.Texts.Enqueue("123");
         services.Dialogs.Choices.Enqueue(1); // depth 2
-        services.Dialogs.Choices.Enqueue(0); // every family
+        services.Dialogs.Ticks.Enqueue([0, 1, 2, 3]); // every family
         Workbench workbench = new(RuleDocument.Create("a AND b"), ToolSettings.Default, new ScriptedPrompts());
 
         bool generated = GenerateCommands.Generate(workbench, services.Services);
@@ -138,7 +203,7 @@ public sealed class GenerateRuleTests
         ScriptedServices services = new();
         services.Dialogs.Texts.Enqueue(" ");
         services.Dialogs.Choices.Enqueue(2);
-        services.Dialogs.Choices.Enqueue(0);
+        services.Dialogs.Ticks.Enqueue([0, 1, 2, 3]);
         Workbench workbench = new(RuleDocument.Create("a"), ToolSettings.Default, new ScriptedPrompts());
 
         bool generated = GenerateCommands.Generate(workbench, services.Services);
@@ -189,7 +254,7 @@ public sealed class GenerateRuleTests
         ScriptedServices services = new();
         services.Dialogs.Texts.Enqueue("5");
         services.Dialogs.Choices.Enqueue(2);
-        services.Dialogs.Choices.Enqueue(0);
+        services.Dialogs.Ticks.Enqueue([0, 1, 2, 3]);
         ScriptedPrompts prompts = new() { Discard = false };
         Workbench workbench = new(RuleDocument.Create("a"), ToolSettings.Default, prompts);
         workbench.Document.SetText("a AND b");
@@ -199,5 +264,18 @@ public sealed class GenerateRuleTests
         Assert.False(generated);
         Assert.Equal("a AND b", workbench.Document.Text);
         Assert.Equal(1, prompts.DiscardQuestions);
+    }
+
+    private static string GenerateWith(int seed, int[] ticked)
+    {
+        ScriptedServices services = new();
+        services.Dialogs.Texts.Enqueue(seed.ToString(CultureInfo.InvariantCulture));
+        services.Dialogs.Choices.Enqueue(1); // depth 2
+        services.Dialogs.Ticks.Enqueue(ticked);
+        Workbench workbench = new(RuleDocument.Create("a"), ToolSettings.Default, new ScriptedPrompts());
+
+        GenerateCommands.Generate(workbench, services.Services);
+
+        return workbench.Document.Text;
     }
 }

@@ -28,17 +28,32 @@ internal static class RuleGeneration
 
     private static readonly string[] Words = ["admin", "editor", "viewer", "EU", "US", "active", "draft", "gold", "beta"];
 
-    /// <summary>Gets the choices of the operator families dialog: the title and the families it stands for. The first is every family.</summary>
+    /// <summary>Gets the indexes into <see cref="FamilyChoices"/> that the dialog ticks first: the connectives only.</summary>
+    public static IReadOnlyList<int> DefaultFamilyIndexes { get; } = [0];
+
+    /// <summary>
+    /// Gets the choices of the operator families dialog: the title and the families it stands for. The titles are the four
+    /// groups of the Insert menu, in its order, so the menu is the one source. The Other group stands for <c>If</c>; the
+    /// generator counts <c>COALESCE</c> with the Inspection group.
+    /// </summary>
     public static IReadOnlyList<(string Title, RuleOperatorFamilies Families)> FamilyChoices { get; } =
-    [
-        ("All operator families", RuleOperatorFamilies.All),
-        ("Connectives only (AND, OR, NOT, XOR, ...)", RuleOperatorFamilies.Connectives),
-        ("Cardinality only (ANY, AtLeast, BETWEEN, ...)", RuleOperatorFamilies.Cardinality),
-        ("If only", RuleOperatorFamilies.Conditional),
-        ("Inspections only (IsTrue, IsUnknown, COALESCE, ...)", RuleOperatorFamilies.Inspection),
-        ("Connectives and cardinality", RuleOperatorFamilies.Connectives | RuleOperatorFamilies.Cardinality),
-        ("No operators (a single predicate)", RuleOperatorFamilies.None),
-    ];
+    [.. InsertItems.Operators.Select(g => (g.Title, FamiliesOf(g.Title)))];
+
+    /// <summary>Combines the families of the chosen entries of <see cref="FamilyChoices"/>.</summary>
+    /// <param name="indexes">The indexes into <see cref="FamilyChoices"/>.</param>
+    /// <returns>The combined families.</returns>
+    public static RuleOperatorFamilies Combine(IEnumerable<int> indexes)
+    {
+        ArgumentNullException.ThrowIfNull(indexes);
+
+        RuleOperatorFamilies families = RuleOperatorFamilies.None;
+        foreach (int index in indexes)
+        {
+            families |= FamilyChoices[index].Families;
+        }
+
+        return families;
+    }
 
     /// <summary>Makes a rule that compiles.</summary>
     /// <param name="seed">The seed of the random source.</param>
@@ -69,6 +84,17 @@ internal static class RuleGeneration
         }
 
         return null;
+    }
+
+    private static RuleOperatorFamilies FamiliesOf(string group)
+    {
+        return group switch
+        {
+            "Connectives" => RuleOperatorFamilies.Connectives,
+            "Cardinality" => RuleOperatorFamilies.Cardinality,
+            "Inspection" => RuleOperatorFamilies.Inspection,
+            _ => RuleOperatorFamilies.Conditional,
+        };
     }
 
     private static string[] PickTerms(Random random, ToolSettings settings)

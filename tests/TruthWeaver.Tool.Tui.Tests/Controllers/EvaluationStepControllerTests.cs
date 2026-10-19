@@ -65,4 +65,68 @@ public sealed class EvaluationStepControllerTests
 
         Assert.False(steps.IsActive);
     }
+
+    /// <summary>
+    /// A term that faults is Unknown, and its step carries the fault message. The status line of the step and the status
+    /// line of the window show the same message.
+    /// </summary>
+    [Fact]
+    public void Next_TermThatFaults_ShowsTheFaultMessageInTheStepAndTheStatusLine_Test()
+    {
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new(
+            "hasName(name: from(\"user\", \"$.name\")) AND b",
+            [new RuleTextPane(), new TreePane(services.Services)]
+        );
+        EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
+
+        harness.Press(StepCommands.NextKey);
+
+        EvaluationStep step = Assert.IsType<EvaluationStep>(steps.Current);
+        Assert.Equal("Unknown", step.Result);
+        Assert.False(string.IsNullOrWhiteSpace(step.Fault));
+        Assert.Contains($"(fault: {step.Fault})", harness.Workbench.Status, StringComparison.Ordinal);
+        Assert.Contains($"(fault: {step.Fault})", harness.Window.StatusText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Previous used more than once walks back one step each time, and a node shows its mark only while the mode has reached
+    /// it. At the first step, Previous stays there.
+    /// </summary>
+    [Fact]
+    public void Previous_UsedMoreThanOnce_RemovesTheMarksOfTheLeftStepsInOrder_Test()
+    {
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new("a AND b", [new RuleTextPane(), new TreePane(services.Services)]);
+        harness.Workbench.Assignment.Set("a", TruthValue.True);
+        harness.Workbench.Assignment.Set("b", TruthValue.True);
+        harness.Workbench.NotifyAssignmentChanged();
+        EvaluationStepController steps = EvaluationStepController.For(harness.Workbench);
+        TreePaneView view = Assert.IsType<TreePaneView>(harness.Window.ActivePaneViews[PaneSlot.Side]);
+        harness.Press(StepCommands.NextKey);
+        harness.Press(StepCommands.NextKey);
+        harness.Press(StepCommands.NextKey);
+        Assert.Equal(2, steps.Index);
+        Assert.EndsWith("  => True", view.Lines[0], StringComparison.Ordinal);
+
+        harness.Press(StepCommands.PreviousKey);
+
+        Assert.Equal(1, steps.Index);
+        Assert.DoesNotContain("=>", view.Lines[0], StringComparison.Ordinal);
+        Assert.EndsWith("  => True", view.Lines[1], StringComparison.Ordinal);
+        Assert.EndsWith("  => True", view.Lines[2], StringComparison.Ordinal);
+        Assert.Contains("Step 2 of 3", harness.Workbench.Status, StringComparison.Ordinal);
+
+        harness.Press(StepCommands.PreviousKey);
+
+        Assert.Equal(0, steps.Index);
+        Assert.DoesNotContain("=>", view.Lines[0], StringComparison.Ordinal);
+        Assert.EndsWith("  => True", view.Lines[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("=>", view.Lines[2], StringComparison.Ordinal);
+        Assert.Equal("$.operands[0]", harness.Workbench.SelectedNode);
+
+        harness.Press(StepCommands.PreviousKey);
+
+        Assert.Equal(0, steps.Index);
+    }
 }

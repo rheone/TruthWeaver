@@ -7,8 +7,11 @@ using TruthWeaver.Tool.Tui.Theme;
 
 /// <summary>
 /// The commands and choices of the workbench: the place to register a new one. One entry, with its group, puts it in the
-/// menu of that group, in the key reference and, with a key, on that key. The keys avoid those the editor uses for itself
-/// (Ctrl+A to Ctrl+F, Ctrl+N, Ctrl+P, Ctrl+V, Ctrl+W, Ctrl+X and the arrows without Alt) and F10, which opens the menu bar.
+/// menu of that group, in the key reference and, with a key, on that key. A key must not clash with a key binding of the
+/// editor, a list or a text field, and F10 opens the menu bar: <c>CommandKeyClashTests</c> checks the keys and, when a
+/// command sets <see cref="WorkbenchCommand.SecondKey"/>, that key too. A command whose primary key a terminal is known to
+/// swallow (Alt+arrows, Ctrl+PageUp/PageDown, a Ctrl+F-key or Shift+F11/F12) sets a second key built from Ctrl or Alt and a
+/// letter, so the command still reaches the window there. See "Terminals that swallow keys" in docs/tui.md.
 /// </summary>
 internal static class WorkbenchCommands
 {
@@ -38,8 +41,14 @@ internal static class WorkbenchCommands
         new(Key.F8.WithShift, CommandGroup.Edit, "Format: pretty", "Format: pretty", w => w.Workbench.Format(pretty: true)),
         new(Key.F6, CommandGroup.View, "Next region", "Next region", w => w.FocusNextRegion(1)) { Hint = "Region" },
         new(Key.F6.WithShift, CommandGroup.View, "Previous region", "Previous region", w => w.FocusNextRegion(-1)),
-        new(Key.PageDown.WithCtrl, CommandGroup.View, "Next pane", "Next pane in this region", w => w.SwitchPane(1)),
-        new(Key.PageUp.WithCtrl, CommandGroup.View, "Previous pane", "Previous pane in this region", w => w.SwitchPane(-1)),
+        new(Key.PageDown.WithCtrl, CommandGroup.View, "Next pane", "Next pane in this region", w => w.SwitchPane(1))
+        {
+            SecondKey = Key.J.WithCtrl,
+        },
+        new(Key.PageUp.WithCtrl, CommandGroup.View, "Previous pane", "Previous pane in this region", w => w.SwitchPane(-1))
+        {
+            SecondKey = Key.L.WithCtrl,
+        },
         new(Key.F11, CommandGroup.View, "Maximise or restore", "Maximise or restore this region", w => w.ToggleMaximised()),
         new(
             Key.CursorLeft.WithAlt,
@@ -47,35 +56,50 @@ internal static class WorkbenchCommands
             "Editor narrower",
             "Resize: editor narrower (vertical divider left)",
             w => w.MoveVerticalDivider(-1)
-        ),
+        )
+        {
+            SecondKey = Key.I.WithCtrl,
+        },
         new(
             Key.CursorRight.WithAlt,
             CommandGroup.View,
             "Editor wider",
             "Resize: editor wider (vertical divider right)",
             w => w.MoveVerticalDivider(1)
-        ),
+        )
+        {
+            SecondKey = Key.W.WithCtrl,
+        },
         new(
             Key.CursorUp.WithAlt,
             CommandGroup.View,
             "Top regions lower",
             "Resize: top regions lower (horizontal divider up)",
             w => w.MoveHorizontalDivider(-1)
-        ),
+        )
+        {
+            SecondKey = Key.T.WithCtrl,
+        },
         new(
             Key.CursorDown.WithAlt,
             CommandGroup.View,
             "Top regions higher",
             "Resize: top regions higher (horizontal divider down)",
             w => w.MoveHorizontalDivider(1)
-        ),
+        )
+        {
+            SecondKey = Key.Y.WithAlt,
+        },
         new(
             Key.F1.WithCtrl,
             CommandGroup.View,
             "Switch theme",
             "Switch between the light and the dark theme",
             w => w.Workbench.ToggleTheme()
-        ),
+        )
+        {
+            SecondKey = Key.G.WithAlt,
+        },
         .. SampleCommands.All,
         .. GenerateCommands.All,
         .. InsertCommands.All,

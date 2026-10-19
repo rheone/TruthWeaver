@@ -72,18 +72,22 @@ internal static class GenerateCommands
         }
 
         IReadOnlyList<(string Title, RuleOperatorFamilies Families)> choices = RuleGeneration.FamilyChoices;
-        int? familyIndex = services.Dialogs.Choose(
+        IReadOnlyList<int>? ticked = services.Dialogs.ChooseMany(
             "Generate rule: operator families",
             [.. choices.Select(c => c.Title)],
+            RuleGeneration.DefaultFamilyIndexes,
             GenerateButton
         );
-        if (familyIndex is not { } family || family < 0 || family >= choices.Count)
+        if (ticked is not { Count: > 0 } || ticked.Any(i => i < 0 || i >= choices.Count))
         {
             return false;
         }
 
+        RuleOperatorFamilies families = RuleGeneration.Combine(ticked);
+        string familyNames = string.Join(", ", ticked.Select(i => choices[i].Title.ToLowerInvariant()));
+
         int depth = depthIndex + 1;
-        string? text = RuleGeneration.Generate(seed, depth, choices[family].Families, workbench.Settings);
+        string? text = RuleGeneration.Generate(seed, depth, families, workbench.Settings);
         if (text is null)
         {
             workbench.SetStatus(
@@ -95,7 +99,7 @@ internal static class GenerateCommands
         return workbench.OpenText(
             text,
             "replace the rule with a generated rule",
-            $"Generated rule: seed {seed}, depth {depth}, {choices[family].Title.ToLowerInvariant()}. Ctrl+Z undoes it."
+            $"Generated rule: seed {seed}, depth {depth}, {familyNames}. Ctrl+Z undoes it."
         );
     }
 }

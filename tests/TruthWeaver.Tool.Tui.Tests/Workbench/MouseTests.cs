@@ -6,6 +6,7 @@ using Terminal.Gui.Drivers;
 using Terminal.Gui.Input;
 using Terminal.Gui.Testing;
 using Terminal.Gui.ViewBase;
+using Terminal.Gui.Views;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Tui.Panes;
@@ -47,6 +48,37 @@ public sealed class MouseTests
         Assert.StartsWith("$.operands[1]", tree.HeaderText, StringComparison.Ordinal);
         harness.Press(new Key('w'));
         Assert.Equal("a AND NOT b", harness.Workbench.Document.Text);
+    }
+
+    /// <summary>A click on a term of the Assign pane selects it, so a value key acts on that term, not the one it replaces.</summary>
+    [Fact]
+    public void Click_OnATermOfTheAssignPane_SelectsTheTerm_Test()
+    {
+        using WorkbenchHarness harness = new("isActive AND isAdmin", [new RuleTextPane(), new AssignmentPane()]);
+        AssignmentView assign = Assert.IsType<AssignmentView>(harness.Window.ActivePaneViews[PaneSlot.Bottom]);
+
+        harness.Click(assign.Terms, 0, 1);
+        harness.Press(new Key('t'));
+
+        Assert.Equal(["[U] isActive", "[T] isAdmin"], assign.TermLines);
+    }
+
+    /// <summary>
+    /// A document edit that drops a diagnostic the author had selected moves the highlight back onto a row that exists,
+    /// rather than leaving it on an index the new, shorter list no longer has.
+    /// </summary>
+    [Fact]
+    public void Click_ThenFewerDiagnostics_KeepsTheSelectionInRange_Test()
+    {
+        using WorkbenchHarness harness = new("a AND\n(b OR\n)c", [new RuleTextPane(), new DiagnosticsPane()]);
+        ListView list = Assert.IsType<ListView>(harness.Window.ActivePaneViews[PaneSlot.Bottom]);
+        harness.Click(list, 0, 2);
+        int before = Assert.IsType<int>(list.Value);
+
+        harness.Workbench.Document.SetText("a AND");
+
+        Assert.True(list.Value is int row && row >= 0 && row < list.Source!.Count, "selection must stay in range");
+        Assert.True(before >= 0);
     }
 
     /// <summary>The wheel scrolls the list of the Tree pane without a key.</summary>

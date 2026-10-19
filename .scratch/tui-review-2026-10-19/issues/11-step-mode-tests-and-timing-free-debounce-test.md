@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test steps a faulting term and checks the fault message in the step and the status line.
-- [ ] A test uses Previous more than once and checks the marks.
-- [ ] The debounce test has no real `Task.Delay` and still checks the timing rule.
+- [x] A test steps a faulting term and checks the fault message in the step and the status line.
+- [x] A test uses Previous more than once and checks the marks.
+- [x] The debounce test has no real `Task.Delay` and still checks the timing rule.

@@ -7,9 +7,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] With the renderer found, the image formats are listed and work.
-- [ ] With the renderer missing, no image format is listed and one line says what to install.
-- [ ] Tests cover both cases without needing the real renderer.
-- [ ] `docs/tui.md` describes the current behavior.
+- [x] With the renderer found, the image formats are listed and work.
+- [x] With the renderer missing, no image format is listed and one line says what to install.
+- [x] Tests cover both cases without needing the real renderer.
+- [x] `docs/tui.md` describes the current behavior.

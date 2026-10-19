@@ -15,20 +15,29 @@ internal static class AssignmentCommands
             "All terms Unknown",
             "Give every term the value Unknown",
             w => w.Workbench.ClearAssignment()
-        ),
+        )
+        {
+            SecondKey = Key.U.WithAlt,
+        },
         new(
             Key.F3.WithCtrl,
             CommandGroup.Rule,
             "Next Unknown policy",
             "Next policy: Unknown counts as False, as True, or is an error",
             w => w.Workbench.CyclePolicy()
-        ),
+        )
+        {
+            SecondKey = Key.P.WithAlt,
+        },
         new(
             Key.F4.WithCtrl,
             CommandGroup.Rule,
             "Load variables...",
             "Load variables for from(...) references (JSON or YAML file)",
             w => w.Workbench.LoadVariables()
-        ),
+        )
+        {
+            SecondKey = Key.D.WithAlt,
+        },
     ];
 }

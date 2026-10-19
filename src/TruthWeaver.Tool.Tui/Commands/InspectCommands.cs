@@ -12,6 +12,9 @@ internal static class InspectCommands
     /// <summary>Gets the key of the Inspect command.</summary>
     public static Key InspectKey => Key.F8.WithCtrl;
 
+    /// <summary>Gets the fallback key of the Inspect command, for a terminal that sends no Ctrl+F-keys.</summary>
+    public static Key InspectSecondKey => Key.M.WithAlt;
+
     /// <summary>Gets the commands. <see cref="WorkbenchCommands.Default"/> includes them.</summary>
     public static IReadOnlyList<WorkbenchCommand> All { get; } =
     [
@@ -24,6 +27,7 @@ internal static class InspectCommands
         )
         {
             Hint = "Inspect",
+            SecondKey = InspectSecondKey,
         },
     ];
 }

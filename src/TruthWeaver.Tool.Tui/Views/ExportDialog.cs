@@ -17,6 +17,10 @@ internal sealed class ExportDialog : Dialog
     /// <summary>The heading of the entry that exports every artifact to a folder.</summary>
     public const string FolderType = "Every artifact, to a folder";
 
+    /// <summary>The line under the term limit that states which of the two truth-table options applies.</summary>
+    public const string LimitNoteText =
+        "A term limit overrides the box above. The box only lifts the cap while the limit is empty.";
+
     private readonly ExportDialogModel model;
     private readonly List<string> types;
     private readonly List<ExportEntry> variants = [];
@@ -25,6 +29,7 @@ internal sealed class ExportDialog : Dialog
     private readonly Label optionsHeading;
     private readonly Label hint;
     private readonly Label limitLabel;
+    private readonly Label limitNote;
     private readonly Label destinationHeading;
     private readonly Label formatHeading;
     private readonly Label[] equationLabels;
@@ -138,6 +143,12 @@ internal sealed class ExportDialog : Dialog
             Width = 6,
             Text = model.TruthTableTermLimit?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
         };
+        this.limitNote = new Label
+        {
+            Text = LimitNoteText,
+            X = 0,
+            Y = 13,
+        };
         this.destinationHeading = new Label
         {
             Text = "File or folder for To File",
@@ -161,13 +172,33 @@ internal sealed class ExportDialog : Dialog
             list.MouseBindings.ReplaceCommands(MouseFlags.LeftButtonDoubleClicked, Command.Activate);
             list.RowRender += (_, args) => HighlightChosen(list, args);
             list.ValueChanged += (_, _) => this.Refresh();
-            list.Accepting += (_, args) =>
-            {
-                // Enter takes the default action: Copy, or To File when the entry cannot be copied.
-                args.Handled = true;
-                this.Finish(this.CopyButton.Enabled ? ExportAction.Copy : ExportAction.ToFile);
-            };
         }
+
+        // Enter in the types moves on to the formats (or the dropdowns of the equation), and acts at once only when the type has
+        // nothing more to choose, as the folder export has not.
+        this.Types.Accepting += (_, args) =>
+        {
+            args.Handled = true;
+            if (this.ChosenType == ExportGroups.Equation)
+            {
+                this.Dialect.SetFocus();
+            }
+            else if (this.ChosenType == FolderType)
+            {
+                this.Finish(ExportAction.ToFile);
+            }
+            else
+            {
+                this.Variants.SetFocus();
+            }
+        };
+
+        // Enter in the formats takes the default action: Copy, or To File when the entry cannot be copied.
+        this.Variants.Accepting += (_, args) =>
+        {
+            args.Handled = true;
+            this.Finish(this.CopyButton.Enabled ? ExportAction.Copy : ExportAction.ToFile);
+        };
 
         this.Dialect.ValueChanged += (_, _) => this.Refresh();
         this.Envelope.ValueChanged += (_, _) => this.Refresh();
@@ -207,7 +238,7 @@ internal sealed class ExportDialog : Dialog
         }
 
         this.Add(this.Dialect, this.Envelope, this.Constants);
-        this.Add(this.hint, this.optionsHeading, this.AllowLarger, this.limitLabel, this.TermLimit);
+        this.Add(this.hint, this.optionsHeading, this.AllowLarger, this.limitLabel, this.TermLimit, this.limitNote);
         this.Add(this.destinationHeading, this.PathField);
         this.AddButton(this.CopyButton);
         this.AddButton(this.FileButton);
@@ -218,6 +249,9 @@ internal sealed class ExportDialog : Dialog
 
     /// <summary>Raised when the author chose Copy or To File with a usable path (<see cref="Request"/> is set) or Cancel (it is not).</summary>
     public event EventHandler? Closed;
+
+    /// <summary>Gets the line under the lists: the hint of the chosen entry, or the note about a missing image renderer.</summary>
+    public string HintText => this.hint.Text;
 
     /// <summary>Gets the list of output types.</summary>
     public ListView Types { get; }
@@ -284,6 +318,7 @@ internal sealed class ExportDialog : Dialog
             this.formatHeading.Dispose();
             this.hint.Dispose();
             this.limitLabel.Dispose();
+            this.limitNote.Dispose();
             this.TermLimit.Dispose();
             this.optionsHeading.Dispose();
             this.destinationHeading.Dispose();
@@ -373,7 +408,9 @@ internal sealed class ExportDialog : Dialog
 
         this.Envelope.Enabled = string.Equals(this.Dialect.Text, "latex", StringComparison.Ordinal);
         ExportEntry? entry = this.ChosenEntry;
-        this.hint.Text = entry?.Hint ?? string.Empty;
+
+        // The line under the lists: the hint of the chosen entry, or else the note about a missing image renderer.
+        this.hint.Text = entry is { Hint.Length: > 0 } ? entry.Hint : this.model.ImageNote;
         bool canCopy = entry is { Kind: ExportEntryKind.Artifact };
         this.CopyButton.Enabled = canCopy;
         this.CopyButton.IsDefault = canCopy;

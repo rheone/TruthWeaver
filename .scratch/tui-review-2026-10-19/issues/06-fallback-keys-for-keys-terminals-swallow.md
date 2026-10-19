@@ -7,9 +7,11 @@
 
 **Blocked by:** 05 (Command keys never lost to the focused pane).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The affected commands are listed with the terminals tried, and each has a second key that arrives in them.
-- [ ] A command with two keys shows both in the menu and the key reference, and both run it.
-- [ ] The key-clash test of ticket 05 also covers the new keys.
-- [ ] `docs/tui.md` has a short section on terminals that swallow keys.
+- [x] The affected commands are listed with the terminals tried, and each has a second key that arrives in them. (The
+      terminals are named from documentation only - Windows Terminal, SSH, tmux - not tried in this session; see
+      `docs/tui.md#terminals-that-swallow-keys`.)
+- [x] A command with two keys shows both in the menu and the key reference, and both run it.
+- [x] The key-clash test of ticket 05 also covers the new keys.
+- [x] `docs/tui.md` has a short section on terminals that swallow keys.

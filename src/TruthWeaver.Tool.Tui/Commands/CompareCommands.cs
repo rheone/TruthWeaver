@@ -22,6 +22,9 @@ internal static class CompareCommands
                     w.ShowPane("Compare");
                 }
             }
-        ),
+        )
+        {
+            SecondKey = Key.B.WithAlt,
+        },
     ];
 }

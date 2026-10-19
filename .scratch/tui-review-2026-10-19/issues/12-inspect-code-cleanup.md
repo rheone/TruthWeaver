@@ -7,11 +7,11 @@
 
 **Blocked by:** 02 (Inspect works when the cursor is right after a word), 03 (Inspect box lifecycle and cleanup).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Adding an operator to the library needs no edit of the inspect code.
-- [ ] One helper skips a subtree and one finds a word, used by every caller.
-- [ ] The hover target is a record, and no code parses "n:" or "o:" strings.
-- [ ] `ShowText` no longer takes the margins as arguments.
-- [ ] No inspect file is a catch-all for several unrelated reasons to change.
-- [ ] All existing inspect tests pass without edits to their expectations.
+- [x] Adding an operator to the library needs no edit of the inspect code.
+- [x] One helper skips a subtree and one finds a word, used by every caller.
+- [x] The hover target is a record, and no code parses "n:" or "o:" strings.
+- [x] `ShowText` no longer takes the margins as arguments.
+- [x] No inspect file is a catch-all for several unrelated reasons to change.
+- [x] All existing inspect tests pass without edits to their expectations.

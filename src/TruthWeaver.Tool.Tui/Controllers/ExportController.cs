@@ -74,7 +74,10 @@ internal sealed class ExportController
         return Controllers.GetValue(workbench, key => new ExportController(key));
     }
 
-    /// <summary>Gets the entries of the dialog: every artifact of the catalog, then the four images.</summary>
+    /// <summary>
+    /// Gets the entries of the dialog: every artifact of the catalog, then the images of each diagram language whose renderer
+    /// is found. A language without its renderer has no entries; <see cref="ImageNote"/> says what to install.
+    /// </summary>
     /// <returns>The entries.</returns>
     public IReadOnlyList<ExportEntry> Entries()
     {
@@ -92,25 +95,39 @@ internal sealed class ExportController
         {
             foreach (ImageFormat format in new[] { ImageFormat.Svg, ImageFormat.Png })
             {
+                if (ImageRenderer.FindProgram(language, this.ImageSearchPath) is null)
+                {
+                    continue;
+                }
+
                 string program = ImageRenderer.ProgramName(language);
-                bool missing = ImageRenderer.FindProgram(language, this.ImageSearchPath) is null;
-                string state = missing ? $"needs {program}, not found" : $"with {program}";
                 entries.Add(
                     new ExportEntry(
                         ExportEntryKind.Image,
-                        $"image-{language.ToString().ToLowerInvariant()}-{ImageRenderer.Extension(format)[1..]}: the diagram as {format.ToString().ToUpperInvariant()} ({state})",
+                        $"image-{language.ToString().ToLowerInvariant()}-{ImageRenderer.Extension(format)[1..]}: the diagram as {format.ToString().ToUpperInvariant()} (with {program})",
                         null,
                         language,
                         format,
                         ExportGroups.Images,
-                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format),
-                        missing ? this.MissingProgram(language) : string.Empty
+                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format)
                     )
                 );
             }
         }
 
         return entries;
+    }
+
+    /// <summary>Gets the one line that names the image renderers to install, in Core's own words.</summary>
+    /// <returns>The line, or an empty string when both renderers are found.</returns>
+    public string ImageNote()
+    {
+        return string.Join(
+            " ",
+            new[] { DiagramLanguage.Mermaid, DiagramLanguage.Dot }
+                .Where(l => ImageRenderer.FindProgram(l, this.ImageSearchPath) is null)
+                .Select(this.MissingProgram)
+        );
     }
 
     /// <summary>Makes the text of one artifact for the text of the editor.</summary>
@@ -291,7 +308,8 @@ internal sealed class ExportController
             directory,
             this.AllowLargerTruthTable,
             $"Make truth tables over {TruthTableOptions.DefaultTermCap} terms (up to {TruthTableOptions.HardTermLimit})",
-            this.TruthTableTermLimit
+            this.TruthTableTermLimit,
+            this.ImageNote()
         );
         if (this.Services.Dialogs.AskExport(model) is not { } request)
         {

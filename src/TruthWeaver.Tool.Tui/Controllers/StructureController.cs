@@ -13,6 +13,7 @@ using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
+using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
@@ -178,6 +179,47 @@ internal sealed class StructureController
         return Controllers.GetValue(workbench, key => new StructureController(key, services));
     }
 
+    /// <summary>
+    /// Gets the value of the term at an offset of the rule text, for the status line, such as
+    /// <c>hasRole(role: "admin") = True</c>. The cursor in a predicate call or in its arguments (a <c>from(...)</c> variable
+    /// too) names that term.
+    /// </summary>
+    /// <param name="offset">The cursor offset in the text of the committed document.</param>
+    /// <returns>
+    /// The text, or <see langword="null"/> when the cursor is in no term, the text has errors, the rule is not rule text, the
+    /// call is not a term of the rule, or no rule has compiled.
+    /// </returns>
+    public string? ValueTextAt(int offset)
+    {
+        // The committed document: reading Document would apply the pending text and end the pause.
+        RuleDocument document = this.workbench.CommittedDocument;
+        if (
+            document.Format != RuleFormat.Text
+            || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
+            || TermCalls.At(document.Text, offset) is not { } call
+        )
+        {
+            return null;
+        }
+
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (!outcome.HasRule)
+        {
+            return null;
+        }
+
+        // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
+        string squeezed = WithoutSpaces(call);
+        TermAssignment? term = outcome.Terms.FirstOrDefault(t => WithoutSpaces(t.Display) == squeezed);
+        if (term is null)
+        {
+            TermAssignment[] named = [.. outcome.Terms.Where(t => NameOf(t.Display) == NameOf(call))];
+            term = named.Length == 1 ? named[0] : null;
+        }
+
+        return term is not null && this.ValueTextOf(term) is { } value ? $"{term.Display} = {value}" : null;
+    }
+
     /// <summary>Selects the node at an index of <see cref="Lines"/>.</summary>
     /// <param name="index">The index.</param>
     public void SelectIndex(int index)
@@ -341,7 +383,7 @@ internal sealed class StructureController
 
     private static string GroupLine(string family)
     {
-        return $"--- {family} ---";
+        return ChoiceDialog.HeaderLine(family);
     }
 
     private static string CatalogLine(CatalogPredicate predicate)
@@ -400,6 +442,17 @@ internal sealed class StructureController
 
     // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
     // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    private static string WithoutSpaces(string text)
+    {
+        return string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
+    }
+
+    private static string NameOf(string call)
+    {
+        int paren = call.IndexOf('(', StringComparison.Ordinal);
+        return paren < 0 ? call : call[..paren];
+    }
+
     private string? ValueTextOf(RuleTreeNode node)
     {
         AssignmentOutcome outcome = this.workbench.Outcome;
@@ -408,6 +461,13 @@ internal sealed class StructureController
             return null;
         }
 
+        return this.ValueTextOf(term);
+    }
+
+    // The value of a term as a word, or Unknown with the reason when it reads data that has no value yet.
+    private string ValueTextOf(TermAssignment term)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
         if (term.Key is not null)
         {
             return term.Value.ToString();
@@ -521,7 +581,7 @@ internal sealed class StructureController
 
                     break;
                 default:
-                    // A group line is not an entry; the list opens again.
+                    // The dialog never returns a group line; a null target is only a guard.
                     picked = targets[choice.Value];
                     break;
             }
@@ -594,7 +654,7 @@ internal sealed class StructureController
 
         while (this.Services.Dialogs.Choose($"Catalog: {query.Trim()}", items) is int choice)
         {
-            // A group line is not an entry; the list opens again.
+            // The dialog never returns a group line; the check is only a guard.
             if (targets[choice] is { } entry)
             {
                 return entry;

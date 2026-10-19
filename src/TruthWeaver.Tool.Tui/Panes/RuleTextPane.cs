@@ -65,6 +65,16 @@ internal sealed class RuleTextPane : IWorkbenchPane
             }
         };
 
+        // The cursor to the status line, which shows the value of the term under it. A replacement of the text by the
+        // document is not a move by the author.
+        editor.CaretChanged += (_, _) =>
+        {
+            if (!syncing)
+            {
+                workbench.MoveEditorCaret(editor.CaretOffset);
+            }
+        };
+
         workbench.DocumentChanged += (_, _) => ShowDocument();
         workbench.SpanRequested += (_, span) =>
         {

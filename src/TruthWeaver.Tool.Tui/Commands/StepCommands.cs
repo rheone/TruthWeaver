@@ -10,8 +10,14 @@ internal static class StepCommands
     /// <summary>Gets the key of the Next step command.</summary>
     public static Key NextKey => Key.F12.WithShift;
 
+    /// <summary>Gets the fallback key of the Next step command, for a terminal that sends no Shift+F12.</summary>
+    public static Key NextSecondKey => Key.J.WithAlt;
+
     /// <summary>Gets the key of the Previous step command.</summary>
     public static Key PreviousKey => Key.F11.WithShift;
+
+    /// <summary>Gets the fallback key of the Previous step command, for a terminal that sends no Shift+F11.</summary>
+    public static Key PreviousSecondKey => Key.K.WithAlt;
 
     /// <summary>Gets the commands. <see cref="WorkbenchCommands.Default"/> includes them.</summary>
     public static IReadOnlyList<WorkbenchCommand> All { get; } =
@@ -22,13 +28,19 @@ internal static class StepCommands
             "Next evaluation step",
             "Step through the evaluation: highlight the next node and show the value it returned (Esc leaves step mode)",
             w => EvaluationStepController.For(w.Workbench).Next()
-        ),
+        )
+        {
+            SecondKey = NextSecondKey,
+        },
         new(
             PreviousKey,
             CommandGroup.Analyze,
             "Previous evaluation step",
             "Step back through the evaluation to the previous node (Esc leaves step mode)",
             w => EvaluationStepController.For(w.Workbench).Previous()
-        ),
+        )
+        {
+            SecondKey = PreviousSecondKey,
+        },
     ];
 }

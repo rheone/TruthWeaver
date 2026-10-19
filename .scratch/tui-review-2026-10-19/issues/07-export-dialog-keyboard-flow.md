@@ -7,9 +7,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Enter in the Types list moves the focus to the formats and does not end the dialog.
-- [ ] Enter in the formats list takes the default action (Copy, or To File when the entry cannot be copied).
-- [ ] When the checkbox and the term-limit field are both set, the dialog says which one applies, and a test covers it.
-- [ ] `docs/tui.md` describes the current keys and the rule.
+- [x] Enter in the Types list moves the focus to the formats and does not end the dialog.
+- [x] Enter in the formats list takes the default action (Copy, or To File when the entry cannot be copied).
+- [x] When the checkbox and the term-limit field are both set, the dialog says which one applies, and a test covers it.
+- [x] `docs/tui.md` describes the current keys and the rule.

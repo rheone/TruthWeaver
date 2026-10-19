@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] After Esc, a pointer that stays or moves inside the same part does not reopen the box.
-- [ ] A box opened with the inspect key is not closed by pointer movement, only by Esc, a click, or a change of the rule or the values.
-- [ ] A hover box still closes when the pointer moves to another part.
-- [ ] The operand lookup of a node does not search the whole node list for each call.
-- [ ] Tests cover each behavior above.
-- [ ] `docs/tui.md` describes how the box closes.
+- [x] After Esc, a pointer that stays or moves inside the same part does not reopen the box.
+- [x] A box opened with the inspect key is not closed by pointer movement, only by Esc, a click, or a change of the rule or the values.
+- [x] A hover box still closes when the pointer moves to another part.
+- [x] The operand lookup of a node does not search the whole node list for each call.
+- [x] Tests cover each behavior above.
+- [x] `docs/tui.md` describes how the box closes.

@@ -1,13 +1,11 @@
 namespace TruthWeaver.Tool.Tui.Hosting;
 
 using Terminal.Gui.App;
-using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Theme;
 using TruthWeaver.Tool.Tui.Views;
-using Attribute = Terminal.Gui.Drawing.Attribute;
 
 /// <summary>The extra questions as Terminal.Gui dialogs.</summary>
 /// <param name="app">The running application.</param>
@@ -62,40 +60,85 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
     {
         ArgumentNullException.ThrowIfNull(items);
 
-        int? result = null;
+        using ChoiceDialog dialog = new(title, items, accept, null, this.Palette);
+        return this.Run(dialog, dialog.List);
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<int>? ChooseMany(
+        string title,
+        IReadOnlyList<string> items,
+        IReadOnlyList<int> initial,
+        string accept = "_OK"
+    )
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(initial);
+
+        IReadOnlyList<int>? result = null;
         using Dialog dialog = new()
         {
             Title = title,
-            Width = Dim.Percent(80),
-            Height = Dim.Percent(80),
+            Width = Dim.Percent(60),
+            Height = items.Count + 8,
         };
-        using ListView list = new()
+        CheckBox[] boxes =
+        [
+            .. items.Select(
+                (text, index) =>
+                    new CheckBox
+                    {
+                        Text = text,
+                        X = 1,
+                        Y = index,
+                        Value = initial.Contains(index) ? CheckState.Checked : CheckState.UnChecked,
+                    }
+            ),
+        ];
+        using Label hint = new()
         {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(2),
+            Text = "Tick at least one.",
+            X = 1,
+            Y = items.Count + 1,
         };
-        list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(items));
-        list.RowRender += (_, args) => this.ColorRow(list, args, row => row < items.Count ? items[row] : null);
         using Button ok = new() { Text = accept, IsDefault = true };
         using Button cancel = new() { Text = "_Cancel" };
         ok.Accepting += (_, args) =>
         {
-            result = list.Value;
             args.Handled = true;
-            app.RequestStop();
+            int[] ticked = [.. Enumerable.Range(0, boxes.Length).Where(i => boxes[i].Value == CheckState.Checked)];
+
+            // Nothing ticked: the dialog stays open, as the hint says.
+            if (ticked.Length > 0)
+            {
+                result = ticked;
+                app.RequestStop();
+            }
         };
         cancel.Accepting += (_, args) =>
         {
             args.Handled = true;
             app.RequestStop();
         };
-        dialog.Add(list);
+        foreach (CheckBox box in boxes)
+        {
+            dialog.Add(box);
+        }
+
+        dialog.Add(hint);
         dialog.AddButton(ok);
         dialog.AddButton(cancel);
-        list.SetFocus();
+        if (boxes.Length > 0)
+        {
+            boxes[0].SetFocus();
+        }
+
         app.Run(dialog);
+        foreach (CheckBox box in boxes)
+        {
+            box.Dispose();
+        }
+
         return result;
     }
 
@@ -105,82 +148,8 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(filter);
 
-        int? result = null;
-        IReadOnlyList<int> visible = filter(string.Empty);
-        using Dialog dialog = new()
-        {
-            Title = title,
-            Width = Dim.Percent(80),
-            Height = Dim.Percent(80),
-        };
-        using Label prompt = new()
-        {
-            Text = "Search:",
-            X = 0,
-            Y = 0,
-        };
-        using TextField box = new()
-        {
-            X = 8,
-            Y = 0,
-            Width = Dim.Fill(),
-        };
-        using ListView list = new()
-        {
-            X = 0,
-            Y = 2,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(4),
-        };
-        list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>([.. visible.Select(i => items[i])]));
-
-        // The description of the chosen row has its own color, and the legend names every color, so no color stands alone.
-        using Label detail = new()
-        {
-            X = 0,
-            Y = Pos.Bottom(list),
-            Width = Dim.Fill(),
-        };
-        detail.SetScheme(SyntaxLegend.SchemeOf(SyntaxKind.Description, this.Palette()));
-        using SyntaxLegend legend = new(this.Palette()) { X = 0, Y = Pos.Bottom(list) + 1 };
-        list.RowRender += (_, args) => this.ColorRow(list, args, row => row < visible.Count ? items[visible[row]] : null);
-        using Button ok = new() { Text = "_OK", IsDefault = true };
-        using Button cancel = new() { Text = "_Cancel" };
-
-        // The part of the chosen row after " - " is its description.
-        void ShowDetail()
-        {
-            string? line = list.Value is int row && row >= 0 && row < visible.Count ? items[visible[row]] : null;
-            int cut = line is null ? -1 : line.IndexOf(" - ", StringComparison.Ordinal);
-            detail.Text = cut < 0 ? string.Empty : line![(cut + 3)..];
-        }
-
-        // Each change of the box rebuilds the list from the indexes the filter returns.
-        box.TextChanged += (_, _) =>
-        {
-            visible = filter(box.Text ?? string.Empty);
-            list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>([.. visible.Select(i => items[i])]));
-            ShowDetail();
-        };
-        list.ValueChanged += (_, _) => ShowDetail();
-        ShowDetail();
-        ok.Accepting += (_, args) =>
-        {
-            result = list.Value is int row && row >= 0 && row < visible.Count ? visible[row] : null;
-            args.Handled = true;
-            app.RequestStop();
-        };
-        cancel.Accepting += (_, args) =>
-        {
-            args.Handled = true;
-            app.RequestStop();
-        };
-        dialog.Add(prompt, box, list, detail, legend);
-        dialog.AddButton(ok);
-        dialog.AddButton(cancel);
-        box.SetFocus();
-        app.Run(dialog);
-        return result;
+        using ChoiceDialog dialog = new(title, items, "_OK", filter, this.Palette);
+        return this.Run(dialog, dialog.SearchBox!);
     }
 
     /// <inheritdoc />
@@ -209,21 +178,11 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
         return dialog.Request;
     }
 
-    // Paints a row of a predicate list in the color of its syntax kind. The chosen row keeps the attribute of the list, so the
-    // selection stays visible; the kind is also the first word of the row, so the color is never the only mark.
-    private void ColorRow(ListView list, ListViewRowEventArgs args, Func<int, string?> lineOf)
+    private int? Run(ChoiceDialog dialog, View focus)
     {
-        if (list.Value == args.Row || lineOf(args.Row) is not { } line || SyntaxKinds.OfPaletteLine(line) is not { } kind)
-        {
-            return;
-        }
-
-        ThemePalette palette = this.Palette();
-        Attribute normal = list.GetAttributeForRole(VisualRole.Normal);
-        args.RowAttribute = new Attribute(
-            palette.Of(kind),
-            palette.HasColor ? normal.Background : Color.None,
-            palette.StyleOf(kind)
-        );
+        dialog.Closed += (_, _) => app.RequestStop();
+        _ = focus.SetFocus();
+        app.Run(dialog);
+        return dialog.Choice;
     }
 }

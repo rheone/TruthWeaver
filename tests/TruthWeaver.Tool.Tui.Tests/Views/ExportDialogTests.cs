@@ -59,6 +59,76 @@ public sealed class ExportDialogTests
         Assert.True(session.Closed);
     }
 
+    /// <summary>Enter in the Types list moves the focus to the formats and does not end the dialog.</summary>
+    [Fact]
+    public void Keyboard_EnterInTheTypes_MovesTheFocusToTheFormats_Test()
+    {
+        using DialogSession session = new();
+        session.Dialog.Types.SetFocus();
+
+        session.Press(Key.Enter);
+
+        Assert.Same(session.Dialog.Variants, session.Dialog.MostFocused);
+        Assert.Null(session.Dialog.Request);
+        Assert.False(session.Closed);
+    }
+
+    /// <summary>Enter in the Types list on the equation moves the focus to its dropdowns and does not end the dialog.</summary>
+    [Fact]
+    public void Keyboard_EnterInTheEquationType_MovesTheFocusToTheDropdowns_Test()
+    {
+        using DialogSession session = new();
+        session.Press(Key.CursorDown);
+        Assert.Equal(ExportGroups.Equation, session.Dialog.ChosenType);
+
+        session.Press(Key.Enter);
+
+        Assert.Null(session.Dialog.Request);
+        Assert.False(session.Closed);
+        Assert.True(session.Dialog.Dialect.HasFocus);
+    }
+
+    /// <summary>Enter in the Types list on the folder export, which has no formats, takes To File as the default action.</summary>
+    [Fact]
+    public void Keyboard_EnterInTheFolderType_ChoosesToFile_Test()
+    {
+        using DialogSession session = new();
+        session.Dialog.Types.Value = session.Dialog.Types.Source!.Count - 1;
+
+        session.Press(Key.Enter);
+
+        Assert.Equal(ExportAction.ToFile, session.Dialog.Request!.Action);
+        Assert.True(session.Closed);
+    }
+
+    /// <summary>Enter in the formats of an entry that cannot be copied takes To File as the default action.</summary>
+    [Fact]
+    public void Keyboard_EnterInTheFormatsOfAnImage_ChoosesToFile_Test()
+    {
+        using DialogSession session = new();
+        session.Dialog.Types.Value = session.Dialog.Types.Source!.Count - 2;
+        Assert.Equal(ExportGroups.Images, session.Dialog.ChosenType);
+        session.Dialog.Variants.SetFocus();
+
+        session.Press(Key.Enter);
+
+        Assert.Equal(ExportAction.ToFile, session.Dialog.Request!.Action);
+        Assert.True(session.Closed);
+    }
+
+    /// <summary>The dialog says that the term limit overrides the box, and a request with both set carries both values.</summary>
+    [Fact]
+    public void TermLimit_WithTheBoxChecked_IsStatedToOverrideTheBox_Test()
+    {
+        using DialogSession session = new(allowLarger: true, termLimit: 6);
+
+        session.Click(session.Dialog.CopyButton, 2, 0);
+
+        Assert.Contains("term limit overrides the box", ExportDialog.LimitNoteText, StringComparison.Ordinal);
+        Assert.True(session.Dialog.Request!.AllowLargerTruthTable);
+        Assert.Equal(6, session.Dialog.Request.TruthTableTermLimit);
+    }
+
     /// <summary>A double click on a format selects it and does not end the dialog.</summary>
     [Fact]
     public void Mouse_DoubleClickOnAFormat_SelectsItAndKeepsTheDialogOpen_Test()
@@ -297,20 +367,46 @@ public sealed class ExportDialogTests
         Assert.Same(session.Dialog.TermLimit, session.Dialog.MostFocused);
     }
 
-    /// <summary>An image entry whose program is missing says what to install, in its label and in the hint under the lists.</summary>
+    /// <summary>With both renderers found, the dialog lists the image type and its four formats, and shows no install note.</summary>
     [Fact]
-    public void ImageEntry_ProgramMissing_ShowsWhatToInstall_Test()
+    public void Images_RenderersFound_AreListedWithNoNote_Test()
     {
-        Workbench workbench = new(RuleDocument.Create("a AND b"), ToolSettings.Default, new ScriptedPrompts());
-        ExportController controller = new(workbench, new ScriptedServices().Services)
-        {
-            ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-renderers"),
-        };
+        using DialogSession session = new();
 
-        ExportEntry image = controller.Entries().First(e => e.Kind == ExportEntryKind.Image);
+        int images = session.TypeIndex(ExportGroups.Images);
+        session.Dialog.Types.Value = images;
 
-        Assert.Contains("not found", image.Label, StringComparison.Ordinal);
-        Assert.Contains(ImageRenderer.ProgramName(image.Language), image.Hint, StringComparison.Ordinal);
+        Assert.Equal(4, session.Dialog.Variants.Source!.Count);
+        Assert.Equal(string.Empty, session.Dialog.HintText);
+    }
+
+    /// <summary>With a renderer missing, the dialog lists none of its image formats and one line says what to install.</summary>
+    [Fact]
+    public void Images_RendererMissing_AreHiddenAndOneLineSaysWhatToInstall_Test()
+    {
+        using FakeRenderers dotOnly = new(DiagramLanguage.Dot);
+        using DialogSession session = new(renderers: dotOnly);
+
+        session.Dialog.Types.Value = session.TypeIndex(ExportGroups.Images);
+
+        Assert.Equal(2, session.Dialog.Variants.Source!.Count);
+        Assert.DoesNotContain(
+            Enumerable.Range(0, session.Dialog.Variants.Source.Count),
+            i => session.Dialog.Variants.Source.ToList()![i]?.ToString()!.Contains("mermaid", StringComparison.Ordinal) ?? false
+        );
+        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Mermaid), session.Dialog.HintText, StringComparison.Ordinal);
+    }
+
+    /// <summary>With no renderer found, the dialog has no image type, and the note names both programs under the lists.</summary>
+    [Fact]
+    public void Images_NoRendererFound_HaveNoTypeAndTheNoteNamesBothPrograms_Test()
+    {
+        using FakeRenderers none = new();
+        using DialogSession session = new(renderers: none);
+
+        Assert.Equal(-1, session.TypeIndex(ExportGroups.Images));
+        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Mermaid), session.Dialog.HintText, StringComparison.Ordinal);
+        Assert.Contains(ImageRenderer.ProgramName(DiagramLanguage.Dot), session.Dialog.HintText, StringComparison.Ordinal);
     }
 
     /// <summary>On the headless ANSI driver the dialog draws its headings, the chosen format and the three buttons.</summary>
@@ -366,12 +462,24 @@ public sealed class ExportDialogTests
     /// <summary>An export dialog in a window of 100 by 30 cells, with the keys and the mouse sent as a terminal sends them.</summary>
     private sealed class DialogSession : IDisposable
     {
-        public DialogSession(bool allowLarger = false, int? termLimit = null)
+        // Only the renderers that the session made itself; a test disposes the ones it passes in.
+        private readonly FakeRenderers? ownedRenderers;
+
+        public DialogSession(bool allowLarger = false, int? termLimit = null, FakeRenderers? renderers = null)
         {
+            this.ownedRenderers = renderers is null ? FakeRenderers.Both() : null;
+            FakeRenderers found = renderers ?? this.ownedRenderers!;
             Workbench workbench = new(RuleDocument.Create("a AND b"), ToolSettings.Default, new ScriptedPrompts());
-            ExportController controller = new(workbench, new ScriptedServices().Services);
+            ExportController controller = new(workbench, new ScriptedServices().Services) { ImageSearchPath = found.Folder };
             this.Dialog = new ExportDialog(
-                new ExportDialogModel(controller.Entries(), Path.GetTempPath(), allowLarger, "Make big truth tables", termLimit)
+                new ExportDialogModel(
+                    controller.Entries(),
+                    Path.GetTempPath(),
+                    allowLarger,
+                    "Make big truth tables",
+                    termLimit,
+                    controller.ImageNote()
+                )
             );
             this.Dialog.Closed += (_, _) => this.Closed = true;
             this.Dialog.BeginInit();
@@ -383,6 +491,20 @@ public sealed class ExportDialogTests
         public ExportDialog Dialog { get; }
 
         public bool Closed { get; private set; }
+
+        // The position of an output type in the list, or -1 when the dialog does not list it.
+        public int TypeIndex(string type)
+        {
+            for (int i = 0; i < this.Dialog.Types.Source!.Count; i++)
+            {
+                if (string.Equals(this.Dialog.Types.Source.ToList()![i]?.ToString(), type, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
 
         public void Press(Key key)
         {
@@ -412,6 +534,7 @@ public sealed class ExportDialogTests
         public void Dispose()
         {
             this.Dialog.Dispose();
+            this.ownedRenderers?.Dispose();
         }
 
         private void Send(View view, int x, int y, params MouseFlags[] flags)

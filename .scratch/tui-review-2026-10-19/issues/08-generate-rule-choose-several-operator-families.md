@@ -7,9 +7,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The dialog lets the user tick any set of families, with at least one required.
-- [ ] The same seed, depth and set of families give the same rule every time.
-- [ ] A generated rule uses only the ticked families, and a test checks it.
-- [ ] `docs/tui.md` describes the dialog.
+- [x] The dialog lets the user tick any set of families, with at least one required.
+- [x] The same seed, depth and set of families give the same rule every time.
+- [x] A generated rule uses only the ticked families, and a test checks it.
+- [x] `docs/tui.md` describes the dialog.

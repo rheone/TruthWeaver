@@ -131,6 +131,7 @@ internal sealed partial class WorkbenchWindow : Window
         _ = workbench.Assignment;
         workbench.DocumentChanged += (_, _) => this.ShowStatus();
         workbench.SelectedNodeChanged += (_, _) => this.ShowStatus();
+        workbench.ValueSourceChanged += (_, _) => this.ShowStatus();
 
         // The box describes the rule as it was; a change of the text or the values makes it stale.
         workbench.DocumentChanged += (_, _) => this.HideInspect();
@@ -196,13 +197,13 @@ internal sealed partial class WorkbenchWindow : Window
         ArgumentNullException.ThrowIfNull(commands);
 
         WorkbenchCommand[] list = [.. commands];
-        int width = list.Length == 0 ? 0 : list.Max(c => KeyText(c.Key).Length);
+        int width = list.Length == 0 ? 0 : list.Max(c => KeyText(c).Length);
         List<string> lines = [MenuHelp];
         foreach (WorkbenchMenuGroup menu in WorkbenchMenus.GroupsOf(list, []))
         {
             lines.Add(string.Empty);
             lines.Add(menu.Group.ToString());
-            lines.AddRange(menu.Commands.Select(c => $"  {KeyText(c.Key).PadRight(width)}  {c.Description}"));
+            lines.AddRange(menu.Commands.Select(c => $"  {KeyText(c).PadRight(width)}  {c.Description}"));
         }
 
         lines.Add(string.Empty);
@@ -261,10 +262,18 @@ internal sealed partial class WorkbenchWindow : Window
             parts.Add(document.Rule is null ? "no valid tree" : "showing the last valid tree");
         }
 
-        // The value of the term under the cursor. Not while a compile waits: reading the tree would end the pause.
-        if (!workbench.IsChecking && StructureController.For(workbench).SelectedValueText is { } value)
+        // The value of the term under the editor cursor, or of the selected node of the tree, whichever moved last. Not while a
+        // compile waits: the text is about to change, and reading the tree would end the pause.
+        if (!workbench.IsChecking)
         {
-            parts.Add(value);
+            StructureController structure = StructureController.For(workbench);
+            string? value = workbench.ValueFollowsEditor
+                ? structure.ValueTextAt(workbench.EditorCaret)
+                : structure.SelectedValueText;
+            if (value is not null)
+            {
+                parts.Add(value);
+            }
         }
 
         if (workbench.Status.Length > 0)
@@ -471,7 +480,7 @@ internal sealed partial class WorkbenchWindow : Window
         // Esc closes the inspect box.
         if (key == Key.Esc && this.inspectPanel.Visible)
         {
-            this.HideInspect();
+            this.CloseInspect();
             return true;
         }
 
@@ -483,7 +492,7 @@ internal sealed partial class WorkbenchWindow : Window
         }
 
         // A command with no key is in the menus only.
-        WorkbenchCommand? command = this.commands.FirstOrDefault(c => c.Key != Key.Empty && c.Key == key);
+        WorkbenchCommand? command = this.commands.FirstOrDefault(c => c.Matches(key));
         if (command is null)
         {
             return false;
@@ -579,7 +588,7 @@ internal sealed partial class WorkbenchWindow : Window
             }
 
             this.ReleaseContextMenu();
-            this.CancelHover();
+            this.CancelPendingHover();
             this.inspectPanel.Dispose();
             this.MenuBar.Dispose();
             this.status.Dispose();
@@ -597,6 +606,13 @@ internal sealed partial class WorkbenchWindow : Window
     private static string KeyText(Key key)
     {
         return key == Key.Empty ? string.Empty : key.ToString();
+    }
+
+    // The text of a command's key for the key reference: both keys, joined by "or", when it has a second one.
+    private static string KeyText(WorkbenchCommand command)
+    {
+        string primary = KeyText(command.Key);
+        return command.SecondKey is { } second ? $"{primary} or {KeyText(second)}" : primary;
     }
 
     // The label of the document, or its file name, or the placeholder for a rule that has no file.
