@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] A double click never closes the dialog.
-- [ ] Copy puts the output on the clipboard, To File asks for a path in the same dialog, Cancel changes nothing.
-- [ ] The truth-table format can be chosen from every format the tool offers.
-- [ ] The default action is Copy.
-- [ ] Tests drive the dialog by keyboard and mouse.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] A double click never closes the dialog.
+- [x] Copy puts the output on the clipboard, To File asks for a path in the same dialog, Cancel changes nothing.
+- [x] The truth-table format can be chosen from every format the tool offers.
+- [x] The default action is Copy.
+- [x] Tests drive the dialog by keyboard and mouse.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

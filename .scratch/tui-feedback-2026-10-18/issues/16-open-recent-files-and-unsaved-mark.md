@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] The File menu lists up to ten recent files; a missing file is shown as unavailable and can be removed.
-- [ ] The unsaved mark appears after an edit and disappears after a save.
-- [ ] `workbench.json` stores the list, and the preferences section of `docs/tui.md` says so.
-- [ ] A test covers the list order, the cap and the mark.
-- [ ] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.
+- [x] The File menu lists up to ten recent files; a missing file is shown as unavailable and can be removed.
+- [x] The unsaved mark appears after an edit and disappears after a save.
+- [x] `workbench.json` stores the list, and the preferences section of `docs/tui.md` says so.
+- [x] A test covers the list order, the cap and the mark.
+- [x] The page that describes the workbench (`docs/tui.md`) is updated to the current behavior, with no "changed from" text.

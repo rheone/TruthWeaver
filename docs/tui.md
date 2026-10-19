@@ -95,6 +95,14 @@ The file is UTF-8 with no byte order mark and LF line endings, and it ends with 
 
 When the rule has unsaved changes, opening another file and quitting ask first.
 
+The title of the window shows the file name and, in front of it, a `*` while the rule has unsaved changes: `* rule.rule - TruthWeaver workbench`. The `*` appears after an edit and goes away after a save. A rule with no file yet shows `(new rule)`.
+
+### Recent files
+
+The File menu has an **Open recent** submenu under **Open**. It lists the last ten files that you opened, newest first, each with its number and path. A long path keeps its end. A file that opened again moves to the top, and the eleventh file pushes out the oldest. A file that you gave on the command line counts as opened.
+
+Choose an entry to open that file. Unsaved changes need your consent first, as for Ctrl+O. A file that no longer exists shows `(missing, choose to remove)`. Choosing it takes it out of the list, shows a message on the status line, and keeps the open rule. The list is in the [preferences file](#preferences-file) and holds paths only.
+
 ## Import and convert
 
 F9 imports a rule. A dialog asks for the source (the clipboard or a file) and the format (detect it, rule text, JSON or YAML). A file that does not compile still opens, with its diagnostics. The clipboard takes only a valid expression: text that does not compile reports its first error and the open rule stays. Unsaved changes need your consent first.
@@ -103,14 +111,18 @@ F4 converts the open rule to the next format in the order rule text, JSON, YAML.
 
 ## Export
 
-F5 opens the export menu. It lists:
+F5 opens the export dialog. One dialog holds all the choices, so no second dialog opens.
 
-- All artifacts to a folder, with `manifest.json`.
-- A switch for truth tables over the cap of 8 terms. A rule with more terms gets no truth table until you allow it, up to 12 terms, and the table then carries a `TRE0034` warning. A refused table says how to allow it.
-- Every artifact of the [tool core catalog](tool-core.md): rule text in each operator style, JSON, YAML, each equation dialect and constant style (with the double dollar and MathJax envelopes), the plain text tree, Mermaid, DOT, HTML, the truth table in each format, the statistics, the diagnostics (text, JSON, SARIF) and the Markdown report.
-- The Mermaid and DOT diagrams as SVG or PNG images.
+- **Output type.** A list of the kinds of output: rule, equation, tree and diagram, truth table, statistics and diagnostics, report, image, and every artifact to a folder. The chosen type stays highlighted.
+- **Format.** A list of the formats of the chosen type, taken from the [tool core catalog](tool-core.md). The chosen format stays highlighted. For the truth table it lists every format of the tool: Markdown, CSV, JSON, HTML and LaTeX. For the equation it shows three dropdowns: the dialect, the LaTeX envelope (only for the LaTeX dialect) and the constant style.
+- **Options.** A box that allows truth tables over the cap of 8 terms, up to 12 terms. The table then carries a `TRE0034` warning. A refused table says how to allow it.
+- **File or folder.** A text field with a suggested path in the folder of the open rule. It follows the chosen format until you edit it.
 
-For an artifact you choose the clipboard or a file. The text equals the output of the matching command line export. The artifacts are made from the text in the editor. If the text has errors, only the diagnostics artifacts can be made.
+The buttons are **Copy**, **To File** and **Cancel**. Copy is the default action, so Enter in a list copies. To File writes to the path in the text field of the same dialog; a file that exists needs your confirmation. For the images and for every artifact to a folder, Copy is off and To File is the default. Cancel changes nothing.
+
+A click selects an entry. A double click also only selects it and never ends the dialog. Tab moves between the lists, the dropdowns, the box, the field and the buttons. Alt+C, Alt+T and Alt+L press Copy, To File and Cancel.
+
+The text of an artifact equals the output of the matching command line export. The artifacts are made from the text in the editor. If the text has errors, only the diagnostics artifacts can be made.
 
 The images need Graphviz (`dot`) for DOT and the Mermaid CLI (`mmdc`) for Mermaid. A missing program is a message on the status line that names the program and where to get it. No dialog opens. An export of all artifacts includes the images only when both programs are installed, and otherwise says which program is missing.
 
@@ -373,7 +385,7 @@ When the environment variable `NO_COLOR` is set and not empty (see [no-color.org
 
 ## Preferences file
 
-The workbench keeps two choices between runs: the theme, after you switched it with Ctrl+F1, and the sizes of the regions, after you moved a divider. They are in one JSON file of the user, outside every project:
+The workbench keeps three choices between runs: the theme, after you switched it with Ctrl+F1, the sizes of the regions, after you moved a divider, and the recent files. They are in one JSON file of the user, outside every project:
 
 | System | Path |
 | --- | --- |
@@ -383,12 +395,14 @@ The workbench keeps two choices between runs: the theme, after you switched it w
 ```json
 {
   "theme": "dark",
-  "layout": { "editorWidthPercent": 60, "topHeightPercent": 70 }
+  "layout": { "editorWidthPercent": 60, "topHeightPercent": 70 },
+  "recentFiles": ["/home/ana/rules/publish.rule", "/home/ana/rules/policy.yaml"]
 }
 ```
 
-- **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). It holds no rule text and no file path. The maximised region is not kept.
+- **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). `recentFiles` lists up to ten full paths, newest first. The file holds no rule text, and no path except the recent files. The maximised region is not kept.
 - **Theme.** A `theme` in the file wins over the `theme` setting of `truthweaver.json`. Without a switch, the file has no `theme`, and the setting applies. To use the setting again, delete the `theme` line or the file.
+- **Recent files.** The file is written each time you open a file or remove a missing one from the list. A path that is repeated or is not text is dropped when the file is read, and so is every path after the tenth.
 - **Layout.** The file is written when you move a divider with the Alt+arrow keys or at the end of a mouse drag, and the next start uses the sizes.
 - **Problems.** A missing file, a file that is not valid JSON, or a file that is not an object gives the defaults and no message. A value that is not valid, such as `auto` or a size outside 15 to 85, is ignored and the other values stay. A file that cannot be written is ignored; the choice then lasts for the session only.
 
@@ -481,6 +495,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 | Key | Does |
 | --- | --- |
 | Ctrl+O | Opens a rule file. |
+| File > Open recent | Lists the last ten files that you opened. Choose one to open it. |
 | Ctrl+S | Saves. For a rule inside a document, it patches the rule into the document. |
 | F12 | Saves to a new path. The extension selects the format. |
 | F2 | Opens a rule inside a JSON or YAML document. |
@@ -524,7 +539,7 @@ Two settings have a small, fixed set of values. Each is a submenu with one entry
 
 | Key | Does |
 | --- | --- |
-| F5 | Opens the export menu. |
+| F5 | Opens the export dialog. |
 
 ### View
 

@@ -47,6 +47,11 @@ internal static class Program
             Post = app.Invoke,
             Preferences = preferences,
         };
+        if (document.Path is { } startFile)
+        {
+            workbench.RememberRecent(startFile);
+        }
+
         workbench.Layout.Restore(preferences.EditorWidthPercent, preferences.TopHeightPercent);
         using WorkbenchWindow window = new(workbench);
         window.FocusRegion(PaneSlot.Editor);

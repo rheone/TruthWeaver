@@ -3,6 +3,8 @@ namespace TruthWeaver.Tool.Tui.Hosting;
 using Terminal.Gui.App;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
+using TruthWeaver.Tool.Tui.Sessions;
+using TruthWeaver.Tool.Tui.Views;
 
 /// <summary>The extra questions as Terminal.Gui dialogs.</summary>
 /// <param name="app">The running application.</param>
@@ -161,5 +163,17 @@ internal sealed class TerminalDialogs(IApplication app) : IWorkbenchDialogs
     public bool Confirm(string title, string message, string confirm)
     {
         return MessageBox.Query(app, title, message, "_" + confirm, "_Cancel") == 0;
+    }
+
+    /// <inheritdoc />
+    public ExportRequest? AskExport(ExportDialogModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        using ExportDialog dialog = new(model);
+        dialog.Closed += (_, _) => app.RequestStop();
+        dialog.Types.SetFocus();
+        app.Run(dialog);
+        return dialog.Request;
     }
 }

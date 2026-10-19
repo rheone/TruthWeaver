@@ -7,9 +7,9 @@ using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Theme;
 
 /// <summary>
-/// The choices of the author that the workbench keeps between runs: the theme after the author switched it, and the sizes of
-/// the regions. The choices live in one small JSON file of the user, outside any project. The file holds these values and no
-/// other: no rule text and no file path. A file that is missing or cannot be read gives no choices, and the workbench starts
+/// The choices of the author that the workbench keeps between runs: the theme after the author switched it, the sizes of
+/// the regions, and the paths of the recently opened files. The choices live in one small JSON file of the user, outside any
+/// project. The file holds these values and no other: no rule text, and no path except the recent files. A file that is missing or cannot be read gives no choices, and the workbench starts
 /// with the setting and the default layout. A file that cannot be written is ignored too: a lost choice is not worth an error.
 /// </summary>
 internal sealed class WorkbenchPreferences
@@ -17,12 +17,17 @@ internal sealed class WorkbenchPreferences
     /// <summary>The name of the file in the folder of <see cref="DefaultPath"/>.</summary>
     public const string FileName = "workbench.json";
 
+    /// <summary>The most recent files that the list keeps.</summary>
+    public const int MaxRecentFiles = 10;
+
     private const string ThemeKey = "theme";
     private const string LayoutKey = "layout";
     private const string EditorWidthKey = "editorWidthPercent";
     private const string TopHeightKey = "topHeightPercent";
+    private const string RecentKey = "recentFiles";
 
     private readonly string path;
+    private readonly List<string> recentFiles = [];
 
     private WorkbenchPreferences(string path)
     {
@@ -47,6 +52,13 @@ internal sealed class WorkbenchPreferences
 
     /// <summary>Gets the saved height of the top regions in percent, or <see langword="null"/> for the default.</summary>
     public int? TopHeightPercent { get; private set; }
+
+    /// <summary>Gets the paths of the recently opened files, newest first. The list holds at most <see cref="MaxRecentFiles"/> paths.</summary>
+    public IReadOnlyList<string> RecentFiles => this.recentFiles;
+
+    // Paths compare the way the file system does: a Windows path ignores case.
+    private static StringComparer PathComparer =>
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     /// <summary>Reads the choices from a file.</summary>
     /// <param name="path">The path of the file, such as <see cref="DefaultPath"/>.</param>
@@ -87,7 +99,53 @@ internal sealed class WorkbenchPreferences
             preferences.TopHeightPercent = PercentOf(layout[TopHeightKey]);
         }
 
+        if (values[RecentKey] is JsonArray recent)
+        {
+            foreach (JsonNode? node in recent)
+            {
+                if (
+                    node is JsonValue value
+                    && value.TryGetValue(out string? file)
+                    && !string.IsNullOrWhiteSpace(file)
+                    && preferences.recentFiles.Count < MaxRecentFiles
+                    && !preferences.recentFiles.Contains(file, PathComparer)
+                )
+                {
+                    preferences.recentFiles.Add(file);
+                }
+            }
+        }
+
         return preferences;
+    }
+
+    /// <summary>
+    /// Puts a path at the top of the recent files, drops an older entry for the same path, keeps the first
+    /// <see cref="MaxRecentFiles"/> and writes the file.
+    /// </summary>
+    /// <param name="file">The full path of a file the author opened.</param>
+    public void AddRecent(string file)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(file);
+
+        this.Remember(file);
+        this.Write();
+    }
+
+    /// <summary>Takes a path out of the recent files and writes the file.</summary>
+    /// <param name="file">The path.</param>
+    /// <returns><see langword="true"/> when the path was in the list.</returns>
+    public bool RemoveRecent(string file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        int removed = this.recentFiles.RemoveAll(f => PathComparer.Equals(f, file));
+        if (removed > 0)
+        {
+            this.Write();
+        }
+
+        return removed > 0;
     }
 
     /// <summary>Keeps the theme that the author switched to.</summary>
@@ -120,6 +178,17 @@ internal sealed class WorkbenchPreferences
             : null;
     }
 
+    // Puts a path first without writing the file.
+    private void Remember(string file)
+    {
+        _ = this.recentFiles.RemoveAll(f => PathComparer.Equals(f, file));
+        this.recentFiles.Insert(0, file);
+        if (this.recentFiles.Count > MaxRecentFiles)
+        {
+            this.recentFiles.RemoveRange(MaxRecentFiles, this.recentFiles.Count - MaxRecentFiles);
+        }
+    }
+
     private void Write()
     {
         JsonObject values = [];
@@ -133,6 +202,11 @@ internal sealed class WorkbenchPreferences
         if (this.EditorWidthPercent is { } width && this.TopHeightPercent is { } height)
         {
             values[LayoutKey] = new JsonObject { [EditorWidthKey] = width, [TopHeightKey] = height };
+        }
+
+        if (this.recentFiles.Count > 0)
+        {
+            values[RecentKey] = new JsonArray([.. this.recentFiles.Select(f => (JsonNode?)JsonValue.Create(f))]);
         }
 
         try

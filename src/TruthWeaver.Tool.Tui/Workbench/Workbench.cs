@@ -96,6 +96,16 @@ internal sealed partial class Workbench
     /// </summary>
     public WorkbenchPreferences? Preferences { get; set; }
 
+    /// <summary>Gets the paths of the recently opened files, newest first, at most ten. It is empty when no <see cref="Preferences"/> file is set.</summary>
+    public IReadOnlyList<string> RecentFiles => this.Preferences?.RecentFiles ?? [];
+
+    /// <summary>
+    /// Gets a value indicating whether the rule has changes that no save has written: the saved state of the document differs, or
+    /// an edit still waits for its compile. A rule that is typed and then typed back to the saved text reads as changed until the
+    /// compile ends.
+    /// </summary>
+    public bool HasUnsavedChanges => this.IsChecking || this.document.IsDirty;
+
     /// <summary>Gets the last message for the status line, such as the result of a save, or an empty string.</summary>
     public string Status { get; private set; } = string.Empty;
 
@@ -153,7 +163,54 @@ internal sealed partial class Workbench
         }
 
         this.ReplaceDocument(next, $"Opened {next.Path} as {FormatName(next.Format)}.");
+        this.RememberRecent(next.Path ?? path);
         return true;
+    }
+
+    /// <summary>
+    /// Opens a file of the recent list. Unsaved changes need the author's consent first. A file that no longer exists is taken
+    /// out of the list and the status line says so; the open rule stays.
+    /// </summary>
+    /// <param name="path">The path from the list.</param>
+    /// <returns><see langword="true"/> when the file was opened.</returns>
+    public bool OpenRecent(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        // A file that is gone is only taken out of the list, so it needs no consent about unsaved changes.
+        if (!File.Exists(path))
+        {
+            _ = this.RemoveRecent(path);
+            this.SetStatus($"'{path}' no longer exists. It is out of the recent files.");
+            return false;
+        }
+
+        this.FlushPendingText();
+        if (this.document.IsDirty && !this.Prompts.ConfirmDiscard("open another file"))
+        {
+            return false;
+        }
+
+        return this.OpenPath(path);
+    }
+
+    /// <summary>Puts a file at the top of the recent files. Nothing happens when no <see cref="Preferences"/> file is set.</summary>
+    /// <param name="path">The path of the file the author opened.</param>
+    public void RememberRecent(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        this.Preferences?.AddRecent(Path.GetFullPath(path));
+    }
+
+    /// <summary>Takes a file out of the recent files.</summary>
+    /// <param name="path">The path.</param>
+    /// <returns><see langword="true"/> when the path was in the list.</returns>
+    public bool RemoveRecent(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        return this.Preferences?.RemoveRecent(path) ?? false;
     }
 
     /// <summary>

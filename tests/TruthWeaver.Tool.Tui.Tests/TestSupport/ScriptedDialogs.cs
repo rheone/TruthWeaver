@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 using TruthWeaver.Tool.Tui.Hosting;
+using TruthWeaver.Tool.Tui.Sessions;
 
 /// <summary>Answers the extra workbench questions from queued values, so no dialog opens.</summary>
 internal sealed class ScriptedDialogs : IWorkbenchDialogs
@@ -25,6 +26,12 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
 
     /// <summary>Gets the messages of the questions that <see cref="Confirm"/> was asked.</summary>
     public List<string> Confirmations { get; } = [];
+
+    /// <summary>Gets the answers to <see cref="AskExport"/>, in order. An empty queue cancels.</summary>
+    public Queue<ExportRequest?> ExportRequests { get; } = new();
+
+    /// <summary>Gets what the last <see cref="AskExport"/> was given.</summary>
+    public ExportDialogModel? LastExportModel { get; private set; }
 
     /// <inheritdoc />
     public string? AskText(string title, string initial)
@@ -58,5 +65,12 @@ internal sealed class ScriptedDialogs : IWorkbenchDialogs
     {
         this.Confirmations.Add(message);
         return this.Agree;
+    }
+
+    /// <inheritdoc />
+    public ExportRequest? AskExport(ExportDialogModel model)
+    {
+        this.LastExportModel = model;
+        return this.ExportRequests.TryDequeue(out ExportRequest? request) ? request : null;
     }
 }

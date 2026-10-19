@@ -60,7 +60,7 @@ internal sealed class WorkbenchWindow : Window
 
         this.Workbench = workbench;
         this.commands = commands ?? WorkbenchCommands.Default;
-        this.Title = "TruthWeaver workbench";
+        this.Title = TitleOf(workbench);
 
         foreach (PaneSlot slot in SlotOrder)
         {
@@ -200,6 +200,19 @@ internal sealed class WorkbenchWindow : Window
         return string.Join("  ", commands.Where(c => c.Hint is not null).Select(c => $"{KeyText(c.Key)} {c.Hint}"));
     }
 
+    /// <summary>
+    /// Gets the title of the window: the file name (or the label of the document) and the product name, with a leading
+    /// <c>*</c> while the rule has unsaved changes.
+    /// </summary>
+    /// <param name="workbench">The workbench.</param>
+    /// <returns>The title.</returns>
+    public static string TitleOf(Workbench workbench)
+    {
+        ArgumentNullException.ThrowIfNull(workbench);
+
+        return $"{(workbench.HasUnsavedChanges ? "* " : string.Empty)}{DocumentName(workbench)} - TruthWeaver workbench";
+    }
+
     /// <summary>Gets the status line for the state of a workbench: file, format, unsaved changes, diagnostics and the last message.</summary>
     /// <param name="workbench">The workbench.</param>
     /// <returns>The status line.</returns>
@@ -209,7 +222,7 @@ internal sealed class WorkbenchWindow : Window
 
         // The committed document: reading Document would apply the pending text and end the pause.
         RuleDocument document = workbench.CommittedDocument;
-        string name = workbench.DocumentLabel ?? (document.Path is null ? "(new rule)" : Path.GetFileName(document.Path));
+        string name = DocumentName(workbench);
         int errors = document.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
         int warnings = document.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
         List<string> parts =
@@ -497,6 +510,13 @@ internal sealed class WorkbenchWindow : Window
         return key == Key.Empty ? string.Empty : key.ToString();
     }
 
+    // The label of the document, or its file name, or the placeholder for a rule that has no file.
+    private static string DocumentName(Workbench workbench)
+    {
+        string? path = workbench.CommittedDocument.Path;
+        return workbench.DocumentLabel ?? (path is null ? "(new rule)" : Path.GetFileName(path));
+    }
+
     // Keys reach the focused pane first; a key the pane does not take reaches the window and its commands.
     private void OnWorkbenchKeyDown(object? sender, Key key)
     {
@@ -509,6 +529,7 @@ internal sealed class WorkbenchWindow : Window
     private void ShowStatus()
     {
         this.status.Text = StatusOf(this.Workbench);
+        this.Title = TitleOf(this.Workbench);
     }
 
     // Places the regions from the layout model. A region with no pane is absent, and its neighbors take its space.

@@ -1,5 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Hosting;
 
+using TruthWeaver.Tool.Tui.Sessions;
+
 /// <summary>
 /// The questions the view, embedded-rule and export panes ask beyond <see cref="IWorkbenchPrompts"/>: a line of text, a
 /// choice from a list, a folder, and a plain yes or no. The terminal implementation shows Terminal.Gui dialogs; a test
@@ -40,4 +42,12 @@ internal interface IWorkbenchDialogs
     /// <param name="confirm">The label of the confirming answer, such as "Overwrite".</param>
     /// <returns><see langword="true"/> when the author confirms.</returns>
     public bool Confirm(string title, string message, string confirm);
+
+    /// <summary>
+    /// Shows the export dialog: the output type and format, the options, the path for a file, and the buttons Copy, To File and
+    /// Cancel. It is one dialog; the path is asked inside it.
+    /// </summary>
+    /// <param name="model">What the dialog starts with.</param>
+    /// <returns>What the author chose, or <see langword="null"/> when the author cancels.</returns>
+    public ExportRequest? AskExport(ExportDialogModel model);
 }

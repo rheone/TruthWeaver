@@ -28,7 +28,7 @@ internal static class ImportExportCommands
             Key.F5,
             CommandGroup.Export,
             "Export...",
-            "Export menu: any artifact to a file or the clipboard, or all to a folder",
+            "Export dialog: any artifact to the clipboard or a file, or all to a folder",
             w => ExportController.For(w.Workbench).ShowMenu()
         )
         {

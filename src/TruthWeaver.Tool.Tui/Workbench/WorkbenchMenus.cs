@@ -14,6 +14,12 @@ using Terminal.Gui.Views;
 /// </remarks>
 internal static class WorkbenchMenus
 {
+    /// <summary>The longest path an Open recent entry shows in full; a longer path keeps its end.</summary>
+    public const int MaxShownPath = 60;
+
+    /// <summary>The title of the submenu that lists the recent files.</summary>
+    public const string RecentTitle = "Open recent";
+
     /// <summary>The key that opens the menu bar. F9, the Terminal.Gui default, imports a rule.</summary>
     public static readonly Key MenuBarKey = Key.F10;
 
@@ -71,6 +77,33 @@ internal static class WorkbenchMenus
         return (isCurrent ? "(*) " : "( ) ") + option;
     }
 
+    /// <summary>
+    /// Gets the entries of the Open recent submenu for the current recent files: the title of each and whether the file is
+    /// missing. A missing file is marked, and choosing it takes it out of the list.
+    /// </summary>
+    /// <param name="workbench">The workbench.</param>
+    /// <returns>The entries, newest first.</returns>
+    public static IReadOnlyList<RecentEntry> RecentEntries(Workbench workbench)
+    {
+        ArgumentNullException.ThrowIfNull(workbench);
+
+        return
+        [
+            .. workbench.RecentFiles.Select(
+                (path, index) =>
+                {
+                    bool missing = !File.Exists(path);
+                    string shown = path.Length > MaxShownPath ? "..." + path[^(MaxShownPath - 3)..] : path;
+                    return new RecentEntry(
+                        path,
+                        $"{index + 1}. {shown}{(missing ? " (missing, choose to remove)" : string.Empty)}",
+                        missing
+                    );
+                }
+            ),
+        ];
+    }
+
     /// <summary>Creates the menu bar of a window.</summary>
     /// <param name="window">The window that the entries act on.</param>
     /// <param name="commands">The commands.</param>
@@ -125,6 +158,15 @@ internal static class WorkbenchMenus
             entries.Add(CreateSubmenu(choice.Title, options));
         }
 
+        // The recent files follow the Open entry of the File menu.
+        if (menu.Group == CommandGroup.File)
+        {
+            int open = entries.FindIndex(e => e is MenuItem { Title: "Open..." });
+            entries.Insert(open + 1, CreateSubmenu(RecentTitle, RecentItems(window, [])));
+        }
+
+        MenuItem? recent = entries.OfType<MenuItem>().FirstOrDefault(e => e.Title == RecentTitle);
+
         MenuBarItem item = new(TitleOf(menu.Group), entries);
 
         // The marks of the choices follow the state, so they are set each time the menu opens.
@@ -133,10 +175,36 @@ internal static class WorkbenchMenus
             if (args.NewValue)
             {
                 MarkCurrent(window.Workbench, choiceItems);
+                if (recent is not null)
+                {
+                    // The list changes with every open, so the submenu is built again each time the menu opens.
+                    Menu? old = recent.SubMenu;
+                    recent.SubMenu = new Menu(RecentItems(window, RecentEntries(window.Workbench)));
+                    old?.Dispose();
+                }
             }
         };
         item.Initialized += (_, _) => KeepOnlyAltHotKeys(item);
         return item;
+    }
+
+    // The entries of the Open recent submenu. With no recent file the submenu shows one disabled line.
+    private static MenuItem[] RecentItems(WorkbenchWindow window, IReadOnlyList<RecentEntry> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return [new MenuItem("(no recent files)", string.Empty, () => { }, Key.Empty) { Enabled = false }];
+        }
+
+        return
+        [
+            .. entries.Select(entry => new MenuItem(
+                entry.Title,
+                string.Empty,
+                () => window.Workbench.OpenRecent(entry.Path),
+                Key.Empty
+            )),
+        ];
     }
 
     // An entry that opens a submenu; the entry owns the submenu.

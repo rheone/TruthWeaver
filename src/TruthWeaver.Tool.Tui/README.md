@@ -53,7 +53,7 @@ most common keys, and Shift+F1 shows the key reference with every key by menu.
 | Ctrl+Z, Ctrl+Y | Undo and redo. |
 | F8, Shift+F8 | Formats the rule: canonical or pretty. |
 | F4, Shift+F4 | Converts the rule to the next or previous format. |
-| F5 | Opens the export menu. |
+| F5 | Opens the export dialog. |
 | F7, Shift+F7 | Validates every level, and turns strict validation on or off. |
 | F9 | Imports a rule from the clipboard or a file. |
 | F2, Shift+F2 | Opens a rule inside a JSON or YAML document, and switches to another rule of that document. |
