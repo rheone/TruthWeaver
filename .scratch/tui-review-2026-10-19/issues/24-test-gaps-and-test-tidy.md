@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test covers the first click of a header double-click.
-- [ ] Every new test name starts with the member under test and follows `{MemberUnderTest}_{Scenario}_{Expectation}_Test`.
-- [ ] No key literal is duplicated between the commands and a test helper (key objects are copied when pressed, as they are mutable).
-- [ ] The tick-box hint text is a constant that the dialog and its test share.
-- [ ] The architecture test for test names passes.
+- [x] A test covers the first click of a header double-click.
+- [x] Every new test name starts with the member under test and follows `{MemberUnderTest}_{Scenario}_{Expectation}_Test`.
+- [x] No key literal is duplicated between the commands and a test helper (key objects are copied when pressed, as they are mutable).
+- [x] The tick-box hint text is a constant that the dialog and its test share.
+- [x] The architecture test for test names passes.

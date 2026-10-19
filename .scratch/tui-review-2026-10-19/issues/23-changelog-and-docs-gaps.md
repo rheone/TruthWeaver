@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The changelog has an entry for each user-visible change above, in the style of the other entries, with a link to the page that covers it.
-- [ ] The `Coalescing` entry is about 25 words per sentence and names no ticket or review.
-- [ ] No sentence in the Layout bullet of `docs/tui.md` is longer than about 25 words.
-- [ ] The documentation tests pass.
+- [x] The changelog has an entry for each user-visible change above, in the style of the other entries, with a link to the page that covers it.
+- [x] The `Coalescing` entry is about 25 words per sentence and names no ticket or review.
+- [x] No sentence in the Layout bullet of `docs/tui.md` is longer than about 25 words.
+- [x] The documentation tests pass.

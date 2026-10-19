@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Insert menu groups and the Generate rule families use one list of group identifiers, not matching title strings in two places.
-- [ ] A group with no generator family fails a test, and does not throw from a static initializer on first use.
-- [ ] `TermCalls.NameOf` has one documented rule, and a test covers a call, a bare name and a call with spaces.
-- [ ] The thin `SameCall` wrapper is gone or has a reason in its summary.
-- [ ] All existing tests pass without changes to their expectations.
+- [x] The Insert menu groups and the Generate rule families use one list of group identifiers, not matching title strings in two places.
+- [x] A group with no generator family fails a test, and does not throw from a static initializer on first use.
+- [x] `TermCalls.NameOf` has one documented rule, and a test covers a call, a bare name and a call with spaces.
+- [x] The thin `SameCall` wrapper is gone or has a reason in its summary.
+- [x] All existing tests pass without changes to their expectations.

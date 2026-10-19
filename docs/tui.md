@@ -513,7 +513,7 @@ The workbench keeps three choices between runs: the theme, after you switched it
 - **Content.** The file holds `theme` (`light` or `dark`, never `auto`) and `layout` (the width of the editor region and the height of the top regions, in percent). `recentFiles` lists up to ten full paths, newest first. The file holds no rule text, and no path except the recent files. The maximised region is not kept.
 - **Theme.** A `theme` in the file wins over the `theme` setting of `truthweaver.json`. Without a switch, the file has no `theme`, and the setting applies. To use the setting again, delete the `theme` line or the file.
 - **Recent files.** The file is written each time you open a file or remove a missing one from the list. A path that is repeated or is not text is dropped when the file is read, and so is every path after the tenth.
-- **Layout.** The file is written when you move a divider with the Alt+arrow keys (or their second keys: Alt+Z, Alt+C, Ctrl+T, Alt+Y; see [Terminals that swallow keys](#terminals-that-swallow-keys)) or at the end of a mouse drag, and the next start uses the sizes.
+- **Layout.** The file is written when you move a divider. Use the Alt+arrow keys or their second keys (Alt+Z, Alt+C, Ctrl+T, Alt+Y; see [Terminals that swallow keys](#terminals-that-swallow-keys)). A mouse drag writes the file when it ends. The next start uses the sizes.
 - **Problems.** A missing file, a file that is not valid JSON, or a file that is not an object gives the defaults and no message. A value that is not valid, such as `auto` or a size outside 15 to 85, is ignored and the other values stay. A file that cannot be written is ignored; the choice then lasts for the session only.
 
 ## Variables

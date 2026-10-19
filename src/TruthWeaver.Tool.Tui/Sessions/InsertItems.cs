@@ -119,6 +119,7 @@ internal static class InsertItems
         return
         [
             new InsertGroup(
+                InsertGroupId.Connectives,
                 "Connectives",
                 Described(
                     ("NOT", "NOT a"),
@@ -133,6 +134,7 @@ internal static class InsertItems
                 )
             ),
             new InsertGroup(
+                InsertGroupId.Cardinality,
                 "Cardinality",
                 Described(
                     ("ANY", "ANY(a, b)"),
@@ -148,6 +150,7 @@ internal static class InsertItems
                 )
             ),
             new InsertGroup(
+                InsertGroupId.Inspection,
                 "Inspection",
                 Described(
                     ("IsTrue", "IsTrue(a)"),
@@ -156,7 +159,7 @@ internal static class InsertItems
                     ("IsKnown", "IsKnown(a)")
                 )
             ),
-            new InsertGroup("Other", Described(("If", "If(a, b, c)"), ("COALESCE", "COALESCE(a, b)"))),
+            new InsertGroup(InsertGroupId.Other, "Other", Described(("If", "If(a, b, c)"), ("COALESCE", "COALESCE(a, b)"))),
         ];
     }
 

@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The every-second-key test runs with the editor focused and checks that the command ran (a status message, a changed state or an opened box), not only that the key event returned true.
-- [ ] Alt+W, Alt+Q, Alt+Z and Alt+C have behavior tests (pane switch or divider move).
-- [ ] The clash test fails when an Alt+letter second key is bound by the editor, a list or a text field.
-- [ ] A test fails if a second key is swallowed by the focused view (show it by a temporary clash during development).
-- [ ] Anything that cannot be tested without a terminal driver is written in the test summary.
+- [x] The every-second-key test runs with the editor focused and checks that the command ran (a status message, a changed state or an opened box), not only that the key event returned true.
+- [x] Alt+W, Alt+Q, Alt+Z and Alt+C have behavior tests (pane switch or divider move).
+- [x] The clash test fails when an Alt+letter second key is bound by the editor, a list or a text field.
+- [x] A test fails if a second key is swallowed by the focused view (show it by a temporary clash during development).
+- [x] Anything that cannot be tested without a terminal driver is written in the test summary.

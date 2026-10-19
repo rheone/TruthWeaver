@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A key listed under the wrong group fails the test.
-- [ ] A group heading that is renamed or missing fails with a message that names the heading, not with zero rows.
-- [ ] The tests do not flatten all tables into one set.
-- [ ] A short test shows each failure by a change of the document text kept in the test.
-- [ ] `docs/tui.md` passes the new checks.
+- [x] A key listed under the wrong group fails the test.
+- [x] A group heading that is renamed or missing fails with a message that names the heading, not with zero rows.
+- [x] The tests do not flatten all tables into one set.
+- [x] A short test shows each failure by a change of the document text kept in the test.
+- [x] `docs/tui.md` passes the new checks.

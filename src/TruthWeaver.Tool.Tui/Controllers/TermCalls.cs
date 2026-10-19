@@ -50,9 +50,13 @@ internal static class TermCalls
         return found;
     }
 
-    /// <summary>Gets the name of a predicate call: the run of predicate characters at its start.</summary>
+    /// <summary>
+    /// Gets the name of a predicate call. The one rule: the name is the run of <see cref="SyntaxKind.Predicate"/> marks
+    /// (see <see cref="SyntaxMarks"/>) at the start of the text. It ends at the first other character, so the opening
+    /// parenthesis, an argument and white space after the name are not part of it, and a bare name is its own name.
+    /// </summary>
     /// <param name="call">The call text, such as <c>hasRole(role: "admin")</c>, or a bare name.</param>
-    /// <returns>The name, such as <c>hasRole</c>.</returns>
+    /// <returns>The name, such as <c>hasRole</c>, or an empty string when the text does not start with a predicate name.</returns>
     public static string NameOf(string call)
     {
         ArgumentNullException.ThrowIfNull(call);
@@ -67,7 +71,11 @@ internal static class TermCalls
         return call[..end];
     }
 
-    /// <summary>Tells whether two call texts are the same call when spacing is ignored.</summary>
+    /// <summary>
+    /// Tells whether two call texts are the same call when spacing is ignored. It is named, not inlined, because the rule
+    /// (the display of a term is normalized, the text in the editor is as typed) is shared by the cursor status and needs
+    /// one test.
+    /// </summary>
     /// <param name="first">The first call text, such as the display of a term.</param>
     /// <param name="second">The second call text, such as the call at the cursor.</param>
     /// <returns><see langword="true"/> when the calls differ at most in white space.</returns>

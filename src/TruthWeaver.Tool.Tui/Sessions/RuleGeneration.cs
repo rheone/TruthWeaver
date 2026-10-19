@@ -32,12 +32,13 @@ internal static class RuleGeneration
     public static IReadOnlyList<int> DefaultFamilyIndexes { get; } = [0];
 
     /// <summary>
-    /// Gets the choices of the operator families dialog: the title and the families it stands for. The titles are the four
+    /// Gets the choices of the operator families dialog: the title and the families it stands for. The titles are the
     /// groups of the Insert menu, in its order, so the menu is the one source. The Other group stands for <c>If</c> and
-    /// <c>COALESCE</c>. A group that this class does not know makes the first read of this property throw.
+    /// <c>COALESCE</c>. A group that this class does not know gets <see cref="RuleOperatorFamilies.None"/> (a test fails
+    /// then); reading this property never throws for it.
     /// </summary>
     public static IReadOnlyList<(string Title, RuleOperatorFamilies Families)> FamilyChoices { get; } =
-    [.. InsertItems.Operators.Select(g => (g.Title, FamiliesOf(g.Title)))];
+    [.. InsertItems.Operators.Select(g => (g.Title, FamiliesOf(g.Id)))];
 
     /// <summary>Combines the families of the chosen entries of <see cref="FamilyChoices"/>.</summary>
     /// <param name="indexes">The indexes into <see cref="FamilyChoices"/>.</param>
@@ -86,15 +87,17 @@ internal static class RuleGeneration
         return null;
     }
 
-    private static RuleOperatorFamilies FamiliesOf(string group)
+    // None for an unlisted group, not an exception: this runs in a static initializer, where a throw would make the type
+    // unusable on first access. A test asserts that every group has a family.
+    internal static RuleOperatorFamilies FamiliesOf(InsertGroupId group)
     {
         return group switch
         {
-            "Connectives" => RuleOperatorFamilies.Connectives,
-            "Cardinality" => RuleOperatorFamilies.Cardinality,
-            "Inspection" => RuleOperatorFamilies.Inspection,
-            "Other" => RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
-            _ => throw new InvalidOperationException($"The Insert menu group '{group}' has no generator family."),
+            InsertGroupId.Connectives => RuleOperatorFamilies.Connectives,
+            InsertGroupId.Cardinality => RuleOperatorFamilies.Cardinality,
+            InsertGroupId.Inspection => RuleOperatorFamilies.Inspection,
+            InsertGroupId.Other => RuleOperatorFamilies.Conditional | RuleOperatorFamilies.Coalescing,
+            _ => RuleOperatorFamilies.None,
         };
     }
 

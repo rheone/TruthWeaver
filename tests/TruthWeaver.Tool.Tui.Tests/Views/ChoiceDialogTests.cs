@@ -54,6 +54,22 @@ public sealed class ChoiceDialogTests
         Assert.False(session.Closed);
     }
 
+    /// <summary>The first click of a double click on a group header selects the header row, as a click on any row does, and ends nothing.</summary>
+    /// <param name="filtered">Whether the dialog has a search box.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Click_GroupHeader_MovesTheHighlightToTheHeaderAndKeepsTheDialogOpen_Test(bool filtered)
+    {
+        using DialogSession session = new(filtered);
+
+        session.Click(session.Dialog.List, 2, 1);
+
+        Assert.Equal(1, session.Dialog.List.Value);
+        Assert.Null(session.Dialog.Choice);
+        Assert.False(session.Closed);
+    }
+
     /// <summary>A double click on a real row chooses that row and closes the dialog.</summary>
     /// <param name="filtered">Whether the dialog has a search box.</param>
     [Theory]
@@ -215,6 +231,12 @@ public sealed class ChoiceDialogTests
         {
             _ = this.Dialog.NewKeyDownEvent(key);
             this.Dialog.Layout(new Size(100, 30));
+        }
+
+        // The first click of the pair: press, release and click.
+        public void Click(View view, int x, int y)
+        {
+            this.Send(view, x, y, MouseFlags.LeftButtonPressed, MouseFlags.LeftButtonReleased, MouseFlags.LeftButtonClicked);
         }
 
         // The terminal sends the pair of clicks and then the double-click event.

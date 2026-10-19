@@ -9,6 +9,9 @@ using Terminal.Gui.Views;
 /// </summary>
 internal sealed class TickBoxDialog : Dialog
 {
+    /// <summary>The hint under the boxes; it tells the author why OK with nothing ticked keeps the dialog open.</summary>
+    public const string HintText = "Tick at least one.";
+
     private readonly Label hint;
 
     /// <summary>Initializes a new instance of the <see cref="TickBoxDialog"/> class.</summary>
@@ -39,7 +42,7 @@ internal sealed class TickBoxDialog : Dialog
         ];
         this.hint = new Label
         {
-            Text = "Tick at least one.",
+            Text = HintText,
             X = 1,
             Y = items.Count + 1,
         };

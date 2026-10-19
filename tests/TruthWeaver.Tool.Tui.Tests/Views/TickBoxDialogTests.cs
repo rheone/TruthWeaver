@@ -47,6 +47,15 @@ public sealed class TickBoxDialogTests
         Assert.Null(dialog.Ticked);
     }
 
+    /// <summary>The dialog shows the hint that explains why OK with nothing ticked keeps it open.</summary>
+    [Fact]
+    public void Constructor_Always_ShowsTheHintText_Test()
+    {
+        using TickBoxDialog dialog = Open([0], out _);
+
+        Assert.Contains(dialog.SubViews.OfType<Label>(), label => label.Text == TickBoxDialog.HintText);
+    }
+
     private static TickBoxDialog Open(int[] initial, out Func<bool> closed)
     {
         TickBoxDialog dialog = new("Pick", Items, initial, "_OK");

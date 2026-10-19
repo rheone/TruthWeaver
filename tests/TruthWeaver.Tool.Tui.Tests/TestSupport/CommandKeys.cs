@@ -21,6 +21,18 @@ internal static class CommandKeys
     /// <summary>Gets the key of the Previous evaluation step command.</summary>
     public static Key PreviousStep => Copy(Of("Previous evaluation step").Key);
 
+    /// <summary>Gets a copy of the second key of a command, which a test may press without changing the command.</summary>
+    /// <param name="command">The command; it must have a second key.</param>
+    /// <returns>A new key event for the second key.</returns>
+    public static Key SecondOf(WorkbenchCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return Copy(
+            command.SecondKey ?? throw new InvalidOperationException($"The command '{command.Title}' has no second key.")
+        );
+    }
+
     // The default command with this title; a missing title fails the test with the title in the message.
     private static WorkbenchCommand Of(string title)
     {

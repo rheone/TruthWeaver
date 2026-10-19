@@ -31,17 +31,25 @@ public sealed class CommandKeyClashTests
         using ListView list = new();
         using TextField field = new();
         View[] views = [editor, list, field];
-        Key[] commandKeys = [.. AllKeysOf(WorkbenchCommands.Default)];
 
-        string[] clashes =
-        [
-            .. from view in views
-            from binding in view.KeyBindings.GetBindings()
-            where commandKeys.Contains(binding.Key) && !OwnedByTheWindow.Contains(binding.Key)
-            select $"{binding.Key} is bound by {view.GetType().Name}",
-        ];
+        string[] clashes = ClashesOf(views, AllKeysOf(WorkbenchCommands.Default));
 
         Assert.Empty(clashes);
+    }
+
+    /// <summary>
+    /// The clash check finds a key that a view binds: an Alt+letter second key added to a view is reported with the key and
+    /// the view. This shows that the clash test would fail for such a key, which no view binds today.
+    /// </summary>
+    [Fact]
+    public void ClashesOf_AltLetterSecondKeyBoundByAView_IsReported_Test()
+    {
+        using TextField field = new();
+        field.KeyBindings.Add(Key.G.WithAlt, Command.Accept);
+
+        string[] clashes = ClashesOf([field], [Key.G.WithAlt]);
+
+        Assert.Equal(["Alt+G is bound by TextField"], clashes);
     }
 
     /// <summary>
@@ -83,6 +91,19 @@ public sealed class CommandKeyClashTests
         string[] found = [.. AllKeysOf(WorkbenchCommands.Default).Where(ambiguous.Contains).Select(k => k.ToString())];
 
         Assert.Empty(found);
+    }
+
+    // The keys of a command list that a view binds, except the keys the window owns on purpose.
+    private static string[] ClashesOf(IEnumerable<View> views, IEnumerable<Key> commandKeys)
+    {
+        Key[] keys = [.. commandKeys];
+        return
+        [
+            .. from view in views
+            from binding in view.KeyBindings.GetBindings()
+            where keys.Contains(binding.Key) && !OwnedByTheWindow.Contains(binding.Key)
+            select $"{binding.Key} is bound by {view.GetType().Name}",
+        ];
     }
 
     // Every key a command binds: its Key (unless it has none) and its SecondKey (when it has one).

@@ -135,6 +135,24 @@ public sealed class GenerateRuleTests
         Assert.All(RuleGeneration.FamilyChoices, c => Assert.NotEqual(RuleOperatorFamilies.None, c.Families));
     }
 
+    /// <summary>Every group identifier has a generator family, so a group added to the enum without one fails here.</summary>
+    [Fact]
+    public void FamiliesOf_EveryInsertGroupId_HasAGeneratorFamily_Test()
+    {
+        Assert.All(
+            Enum.GetValues<InsertGroupId>(),
+            id => Assert.NotEqual(RuleOperatorFamilies.None, RuleGeneration.FamiliesOf(id))
+        );
+        Assert.Equal(Enum.GetValues<InsertGroupId>(), InsertItems.Operators.Select(g => g.Id));
+    }
+
+    /// <summary>A group identifier that the generator does not know gives no family and does not throw.</summary>
+    [Fact]
+    public void FamiliesOf_UnknownGroupId_ReturnsNoneWithoutThrowing_Test()
+    {
+        Assert.Equal(RuleOperatorFamilies.None, RuleGeneration.FamiliesOf((InsertGroupId)99));
+    }
+
     /// <summary>The Other group stands for every operator that the Insert menu lists under Other: <c>If</c> and <c>COALESCE</c>.</summary>
     [Fact]
     public void Generate_OtherTicked_CanProduceIfAndCoalesceAndNothingElse_Test()

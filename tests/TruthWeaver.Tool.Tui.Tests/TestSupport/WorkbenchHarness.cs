@@ -17,10 +17,15 @@ internal sealed class WorkbenchHarness : IDisposable
     /// <summary>Initializes a new instance of the <see cref="WorkbenchHarness"/> class.</summary>
     /// <param name="text">The rule text to start with.</param>
     /// <param name="panes">The panes, or <see langword="null"/> for the default panes.</param>
-    public WorkbenchHarness(string text = "", IReadOnlyList<IWorkbenchPane>? panes = null)
+    /// <param name="commands">The commands, or <see langword="null"/> for the default commands.</param>
+    public WorkbenchHarness(
+        string text = "",
+        IReadOnlyList<IWorkbenchPane>? panes = null,
+        IReadOnlyList<WorkbenchCommand>? commands = null
+    )
     {
         this.Workbench = new Workbench(RuleDocument.Create(text), ToolSettings.Default, this.Prompts);
-        this.Window = new WorkbenchWindow(this.Workbench, panes);
+        this.Window = new WorkbenchWindow(this.Workbench, panes, commands);
         this.Window.BeginInit();
         this.Window.EndInit();
         this.Window.Layout(new Size(100, 30));

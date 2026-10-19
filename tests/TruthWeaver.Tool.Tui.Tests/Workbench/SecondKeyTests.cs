@@ -19,7 +19,7 @@ public sealed class SecondKeyTests
 {
     /// <summary>Alt+G, the second key of Switch theme (Ctrl+F1), switches the theme the same way the primary key does.</summary>
     [Fact]
-    public void AltG_SecondKeyOfSwitchTheme_SwitchesTheThemeLikeCtrlF1_Test()
+    public void Default_AltGSecondKeyOfSwitchTheme_SwitchesTheThemeLikeCtrlF1_Test()
     {
         using WorkbenchHarness harness = new("a");
         ThemeVariant before = harness.Workbench.Theme;
@@ -31,7 +31,7 @@ public sealed class SecondKeyTests
 
     /// <summary>Alt+W, the second key of Next pane (Ctrl+PageDown), switches the pane the same way the primary key does.</summary>
     [Fact]
-    public void AltW_SecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeCtrlPageDown_Test()
+    public void Default_AltWSecondKeyOfNextPane_SwitchesToTheRegisteredPaneLikeCtrlPageDown_Test()
     {
         // Two Side panes, so switching the pane has somewhere to go.
         IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
@@ -46,7 +46,7 @@ public sealed class SecondKeyTests
 
     /// <summary>Alt+Q, the second key of Previous pane (Ctrl+PageUp), switches back to the pane before, like the primary key.</summary>
     [Fact]
-    public void AltQ_SecondKeyOfPreviousPane_SwitchesToThePaneBeforeLikeCtrlPageUp_Test()
+    public void Default_AltQSecondKeyOfPreviousPane_SwitchesToThePaneBeforeLikeCtrlPageUp_Test()
     {
         IWorkbenchPane[] panes = [new RuleTextPane(), new CanonicalTextPane(), new ViewPane()];
         using WorkbenchHarness harness = new("a", panes);
@@ -62,7 +62,7 @@ public sealed class SecondKeyTests
 
     /// <summary>Alt+C, the second key of Editor wider (Alt+Right), widens the editor region the same way the primary key does.</summary>
     [Fact]
-    public void AltC_SecondKeyOfEditorWider_WidensTheEditorRegionLikeAltRight_Test()
+    public void Default_AltCSecondKeyOfEditorWider_WidensTheEditorRegionLikeAltRight_Test()
     {
         using WorkbenchHarness harness = new("a");
         int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
@@ -75,7 +75,7 @@ public sealed class SecondKeyTests
 
     /// <summary>Alt+Z, the second key of Editor narrower (Alt+Left), narrows the editor region the same way the primary key does.</summary>
     [Fact]
-    public void AltZ_SecondKeyOfEditorNarrower_NarrowsTheEditorRegionLikeAltLeft_Test()
+    public void Default_AltZSecondKeyOfEditorNarrower_NarrowsTheEditorRegionLikeAltLeft_Test()
     {
         using WorkbenchHarness harness = new("a");
         int before = harness.Window.ActivePaneViews[PaneSlot.Editor].SuperView!.Frame.Width;
@@ -88,7 +88,7 @@ public sealed class SecondKeyTests
 
     /// <summary>Alt+M, the second key of Inspect (Ctrl+F8), opens the inspect box the same way the primary key does.</summary>
     [Fact]
-    public void AltM_SecondKeyOfInspect_OpensTheInspectBoxLikeCtrlF8_Test()
+    public void Default_AltMSecondKeyOfInspect_OpensTheInspectBoxLikeCtrlF8_Test()
     {
         using WorkbenchHarness harness = new("isActive");
 
@@ -98,23 +98,25 @@ public sealed class SecondKeyTests
     }
 
     /// <summary>
-    /// Every second key of every default command reaches the window from the focused editor and runs its command, so a key
-    /// that a terminal turns into another key, or that a view takes first, fails here.
+    /// Every second key of every default command, pressed with the editor focused, reaches its command: the window runs that
+    /// command and no other. A key that a terminal turns into another key, or that the editor takes first, fails here and
+    /// names the key and the command. The test replaces the action of each command with a recorder, so it proves that the
+    /// key reached the command and not what the command does; the tests above cover the effect of the pane and divider
+    /// keys. Only a terminal driver can prove that a real terminal sends the key at all, and this test cannot.
     /// </summary>
     [Fact]
-    public void Default_EverySecondKeyPressedInTheEditor_RunsItsCommand_Test()
+    public void RunCommand_EverySecondKeyPressedInTheFocusedEditor_RunsItsCommand_Test()
     {
         List<string> failures = [];
         foreach (WorkbenchCommand command in WorkbenchCommands.Default.Where(c => c.SecondKey is not null))
         {
-            using WorkbenchHarness harness = new("isActive");
-            Key second = command.SecondKey!;
+            Key second = CommandKeys.SecondOf(command);
 
-            bool handled = harness.Window.NewKeyDownEvent(second);
+            string[] ran = RanByKeyInTheEditor(second, extraEditorBinding: false);
 
-            if (!handled)
+            if (!ran.SequenceEqual([command.Title]))
             {
-                failures.Add($"{second} ({command.Title}) was not handled");
+                failures.Add($"{command.SecondKey} ({command.Title}) ran [{string.Join(", ", ran)}]");
             }
         }
 
@@ -122,11 +124,24 @@ public sealed class SecondKeyTests
     }
 
     /// <summary>
+    /// A second key that the focused editor binds is swallowed before the window sees it, and the recorder test reports that
+    /// the command did not run. This shows that the every-second-key test fails on a clash: it adds a binding for Alt+G to
+    /// the editor, as a temporary clash would.
+    /// </summary>
+    [Fact]
+    public void RunCommand_SecondKeyBoundByTheFocusedEditor_DoesNotRunItsCommand_Test()
+    {
+        string[] ran = RanByKeyInTheEditor(Key.G.WithAlt, extraEditorBinding: true);
+
+        Assert.Empty(ran);
+    }
+
+    /// <summary>
     /// Ctrl+F12 with the editor focused runs Save into the document: after the author agrees to the warning, the rule goes
     /// into the document file.
     /// </summary>
     [Fact]
-    public void CtrlF12_EditorFocused_SavesTheRuleIntoTheDocument_Test()
+    public void Default_CtrlF12InTheEditor_SavesTheRuleIntoTheDocument_Test()
     {
         string folder = Directory.CreateTempSubdirectory("tw-ctrlf12-").FullName;
         WorkbenchServices previous = WorkbenchServices.Current;
@@ -193,5 +208,25 @@ public sealed class SecondKeyTests
         Assert.NotEmpty(second);
         Assert.All(second, key => Assert.DoesNotContain(key, primary));
         Assert.Equal(second.Length, second.Distinct().Count());
+    }
+
+    // Presses a key with the editor focused, in a window whose commands only record their titles, and returns the titles of
+    // the commands that ran. With extraEditorBinding the editor also binds the key, as a clash would.
+    private static string[] RanByKeyInTheEditor(Key key, bool extraEditorBinding)
+    {
+        List<string> ran = [];
+        WorkbenchCommand[] recorders = [.. WorkbenchCommands.Default.Select(c => c with { Execute = _ => ran.Add(c.Title) })];
+        using WorkbenchHarness harness = new("isActive", commands: recorders);
+        if (extraEditorBinding)
+        {
+            (harness.Window.MostFocused ?? throw new InvalidOperationException("No view has the focus.")).KeyBindings.Add(
+                key,
+                Command.Copy
+            );
+        }
+
+        harness.Press(key);
+
+        return [.. ran];
     }
 }
