@@ -233,7 +233,7 @@ public sealed class RuleDocument
 
     /// <summary>
     /// Formats the text in its own format, as one undo step. The canonical form is one line for rule text and JSON; the
-    /// pretty form breaks rule text at <see cref="ArtifactCatalog.PrettyWidth"/> characters and indents JSON by two
+    /// pretty form breaks rule text at <see cref="RulePrinter.PrettyWidth"/> characters and indents JSON by two
     /// spaces. YAML is one node per line in both forms. Rule text uses the operator style of the settings. Notes are kept.
     /// </summary>
     /// <param name="pretty"><see langword="true"/> for the pretty form; <see langword="false"/> for the canonical form.</param>
@@ -371,7 +371,12 @@ public sealed class RuleDocument
     {
         ArgumentNullException.ThrowIfNull(rule);
 
-        string text = this.Print(rule, this.Format, pretty: this.Text.Trim().Contains('\n', StringComparison.Ordinal));
+        string text = RulePrinter.Print(
+            rule,
+            this.Format,
+            this.settings,
+            pretty: this.Text.Trim().Contains('\n', StringComparison.Ordinal)
+        );
         CompilationResult<StubAssignment> check = this.compiler.CompileAs(text, this.Format);
         if (check.Rule is null)
         {
@@ -422,31 +427,6 @@ public sealed class RuleDocument
         return ToolResults.Success(printed.Value, this.Diagnostics);
     }
 
-    /// <summary>Indents JSON by two spaces with line feeds, without escaping characters that JSON allows as they are.</summary>
-    /// <param name="json">The JSON text.</param>
-    /// <returns>The indented text.</returns>
-    internal static string IndentJson(string json)
-    {
-        JsonNode node = JsonNode.Parse(json) ?? throw new InvalidOperationException("The printer wrote JSON null.");
-        using MemoryStream stream = new();
-        using (
-            Utf8JsonWriter writer = new(
-                stream,
-                new JsonWriterOptions
-                {
-                    Indented = true,
-                    NewLine = "\n",
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                }
-            )
-        )
-        {
-            node.WriteTo(writer);
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-
     // The format that an extension names, or null for an extension the loader does not know.
     private static RuleFormat? FormatOf(string path)
     {
@@ -459,38 +439,18 @@ public sealed class RuleDocument
     {
         return this.Definitions is { Succeeded: true, HasDefinitions: true } read && read.PrintJson() is { } json
             ? this.PrintDefinitions(json, format, pretty)
-            : ToolResults.Success(this.Print(this.Rule!, format, pretty));
+            : ToolResults.Success(RulePrinter.Print(this.Rule!, format, this.settings, pretty));
     }
 
     private ToolResult<string> PrintDefinitions(string document, RuleFormat format, bool pretty)
     {
-        string? printed = DefinitionsPrinter.Print((JsonObject)JsonNode.Parse(document)!, format, this.settings, pretty);
+        string? printed = RulePrinter.PrintDefinitions((JsonObject)JsonNode.Parse(document)!, format, this.settings, pretty);
         return printed is null
             ? ToolResults.Failure<string>(
                 ToolDiagnosticCodes.WriteBackFailed,
                 "The rule cannot be printed with its definitions: a definition body or the rule does not compile on its own."
             )
             : ToolResults.Success(printed);
-    }
-
-    private string Print(CompiledRule<StubAssignment> rule, RuleFormat format, bool pretty)
-    {
-        return format switch
-        {
-            RuleFormat.Text => rule.PrintRuleText(
-                new RuleTextOptions
-                {
-                    OperatorStyle = this.settings.OperatorStyle,
-                    IncludeNotes = true,
-                    Width = pretty ? ArtifactCatalog.PrettyWidth : null,
-                }
-            ),
-            RuleFormat.Json when pretty => IndentJson(rule.PrintAs(RuleFormat.Json)),
-
-            // The YAML printer may write CRLF on Windows; the document keeps line feeds, as the output writer does.
-            RuleFormat.Yaml => rule.PrintAs(RuleFormat.Yaml).ReplaceLineEndings("\n"),
-            _ => rule.PrintAs(format),
-        };
     }
 
     // A change made by the author: one undo step, and no redo steps left.
