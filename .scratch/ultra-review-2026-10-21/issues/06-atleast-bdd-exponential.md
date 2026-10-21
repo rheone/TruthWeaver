@@ -1,0 +1,37 @@
+# 06 - AtLeastBdd recursion is exponential in operand count, so Compile can hang
+
+Status: needs-triage
+Severity: high
+Lens: F5 Analysis+Rewriting
+Verdict: CONFIRMED
+Blocked by: none
+
+## Finding F5.1: AtLeastBdd recursion is exponential in operand count, so Compile can hang
+
+Location: `src/TruthWeaver/Analysis/Analyzer.cs:710` (CONFIRMED, high)
+
+AtLeastBdd recurses twice per operand without memoizing on (k, fromIndex). The BDD ite cache absorbs the node work, but the number of calls is about C(n, k). The only cap is on distinct terms (MaxAnalysisTerms). Operand count is not capped, and the compiler does not reject repeated threshold operands. This path runs on every Compile (Analyze, the Analyze step of ADR-0003). It also runs in Linter.Profile, RuleMetrics.BddNodeCount, RuleEquivalence, RuleOverlap and RuleSetAnalysis. The 100,000 node budget does not trip, because the node count stays small; only the call count grows.
+
+### Failure scenario
+
+Compile `AtLeast(20, a1..a20, a1..a20)`: 41 nodes, under MaxNodeCount 512, and 20 distinct terms, so within the default cap. AtLeastBdd makes about 5.4e11 calls per rail (computed from T(m,k)=1+T(m-1,k-1)+T(m-1,k)), so Compile does not return. Even 30 operands with k=15 costs about 6e8 calls per rail, which is minutes. A service that compiles user-written rule text can be stalled this way.
+
+### Expected behavior
+
+Memoize AtLeastBdd on (k, fromIndex), or build the threshold as the standard O(n*k) dynamic-programming BDD, so the cost is polynomial in the operand count.
+
+### Verification
+
+Traced in src/TruthWeaver/Analysis/Analyzer.cs. AtLeastBdd (lines 710-726) has no memo on (k, fromIndex). Every call that is not a base case (k<=0 or k>remaining) makes two recursive calls, at lines 723 and 724: one with (k-1, i+1) and one with (k, i+1). So the call count follows T(m,k)=1+T(m-1,k-1)+T(m-1,k), which grows roughly like C(n,k). The BDD operations are cached, but the calls themselves are not. AtLeast (702-708) runs this on both rails. Threshold (738-749) calls AtLeast once or twice.
+
+Analyze (33-52) only checks distinct terms against MaxAnalysisTerms (default 20). It then calls Build unconditionally. Operand count is not limited: OperatorDefinitions.cs lines 126-130 give AtLeast, AtMost, GreaterThan, LessThan and Exactly a MaxOperands of null. The only other bound is MaxNodeCount, 512 by default. That allows about 40 repeated operands, so the 20-distinct-term cap does not stop it. I did not confirm that the Build threshold case or Compile calls Analyze on every compile. The Analyze entry point and the unbounded operands are confirmed.
+
+A rule such as AtLeast(20, a1..a20, a1..a20) therefore reaches about 1e11 calls per rail and Compile does not return in practice. The ALL case is not affected: k=n prunes immediately, so it stays linear. Duplicated operands are needed to reach the extreme cases, but 30 operands with k=15 already costs about 1e8 calls.
+
+Severity: this is a real denial of service when untrusted rule text is compiled. It needs a deliberately crafted rule, and it is fixed with a small change (memoize on (k, fromIndex)). I would rate it medium to high and keep it at high only if the engine takes untrusted authoring input.
+
+## Acceptance criteria
+
+- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- The page that describes the behavior states the current truth (required when behavior or public API changes).
+- The validation list in CLAUDE.md passes.

@@ -1,6 +1,15 @@
 # Ultra review plan - 2026-10-21 (bounded)
 
-Status: agreed with the owner, not started
+Status: phases 2-4 done on 2026-10-21 (results in `summary.md` and `issues/`); phase 1 (K3 oracle) not yet written
+
+Run notes:
+
+- Phase 2 and 3 ran before the oracle was written, so the reviewers did not get oracle mismatches as leads. Oracle
+  mismatches will be filed as new tickets.
+- The phase 0 baseline was only partly run: the pre-commit hook's build and test run passed except
+  `SkillProvenanceTests` (the untracked `.claude/skills/voice-of-robert` has no row in `.claude/skills/README.md`).
+  The package vulnerability and outdated checks were not run.
+- 14 reviewers ran: 9 folder slices, 4 lenses, 1 surface pass.
 
 ## Goal
 
@@ -74,7 +83,7 @@ The reference table is written from the K3 definitions in `docs/strong-k3/`, not
 mismatch becomes a critical ticket with its exact inputs, and is passed to the Phase 2 reviewers as a lead.
 Operators that are not information-monotone (`COALESCE`, `Is*`) get their own expected tables.
 
-### Phase 2 - Review (15 agents, parallel)
+### Phase 2 - Review (14 agents, parallel)
 
 Read-only. Each agent cites `file:line` and a concrete failure scenario for every finding. Each reports "no
 findings" for a clean slice. Each uses `codegraph_explore` before grep or file reads.
