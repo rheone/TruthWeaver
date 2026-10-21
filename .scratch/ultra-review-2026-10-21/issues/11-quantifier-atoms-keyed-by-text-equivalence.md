@@ -41,3 +41,7 @@ Impact: no crash, no wrong rule evaluation, and no security effect. The effect i
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
 - The page that describes the behavior states the current truth (required when behavior or public API changes).
 - The validation list in CLAUDE.md passes.
+
+## Triage note (added after the oracle run)
+
+`QuantifierAnalysisRewritesCoverageTests.Compare_QuantifiersWithEquivalentButDifferentlyWrittenBodies_ReportsNotEquivalent_Test` pins this behavior on purpose: ADR-0010 decision 8 makes a quantifier one opaque atom, so the equivalence check is sound but incomplete across rewordings. Triage this as a documented trade-off, not a defect, unless the owner wants ADR-0010 decision 8 changed. The ticket still stands if the result for a `ToNnf` rewrite of the same rule (which the engine itself produces) is meant to count as Equivalent.

@@ -6,7 +6,9 @@ Tickets by severity: critical 0, high 8, medium 31, low 28.
 
 Verification: each critical or high candidate was checked by a fresh agent. 25 findings were confirmed (some at a lower severity) and none were refuted. Medium and low findings that were not verified are marked PLAUSIBLE. No reviewer rated anything critical.
 
-Not yet done: the K3 oracle test (plan phase 1), so no truth-table mismatch has been checked mechanically. Reviewers read truth tables from the docs and code.
+K3 oracle: `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs` (committed with this review). `K3Oracle` and per-operator exhaustive tests already existed, so the new class covers what they do not: the FORALL/EXISTS quantifiers across the evaluator, nine rewrites, print-then-compile (canonical text and JSON) and the decision renderers, over every K3 value of two terms and every element list of up to three elements. Result: evaluation, seven rewrites and both round trips match the oracle with no mismatch; ExpandToNand/ExpandToNor (ticket 07) and the decision renderers (ticket 08) fail, and their tests are recorded in those tickets as acceptance tests, because a skipped test fails the `dotnet format --severity info` gate. A guard in `OperatorCoverageGuardTests` fails if an operator in `OperatorDefinitions` is never produced by the rule generator that the rewrite and analyzer tests use. No new tickets came from the oracle.
+
+Triage note: ticket 11 describes a trade-off that ADR-0010 decision 8 documents and an existing test pins.
 
 | # | Severity | Verdict | Title | Findings |
 | --- | --- | --- | --- | --- |

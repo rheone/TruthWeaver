@@ -29,3 +29,9 @@ I traced the path and found no guard on it. CompiledRule.Rewrites.cs:68-71 sends
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
 - The page that describes the behavior states the current truth (required when behavior or public API changes).
 - The validation list in CLAUDE.md passes.
+
+## Oracle reproduction
+
+The oracle in `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs` runs every rewrite over 12 quantifier rules, every K3 value of two terms and every element list of up to three elements. Seven of the nine rewrites (all but these two) pass. `ExpandToNand` and `ExpandToNor` throw `InvalidOperationException: Unhandled expression type QuantifierExpression` from `NandNorExpander.Convert` (`NandNorExpander.cs:136`). The two tests are not in the repo, because a skipped test fails the `dotnet format --severity info` gate (xUnit1004).
+
+Acceptance test to add with the fix: in that class, add `("ExpandToNand", r => r.ExpandToNand())` and `("ExpandToNor", r => r.ExpandToNor())` to the `Rewrites` table, and `[InlineData("ExpandToNand")]` and `[InlineData("ExpandToNor")]` to `Rewrite_QuantifierRules_KeepTheOracleValueForEveryContext_Test`.

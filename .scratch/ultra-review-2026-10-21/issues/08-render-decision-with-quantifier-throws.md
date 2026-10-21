@@ -42,3 +42,29 @@ Severity: it is a deterministic exception from a public API on a valid decision 
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
 - The page that describes the behavior states the current truth (required when behavior or public API changes).
 - The validation list in CLAUDE.md passes.
+
+## Oracle reproduction
+
+A throwaway test in `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs` failed for `FORALL(x IN items, elementTrue)` with 0 elements and for every other rule and element count: `PrintPlainText`, `PrintHtml`, `PrintMermaid` and `PrintDot` of the decision threw. It is not in the repo, because a skipped test fails the `dotnet format --severity info` gate (xUnit1004).
+
+Acceptance test to add with the fix, in that class:
+
+```csharp
+[Fact]
+public async Task Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test()
+{
+    RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+    foreach ((string text, _) in Rules)
+    {
+        CompiledRule<QuantifierContext> rule = Compile(compiler, text);
+        foreach (QuantifierContext context in Contexts().Where(c => c.A == TruthValue.Unknown && c.B == TruthValue.True))
+        {
+            Decision decision = await rule.EvaluateAsync(context, cancellationToken: TestContext.Current.CancellationToken);
+            Assert.NotEmpty(rule.PrintPlainText(decision));
+            Assert.NotEmpty(rule.PrintHtml(decision));
+            Assert.NotEmpty(rule.PrintMermaid(decision));
+            Assert.NotEmpty(rule.PrintDot(decision));
+        }
+    }
+}
+```
