@@ -55,6 +55,8 @@ public sealed class QuantifierLayerAgreementTests
         ("Canonicalize", r => r.Canonicalize()),
         ("CompressToDerived", r => r.CompressToDerived()),
         ("ExpandToPrimitives", r => r.ExpandToPrimitives()),
+        ("ExpandToNand", r => r.ExpandToNand()),
+        ("ExpandToNor", r => r.ExpandToNor()),
         ("ToNnf", r => r.ToNnf()),
         ("ToCnf", r => r.ToCnf()),
         ("ToDnf", r => r.ToDnf()),
@@ -90,6 +92,18 @@ public sealed class QuantifierLayerAgreementTests
         return AssertRewriteKeepsValueAsync(rewrite);
     }
 
+    /// <summary>
+    /// <c>ExpandToNand</c> and <c>ExpandToNor</c> keep a quantifier whole, as <c>ExpandToPrimitives</c> does, and return
+    /// a rule that still matches the oracle. Ultra review ticket 07: today they throw on any quantifier.
+    /// </summary>
+    [Theory(Skip = "Ultra review ticket 07: ExpandToNand and ExpandToNor throw on a rule that contains FORALL or EXISTS.")]
+    [InlineData("ExpandToNand")]
+    [InlineData("ExpandToNor")]
+    public Task Rewrite_QuantifierRulesUnderAUniversalGate_KeepTheOracleValueForEveryContext_Test(string rewrite)
+    {
+        return AssertRewriteKeepsValueAsync(rewrite);
+    }
+
     /// <summary>A rule printed as canonical text or as JSON and compiled again evaluates to the same oracle value.</summary>
     [Theory]
     [InlineData("canonical text")]
@@ -116,6 +130,31 @@ public sealed class QuantifierLayerAgreementTests
         }
 
         Assert.Empty(mismatches);
+    }
+
+    /// <summary>
+    /// Rendering an evaluated decision of a quantifier rule never throws, whatever the element count. Ultra review
+    /// ticket 08: today the renderers throw when a quantifier was evaluated.
+    /// </summary>
+    [Fact(
+        Skip = "Ultra review ticket 08: rendering a decision with an evaluated quantifier throws (trace shape does not match the outline)."
+    )]
+    public async Task Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test()
+    {
+        RuleCompiler<QuantifierContext> compiler = CreateCompiler();
+
+        foreach ((string text, _) in Rules)
+        {
+            CompiledRule<QuantifierContext> rule = Compile(compiler, text);
+            foreach (QuantifierContext context in Contexts().Where(c => c.A == TruthValue.Unknown && c.B == TruthValue.True))
+            {
+                Decision decision = await rule.EvaluateAsync(context, cancellationToken: TestContext.Current.CancellationToken);
+                Assert.NotEmpty(rule.PrintPlainText(decision));
+                Assert.NotEmpty(rule.PrintHtml(decision));
+                Assert.NotEmpty(rule.PrintMermaid(decision));
+                Assert.NotEmpty(rule.PrintDot(decision));
+            }
+        }
     }
 
     private static async Task AssertRewriteKeepsValueAsync(string rewrite)
