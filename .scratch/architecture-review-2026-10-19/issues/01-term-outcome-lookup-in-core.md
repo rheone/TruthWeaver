@@ -1,6 +1,6 @@
 # 01: Core finds the outcome for one term
 
-**Status:** ready-for-agent
+**Status:** done
 **Type:** task
 **Blocked by:** None (can start immediately)
 **Source:** architecture review of 2026-10-19, candidate 1
