@@ -10,3 +10,5 @@
 - [ ] The on-disk conflict case is tested without a Tui reference
 - [ ] Patch mode choice and baseline reset are Core behavior
 - [ ] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
+
+**Decision from ticket 12:** move the session only; keep the outline, source index, reader and patcher as separate modules; no CLI patch option.
