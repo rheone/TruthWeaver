@@ -7,8 +7,6 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
-using TruthWeaver.Tool.Core.Documents;
-using TruthWeaver.Tool.Core.Export;
 using TruthWeaver.Yaml;
 
 /// <summary>
@@ -20,24 +18,6 @@ using TruthWeaver.Yaml;
 internal static class DefinitionsPrinter
 {
     private const string PlaceholderStem = "__twuse";
-
-    /// <summary>Prints a document in a format.</summary>
-    /// <param name="document">The document in the JSON tree format, with its definitions section.</param>
-    /// <param name="format">The format to print.</param>
-    /// <param name="settings">The settings: the operator style of rule text and the limits of the compiler.</param>
-    /// <param name="pretty"><see langword="true"/> for the pretty form (indented JSON, rule text broken at <see cref="ArtifactCatalog.PrettyWidth"/>).</param>
-    /// <returns>The text, or <see langword="null"/> when a part of the document does not compile on its own.</returns>
-    public static string? Print(JsonObject document, RuleFormat format, ToolSettings settings, bool pretty)
-    {
-        return format switch
-        {
-            RuleFormat.Json => pretty ? RuleDocument.IndentJson(document.ToJsonString()) : document.ToJsonString(),
-
-            // The YAML printer may write CRLF on Windows; the document keeps line feeds.
-            RuleFormat.Yaml => RuleDefinitions.ReadJson(document.ToJsonString()).PrintYaml()?.ReplaceLineEndings("\n"),
-            _ => PrintText(document, settings, pretty ? ArtifactCatalog.PrettyWidth : null),
-        };
-    }
 
     /// <summary>Prints the <c>let</c> declarations of a document as rule text, one per line, each ending in a line feed.</summary>
     /// <param name="document">The document in the JSON tree format.</param>
@@ -69,7 +49,12 @@ internal static class DefinitionsPrinter
             && string.Equals(name, "use", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string? PrintText(JsonObject document, ToolSettings settings, int? width)
+    /// <summary>Prints a document as rule text: its declarations, then the rule.</summary>
+    /// <param name="document">The document in the JSON tree format, with its definitions section.</param>
+    /// <param name="settings">The settings.</param>
+    /// <param name="width">The line width, or <see langword="null"/> for one line per part.</param>
+    /// <returns>The text, or <see langword="null"/> when a part of the document does not compile on its own.</returns>
+    internal static string? PrintText(JsonObject document, ToolSettings settings, int? width)
     {
         Printer printer = new(document, settings, width);
         if (printer.Declarations() is not { } declarations)

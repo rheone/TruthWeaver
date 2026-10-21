@@ -11,6 +11,7 @@ public sealed class ArtifactDefinition
 {
     /// <summary>Initializes a new instance of the <see cref="ArtifactDefinition"/> class.</summary>
     /// <param name="id">The artifact id.</param>
+    /// <param name="group">The kind of output the artifact is.</param>
     /// <param name="extension">The file name extension, with the dot.</param>
     /// <param name="format">The name of the output format.</param>
     /// <param name="description">A one-line description.</param>
@@ -18,6 +19,7 @@ public sealed class ArtifactDefinition
     /// <param name="render">Makes the text from a compiled source.</param>
     internal ArtifactDefinition(
         string id,
+        ArtifactGroup group,
         string extension,
         string format,
         string description,
@@ -26,6 +28,7 @@ public sealed class ArtifactDefinition
     )
     {
         this.Id = id;
+        this.Group = group;
         this.FileName = id + extension;
         this.Format = format;
         this.Description = description;
@@ -35,6 +38,9 @@ public sealed class ArtifactDefinition
 
     /// <summary>Gets the artifact id, such as <c>equation-latex-letters</c>. Ids are lower case and stable.</summary>
     public string Id { get; }
+
+    /// <summary>Gets the kind of output the artifact is. A front end lists the artifacts under it.</summary>
+    public ArtifactGroup Group { get; }
 
     /// <summary>Gets the file name that an export of every artifact uses: the id and an extension, such as <c>json.json</c>.</summary>
     public string FileName { get; }

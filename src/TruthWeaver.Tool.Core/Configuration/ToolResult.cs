@@ -21,6 +21,33 @@ public sealed record ToolResult<T>(T? Value, EquatableArray<Diagnostic> Diagnost
     [MemberNotNullWhen(true, nameof(Value))]
     public bool Succeeded => this.Value is not null && !this.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
 
+    /// <summary>
+    /// Describes the first error diagnostic in one line, as <c>code: message</c>, for a status line or a message to the
+    /// author. Warnings and information are not errors, so they are not described.
+    /// </summary>
+    /// <param name="fallback">The text for a result with no error diagnostic, such as a failure that raised none.</param>
+    /// <returns>The description of the first error, or <paramref name="fallback"/> when there is none.</returns>
+    public string FailureSummary(string fallback = "unknown problem.")
+    {
+        ArgumentNullException.ThrowIfNull(fallback);
+
+        Diagnostic? first = this.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
+        return first is null ? fallback : $"{first.Code}: {first.Message}";
+    }
+
+    /// <summary>
+    /// Describes every warning diagnostic in one line: each as <c>code: message</c>, in order, separated by a space. Errors
+    /// and information are not warnings, so they are not described.
+    /// </summary>
+    /// <returns>The description, or an empty string when the result has no warning.</returns>
+    public string WarningSummary()
+    {
+        return string.Join(
+            " ",
+            this.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).Select(d => $"{d.Code}: {d.Message}")
+        );
+    }
+
     /// <summary>Gets the value and the diagnostics without a result object.</summary>
     /// <param name="value">The value when this method returns <see langword="true"/>; otherwise <see langword="null"/>.</param>
     /// <param name="diagnostics">Every diagnostic raised.</param>

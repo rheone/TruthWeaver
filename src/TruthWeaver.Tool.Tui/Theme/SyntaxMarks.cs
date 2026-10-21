@@ -34,6 +34,10 @@ internal sealed class SyntaxMarks
         new HashSet<string>(InsertItems.Constants.Select(i => i.Name), StringComparer.Ordinal)
     );
 
+    // The single-entry cache of Compute. Per thread, so a test or a second thread never replaces the entry of another.
+    [ThreadStatic]
+    private static (string Text, SyntaxMarks Marks)? last;
+
     private readonly SyntaxKind?[] kinds;
 
     private SyntaxMarks(SyntaxKind?[] kinds)
@@ -44,16 +48,27 @@ internal sealed class SyntaxMarks
     /// <summary>Gets marks that mark nothing.</summary>
     public static SyntaxMarks None { get; } = new([]);
 
-    /// <summary>Computes the syntax kind of each character of a text.</summary>
+    /// <summary>
+    /// Computes the syntax kind of each character of a text. The last text is remembered per thread, so the hover, the caret
+    /// and the term-name lookups of one text revision share one scan. The marks are immutable, so sharing them is safe.
+    /// </summary>
     /// <param name="text">The rule text.</param>
     /// <returns>The marks. A character that is not part of a predicate, operator, variable, constant or comment has no kind.</returns>
     public static SyntaxMarks Compute(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
+        // A string compare is cheaper than a scan, and it ends at once for the same instance.
+        if (last is { } cached && string.Equals(cached.Text, text, StringComparison.Ordinal))
+        {
+            return cached.Marks;
+        }
+
         SyntaxKind?[] kinds = new SyntaxKind?[text.Length];
         new Scanner(text, kinds).Run();
-        return new SyntaxMarks(kinds);
+        SyntaxMarks marks = new(kinds);
+        last = (text, marks);
+        return marks;
     }
 
     /// <summary>Gets the syntax kind of a character.</summary>

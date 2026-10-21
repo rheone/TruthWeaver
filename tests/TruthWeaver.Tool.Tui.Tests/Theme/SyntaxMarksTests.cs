@@ -21,6 +21,32 @@ public sealed class SyntaxMarksTests
         Assert.Equal(SyntaxKind.Constant, marks.At(Text.IndexOf("True", StringComparison.Ordinal)));
     }
 
+    /// <summary>An unchanged text is scanned once: the same marks come back, even for an equal copy of the string.</summary>
+    [Fact]
+    public void Compute_UnchangedText_ReusesTheMarks_Test()
+    {
+        const string text = "isAdult(age: 18) AND NOT True";
+
+        SyntaxMarks first = SyntaxMarks.Compute(text);
+        SyntaxMarks second = SyntaxMarks.Compute(text);
+        SyntaxMarks copy = SyntaxMarks.Compute(new string(text));
+
+        Assert.Same(first, second);
+        Assert.Same(first, copy);
+    }
+
+    /// <summary>A changed text is scanned again, so the marks follow the new revision.</summary>
+    [Fact]
+    public void Compute_ChangedText_ScansAgain_Test()
+    {
+        SyntaxMarks before = SyntaxMarks.Compute("a AND b");
+        SyntaxMarks after = SyntaxMarks.Compute("a AND b AND c");
+
+        Assert.NotSame(before, after);
+        Assert.Equal(SyntaxKind.Predicate, after.At(12));
+        Assert.Null(before.At(12));
+    }
+
     /// <summary>The symbolic operators get the operator kind, and a bare name that is not a keyword is a predicate.</summary>
     [Fact]
     public void Compute_SymbolicOperators_AreOperators_Test()
