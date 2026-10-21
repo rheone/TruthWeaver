@@ -45,26 +45,6 @@ Severity: it is a deterministic exception from a public API on a valid decision 
 
 ## Oracle reproduction
 
-A throwaway test in `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs` failed for `FORALL(x IN items, elementTrue)` with 0 elements and for every other rule and element count: `PrintPlainText`, `PrintHtml`, `PrintMermaid` and `PrintDot` of the decision threw. It is not in the repo, because a skipped test fails the `dotnet format --severity info` gate (xUnit1004).
+In `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs`, the test failed for every quantifier rule and element count tried (0 to 3): `PrintPlainText`, `PrintHtml`, `PrintMermaid` and `PrintDot` of the decision threw.
 
-Acceptance test to add with the fix, in that class:
-
-```csharp
-[Fact]
-public async Task Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test()
-{
-    RuleCompiler<QuantifierContext> compiler = CreateCompiler();
-    foreach ((string text, _) in Rules)
-    {
-        CompiledRule<QuantifierContext> rule = Compile(compiler, text);
-        foreach (QuantifierContext context in Contexts().Where(c => c.A == TruthValue.Unknown && c.B == TruthValue.True))
-        {
-            Decision decision = await rule.EvaluateAsync(context, cancellationToken: TestContext.Current.CancellationToken);
-            Assert.NotEmpty(rule.PrintPlainText(decision));
-            Assert.NotEmpty(rule.PrintHtml(decision));
-            Assert.NotEmpty(rule.PrintMermaid(decision));
-            Assert.NotEmpty(rule.PrintDot(decision));
-        }
-    }
-}
-```
+The failing test is in the repo, skipped with this ticket number: `Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test`. Acceptance: remove its `Skip` and the test passes. While the `Skip` is there, `dotnet format --severity info` reports xUnit1004, so CI is red on the format step until this ticket is done.
