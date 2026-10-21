@@ -1,5 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Sessions;
 
+using TruthWeaver.Tool.Core.Export;
+
 /// <summary>The headings under which the export dialog lists its entries.</summary>
 internal static class ExportGroups
 {
@@ -23,4 +25,22 @@ internal static class ExportGroups
 
     /// <summary>The diagrams as images.</summary>
     public const string Images = "Image";
+
+    /// <summary>Gets the heading of the export dialog for the group of an artifact.</summary>
+    /// <param name="group">The group that the catalog states for the artifact.</param>
+    /// <returns>The heading.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="group"/> is not a defined value.</exception>
+    public static string For(ArtifactGroup group)
+    {
+        return group switch
+        {
+            ArtifactGroup.Rule => Rule,
+            ArtifactGroup.Equation => Equation,
+            ArtifactGroup.Diagram => Diagram,
+            ArtifactGroup.TruthTable => TruthTable,
+            ArtifactGroup.Analysis => Analysis,
+            ArtifactGroup.Report => Report,
+            _ => throw new ArgumentOutOfRangeException(nameof(group), group, "The value is not an artifact group."),
+        };
+    }
 }

@@ -20,6 +20,8 @@ using TruthWeaver.Tool.Core.Output;
 public static class ImageRenderer
 {
     // On Windows a program on the PATH is an .exe, or a .cmd or .bat script (npm installs mmdc as mmdc.cmd).
+    private static readonly DiagramLanguage[] Languages = [DiagramLanguage.Mermaid, DiagramLanguage.Dot];
+
     private static readonly string[] WindowsExtensions = [".exe", ".cmd", ".bat"];
 
     /// <summary>Gets the name of the program that renders a diagram language, as it is looked for on the search path.</summary>
@@ -61,6 +63,22 @@ public static class ImageRenderer
         }
 
         return null;
+    }
+
+    /// <summary>Gets the diagram languages whose renderer program is on the search path, in the order Mermaid, DOT.</summary>
+    /// <param name="searchPath">The directories to look in, or <see langword="null"/> for <c>PATH</c>.</param>
+    /// <returns>The languages that can be rendered to an image.</returns>
+    public static IReadOnlyList<DiagramLanguage> AvailableLanguages(string? searchPath = null)
+    {
+        return [.. Languages.Where(language => FindProgram(language, searchPath) is not null)];
+    }
+
+    /// <summary>Gets the diagram languages whose renderer program is not on the search path, in the order Mermaid, DOT.</summary>
+    /// <param name="searchPath">The directories to look in, or <see langword="null"/> for <c>PATH</c>.</param>
+    /// <returns>The languages that cannot be rendered to an image.</returns>
+    public static IReadOnlyList<DiagramLanguage> MissingLanguages(string? searchPath = null)
+    {
+        return [.. Languages.Where(language => FindProgram(language, searchPath) is null)];
     }
 
     /// <summary>Gets the file name extension of an image format, with the dot.</summary>
