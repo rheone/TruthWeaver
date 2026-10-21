@@ -1,6 +1,6 @@
 # 15: A result summarizes its own failure and warnings
 
-**Status:** ready-for-agent
+**Status:** done
 **Type:** task
 **Blocked by:** None (can start immediately)
 **Source:** architecture review of 2026-10-19, candidate 6
