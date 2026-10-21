@@ -87,19 +87,14 @@ internal sealed class ExportController
                 ExportEntryKind.Artifact,
                 $"{a.Id}  ({a.Format}): {a.Description}",
                 a,
-                Group: GroupOf(a),
+                Group: ExportGroups.For(a.Group),
                 FileName: a.FileName
             )),
         ];
-        foreach (DiagramLanguage language in new[] { DiagramLanguage.Mermaid, DiagramLanguage.Dot })
+        foreach (DiagramLanguage language in ImageRenderer.AvailableLanguages(this.ImageSearchPath))
         {
             foreach (ImageFormat format in new[] { ImageFormat.Svg, ImageFormat.Png })
             {
-                if (ImageRenderer.FindProgram(language, this.ImageSearchPath) is null)
-                {
-                    continue;
-                }
-
                 string program = ImageRenderer.ProgramName(language);
                 entries.Add(
                     new ExportEntry(
@@ -109,7 +104,7 @@ internal sealed class ExportController
                         language,
                         format,
                         ExportGroups.Images,
-                        (language == DiagramLanguage.Dot ? "dot" : "mermaid") + ImageRenderer.Extension(format)
+                        ArtifactCatalog.Diagram(language).Id + ImageRenderer.Extension(format)
                     )
                 );
             }
@@ -122,12 +117,7 @@ internal sealed class ExportController
     /// <returns>The line, or an empty string when both renderers are found.</returns>
     public string ImageNote()
     {
-        return string.Join(
-            " ",
-            new[] { DiagramLanguage.Mermaid, DiagramLanguage.Dot }
-                .Where(l => ImageRenderer.FindProgram(l, this.ImageSearchPath) is null)
-                .Select(this.MissingProgram)
-        );
+        return string.Join(" ", ImageRenderer.MissingLanguages(this.ImageSearchPath).Select(this.MissingProgram));
     }
 
     /// <summary>Makes the text of one artifact for the text of the editor.</summary>
@@ -211,8 +201,7 @@ internal sealed class ExportController
             return false;
         }
 
-        string id = language == DiagramLanguage.Dot ? "dot" : "mermaid";
-        ArtifactDefinition diagram = ArtifactCatalog.All.First(a => a.Id == id);
+        ArtifactDefinition diagram = ArtifactCatalog.Diagram(language);
         ToolResult<string> rendered = this.Render(diagram);
         if (!rendered.TryGetValue(out string? text, out EquatableArray<Diagnostic> diagnostics))
         {
@@ -220,7 +209,7 @@ internal sealed class ExportController
             return false;
         }
 
-        if (this.PathOrAsk(path, id + ImageRenderer.Extension(format)) is not { } target)
+        if (this.PathOrAsk(path, diagram.Id + ImageRenderer.Extension(format)) is not { } target)
         {
             return false;
         }
@@ -237,7 +226,7 @@ internal sealed class ExportController
             return false;
         }
 
-        this.workbench.SetStatus($"Saved the {id} image to {file}.");
+        this.workbench.SetStatus($"Saved the {diagram.Id} image to {file}.");
         return true;
     }
 
@@ -262,12 +251,7 @@ internal sealed class ExportController
             return false;
         }
 
-        string missing = string.Join(
-            " ",
-            new[] { DiagramLanguage.Mermaid, DiagramLanguage.Dot }
-                .Where(l => ImageRenderer.FindProgram(l, this.ImageSearchPath) is null)
-                .Select(this.MissingProgram)
-        );
+        string missing = this.ImageNote();
         ExportOptions options = this.Options with
         {
             Images = missing.Length == 0 ? new ImageRenderOptions { SearchPath = this.ImageSearchPath } : null,
@@ -346,20 +330,6 @@ internal sealed class ExportController
             .. diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).Select(d => $"{d.Code}: {d.Message}"),
         ];
         return warnings.Length == 0 ? string.Empty : " (" + string.Join(" ", warnings) + ")";
-    }
-
-    // The group of the export dialog that holds an artifact.
-    private static string GroupOf(ArtifactDefinition artifact)
-    {
-        return artifact.Id switch
-        {
-            "rule-text" or "rule-text-symbolic" or "rule-text-pretty" or "json" or "yaml" => ExportGroups.Rule,
-            "tree" or "mermaid" or "dot" or "html" => ExportGroups.Diagram,
-            "report" => ExportGroups.Report,
-            string id when id.StartsWith("equation-", StringComparison.Ordinal) => ExportGroups.Equation,
-            string id when id.StartsWith("truth-table-", StringComparison.Ordinal) => ExportGroups.TruthTable,
-            _ => ExportGroups.Analysis,
-        };
     }
 
     // The editor text as a loaded rule in the format of the document, so the artifacts are made from what the author sees.

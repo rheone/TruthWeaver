@@ -7,6 +7,7 @@ using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Core.Reports;
 using TruthWeaver.Tool.Core.Validation;
 using TruthWeaver.Yaml;
@@ -23,7 +24,7 @@ using TruthWeaver.Yaml;
 public static class ArtifactCatalog
 {
     /// <summary>The page width of the <c>rule-text-pretty</c> artifact, in characters.</summary>
-    public const int PrettyWidth = 80;
+    public const int PrettyWidth = RulePrinter.PrettyWidth;
 
     private static readonly (EquationDialect Dialect, string Name, string Extension, string Format)[] Dialects =
     [
@@ -116,10 +117,25 @@ public static class ArtifactCatalog
         throw new ArgumentOutOfRangeException(nameof(format), format, "The value is not a truth-table format.");
     }
 
+    /// <summary>Gets the diagram artifact whose text an image renderer takes: <c>dot</c> or <c>mermaid</c>.</summary>
+    /// <param name="language">The diagram language.</param>
+    /// <returns>The artifact.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="language"/> is not a defined value.</exception>
+    public static ArtifactDefinition Diagram(DiagramLanguage language)
+    {
+        return language switch
+        {
+            DiagramLanguage.Dot => ById["dot"],
+            DiagramLanguage.Mermaid => ById["mermaid"],
+            _ => throw new ArgumentOutOfRangeException(nameof(language), language, "The value is not a diagram language."),
+        };
+    }
+
     private static IEnumerable<ArtifactDefinition> Build()
     {
         yield return Artifact(
             "rule-text",
+            ArtifactGroup.Rule,
             ".rule",
             "rule-text",
             "The rule as rule text, in the word style with parentheses and the notes.",
@@ -128,6 +144,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "rule-text-symbolic",
+            ArtifactGroup.Rule,
             ".rule",
             "rule-text",
             "The rule as rule text with the symbolic operators.",
@@ -136,6 +153,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "rule-text-pretty",
+            ArtifactGroup.Rule,
             ".rule",
             "rule-text",
             $"The rule as rule text, broken across lines to a width of {PrettyWidth} characters.",
@@ -144,6 +162,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "json",
+            ArtifactGroup.Rule,
             ".json",
             "json",
             "The rule in the JSON tree format, with the notes.",
@@ -152,6 +171,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "yaml",
+            ArtifactGroup.Rule,
             ".yaml",
             "yaml",
             "The rule in the YAML tree format, with the notes.",
@@ -176,6 +196,7 @@ public static class ArtifactCatalog
 
         yield return Artifact(
             "tree",
+            ArtifactGroup.Diagram,
             ".txt",
             "text",
             "The rule as an indented plain text tree.",
@@ -184,6 +205,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "mermaid",
+            ArtifactGroup.Diagram,
             ".mmd",
             "mermaid",
             "The rule as a Mermaid flowchart.",
@@ -192,6 +214,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "dot",
+            ArtifactGroup.Diagram,
             ".dot",
             "dot",
             "The rule as a Graphviz DOT graph.",
@@ -200,6 +223,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "html",
+            ArtifactGroup.Diagram,
             ".html",
             "html",
             "The rule as an HTML tree.",
@@ -211,6 +235,7 @@ public static class ArtifactCatalog
         {
             yield return Artifact(
                 "truth-table-" + name,
+                ArtifactGroup.TruthTable,
                 extension,
                 name,
                 $"The Strong K3 truth table in {name}.",
@@ -221,6 +246,7 @@ public static class ArtifactCatalog
 
         yield return Artifact(
             "statistics",
+            ArtifactGroup.Analysis,
             ".json",
             "json",
             "The statistics of the rule as JSON.",
@@ -229,6 +255,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "statistics-text",
+            ArtifactGroup.Analysis,
             ".txt",
             "text",
             "The statistics of the rule as text.",
@@ -237,6 +264,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "diagnostics",
+            ArtifactGroup.Analysis,
             ".txt",
             "text",
             "The diagnostics of every validation level as text.",
@@ -245,6 +273,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "diagnostics-json",
+            ArtifactGroup.Analysis,
             ".json",
             "json",
             "The diagnostics of every validation level as JSON.",
@@ -253,6 +282,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "diagnostics-sarif",
+            ArtifactGroup.Analysis,
             ".sarif",
             "sarif",
             "The diagnostics of every validation level as SARIF 2.1.0.",
@@ -261,6 +291,7 @@ public static class ArtifactCatalog
         );
         yield return Artifact(
             "report",
+            ArtifactGroup.Report,
             ".md",
             "markdown",
             "The Markdown report: the rule, the equation, a diagram, the truth table, the statistics and the analysis.",
@@ -294,6 +325,7 @@ public static class ArtifactCatalog
             + $", with the constants as {ConstantName(constants)}.";
         return Artifact(
             EquationId(dialectName, wrapName, ConstantName(constants)),
+            ArtifactGroup.Equation,
             markdown ? ".md" : extension,
             markdown ? "markdown" : format,
             description,
@@ -334,6 +366,7 @@ public static class ArtifactCatalog
 
     private static ArtifactDefinition Artifact(
         string id,
+        ArtifactGroup group,
         string extension,
         string format,
         string description,
@@ -341,7 +374,7 @@ public static class ArtifactCatalog
         Func<ArtifactSource, ToolResult<string>> render
     )
     {
-        return new ArtifactDefinition(id, extension, format, description, options, render);
+        return new ArtifactDefinition(id, group, extension, format, description, options, render);
     }
 
     private static KeyValuePair<string, string> Option(string name, string value)

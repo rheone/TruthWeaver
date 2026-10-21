@@ -1,6 +1,6 @@
 # 11: The export catalog states each artifact group
 
-**Status:** ready-for-agent
+**Status:** done
 **Type:** task
 **Blocked by:** None (can start immediately)
 **Source:** architecture review of 2026-10-19, candidate 4
