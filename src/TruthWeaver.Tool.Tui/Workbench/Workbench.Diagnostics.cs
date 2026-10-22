@@ -3,11 +3,11 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Loading;
 
-/// <summary>
+/// <content>
 /// The part of the workbench state that keeps typing responsive: the editor hands its text to <see cref="EditText"/>, and
 /// after a pause the text compiles on a background task. The result replaces the text of the document only when no newer
 /// edit exists.
-/// </summary>
+/// </content>
 internal sealed partial class Workbench
 {
     /// <summary>The pause the terminal application uses between the last edit and the compile.</summary>

@@ -23,24 +23,6 @@ namespace TruthWeaver.Printing;
 /// </remarks>
 public sealed record MermaidPalette
 {
-    /// <summary>Gets the style of a node that contributed <c>True</c>.</summary>
-    public required string True { get; init; }
-
-    /// <summary>Gets the style of a node that contributed <c>False</c>.</summary>
-    public required string False { get; init; }
-
-    /// <summary>Gets the style of a node that contributed <c>Unknown</c>.</summary>
-    public required string Unknown { get; init; }
-
-    /// <summary>Gets the style of a node that evaluation skipped through short-circuiting.</summary>
-    public required string Skipped { get; init; }
-
-    /// <summary>Gets the style that draws attention to a node.</summary>
-    public required string Highlight { get; init; }
-
-    /// <summary>Gets the style that pushes a node into the background.</summary>
-    public required string Mute { get; init; }
-
     /// <summary>Gets the default palette: pale green, red, yellow and gray fills with dark text.</summary>
     public static MermaidPalette Light { get; } =
         new()
@@ -88,4 +70,22 @@ public sealed record MermaidPalette
             Highlight = "fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe,stroke-width:3px",
             Mute = "fill:#111827,stroke:#4b5563,color:#9ca3af",
         };
+
+    /// <summary>Gets the style of a node that contributed <c>True</c>.</summary>
+    public required string True { get; init; }
+
+    /// <summary>Gets the style of a node that contributed <c>False</c>.</summary>
+    public required string False { get; init; }
+
+    /// <summary>Gets the style of a node that contributed <c>Unknown</c>.</summary>
+    public required string Unknown { get; init; }
+
+    /// <summary>Gets the style of a node that evaluation skipped through short-circuiting.</summary>
+    public required string Skipped { get; init; }
+
+    /// <summary>Gets the style that draws attention to a node.</summary>
+    public required string Highlight { get; init; }
+
+    /// <summary>Gets the style that pushes a node into the background.</summary>
+    public required string Mute { get; init; }
 }

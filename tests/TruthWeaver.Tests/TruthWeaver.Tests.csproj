@@ -33,15 +33,7 @@
   <!-- The published JSON Schema for the ADR-0003 rule tree, linked in so schema-validation tests can
        load it from the build output without a source-relative path walk. -->
   <ItemGroup>
-    <None
-      Include="../../src/TruthWeaver/Json/rule-tree.schema.json"
-      Link="TestSupport/rule-tree.schema.json"
-      CopyToOutputDirectory="PreserveNewest"
-    />
-    <None
-      Include="../../src/TruthWeaver/Json/decision-record.schema.json"
-      Link="TestSupport/decision-record.schema.json"
-      CopyToOutputDirectory="PreserveNewest"
-    />
+    <None Include="../../src/TruthWeaver/Json/rule-tree.schema.json" Link="TestSupport/rule-tree.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/TruthWeaver/Json/decision-record.schema.json" Link="TestSupport/decision-record.schema.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

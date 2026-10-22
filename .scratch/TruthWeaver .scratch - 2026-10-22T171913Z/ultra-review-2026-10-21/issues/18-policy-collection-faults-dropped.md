@@ -1,0 +1,45 @@
+# 18 - Collection-level faults (selector, element limit, missing collection) are dropped from PolicyDecision.Decision.Faults
+
+Status: needs-triage
+Severity: medium
+Lens: F9 Policies; F4 Evaluation
+Verdict: CONFIRMED
+Blocked by: none
+
+## Finding F9.1: Collection faults are dropped from PolicyDecision.Decision.Faults
+
+Location: `src/TruthWeaver.Policies/PolicySet{TContext}.cs:174` (CONFIRMED, medium)
+
+RunAsync keeps only the faults whose Term is in rule.TermIdentities. CollectTermIdentities (src/TruthWeaver/Evaluation/CompiledRule.cs:147-167) adds TermExpression identities only, and ExpressionShape gives a quantifier its body as the only operand. A quantifier fault is recorded against new TermIdentity(collectionName, []) (CollectionBinding.cs:111 for a throwing selector, :175 for MaxElementEvaluations, Evaluator.cs:438 for an unregistered collection). That identity is never in the set, so the filter drops the fault. This breaks ADR-0001 (an Unknown carries its Fault) and the PolicyDecision doc ('Its faults are those of every rule that was evaluated').
+
+### Failure scenario
+
+A deny policy has condition `EXISTS(o IN orders, isOverdue)` and the `orders` selector throws. The policy is Unknown, so DenyOverrides answers Indeterminate, but PolicyDecision.Decision.Faults is empty. The host cannot see why access was refused. Calling the same CompiledRule directly with EvaluateAsync reports the fault, so the two layers disagree.
+
+### Expected behavior
+
+Every fault recorded while a rule of the set ran, including quantifier and collection faults, appears in PolicyDecision.Decision.Faults. For example, filter by the faults this rule added (state.Faults count before and after), plus the memo-shared term faults.
+
+### Verification
+
+The fault is dropped by the filter at src/TruthWeaver.Policies/PolicySet{TContext}.cs:171-174. RunAsync calls rule.EvaluateAsync with the shared EvaluationState. Evaluator.cs:72-74 builds the Decision from this.state.Faults, so the Decision does contain collection faults. RunAsync then keeps only faults where ownTerms.Contains(fault.Term). ownTerms is rule.TermIdentities. CollectTermIdentities (CompiledRule.cs:147-167) adds an identity only for TermExpression nodes and otherwise walks ExpressionShape.Of(node).Operands. NodeShape.cs:67 gives a QuantifierExpression the single operand q.Body, so only the body's terms are collected. Collection faults use new TermIdentity(collectionName, []). It is created at CollectionBinding.cs:111 (throwing selector), CollectionBinding.cs:175 (MaxElementEvaluations) and Evaluator.cs:438 (unregistered collection). None of these is a TermExpression identity in the tree, so they are never in the set and the filter drops them. A policy condition `EXISTS(o IN orders, isOverdue)` whose `orders` selector throws therefore gives Unknown and an Indeterminate outcome with an empty PolicyDecision.Decision.Faults. I traced this by reading the code and did not run it. Severity is lowered from high to medium. The outcome stays correct and fail-closed. Only the fault diagnostics are lost, and the Policies layer then disagrees with a direct CompiledRule.EvaluateAsync call.
+
+## Finding F4.3: TermIdentities omits collection identities, so PolicySet silently drops selector, element-limit and missing-collection faults
+
+Location: `src/TruthWeaver/Evaluation/CompiledRule.cs:147` (PLAUSIBLE, medium)
+
+CollectTermIdentities only collects TermExpression identities (it does walk into quantifier bodies). A collection-level fault is recorded under TermIdentity(collectionName, []): a throwing selector (CollectionBinding.cs:111), MaxElementEvaluations (CollectionBinding.cs:173) and an unregistered collection (Evaluator.cs:437). PolicySet.RunAsync keeps only the faults whose Term is in rule.TermIdentities (PolicySet{TContext}.cs:174), so these faults never reach the PolicyDecision.
+
+### Failure scenario
+
+A policy condition `FORALL(x IN lines: ok)` whose `lines` selector throws evaluates to Unknown. The policy set returns Indeterminate with an empty Faults list, so the caller cannot see why. The same happens when MaxElementEvaluations is exceeded.
+
+### Verification
+
+not verified (medium or low)
+
+## Acceptance criteria
+
+- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- The page that describes the behavior states the current truth (required when behavior or public API changes).
+- The validation list in CLAUDE.md passes.

@@ -168,7 +168,7 @@ After: (Show the table. The reader can see its order.)
 Before: (A five-paragraph reply that restates the problem, the diagnosis, and the evidence before the answer.)
 After: The decision first, one fact the reader lacks, and a link if they need one.
 
-His habits that look like tells but stay: the italic *MUST*, the ❗ in a breaking-change heading, real bold labels in a reference list, an "admittedly" aside, and a team refrain used on purpose.
+His habits that look like tells but stay: the italic *MUST*, real bold labels in a reference list, an "admittedly" aside, and a team refrain used on purpose.
 
 ## 8. Final self-check
 

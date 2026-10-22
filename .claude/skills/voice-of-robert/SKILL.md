@@ -15,12 +15,12 @@ When two rules conflict, the higher one wins.
 
 1. **Accuracy and established terminology.** Keep established technical terms, proper nouns, project terms, and required terminology exactly as they are. Never swap a precise term for a simpler word. Never invent a fact, name, number, or behavior.
 2. **STE structure.** Short sentences, one meaning each, active voice, one term per concept.
-3. **Voice.** Plain words, dry humor, his emphasis habits.
+3. **Voice.** Plain words, dry humor, emphasis habits.
 4. **AI-tell cleanup.** Remove staged, inflated, or chatbot-sounding patterns. His own samples override this list where they differ.
 
 ## Workflow
 
-1. **Pick the register.** Informal (email, chat, mentoring), formal (memo, policy, documentation intro), or technical (README, wiki, procedure, PR process). If the user does not say, infer it from the artifact. Ask only when a wrong guess would waste real effort.
+1. **Pick the register.** Informal (email, chat, mentoring, code documentation), formal (memo, policy, documentation intro), or technical (README, wiki, procedure, PR process). If the user does not say, infer it from the artifact. Ask only when a wrong guess would waste real effort.
 2. **Find the reader.** Readers range from interns to principal developers, plus project managers and other groups. Write for the least experienced reader the document must serve, and order the content so experts can skip ahead.
 3. **Draft with STE and structure.** Apply the writing rules below and the structure for the document type.
 4. **Audit.** Mark every AI tell and every STE break. Fix them by restating the point, not by patching single words.
@@ -29,7 +29,7 @@ When two rules conflict, the higher one wins.
 
 ## Writing rules (STE-based)
 
-These rules adapt the ASD-STE100 principles for US English. They guide the writing. They do not certify formal STE compliance, which needs the full specification and dictionary.
+These rules adapt the ASD-STE100 principles for US English. They guide the writing. They do not certify formal STE compliance.
 
 **Sentences**
 - Keep procedure sentences to 20 words or fewer. Keep descriptive sentences to 25 words or fewer.
@@ -57,11 +57,11 @@ These rules adapt the ASD-STE100 principles for US English. They guide the writi
 
 **Warnings**
 - Put a warning before the step it protects, never after.
-- Mark hard rules with *MUST* in italic capitals. Mark breaking changes with a ❗ in the heading. Use *Note that...* in italics for softer cautions.
+- Mark hard rules with *MUST* in italic capitals. Use *Note that...* in italics for softer cautions.
 
 **Mechanics**
 - Use no contractions in technical and formal text. Allow them in informal text.
-- Use commas, periods, colons, or parentheses instead of em dashes. His own writing does not use them.
+- Use commas, periods, colons, or parentheses instead of em dashes.
 - No emoji except for an occasional one in a casual email to break tension.
 
 ## Document structure (progressive disclosure)
@@ -114,18 +114,15 @@ Rules for the rewrite:
 - Leave a watched phrase alone inside a quotation, a title, a proper name, or a passage that discusses the phrase.
 - Keep specific, unusual details and real asides. Removing tells is half the job. The result must still sound like a person.
 
-His habits override this list where they conflict. Keep the italic *MUST*, the ❗ heading, bold lead-ins on reference lists that carry real labels, the "admittedly" aside, and a repeated team refrain used with purpose.
+His habits override this list where they conflict. Keep the italic *MUST*, bold lead-ins on reference lists that carry real labels, the "admittedly" aside, and a repeated team refrain used with purpose.
 
 ## Registers (one voice, three dial settings)
 
 | Setting | STE strictness | Humor | Contractions | Emoji | Typical shape |
 |---|---|---|---|---|---|
-| Technical (README, wiki, procedure, PR process) | Strict | Only in About and credits | No | ❗ only | Numbered steps, tables, code formatting, warnings first |
+| Technical (README, wiki, procedure, PR process) | Strict | Only in About and credits | No | Rare | Numbered steps, tables, code formatting, warnings first |
 | Formal (memo, policy, documentation intro) | Strict structure, relaxed vocabulary | None, or one light line | No | None | Point, reason, ask. Concrete facts over adjectives |
 | Informal (email, chat, mentoring) | Short sentences, plain words | One dry aside, one analogy | Yes | Rare | Question up front, offer to talk |
 
 Fragments and numbered steps are fine in technical text. Full sentences are the default elsewhere.
 
-## Known gaps
-
-The corpus has no real email in his words asking someone for something, no real new-hire wiki warnings, and almost no scene description (he summarizes the arc). It has one analogy (a car). Money and budget never appeared in his case for fixing technical debt. When a draft needs one of these, ask him instead of guessing, and do not invent vivid scene detail.

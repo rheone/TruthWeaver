@@ -1,5 +1,5 @@
-// IDE0130 (namespace does not match folder): the compiler looks for this exact namespace.
 #pragma warning disable IDE0130
+// IDE0130 (namespace does not match folder): the compiler looks for this exact namespace.
 namespace System.Runtime.CompilerServices;
 
 #pragma warning restore IDE0130

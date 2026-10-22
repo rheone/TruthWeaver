@@ -5,15 +5,13 @@ root = true
 [*]
 charset = utf-8
 end_of_line = lf
-insert_final_newline = true
-indent_style = space
 indent_size = 4
-tab_width = 4
+indent_style = space
+insert_final_newline = true
 trim_trailing_whitespace = true
 
 [*.cs]
 indent_size = 4
-tab_width = 4
 # Same value as printWidth in .csharpierrc.json. CSharpier reads either; the IDEs read only this one.
 max_line_length = 128
 
@@ -118,10 +116,41 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# Windows-only formats: cmd.exe and the legacy .sln parser need CRLF (see .gitattributes).
-[*.{bat,cmd,sln}]
-end_of_line = crlf
-
 # Shell scripts and Git hooks must be LF.
 [*.sh]
 end_of_line = lf
+
+[*.{cs,vb}]
+#dotnet_analyzer_diagnostic.category-<category>.severity = unset
+#dotnet_analyzer_diagnostic.severity = unset
+#dotnet_code_quality.<rule_id>.<option> = unset
+#dotnet_code_quality.<rule_id>.api_surface = public
+#dotnet_code_quality_unused_parameters = all:
+#dotnet_diagnostic.<rule_id>.severity = unset
+dotnet_prefer_system_hash_code = true:suggestion
+dotnet_remove_unnecessary_suppression_exclusions = <rule IDs or categories>
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = true
+dotnet_style_allow_multiple_blank_lines_experimental = true:silent
+dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
+dotnet_style_explicit_tuple_names = true:suggestion
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
+dotnet_style_predefined_type_for_locals_parameters_members = true:silent
+dotnet_style_predefined_type_for_member_access = true:silent
+dotnet_style_prefer_auto_properties = true:silent
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+dotnet_style_prefer_compound_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+dotnet_style_prefer_foreach_explicit_cast_in_source = when_strongly_typed:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:silent
+dotnet_style_prefer_non_hidden_explicit_cast_in_source = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:silent
+dotnet_style_prefer_simplified_interpolation = true:silent
+dotnet_style_readonly_field = true:suggestion

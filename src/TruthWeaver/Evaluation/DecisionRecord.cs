@@ -14,30 +14,6 @@ using TruthWeaver.Json;
 public sealed record DecisionRecord(Decision Decision, RuleIdentity? Rule = null, EvaluationOptions? Options = null)
 {
     /// <summary>
-    /// Prints this record as indented JSON with line feeds. The literal argument values of the rule, in the fault terms and
-    /// in the trace texts, are omitted unless <paramref name="options"/> includes them. A value from a data source is in the
-    /// trace only when the evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>.
-    /// </summary>
-    /// <param name="options">What to include, or <see langword="null"/> for <see cref="DecisionJsonOptions.Default"/>.</param>
-    /// <returns>The JSON text, ending with a line feed.</returns>
-    public string PrintJson(DecisionJsonOptions? options = null)
-    {
-        using StringWriter writer = new();
-        DecisionJsonWriter.Write(this, options ?? DecisionJsonOptions.Default, writer);
-        return writer.ToString();
-    }
-
-    /// <summary>Writes the text of <see cref="PrintJson(DecisionJsonOptions?)"/> to <paramref name="writer"/>. The writer is not flushed or disposed.</summary>
-    /// <param name="writer">The writer.</param>
-    /// <param name="options">What to include, or <see langword="null"/> for <see cref="DecisionJsonOptions.Default"/>.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
-    public void PrintJson(TextWriter writer, DecisionJsonOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(writer);
-        DecisionJsonWriter.Write(this, options ?? DecisionJsonOptions.Default, writer);
-    }
-
-    /// <summary>
     /// Reads a record that <see cref="PrintJson(DecisionJsonOptions?)"/> wrote. A fault reads back with a
     /// <see cref="RecordedFaultException"/> (or a <see cref="VariableResolutionException"/> for a variable failure) that
     /// keeps the type name and message, so the read decision equals the written one when the argument values were included.
@@ -60,5 +36,29 @@ public sealed record DecisionRecord(Decision Decision, RuleIdentity? Rule = null
     {
         ArgumentNullException.ThrowIfNull(json);
         return DecisionJsonReader.TryRead(json, out record, out error);
+    }
+
+    /// <summary>
+    /// Prints this record as indented JSON with line feeds. The literal argument values of the rule, in the fault terms and
+    /// in the trace texts, are omitted unless <paramref name="options"/> includes them. A value from a data source is in the
+    /// trace only when the evaluation set <see cref="EvaluationOptions.IncludeResolvedValues"/>.
+    /// </summary>
+    /// <param name="options">What to include, or <see langword="null"/> for <see cref="DecisionJsonOptions.Default"/>.</param>
+    /// <returns>The JSON text, ending with a line feed.</returns>
+    public string PrintJson(DecisionJsonOptions? options = null)
+    {
+        using StringWriter writer = new();
+        DecisionJsonWriter.Write(this, options ?? DecisionJsonOptions.Default, writer);
+        return writer.ToString();
+    }
+
+    /// <summary>Writes the text of <see cref="PrintJson(DecisionJsonOptions?)"/> to <paramref name="writer"/>. The writer is not flushed or disposed.</summary>
+    /// <param name="writer">The writer.</param>
+    /// <param name="options">What to include, or <see langword="null"/> for <see cref="DecisionJsonOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    public void PrintJson(TextWriter writer, DecisionJsonOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        DecisionJsonWriter.Write(this, options ?? DecisionJsonOptions.Default, writer);
     }
 }

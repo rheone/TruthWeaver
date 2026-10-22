@@ -43,6 +43,16 @@ public sealed record ConstantFormat
         init => field = Validate(value, nameof(this.UnknownText));
     }
 
+    /// <summary>Picks the dialect's command for <c>⊤</c> (for a true value) or <c>⊥</c> (for a false value).</summary>
+    /// <param name="value">The constant's value, which is not <see cref="TruthValue.Unknown"/>.</param>
+    /// <param name="top">The dialect's command for <c>⊤</c>.</param>
+    /// <param name="bottom">The dialect's command for <c>⊥</c>.</param>
+    /// <returns><paramref name="top"/> for <see cref="TruthValue.True"/>, otherwise <paramref name="bottom"/>.</returns>
+    internal static string SymbolCommand(TruthValue value, string top, string bottom)
+    {
+        return value == TruthValue.True ? top : bottom;
+    }
+
     /// <summary>Gets the plain text of a constant: its override if it has one, otherwise the text of <see cref="Style"/>.</summary>
     /// <param name="value">The constant's value.</param>
     /// <returns>The unescaped text.</returns>
@@ -78,16 +88,6 @@ public sealed record ConstantFormat
     internal bool IsLogicSymbol(TruthValue value)
     {
         return this.Style == ConstantStyle.LogicSymbols && value != TruthValue.Unknown && this.OverrideFor(value) is null;
-    }
-
-    /// <summary>Picks the dialect's command for <c>⊤</c> (for a true value) or <c>⊥</c> (for a false value).</summary>
-    /// <param name="value">The constant's value, which is not <see cref="TruthValue.Unknown"/>.</param>
-    /// <param name="top">The dialect's command for <c>⊤</c>.</param>
-    /// <param name="bottom">The dialect's command for <c>⊥</c>.</param>
-    /// <returns><paramref name="top"/> for <see cref="TruthValue.True"/>, otherwise <paramref name="bottom"/>.</returns>
-    internal static string SymbolCommand(TruthValue value, string top, string bottom)
-    {
-        return value == TruthValue.True ? top : bottom;
     }
 
     /// <summary>
@@ -126,16 +126,6 @@ public sealed record ConstantFormat
         return true;
     }
 
-    private string? OverrideFor(TruthValue value)
-    {
-        return value switch
-        {
-            TruthValue.True => this.TrueText,
-            TruthValue.False => this.FalseText,
-            _ => this.UnknownText,
-        };
-    }
-
     private static string? Validate(string? value, string propertyName)
     {
         if (value is not null && (value.Length == 0 || value.AsSpan().ContainsAny('\r', '\n')))
@@ -144,5 +134,15 @@ public sealed record ConstantFormat
         }
 
         return value;
+    }
+
+    private string? OverrideFor(TruthValue value)
+    {
+        return value switch
+        {
+            TruthValue.True => this.TrueText,
+            TruthValue.False => this.FalseText,
+            _ => this.UnknownText,
+        };
     }
 }
