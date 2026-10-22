@@ -19,7 +19,7 @@ using TruthWeaver.Tool.Tui.Predicates;
 internal sealed partial class InspectController
 {
     // The operators that count their operands, so the text adds how many operands are True, False and Unknown now. The
-    // outline gives no "counts its operands" fact, so this is the Cardinality group of the Insert menu, read as names;
+    // outline gives no "counts its operands" fact, so this is the Cardinality group of the Insert menu, read as names
     // internal so a test can check it against that group.
     internal static readonly HashSet<string> CardinalityOperators = new(
         ["any", "all", "none", "exactlyone", "atleast", "atmost", "exactly", "greaterthan", "lessthan", "between"],
@@ -37,8 +37,8 @@ internal sealed partial class InspectController
     // Internal so a test can check every entry against the parser: each symbol must parse to the operator it claims.
     internal static readonly Dictionary<string, string> OperatorSpellings = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["IFF"] = "Equivalent",
-        ["XNOR"] = "Equivalent",
+        ["IFF"] = Equivalent,
+        ["XNOR"] = Equivalent,
         ["&&"] = "And",
         ["||"] = "Or",
         ["??"] = "Coalesce",
@@ -50,13 +50,15 @@ internal sealed partial class InspectController
         ["⊻"] = "Xor",
         ["→"] = "Implies",
         ["⇒"] = "Implies",
-        ["↔"] = "Equivalent",
-        ["⇔"] = "Equivalent",
+        ["↔"] = Equivalent,
+        ["⇔"] = Equivalent,
         ["↑"] = "Nand",
         ["⊼"] = "Nand",
         ["↓"] = "Nor",
         ["⊽"] = "Nor",
     };
+
+    private const string Equivalent = "Equivalent";
 
     /// <summary>Describes a node of the tree.</summary>
     /// <param name="path">The path of the node.</param>

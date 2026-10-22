@@ -58,101 +58,6 @@ internal sealed record EquationTokens
             Wrap = equation => $"`{equation}`",
         };
 
-    /// <summary>Gets the opening delimiter of a group or of a function call's argument list. The default is <c>(</c>.</summary>
-    public string OpenParen { get; init; } = "(";
-
-    /// <summary>Gets the closing delimiter of a group or of a function call's argument list. The default is <c>)</c>.</summary>
-    public string CloseParen { get; init; } = ")";
-
-    /// <summary>Gets the separator between the arguments of a function call. The default is a comma and a space.</summary>
-    public string ArgumentSeparator { get; init; } = ", ";
-
-    /// <summary>Gets the token between a variable and its term in a legend line. The default is <c>=</c>.</summary>
-    public string LegendEquals { get; init; } = "=";
-
-    /// <summary>Gets the formatter for a count argument of a function call, for example the <c>2</c> of <c>AtLeast(2, a, b)</c>.</summary>
-    public Func<int, string> FormatNumber { get; init; } = number => number.ToString(CultureInfo.InvariantCulture);
-
-    /// <summary>Gets the infix token for <c>AND</c>.</summary>
-    public required string And { get; init; }
-
-    /// <summary>Gets the infix token for <c>OR</c>.</summary>
-    public required string Or { get; init; }
-
-    /// <summary>
-    /// Gets the prefix token for <c>NOT</c>. The walk writes the operand directly after it, so a dialect whose token
-    /// needs a separator (a LaTeX command, for example) includes the trailing space in the token.
-    /// </summary>
-    public required string Not { get; init; }
-
-    /// <summary>Gets the infix token for <c>XOR</c>.</summary>
-    public required string Xor { get; init; }
-
-    /// <summary>Gets the infix token for <c>EQUIVALENT</c>.</summary>
-    public required string Equivalent { get; init; }
-
-    /// <summary>Gets the infix token for <c>IMPLIES</c>.</summary>
-    public required string Implies { get; init; }
-
-    /// <summary>Gets the infix token for <c>NAND</c>.</summary>
-    public required string Nand { get; init; }
-
-    /// <summary>Gets the infix token for <c>NOR</c>.</summary>
-    public required string Nor { get; init; }
-
-    /// <summary>
-    /// Gets the prefix token for <c>FORALL</c> (ADR-0010), for example <c>∀</c>. Defaults to the word
-    /// <c>FORALL</c>, which every dialect keeps unless it has a native quantifier glyph or command.
-    /// </summary>
-    public string ForAll { get; init; } = "FORALL";
-
-    /// <summary>Gets the prefix token for <c>EXISTS</c> (ADR-0010), for example <c>∃</c>. Defaults to the word <c>EXISTS</c>.</summary>
-    public string Exists { get; init; } = "EXISTS";
-
-    /// <summary>Gets the membership token between a quantifier's bound variable and its collection, for example <c>∈</c>. Defaults to the word <c>IN</c>.</summary>
-    public string ElementOf { get; init; } = "IN";
-
-    /// <summary>Gets the separator between a quantifier's head and its body, for example <c> . </c> (with its own spacing).</summary>
-    public string QuantifierDot { get; init; } = " . ";
-
-    /// <summary>
-    /// Gets the formatter for <c>If(condition, whenTrue, whenFalse)</c> as a ternary, given the three operands already
-    /// printed (and parenthesized, where their own context needs it). <see langword="null"/> (the default for every
-    /// dialect but <see cref="EquationDialect.CStyle"/>) means <c>If</c> prints in function-call form instead.
-    /// </summary>
-    public Func<string, string, string, string>? FormatIf { get; init; }
-
-    /// <summary>
-    /// Gets the term formatter. It takes the term's identity and whether to show argument values, and returns the
-    /// finished term text, escaped for the dialect.
-    /// </summary>
-    public required Func<TermIdentity, bool, string> FormatTerm { get; init; }
-
-    /// <summary>
-    /// Gets the constant formatter. It takes the value and the <see cref="ConstantFormat"/> and returns the dialect's text
-    /// for the constant, escaped for the dialect. A dialect writes its own command for <c>⊤</c> and <c>⊥</c>
-    /// (<see cref="ConstantFormat.IsLogicSymbol"/>) and escapes every other text as a literal.
-    /// </summary>
-    public required Func<TruthValue, ConstantFormat, string> FormatConstant { get; init; }
-
-    /// <summary>
-    /// Gets the formatter for the name of an operator that prints in function-call form, for example <c>AtLeast</c>.
-    /// It takes the DSL spelling and returns the dialect's text for it.
-    /// </summary>
-    public required Func<string, string> FormatFunctionName { get; init; }
-
-    /// <summary>
-    /// Gets the variable formatter for simple-variable mode. It takes the letter and its numeric subscript (zero for
-    /// none) and returns the dialect's text, for example <c>p₁</c>, <c>p_{1}</c> or <c>p_1</c>.
-    /// </summary>
-    public required Func<char, int, string> FormatVariable { get; init; }
-
-    /// <summary>
-    /// Gets the envelope function. It takes the finished equation and returns it inside the dialect's delimiters, for
-    /// example <c>$$...$$</c>. A dialect with no envelope returns the equation unchanged.
-    /// </summary>
-    public required Func<string, string> Wrap { get; init; }
-
     /// <summary>Gets the table for the MathML dialect: <c>&lt;mo&gt;</c> operators and <c>&lt;mtext&gt;</c> text inside one <c>&lt;math&gt;</c> element.</summary>
     public static EquationTokens MathMl { get; } =
         new()
@@ -271,6 +176,101 @@ internal sealed record EquationTokens
             FormatVariable = (letter, subscript) => subscript == 0 ? letter.ToString() : letter + ToSubscriptDigits(subscript),
             Wrap = equation => equation,
         };
+
+    /// <summary>Gets the opening delimiter of a group or of a function call's argument list. The default is <c>(</c>.</summary>
+    public string OpenParen { get; init; } = "(";
+
+    /// <summary>Gets the closing delimiter of a group or of a function call's argument list. The default is <c>)</c>.</summary>
+    public string CloseParen { get; init; } = ")";
+
+    /// <summary>Gets the separator between the arguments of a function call. The default is a comma and a space.</summary>
+    public string ArgumentSeparator { get; init; } = ", ";
+
+    /// <summary>Gets the token between a variable and its term in a legend line. The default is <c>=</c>.</summary>
+    public string LegendEquals { get; init; } = "=";
+
+    /// <summary>Gets the formatter for a count argument of a function call, for example the <c>2</c> of <c>AtLeast(2, a, b)</c>.</summary>
+    public Func<int, string> FormatNumber { get; init; } = number => number.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Gets the infix token for <c>AND</c>.</summary>
+    public required string And { get; init; }
+
+    /// <summary>Gets the infix token for <c>OR</c>.</summary>
+    public required string Or { get; init; }
+
+    /// <summary>
+    /// Gets the prefix token for <c>NOT</c>. The walk writes the operand directly after it, so a dialect whose token
+    /// needs a separator (a LaTeX command, for example) includes the trailing space in the token.
+    /// </summary>
+    public required string Not { get; init; }
+
+    /// <summary>Gets the infix token for <c>XOR</c>.</summary>
+    public required string Xor { get; init; }
+
+    /// <summary>Gets the infix token for <c>EQUIVALENT</c>.</summary>
+    public required string Equivalent { get; init; }
+
+    /// <summary>Gets the infix token for <c>IMPLIES</c>.</summary>
+    public required string Implies { get; init; }
+
+    /// <summary>Gets the infix token for <c>NAND</c>.</summary>
+    public required string Nand { get; init; }
+
+    /// <summary>Gets the infix token for <c>NOR</c>.</summary>
+    public required string Nor { get; init; }
+
+    /// <summary>
+    /// Gets the prefix token for <c>FORALL</c> (ADR-0010), for example <c>∀</c>. Defaults to the word
+    /// <c>FORALL</c>, which every dialect keeps unless it has a native quantifier glyph or command.
+    /// </summary>
+    public string ForAll { get; init; } = "FORALL";
+
+    /// <summary>Gets the prefix token for <c>EXISTS</c> (ADR-0010), for example <c>∃</c>. Defaults to the word <c>EXISTS</c>.</summary>
+    public string Exists { get; init; } = "EXISTS";
+
+    /// <summary>Gets the membership token between a quantifier's bound variable and its collection, for example <c>∈</c>. Defaults to the word <c>IN</c>.</summary>
+    public string ElementOf { get; init; } = "IN";
+
+    /// <summary>Gets the separator between a quantifier's head and its body, for example <c> . </c> (with its own spacing).</summary>
+    public string QuantifierDot { get; init; } = " . ";
+
+    /// <summary>
+    /// Gets the formatter for <c>If(condition, whenTrue, whenFalse)</c> as a ternary, given the three operands already
+    /// printed (and parenthesized, where their own context needs it). <see langword="null"/> (the default for every
+    /// dialect but <see cref="EquationDialect.CStyle"/>) means <c>If</c> prints in function-call form instead.
+    /// </summary>
+    public Func<string, string, string, string>? FormatIf { get; init; }
+
+    /// <summary>
+    /// Gets the term formatter. It takes the term's identity and whether to show argument values, and returns the
+    /// finished term text, escaped for the dialect.
+    /// </summary>
+    public required Func<TermIdentity, bool, string> FormatTerm { get; init; }
+
+    /// <summary>
+    /// Gets the constant formatter. It takes the value and the <see cref="ConstantFormat"/> and returns the dialect's text
+    /// for the constant, escaped for the dialect. A dialect writes its own command for <c>⊤</c> and <c>⊥</c>
+    /// (<see cref="ConstantFormat.IsLogicSymbol"/>) and escapes every other text as a literal.
+    /// </summary>
+    public required Func<TruthValue, ConstantFormat, string> FormatConstant { get; init; }
+
+    /// <summary>
+    /// Gets the formatter for the name of an operator that prints in function-call form, for example <c>AtLeast</c>.
+    /// It takes the DSL spelling and returns the dialect's text for it.
+    /// </summary>
+    public required Func<string, string> FormatFunctionName { get; init; }
+
+    /// <summary>
+    /// Gets the variable formatter for simple-variable mode. It takes the letter and its numeric subscript (zero for
+    /// none) and returns the dialect's text, for example <c>p₁</c>, <c>p_{1}</c> or <c>p_1</c>.
+    /// </summary>
+    public required Func<char, int, string> FormatVariable { get; init; }
+
+    /// <summary>
+    /// Gets the envelope function. It takes the finished equation and returns it inside the dialect's delimiters, for
+    /// example <c>$$...$$</c>. A dialect with no envelope returns the equation unchanged.
+    /// </summary>
+    public required Func<string, string> Wrap { get; init; }
 
     /// <summary>
     /// Gets the table for the LaTeX dialect. A term and a function name are <c>\text</c> groups. The wrap mode sets the

@@ -11,4 +11,4 @@
 - [ ] ADR-0017 decision 4 matches the code
 - [ ] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
 
-Amend ADR-0004 and correct ADR-0017 decision 4 in ticket 05 (see ticket 04 Answer).
+ADR-0004 and ADR-0017 decision 4 are amended and corrected in ticket 05.

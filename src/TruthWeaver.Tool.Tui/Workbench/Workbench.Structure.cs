@@ -6,10 +6,10 @@ using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Tree;
 
-/// <summary>
+/// <content>
 /// The part of the workbench state that the structural editor and the rewrites share: the selected node of the tree, and
 /// the step that puts an edited or rewritten rule into the document.
-/// </summary>
+/// </content>
 internal sealed partial class Workbench
 {
     private string selectedNode = "$";

@@ -25,11 +25,7 @@
   <!-- The JSON schema of the rule tree, embedded from the TruthWeaver package's own file (one source, no copy), for the
        tree schema level of the validation. -->
   <ItemGroup>
-    <EmbeddedResource
-      Include="../TruthWeaver/Json/rule-tree.schema.json"
-      LogicalName="TruthWeaver.Tool.Core.rule-tree.schema.json"
-      Link="rule-tree.schema.json"
-    />
+    <EmbeddedResource Include="../TruthWeaver/Json/rule-tree.schema.json" LogicalName="TruthWeaver.Tool.Core.rule-tree.schema.json" Link="rule-tree.schema.json" />
   </ItemGroup>
 
   <!-- The tests reach the conversion self-check's printer seam, which is not public API. -->

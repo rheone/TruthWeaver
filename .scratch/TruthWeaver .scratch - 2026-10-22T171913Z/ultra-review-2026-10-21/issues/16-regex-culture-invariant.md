@@ -1,0 +1,42 @@
+# 16 - Regex is built without CultureInvariant: an inline (?i) depends on the culture of the first thread to compile it
+
+Status: needs-triage
+Severity: medium
+Lens: F7 Predicates B
+Verdict: CONFIRMED
+Blocked by: none
+
+## Finding F7.1: Regex built without CultureInvariant: an inline (?i) depends on the culture of whichever thread first compiled it
+
+Location: `src/TruthWeaver.Predicates/RegexFlags.cs:35` (CONFIRMED, medium)
+
+RegexOptions.CultureInvariant is added only when the rule sets the 'i' flag. A pattern that turns on case-insensitivity inline with (?i), which regex-ismatch.md documents as a supported way to ignore case, is compiled under CultureInfo.CurrentCulture. The compiled Regex is then cached process-wide (RegexPatternCache.Get, keyed on pattern and options only), so the culture of the first thread that compiles the pattern fixes the answer for every later evaluation.
+
+### Failure scenario
+
+The host runs under tr-TR. The rule is `codeIsMatch(pattern: "(?i)^id$")` and the selected value is "ID". With Turkish casing, 'i' and 'I' are not case-equivalent, so the answer is False. On an en-US thread the same rule gives True. If a tr-TR request compiles the pattern first, every later en-US request also gets False from the cache.
+
+### Expected behavior
+
+Always add RegexOptions.CultureInvariant, whatever the flags are, so the host culture never changes a match. This is what the predicates README promises for all families.
+
+### Verification
+
+The code path is as claimed.
+
+- src/TruthWeaver.Predicates/RegexFlags.cs:35 adds CultureInvariant only inside the 'i' case. Flags "", "m", "s", "n" and "x" never set it.
+- src/TruthWeaver.Predicates/RegexPatternCache.cs:54 builds `new Regex(pattern, options, timeout)` with only those options. Validate (line 37) does the same.
+- The cache key at line 47 is (pattern, options) with no culture. The first Regex built for a pair is therefore reused by every later thread, whatever its culture.
+- The only other CultureInvariant uses in src are GeneratedRegex attributes and tool code. None cover rule-supplied patterns.
+
+Without CultureInvariant, the Regex parser uses CultureInfo.CurrentCulture when it builds case-equivalence data. An inline (?i) in the pattern triggers this even though RegexOptions.IgnoreCase is not set. .NET 7 and later special-case tr/az casing, where I and i are not equivalent. So `(?i)^id$` against "ID" can be False on a tr-TR thread and True on en-US. The cache then fixes the first answer for every later evaluation of that pattern.
+
+I traced the code and the cache. I did not run it under tr-TR. The Turkish case-folding behavior of .NET's regex parser is from my knowledge of the runtime.
+
+The severity is lower than "high" for two reasons. The trigger needs a host with a Turkish or Azeri culture on the compiling thread, or mixed cultures across threads. It also needs a pattern with an inline (?i) and the letters i or I, and it gives a wrong match rather than a crash. The effect is still real: it is non-deterministic and the cache makes it persist. The fix is to always OR RegexOptions.CultureInvariant, for example at the point where RegexPredicates.cs:201 and :218 hand over the parsed options. The same applies when the flags are empty.
+
+## Acceptance criteria
+
+- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- The page that describes the behavior states the current truth (required when behavior or public API changes).
+- The validation list in CLAUDE.md passes.

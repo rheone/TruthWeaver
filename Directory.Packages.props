@@ -24,7 +24,7 @@
   <ItemGroup>
     <!-- 1.2.0-beta is required for record support: 1.1.x SA1313 flags PascalCase positional-record
          parameters, which are correct (they become public properties). -->
-    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
+    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.3.151-beta" PrivateAssets="all" />
   </ItemGroup>
   <!-- SonarAnalyzer -->
   <ItemGroup>
@@ -64,7 +64,7 @@
        a net11.0 build, evaluates System.Text.Json JsonNode directly and is actively maintained. Chosen over JsonPath.Net, whose
        3.x binaries ship under the Open Source Maintenance Fee EULA. -->
   <ItemGroup>
-    <PackageVersion Include="Meziantou.Framework.JsonPath" Version="3.0.7" />
+    <PackageVersion Include="Meziantou.Framework.JsonPath" Version="3.0.8" />
   </ItemGroup>
   <!-- YamlDotNet - TruthWeaver.Yaml's sole dependency beyond TruthWeaver itself. -->
   <ItemGroup>
@@ -97,8 +97,8 @@
        4.14.0 is the oldest compiler API with AddEmbeddedAttributeDefinition (the generated marker attribute stays
        invisible outside each consuming compilation). A consumer needs the .NET 9.0.300 SDK or later to load it. -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>

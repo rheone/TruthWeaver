@@ -2,10 +2,10 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 
 using TruthWeaver.Compilation;
 
-/// <summary>
+/// <content>
 /// The part of the workbench that puts a piece of rule text into the editor at the cursor: the Insert menu. The editor owns
 /// the cursor and the selection, so the workbench only asks it to insert.
-/// </summary>
+/// </content>
 internal sealed partial class Workbench
 {
     /// <summary>Occurs when text should go into the editor at the cursor, in place of the selection.</summary>

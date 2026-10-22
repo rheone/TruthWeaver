@@ -1,0 +1,67 @@
+# 20 - Duplicate parameter names in one definition are accepted; the last binding silently wins
+
+Status: needs-triage
+Severity: medium
+Lens: F2 Parsing; F3 Compilation; L3 Externals+If+constants
+Verdict: PLAUSIBLE
+Blocked by: none
+
+## Finding F2.6: Duplicate definition parameter names are accepted; the last binding silently wins
+
+Location: `src/TruthWeaver/Parsing/DslParser.cs:774` (PLAUSIBLE, medium)
+
+ParseDefinition collects parameter names into a List with no uniqueness check (767-780). TreeFormatReader.ReadDefinitionEntry does the same (788-803). DefinitionExpander binds them into a case-insensitive dictionary by index (DefinitionExpander.cs:292-296), so a later duplicate overwrites an earlier one. The argument count still matches, so no diagnostic is raised and one argument is dropped. ADR-0008 decision 6 asks for argument-shape mistakes to be diagnostics, 'not silently absorbed'.
+
+### Failure scenario
+
+`let both(a, A) = a AND isAdult; both(isOwner, isEditor)` compiles to `isEditor AND isAdult`, and isOwner is ignored with no diagnostic. The JSON form with `"parameters":["a","A"]` gives the same result.
+
+### Expected behavior
+
+A repeated parameter name (compared without case) is a compile error, for example DefinitionNameCollision or a dedicated code.
+
+### Verification
+
+not verified (medium or low)
+
+## Finding F3.5: Repeated parameter names in a let definition are accepted and the last argument silently wins
+
+Location: `src/TruthWeaver/Compilation/DefinitionExpander.cs:295` (PLAUSIBLE, medium)
+
+Neither DslParser.ParseDefinition (DslParser.cs:767-779) nor the expander rejects a definition whose parameter list repeats a name (compared case-insensitively). When the expander binds the arguments, the later entry overwrites the earlier one in a case-insensitive dictionary, so one argument is discarded with no diagnostic. This contradicts the compiler's own rule for repeated predicate arguments (RuleNodeCompiler.cs:750, 'A repeated name never wins silently', TRE duplicate-argument error).
+
+### Failure scenario
+
+`let pick(x, X) = x; pick(isAdmin, isGuest)` compiles to `isGuest` with no diagnostic, so the author's first argument is dropped.
+
+### Expected behavior
+
+A definition that declares the same parameter name twice is a compile error, in the same family as DuplicateArgument or DefinitionNameCollision.
+
+### Verification
+
+not verified (medium or low)
+
+## Finding L3.2: A duplicate parameter name in one definition is accepted and silently drops an argument
+
+Location: `src/TruthWeaver/Compilation/DefinitionExpander.cs:295` (PLAUSIBLE, medium)
+
+ExpandUse binds parameters into a case-insensitive dictionary by name, so `let f(x, x) = ...` (accepted by DslParser.ExpectParameterName, TreeFormatReader.ReadDefinitionEntry and RuleBuilder.Define without a check) binds only the last argument and the earlier one is discarded with no diagnostic. The term-argument precedent (DuplicateArgument, TRE0032, 'no occurrence wins') rejects the same mistake for predicate arguments.
+
+### Failure scenario
+
+`let both(x, X) = x AND X; both(isOwner, isEditor)` compiles without a diagnostic to `isEditor AND isEditor`; with isOwner False and isEditor True the rule yields True instead of False.
+
+### Expected behavior
+
+A definition whose parameter list repeats a name (case-insensitively) is a compile error in every format, in the same family as DuplicateArgument.
+
+### Verification
+
+not verified (medium or low)
+
+## Acceptance criteria
+
+- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- The page that describes the behavior states the current truth (required when behavior or public API changes).
+- The validation list in CLAUDE.md passes.

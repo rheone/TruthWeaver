@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 
 using TruthWeaver.Tool.Tui.Theme;
 
-/// <summary>The theme of the workbench: the color set, the <c>NO_COLOR</c> choice and the key that switches the color set.</summary>
+/// <content>The theme of the workbench: the color set, the <c>NO_COLOR</c> choice and the key that switches the color set.</content>
 internal sealed partial class Workbench
 {
     /// <summary>Occurs after <see cref="ToggleTheme"/> changes <see cref="Theme"/>.</summary>

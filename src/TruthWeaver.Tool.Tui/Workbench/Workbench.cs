@@ -7,11 +7,11 @@ using TruthWeaver.Tool.Tui.Hosting;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Theme;
 
-/// <summary>
+/// <content>
 /// The state that every pane shares: the open <see cref="RuleDocument"/>, the settings, the layout and the status message,
 /// and the actions behind the keys (open, save, undo, redo, format). It has no view, so the panes stay in sync through
 /// its events and a test drives it without a terminal.
-/// </summary>
+/// </content>
 internal sealed partial class Workbench
 {
     private RuleDocument document;
