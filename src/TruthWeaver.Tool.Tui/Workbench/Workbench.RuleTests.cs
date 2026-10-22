@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 
 using TruthWeaver.Tool.Tui.Sessions;
 
-/// <summary>The part of the workbench state that saves the assignment as cases of a rule test file and runs the file.</summary>
+/// <content>The part of the workbench state that saves the assignment as cases of a rule test file and runs the file.</content>
 internal sealed partial class Workbench
 {
     private RuleTestSession? ruleTests;

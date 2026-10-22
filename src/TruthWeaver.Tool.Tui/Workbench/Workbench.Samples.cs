@@ -3,10 +3,10 @@ namespace TruthWeaver.Tool.Tui.Workbench;
 using TruthWeaver.Compilation;
 using TruthWeaver.Tool.Tui.Sessions;
 
-/// <summary>
+/// <content>
 /// The part of the workbench that puts a whole new text in place of the rule inside the undo history: a sample today, and
 /// any other source of ready text later.
-/// </summary>
+/// </content>
 internal sealed partial class Workbench
 {
     /// <summary>

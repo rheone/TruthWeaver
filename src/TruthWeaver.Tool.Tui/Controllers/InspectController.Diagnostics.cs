@@ -2,7 +2,7 @@ namespace TruthWeaver.Tool.Tui.Controllers;
 
 using TruthWeaver.Diagnostics;
 
-/// <summary>Renders the text of one diagnostic, and the analyzer findings of a node of the tree.</summary>
+/// <content>Renders the text of one diagnostic, and the analyzer findings of a node of the tree.</content>
 internal sealed partial class InspectController
 {
     private static void DiagnosticText(Lines text, Diagnostic diagnostic)

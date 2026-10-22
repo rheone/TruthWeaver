@@ -21,11 +21,6 @@
        production code path here - the package only carries the file. -->
   <ItemGroup>
     <None Include="Json\rule-tree.schema.json" Pack="true" PackagePath="content\rule-tree.schema.json" Visible="true" />
-    <None
-      Include="Json\decision-record.schema.json"
-      Pack="true"
-      PackagePath="content\decision-record.schema.json"
-      Visible="true"
-    />
+    <None Include="Json\decision-record.schema.json" Pack="true" PackagePath="content\decision-record.schema.json" Visible="true" />
   </ItemGroup>
 </Project>

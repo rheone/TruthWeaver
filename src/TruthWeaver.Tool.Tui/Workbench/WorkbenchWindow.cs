@@ -12,13 +12,13 @@ using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
 using TruthWeaver.Tool.Tui.Views;
 
-/// <summary>
+/// <content>
 /// The workbench window: the menu bar on the first row, three regions (editor on the left, side view on the right, a region
 /// below), a status line, a hint line with the most common keys, and the key reference overlay. Each region holds the panes
 /// that <see cref="WorkbenchPanes"/> registers for it and shows one at a time. The commands and their keys come from
 /// <see cref="WorkbenchCommands"/>, and <see cref="WorkbenchMenus"/> puts them in the menus. Every region can take focus, be
 /// maximised and be resized with the keys or by dragging a divider (the borders between the regions) with the mouse.
-/// </summary>
+/// </content>
 internal sealed partial class WorkbenchWindow : Window
 {
     /// <summary>The last line of the key reference: the mouse is an extra way to do what the keys do.</summary>

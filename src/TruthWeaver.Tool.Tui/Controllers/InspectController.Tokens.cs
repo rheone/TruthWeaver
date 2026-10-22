@@ -11,10 +11,10 @@ using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Theme;
 using TruthWeaver.Tool.Tui.Workbench;
 
-/// <summary>
+/// <content>
 /// Finds the token, symbol or diagnostic span under an offset of the editor text (the caret logic), and describes what
 /// it finds. The word-character test and the subtree-aware span math live here once, for every caller.
-/// </summary>
+/// </content>
 internal sealed partial class InspectController
 {
     /// <summary>Describes the place at an offset of the editor text.</summary>

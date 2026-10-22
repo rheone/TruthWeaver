@@ -32,24 +32,14 @@
        src/TruthWeaver.Generators. It then locks the copy instead, and the copy is made fresh for each build.
        The target is skipped in a design-time build (the project load of `dotnet format` and editors). There the copy
        is not built yet, and a project that loads with the added analyzer makes `dotnet format` report S8970 on Linux. -->
-  <Target
-    Name="UseGeneratorCopyAsAnalyzer"
-    BeforeTargets="CoreCompile"
-    DependsOnTargets="ResolveReferences"
-    Condition="'$(DesignTimeBuild)' != 'true'"
-  >
+  <Target Name="UseGeneratorCopyAsAnalyzer" BeforeTargets="CoreCompile" DependsOnTargets="ResolveReferences" Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
       <GeneratorCopyDirectory>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(IntermediateOutputPath), 'analyzer-copy'))</GeneratorCopyDirectory>
     </PropertyGroup>
     <ItemGroup>
       <GeneratorBuildOutput Include="@(ReferencePath)" Condition="'%(Filename)' == 'TruthWeaver.Generators'" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(GeneratorBuildOutput)"
-      DestinationFolder="$(GeneratorCopyDirectory)"
-      Retries="1"
-      SkipUnchangedFiles="true"
-    />
+    <Copy SourceFiles="@(GeneratorBuildOutput)" DestinationFolder="$(GeneratorCopyDirectory)" Retries="1" SkipUnchangedFiles="true" />
     <ItemGroup>
       <Analyzer Include="$(GeneratorCopyDirectory)TruthWeaver.Generators.dll" />
     </ItemGroup>

@@ -5,12 +5,12 @@ using System.Text;
 using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Workbench;
 
-/// <summary>
+/// <content>
 /// The text of the inspect key and of the mouse hover: what a part of the rule means and what it does now. Both routes call
 /// <see cref="DescribeNode"/> (a node of the tree) or <see cref="DescribeOffset"/> (a place in the editor text), so the
 /// keyboard and the hover never differ. The descriptions come from the library: the outline of the compiled rule (the
 /// operator table), the predicate catalog and the palette, not from copies.
-/// </summary>
+/// </content>
 /// <remarks>
 /// The controller is split by reason to change: this file holds the scaffolding every part shares; <c>.Nodes.cs</c> builds
 /// the text of a node of the tree (and the operator and predicate facts both routes read); <c>.Tokens.cs</c> finds and
