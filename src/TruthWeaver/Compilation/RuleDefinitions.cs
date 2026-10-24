@@ -364,7 +364,7 @@ public sealed class RuleDefinitions
                 !this.byName.TryGetValue(use.Name, out (DefinitionNode Node, string Path) found)
                 || chain.Contains(use.Name, StringComparer.OrdinalIgnoreCase)
                 || use.Arguments.Count != found.Node.Parameters.Count
-                || chain.Count >= CompilerOptions.Default.MaxDefinitionDepth
+                || chain.Count >= options.MaxDefinitionDepth
             )
             {
                 return;
