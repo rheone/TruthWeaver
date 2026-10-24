@@ -54,3 +54,9 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # The dev container base image (.devcontainer/Dockerfile). global.json pins the SDK, so keep the two in step by hand.
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule:
+      interval: weekly

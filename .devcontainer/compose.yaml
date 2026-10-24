@@ -1,0 +1,22 @@
+# Run the dev image without VS Code:
+#   docker compose -f .devcontainer/compose.yaml run --rm dev
+# Set CLAUDE_HOME to your host .claude folder if it is not at ~/.claude (on Windows: %USERPROFILE%\.claude).
+services:
+  dev:
+    build: .
+    container_name: TruthWeaver
+    working_dir: /workspaces/TruthWeaver
+    stdin_open: true
+    tty: true
+    environment:
+      NUGET_PACKAGES: /home/vscode/.nuget/packages
+    volumes:
+      - ..:/workspaces/TruthWeaver
+      - nuget:/home/vscode/.nuget
+      - claude:/home/vscode/.claude
+      - ${CLAUDE_HOME:-~/.claude}:/mnt/host-claude:ro
+    command: bash -c "bash .devcontainer/post-create.sh && exec pwsh"
+
+volumes:
+  nuget:
+  claude:

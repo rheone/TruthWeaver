@@ -1,0 +1,29 @@
+{
+  "name": "TruthWeaver (.NET 11 / Alpine)",
+  "build": { "dockerfile": "Dockerfile", "context": "." },
+  "runArgs": ["--name=TruthWeaver"],
+  "remoteUser": "vscode",
+  "containerEnv": { "NUGET_PACKAGES": "/home/vscode/.nuget/packages" },
+  "mounts": [
+    // NuGet cache survives container rebuilds.
+    "source=truthweaver-nuget,target=/home/vscode/.nuget,type=volume",
+    // Writable ~/.claude for sessions and credentials; the host copy below stays read-only.
+    "source=truthweaver-claude,target=/home/vscode/.claude,type=volume",
+    // Host ~/.claude, read-only. USERPROFILE on Windows, HOME on macOS/Linux.
+    "source=${localEnv:USERPROFILE}${localEnv:HOME}/.claude,target=/mnt/host-claude,type=bind,readonly"
+  ],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/fix-ownership.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "csharpier.csharpier-vscode",
+        "ms-vscode.powershell",
+        "anthropic.claude-code"
+      ],
+      "settings": { "terminal.integrated.defaultProfile.linux": "pwsh" }
+    }
+  }
+}
