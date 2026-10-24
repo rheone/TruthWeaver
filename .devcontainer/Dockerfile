@@ -9,9 +9,15 @@ ARG USER_GID=1000
 
 # PowerShell on musl needs ICU, so the SDK image's invariant-globalization default is turned off.
 # Chromium is only for mermaid-cli; Puppeteer must not download its own glibc build.
+# DOTNET_ROLL_FORWARD=LatestMajor: this image only carries the .NET 11 RC runtime. Several
+# framework-dependent global/local tools (husky, csharp-ls) are still built against net8/9/10
+# and have no rollForward of their own, so without this they fail with "You must install or
+# update .NET" even though a newer runtime is present. dotnet-coverage and reportgenerator
+# already set their own rollForward and are unaffected.
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     DOTNET_NOLOGO=1 \
+    DOTNET_ROLL_FORWARD=LatestMajor \
     PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/chromium-no-sandbox
 
@@ -19,7 +25,8 @@ RUN apk add --no-cache \
         bash zsh git openssh-client gnupg less curl ca-certificates tzdata \
         ripgrep github-cli jq yq nodejs npm chromium graphviz font-noto \
         icu-libs icu-data-full krb5-libs libgcc libintl libssl3 libstdc++ \
-        ncurses-terminfo-base userspace-rcu zlib lttng-ust shadow sudo
+        ncurses-terminfo-base userspace-rcu zlib lttng-ust shadow sudo \
+        zoxide zoxide-zsh-completion
 
 # PowerShell is not in the Alpine repositories; take the official musl build.
 RUN mkdir -p /opt/microsoft/powershell/7 \
@@ -77,6 +84,11 @@ RUN mkdir -p "$(dirname "$(pwsh -NoProfile -Command 'echo $PROFILE')")" \
     && echo 'oh-my-posh init pwsh --config ~/.config/oh-my-posh/theme.omp.json | Invoke-Expression' \
         >> "$(pwsh -NoProfile -Command 'echo $PROFILE')" \
     && echo 'eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/theme.omp.json)"' >> /home/${USERNAME}/.zshrc
+
+# zoxide: a frecency-based `z`/`zi` alternative to `cd`, useful for jumping between the repo's
+# many projects (src/tests/samples/benchmarks each hold a dozen+ sibling folders).
+RUN echo '(zoxide init powershell | Out-String) | Invoke-Expression' >> "$(pwsh -NoProfile -Command 'echo $PROFILE')" \
+    && echo 'eval "$(zoxide init zsh)"' >> /home/${USERNAME}/.zshrc
 
 WORKDIR /workspaces/TruthWeaver
 CMD ["pwsh"]

@@ -1,6 +1,7 @@
 {
   "name": "TruthWeaver (.NET 11 / Alpine)",
   "build": { "dockerfile": "Dockerfile", "context": "." },
+  "runArgs": ["--name=TruthWeaver"],
   "remoteUser": "vscode",
   "containerEnv": { "NUGET_PACKAGES": "/home/vscode/.nuget/packages" },
   "mounts": [
