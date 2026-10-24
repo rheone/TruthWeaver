@@ -803,11 +803,15 @@ internal static class CanonicalPrinter
     /// <summary>Maps a connective's canonical word to the symbol <c>DslParser.SymbolAlias</c> reads back to it.</summary>
     private static string SymbolFor(string word)
     {
-        return
+        if (
             OperatorDefinitions.TryGetByLabel(word, out OperatorDefinition? definition)
             && definition.SymbolicSpelling is { } symbol
-            ? symbol
-            : throw new ArgumentOutOfRangeException(nameof(word), word, "No symbolic spelling for this connective.");
+        )
+        {
+            return symbol;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(word), word, "No symbolic spelling for this connective.");
     }
 
     /// <summary>

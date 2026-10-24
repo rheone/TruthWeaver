@@ -65,11 +65,15 @@ internal sealed class RuleTestFileReader
             return RuleFormat.Json;
         }
 
-        return
+        if (
             string.Equals(extension, ".yaml", StringComparison.OrdinalIgnoreCase)
             || string.Equals(extension, ".yml", StringComparison.OrdinalIgnoreCase)
-            ? RuleFormat.Yaml
-            : RuleFormat.Text;
+        )
+        {
+            return RuleFormat.Yaml;
+        }
+
+        return RuleFormat.Text;
     }
 
     /// <summary>Writes one YAML node as a YAML document, so an inline rule tree compiles with <c>CompileYaml</c>.</summary>

@@ -1,6 +1,6 @@
 # 08 - Rendering a decision with an evaluated quantifier throws: the trace shape does not match the outline
 
-Status: needs-triage
+Status: resolved
 Severity: high
 Lens: T2 Surfaces
 Verdict: CONFIRMED
@@ -48,3 +48,7 @@ Severity: it is a deterministic exception from a public API on a valid decision 
 In `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs`, the test failed for every quantifier rule and element count tried (0 to 3): `PrintPlainText`, `PrintHtml`, `PrintMermaid` and `PrintDot` of the decision threw.
 
 The failing test is in the repo, skipped with this ticket number: `Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test`. Acceptance: remove its `Skip` and the test passes. While the `Skip` is there, `dotnet format --severity info` reports xUnit1004, so CI is red on the format step until this ticket is done.
+
+## Answer
+
+Fixed, per ADR-0010 decision 7's own instruction ("every consumer that pairs trace nodes with rule nodes by position... must fold the element children onto the one body node"). `RuleRenderTree.Build` now special-cases a quantifier outline node (`BuildQuantifier`, `src/TruthWeaver/Printing/RuleRenderTree.cs`): instead of the positional zip `AssertOperandCountsAligned` otherwise enforces, it folds every element's body trace onto the outline's one body operand with `MergeElementBodies`/`MergeBodyTraces` - a body position counts as reached when at least one element reached it, and its value is the common value when every element that reached it agrees, or `Unknown` when they disagree. `Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test` no longer has its `Skip` and passes for 0-3 element collections across all four printers. `docs/html-and-dot.md` gained a sentence on this folding for `PrintHtml`/`PrintDot` with a decision.

@@ -46,11 +46,14 @@ public static class AssignmentVariables
             return Malformed(error);
         }
 
-        return root is JsonObject sources
-            ? ToolResults.Success(sources)
-            : Malformed(
-                "The data must be an object that maps each source name to its data, such as {\"user\": {\"region\": \"EU\"}}."
-            );
+        if (root is JsonObject sources)
+        {
+            return ToolResults.Success(sources);
+        }
+
+        return Malformed(
+            "The data must be an object that maps each source name to its data, such as {\"user\": {\"region\": \"EU\"}}."
+        );
     }
 
     /// <summary>Reads the document and makes a data source for each source name.</summary>

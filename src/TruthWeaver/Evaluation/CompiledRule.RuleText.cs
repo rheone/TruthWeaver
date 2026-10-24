@@ -60,13 +60,17 @@ public sealed partial class CompiledRule<TContext>
             throw new ArgumentException($"{reason} Call TryPrintRuleText to avoid the exception.", nameof(constants));
         }
 
-        return
+        if (
             grouping == GroupingStyle.Parentheses
             && operatorStyle == OperatorStyle.Word
             && constants is null
             && this.NoteLookup is null
-            ? this.CanonicalText
-            : CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants, this.NoteLookup);
+        )
+        {
+            return this.CanonicalText;
+        }
+
+        return CanonicalPrinter.Print(this.Root, grouping, operatorStyle, constants, this.NoteLookup);
     }
 
     /// <summary>
@@ -122,14 +126,18 @@ public sealed partial class CompiledRule<TContext>
         }
 
         NoteLookup? notes = options.IncludeNotes ? this.NoteLookup : null;
-        return
+        if (
             options.Width is null
             && options.Grouping == GroupingStyle.Parentheses
             && options.OperatorStyle == OperatorStyle.Word
             && options.Constants is null
             && notes is null
-            ? this.CanonicalText
-            : CanonicalPrinter.Print(this.Root, options, notes);
+        )
+        {
+            return this.CanonicalText;
+        }
+
+        return CanonicalPrinter.Print(this.Root, options, notes);
     }
 
     /// <summary>

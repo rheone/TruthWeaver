@@ -528,21 +528,26 @@ public sealed class DslRoundTripPropertyTests
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
         foreach (TermSpec spec in TermSpecs)
         {
-            builder.Add(
-                spec.ArgumentKind is { } kind
-                    ? new PredicateSchema(
-                        spec.PredicateName,
-                        spec.PredicateName,
-                        $"Property-test predicate '{spec.PredicateName}', argument of kind '{kind}'.",
-                        [new PredicateArgumentSchema(spec.ArgumentName!, "Generated argument.", kind)]
-                    )
-                    : PredicateSchema.NoArguments(
-                        spec.PredicateName,
-                        spec.PredicateName,
-                        $"Property-test predicate '{spec.PredicateName}'."
-                    ),
-                (_, _, _) => ValueTask.FromResult(true ? TruthValue.True : TruthValue.False)
-            );
+            PredicateSchema schema;
+            if (spec.ArgumentKind is { } kind)
+            {
+                schema = new PredicateSchema(
+                    spec.PredicateName,
+                    spec.PredicateName,
+                    $"Property-test predicate '{spec.PredicateName}', argument of kind '{kind}'.",
+                    [new PredicateArgumentSchema(spec.ArgumentName!, "Generated argument.", kind)]
+                );
+            }
+            else
+            {
+                schema = PredicateSchema.NoArguments(
+                    spec.PredicateName,
+                    spec.PredicateName,
+                    $"Property-test predicate '{spec.PredicateName}'."
+                );
+            }
+
+            builder.Add(schema, (_, _, _) => ValueTask.FromResult(true ? TruthValue.True : TruthValue.False));
         }
 
         return builder.Build();
