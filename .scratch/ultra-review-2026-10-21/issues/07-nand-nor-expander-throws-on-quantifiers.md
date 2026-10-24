@@ -1,6 +1,6 @@
 # 07 - ExpandToNand and ExpandToNor throw on any rule that contains FORALL or EXISTS
 
-Status: needs-triage
+Status: resolved
 Severity: high
 Lens: F5 Analysis+Rewriting
 Verdict: CONFIRMED
@@ -35,3 +35,7 @@ I traced the path and found no guard on it. CompiledRule.Rewrites.cs:68-71 sends
 `tests/TruthWeaver.Tests/QuantifierLayerAgreementTests.cs` runs every rewrite over 12 quantifier rules, every K3 value of two terms and every element list of up to three elements. Seven of the nine rewrites pass. `ExpandToNand` and `ExpandToNor` throw `InvalidOperationException: Unhandled expression type QuantifierExpression` from `NandNorExpander.Convert` (`NandNorExpander.cs:136`).
 
 The failing test is in the repo, skipped with this ticket number: theory `Rewrite_QuantifierRulesUnderAUniversalGate_KeepTheOracleValueForEveryContext_Test`. Acceptance: remove its `Skip` and the test passes. While the `Skip` is there, `dotnet format --severity info` reports xUnit1004, so CI is red on the format step until this ticket is done.
+
+## Answer
+
+Fixed. `NandNorExpander.Convert` (`src/TruthWeaver/Rewriting/NandNorExpander.cs`) gained the proposed `QuantifierExpression` case: `new QuantifierExpression(q.Kind, q.Variable, q.CollectionName, Convert(q.Body, conversion))`, matching every other rewrite's "keep the quantifier as an atom, convert only its body" rule. `Rewrite_QuantifierRulesUnderAUniversalGate_KeepTheOracleValueForEveryContext_Test` no longer has its `Skip` and passes for both `ExpandToNand` and `ExpandToNor`.

@@ -62,6 +62,11 @@ internal static class RuleRenderTree
         ConstantFormat? constants
     )
     {
+        if (description.QuantifierVariable is not null)
+        {
+            return BuildQuantifier(description, evaluated, ancestorSkipped, style, showArgumentValues, constants);
+        }
+
         AssertOperandCountsAligned(description, evaluated);
 
         bool skipped = ancestorSkipped || evaluated is { NotEvaluated: true };
@@ -88,6 +93,83 @@ internal static class RuleRenderTree
             showArgumentValues ? description.ArgumentText : null,
             description
         );
+    }
+
+    /// <summary>
+    /// Builds a quantifier node (ADR-0010 decision 7). Its <see cref="TraceNode"/> has one child per element, each
+    /// wrapping the body's own trace as its single child, not one child per written operand like every other
+    /// node, so <see cref="AssertOperandCountsAligned"/> does not apply here. Every element's body trace is folded
+    /// onto the outline's one body operand instead of zipped positionally: a body position counts as reached when
+    /// at least one element reached it, and its value is the common value when every element that reached it
+    /// agrees, or <see cref="TruthValue.Unknown"/> when elements disagree.
+    /// </summary>
+    private static RenderNode BuildQuantifier(
+        OutlineNode description,
+        TraceNode? evaluated,
+        bool ancestorSkipped,
+        OperatorStyle style,
+        bool showArgumentValues,
+        ConstantFormat? constants
+    )
+    {
+        bool skipped = ancestorSkipped || evaluated is { NotEvaluated: true };
+        RenderState state = skipped ? RenderState.Skipped : StateFor(evaluated?.Result);
+
+        TraceNode? bodyTrace = null;
+        if (evaluated is { NotEvaluated: false } quantifierTrace && quantifierTrace.Children.Count > 0)
+        {
+            bodyTrace = MergeElementBodies(quantifierTrace.Children);
+        }
+
+        RenderNode bodyNode = Build(description.Operands[0], bodyTrace, skipped, style, showArgumentValues, constants);
+        return new RenderNode(
+            StyledLabel(description, style, showArgumentValues, constants),
+            state,
+            [bodyNode],
+            OutlineNodeKind.Operator,
+            BaseLabel(description, style, constants),
+            showArgumentValues ? description.ArgumentText : null,
+            description
+        );
+    }
+
+    /// <summary>Takes each element's per-body trace (the single child of its per-element trace node) and merges them.</summary>
+    private static TraceNode MergeElementBodies(EquatableArray<TraceNode> elementTraces)
+    {
+        List<TraceNode> bodies = [with(elementTraces.Count)];
+        foreach (TraceNode element in elementTraces)
+        {
+            if (element.Children.Count != 1)
+            {
+                throw new InvalidOperationException(
+                    $"Expected one body trace for quantifier element '{element.Text}', found {element.Children.Count}."
+                );
+            }
+
+            bodies.Add(element.Children[0]);
+        }
+
+        return MergeBodyTraces(bodies);
+    }
+
+    /// <summary>Merges one body position's trace across every element that reached it, then recurses into its children.</summary>
+    private static TraceNode MergeBodyTraces(IReadOnlyList<TraceNode> bodies)
+    {
+        List<TraceNode> reached = [.. bodies.Where(b => !b.NotEvaluated)];
+        if (reached.Count == 0)
+        {
+            return bodies[0] with { Result = null, NotEvaluated = true, Children = EquatableArray<TraceNode>.Empty };
+        }
+
+        TruthValue? value = reached.All(b => b.Result == reached[0].Result) ? reached[0].Result : TruthValue.Unknown;
+        int childCount = reached.Max(b => b.Children.Count);
+        List<TraceNode> mergedChildren = [with(childCount)];
+        for (int i = 0; i < childCount; i++)
+        {
+            mergedChildren.Add(MergeBodyTraces([.. reached.Where(b => i < b.Children.Count).Select(b => b.Children[i])]));
+        }
+
+        return new TraceNode(reached[0].Text, value, false, new EquatableArray<TraceNode>(mergedChildren));
     }
 
     /// <summary>
@@ -159,7 +241,8 @@ internal static class RuleRenderTree
     /// Guards the positional-zip invariant this method depends on: <see cref="OutlineNode"/> and
     /// <see cref="TraceNode"/> are built by two independent recursive traversals (<c>CompiledRule.OutlineOf</c>
     /// and <see cref="Evaluation.Evaluator{TContext}"/> respectively. Nothing structural stops them from disagreeing on operand count if either traversal is edited carelessly.
-    /// Runs in every build: without it, a mismatch surfaces later as an <see cref="IndexOutOfRangeException"/>
+    /// Runs for every node except a quantifier (<see cref="BuildQuantifier"/> folds its trace instead, per ADR-0010
+    /// decision 7): without it, a mismatch surfaces later as an <see cref="IndexOutOfRangeException"/>
     /// from the positional zip below, which is far harder to diagnose than this guard's explicit message.
     /// </summary>
     private static void AssertOperandCountsAligned(OutlineNode description, TraceNode? evaluated)

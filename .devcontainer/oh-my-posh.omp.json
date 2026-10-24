@@ -1,0 +1,107 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "version": 3,
+  "final_space": true,
+  "console_title_template": "{{ .Folder }}",
+  "blocks": [
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "root",
+          "style": "plain",
+          "foreground": "#ffcc00",
+          "template": " root "
+        },
+        {
+          "type": "os",
+          "style": "diamond",
+          "leading_diamond": "╭─",
+          "foreground": "#ffffff",
+          "background": "#2f333e",
+          "properties": {
+            "macos": "",
+            "linux": "",
+            "windows": ""
+          }
+        },
+        {
+          "type": "path",
+          "style": "powerline",
+          "powerline_symbol": "",
+          "foreground": "#ffffff",
+          "background": "#61AFEF",
+          "properties": {
+            "style": "folder"
+          }
+        },
+        {
+          "type": "git",
+          "style": "powerline",
+          "powerline_symbol": "",
+          "foreground": "#193549",
+          "background": "#95ffa4",
+          "properties": {
+            "fetch_status": true,
+            "fetch_upstream_icon": true
+          },
+          "template": " {{ .HEAD }}{{if .Staging.Changed }}  {{ .Staging.String }}{{ end }}{{ if .Working.Changed }}  {{ .Working.String }}{{ end }} "
+        },
+        {
+          "type": "dotnet",
+          "style": "powerline",
+          "powerline_symbol": "",
+          "foreground": "#ffffff",
+          "background": "#512BD4",
+          "template": "  {{ .Full }} "
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "right",
+      "segments": [
+        {
+          "type": "executiontime",
+          "style": "plain",
+          "foreground": "#6f7683",
+          "properties": {
+            "threshold": 2000,
+            "style": "austin"
+          },
+          "template": " {{ .FormattedMs }} "
+        },
+        {
+          "type": "shell",
+          "style": "plain",
+          "foreground": "#6f7683",
+          "template": " {{ .Name }} "
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "status",
+          "style": "plain",
+          "foreground": "#ff5d5d",
+          "properties": {
+            "always_enabled": false
+          },
+          "template": " {{ .Code }} "
+        },
+        {
+          "type": "text",
+          "style": "plain",
+          "foreground": "#61AFEF",
+          "template": "╰─❯ "
+        }
+      ]
+    }
+  ]
+}

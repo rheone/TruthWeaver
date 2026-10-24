@@ -28,6 +28,10 @@
        validated against. The schema of the test file is the shipped one from the Testing project. -->
   <ItemGroup>
     <None Include="RuleTests/**" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../src/TruthWeaver.Testing/rule-test.schema.json" Link="RuleTests/rule-test.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <None
+      Include="../../src/TruthWeaver.Testing/rule-test.schema.json"
+      Link="RuleTests/rule-test.schema.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>

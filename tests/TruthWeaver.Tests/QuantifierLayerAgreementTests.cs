@@ -96,7 +96,7 @@ public sealed class QuantifierLayerAgreementTests
     /// <c>ExpandToNand</c> and <c>ExpandToNor</c> keep a quantifier whole, as <c>ExpandToPrimitives</c> does, and return
     /// a rule that still matches the oracle. Ultra review ticket 07: today they throw on any quantifier.
     /// </summary>
-    [Theory(Skip = "Ultra review ticket 07: ExpandToNand and ExpandToNor throw on a rule that contains FORALL or EXISTS.")]
+    [Theory]
     [InlineData("ExpandToNand")]
     [InlineData("ExpandToNor")]
     public Task Rewrite_QuantifierRulesUnderAUniversalGate_KeepTheOracleValueForEveryContext_Test(string rewrite)
@@ -136,9 +136,7 @@ public sealed class QuantifierLayerAgreementTests
     /// Rendering an evaluated decision of a quantifier rule never throws, whatever the element count. Ultra review
     /// ticket 08: today the renderers throw when a quantifier was evaluated.
     /// </summary>
-    [Fact(
-        Skip = "Ultra review ticket 08: rendering a decision with an evaluated quantifier throws (trace shape does not match the outline)."
-    )]
+    [Fact]
     public async Task Print_DecisionOfAQuantifierRule_DoesNotThrowForAnyElementCount_Test()
     {
         RuleCompiler<QuantifierContext> compiler = CreateCompiler();

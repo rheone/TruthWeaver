@@ -20,7 +20,7 @@ public sealed class SkillProvenanceTests
     private static readonly string[] Skills = ["csharp-async", "humanizer"];
 
     /// <summary>The real skills folder, table and lock agree.</summary>
-    [Fact(Skip = "Ignored until .claude/skills/README.md and skills-lock.json are restored or the skills table is rebuilt: see .scratch/repo-hygiene/issues/01-restore-skill-provenance-table.md.")]
+    [Fact]
     public void CheckTree_RealRepository_ReportsNoFailures_Test()
     {
         IReadOnlyList<string> failures = SkillProvenanceChecker.CheckTree(DocExampleChecker.FindRepositoryRoot());

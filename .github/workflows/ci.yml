@@ -90,3 +90,23 @@ jobs:
 
       - name: Check packages
         run: dotnet run scripts/check-packages.cs -- "$RUNNER_TEMP/packages"
+
+  devcontainer:
+    # Builds the dev image and checks that its SDK is the one global.json pins, so the container cannot drift from CI.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build --tag truthweaver-dev .devcontainer
+
+      - name: Check SDK version
+        run: |
+          expected=$(jq -r .sdk.version global.json)
+          actual=$(docker run --rm truthweaver-dev dotnet --version)
+          test "$expected" = "$actual" || { echo "global.json pins $expected but the image has $actual"; exit 1; }
+
+      - name: Check tools
+        run: docker run --rm truthweaver-dev bash -c 'rg --version && gh --version && pwsh -v && zsh --version && codegraph --version'

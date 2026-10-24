@@ -66,6 +66,8 @@ Simple variables write letters. After the eleventh distinct term, the letters re
 
 `PrintHtml(writer)` and `PrintHtml(writer, decision)` write the same fragment to a `TextWriter`. `PrintDot(writer)` and `PrintDot(writer, decision)` do the same for DOT. See [Write a printer to a TextWriter](examples.md#write-a-printer-to-a-textwriter).
 
+A `FORALL`/`EXISTS` [quantifier](strong-k3/quantifiers/README.md)'s decision coloring folds every element's evaluation of the body onto the one body node the rule's structure shows: the body node has a state only when at least one element reached it, and that state is the common state when every element that reached it agrees, or `tw-unknown` (`Unknown`, yellow in DOT) when elements disagree.
+
 ## Graphviz DOT
 
 ```csharp

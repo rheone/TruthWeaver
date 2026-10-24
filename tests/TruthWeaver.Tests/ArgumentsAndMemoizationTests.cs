@@ -162,9 +162,13 @@ public sealed class ArgumentsAndMemoizationTests
     private static RuleCompiler<RuleTestContext> CompilerWithHasRole(List<string>? invocationLog = null)
     {
         PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
-        builder = invocationLog is null
-            ? builder.AddStringArgPredicate("hasRole", "role", "Y")
-            : builder.Add(
+        if (invocationLog is null)
+        {
+            builder = builder.AddStringArgPredicate("hasRole", "role", "Y");
+        }
+        else
+        {
+            builder = builder.Add(
                 new PredicateSchema(
                     "hasRole",
                     "hasRole",
@@ -181,6 +185,7 @@ public sealed class ArgumentsAndMemoizationTests
                     );
                 }
             );
+        }
 
         return new RuleCompiler<RuleTestContext>(builder.Build());
     }

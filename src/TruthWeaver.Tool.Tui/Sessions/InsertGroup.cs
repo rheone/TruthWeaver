@@ -17,11 +17,18 @@ internal sealed record InsertGroup(string Title, RuleOperatorFamilies Families, 
     /// Gets the generator families that ticking this group in the Generate rule dialog allows. The check runs when the group is
     /// created, so a group that stands for no family fails at once and names itself, and not later in the Generate dialog.
     /// </summary>
-    public RuleOperatorFamilies Families { get; init; } =
-        Families != RuleOperatorFamilies.None
-            ? Families
-            : throw new ArgumentException(
-                $"The Insert group '{Title}' must stand for at least one generator family.",
-                nameof(Families)
+    public RuleOperatorFamilies Families { get; init; } = Validated(Families, Title);
+
+    private static RuleOperatorFamilies Validated(RuleOperatorFamilies families, string title)
+    {
+        if (families == RuleOperatorFamilies.None)
+        {
+            throw new ArgumentException(
+                $"The Insert group '{title}' must stand for at least one generator family.",
+                nameof(families)
             );
+        }
+
+        return families;
+    }
 }

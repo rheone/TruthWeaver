@@ -71,12 +71,12 @@ internal static class NormalForms
         }
 
         EquatableArray<Expression> operands = node is OrExpression o ? o.Operands : ((AndExpression)node).Operands;
-        List<List<Expression>>? acc = isInner
-            ?
-            [
-                [],
-            ]
-            : [];
+        List<List<Expression>>? acc = [];
+        if (isInner)
+        {
+            acc.Add([]);
+        }
+
         foreach (Expression operand in operands)
         {
             List<List<Expression>>? child = Distribute(operand, form, cap);
