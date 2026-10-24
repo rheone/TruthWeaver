@@ -256,12 +256,17 @@ internal static class TruthTablePrinter
     {
         for (int i = 0; i < valuation.Terms.Count; i++)
         {
-            yield return options.SimpleVariables
-                ? tokens.FormatVariable(
+            if (options.SimpleVariables)
+            {
+                yield return tokens.FormatVariable(
                     EquationPrinter.VariableLetters[i % EquationPrinter.VariableLetters.Length],
                     i / EquationPrinter.VariableLetters.Length
-                )
-                : tokens.FormatTerm(valuation.Terms[i], options.ShowArgumentValues);
+                );
+            }
+            else
+            {
+                yield return tokens.FormatTerm(valuation.Terms[i], options.ShowArgumentValues);
+            }
         }
     }
 

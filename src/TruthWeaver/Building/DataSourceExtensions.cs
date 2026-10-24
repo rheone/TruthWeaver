@@ -113,10 +113,13 @@ public static class DataSourceExtensions
             return LiteralKind.DateTimeOffset;
         }
 
-        return type == typeof(Guid)
-            ? LiteralKind.Guid
-            : throw new NotSupportedException(
-                $"'{type}' has no literal kind; use string, long, decimal, bool, DateTimeOffset or Guid."
-            );
+        if (type == typeof(Guid))
+        {
+            return LiteralKind.Guid;
+        }
+
+        throw new NotSupportedException(
+            $"'{type}' has no literal kind; use string, long, decimal, bool, DateTimeOffset or Guid."
+        );
     }
 }

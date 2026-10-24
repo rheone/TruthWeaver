@@ -290,10 +290,8 @@ public static class RuleTestCaseText
                 end--;
             }
 
-            string name = items[i].Children.FirstOrDefault(c => c.Key is YamlScalarNode { Value: "name" }).Value
-                is YamlScalarNode scalar
-                ? scalar.Value ?? string.Empty
-                : string.Empty;
+            YamlNode? nameValue = items[i].Children.FirstOrDefault(c => c.Key is YamlScalarNode { Value: "name" }).Value;
+            string name = nameValue is YamlScalarNode { Value: { } text } ? text : string.Empty;
             chunks.Add(new Chunk(name, start, end));
         }
 

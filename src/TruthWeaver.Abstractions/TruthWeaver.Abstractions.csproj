@@ -6,5 +6,4 @@
     <Description>Dependency-free contracts for TruthWeaver: TruthValue, Decision, Fault, IPredicate and the predicate schema types, for a project that only implements predicates.</Description>
     <PackageTags>rules engine;kleene;k3;three-valued logic;predicate;abstractions;truthweaver</PackageTags>
   </PropertyGroup>
-
 </Project>

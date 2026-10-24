@@ -38,33 +38,21 @@ internal sealed class RuleEditorView : Editor
     public EditorMarks Marks
     {
         get => this.marks;
-        set
-        {
-            this.marks = value;
-            this.SetNeedsDraw();
-        }
+        set => this.SetAndRedraw(ref this.marks, value);
     }
 
     /// <summary>Gets or sets the syntax kinds to color, computed from the current text after the compile.</summary>
     public SyntaxMarks Syntax
     {
         get => this.syntax;
-        set
-        {
-            this.syntax = value;
-            this.SetNeedsDraw();
-        }
+        set => this.SetAndRedraw(ref this.syntax, value);
     }
 
     /// <summary>Gets or sets the colors of the marks. The workbench sets it from the theme.</summary>
     public ThemePalette Palette
     {
         get => this.palette;
-        set
-        {
-            this.palette = value;
-            this.SetNeedsDraw();
-        }
+        set => this.SetAndRedraw(ref this.palette, value);
     }
 
     /// <summary>Gets the cursor as a 0-based column (X) and line (Y).</summary>
@@ -116,6 +104,13 @@ internal sealed class RuleEditorView : Editor
 
         this.Document!.Replace(start, length, text);
         this.MoveTo(start + text.Length);
+    }
+
+    /// <summary>Assigns <paramref name="value"/> to <paramref name="field"/> and redraws, for the color/mark properties above.</summary>
+    private void SetAndRedraw<T>(ref T field, T value)
+    {
+        field = value;
+        this.SetNeedsDraw();
     }
 
     /// <summary>Colors the marked characters of a visual line: the editor calls it for each line before it draws.</summary>
