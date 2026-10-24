@@ -21,7 +21,11 @@ public static class YamlRuleExtensions
     /// <returns>The compilation result.</returns>
     public static CompilationResult<TContext> CompileYaml<TContext>(this RuleCompiler<TContext> compiler, string yaml)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = YamlTreeParser.Parse(yaml, compiler.Options.MaxDepth);
+        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = YamlTreeParser.Parse(
+            yaml,
+            compiler.Options.MaxDepth,
+            compiler.Options.MaxNodeCount
+        );
         return CompileFromParsedYaml(compiler, root, diagnostics);
     }
 
@@ -39,7 +43,11 @@ public static class YamlRuleExtensions
     /// <returns>The compilation result.</returns>
     public static CompilationResult<TContext> CompileYaml<TContext>(this RuleCompiler<TContext> compiler, YamlNode node)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = YamlTreeParser.Parse(node, compiler.Options.MaxDepth);
+        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = YamlTreeParser.Parse(
+            node,
+            compiler.Options.MaxDepth,
+            compiler.Options.MaxNodeCount
+        );
         return CompileFromParsedYaml(compiler, root, diagnostics);
     }
 

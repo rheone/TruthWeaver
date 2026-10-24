@@ -219,6 +219,49 @@ public sealed class YamlRuleExtensionsTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
 
+    /// <summary>
+    /// A YAML tree only 6 anchor/alias levels deep (well within the default MaxDepth of 32), where each level is an
+    /// <c>and</c> of 6 references to the one below (one of them the anchor's own definition, the rest aliases),
+    /// expands to tens of thousands of nodes if fully materialized (roughly 6^6). YamlNodeCursor.ElementsOf walks an
+    /// aliased node again in full on every reference with no count limit of its own, so this reports
+    /// MaxNodeCountExceeded quickly instead of hanging or exhausting memory while TreeFormatReader reads it
+    /// (ticket 05).
+    /// </summary>
+    [Fact]
+    public void CompileYaml_ShallowHighFanoutAliasChain_ReportsMaxNodeCountInsteadOfExponentialBlowup_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(
+            PredicateRegistry<YamlTestContext>.CreateBuilder().Build(),
+            new CompilerOptions(MaxNodeCount: 50)
+        );
+        string yaml = BuildAliasFanoutYaml(levels: 6, fanout: 6);
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// Builds YAML tree-format text for a chain of <paramref name="levels"/> anchored <c>and</c> nodes, each
+    /// referencing the one below it <paramref name="fanout"/> times (once as the anchor's own definition, the rest
+    /// as aliases), so the fully expanded tree has roughly <paramref name="fanout"/>^<paramref name="levels"/> nodes
+    /// even though the YAML nests only <paramref name="levels"/> levels deep.
+    /// </summary>
+    private static string BuildAliasFanoutYaml(int levels, int fanout)
+    {
+        string level = "&a0 {const: true}";
+        for (int i = 1; i <= levels; i++)
+        {
+            string previousAnchor = $"a{i - 1}";
+            List<string> operands = [level];
+            operands.AddRange(Enumerable.Repeat($"*{previousAnchor}", fanout - 1));
+            level = $"&a{i} {{op: and, operands: [{string.Join(", ", operands)}]}}";
+        }
+
+        return level;
+    }
+
     /// <summary>A writer whose every write fails with a preset exception.</summary>
     private sealed class ThrowingWriter(Exception failure) : TextWriter
     {

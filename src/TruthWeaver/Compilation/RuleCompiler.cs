@@ -69,7 +69,11 @@ public sealed class RuleCompiler<TContext>(
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> CompileJson([StringSyntax(StringSyntaxAttribute.Json)] string json)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(json, this.Options.MaxDepth);
+        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(
+            json,
+            this.Options.MaxDepth,
+            this.Options.MaxNodeCount
+        );
         return this.CompileFromParsedJson(root, parseDiagnostics, json);
     }
 
@@ -83,7 +87,11 @@ public sealed class RuleCompiler<TContext>(
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> CompileJson(JsonElement element)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(element, this.Options.MaxDepth);
+        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(
+            element,
+            this.Options.MaxDepth,
+            this.Options.MaxNodeCount
+        );
         return this.CompileFromParsedJson(root, parseDiagnostics);
     }
 

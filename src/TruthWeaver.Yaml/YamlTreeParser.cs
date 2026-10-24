@@ -24,11 +24,24 @@ internal static class YamlTreeParser
     /// <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
     /// built tree that is too deep.
     /// </param>
+    /// <param name="maxNodeCount">
+    /// The node-count bound the reader applies while walking the tree, matching
+    /// <see cref="TruthWeaver.Compilation.CompilerOptions.MaxNodeCount"/>'s default. Exceeding it is reported as
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
+    /// built tree with too many nodes. An anchor aliased several times makes <see cref="YamlNodeCursor"/> walk its
+    /// target again in full on every reference, so a document only a few levels deep can still expand to far more
+    /// nodes than this bound allows (ticket 05); this check catches that during the read, before the whole
+    /// expansion is materialized.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the YAML itself was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string yaml, int maxDepth = 32)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
+        string yaml,
+        int maxDepth = 32,
+        int maxNodeCount = 512
+    )
     {
         YamlStream stream = [];
         try
@@ -60,17 +73,22 @@ internal static class YamlTreeParser
             return (null, diagnostics);
         }
 
-        return Parse(stream.Documents[0].RootNode, maxDepth);
+        return Parse(stream.Documents[0].RootNode, maxDepth, maxNodeCount);
     }
 
     /// <summary>Parses an already-materialized YAML tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="node">The YAML tree node.</param>
-    /// <param name="maxDepth">The nesting bound, as for <see cref="Parse(string, int)"/>.</param>
+    /// <param name="maxDepth">The nesting bound, as for <see cref="Parse(string, int, int)"/>.</param>
+    /// <param name="maxNodeCount">The node-count bound, as for <see cref="Parse(string, int, int)"/>.</param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the node was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(YamlNode node, int maxDepth = 32)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
+        YamlNode node,
+        int maxDepth = 32,
+        int maxNodeCount = 512
+    )
     {
         // YamlStream.Load resolves an anchor's alias into a reference to the same YamlNode, so an anchor aliased
         // inside its own body (`a: &x [*x]`) makes the node graph cyclic rather than a tree. YamlNodeCursor detects
@@ -79,7 +97,7 @@ internal static class YamlTreeParser
         // instead of either recursing forever or letting the exception reach the caller.
         try
         {
-            return TreeFormatReader.Read(new YamlNodeCursor(node), YamlNodeCursor.Vocabulary, maxDepth);
+            return TreeFormatReader.Read(new YamlNodeCursor(node), YamlNodeCursor.Vocabulary, maxDepth, maxNodeCount);
         }
         catch (YamlException ex)
         {
