@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F5 Analysis+Rewriting; L3 Externals+If+constants
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - ran the existing permanent test `ToNnf_OpaqueOperators_AreAtomsAndKeepTheirNot_Test` (tests/TruthWeaver.Tests/NormalFormTests.cs:42-50), whose `[InlineData("NOT If(a, b, c)", "NOT If(a, b, c)")]` passed, confirming `ToNnf` leaves `NOT` sitting above `If` unchanged (not NNF under the K3 reference); NormalForms.cs:268-269 groups `IfExpression` with `CoalesceExpression`/`InspectionExpression` under the comment "Not information-monotone: no NOT is pushed in", while docs/strong-k3/specification/semantics.md:184 and docs/strong-k3/functions/if.md:16 both classify `If` as a monotone Strong Kleene connective and docs/rewriting-rules.md:320 and :375 repeat the "not information-monotone"/"atom" claim for `If` - the code behavior (If stays an atom) and the doc/code contradiction both hold exactly as described.
 Blocked by: none
 
 ## Finding F5.4: NormalForms keeps If as an atom as if it were not monotone, but the K3 reference says it is a monotone connective

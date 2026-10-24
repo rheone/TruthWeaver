@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test showed the element projector called twice for two distinct from(line, ...) queries over one element (ADR-0010's amendment says it "runs at the first query of that element"), and a second throwaway test showed an outer from("cfg", "$.limit") reference inside a 3-element FORALL body queried the outer FakeDataSource 3 times instead of the 1 ADR-0006 decision 11 promises ("each (source, query) pair is queried at most once").
 Blocked by: none
 
 ## Finding F8.8: The element projector runs once per distinct query, not once per element as ADR-0010 states

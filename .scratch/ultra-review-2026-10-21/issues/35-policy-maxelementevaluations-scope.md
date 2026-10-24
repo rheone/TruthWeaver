@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F9 Policies
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - three `Deny` policies each running the same `FORALL(x IN items, elementTrue)` over 2 elements (each under a `MaxElementEvaluations = 5` bound and answering True standalone) combine in one `PolicySet` so the third policy's quantifier hits the shared count at element 2, forces that policy to Unknown, and the `ElementEvaluationLimitExceededException` fault never appears in `PolicyDecision.Decision.Faults`.
 Blocked by: none
 
 ## Finding F9.5: MaxElementEvaluations is a whole-set bound but is documented as per evaluation

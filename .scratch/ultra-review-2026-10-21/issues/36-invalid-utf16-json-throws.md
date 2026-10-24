@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: T2 Surfaces
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `RuleCompiler.CompileJson("{\"predicate\":\"a\uD800\"}")` throws `System.ArgumentException` ("Cannot transcode invalid UTF-16 string to UTF-8 JSON text.") from `JsonDocument.Parse` inside `JsonTreeParser.Parse` (src/TruthWeaver/Json/JsonTreeParser.cs:34), which only catches `JsonException`, not `ArgumentException`.
 Blocked by: none
 
 ## Finding T2.6: Invalid UTF-16 in JSON input throws ArgumentException instead of a diagnostic or a false result

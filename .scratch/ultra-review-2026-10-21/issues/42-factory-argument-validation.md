@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts; F6 Predicates A; F7 Predicates B
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - Add(schema, null!) registers without error (PredicateRegistryBuilder.cs:34-41, no ArgumentNullException.ThrowIfNull), Add(null!, evaluate) throws NullReferenceException not ArgumentException, StringPredicates.StartsWith(name, null! selector) registers without throwing ArgumentNullException, and NullBehaviorScope.Resolve((NullBehavior)3, family) returns the undefined value unchanged instead of throwing ArgumentOutOfRangeException.
 Blocked by: none
 
 ## Finding F8.7: Lambda registration accepts a null delegate and fails on every evaluation instead of at registration

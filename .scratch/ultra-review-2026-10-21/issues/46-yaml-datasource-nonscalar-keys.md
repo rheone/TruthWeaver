@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test parsed `? [a]\n: 1\n? [b]\n: 2\n` with YamlDataSource.Parse (no exception), and `$['']` matched exactly one node (value 2), confirming the first entry was silently overwritten.
 Blocked by: none
 
 ## Finding F8.10: YAML mapping keys that are not scalars all collapse to an empty-string key, and the data is silently overwritten

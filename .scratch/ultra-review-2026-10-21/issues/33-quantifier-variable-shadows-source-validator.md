@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - declaring outer source "user" with `JsonQueryValidator.Instance`, then compiling `FORALL(user IN orders, readsTotal(val: from("user", "total")))` where the `orders` element source accepts the flat key `"total"` (not JSONPath), fails to compile with `TRE0025` (`MalformedDataQuery`) because `DeclareElementSource` keeps the outer validator for the shadowing variable name.
 Blocked by: none
 
 ## Finding F8.4: A quantifier variable that shadows a declared source keeps the hidden source's validator for element queries

@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: T2 Surfaces
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `RuleBuilder.Predicate("scoreAbove", ("min", double.NaN)).Compile(compiler)` throws `System.ArgumentException` ("positive and negative infinity cannot be written as valid JSON") from `Utf8JsonWriter.WriteNumberValue` via `RuleBuilder.ToJson()` (src/TruthWeaver/Building/RuleBuilder.cs:761) called from `Compile` (src/TruthWeaver/Building/RuleBuilder.cs:792), instead of returning a diagnostic.
 Blocked by: none
 
 ## Finding T2.7: RuleBuilder accepts double NaN/Infinity arguments, then Compile throws

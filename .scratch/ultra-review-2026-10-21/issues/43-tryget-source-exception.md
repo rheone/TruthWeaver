@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - calling TryGetAsync<long> against an IDataSource whose QueryAsync throws HttpRequestException let the exception propagate out of TryGetAsync instead of returning DataReadResult<T>.Failure(SourceError, ...), confirming DataSourceExtensions.cs:55 has no try/catch around the QueryAsync await.
 Blocked by: none
 
 ## Finding F8.5: TryGetAsync does not catch a source exception, so its 'result instead of throwing' contract fails for a thrown backend failure

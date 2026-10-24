@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts; L5 Least surprise
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - docs/data-sources.md:307 still reads "Yes (`TypeMismatch`, or `UnsupportedType` for `null`)" while VariableFailureKind (src/TruthWeaver.Abstractions/VariableFailureKind.cs) has no UnsupportedType member and Evaluator.cs:797-804 maps every DataQueryErrorKind.UnsupportedType result to VariableFailureKind.TypeMismatch regardless of node kind.
 Blocked by: none
 
 ## Finding F8.11: The docs name a fault kind 'UnsupportedType' that faults never carry

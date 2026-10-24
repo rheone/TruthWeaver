@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F6 Predicates A
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `docs/strong-k3/predicates/README.md`'s index sentence says a null element has no effect outside `HasCount`, but `CollectionPredicates.cs` (`IsSubsetOf` at line 472-473, `BuildSetEquals` at line 983-987) makes a null selected element change the answer, and the predicates' own pages (`collection-issubsetof.md`, `collection-setequals.md`) document exactly that: a null element is "not in the argument array" (IsSubsetOf) or "an extra member of the set" (SetEquals), contradicting the index.
 Blocked by: none
 
 ## Finding F6.2: Predicates index says a null element has no effect outside HasCount, but IsSubsetOf and SetEquals answer False because of one

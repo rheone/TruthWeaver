@@ -24,6 +24,8 @@ The description names IFF and XNOR as aliases, with no 'formerly'.
 
 not verified (medium or low)
 
+Verified 2026-10-24: reproduced - src/TruthWeaver/Ast/OperatorDefinitions.cs:55 reads "Logical biconditional (IFF, formerly XNOR) ...", while docs/strong-k3/specification/operations.md:15 lists "Aliases `IFF` and `XNOR`" and both the DSL grammar (docs/rule-text.md:33, `infix_op` includes `"XNOR"`) and `TreeFormatOpNames.BuildReadTable` (src/TruthWeaver/Ast/TreeFormatOpNames.cs:57, `table["xnor"] = "Equivalent"`) still accept XNOR as live input.
+
 ## Acceptance criteria
 
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.

@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F4 Evaluation
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - the repo's own pinned test EvaluateAsync_IncludeTrace_FillsTheFlatTrace_Test asserts decision.Trace.Entries.Select(e => e.Text) equals exactly ["a", "b"] for the rule "a AND b" with no "AND" entry, contradicting CONTEXT.md's "one entry per node visited or skipped" and EvaluationOptions.IncludeTrace's "every term and operator" (confirmed by running that existing test).
 Blocked by: none
 
 ## Finding F4.4: The flat trace logs no operator nodes, but CONTEXT.md and EvaluationOptions.IncludeTrace say it does

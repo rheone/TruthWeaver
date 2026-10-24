@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F9 Policies
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a `PolicySet` target compiled Lenient against a registry missing `isAdmin` memoizes Unknown for the term, then a sibling policy's condition compiled Strict against a registry where `isAdmin` always returns True also comes back Unknown (confirmed True when evaluated standalone) because both share the same `(scope, TermIdentity)` memo key with no registry component.
 Blocked by: none
 
 ## Finding F9.4: Term memo is shared across rules compiled with different registries

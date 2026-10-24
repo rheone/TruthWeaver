@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F7 Predicates B
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - compiling and evaluating `isWeekday(days: ["Monday"], offset: "-05:00")` against `default(DateTimeOffset)` gives `Decision.Result == Unknown` with exactly one `Fault` whose `Exception` is an `ArgumentOutOfRangeException` thrown from `instant.ToOffset(offset)` inside `BindDays`'s test lambda.
 Blocked by: none
 
 ## Finding F7.4: Calendar predicates fault on a valid instant near DateTimeOffset.MinValue/MaxValue, including default(DateTimeOffset)

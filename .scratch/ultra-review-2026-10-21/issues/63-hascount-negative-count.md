@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F6 Predicates A
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test confirmed `CollectionPredicates.HasCountLessThan`'s schema has `ArgumentValidator == null`, and evaluating it with `count: -1` against `["a"]` returns `False` (and `HasCountGreaterThanOrEqualTo` with `count: -1` returns `True`), with no compile or evaluation diagnostic either way.
 Blocked by: none
 
 ## Finding F6.3: Collection HasCount predicates accept a negative count with no diagnostic

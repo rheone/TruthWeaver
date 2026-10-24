@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: L5 Least surprise
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - reading the current source confirms DecisionExplainer.Phrase and TraceReasons.ForLeaf both render a faulted term as "could not be evaluated" while TraceReasons.Skipped and the notEvaluated JSON field (reserved for short-circuit skips per ADR-0002/CONTEXT.md) use "Not evaluated", the near-identical wording the ticket describes.
 Blocked by: none
 
 ## Finding L5.4: "could not be evaluated" (faulted) and "not evaluated" (skipped) are near-identical words for different states

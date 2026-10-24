@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: L3 Externals+If+constants; L5 Least surprise
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `JsonNodeCursor.TryGetTruthValue` and `YamlNodeCursor.TryGetTruthValue` both call `TruthValueText.TryParseLetter` and accept `T`/`F`/`U`, contradicting docs/rule-text.md:204 ("JSON and YAML read the words only") and docs/adr/0005-strong-k3-language-surface.md:579 ("JSON and YAML do not read the letters"), while rule-tree.schema.json's `constNode` pattern (`[TtFfUu]`), docs/strong-k3/specification/syntax.md:16 and docs/rule-formats.md:74 all agree with the code that the letters are accepted; separately, ADR decision 13 at docs/adr/0005-strong-k3-language-surface.md:358 gives the Unknown literal as `{"op": "unknown"}` though the code and ADR decision 3 itself use `{"const": "unknown"}`; and the TRE0014 `ConstMessage`/`ConstExpected` text at src/TruthWeaver/Json/JsonNodeCursor.cs:24-25 and src/TruthWeaver.Yaml/YamlNodeCursor.cs:24-25 names only the three words, omitting the letters the parser accepts.
 Blocked by: none
 
 ## Finding L3.5: rule-text.md and ADR-0005 say JSON/YAML do not read the constant letters, but the readers, the schema and syntax.md accept them
