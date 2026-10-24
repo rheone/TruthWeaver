@@ -232,16 +232,18 @@ public sealed class RuleCompiler<TContext>(
         this.LogDiagnostics(diagnostics);
 
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
-        CompiledRule<TContext>? compiled =
-            !hasErrors && tree is not null
-                ? new CompiledRule<TContext>(
-                    tree,
-                    this.registry,
-                    this.logger,
-                    this.options,
-                    NoteCollector.Collect(expandedRoot, tree)
-                )
-                : null;
+        CompiledRule<TContext>? compiled = null;
+        if (!hasErrors && tree is not null)
+        {
+            compiled = new CompiledRule<TContext>(
+                tree,
+                this.registry,
+                this.logger,
+                this.options,
+                NoteCollector.Collect(expandedRoot, tree)
+            );
+        }
+
         return new CompilationResult<TContext>(compiled, new EquatableArray<Diagnostic>(diagnostics));
     }
 

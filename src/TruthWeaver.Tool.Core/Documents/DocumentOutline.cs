@@ -84,12 +84,15 @@ public static class DocumentOutline
             return ToolResults.Failure<IReadOnlyList<DocumentNode>>(diagnostics);
         }
 
-        return document.Format == RuleFormat.Text
-            ? ToolResults.Failure<IReadOnlyList<DocumentNode>>(
+        if (document.Format == RuleFormat.Text)
+        {
+            return ToolResults.Failure<IReadOnlyList<DocumentNode>>(
                 ToolDiagnosticCodes.NotARule,
                 $"'{System.IO.Path.GetFileName(path)}' is rule text, which has no paths. A path selects a rule inside a JSON or YAML document."
-            )
-            : Browse(document.Source.Text, document.Format);
+            );
+        }
+
+        return Browse(document.Source.Text, document.Format);
     }
 
     /// <summary>
@@ -177,10 +180,12 @@ public static class DocumentOutline
                             RuleLabel(
                                 keys,
                                 name =>
-                                    mapping.Children.FirstOrDefault(c => (c.Key as YamlScalarNode)?.Value == name).Value
-                                        is YamlScalarNode { Value: { } value }
-                                        ? value
-                                        : null
+                                {
+                                    YamlNode? found = mapping
+                                        .Children.FirstOrDefault(c => (c.Key as YamlScalarNode)?.Value == name)
+                                        .Value;
+                                    return found is YamlScalarNode { Value: { } value } ? value : null;
+                                }
                             )
                         )
                     );

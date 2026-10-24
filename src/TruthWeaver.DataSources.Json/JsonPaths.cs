@@ -43,11 +43,15 @@ internal static partial class JsonPaths
     private static int? ReadPosition(string message)
     {
         Match match = PositionPattern().Match(message);
-        return
+        if (
             match.Success
             && int.TryParse(match.Groups[1].ValueSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int position)
-            ? position
-            : null;
+        )
+        {
+            return position;
+        }
+
+        return null;
     }
 
     [GeneratedRegex(@"at position (\d+)", RegexOptions.CultureInvariant)]

@@ -1,6 +1,6 @@
 # 01: Restore the skill provenance table and un-ignore its real-repository test
 
-**Status:** ready-for-agent
+**Status:** done
 **Type:** task
 **Blocked by:** None (can start immediately)
 **Source:** `dotnet test` run on 2026-10-22 before the commit of the manual-intervention work
@@ -14,11 +14,11 @@ Decide first whether the table is still wanted:
 
 Either way, the skip reason text in `tests/TruthWeaver.Tests/ReferenceDocs/SkillProvenanceTests.cs` is removed with it.
 
-- [ ] `CheckTree_RealRepository_ReportsNoFailures_Test` runs without `Skip` and passes, or the test and checker check are removed with the reason recorded under `## Answer`
-- [ ] The `Skip` attribute is gone from `SkillProvenanceTests.cs`
-- [ ] `dotnet format --verify-no-changes --severity info` reports no xUnit1004 for this class (a `Skip` is an xUnit1004 finding in the CI format gate)
-- [ ] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
+- [x] `CheckTree_RealRepository_ReportsNoFailures_Test` runs without `Skip` and passes, or the test and checker check are removed with the reason recorded under `## Answer`
+- [x] The `Skip` attribute is gone from `SkillProvenanceTests.cs`
+- [x] `dotnet format --verify-no-changes --severity info` reports no xUnit1004 for this class (a `Skip` is an xUnit1004 finding in the CI format gate)
+- [x] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
 
 ## Answer
 
-Not yet answered. The owner decides whether the provenance table stays.
+Restored. `.claude/skills/README.md` is back (`git show 0c73f17^:.claude/skills/README.md`), unchanged from before the deletion: its 23 rows already match the 23 skill directories now in the tree, because `voice-of-robert` (the skill with no provenance row, the proximate cause of the original failure) was a personal, host-level skill that should never have been checked into this repository's `.claude/skills/` and has been removed instead of given a row. The `Skip` is gone from `CheckTree_RealRepository_ReportsNoFailures_Test`, and the test passes.

@@ -147,25 +147,8 @@ public static class RuleValidator
                 ValidationLevels.PredicateSchema,
                 () => PredicateSchemaLevel(rule, compiled, statistics, options, unlimited)
             ),
-            Level(
-                options,
-                ValidationLevels.Analysis,
-                () =>
-                    compiled is null
-                        ? NotCompiled(ValidationLevels.Analysis)
-                        : ValidationLevelReport.Ran(ValidationLevels.Analysis, analysis)
-            ),
-            Level(
-                options,
-                ValidationLevels.ConversionCheck,
-                () =>
-                    compiled is null
-                        ? NotCompiled(ValidationLevels.ConversionCheck)
-                        : ValidationLevelReport.Ran(
-                            ValidationLevels.ConversionCheck,
-                            CheckConversions(compiled, Compiler(unlimited with { Lints = LintRules.None }), print)
-                        )
-            ),
+            Level(options, ValidationLevels.Analysis, () => AnalysisLevel(compiled, analysis)),
+            Level(options, ValidationLevels.ConversionCheck, () => ConversionCheckLevel(compiled, unlimited, print)),
         ];
 
         ValidationReport report = new(rule, new EquatableArray<ValidationLevelReport>(levels), statistics);
@@ -183,12 +166,15 @@ public static class RuleValidator
 
     private static ValidationLevelReport TreeSchemaLevel(LoadedRule rule)
     {
-        return rule.Format == RuleFormat.Text
-            ? ValidationLevelReport.Skip(
+        if (rule.Format == RuleFormat.Text)
+        {
+            return ValidationLevelReport.Skip(
                 ValidationLevels.TreeSchema,
                 "The rule is rule text. The tree schema applies to JSON and YAML rules."
-            )
-            : ValidationLevelReport.Ran(ValidationLevels.TreeSchema, TreeSchemaValidator.Validate(rule.Text, rule.Format));
+            );
+        }
+
+        return ValidationLevelReport.Ran(ValidationLevels.TreeSchema, TreeSchemaValidator.Validate(rule.Text, rule.Format));
     }
 
     private static ValidationLevelReport PredicateSchemaLevel(
@@ -240,6 +226,33 @@ public static class RuleValidator
         return ValidationLevelReport.Ran(
             ValidationLevels.PredicateSchema,
             result.Diagnostics.Where(d => PredicateSchemaCodes.Contains(d.Code))
+        );
+    }
+
+    private static ValidationLevelReport AnalysisLevel(CompiledRule<StubAssignment>? compiled, List<Diagnostic> analysis)
+    {
+        if (compiled is null)
+        {
+            return NotCompiled(ValidationLevels.Analysis);
+        }
+
+        return ValidationLevelReport.Ran(ValidationLevels.Analysis, analysis);
+    }
+
+    private static ValidationLevelReport ConversionCheckLevel(
+        CompiledRule<StubAssignment>? compiled,
+        CompilerOptions unlimited,
+        Func<CompiledRule<StubAssignment>, RuleFormat, string> print
+    )
+    {
+        if (compiled is null)
+        {
+            return NotCompiled(ValidationLevels.ConversionCheck);
+        }
+
+        return ValidationLevelReport.Ran(
+            ValidationLevels.ConversionCheck,
+            CheckConversions(compiled, Compiler(unlimited with { Lints = LintRules.None }), print)
         );
     }
 

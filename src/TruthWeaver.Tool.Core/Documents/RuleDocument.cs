@@ -445,12 +445,15 @@ public sealed class RuleDocument
     private ToolResult<string> PrintDefinitions(string document, RuleFormat format, bool pretty)
     {
         string? printed = RulePrinter.PrintDefinitions((JsonObject)JsonNode.Parse(document)!, format, this.settings, pretty);
-        return printed is null
-            ? ToolResults.Failure<string>(
+        if (printed is null)
+        {
+            return ToolResults.Failure<string>(
                 ToolDiagnosticCodes.WriteBackFailed,
                 "The rule cannot be printed with its definitions: a definition body or the rule does not compile on its own."
-            )
-            : ToolResults.Success(printed);
+            );
+        }
+
+        return ToolResults.Success(printed);
     }
 
     // A change made by the author: one undo step, and no redo steps left.

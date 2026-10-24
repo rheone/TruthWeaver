@@ -249,12 +249,15 @@ internal sealed partial class InspectController
 
     private static string PredicateKinds(PaletteEntry entry)
     {
-        return entry.Arguments.Count == 0
-            ? "none"
-            : string.Join(
-                ", ",
-                entry.Arguments.Select(a => $"{a.Name}: {a.Kind}{(a.Required ? string.Empty : " (optional)")}")
-            );
+        if (entry.Arguments.Count == 0)
+        {
+            return "none";
+        }
+
+        return string.Join(
+            ", ",
+            entry.Arguments.Select(a => $"{a.Name}: {a.Kind}{(a.Required ? string.Empty : " (optional)")}")
+        );
     }
 
     // The threshold and how many operands are True, False and Unknown now, for a cardinality operator.

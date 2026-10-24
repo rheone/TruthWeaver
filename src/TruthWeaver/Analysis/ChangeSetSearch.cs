@@ -202,12 +202,7 @@ internal sealed class ChangeSetSearch
 
         int term = Analyzer.TermOf(this.bdd, node);
         TruthValue? fact = this.facts[term];
-        int keep = fact is { } known
-            ? this.Cofactor(node, term, known)
-            : this.bdd.And(
-                this.bdd.And(this.Cofactor(node, term, TruthValue.True), this.Cofactor(node, term, TruthValue.False)),
-                this.Cofactor(node, term, TruthValue.Unknown)
-            );
+        int keep = fact is { } known ? this.Cofactor(node, term, known) : this.CofactorOverEveryValue(node, term);
 
         List<Option> result = [new Option(term, null, keep)];
         if (!this.isFixed[term])
@@ -232,6 +227,15 @@ internal sealed class ChangeSetSearch
     private int Cofactor(int node, int term, TruthValue value)
     {
         return Analyzer.Cofactor(this.bdd, node, term, value);
+    }
+
+    /// <summary>The fact at <paramref name="term"/> is unknown: the intersection of its cofactor under every value.</summary>
+    private int CofactorOverEveryValue(int node, int term)
+    {
+        return this.bdd.And(
+            this.bdd.And(this.Cofactor(node, term, TruthValue.True), this.Cofactor(node, term, TruthValue.False)),
+            this.Cofactor(node, term, TruthValue.Unknown)
+        );
     }
 
     /// <summary>

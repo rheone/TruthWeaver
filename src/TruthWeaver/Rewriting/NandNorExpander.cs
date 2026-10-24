@@ -132,6 +132,15 @@ internal static class NandNorExpander
             CoalesceExpression c => new CoalesceExpression(new EquatableArray<Expression>(ConvertAll(c.Operands, conversion))),
             ThresholdExpression t => ConvertThreshold(t, ConvertAll(t.Operands, conversion), conversion),
 
+            // The quantifier stays an atom (ADR-0010 decision 9): n is known only at evaluation time, so it cannot
+            // reduce to a fixed NAND/NOR formula. Only its body converts.
+            QuantifierExpression q => new QuantifierExpression(
+                q.Kind,
+                q.Variable,
+                q.CollectionName,
+                Convert(q.Body, conversion)
+            ),
+
             // PrimitiveExpander has already removed every other node type.
             _ => throw new InvalidOperationException($"Unhandled expression type '{node.GetType().Name}'."),
         };

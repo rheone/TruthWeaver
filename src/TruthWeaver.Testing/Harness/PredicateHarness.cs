@@ -72,21 +72,29 @@ public static class PredicateHarness
             outcomes.Add(CallOutcome(harnessCase, first, options));
         }
 
-        outcomes.Add(
-            differences.Count == 0
-                ? new(
+        if (differences.Count == 0)
+        {
+            outcomes.Add(
+                new(
                     PredicateHarnessCheck.Determinism,
                     PredicateHarnessStatus.Passed,
                     "all argument sets",
                     $"Two calls gave the same answer for each of {cases.Count} argument sets."
                 )
-                : new(
+            );
+        }
+        else
+        {
+            outcomes.Add(
+                new(
                     PredicateHarnessCheck.Determinism,
                     PredicateHarnessStatus.Failed,
                     "all argument sets",
                     $"Two calls with the same arguments and context gave different answers: {string.Join("; ", differences)}."
                 )
-        );
+            );
+        }
+
         outcomes.AddRange(SchemaOutcomes(schema, reads));
         outcomes.Add(await CancellationOutcomeAsync(evaluate, context, baseline).ConfigureAwait(false));
         return new PredicateHarnessReport(schema.Name, outcomes);
@@ -209,17 +217,20 @@ public static class PredicateHarness
             );
         }
 
-        return problems.Count > 0
-            ? problems
-            :
-            [
-                new(
-                    PredicateHarnessCheck.SchemaConformance,
-                    PredicateHarnessStatus.Passed,
-                    "all arguments",
-                    "The predicate reads every declared argument and no undeclared argument."
-                ),
-            ];
+        if (problems.Count > 0)
+        {
+            return problems;
+        }
+
+        return
+        [
+            new(
+                PredicateHarnessCheck.SchemaConformance,
+                PredicateHarnessStatus.Passed,
+                "all arguments",
+                "The predicate reads every declared argument and no undeclared argument."
+            ),
+        ];
     }
 
     private static async Task<PredicateHarnessOutcome> CancellationOutcomeAsync<TContext>(
