@@ -105,6 +105,17 @@ internal static class DefinitionExpander
         List<Diagnostic> diagnostics
     )
     {
+        // Counts every node ExpandNode produces (or, past the limit, merely attempts), mirroring
+        // RuleNodeCompiler.Build's own nodeCount. Without this, a shallow but high-fanout chain of 'let' uses (each
+        // level AND-ing many uses of the one below) expands to fanout^depth nodes before Build ever gets to apply
+        // MaxNodeCount, exhausting memory on a tiny document (ticket 04). Checking it on entry to every ExpandNode
+        // call, before any recursion for that node, keeps the work past the limit to O(1) per call instead of
+        // letting it keep recursing into UseNode bodies: once nodeCount is already over budget, every call this one
+        // makes to expand an operand or a use's body also trips the same check immediately and returns without
+        // expanding further.
+        private int nodeCount;
+        private bool nodeLimitReported;
+
         /// <summary>Recursively expands one raw node, substituting parameter references and expanding uses as they are found.</summary>
         /// <param name="node">The node to expand.</param>
         /// <param name="parameters">The current definition body's parameter bindings (name to already-expanded argument), or <see langword="null"/> outside one.</param>
@@ -117,6 +128,33 @@ internal static class DefinitionExpander
             HashSet<string> unused
         )
         {
+            this.nodeCount++;
+            if (this.nodeCount > options.MaxNodeCount)
+            {
+                if (!this.nodeLimitReported)
+                {
+                    this.nodeLimitReported = true;
+                    diagnostics.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.MaxNodeCountExceeded,
+                            $"Rule exceeds the maximum node count of {options.MaxNodeCount}.",
+                            node.Span,
+                            expected: $"at most {options.MaxNodeCount} nodes",
+                            found: "more nodes than that",
+                            path: node.Path
+                        )
+                    );
+                }
+
+                // A placeholder, not the real expansion: once over budget, nothing further is expanded, so the
+                // returned tree is incomplete. RuleNodeCompiler.Build never runs on it for real (the error
+                // diagnostic above makes Compile return a null tree), so the placeholder's shape does not matter.
+                return new ErrorNode(node.Span) with
+                {
+                    Path = node.Path,
+                };
+            }
+
             return node switch
             {
                 // Only ever produced inside the owning definition's own body, so parameters is never null here in a

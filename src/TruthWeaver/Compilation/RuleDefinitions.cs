@@ -58,14 +58,22 @@ public sealed class RuleDefinitions
 
     /// <summary>Reads the definitions and uses of rule text.</summary>
     /// <param name="text">The rule text.</param>
+    /// <param name="options">
+    /// The resource limits to read by: <see cref="CompilerOptions.MaxDepth"/> bounds the parse, and
+    /// <see cref="CompilerOptions.MaxDefinitionDepth"/> and <see cref="CompilerOptions.MaxNodeCount"/> bound the walk
+    /// that maps compiled nodes back to their sources (<see cref="SourcesOf"/>), the same way they bound an actual
+    /// compile. Defaults to <see cref="CompilerOptions.Default"/>, so a reader that supplies none still cannot be
+    /// made to hang or exhaust memory by an untrusted document (ticket 04).
+    /// </param>
     /// <returns>The definitions and uses, or the syntax diagnostics when the text cannot be read.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
-    public static RuleDefinitions ReadText(string text)
+    public static RuleDefinitions ReadText(string text, CompilerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(text);
-        return FromParsed(root, diagnostics, null);
+        CompilerOptions effective = options ?? CompilerOptions.Default;
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(text, effective.MaxDepth);
+        return FromParsed(root, diagnostics, null, effective);
     }
 
     /// <summary>Reads the definitions and uses of a rule in the JSON tree format.</summary>
@@ -120,26 +128,36 @@ public sealed class RuleDefinitions
     /// <param name="locator">
     /// Finds the span of a JSON path, for a front end whose nodes carry no span (JSON), or <see langword="null"/>.
     /// </param>
+    /// <param name="options">
+    /// The resource limits the source-mapping walk (<see cref="Reader.Expand"/>) enforces, matching whatever a real
+    /// compile of the same document would use. Defaults to <see cref="CompilerOptions.Default"/> when not supplied,
+    /// so <see cref="ReadJson"/> and <c>YamlRuleDefinitions.ReadYaml</c>, which take no options of their own, still
+    /// cannot be made to hang or exhaust memory (ticket 04).
+    /// </param>
     /// <returns>The result.</returns>
-    internal static RuleDefinitions FromParsed(RuleNode? root, IReadOnlyList<Diagnostic> diagnostics, JsonSpanLocator? locator)
+    internal static RuleDefinitions FromParsed(
+        RuleNode? root,
+        IReadOnlyList<Diagnostic> diagnostics,
+        JsonSpanLocator? locator,
+        CompilerOptions? options = null
+    )
     {
-        EquatableArray<Diagnostic> all = new(diagnostics);
         if (root is null || diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
         {
             return new RuleDefinitions(
                 null,
-                all,
+                new EquatableArray<Diagnostic>(diagnostics),
                 EquatableArray<DefinitionDeclaration>.Empty,
                 EquatableArray<DefinitionUse>.Empty,
                 []
             );
         }
 
-        Reader reader = new(locator);
+        Reader reader = new(locator, options ?? CompilerOptions.Default);
         reader.Read(root);
         return new RuleDefinitions(
             root,
-            all,
+            new EquatableArray<Diagnostic>([.. diagnostics, .. reader.Diagnostics]),
             new EquatableArray<DefinitionDeclaration>(reader.Definitions),
             new EquatableArray<DefinitionUse>(reader.Uses),
             reader.Sources
@@ -167,7 +185,7 @@ public sealed class RuleDefinitions
     /// Reads one parsed document: lists its definitions and uses, and walks the rule as the expander expands it so that
     /// each node of the compiled rule gets the source paths it comes from.
     /// </summary>
-    private sealed class Reader(JsonSpanLocator? locator)
+    private sealed class Reader(JsonSpanLocator? locator, CompilerOptions options)
     {
         // The first declaration of each name, as the expander keeps it; a repeated name is a collision the compiler reports.
         private readonly Dictionary<string, (DefinitionNode Node, string Path)> byName =
@@ -178,11 +196,20 @@ public sealed class RuleDefinitions
         private readonly List<(UseNode Node, string? Definition, string Path)> uses = [];
         private readonly Dictionary<string, List<string>> expandedPathsOfUse = [with(StringComparer.Ordinal)];
 
+        // Counts every node Expand visits, mirroring DefinitionExpander's own nodeCount (ticket 04): this walk
+        // follows the same 'let' uses a real compile would expand, so a shallow but high-fanout chain of definitions
+        // can make it recurse just as explosively. Checked on entry to Expand, before it records anything or
+        // recurses into an operand or a use's body, so work past the limit stays O(1) per call.
+        private int nodeCount;
+        private bool nodeLimitReported;
+
         public List<DefinitionDeclaration> Definitions { get; } = [];
 
         public List<DefinitionUse> Uses { get; } = [];
 
         public Dictionary<string, List<string>> Sources { get; } = [with(StringComparer.Ordinal)];
+
+        public List<Diagnostic> Diagnostics { get; } = [];
 
         public void Read(RuleNode root)
         {
@@ -268,6 +295,27 @@ public sealed class RuleDefinitions
             List<string> chain
         )
         {
+            this.nodeCount++;
+            if (this.nodeCount > options.MaxNodeCount)
+            {
+                if (!this.nodeLimitReported)
+                {
+                    this.nodeLimitReported = true;
+                    this.Diagnostics.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.MaxNodeCountExceeded,
+                            $"Rule exceeds the maximum node count of {options.MaxNodeCount}.",
+                            node.Span,
+                            expected: $"at most {options.MaxNodeCount} nodes",
+                            found: "more nodes than that",
+                            path: node.Path
+                        )
+                    );
+                }
+
+                return;
+            }
+
             if (node is ParameterReferenceNode reference)
             {
                 // The argument takes the place of the parameter, in the scope of the use that supplied it.

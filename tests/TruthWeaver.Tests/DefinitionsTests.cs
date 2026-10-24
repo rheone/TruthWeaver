@@ -207,6 +207,44 @@ public sealed class DefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A chain of definitions only 6 levels deep (well within the default <see cref="CompilerOptions.MaxDefinitionDepth"/>
+    /// of 8), where each level ANDs 12 uses of the one below, expands to millions of nodes if fully materialized
+    /// (12^6, about 3 million). Compiling it reports <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> quickly
+    /// instead of allocating the whole expansion before <c>RuleNodeCompiler.Build</c>'s own count ever runs
+    /// (ticket 04).
+    /// </summary>
+    [Fact]
+    public void Compile_ShallowHighFanoutDefinitionChain_ReportsMaxNodeCountInsteadOfExponentialBlowup_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build(),
+            new CompilerOptions(MaxNodeCount: 50)
+        );
+        string chain = BuildFanoutChain(depth: 6, fanout: 12);
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(chain);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// The same shallow, high-fanout blow-up as above, read through <see cref="RuleDefinitions.ReadText(string, CompilerOptions?)"/>
+    /// with no options supplied: the default <see cref="CompilerOptions.MaxNodeCount"/> of 512 is still far below the
+    /// roughly 3 million nodes the chain would expand to, so the walk that maps compiled nodes back to their sources
+    /// must be bounded too, not just <c>DefinitionExpander</c> (ticket 04, finding F3.1).
+    /// </summary>
+    [Fact]
+    public void ReadText_ShallowHighFanoutDefinitionChain_IsBoundedByDefaultMaxNodeCount_Test()
+    {
+        string chain = BuildFanoutChain(depth: 6, fanout: 12);
+
+        RuleDefinitions read = RuleDefinitions.ReadText(chain);
+
+        Assert.Contains(read.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
     /// <summary>An unused definition is silent by default.</summary>
     [Fact]
     public void Compile_UnusedDefinitionWithoutLint_RaisesNoDiagnostic_Test()
@@ -366,6 +404,25 @@ public sealed class DefinitionsTests
     private static CompiledRule<RuleTestContext> Compile(RuleCompiler<RuleTestContext> compiler, string text)
     {
         return compiler.Compile(text).CompiledRule ?? throw new InvalidOperationException($"'{text}' did not compile.");
+    }
+
+    /// <summary>
+    /// Builds <c>let</c> text for a chain of <paramref name="depth"/> definitions, each ANDing <paramref name="fanout"/>
+    /// uses of the one before it, so the fully expanded tree has roughly <paramref name="fanout"/>^<paramref name="depth"/>
+    /// nodes even though the chain itself is only <paramref name="depth"/> levels deep.
+    /// </summary>
+    private static string BuildFanoutChain(int depth, int fanout)
+    {
+        System.Text.StringBuilder text = new();
+        text.Append("let d0 = a;");
+        for (int level = 1; level <= depth; level++)
+        {
+            string body = string.Join(" AND ", Enumerable.Repeat($"d{level - 1}", fanout));
+            text.Append($" let d{level} = {body};");
+        }
+
+        text.Append($" d{depth}");
+        return text.ToString();
     }
 
     private static RuleCompiler<RuleTestContext> CreateCompiler()
