@@ -59,14 +59,17 @@ public static class TermOutcomeLookup
     // message merely starts with it. The identity is set when the fault is recorded (Evaluator), never derived here.
     private static TermOutcome Build(TermAssignment term, AssignmentOutcome outcome)
     {
-        IReadOnlyList<Fault> faults = outcome.Evaluation is { } evaluation
-            ?
+        IReadOnlyList<Fault> faults = [];
+        if (outcome.Evaluation is { } evaluation)
+        {
+            faults =
             [
                 .. evaluation.Decision.Faults.Where(f =>
                     string.Equals(f.Term.ToString(), term.Display, StringComparison.Ordinal)
                 ),
-            ]
-            : [];
+            ];
+        }
+
         return new TermOutcome(term.Display, term.Key, term.Value, faults);
     }
 }

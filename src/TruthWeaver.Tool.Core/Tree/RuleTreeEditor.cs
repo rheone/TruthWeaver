@@ -484,7 +484,7 @@ public sealed class RuleTreeEditor
     private static int? OperandIndex(string path)
     {
         int open = path.LastIndexOf('[');
-        return
+        if (
             path.EndsWith(']')
             && open >= 0
             && int.TryParse(
@@ -493,8 +493,12 @@ public sealed class RuleTreeEditor
                 CultureInfo.InvariantCulture,
                 out int index
             )
-            ? index
-            : null;
+        )
+        {
+            return index;
+        }
+
+        return null;
     }
 
     // Keeps a member that an operator needs (adding it with a start value) and removes it when the operator does not take it.

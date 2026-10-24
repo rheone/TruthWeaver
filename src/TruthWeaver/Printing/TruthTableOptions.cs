@@ -47,11 +47,7 @@ public sealed record TruthTableOptions
     public int TermLimit
     {
         get => this.termLimit;
-        init
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
-            this.termLimit = value;
-        }
+        init => this.termLimit = AtLeastOne(value);
     }
 
     /// <summary>
@@ -72,4 +68,10 @@ public sealed record TruthTableOptions
     /// <see cref="ConstantStyle.Letters"/> (<c>T</c>, <c>F</c>, <c>U</c>).
     /// </summary>
     public ConstantFormat Constants { get; init; } = new() { Style = ConstantStyle.Letters };
+
+    private static int AtLeastOne(int value)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+        return value;
+    }
 }

@@ -102,17 +102,22 @@ public sealed class JsonDataSource : IDataSource
             );
         }
 
+        // A scope query must pick one node; the message gives the count, never the data.
         JsonPathResult matches = path.Evaluate(this.root);
+        if (matches.Count == 0)
+        {
+            return ValueTask.FromResult(
+                DataScopeResult.Failure(DataQueryErrorKind.NoMatch, "The scope query matched no node.")
+            );
+        }
+
         if (matches.Count != 1)
         {
-            // A scope query must pick one node; the message gives the count, never the data.
             return ValueTask.FromResult(
-                matches.Count == 0
-                    ? DataScopeResult.Failure(DataQueryErrorKind.NoMatch, "The scope query matched no node.")
-                    : DataScopeResult.Failure(
-                        DataQueryErrorKind.AmbiguousMatch,
-                        $"A scope query must match exactly one node, but it matched {matches.Count}."
-                    )
+                DataScopeResult.Failure(
+                    DataQueryErrorKind.AmbiguousMatch,
+                    $"A scope query must match exactly one node, but it matched {matches.Count}."
+                )
             );
         }
 

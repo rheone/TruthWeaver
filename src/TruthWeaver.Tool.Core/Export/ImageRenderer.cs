@@ -158,12 +158,15 @@ public static class ImageRenderer
                 failure = "it wrote no image file";
             }
 
-            return failure is null
-                ? ToolResults.Success(output)
-                : ToolResults.Failure<string>(
-                    ToolDiagnosticCodes.RenderFailed,
-                    $"'{ProgramName(language)}' ({program}) did not render '{outputPath}': {failure}"
-                );
+            if (failure is null)
+            {
+                return ToolResults.Success(output);
+            }
+
+            return ToolResults.Failure<string>(
+                ToolDiagnosticCodes.RenderFailed,
+                $"'{ProgramName(language)}' ({program}) did not render '{outputPath}': {failure}"
+            );
         }
         finally
         {

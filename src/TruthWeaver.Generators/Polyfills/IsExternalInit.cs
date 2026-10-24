@@ -1,7 +1,5 @@
 #pragma warning disable IDE0130
-// IDE0130 (namespace does not match folder): the compiler looks for this exact namespace.
-namespace System.Runtime.CompilerServices;
-
+namespace System.Runtime.CompilerServices; // IDE0130: the compiler looks for this exact namespace.
 #pragma warning restore IDE0130
 
 // S2094 (empty class): the compiler looks for the type by name only, so the type has no members by design.

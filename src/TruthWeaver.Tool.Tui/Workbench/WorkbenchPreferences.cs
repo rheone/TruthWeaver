@@ -170,12 +170,16 @@ internal sealed class WorkbenchPreferences
     // A percent is valid when it is a whole number in the range that the layout allows.
     private static int? PercentOf(JsonNode? node)
     {
-        return
+        if (
             node is JsonValue value
             && value.TryGetValue(out int percent)
             && percent is >= PaneLayout.MinimumPercent and <= PaneLayout.MaximumPercent
-            ? percent
-            : null;
+        )
+        {
+            return percent;
+        }
+
+        return null;
     }
 
     // Puts a path first without writing the file.

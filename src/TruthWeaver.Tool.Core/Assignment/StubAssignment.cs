@@ -131,11 +131,15 @@ public sealed class StubAssignment
 
     private static string? CanonicalTerm(RuleCompiler<StubAssignment> compiler, string key)
     {
-        return
+        if (
             compiler.TryCompile(key, out CompiledRule<StubAssignment>? rule, out _)
             && rule.Metrics is { NodeCount: 1, DistinctTermCount: 1 }
-            ? rule.CanonicalText
-            : null;
+        )
+        {
+            return rule.CanonicalText;
+        }
+
+        return null;
     }
 
     private static List<Entry>? ReadJson(string text, List<Diagnostic> diagnostics)
