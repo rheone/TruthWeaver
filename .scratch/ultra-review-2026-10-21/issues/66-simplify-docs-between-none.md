@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: L2 Cardinality+quantifiers
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test compiling BETWEEN(1, 2, True, a, b) and NONE(True, a) and calling CompiledRule.Simplify() found the canonical text of both results no longer contained the word BETWEEN or NONE, confirming Simplifier.Rewrite's ViaExpansion(RewriteLaw.DerivedWithConstant) path folds/rewrites the node when an operand is constant, contrary to the pages' unqualified "Simplify and Canonicalize keep BETWEEN/NONE" statement.
 Blocked by: none
 
 ## Finding L2.5: BETWEEN and NONE pages say Simplify keeps the node; Simplify rewrites either one when an operand is a constant

@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a [Predicate] method with parameters `role` and `Role` (default "x") produced zero generator diagnostics and zero compiler errors from PredicateRegistrationGenerator, while PredicateRegistryBuilder.RejectCaseVariantArguments (PredicateRegistryBuilder.cs:109-122) still throws ArgumentException when the generated Register call reaches it, so the collision surfaces only at run time.
 Blocked by: none
 
 ## Finding F8.6: The generator does not detect argument names that differ only in case; Register then throws at run time

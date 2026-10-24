@@ -24,6 +24,8 @@ Add `argument = identifier ":" ( literal | variable )` and `variable = "from" "(
 
 not verified (medium or low)
 
+Verified 2026-10-24: reproduced - docs/rule-text.md:50-52 defines `argument = identifier ":" literal` with no variable alternative, while `DslParser.ParseArgument` (src/TruthWeaver/Parsing/DslParser.cs:838-844) calls `ParseVariableReference()` whenever `IsVariableReferenceStart()` matches `from(`, so `limit: from("limits", "$.max")` parses successfully even though the grammar block does not list it.
+
 ## Acceptance criteria
 
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.

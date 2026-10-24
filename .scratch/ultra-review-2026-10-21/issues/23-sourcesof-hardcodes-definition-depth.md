@@ -4,7 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F3 Compilation
 Verdict: PLAUSIBLE
-Blocked by: none
+Verified 2026-10-24: reproduced - compiling a 10-definitions-deep chain with `CompilerOptions(MaxDefinitionDepth: 12)` succeeded fully, but `RuleDefinitions.ReadText` (no options) on the same text returned only 9 truncated source entries for `SourcesOf("$")`, stopping at `$.definitions.d3.body` instead of reaching `d1`'s body, matching the hard-coded default depth of 8.
 
 ## Finding F3.6: RuleDefinitions.SourcesOf hard-codes the default MaxDefinitionDepth and disagrees with compiles that use another limit
 

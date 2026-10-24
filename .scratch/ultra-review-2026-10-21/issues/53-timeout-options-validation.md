@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F4 Evaluation
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `EvaluationOptions(MaxElementEvaluations: 0)` makes a single-True-element FORALL (which should be True) come back Unknown with one fault instead of throwing a validation error, and `EvaluationOptions(Timeout: TimeSpan.FromSeconds(-5))` throws an undocumented `ArgumentOutOfRangeException` from `CancelAfter` instead of a documented upfront check.
 Blocked by: none
 
 ## Finding F4.6: Timeout and MaxElementEvaluations are not validated; Timeout is cooperative only

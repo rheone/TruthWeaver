@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F2 Parsing
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a timing repro parsing `"a /* c */ AND " * n` with DslParser.Parse directly showed a 4x increase in comment/node count (2000 to 8000) producing a 14.07x increase in wall time (0.268s to 3.768s, near the ~16x a quadratic cost predicts), and NoteAttacher.Attach (called from DslParser.Parse at DslParser.cs:120) runs before RuleNodeCompiler.Build's MaxNodeCount/MaxDepth checks (RuleNodeCompiler.cs:203-239), which only run later in RuleCompiler.CompileNode, confirming the claimed O(comments x (tokens + nodes)) shape runs unbounded first.
 Blocked by: none
 
 ## Finding F2.5: Comment-to-note attachment is quadratic and runs before any size limit

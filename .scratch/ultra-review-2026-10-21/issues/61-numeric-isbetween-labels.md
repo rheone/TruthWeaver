@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F6 Predicates A
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `src/TruthWeaver.Predicates/NumericPredicates.cs` lines 806/844 default `label` to `"IsBetween"` and lines 884/924 default it to `"Not IsBetween"`, while `docs/strong-k3/predicates/numeric-isbetween.md` and `numeric-isnotbetween.md` both document the default label as `Is Between` / `Is Not Between`.
 Blocked by: none
 
 ## Finding F6.1: Numeric IsBetween/IsNotBetween default labels do not match the reference pages

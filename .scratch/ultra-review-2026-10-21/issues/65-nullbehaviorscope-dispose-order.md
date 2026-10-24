@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F7 Predicates B
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test opening scope a (False, all families), then b (Unknown, Type family), disposing a then b, found NullBehaviorScope.Resolve(Default, Type) returned False instead of the documented no-scope default Unknown.
 Blocked by: none
 
 ## Finding F7.7: Disposing scopes out of order can bring back a disposed NullBehaviorScope

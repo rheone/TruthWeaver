@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: T2 Surfaces
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - compiler.CompileYaml("const: true\n---\nconst: false\n") succeeds with zero diagnostics and evaluates to True, silently discarding the second document (confirmed with a throwaway xUnit test, then removed).
 Blocked by: none
 
 ## Finding T2.9: A multi-document YAML stream silently compiles only the first document

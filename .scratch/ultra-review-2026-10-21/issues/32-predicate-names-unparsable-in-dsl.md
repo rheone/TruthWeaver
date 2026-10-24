@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - registering `PredicateSchema.NoArguments("has-role", ...)` and compiling `{"predicate":"has-role"}` succeeds, but `CompiledRule.PrintRuleText()` emits `has-role`, which `RuleCompiler.Compile` then fails to re-parse as the same predicate.
 Blocked by: none
 
 ## Finding F8.3: Registry and generator accept predicate and collection names that rule text cannot express, so a JSON-compiled rule prints unparsable DSL

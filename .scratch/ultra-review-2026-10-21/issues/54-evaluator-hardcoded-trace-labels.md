@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F4 Evaluation
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - after changing the PARITY entry's `LabelTemplate` in `OperatorDefinitions`, an evaluated `PARITY(a, b)` node's trace text stayed the hardcoded "PARITY" while a skipped sibling `PARITY` node (reached via `TraceText.Of`) picked up the new label "Parity", so the two disagree.
 Blocked by: none
 
 ## Finding F4.7: Evaluator hard-codes operator trace labels instead of reading OperatorDefinitions

@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F2 Parsing
 Verdict: PLAUSIBLE
+NOT-REPRODUCED 2026-10-24: `TreePath.Property` is injective for every variant tried (`"a'"` -> `$['a\'']`, `"a\"` -> `$['a\']`, `"a\\"` (two backslashes) -> `$['a\\']`, `"a\'"` -> `$['a\\'']`) - all four distinct keys produced distinct path strings, none colliding, because the inserted escape backslash always lands immediately before the escaped quote rather than at the key's end, so the claimed `a'`/`a\` collision onto a shared `$['a\']` does not occur.
 Blocked by: none
 
 ## Finding F2.10: TreePath bracket form does not escape backslash, so two different keys can share one path

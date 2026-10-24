@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F5 Analysis+Rewriting
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a scaled-down repro (18 x-terms + 18 y-terms, MaxAnalysisTerms raised to 36, first-occurrence ordering putting all x-terms ahead of all y-terms) compiled via `RuleCompiler.Compile` in over 1 second, confirming `Analyzer.Analyze` builds its `new BddManager()` (line 50, the no-arg constructor that passes `maxNodes: null`, src/TruthWeaver/Analysis/BddManager.cs:38-39) with no node budget and no diagnostic fires before the exponential blowup; the full n=24 scenario from the ticket is correspondingly far worse.
 Blocked by: none
 
 ## Finding F5.5: Compile-time analysis and the other BDD readers run with no node budget

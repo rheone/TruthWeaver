@@ -4,7 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F3 Compilation
 Verdict: PLAUSIBLE
-Blocked by: none
+Verified 2026-10-24: reproduced - compiling `let a = b; let b = a; isAdmin` (the unused `a`/`b` cycle is never reached from the body) succeeded with zero diagnostics, no DefinitionCycleDetected reported; note the ticket's own `let c = AND(x);` clause does not parse as DSL (AND is infix-only), but the core cyclic-unreachable-definition claim holds without it.
 
 ## Finding F3.4: Definitions not reachable from the rule body are never validated: cycles, unknown uses and operator errors inside them compile silently
 

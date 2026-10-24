@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F1 Ast+Abstractions
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a repro test confirmed `LiteralValue.OfDecimal(1.0m).Equals(OfDecimal(1.00m))` is true (same `GetHashCode`) while their `ToString()` differ ("1.0" vs "1.00"), and likewise `LiteralValue.OfDateTimeOffset` for the same instant at two different offsets (00:00Z vs 02:00+02:00) are Equals-true with matching hash codes but different `ToString()` ("...+00:00" vs "...+02:00"), exactly as the ticket describes for `Equals`/`GetHashCode` (LiteralValue.cs:313-317, 328-340) versus `ToString` (LiteralValue.cs:349, 351).
 Blocked by: none
 
 ## Finding F1.1: LiteralValue equality ignores DateTimeOffset offset and decimal scale, but the printers keep both

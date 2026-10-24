@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F8 Predicate+DataSource concepts; L5 Least surprise
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - for the same `DataQueryErrorKind.UnsupportedType` result, `DataSourceExtensions.TryGetAsync<long>` returns `VariableFailureKind.SourceError` while `Evaluator.EvaluateAsync` on an equivalent `from(...)` variable records a `VariableResolutionException` with `Kind == TypeMismatch`; separately, a source answering `QueryAsync` with `DataQueryErrorKind.NoMatch` is recorded by the evaluator as `SourceError` rather than `Missing`, confirming L5.6 as well.
 Blocked by: none
 
 ## Finding F8.1: TryGetAsync/GetAsync classify an object, array or null match as SourceError; a variable classifies the same match as TypeMismatch
