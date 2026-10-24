@@ -39,6 +39,49 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
 
+    /// <summary>
+    /// A NOT chain thousands of levels deep, well beyond the default MaxDepth, reports MaxDepthExceeded instead of
+    /// overflowing the call stack with an uncatchable StackOverflowException (ticket 03). ParseNotExpression
+    /// recurses once per NOT with no guard of its own, so this exercises that guard directly.
+    /// </summary>
+    [Fact]
+    public void Compile_NotChainThousandsOfLevelsDeep_ReportsMaxDepthInsteadOfCrashing_Test()
+    {
+        PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("a", true)
+            .Build();
+        RuleCompiler<RuleTestContext> compiler = new(registry);
+        string deeplyNested = string.Concat(Enumerable.Repeat("NOT ", 5_000)) + "a";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(deeplyNested);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
+    /// <summary>
+    /// A term wrapped in thousands of redundant, nested parentheses reports MaxDepthExceeded instead of overflowing
+    /// the call stack (ticket 03). Parentheses add no tree depth on their own (ParsePrimary discards them, keeping
+    /// only the widest group extent for notes), so this exercises the parser's own recursion guard, not
+    /// RuleNodeCompiler.Build's existing check on the built tree.
+    /// </summary>
+    [Fact]
+    public void Compile_TermWrappedInThousandsOfNestedParentheses_ReportsMaxDepthInsteadOfCrashing_Test()
+    {
+        PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("a", true)
+            .Build();
+        RuleCompiler<RuleTestContext> compiler = new(registry);
+        string deeplyNested = new string('(', 5_000) + "a" + new string(')', 5_000);
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(deeplyNested);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
     /// <summary>A rule that exceeds the maximum node count is a compile error.</summary>
     [Fact]
     public void Limits_ExceedingMaxNodeCount_IsCompileError_Test()

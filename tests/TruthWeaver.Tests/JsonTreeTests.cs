@@ -403,6 +403,32 @@ public sealed class JsonTreeTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
+    /// <summary>
+    /// A <see cref="JsonElement"/> read with a raised <see cref="JsonDocumentOptions.MaxDepth"/>, nested deep enough
+    /// that <see cref="JsonDocument"/>'s own default cap (64) would otherwise have blocked it, reports
+    /// <see cref="DiagnosticCodes.MaxDepthExceeded"/> instead of overflowing the call stack while <c>TreeFormatReader</c>
+    /// walks it (ticket 03).
+    /// </summary>
+    [Fact]
+    public void CompileJson_ElementNestedBeyondJsonDocumentDefaultDepth_ReportsMaxDepthInsteadOfCrashing_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const int levels = 2_000;
+        string deeplyNested =
+            string.Concat(Enumerable.Repeat("""{"op":"not","operands":[""", levels))
+            + """{"predicate":"isManager"}"""
+            + string.Concat(Enumerable.Repeat("]}", levels));
+        using JsonDocument document = JsonDocument.Parse(
+            deeplyNested,
+            new JsonDocumentOptions { MaxDepth = (levels * 2) + 10 }
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(document.RootElement);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
     private static RuleCompiler<RuleTestContext> CreateCompiler()
     {
         return new(

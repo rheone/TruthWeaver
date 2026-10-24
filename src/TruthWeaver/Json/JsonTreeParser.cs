@@ -20,12 +20,21 @@ internal static class JsonTreeParser
 {
     /// <summary>Parses JSON tree text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="json">The JSON tree text.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound the reader applies while walking the tree, matching
+    /// <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default. Exceeding it is reported as
+    /// <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
+    /// built tree that is too deep: <see cref="JsonDocument"/> caps its own nesting at 64 by default, but a caller
+    /// that raises <see cref="JsonDocumentOptions.MaxDepth"/> can still hand this reader a deeper
+    /// <see cref="JsonElement"/> than that.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the JSON itself was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
     public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
-        [StringSyntax(StringSyntaxAttribute.Json)] string json
+        [StringSyntax(StringSyntaxAttribute.Json)] string json,
+        int maxDepth = 32
     )
     {
         JsonDocument document;
@@ -41,19 +50,20 @@ internal static class JsonTreeParser
 
         using (document)
         {
-            return Parse(document.RootElement);
+            return Parse(document.RootElement, maxDepth);
         }
     }
 
     /// <summary>Parses an already-materialized JSON tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="element">The JSON tree node.</param>
+    /// <param name="maxDepth">The nesting bound, as for <see cref="Parse(string, int)"/>.</param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the element was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(JsonElement element)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(JsonElement element, int maxDepth = 32)
     {
-        return TreeFormatReader.Read(new JsonNodeCursor(element), JsonNodeCursor.Vocabulary);
+        return TreeFormatReader.Read(new JsonNodeCursor(element), JsonNodeCursor.Vocabulary, maxDepth);
     }
 
     /// <summary>Builds the diagnostic for text that is not JSON at all: the reader's message, its position, and the nearest valid ancestor.</summary>

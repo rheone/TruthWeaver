@@ -18,6 +18,13 @@ internal sealed class TreeFormatReader
     private readonly TreeFormatVocabulary words;
     private readonly List<Diagnostic> diagnostics = [];
 
+    // Guards ReadNode's recursion (operands, a use's arguments, a quantifier's body) against an unbounded JSON or
+    // YAML tree: JsonDocument caps JSON nesting at 64 by default, but a caller that raises JsonDocumentOptions.MaxDepth
+    // can still hand CompileJson(JsonElement) a deeper element, and nothing bounds a YamlNode graph at all. Without
+    // this, a deeply nested document overflows the call stack with an uncatchable StackOverflowException before
+    // RuleNodeCompiler.Build ever gets to apply CompilerOptions.MaxDepth to the finished tree.
+    private readonly int maxDepth;
+
     // Set by ReadUse: unlike the DSL (where ParseUse is reachable only for a name already scanned as a 'let'
     // declaration, so a bare use never appears without a document), a JSON/YAML 'use' node is its own explicit shape,
     // legal even when the document declared no 'definitions' at all (ADR-0008 decision 3 says "wherever a tree node is
@@ -31,21 +38,33 @@ internal sealed class TreeFormatReader
     // threading the scope through every recursive Read* method, is safe because definitions never nest (ADR-0008
     // decision 5): reading one body never re-enters ReadDefinitionEntry for another.
     private IReadOnlySet<string>? activeParameters;
+    private int depth;
+    private bool maxDepthReported;
 
-    private TreeFormatReader(TreeFormatVocabulary words)
+    private TreeFormatReader(TreeFormatVocabulary words, int maxDepth)
     {
         this.words = words;
+        this.maxDepth = maxDepth;
     }
 
     /// <summary>Reads a tree document into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="root">The cursor positioned on the document's root node.</param>
     /// <param name="words">The format's own words for diagnostics.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound, matching <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default.
+    /// Exceeding it is reported as <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code
+    /// <c>RuleNodeCompiler.Build</c> reports for a built tree that is too deep.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> when the tree was malformed) and the diagnostics raised while reading.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Read(ITreeNodeCursor root, TreeFormatVocabulary words)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Read(
+        ITreeNodeCursor root,
+        TreeFormatVocabulary words,
+        int maxDepth = 32
+    )
     {
-        TreeFormatReader reader = new(words);
+        TreeFormatReader reader = new(words, maxDepth);
 
         // A 'definitions' section sits alongside the document's own root node (ADR-0008 decision 3), never on a
         // nested node, so it is recognized here, once, rather than as a case of the generic node reader.
@@ -148,18 +167,45 @@ internal sealed class TreeFormatReader
 
     private RuleNode? ReadNode(ITreeNodeCursor node, string path)
     {
-        RuleNode? parsed = this.ReadNodeCore(node, path);
-        if (parsed is null || !this.TryReadNote(node, path, out string? note))
+        this.depth++;
+        if (this.depth > this.maxDepth)
         {
+            if (!this.maxDepthReported)
+            {
+                this.maxDepthReported = true;
+                this.Report(
+                    DiagnosticCodes.MaxDepthExceeded,
+                    $"Rule exceeds the maximum tree depth of {this.maxDepth}.",
+                    node.Span,
+                    $"nesting at most {this.maxDepth} deep",
+                    "deeper nesting",
+                    path
+                );
+            }
+
+            this.depth--;
             return null;
         }
 
-        return parsed with
+        try
         {
-            Path = path,
-            Span = node.Span,
-            Note = note,
-        };
+            RuleNode? parsed = this.ReadNodeCore(node, path);
+            if (parsed is null || !this.TryReadNote(node, path, out string? note))
+            {
+                return null;
+            }
+
+            return parsed with
+            {
+                Path = path,
+                Span = node.Span,
+                Note = note,
+            };
+        }
+        finally
+        {
+            this.depth--;
+        }
     }
 
     /// <summary>

@@ -18,11 +18,17 @@ internal static class YamlTreeParser
 {
     /// <summary>Parses YAML tree text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="yaml">The YAML tree text.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound the reader applies while walking the tree, matching
+    /// <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default. Exceeding it is reported as
+    /// <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
+    /// built tree that is too deep.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the YAML itself was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string yaml)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string yaml, int maxDepth = 32)
     {
         YamlStream stream = [];
         try
@@ -54,18 +60,47 @@ internal static class YamlTreeParser
             return (null, diagnostics);
         }
 
-        return Parse(stream.Documents[0].RootNode);
+        return Parse(stream.Documents[0].RootNode, maxDepth);
     }
 
     /// <summary>Parses an already-materialized YAML tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="node">The YAML tree node.</param>
+    /// <param name="maxDepth">The nesting bound, as for <see cref="Parse(string, int)"/>.</param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the node was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(YamlNode node)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(YamlNode node, int maxDepth = 32)
     {
-        return TreeFormatReader.Read(new YamlNodeCursor(node), YamlNodeCursor.Vocabulary);
+        // YamlStream.Load resolves an anchor's alias into a reference to the same YamlNode, so an anchor aliased
+        // inside its own body (`a: &x [*x]`) makes the node graph cyclic rather than a tree. YamlNodeCursor detects
+        // that by reference identity (mirroring YamlDataSource.ToJson's ancestor set) and throws; caught here and
+        // turned into the same MalformedTree diagnostic every other "this is not a valid tree" problem gets,
+        // instead of either recursing forever or letting the exception reach the caller.
+        try
+        {
+            return TreeFormatReader.Read(new YamlNodeCursor(node), YamlNodeCursor.Vocabulary, maxDepth);
+        }
+        catch (YamlException ex)
+        {
+            List<Diagnostic> diagnostics = [CycleError(ex)];
+            return (null, diagnostics);
+        }
+    }
+
+    /// <summary>Builds the diagnostic for a YAML alias that refers to one of its own ancestors.</summary>
+    private static Diagnostic CycleError(YamlException ex)
+    {
+        int start = Math.Max(0, (int)ex.Start.Index);
+        int length = Math.Max(1, (int)ex.End.Index - start);
+        return Diagnostic.Error(
+            DiagnosticCodes.MalformedTree,
+            $"Malformed YAML: {ex.Message}",
+            new SourceSpan(start, length),
+            expected: "a tree with no cyclic aliases",
+            found: "an alias that refers to its own ancestor",
+            path: TreePath.Root
+        );
     }
 
     /// <summary>Builds the diagnostic for text that is not YAML: the parser's message, its position, and the nearest valid ancestor.</summary>

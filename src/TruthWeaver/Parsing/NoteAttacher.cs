@@ -1,5 +1,7 @@
 namespace TruthWeaver.Parsing;
 
+using System.Runtime.CompilerServices;
+
 /// <summary>
 /// Attaches each comment of DSL rule text to one node of the parsed tree as that node's note (ADR-0005 decision 2,
 /// amended 2026-10-11). The rule, in order of precedence:
@@ -120,6 +122,16 @@ internal static class NoteAttacher
     )
     {
         if (node is ErrorNode)
+        {
+            return null;
+        }
+
+        // Belt-and-suspenders: the parsers that build this tree (DslParser, TreeFormatReader) already bound its
+        // depth against CompilerOptions.MaxDepth, but that limit is caller-configurable and this traversal has no
+        // diagnostics channel of its own. Rather than thread a second depth budget and an error path through every
+        // call site just for a note-attachment nicety, stop descending if the stack is genuinely running low; the
+        // affected subtree simply keeps no note instead of risking a StackOverflowException.
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
         {
             return null;
         }

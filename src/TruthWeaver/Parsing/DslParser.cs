@@ -40,23 +40,46 @@ internal sealed class DslParser
     // note, so the note attacher needs to know where the group began. Keyed by reference, as two equal nodes are distinct.
     private readonly Dictionary<RuleNode, (int Start, int End)> groups = [with(ReferenceEqualityComparer.Instance)];
 
+    // Guards the recursive-descent expression chain (ParseExpression -> ParseOrExpression -> ... ->
+    // ParseNotExpression -> ParsePrimary) against unbounded recursion: a parenthesized group, a ternary branch, a
+    // call-like operand list (ANY/ALL/threshold/BETWEEN/FORALL/EXISTS), a 'let' body, a use's arguments and one
+    // step of a NOT chain each count as one level. Without this, a deeply nested or long input (hundreds of
+    // thousands of '(' or 'NOT') overflows the call stack with an uncatchable StackOverflowException before
+    // RuleNodeCompiler.Build ever gets to apply CompilerOptions.MaxDepth to the finished tree. This counter is
+    // intentionally coarser than that later check (redundant parentheses count here even though they add no tree
+    // depth), trading a few legal-but-pointless inputs for a guard simple enough to reason about.
+    private readonly int maxDepth;
+
     // The current definition's declared parameters while its own body is being parsed, so a bare identifier matching
     // one is read as a ParameterReferenceNode rather than a term or a use; null outside a definition's body (ADR-0008
     // decision 5: definitions do not nest, so this is never more than one level deep).
     private IReadOnlySet<string>? currentParameters;
     private int position;
+    private int depth;
+    private bool maxDepthReported;
+
+    // The diagnostics count at the moment the MaxDepthExceeded diagnostic was added. Once the guard trips, the
+    // recursive-descent machinery unwinds with tokens left unconsumed wherever it stopped early, which would
+    // otherwise cost a few bogus "expected closer"/"unexpected token" diagnostics purely as an artifact of bailing
+    // out mid-expression. RuleNodeCompiler.Build's own MaxDepth check has no such artifact (it just returns a
+    // placeholder and the enclosing operators build normally around it), so Parse() truncates back to this count
+    // to give the same single-diagnostic contract: callers (e.g. the validation tool) that treat "every error is a
+    // limit code" as "the rule is otherwise fine, just too deep" depend on that.
+    private int diagnosticsCeiling = int.MaxValue;
 
     private DslParser(
         string source,
         IReadOnlyList<Token> tokens,
         List<Diagnostic> diagnostics,
-        IReadOnlySet<string> definitionNames
+        IReadOnlySet<string> definitionNames,
+        int maxDepth
     )
     {
         this.source = source;
         this.tokens = tokens;
         this.diagnostics = diagnostics;
         this.definitionNames = definitionNames;
+        this.maxDepth = maxDepth;
     }
 
     private Token Current => this.tokens[this.position];
@@ -71,13 +94,19 @@ internal sealed class DslParser
 
     /// <summary>Parses DSL rule text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="source">The rule text.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound for the recursive-descent grammar (groups, call-like operand lists, ternary branches and
+    /// NOT chains), matching <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default. Exceeding it
+    /// is reported as <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code
+    /// <c>RuleNodeCompiler.Build</c> reports for a built tree that is too deep.
+    /// </param>
     /// <returns>The parsed root node and the diagnostics raised while parsing.</returns>
-    public static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string source)
+    public static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string source, int maxDepth = 32)
     {
         Lexer lexer = new(source);
         IReadOnlyList<Token> tokens = lexer.Tokenize();
         List<Diagnostic> diagnostics = [.. lexer.Diagnostics];
-        DslParser parser = new(source, tokens, diagnostics, CollectDefinitionNames(tokens));
+        DslParser parser = new(source, tokens, diagnostics, CollectDefinitionNames(tokens), maxDepth);
 
         List<DefinitionNode> definitions = [];
         while (parser.IsKeyword("LET"))
@@ -118,6 +147,15 @@ internal sealed class DslParser
                 ? body
                 : new RuleDocumentNode(definitions, body, SpanCovering(definitions[0].Span.Start, body.Span.End));
         NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
+
+        // Drop whatever "expected closer"/"unexpected token" noise the unwind above added once the depth guard
+        // tripped (see the field comment on diagnosticsCeiling): it is an artifact of bailing out mid-expression,
+        // not a second real problem with the rule.
+        if (diagnostics.Count > parser.diagnosticsCeiling)
+        {
+            diagnostics.RemoveRange(parser.diagnosticsCeiling, diagnostics.Count - parser.diagnosticsCeiling);
+        }
+
         return (root, diagnostics);
     }
 
@@ -376,16 +414,16 @@ internal sealed class DslParser
             return false;
         }
 
-        int depth = 0;
+        int bracketDepth = 0;
         for (int i = startToken; i < this.position; i++)
         {
-            depth += this.tokens[i].Kind switch
+            bracketDepth += this.tokens[i].Kind switch
             {
                 TokenKind.LParen or TokenKind.LBracket or TokenKind.LBrace => 1,
                 TokenKind.RParen or TokenKind.RBracket or TokenKind.RBrace => -1,
                 _ => 0,
             };
-            if (depth == 0)
+            if (bracketDepth == 0)
             {
                 return i == this.position - 1;
             }
@@ -396,7 +434,53 @@ internal sealed class DslParser
 
     private (RuleNode Node, string? BareInfix) ParseOrExpression()
     {
-        return this.ParseAndOrChain("OR", this.ParseAndExpression, (operands, span) => new OrNode(operands, span));
+        if (!this.TryEnterNesting())
+        {
+            return (new ErrorNode(this.Current.Span), null);
+        }
+
+        try
+        {
+            return this.ParseAndOrChain("OR", this.ParseAndExpression, (operands, span) => new OrNode(operands, span));
+        }
+        finally
+        {
+            this.depth--;
+        }
+    }
+
+    /// <summary>
+    /// Enters one level of the recursive-descent expression chain. Returns <see langword="false"/> once
+    /// <see cref="maxDepth"/> nesting levels are already open, in which case the caller must not descend any
+    /// further (it should return a placeholder instead, without a matching exit: a failed entry never happened).
+    /// The <see cref="DiagnosticCodes.MaxDepthExceeded"/> diagnostic is reported only once, no matter how many
+    /// guarded call sites are still unwinding above the first one to trip.
+    /// </summary>
+    private bool TryEnterNesting()
+    {
+        this.depth++;
+        if (this.depth <= this.maxDepth)
+        {
+            return true;
+        }
+
+        this.depth--;
+        if (!this.maxDepthReported)
+        {
+            this.maxDepthReported = true;
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.MaxDepthExceeded,
+                    $"Rule exceeds the maximum tree depth of {this.maxDepth}.",
+                    this.Current.Span,
+                    expected: $"nesting at most {this.maxDepth} deep",
+                    found: "deeper nesting"
+                )
+            );
+            this.diagnosticsCeiling = this.diagnostics.Count;
+        }
+
+        return false;
     }
 
     private (RuleNode Node, string? BareInfix) ParseAndExpression()
@@ -519,8 +603,23 @@ internal sealed class DslParser
         if (this.TryConsumeKeyword("NOT"))
         {
             int start = this.tokens[this.position - 1].Span.Start;
-            RuleNode operand = this.ParseNotExpression();
-            return new NotNode(operand, SpanCovering(start, operand.Span.End));
+
+            // A NOT chain recurses here directly, without going back through ParseOrExpression, so it needs its
+            // own guard: "NOT " repeated enough times is otherwise an unbounded self-recursion.
+            if (!this.TryEnterNesting())
+            {
+                return new ErrorNode(SpanCovering(start, this.Current.Span.End));
+            }
+
+            try
+            {
+                RuleNode operand = this.ParseNotExpression();
+                return new NotNode(operand, SpanCovering(start, operand.Span.End));
+            }
+            finally
+            {
+                this.depth--;
+            }
         }
 
         return this.ParsePrimary();

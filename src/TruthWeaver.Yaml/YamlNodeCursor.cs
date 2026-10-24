@@ -1,5 +1,6 @@
 namespace TruthWeaver.Yaml;
 
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Diagnostics;
@@ -11,9 +12,30 @@ using YamlDotNet.RepresentationModel;
 /// The YAML adapter for the shared <see cref="TreeFormatReader"/>: a view of one <see cref="YamlNode"/>. YamlDotNet keeps
 /// node positions, so <see cref="Span"/> is the real source range of the node and each diagnostic is located by it.
 /// </summary>
-/// <param name="node">The node this cursor views.</param>
-internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
+internal readonly struct YamlNodeCursor : ITreeNodeCursor
 {
+    private readonly YamlNode node;
+
+    // The ancestors of 'node' (not including 'node' itself), by reference identity. YamlStream.Load resolves an
+    // anchor's alias into a reference to the same YamlNode object, so an anchor aliased inside its own body
+    // (`a: &x [*x]`) makes the node graph cyclic rather than a tree. This set lets every child cursor this one
+    // creates (Child) detect that before recursing into it, mirroring the ancestor set YamlDataSource.ToJson
+    // already keeps for the same problem on the data-source path. It must use ReferenceEqualityComparer: YamlNode's
+    // own Equals/GetHashCode are structural, recursing into every descendant, so the default comparer would walk the
+    // whole subtree (and overflow the stack on a deep one) on every Add instead of comparing by identity.
+    private readonly ImmutableHashSet<YamlNode> ancestors;
+
+    /// <summary>Initializes a new instance of the <see cref="YamlNodeCursor"/> struct viewing the root of a YAML tree, with no recorded ancestors yet.</summary>
+    /// <param name="node">The node this cursor views.</param>
+    public YamlNodeCursor(YamlNode node)
+        : this(node, ImmutableHashSet<YamlNode>.Empty.WithComparer(ReferenceEqualityComparer.Instance)) { }
+
+    private YamlNodeCursor(YamlNode node, ImmutableHashSet<YamlNode> ancestors)
+    {
+        this.node = node;
+        this.ancestors = ancestors;
+    }
+
     /// <summary>Gets the diagnostic wording for YAML trees.</summary>
     public static TreeFormatVocabulary Vocabulary { get; } =
         new(
@@ -28,7 +50,7 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
 
     /// <inheritdoc />
     public TreeNodeShape Shape =>
-        node switch
+        this.node switch
         {
             YamlMappingNode => TreeNodeShape.Mapping,
             YamlSequenceNode => TreeNodeShape.Sequence,
@@ -37,30 +59,30 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
         };
 
     /// <inheritdoc />
-    public SourceSpan Span => SpanOf(node);
+    public SourceSpan Span => SpanOf(this.node);
 
     /// <inheritdoc />
-    public string KindName => node.NodeType.ToString();
+    public string KindName => this.node.NodeType.ToString();
 
     /// <inheritdoc />
-    public string? StringValue => node is YamlScalarNode { Value: { } text } ? text : null;
+    public string? StringValue => this.node is YamlScalarNode { Value: { } text } ? text : null;
 
     /// <inheritdoc />
-    public IEnumerable<ITreeNodeCursor> Elements => node is YamlSequenceNode sequence ? ElementsOf(sequence) : [];
+    public IEnumerable<ITreeNodeCursor> Elements => this.node is YamlSequenceNode sequence ? this.ElementsOf(sequence) : [];
 
     /// <inheritdoc />
-    public IEnumerable<TreeMember> Members => node is YamlMappingNode mapping ? MembersOf(mapping) : [];
+    public IEnumerable<TreeMember> Members => this.node is YamlMappingNode mapping ? this.MembersOf(mapping) : [];
 
     /// <inheritdoc />
     public string UnsupportedLiteralMessage =>
-        IsNull(node)
+        IsNull(this.node)
             ? "Unsupported literal YAML value kind 'Null'."
-            : $"Unsupported YAML node type '{node.NodeType}' for a literal value.";
+            : $"Unsupported YAML node type '{this.node.NodeType}' for a literal value.";
 
     /// <inheritdoc />
     public string Describe()
     {
-        return node switch
+        return this.node switch
         {
             YamlScalarNode scalar when IsNull(scalar) => "null",
             YamlScalarNode => "a scalar",
@@ -73,19 +95,19 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     /// <inheritdoc />
     public string DescribeValue()
     {
-        return node is YamlScalarNode { Value: { } text } ? $"'{text}'" : this.Describe();
+        return this.node is YamlScalarNode { Value: { } text } ? $"'{text}'" : this.Describe();
     }
 
     /// <inheritdoc />
     public bool TryGetChild(string key, [NotNullWhen(true)] out ITreeNodeCursor? child)
     {
-        if (node is YamlMappingNode mapping)
+        if (this.node is YamlMappingNode mapping)
         {
             foreach (KeyValuePair<YamlNode, YamlNode> entry in mapping.Children)
             {
                 if (entry.Key is YamlScalarNode { Value: { } keyText } && string.Equals(keyText, key, StringComparison.Ordinal))
                 {
-                    child = new YamlNodeCursor(entry.Value);
+                    child = this.Child(entry.Value);
                     return true;
                 }
             }
@@ -99,7 +121,7 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     public bool TryGetInt32(out int value)
     {
         value = 0;
-        return node is YamlScalarNode { Value: { } text }
+        return this.node is YamlScalarNode { Value: { } text }
             && int.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out value);
     }
 
@@ -108,14 +130,14 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     {
         // YAML has a native boolean, but a plain scalar's text is all the parser keeps, so the words true, false and unknown and the letters T, F and U share one spelling rule.
         value = TruthValue.Unknown;
-        return node is YamlScalarNode { Value: { } text }
+        return this.node is YamlScalarNode { Value: { } text }
             && (TruthValueText.TryParse(text, out value) || TruthValueText.TryParseLetter(text, out value));
     }
 
     /// <inheritdoc />
     public RawLiteral? ReadScalarLiteral()
     {
-        if (node is not YamlScalarNode scalar)
+        if (this.node is not YamlScalarNode scalar)
         {
             return null;
         }
@@ -167,28 +189,6 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
         return new SourceSpan(start, Math.Max(0, (int)node.End.Index - start));
     }
 
-    private static IEnumerable<ITreeNodeCursor> ElementsOf(YamlSequenceNode sequence)
-    {
-        foreach (YamlNode child in sequence.Children)
-        {
-            yield return new YamlNodeCursor(child);
-        }
-    }
-
-    private static IEnumerable<TreeMember> MembersOf(YamlMappingNode mapping)
-    {
-        foreach (KeyValuePair<YamlNode, YamlNode> entry in mapping.Children)
-        {
-            // The key cursor is always supplied (not only for a non-string key): YamlDotNet keeps every node's
-            // position, so a diagnostic about a keyed-by-name construct, such as a 'definitions' entry's own name, can
-            // locate itself from this key's real span rather than falling back to a path.
-            YamlNodeCursor keyCursor = new(entry.Key);
-            yield return entry.Key is YamlScalarNode { Value: { } name }
-                ? new TreeMember(name, new YamlNodeCursor(entry.Value), keyCursor)
-                : new TreeMember(null, new YamlNodeCursor(entry.Value), keyCursor);
-        }
-    }
-
     private static bool TryParseBoolean(string text, out bool value)
     {
         if (string.Equals(text, "true", StringComparison.OrdinalIgnoreCase))
@@ -210,5 +210,49 @@ internal readonly struct YamlNodeCursor(YamlNode node) : ITreeNodeCursor
     private static bool IsNumber(string text)
     {
         return decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+    }
+
+    /// <summary>
+    /// Builds the cursor for a direct child of <see cref="node"/> (a sequence element, a mapping value or key),
+    /// recording <see cref="node"/> as that child's ancestor. Throws when the child is already one of this cursor's
+    /// own ancestors, including <see cref="node"/> itself: that can only happen when an alias resolved to a node
+    /// still being read, i.e. the YAML document is cyclic rather than a tree (YamlDataSource.ToJson detects the
+    /// identical case the same way, on the data-source path).
+    /// </summary>
+    private YamlNodeCursor Child(YamlNode child)
+    {
+        ImmutableHashSet<YamlNode> childAncestors = this.ancestors.Add(this.node);
+        if (childAncestors.Contains(child))
+        {
+            throw new YamlException(
+                child.Start,
+                child.End,
+                "An alias refers to its own ancestor, which cannot be read as a rule tree."
+            );
+        }
+
+        return new YamlNodeCursor(child, childAncestors);
+    }
+
+    private IEnumerable<ITreeNodeCursor> ElementsOf(YamlSequenceNode sequence)
+    {
+        foreach (YamlNode child in sequence.Children)
+        {
+            yield return this.Child(child);
+        }
+    }
+
+    private IEnumerable<TreeMember> MembersOf(YamlMappingNode mapping)
+    {
+        foreach (KeyValuePair<YamlNode, YamlNode> entry in mapping.Children)
+        {
+            // The key cursor is always supplied (not only for a non-string key): YamlDotNet keeps every node's
+            // position, so a diagnostic about a keyed-by-name construct, such as a 'definitions' entry's own name, can
+            // locate itself from this key's real span rather than falling back to a path.
+            YamlNodeCursor keyCursor = this.Child(entry.Key);
+            yield return entry.Key is YamlScalarNode { Value: { } name }
+                ? new TreeMember(name, this.Child(entry.Value), keyCursor)
+                : new TreeMember(null, this.Child(entry.Value), keyCursor);
+        }
     }
 }

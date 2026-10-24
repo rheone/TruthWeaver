@@ -178,6 +178,47 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal("hasRole(role: \"null\")", result.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>
+    /// A self-referencing YAML alias (an anchor aliased inside its own body, so YamlDotNet's loaded node graph is
+    /// cyclic rather than a tree) reports MalformedTree instead of recursing forever and overflowing the call stack
+    /// with an uncatchable StackOverflowException (ticket 03). Mirrors the <c>a: &amp;x [*x]</c> pattern already
+    /// pinned for <see cref="YamlDataSource"/> in <c>YamlDataSourceTests</c>, through the rule-compiling path instead
+    /// of the data-source path.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_SelfReferencingAlias_ReportsMalformedTreeInsteadOfHanging_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml("&r\nop: not\noperands: [*r]\n");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+    }
+
+    /// <summary>
+    /// A YAML tree nested well beyond the default MaxDepth reports MaxDepthExceeded instead of overflowing the call
+    /// stack while TreeFormatReader.ReadNode walks it (ticket 03), which recurses once per level with no guard of
+    /// its own. The depth here is deliberately a few hundred, not thousands: YamlDotNet's own recursive-descent
+    /// loader (YamlStream.Load, outside this fix's reach) has its own, lower stack-overflow ceiling for flow-style
+    /// nesting, so a test that is "deep enough to prove the guard trips" must stay well under that ceiling too.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_NestedWellBeyondMaxDepth_ReportsMaxDepthInsteadOfCrashing_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
+        const int levels = 150;
+        string deeplyNested =
+            string.Concat(Enumerable.Repeat("{op: not, operands: [", levels))
+            + "{const: true}"
+            + string.Concat(Enumerable.Repeat("]}", levels));
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml(deeplyNested);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
     /// <summary>A writer whose every write fails with a preset exception.</summary>
     private sealed class ThrowingWriter(Exception failure) : TextWriter
     {
