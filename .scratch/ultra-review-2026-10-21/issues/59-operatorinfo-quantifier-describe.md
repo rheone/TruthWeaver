@@ -24,6 +24,8 @@ Describe returns QuantifierText.Label(kind) and a real description for a quantif
 
 not verified (medium or low)
 
+Verified 2026-10-24: reproduced - a throwaway xUnit test calling `OperatorInfo.Describe(new QuantifierExpression(QuantifierKind.ForAll, "line", "lines", ConstantExpression(True)))` returned `Label="Forall"` and `Description=""`, because `ExpressionShape.Of` (src/TruthWeaver/Ast/ExpressionShape.cs:50) assigns op-name "Forall"/"Exists" but `OperatorDefinitions` has no such entry, so `Describe` falls through to the empty-description branch at src/TruthWeaver/Ast/OperatorInfo.cs:41.
+
 ## Finding F1.3: Tree-format 'did you mean' candidates leave out forall/exists
 
 Location: `src/TruthWeaver/Ast/TreeFormatOpNames.cs:23` (PLAUSIBLE, low)
@@ -41,6 +43,8 @@ ReadableNames includes forall and exists, so a quantifier typo gets the same 'di
 ### Verification
 
 not verified (medium or low)
+
+Verified 2026-10-24: reproduced - a throwaway xUnit test confirmed `TreeFormatOpNames.ReadableNames` (built only from `OperatorDefinitions.All` at src/TruthWeaver/Ast/TreeFormatOpNames.cs:14-23, plus the `xnor`/`iff` aliases) contains neither `forall` nor `exists`, matching OperatorDefinitions having no entry for either.
 
 ## Acceptance criteria
 

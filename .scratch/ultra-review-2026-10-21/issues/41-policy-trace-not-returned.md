@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F9 Policies
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - A test evaluating a PolicySet with EvaluationOptions(IncludeTrace: true) got back a PolicyDecision whose Decision.Trace is null, because PolicySet.Build (PolicySet{TContext}.cs:187-191) constructs `new Decision(result, new EquatableArray<Fault>(faults))` with no Trace argument.
 Blocked by: none
 
 ## Finding F9.6: IncludeTrace collects a trace that PolicyDecision never returns

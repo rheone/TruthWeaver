@@ -24,6 +24,8 @@ Point at `min` or `max`, whichever violates the rule (for example `max` when max
 
 not verified (medium or low)
 
+Verified 2026-10-24: reproduced - a throwaway xUnit test against `{"op":"between","min":3,"max":1,"operands":[...]}` showed the TRE0008 diagnostic's span equals the entire JSON object text (because `BuildBetween` passes `path: node.Path` at src/TruthWeaver/Compilation/RuleNodeCompiler.cs:683), while the equivalent AtLeast k-violation diagnostic's span is narrowed to just the `k` member (via `PathOf(node, "k")` at line 631).
+
 ## Acceptance criteria
 
 - The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.

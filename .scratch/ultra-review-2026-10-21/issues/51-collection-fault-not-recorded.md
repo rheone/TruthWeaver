@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F4 Evaluation
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwing collection selector adds a Fault to Decision.Faults but a substitute ILogger receives zero Log calls and the truthweaver.faults Meter counter receives zero measurements, unlike a normal predicate fault (confirmed with a throwaway xUnit test, then removed).
 Blocked by: none
 
 ## Finding F4.5: Collection-level faults skip RecordFault: no log, no fault metric

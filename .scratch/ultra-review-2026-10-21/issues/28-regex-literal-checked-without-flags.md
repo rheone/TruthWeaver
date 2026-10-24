@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F7 Predicates B
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - compiling `isMatch(pattern: "^a+ # one or more (a's", flags: from("request", "$.flags"))` fails with TRE0026 ("Not enough )'s") because `ValidateArguments` validates the literal pattern under `RegexOptions.None` without checking `args.IsDeferred("flags")`, even though the pattern is valid under the `x` flag the data source would supply at evaluation.
 Blocked by: none
 
 ## Finding F7.3: Literal regex pattern is checked with no options when the flags come from a data source, so a valid rule fails to compile

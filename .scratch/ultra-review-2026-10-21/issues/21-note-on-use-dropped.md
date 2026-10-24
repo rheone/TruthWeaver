@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: L3 Externals+If+constants
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - compiling the JSON use-with-note example succeeded, but `CompiledRule.Notes` was empty and `PrintJson()` no longer contained `age gate`.
 Blocked by: none
 
 ## Finding L3.3: A note written on a `use` node is dropped when the use expands

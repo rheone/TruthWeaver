@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F2 Parsing
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `DslParser.Parse("(a AND )")` raises both the expected-term error and a false "Unclosed '(' ... expected ')'" diagnostic (the primary fallback consumes the closer the group was waiting for), `DslParser.Parse("AtLeast(a, b, c)")` raises more than one diagnostic for the single missing-k mistake, and `DslParser.Parse("a AND OR")` / `DslParser.Parse("XOR()")` raise no `SyntaxError` at all (the operator word is parsed as an ordinary term instead).
 Blocked by: none
 
 ## Finding F2.8: Error recovery cascades into misleading follow-on diagnostics

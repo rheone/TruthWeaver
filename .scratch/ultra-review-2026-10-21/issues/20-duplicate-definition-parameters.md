@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F2 Parsing; F3 Compilation; L3 Externals+If+constants
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a test compiling `let both(x, X) = x AND X; both(isOwner, isEditor)` with isOwner=false/isEditor=true succeeded with no error diagnostics and printed `isEditor AND isEditor`, confirming the first argument is silently dropped.
 Blocked by: none
 
 ## Finding F2.6: Duplicate definition parameter names are accepted; the last binding silently wins

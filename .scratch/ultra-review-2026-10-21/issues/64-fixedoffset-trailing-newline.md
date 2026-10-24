@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: F7 Predicates B
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test showed `FixedOffsetText.TryParseOffset("+05:30\n", ...)` and `TryParseTimeOfDay("09:00\n", ...)` both return `true` (parsed as `+05:30` / `09:00`), confirming the `$`-anchored, non-Multiline regexes accept a trailing newline.
 Blocked by: none
 
 ## Finding F7.5: FixedOffsetText regexes use '$', so a trailing newline is accepted

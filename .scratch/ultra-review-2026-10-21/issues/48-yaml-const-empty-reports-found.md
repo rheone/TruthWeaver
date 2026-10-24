@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: L5 Least surprise
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - a throwaway xUnit test compiling YAML `const:` (empty value) through RuleCompiler.CompileYaml produced an error diagnostic with Found `''`, not `null`.
 Blocked by: none
 
 ## Finding L5.7: YAML `const:` with an empty or `~` value reports Found as a quoted empty string rather than null

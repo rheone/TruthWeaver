@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: low
 Lens: T2 Surfaces
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - compiler.CompileYaml("definitions:\n  args:\n    body: {const: true}\n    body: {const: false}\n") raises exactly one diagnostic coded DuplicateArgument (TRE0032) instead of MalformedTree, because FindDuplicateArgument's top.Path.EndsWith(".args") check matches the 'args'-named definitions entry, not only a predicate's own args mapping (confirmed with a throwaway xUnit test, then removed).
 Blocked by: none
 
 ## Finding T2.8: YAML duplicate-key rescan labels any repeat under a key named 'args' as DuplicateArgument

@@ -4,6 +4,7 @@ Status: needs-triage
 Severity: medium
 Lens: F8 Predicate+DataSource concepts
 Verdict: PLAUSIBLE
+Verified 2026-10-24: reproduced - `JsonDataSource.Create(new JsonObject { ["id"] = Guid.NewGuid() }).QueryAsync("$.id")` and the same with a CLR `DateTimeOffset` both throw `InvalidOperationException` ("A value of type 'System.Guid'/'System.DateTimeOffset' cannot be converted to a 'System.String'") from `JsonValue<T>.GetValue<string>()` inside `TryConvert` at `JsonDataSource.cs:158`, instead of returning a `DataQueryResult` failure.
 Blocked by: none
 
 ## Finding F8.2: JsonDataSource throws instead of converting when a node holds a CLR value (Guid, DateTimeOffset, char, NaN)
