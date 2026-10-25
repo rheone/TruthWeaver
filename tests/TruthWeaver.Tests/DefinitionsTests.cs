@@ -164,6 +164,70 @@ public sealed class DefinitionsTests
     }
 
     /// <summary>
+    /// A cycle between two definitions that the rule body never reaches is reported at compile time (ticket 22),
+    /// not only once some later edit happens to use one of them: <c>DefinitionExpander.Expand</c> previously
+    /// walked only <c>document.Body</c>, so this cycle compiled with zero diagnostics. The single diagnostic
+    /// asserted below also confirms the cycle is reported once, not twice (once from each definition's own
+    /// validation walk).
+    /// </summary>
+    [Fact]
+    public void Compile_UnreachableDefinitionCycle_ReportsDefinitionCycleDetected_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isAdmin", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let a = b; let b = a; isAdmin");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionCycleDetected);
+        Assert.Contains("a", diagnostic.Message);
+        Assert.Contains("b", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A definition the rule body never reaches, but which is itself valid (no cycle, no unknown use), still
+    /// compiles with no diagnostic (ticket 22): validating every declared definition must not turn a merely
+    /// unused-but-fine definition into a false positive.
+    /// </summary>
+    [Fact]
+    public void Compile_UnreachableValidDefinition_CompilesWithoutDiagnostic_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isAdmin", true).AddConstant("a", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let unused(x) = x AND a; isAdmin");
+
+        Assert.NotNull(result.CompiledRule);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    /// <summary>
+    /// A definition the rule body never reaches, whose own body uses a definition name that was never declared, is
+    /// reported too (ticket 22): JSON's explicit <c>use</c> node shape can name an undeclared definition directly,
+    /// unlike rule text (where an undeclared name parses as an ordinary predicate term, not a use).
+    /// </summary>
+    [Fact]
+    public void CompileJson_UnreachableDefinitionUsingUnknownDefinition_ReportsUnknownDefinition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "broken": { "body": { "op": "use", "name": "nope" } }
+              },
+              "predicate": "a"
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownDefinition);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
     /// A definition whose parameter list repeats a name (case-insensitively) is a compile error (ticket 20), not a
     /// silent binding where <c>ExpandUse</c>'s case-insensitive parameter dictionary lets the later parameter
     /// overwrite the earlier one's argument.

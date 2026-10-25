@@ -67,6 +67,42 @@ internal static class DefinitionExpander
         Expander expander = new(definitionsByName, options, diagnostics);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
 
+        // A definition document.Body's own expansion never reaches is still declared, and ADR-0008's cycle,
+        // unknown-use, argument-count and definition-depth guardrails are unconditional ("a definition cannot
+        // reference itself... through a chain of other definitions"), not "only a definition some use reaches"
+        // (ticket 22). Without this, `let a = b; let b = a; isAdmin` compiled with zero diagnostics even though a
+        // and b form a cycle, and the cycle surfaced only once some later edit happened to use a or b. Each
+        // still-unused definition's own body is walked here, through the same ExpandNode/ExpandUse logic (so the
+        // same MaxDefinitionDepth bound and cycle/unknown-use checks apply) and its result is discarded: an
+        // unreachable definition never contributes nodes to the compiled rule, so only its diagnostics matter. A
+        // separate Expander (so a fresh, independent nodeCount) keeps a large unreachable chain from spending the
+        // same node budget as the rule's own reachable expansion above - a document that already compiled because
+        // its reachable tree was well within MaxNodeCount must not start failing only because this new, unrelated
+        // validation pass now also looks at its unreachable definitions - while still bounding this pass's own
+        // work against the same MaxNodeCount, the same protection ticket 04 gave the reachable walk. A scratch copy
+        // of 'unused' keeps this walk from marking a definition used for the real UnusedDefinition lint below.
+        Expander unreachableValidator = new(definitionsByName, options, diagnostics);
+        HashSet<string> validated = [with(StringComparer.OrdinalIgnoreCase)];
+        foreach (DefinitionNode definition in document.Definitions)
+        {
+            if (!definitionsByName.ContainsKey(definition.Name) || !unused.Contains(definition.Name))
+            {
+                continue; // Discarded by an earlier declaration-level diagnostic, or already reached from the body.
+            }
+
+            if (!validated.Add(definition.Name))
+            {
+                // Already covered by an earlier unreached definition's own validation walk this pass, e.g. the
+                // other half of a cycle between two unreached definitions: walking it again would report the same
+                // cycle a second time.
+                continue;
+            }
+
+            HashSet<string> scratchUnused = new(unused, StringComparer.OrdinalIgnoreCase);
+            unreachableValidator.ExpandNode(definition.Body, parameters: null, chain: [definition.Name], scratchUnused);
+            validated.UnionWith(unused.Where(name => !scratchUnused.Contains(name)));
+        }
+
         if (options.Lints.HasFlag(LintRules.UnusedDefinition))
         {
             // Report in declaration order, not hash-set order, so the findings read the way the document was written.
