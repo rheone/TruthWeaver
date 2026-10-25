@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** needs-triage (do not start or dispatch until the owner approves explicitly)
 
 - [ ] A map document in the ticket folder lists every page, its package, its audience task and its action (keep, improve, move, merge, write)
 - [ ] The map applies the spec's decisions, including the strong-k3 fold with its proposed rule and checker changes

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** on-hold (do not start or dispatch until the owner triggers the effort)
+**Status:** needs-triage (do not start or dispatch until the owner triggers the effort)
 
 - [ ] Tickets 02 to 09 of `public-api-documentation` are done
 - [ ] Every public member has an XML doc, and a missing one fails the build (CS1591 and the doc analyzers as errors, no suppressions)

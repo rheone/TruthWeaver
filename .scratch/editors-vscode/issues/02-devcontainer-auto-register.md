@@ -2,7 +2,7 @@
 
 **What to build:** Auto-install `editors/vscode/` into the devcontainer's VS Code Server so it's available on a fresh container without a manual copy or `F5` Extension Development Host.
 
-**Status:** on-hold — deferred during the 2026-10-24 grilling session. Do not start or dispatch until explicitly triggered.
+**Status:** needs-triage — deferred during the 2026-10-24 grilling session. Do not start or dispatch until explicitly triggered.
 
 **Research findings (2026-10-24):**
 

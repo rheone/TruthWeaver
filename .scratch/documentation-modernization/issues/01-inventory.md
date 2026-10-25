@@ -4,7 +4,7 @@
 
 **Blocked by:** 00
 
-**Status:** on-hold (do not start or dispatch until the owner triggers the effort)
+**Status:** needs-triage (do not start or dispatch until the owner triggers the effort)
 
 - [ ] The audit table covers every surface in spec decision 3, reproducible by a script in `scripts/` or stated commands
 - [ ] Nothing outside `.scratch/` and `scripts/` changed

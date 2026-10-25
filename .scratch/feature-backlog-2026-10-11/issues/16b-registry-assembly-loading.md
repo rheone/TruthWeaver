@@ -6,7 +6,7 @@
 
 **Blocked by:** 16
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** needs-triage (do not start or dispatch until the owner approves explicitly)
 
 - [ ] Scope is confirmed with the owner before any work
 - [ ] A host registry loads and its schemas are used for strict validation

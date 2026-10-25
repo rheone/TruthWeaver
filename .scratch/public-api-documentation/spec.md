@@ -1,6 +1,6 @@
 # Public API documentation for package consumers
 
-**Status:** on hold. The plan is written; no ticket may start until the owner approves explicitly.
+**Status:** needs-triage. The plan is written; no ticket may start until the owner approves explicitly.
 
 ## Goal
 

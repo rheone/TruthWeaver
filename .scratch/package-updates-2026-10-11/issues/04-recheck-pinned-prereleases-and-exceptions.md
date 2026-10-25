@@ -6,7 +6,7 @@
 
 **Blocked by:** None; start only when one of the conditions above is met
 
-**Status:** on-hold (do not start until the named release exists)
+**Status:** needs-triage (do not start until the named release exists)
 
 - [ ] Each condition that has been met is acted on, with the update and its fixes
 - [ ] Pins that remain have an up-to-date reason comment

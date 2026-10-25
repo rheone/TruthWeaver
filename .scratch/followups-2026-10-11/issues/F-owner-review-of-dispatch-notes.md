@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** needs-owner-action
+**Status:** needs-triage
 
 - [x] Ticket A: `NullBehaviorScope` (AsyncLocal) with `PredicateFamily`, and `NullBehavior.Default = 2`. API shape and names.
 - [x] Ticket C: reserved names `T`, `F`, `U`. Wording in CHANGELOG and ADR-0005 decision 16.

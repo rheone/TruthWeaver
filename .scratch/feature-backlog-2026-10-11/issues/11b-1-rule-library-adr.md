@@ -6,7 +6,7 @@
 
 **Blocked by:** none
 
-**Status:** on-hold (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
 
 - [ ] The ADR names each decision and the rejected alternatives
 - [ ] `CONTEXT.md` and `docs/glossary.md` define rule library, library rule, rule reference and runtime call

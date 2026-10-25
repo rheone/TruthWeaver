@@ -4,7 +4,7 @@
 
 **Blocked by:** a design for node locations. `Expression` nodes keep none today, and structural equality must not include one.
 
-**Status:** deferred
+**Status:** needs-triage
 
 - [ ] Owner confirms the node-location design (side table keyed by node, or a field excluded from equality)
 - [ ] Every lint finding carries `Span` or `Path`, matching how parse diagnostics already do

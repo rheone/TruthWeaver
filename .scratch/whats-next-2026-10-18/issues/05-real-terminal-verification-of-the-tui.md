@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-owner-action
+**Status:** needs-triage
 
 - [ ] `NO_COLOR` swaps the color scheme.
 - [ ] OSC 11 background detection picks the light or dark theme.

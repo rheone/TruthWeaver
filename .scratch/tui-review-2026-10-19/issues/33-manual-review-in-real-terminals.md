@@ -8,7 +8,7 @@
 
 **Blocked by:** None (can start immediately). Needs a person.
 
-**Status:** needs-human-review
+**Status:** ready-for-human
 
 - [ ] Hover: in Windows Terminal, Visual Studio terminal, an SSH session and tmux, rest the pointer on an editor word and on a Tree pane line. Record which terminals show the box and which send no mouse movement.
 - [ ] Inspect key (Ctrl+F8 and Alt+M): the box opens in each terminal, Esc closes it, and the cursor right after a word is described.

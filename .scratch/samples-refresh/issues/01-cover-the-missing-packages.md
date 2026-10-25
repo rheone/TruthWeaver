@@ -2,7 +2,7 @@
 
 **What to build:** The four samples (Consumer, PredicateLibrary, AspNetCore, DataSource) use five of the thirteen packages. Add one small sample per uncovered package, each with a test project that asserts a decision. The tool and the terminal UI share one "rules as files" sample. Each sample builds in the solution and follows `samples/README.md`.
 
-**Status:** ready
+**Status:** ready-for-agent
 
 Not covered today:
 

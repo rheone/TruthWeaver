@@ -4,7 +4,7 @@
 
 **What to build:** N/A — see the spec above.
 
-**Status:** superseded
+**Status:** wontfix
 
 **Research findings (2026-10-24):**
 
