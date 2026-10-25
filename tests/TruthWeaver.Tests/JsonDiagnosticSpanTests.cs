@@ -124,9 +124,9 @@ public sealed class JsonDiagnosticSpanTests
         Assert.Equal(SourceSpan.None, diagnostic.Span);
     }
 
-    /// <summary>A BETWEEN whose min exceeds its max is located at the max member, not the whole BETWEEN object.</summary>
+    /// <summary>A BETWEEN whose min exceeds its max is located at the min member, not the whole BETWEEN object.</summary>
     [Fact]
-    public void CompileJson_BetweenMinAboveMax_SpanCoversTheMaxMember_Test()
+    public void CompileJson_BetweenMinAboveMax_SpanCoversTheMinMember_Test()
     {
         const string json =
             """{"op":"between","min":3,"max":1,"operands":[{"predicate":"a"},{"predicate":"a"},{"predicate":"a"}]}""";
@@ -134,8 +134,53 @@ public sealed class JsonDiagnosticSpanTests
         Diagnostic diagnostic = Single(json);
 
         Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        Assert.Equal("$.min", diagnostic.Path);
+        Assert.Equal("3", Covered(json, diagnostic));
+    }
+
+    /// <summary>A BETWEEN whose max exceeds the operand count is located at the max member, not the whole BETWEEN object.</summary>
+    [Fact]
+    public void CompileJson_BetweenMaxAboveOperandCount_SpanCoversTheMaxMember_Test()
+    {
+        const string json =
+            """{"op":"between","min":1,"max":9,"operands":[{"predicate":"a"},{"predicate":"a"},{"predicate":"a"}]}""";
+
+        Diagnostic diagnostic = Single(json);
+
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
         Assert.Equal("$.max", diagnostic.Path);
-        Assert.Equal("1", Covered(json, diagnostic));
+        Assert.Equal("9", Covered(json, diagnostic));
+    }
+
+    /// <summary>A BETWEEN with a negative min is located at the min member, not the whole BETWEEN object.</summary>
+    [Fact]
+    public void CompileJson_BetweenNegativeMin_SpanCoversTheMinMember_Test()
+    {
+        const string json =
+            """{"op":"between","min":-1,"max":2,"operands":[{"predicate":"a"},{"predicate":"a"},{"predicate":"a"}]}""";
+
+        Diagnostic diagnostic = Single(json);
+
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        Assert.Equal("$.min", diagnostic.Path);
+        Assert.Equal("-1", Covered(json, diagnostic));
+    }
+
+    /// <summary>
+    /// A BETWEEN covering the full operand range (a structural constant) blames neither bound individually, so it
+    /// is located at the max member, matching the threshold family's convention of reporting on a single member.
+    /// </summary>
+    [Fact]
+    public void CompileJson_BetweenFullRange_SpanCoversTheMaxMember_Test()
+    {
+        const string json =
+            """{"op":"between","min":0,"max":3,"operands":[{"predicate":"a"},{"predicate":"a"},{"predicate":"a"}]}""";
+
+        Diagnostic diagnostic = Single(json);
+
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        Assert.Equal("$.max", diagnostic.Path);
+        Assert.Equal("3", Covered(json, diagnostic));
     }
 
     private static Diagnostic Single(string json)
