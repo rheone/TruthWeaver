@@ -67,11 +67,11 @@ internal static class DefinitionExpander
         Expander expander = new(definitionsByName, options, diagnostics);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
 
-        // A definition document.Body's own expansion never reaches is still declared, and ADR-0008's cycle,
-        // unknown-use, argument-count and definition-depth guardrails are unconditional ("a definition cannot
-        // reference itself... through a chain of other definitions"), not "only a definition some use reaches"
-        // (ticket 22). Without this, `let a = b; let b = a; isAdmin` compiled with zero diagnostics even though a
-        // and b form a cycle, and the cycle surfaced only once some later edit happened to use a or b. Each
+        // Every definition that document.Body's own expansion never reaches is still declared, and ADR-0008's
+        // cycle, unknown-use, argument-count and definition-depth guardrails are unconditional ("a definition
+        // cannot reference itself... through a chain of other definitions"), not "only a definition some use
+        // reaches" (ticket 22). Without this, `let a = b; let b = a; isAdmin` compiled with zero diagnostics even
+        // though a and b form a cycle, and the cycle surfaced only once some later edit happened to use a or b. Each
         // still-unused definition's own body is walked here, through the same ExpandNode/ExpandUse logic (so the
         // same MaxDefinitionDepth bound and cycle/unknown-use checks apply) and its result is discarded: an
         // unreachable definition never contributes nodes to the compiled rule, so only its diagnostics matter. A
@@ -179,15 +179,14 @@ internal static class DefinitionExpander
     )
     {
         // Counts every node ExpandNode produces (or, past the limit, merely attempts), mirroring
-        // RuleNodeCompiler.Build's own nodeCount. Without this, a shallow but high-fanout chain of 'let' uses (each
+        // RuleNodeCompiler.Build's own node count. Without this, a shallow but high-fanout chain of 'let' uses (each
         // level AND-ing many uses of the one below) expands to fanout^depth nodes before Build ever gets to apply
         // MaxNodeCount, exhausting memory on a tiny document (ticket 04). Checking it on entry to every ExpandNode
         // call, before any recursion for that node, keeps the work past the limit to O(1) per call instead of
-        // letting it keep recursing into UseNode bodies: once nodeCount is already over budget, every call this one
+        // letting it keep recursing into UseNode bodies: once the guard is already over budget, every call this one
         // makes to expand an operand or a use's body also trips the same check immediately and returns without
         // expanding further.
-        private int nodeCount;
-        private bool nodeLimitReported;
+        private readonly NodeCountGuard nodeBudget = new(options.MaxNodeCount);
 
         /// <summary>Recursively expands one raw node, substituting parameter references and expanding uses as they are found.</summary>
         /// <param name="node">The node to expand.</param>
@@ -201,31 +200,12 @@ internal static class DefinitionExpander
             HashSet<string> unused
         )
         {
-            this.nodeCount++;
-            if (this.nodeCount > options.MaxNodeCount)
+            if (!this.nodeBudget.TryCount(diagnostics, node.Span, node.Path))
             {
-                if (!this.nodeLimitReported)
-                {
-                    this.nodeLimitReported = true;
-                    diagnostics.Add(
-                        Diagnostic.Error(
-                            DiagnosticCodes.MaxNodeCountExceeded,
-                            $"Rule exceeds the maximum node count of {options.MaxNodeCount}.",
-                            node.Span,
-                            expected: $"at most {options.MaxNodeCount} nodes",
-                            found: "more nodes than that",
-                            path: node.Path
-                        )
-                    );
-                }
-
                 // A placeholder, not the real expansion: once over budget, nothing further is expanded, so the
                 // returned tree is incomplete. RuleNodeCompiler.Build never runs on it for real (the error
                 // diagnostic above makes Compile return a null tree), so the placeholder's shape does not matter.
-                return new ErrorNode(node.Span) with
-                {
-                    Path = node.Path,
-                };
+                return new ErrorNode(node.Span) with { Path = node.Path };
             }
 
             return node switch

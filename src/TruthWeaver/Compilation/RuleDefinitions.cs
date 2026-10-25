@@ -207,12 +207,11 @@ public sealed class RuleDefinitions
         private readonly List<(UseNode Node, string? Definition, string Path)> uses = [];
         private readonly Dictionary<string, List<string>> expandedPathsOfUse = [with(StringComparer.Ordinal)];
 
-        // Counts every node Expand visits, mirroring DefinitionExpander's own nodeCount (ticket 04): this walk
+        // Counts every node Expand visits, mirroring DefinitionExpander's own node budget (ticket 04): this walk
         // follows the same 'let' uses a real compile would expand, so a shallow but high-fanout chain of definitions
         // can make it recurse just as explosively. Checked on entry to Expand, before it records anything or
         // recurses into an operand or a use's body, so work past the limit stays O(1) per call.
-        private int nodeCount;
-        private bool nodeLimitReported;
+        private readonly NodeCountGuard nodeBudget = new(options.MaxNodeCount);
 
         public List<DefinitionDeclaration> Definitions { get; } = [];
 
@@ -306,24 +305,8 @@ public sealed class RuleDefinitions
             List<string> chain
         )
         {
-            this.nodeCount++;
-            if (this.nodeCount > options.MaxNodeCount)
+            if (!this.nodeBudget.TryCount(this.Diagnostics, node.Span, node.Path))
             {
-                if (!this.nodeLimitReported)
-                {
-                    this.nodeLimitReported = true;
-                    this.Diagnostics.Add(
-                        Diagnostic.Error(
-                            DiagnosticCodes.MaxNodeCountExceeded,
-                            $"Rule exceeds the maximum node count of {options.MaxNodeCount}.",
-                            node.Span,
-                            expected: $"at most {options.MaxNodeCount} nodes",
-                            found: "more nodes than that",
-                            path: node.Path
-                        )
-                    );
-                }
-
                 return;
             }
 

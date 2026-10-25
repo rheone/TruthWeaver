@@ -30,12 +30,10 @@ internal sealed class TreeFormatReader
     // anchors and aliases (ticket 05): YamlStream.Load resolves every alias to the same anchored YamlNode instance,
     // so YamlNodeCursor's Elements/Members walk it again in full on every reference, and a document only a handful
     // of levels deep can still expand to fanout^levels visits. Checking this on entry to ReadNode, before recursing
-    // into that node's own operands, keeps the work past the limit to O(1) per call: once nodeCount is already over
+    // into that node's own operands, keeps the work past the limit to O(1) per call: once the guard is already over
     // budget, every sibling or ancestor operand still to be visited also trips the same check immediately instead of
     // walking its own (possibly aliased) subtree.
-    private readonly int maxNodeCount;
-    private int nodeCount;
-    private bool maxNodeCountReported;
+    private readonly NodeCountGuard nodeBudget;
 
     // Set by ReadUse: unlike the DSL (where ParseUse is reachable only for a name already scanned as a 'let'
     // declaration, so a bare use never appears without a document), a JSON/YAML 'use' node is its own explicit shape,
@@ -57,7 +55,7 @@ internal sealed class TreeFormatReader
     {
         this.words = words;
         this.maxDepth = maxDepth;
-        this.maxNodeCount = maxNodeCount;
+        this.nodeBudget = new NodeCountGuard(maxNodeCount);
     }
 
     /// <summary>Reads a tree document into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
@@ -207,22 +205,8 @@ internal sealed class TreeFormatReader
             return null;
         }
 
-        this.nodeCount++;
-        if (this.nodeCount > this.maxNodeCount)
+        if (!this.nodeBudget.TryCount(this.diagnostics, node.Span, path))
         {
-            if (!this.maxNodeCountReported)
-            {
-                this.maxNodeCountReported = true;
-                this.Report(
-                    DiagnosticCodes.MaxNodeCountExceeded,
-                    $"Rule exceeds the maximum node count of {this.maxNodeCount}.",
-                    node.Span,
-                    $"at most {this.maxNodeCount} nodes",
-                    "more nodes than that",
-                    path
-                );
-            }
-
             this.depth--;
             return null;
         }
