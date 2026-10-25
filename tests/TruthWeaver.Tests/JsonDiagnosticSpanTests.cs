@@ -124,6 +124,20 @@ public sealed class JsonDiagnosticSpanTests
         Assert.Equal(SourceSpan.None, diagnostic.Span);
     }
 
+    /// <summary>A BETWEEN whose min exceeds its max is located at the max member, not the whole BETWEEN object.</summary>
+    [Fact]
+    public void CompileJson_BetweenMinAboveMax_SpanCoversTheMaxMember_Test()
+    {
+        const string json =
+            """{"op":"between","min":3,"max":1,"operands":[{"predicate":"a"},{"predicate":"a"},{"predicate":"a"}]}""";
+
+        Diagnostic diagnostic = Single(json);
+
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        Assert.Equal("$.max", diagnostic.Path);
+        Assert.Equal("1", Covered(json, diagnostic));
+    }
+
     private static Diagnostic Single(string json)
     {
         return Assert.Single(Compiler.CompileJson(json).Diagnostics, d => d.Severity == DiagnosticSeverity.Error);

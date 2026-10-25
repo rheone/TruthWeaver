@@ -692,6 +692,10 @@ internal sealed class RuleNodeCompiler<TContext>
             string reason = inRange
                 ? $"the full range 0..{operandCount} is always True (a structural constant)"
                 : $"it must satisfy 0 <= min <= max <= {operandCount} for {operandCount} operand(s)";
+
+            // Only a negative min is wrong on its own; every other failure (min > max, max > n, or the full range) is
+            // reported on max, as the threshold family reports on k.
+            string? offendingPath = node.Min < 0 ? PathOf(node, "min") : PathOf(node, "max");
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.InvalidThresholdValue,
@@ -699,7 +703,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     node.Span,
                     expected: $"0 <= min <= max <= {operandCount}, excluding the full range",
                     found: $"min={node.Min}, max={node.Max}",
-                    path: node.Path
+                    path: offendingPath
                 )
             );
             return FailedNode.Placeholder;
