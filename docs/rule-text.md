@@ -104,6 +104,9 @@ A definition is document-scoped sugar, not a new kind of node, so it follows a f
 - **Unique, non-reserved names.** A definition's name must be unique (case-insensitively) within its document. It
   cannot reuse `let` or any other reserved word, `T`/`F`/`U`, or the name of a predicate registered with the
   compiler.
+- **Unique parameter names.** A definition's own parameter list cannot name the same parameter twice
+  (case-insensitively), such as `let both(x, X) = x AND X;`. Binding a use's arguments by name would otherwise let
+  the later parameter silently overwrite the earlier one, dropping an argument with no diagnostic.
 - **Order does not matter.** A use may name a definition declared earlier or later in the same document.
 - **Expansion counts toward the normal limits.** Once a use is expanded, its nodes are ordinary tree nodes: they
   count toward `CompilerOptions.MaxNodeCount` and `MaxDepth` exactly as if written out by hand.
@@ -113,11 +116,13 @@ A definition is document-scoped sugar, not a new kind of node, so it follows a f
 - **An unused definition is an opt-in lint**, `LintRules.UnusedDefinition`, off by default.
 
 Each rule is a distinct compile diagnostic, listed with the others in [Diagnostics](strong-k3/specification/diagnostics.md):
-a self- or mutual reference (`DefinitionCycleDetected`), a name collision (`DefinitionNameCollision`), a chain
-deeper than `MaxDefinitionDepth` (`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments
-(`DefinitionArgumentCountMismatch`), a use of a name that was never declared (`UnknownDefinition`), and the
-unused-definition lint (`UnusedDefinition`). A diagnostic's span always points at the use; one actually inside a
-definition's own body additionally names the definition.
+a self- or mutual reference (`DefinitionCycleDetected`), a name collision (`DefinitionNameCollision`), a repeated
+parameter name (`DuplicateDefinitionParameter`), a chain deeper than `MaxDefinitionDepth`
+(`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments (`DefinitionArgumentCountMismatch`), a use
+of a name that was never declared (`UnknownDefinition`), and the unused-definition lint (`UnusedDefinition`). A
+diagnostic's span always points at the use; one actually inside a definition's own body additionally names the
+definition. `DuplicateDefinitionParameter` is the exception: nothing about the definition's own declaration is a
+use, so its span always points at the declaration itself.
 
 ### Read the definitions of a document
 

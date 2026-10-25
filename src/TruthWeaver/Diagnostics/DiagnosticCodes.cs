@@ -269,4 +269,13 @@ public static class DiagnosticCodes
     /// still trip it. The rule still compiles.
     /// </summary>
     public const string AnalysisSkippedNodeBudgetExceeded = "TRE0045";
+
+    /// <summary>
+    /// A <c>let</c> definition's own parameter list repeats a name (compared case-insensitively), in rule text, JSON,
+    /// YAML or <c>RuleBuilder</c> (ticket 20). Binding a use's arguments by parameter name would otherwise let a
+    /// later duplicate silently overwrite an earlier one, the same "no occurrence wins" rationale as
+    /// <see cref="DuplicateArgument"/> for a repeated predicate argument name. The span or path is the definition's
+    /// own declaration, not any particular use.
+    /// </summary>
+    public const string DuplicateDefinitionParameter = "TRE0046";
 }

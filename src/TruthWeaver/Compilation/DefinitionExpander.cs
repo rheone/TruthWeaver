@@ -54,6 +54,12 @@ internal static class DefinitionExpander
                 continue;
             }
 
+            if (DuplicateParameterName(definition.Parameters) is { } duplicateParameter)
+            {
+                diagnostics.Add(DuplicateParameterDiagnostic(definition, duplicateParameter));
+                continue;
+            }
+
             definitionsByName[definition.Name] = definition;
             unused.Add(definition.Name);
         }
@@ -94,6 +100,37 @@ internal static class DefinitionExpander
             definition.NameSpan,
             expected: "a definition name not already used in this document, not a reserved word, and not a registered predicate name",
             found: $"'{definition.Name}', which clashes with {clash}",
+            path: definition.NamePath
+        );
+    }
+
+    // Returns the first parameter name (as written) that repeats an earlier one in the same list, compared
+    // case-insensitively, or null when every name is distinct. ExpandUse binds a use's arguments into a
+    // case-insensitive dictionary keyed by parameter name (ticket 20): without this check, a repeated name such as
+    // `let both(x, X) = x AND X;` would let the later parameter silently overwrite the earlier one's binding,
+    // dropping an argument with no diagnostic, the same mistake TRE0032 (DuplicateArgument) already rejects for a
+    // repeated predicate argument name.
+    private static string? DuplicateParameterName(IReadOnlyList<string> parameters)
+    {
+        return parameters
+            .Where((name, index) => parameters.Take(index).Contains(name, StringComparer.OrdinalIgnoreCase))
+            .FirstOrDefault();
+    }
+
+    // The span and path are the definition's own declaration, not any particular use: a repeated parameter name is
+    // wrong about the declaration itself, independent of whether (or how) the definition is ever used.
+    private static Diagnostic DuplicateParameterDiagnostic(DefinitionNode definition, string duplicateParameter)
+    {
+        return Diagnostic.Error(
+            DiagnosticCodes.DuplicateDefinitionParameter,
+            $"Definition '{definition.Name}' repeats parameter '{duplicateParameter}'.",
+            definition.NameSpan,
+            expected: "a parameter list with no name repeated (compared case-insensitively)",
+            found: $"'{duplicateParameter}' repeated",
+            suggestion: new DiagnosticSuggestion(
+                DiagnosticSuggestionKind.Hint,
+                $"Rename or remove one of the '{duplicateParameter}' parameters."
+            ),
             path: definition.NamePath
         );
     }

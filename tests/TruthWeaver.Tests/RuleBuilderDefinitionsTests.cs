@@ -169,6 +169,30 @@ public sealed class RuleBuilderDefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A definition whose parameter list repeats a name (case-insensitively) is a compile error (ticket 20),
+    /// matching the rule-text and JSON forms, rather than letting <c>ExpandUse</c>'s case-insensitive parameter
+    /// binding silently drop one of the use's arguments.
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        RuleDefinition both = RuleBuilder.Define(
+            "both",
+            ["x", "X"],
+            RuleBuilder.And(RuleBuilder.Predicate("x"), RuleBuilder.Predicate("X"))
+        );
+        RuleBuilder builder = RuleBuilder
+            .Use("both", RuleBuilder.Predicate("a"), RuleBuilder.Predicate("b"))
+            .WithDefinitions(both);
+
+        CompilationResult<RuleTestContext> result = builder.Compile(compiler);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A definition named after a predicate registered with the compiler is a name collision, matching rule text.</summary>
     [Fact]
     public void Compile_DefinitionNamedAfterRegisteredPredicate_ReportsDefinitionNameCollision_Test()

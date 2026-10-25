@@ -164,6 +164,101 @@ public sealed class DefinitionsTests
     }
 
     /// <summary>
+    /// A definition whose parameter list repeats a name (case-insensitively) is a compile error (ticket 20), not a
+    /// silent binding where <c>ExpandUse</c>'s case-insensitive parameter dictionary lets the later parameter
+    /// overwrite the earlier one's argument.
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let both(x, X) = x AND X; both(a, b)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Contains("both", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// The exact ticket 20 failure scenario: without the fix, <c>both(isOwner, isEditor)</c> compiled silently to
+    /// <c>isEditor AND isEditor</c>, dropping <c>isOwner</c>, so a rule that should evaluate <c>False</c> (isOwner is
+    /// False) instead evaluated <c>True</c>. The fix rejects the definition at compile time, so the rule never
+    /// reaches evaluation with the wrong meaning.
+    /// </summary>
+    [Fact]
+    public void Compile_DuplicateParameterDefinitionUsedWithDifferingArguments_FailsCompilationInsteadOfDroppingAnArgument_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("isOwner", false)
+                .AddConstant("isEditor", true)
+                .Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let both(x, X) = x AND X; both(isOwner, isEditor)");
+
+        Assert.Null(result.CompiledRule);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+    }
+
+    /// <summary>A JSON definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "both": {
+                  "parameters": ["x", "X"],
+                  "body": {
+                    "op": "and",
+                    "operands": [{ "predicate": "x" }, { "predicate": "X" }]
+                  }
+                }
+              },
+              "op": "use",
+              "name": "both",
+              "operands": [{ "predicate": "a" }, { "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              both:
+                parameters: [x, X]
+                body:
+                  op: and
+                  operands:
+                    - predicate: x
+                    - predicate: X
+            op: use
+            name: both
+            operands:
+              - predicate: a
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
     /// A non-cyclic chain of uses deeper than <see cref="CompilerOptions.MaxDefinitionDepth"/> is a distinct compile
     /// error, independent of <c>MaxDepth</c> and the cycle check.
     /// </summary>

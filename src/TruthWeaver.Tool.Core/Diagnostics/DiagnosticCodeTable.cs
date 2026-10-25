@@ -223,6 +223,11 @@ public static class DiagnosticCodeTable
             nameof(DiagnosticCodes.AnalysisSkippedNodeBudgetExceeded),
             "The analysis was skipped because building its decision diagram would exceed the analyzer's node budget."
         ),
+        Error(
+            DiagnosticCodes.DuplicateDefinitionParameter,
+            nameof(DiagnosticCodes.DuplicateDefinitionParameter),
+            "A let definition's parameter list repeats a name."
+        ),
         Error(ToolDiagnosticCodes.InputUnreadable, nameof(ToolDiagnosticCodes.InputUnreadable), "The input cannot be read."),
         Error(
             ToolDiagnosticCodes.InvalidEncoding,
