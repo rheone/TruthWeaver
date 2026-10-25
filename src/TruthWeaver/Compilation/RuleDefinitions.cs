@@ -78,14 +78,26 @@ public sealed class RuleDefinitions
 
     /// <summary>Reads the definitions and uses of a rule in the JSON tree format.</summary>
     /// <param name="json">The JSON tree text.</param>
+    /// <param name="options">
+    /// The resource limits to read by, matching <see cref="ReadText"/>: <see cref="CompilerOptions.MaxDepth"/> bounds
+    /// the parse, and <see cref="CompilerOptions.MaxDefinitionDepth"/> and <see cref="CompilerOptions.MaxNodeCount"/>
+    /// bound the <see cref="SourcesOf"/> walk. Defaults to <see cref="CompilerOptions.Default"/>, so a caller that
+    /// compiles with a different <see cref="CompilerOptions.MaxDefinitionDepth"/> can pass the same options here and
+    /// get a source map that agrees with that compile (ticket 23), instead of one truncated at the default depth.
+    /// </param>
     /// <returns>The definitions and uses, or the diagnostics when the JSON cannot be read as a rule tree.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/>.</exception>
-    public static RuleDefinitions ReadJson(string json)
+    public static RuleDefinitions ReadJson(string json, CompilerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = JsonTreeParser.Parse(json);
-        return FromParsed(root, diagnostics, JsonSpanLocator.Create(json));
+        CompilerOptions effective = options ?? CompilerOptions.Default;
+        (RuleNode? root, IReadOnlyList<Diagnostic> diagnostics) = JsonTreeParser.Parse(
+            json,
+            effective.MaxDepth,
+            effective.MaxNodeCount
+        );
+        return FromParsed(root, diagnostics, JsonSpanLocator.Create(json), effective);
     }
 
     /// <summary>
@@ -130,9 +142,8 @@ public sealed class RuleDefinitions
     /// </param>
     /// <param name="options">
     /// The resource limits the source-mapping walk (<see cref="Reader.Expand"/>) enforces, matching whatever a real
-    /// compile of the same document would use. Defaults to <see cref="CompilerOptions.Default"/> when not supplied,
-    /// so <see cref="ReadJson"/> and <c>YamlRuleDefinitions.ReadYaml</c>, which take no options of their own, still
-    /// cannot be made to hang or exhaust memory (ticket 04).
+    /// compile of the same document would use. Defaults to <see cref="CompilerOptions.Default"/> when a caller
+    /// supplies none, so a reader can never be made to hang or exhaust memory on an untrusted document (ticket 04).
     /// </param>
     /// <returns>The result.</returns>
     internal static RuleDefinitions FromParsed(
