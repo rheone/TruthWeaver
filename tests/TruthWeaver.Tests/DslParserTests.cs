@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using System.Diagnostics;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
@@ -257,5 +258,41 @@ public sealed class DslParserTests
         Assert.Empty(diagnostics);
         RuleDocumentNode document = Assert.IsType<RuleDocumentNode>(root);
         Assert.IsType<TermNode>(document.Body);
+    }
+
+    /// <summary>
+    /// Ticket 25: comment-to-note attachment used to re-scan every token and every node extent for every comment
+    /// (NoteAttacher.FindTarget/Deepest), which made a comment-heavy input quadratic. Parsing an input with 4x as many
+    /// trailing-comment terms now takes close to 4x as long, not the ~16x a quadratic cost gives (the ticket's own
+    /// repro measured ~14x for a 4x increase before the fix).
+    /// </summary>
+    [Fact]
+    public void Parse_CommentHeavyInput_ScalesLinearlyNotQuadratically_Test()
+    {
+        // Warm up the JIT so the first measured parse is not penalized by startup/tiering costs.
+        DslParser.Parse(CommentHeavyRule(50));
+
+        long smallElapsedMs = TimeParse(CommentHeavyRule(2_000));
+        long largeElapsedMs = TimeParse(CommentHeavyRule(8_000));
+
+        // Floor the small measurement so a near-zero denominator (a very fast machine) cannot inflate the ratio.
+        double ratio = largeElapsedMs / (double)Math.Max(smallElapsedMs, 5);
+        string ratioMessage =
+            $"4x more comments took {ratio:F1}x longer ({smallElapsedMs} ms -> {largeElapsedMs} ms); expected close to linear growth, not quadratic.";
+        Assert.True(ratio < 8.0, ratioMessage);
+        Assert.True(largeElapsedMs < 2_000, $"Parsing 8,000 comments took {largeElapsedMs} ms; expected well under 2 seconds.");
+    }
+
+    private static long TimeParse(string text)
+    {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        DslParser.Parse(text);
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
+    }
+
+    private static string CommentHeavyRule(int repeats)
+    {
+        return string.Concat(Enumerable.Repeat("a /* c */ AND ", repeats)) + "a";
     }
 }
