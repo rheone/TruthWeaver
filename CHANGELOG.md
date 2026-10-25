@@ -11,10 +11,9 @@ All notable changes to TruthWeaver are recorded here. The format follows
 > has been shipped to a consumer yet, so the "breaking changes" are measured against two reference points rather than
 > against a released version:
 >
-> - **The first engine commit, [`df8f4b9`](https://github.com/rheone/TruthWeaver/commit/df8f4b9)**
->   (`BooleanRulesEngine` v1). Anyone who cloned the project early starts here. See
+> - **The first engine commit** (`BooleanRulesEngine` v1). Anyone who cloned the project early starts here. See
 >   [Migrating from the first engine commit](#migrating-from-the-first-engine-commit).
-> - **The commit before the Strong K3 work, `57cf2c9`.** The K3 effort changed most of the public surface. See
+> - **The state right before the Strong K3 work.** The K3 effort changed most of the public surface. See
 >   [Migrating across the Strong K3 work](#migrating-across-the-strong-k3-work).
 
 **Version policy.** MinVer derives the version from the Git tags (tag prefix `v`). Until the first release, no tag exists, so every build is a `1.0.0-preview.0.N` pre-release (`N` is the number of commits since the start of the history). Until `1.0.0` ships, any change may break
@@ -646,7 +645,7 @@ Entries elsewhere in this file that name a code were updated to the `TRE` prefix
 
 ## Migrating across the Strong K3 work
 
-Reference point: commit `57cf2c9`, the last commit before the K3 work began. Each entry gives the old form, the new
+Reference point: the state right before the K3 work began. Each entry gives the old form, the new
 form and the migration step.
 
 ### 1. Predicates return `TruthValue`
@@ -744,7 +743,7 @@ form and the migration step.
 ### Names that existed only in unreleased K3 commits
 
 These were added and then replaced during the K3 effort, before any release. They are listed because a clone taken
-mid-effort may use them; a consumer starting from `57cf2c9` or `df8f4b9` never saw them.
+mid-effort may use them; a consumer starting from the pre-K3 state or the first engine commit never saw them.
 
 | Interim form | Final form | Why |
 | --- | --- | --- |
@@ -758,19 +757,19 @@ mid-effort may use them; a consumer starting from `57cf2c9` or `df8f4b9` never s
 
 ## Migrating from the first engine commit
 
-Reference point: `df8f4b9`. In addition to everything under [Migrating across the Strong K3 work](#migrating-across-the-strong-k3-work),
-these breaks landed between that commit and `57cf2c9`:
+Reference point: the first engine commit. In addition to everything under [Migrating across the Strong K3 work](#migrating-across-the-strong-k3-work),
+these breaks landed between that commit and the pre-K3 state:
 
-- **Rename `BooleanRulesEngine` to `TruthWeaver`** (commit `4cfc1b9`). Solution, project, package and namespace names
+- **Rename `BooleanRulesEngine` to `TruthWeaver`.** Solution, project, package and namespace names
   changed (`BooleanRulesEngine.*` to `TruthWeaver.*`), including the Predicates and Testing packages and the
   `BooleanRulesEngine.Ast` namespace. **Migrate:** update `PackageReference`/`ProjectReference` entries and `using`
   directives.
-- **Predicate `Description` and `Label` are required** (commits `4176ea2`, `dc02e7b`). `PredicateSchema` and
+- **Predicate `Description` and `Label` are required.** `PredicateSchema` and
   `PredicateArgumentSchema` require a `Description`, and `PredicateSchema` requires a `Label`. **Migrate:** supply both
   when building schemas.
-- **Canonical text parenthesises mixed `AND`/`OR`** (commit `578cce8`). An `AND` operand under an `OR` (and the reverse)
+- **Canonical text parenthesises mixed `AND`/`OR`.** An `AND` operand under an `OR` (and the reverse)
   is parenthesised even where precedence would make it unambiguous. **Migrate:** regenerate stored canonical text.
-- **String literal escaping** (commit `f3272f1`). `LiteralValue.ToString()` and the canonical printer escape `\` and
+- **String literal escaping.** `LiteralValue.ToString()` and the canonical printer escape `\` and
   `"` in string arguments, and an unknown escape such as `\q` in rule text is now diagnostic `TRE0015` instead of the
   backslash being dropped silently. **Migrate:** fix rule text that relied on an unrecognised escape.
 
@@ -779,7 +778,7 @@ Other changes in that range were additive (threshold family, `XNOR`/`IFF`, `Rule
 
 ## How this list was verified
 
-Each entry was checked against `git log` and `git diff 57cf2c9 HEAD` and, where it describes behaviour, by running it
+Each entry was checked against `git log` and a diff against the pre-K3 state and, where it describes behaviour, by running it
 (for example a registered predicate named `any` no longer parses, the JSON printer writes `equivalent`, and canonical
 text prints `EQUIVALENT`). The interim-name table was checked against the k3-followups tickets 04, 05, 06, 08, 20, 21
 and k3-hardening ticket 03. The README quick-start was compiled in a fresh project against the current API.
