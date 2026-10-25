@@ -230,7 +230,7 @@ public sealed class RuleCompiler<TContext>(
             return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
-        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics) =
+        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics, _) =
             RuleNodeCompiler<TContext>.Compile(root, this.registry, this.Options);
         diagnostics.AddRange(validationDiagnostics);
 

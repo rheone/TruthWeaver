@@ -101,6 +101,46 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
     }
 
+    /// <summary>
+    /// Ticket 10: a quantifier's body used to compile against a brand new <see cref="CompilerOptions.MaxNodeCount"/>
+    /// allowance instead of extending the outer compile's running count (ADR-0010 line 175: "a quantifier counts as
+    /// one node plus its body, once"), so several quantifiers each within budget on their own could combine into a
+    /// tree far over the limit with no diagnostic. Three quantifiers, each with a body that alone fits comfortably
+    /// under a small test budget, combine to more nodes than that budget and are now rejected.
+    /// </summary>
+    [Fact]
+    public void Limits_SeveralQuantifiersEachWithinBudgetAlone_CombineOverMaxNodeCountAndAreRejected_Test()
+    {
+        RuleCompiler<QuantifierBudgetContext> compiler = CreateQuantifierCompiler(new CompilerOptions(MaxNodeCount: 20));
+
+        // One quantifier: 1 (the quantifier itself) + 9 (1 AND node + 8 "elementTrue" terms) = 10 nodes, comfortably
+        // under the 20-node budget. Three of them, AND'ed together: 1 (the outer AND) + 3 x 10 = 31 nodes, over it.
+        string body = string.Join(" AND ", Enumerable.Repeat("elementTrue", 8));
+        string oneQuantifier = $"FORALL(x IN items, {body})";
+        string threeQuantifiers = string.Join(" AND ", Enumerable.Repeat(oneQuantifier, 3));
+
+        CompilationResult<QuantifierBudgetContext> result = compiler.Compile(threeQuantifiers);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// Ticket 10: threading the running node count across the collection-binding boundary must not make a single
+    /// quantifier whose body legitimately fits the budget fail to compile.
+    /// </summary>
+    [Fact]
+    public void Limits_SingleQuantifierWithinBudget_StillCompiles_Test()
+    {
+        RuleCompiler<QuantifierBudgetContext> compiler = CreateQuantifierCompiler(new CompilerOptions(MaxNodeCount: 20));
+        string body = string.Join(" AND ", Enumerable.Repeat("elementTrue", 8));
+        string oneQuantifier = $"FORALL(x IN items, {body})"; // 10 nodes total, well within the 20-node budget.
+
+        CompilationResult<QuantifierBudgetContext> result = compiler.Compile(oneQuantifier);
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+    }
+
     /// <summary>A rule with more distinct terms than the analysis cap compiles and reports an information skip.</summary>
     [Fact]
     public void Limits_MoreTermsThanAnalysisCap_CompilesAndReportsInfo_Test()
@@ -281,4 +321,25 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Equal(DiagnosticCodes.UnknownPredicate, error.Code);
         Assert.Contains($"'{word}'", error.Message);
     }
+
+    private static RuleCompiler<QuantifierBudgetContext> CreateQuantifierCompiler(CompilerOptions options)
+    {
+        PredicateRegistryBuilder<QuantifierBudgetContext> builder = PredicateRegistry<QuantifierBudgetContext>
+            .CreateBuilder()
+            .AddCollection(
+                "items",
+                _ => Array.Empty<TruthValue>(),
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        return new RuleCompiler<QuantifierBudgetContext>(builder.Build(), options);
+    }
+
+    /// <summary>A marker application context: the node-budget tests above only compile rules, never evaluate them.</summary>
+#pragma warning disable S2094 // Intentionally empty: a marker TContext, not a stand-in for an interface.
+    private sealed class QuantifierBudgetContext;
+#pragma warning restore S2094
 }

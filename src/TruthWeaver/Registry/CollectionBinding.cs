@@ -37,20 +37,21 @@ internal sealed class CollectionBinding<TContext, TItem>(
 {
     public string Name => name;
 
-    public (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics) CompileBody(
+    public (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics, int NodeCount) CompileBody(
         string variable,
         RuleNode body,
         CompilerOptions options,
         int depth,
         int quantifierDepth,
-        IReadOnlyList<string> enclosingVariables
+        IReadOnlyList<string> enclosingVariables,
+        int startNodeCount
     )
     {
         CompilerOptions bodyOptions = elementSource is null ? options : DeclareElementSource(options, variable);
-        (Expression? tree, RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = RuleNodeCompiler<
+        (Expression? tree, RuleNode _, IReadOnlyList<Diagnostic> diagnostics, int nodeCount) = RuleNodeCompiler<
             Element<TContext, TItem>
-        >.Compile(body, elementRegistry, bodyOptions, depth, quantifierDepth, enclosingVariables);
-        return (tree, diagnostics);
+        >.Compile(body, elementRegistry, bodyOptions, depth, quantifierDepth, enclosingVariables, startNodeCount);
+        return (tree, diagnostics, nodeCount);
     }
 
     public async ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
