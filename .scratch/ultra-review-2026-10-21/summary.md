@@ -18,8 +18,8 @@ Triage note: ticket 11 describes a trade-off that ADR-0010 decision 8 documents 
 | [04](issues/04-definition-expansion-exponential.md) | high | CONFIRMED | Definition (let) expansion grows exponentially before any size limit is checked | F2.4, F3.1 |
 | [05](issues/05-yaml-alias-exponential-expansion.md) | high | CONFIRMED | YAML anchors and aliases allow exponential rule expansion before any size limit runs | T2.2 |
 | [06](issues/06-atleast-bdd-exponential.md) | high | CONFIRMED | AtLeastBdd recursion is exponential in operand count, so Compile can hang | F5.1 |
-| [07](issues/07-nand-nor-expander-throws-on-quantifiers.md) | high | CONFIRMED | ExpandToNand and ExpandToNor throw on any rule that contains FORALL or EXISTS | F5.2 |
-| [08](issues/08-render-decision-with-quantifier-throws.md) | high | CONFIRMED | Rendering a decision with an evaluated quantifier throws: the trace shape does not match the outline | T2.5 |
+| 07 | high | CONFIRMED | ExpandToNand and ExpandToNor throw on any rule that contains FORALL or EXISTS | F5.2 |
+| 08 | high | CONFIRMED | Rendering a decision with an evaluated quantifier throws: the trace shape does not match the outline | T2.5 |
 | [09](issues/09-fault-budget-exhaustive-changes-result.md) | medium | CONFIRMED | With FaultBudget set, Exhaustive mode changes Decision.Result, against the ADR-0002 invariant | F4.2 |
 | [10](issues/10-maxnodecount-resets-in-quantifier.md) | medium | CONFIRMED | MaxNodeCount restarts at 0 inside every quantifier body, so the total node limit is not enforced | F3.2 |
 | [11](issues/11-quantifier-atoms-keyed-by-text-equivalence.md) | medium | CONFIRMED | Quantifier atoms keyed by text make RuleEquivalence call valid ToNnf rewrites NotEquivalent | F5.3 |
