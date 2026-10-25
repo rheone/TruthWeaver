@@ -70,7 +70,10 @@ public sealed class MouseTests
     [Fact]
     public void Click_ThenFewerDiagnostics_KeepsTheSelectionInRange_Test()
     {
-        using WorkbenchHarness harness = new("a AND\n(b OR\n)c", [new RuleTextPane(), new DiagnosticsPane()]);
+        using WorkbenchHarness harness = new(
+            "(a AND\n) OR (b AND\n) OR (c AND\n)",
+            [new RuleTextPane(), new DiagnosticsPane()]
+        );
         ListView list = Assert.IsType<ListView>(harness.Window.ActivePaneViews[PaneSlot.Bottom]);
         harness.Click(list, 0, 2);
         int before = Assert.IsType<int>(list.Value);
