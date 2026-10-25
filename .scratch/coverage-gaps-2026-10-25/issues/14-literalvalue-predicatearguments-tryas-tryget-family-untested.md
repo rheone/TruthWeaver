@@ -1,0 +1,34 @@
+# 14 - LiteralValue's TryAsXxx family and PredicateArguments' matching TryGetXxx family are untested
+
+Status: needs-triage
+Severity: high
+Slice: Abstractions (src/TruthWeaver.Abstractions/LiteralValue.cs, PredicateArguments.cs)
+Lens: boundary
+Signal: line
+
+## Gap
+
+`LiteralValue.TryAsInt64`, `TryAsDecimal`, `TryAsDateTimeOffset`, `TryAsGuid` and `TryAsArray`
+(`src/TruthWeaver.Abstractions/LiteralValue.cs:250-299`) are each a two-line "is this literal that kind;
+if so return its value, else the default" body, and every one of those bodies is uncovered. The matching
+convenience getters one layer up, `PredicateArguments.TryGetInt64`, `TryGetDecimal`, `TryGetBool`,
+`TryGetDateTimeOffset` and `TryGetGuid` (`src/TruthWeaver.Abstractions/PredicateArguments.cs:169-238`),
+which each delegate straight to the `LiteralValue` method of the same shape, are uncovered for the same
+reason. Both families are public API explicitly documented as "unlike the throwing getter, never throws, so
+it suits optional or mixed-kind arguments" - the whole point of the pair is the non-throwing, wrong-kind
+behavior, and that is exactly the behavior with no test.
+
+## Missing scenario
+
+For at least `Int64`, `Decimal`, `DateTimeOffset`, `Guid` and the array kind: (a) call the `TryAsXxx`
+method on a `LiteralValue` of that exact kind, asserting it returns `true` with the correct value; (b) call
+it on a `LiteralValue` of a *different* kind, asserting it returns `false` with the type's default (not a
+thrown exception). Repeat through `PredicateArguments.TryGetXxx` for a present argument of the wrong kind
+and for a missing argument name, confirming both return `false` without throwing.
+
+## Acceptance criteria
+
+- Add the test first (`/tdd`): it exercises the missing scenario, which currently has no coverage for it
+- The line coverage signal clears for `LiteralValue.cs:250-299` and `PredicateArguments.cs:169-238`
+- Test named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added
+- Validation list from CLAUDE.md passes

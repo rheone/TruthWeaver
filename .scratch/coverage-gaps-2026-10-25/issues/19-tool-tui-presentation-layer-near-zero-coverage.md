@@ -1,0 +1,37 @@
+# 19 - Tool.Tui's presentation layer (dialogs, panes, views, workbench chrome) has near-zero coverage
+
+Status: needs-triage
+Severity: low
+Slice: Tool.Tui (src/TruthWeaver.Tool.Tui/{Hosting,Views,Panes,Workbench,Theme}/)
+Lens: boundary
+Signal: line
+
+## Gap
+
+Beyond the controllers (ticket 18) and sessions, the pure-presentation layer of the TUI - terminal dialog
+plumbing, views, panes, workbench chrome and theming - is near-0% covered across the merged 14-project
+run. Representative examples: `Hosting.TerminalDialogs` (68 uncovered lines, 0 partial branches - the
+whole class), `Program` (36 uncovered), `Hosting.TerminalPrompts` (21 uncovered), `Theme.TerminalBackground`
+(17 uncovered), `Panes.ViewPane` (16 uncovered, 2 partial), `Views.ChoiceDialog` (14 uncovered, 5 partial),
+`Workbench.WorkbenchWindow` (14 uncovered, 8 partial across its partial files), plus roughly thirty more
+view/pane/workbench classes each with smaller (1-10 line) gaps.
+
+Unlike tickets 17 and 18, this is structurally a different problem: Terminal.Gui-based rendering code is
+hard to unit-test in the way the rest of this effort's tickets ask (one boundary-condition test per gap).
+Filing dozens of near-identical "this view class is untested" tickets here would not match this effort's
+"boundary and edge-case test" pattern and would mostly be noise relative to the real issue, which is that
+the TUI has no established testing strategy for its rendering layer at all (golden-file rendering snapshots,
+a headless Terminal.Gui driver, or similar).
+
+## Recommendation
+
+Treat this as a separate, dedicated initiative (a TUI testing-strategy ticket under a different effort),
+not as a per-class boundary-test backlog item here. If a narrower slice of this layer turns out to contain
+real (non-rendering) logic worth testing directly, split that out as its own ticket when found, the way
+tickets 17 and 18 already did for the layers that had one.
+
+## Acceptance criteria
+
+- This ticket's "acceptance" is a decision, not a test: either scope a TUI rendering-test strategy as its
+  own effort, or explicitly accept the current state and close this as won't-fix
+- No code change is implied by this ticket on its own
