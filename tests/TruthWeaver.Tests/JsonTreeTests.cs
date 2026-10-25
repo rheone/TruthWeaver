@@ -429,6 +429,74 @@ public sealed class JsonTreeTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
 
+    /// <summary>
+    /// A rule whose tree depth sits exactly at <see cref="CompilerOptions.MaxDepth"/>'s default (32) compiles
+    /// through <see cref="RuleCompiler{TContext}.CompileJson(string)"/> instead of failing at
+    /// <see cref="JsonDocument"/>'s own, unrelated default nesting cap of 64 (ticket 14). Each rule-tree level costs
+    /// two JSON levels (the node object and its operands array), so a 32-deep rule's JSON text nests about 65 levels
+    /// deep, past that unrelated cap.
+    /// </summary>
+    [Fact]
+    public void CompileJson_NotChainAtDefaultMaxDepth_CompilesWithoutSpuriousJsonDepthFailure_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const int levels = 31; // 31 NOTs over a predicate term = tree depth 32, the default MaxDepth.
+        string json =
+            string.Concat(Enumerable.Repeat("""{"op":"not","operands":[""", levels))
+            + """{"predicate":"isManager"}"""
+            + string.Concat(Enumerable.Repeat("]}", levels));
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.True(result.Succeeded);
+    }
+
+    /// <summary>
+    /// A rule whose tree depth sits exactly at a custom, raised <see cref="CompilerOptions.MaxDepth"/> also compiles
+    /// (ticket 14): the JSON nesting cap this parser applies scales with <c>CompilerOptions.MaxDepth</c> rather than
+    /// staying fixed at <see cref="JsonDocument"/>'s own default of 64.
+    /// </summary>
+    [Fact]
+    public void CompileJson_NotChainAtRaisedMaxDepth_CompilesWithoutSpuriousJsonDepthFailure_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isManager", true).Build(),
+            new CompilerOptions(MaxDepth: 50)
+        );
+        const int levels = 49; // 49 NOTs over a predicate term = tree depth 50.
+        string json =
+            string.Concat(Enumerable.Repeat("""{"op":"not","operands":[""", levels))
+            + """{"predicate":"isManager"}"""
+            + string.Concat(Enumerable.Repeat("]}", levels));
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.True(result.Succeeded);
+    }
+
+    /// <summary>
+    /// A rule one level past <see cref="CompilerOptions.MaxDepth"/> reports <see cref="DiagnosticCodes.MaxDepthExceeded"/>,
+    /// not a JSON-parse-level <see cref="DiagnosticCodes.MalformedTree"/> diagnostic (ticket 14): raising the JSON
+    /// nesting cap enough to compile a rule at the limit must not also mask the real "too deep" diagnostic for a
+    /// rule genuinely past it.
+    /// </summary>
+    [Fact]
+    public void CompileJson_NotChainOneLevelPastMaxDepth_ReportsMaxDepthExceeded_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const int levels = 32; // 32 NOTs over a predicate term = tree depth 33, one past the default MaxDepth of 32.
+        string json =
+            string.Concat(Enumerable.Repeat("""{"op":"not","operands":[""", levels))
+            + """{"predicate":"isManager"}"""
+            + string.Concat(Enumerable.Repeat("]}", levels));
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+    }
+
     private static RuleCompiler<RuleTestContext> CreateCompiler()
     {
         return new(
