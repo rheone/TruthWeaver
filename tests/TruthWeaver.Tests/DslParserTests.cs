@@ -272,8 +272,11 @@ public sealed class DslParserTests
         // Warm up the JIT so the first measured parse is not penalized by startup/tiering costs.
         DslParser.Parse(CommentHeavyRule(50));
 
-        long smallElapsedMs = TimeParse(CommentHeavyRule(2_000));
-        long largeElapsedMs = TimeParse(CommentHeavyRule(8_000));
+        // The fastest of several trials, rather than a single sample, filters out scheduler/GC noise from other
+        // work running on the machine at the same time (this suite's own pre-commit hook runs many test
+        // assemblies in parallel), which otherwise inflates the small (and fast) measurement disproportionately.
+        long smallElapsedMs = FastestParse(CommentHeavyRule(2_000), trials: 7);
+        long largeElapsedMs = FastestParse(CommentHeavyRule(8_000), trials: 7);
 
         // Floor the small measurement so a near-zero denominator (a very fast machine) cannot inflate the ratio.
         double ratio = largeElapsedMs / (double)Math.Max(smallElapsedMs, 5);
@@ -283,12 +286,18 @@ public sealed class DslParserTests
         Assert.True(largeElapsedMs < 2_000, $"Parsing 8,000 comments took {largeElapsedMs} ms; expected well under 2 seconds.");
     }
 
-    private static long TimeParse(string text)
+    private static long FastestParse(string text, int trials)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        DslParser.Parse(text);
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        long fastestMs = long.MaxValue;
+        for (int trial = 0; trial < trials; trial++)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            DslParser.Parse(text);
+            stopwatch.Stop();
+            fastestMs = Math.Min(fastestMs, stopwatch.ElapsedMilliseconds);
+        }
+
+        return fastestMs;
     }
 
     private static string CommentHeavyRule(int repeats)
