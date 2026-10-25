@@ -218,6 +218,11 @@ public static class DiagnosticCodeTable
             nameof(DiagnosticCodes.ShadowedVariable),
             "A nested quantifier reuses the bound variable name of an enclosing quantifier."
         ),
+        Info(
+            DiagnosticCodes.AnalysisSkippedNodeBudgetExceeded,
+            nameof(DiagnosticCodes.AnalysisSkippedNodeBudgetExceeded),
+            "The analysis was skipped because building its decision diagram would exceed the analyzer's node budget."
+        ),
         Error(ToolDiagnosticCodes.InputUnreadable, nameof(ToolDiagnosticCodes.InputUnreadable), "The input cannot be read."),
         Error(
             ToolDiagnosticCodes.InvalidEncoding,

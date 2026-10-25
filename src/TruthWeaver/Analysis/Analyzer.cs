@@ -47,9 +47,21 @@ internal static class Analyzer
         }
 
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         List<Diagnostic> diagnostics = [];
-        _ = Build(root, bdd, variableIndex, diagnostics);
+        try
+        {
+            _ = Build(root, bdd, variableIndex, diagnostics);
+        }
+        catch (BddNodeBudgetExceededException)
+        {
+            // The term count is within the cap, but the shared BDD for this term ordering and rule shape still grew
+            // past the internal node budget (ticket 24): skip the same way the term-count cap does, rather than
+            // reporting partial findings built on a diagram that never finished.
+            const string message =
+                "Constant/contradiction analysis skipped: building the decision diagram for this rule's terms would exceed the analyzer's internal node budget.";
+            return [Diagnostic.Info(DiagnosticCodes.AnalysisSkippedNodeBudgetExceeded, message, SourceSpan.None)];
+        }
 
         // ADR-0010 decision 8: a quantifier is an opaque atom in the outer analysis above (its own BDD variable
         // pair, keyed by its canonical text in Build's TermExpression-like case below); its body is analyzed on
@@ -131,13 +143,17 @@ internal static class Analyzer
     /// The manager, the function's node in it, and each term's index: term <c>i</c> owns variable <c>2i</c> ("is True")
     /// and <c>2i + 1</c> ("is Unknown").
     /// </returns>
+    /// <exception cref="BddNodeBudgetExceededException">
+    /// Building the shared BDD for this term ordering and rule shape would exceed the internal node budget. The caller
+    /// (counterfactual search, via <see cref="ChangeSetSearch"/>) catches this and reports its own undecided outcome.
+    /// </exception>
     public static (BddManager Bdd, int Node, Dictionary<TermIdentity, int> VariableIndex) TargetFunction(
         Expression root,
         TruthValue target
     )
     {
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         DualRail rail = Build(root, bdd, variableIndex, []);
         return (bdd, ValueNode(bdd, rail, target), variableIndex);
     }
@@ -174,7 +190,11 @@ internal static class Analyzer
     /// </summary>
     /// <param name="root">The tree.</param>
     /// <param name="maxTerms">The distinct-term cap; a tree with more is not analysed.</param>
-    /// <returns>The reachable values, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms.</returns>
+    /// <returns>
+    /// The reachable values, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms, or
+    /// when building the shared BDD for this term ordering and rule shape would exceed the internal node budget (ticket
+    /// 24): both are "could not analyze", not "could not reach any value".
+    /// </returns>
     public static ValueProfile? Profile(Expression root, int maxTerms)
     {
         if (DistinctTerms(root).Count > maxTerms)
@@ -182,13 +202,20 @@ internal static class Analyzer
             return null;
         }
 
-        BddManager bdd = new();
-        DualRail rail = Build(root, bdd, [], []);
-        return new ValueProfile(
-            CanBeTrue: rail.Definite != BddManager.False,
-            CanBeFalse: rail.Possible != BddManager.True,
-            CanBeUnknown: bdd.And(rail.Possible, bdd.Not(rail.Definite)) != BddManager.False
-        );
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
+        try
+        {
+            DualRail rail = Build(root, bdd, [], []);
+            return new ValueProfile(
+                CanBeTrue: rail.Definite != BddManager.False,
+                CanBeFalse: rail.Possible != BddManager.True,
+                CanBeUnknown: bdd.And(rail.Possible, bdd.Not(rail.Definite)) != BddManager.False
+            );
+        }
+        catch (BddNodeBudgetExceededException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -197,7 +224,10 @@ internal static class Analyzer
     /// </summary>
     /// <param name="root">The tree.</param>
     /// <param name="maxTerms">The distinct-term cap; a tree with more is not analysed.</param>
-    /// <returns>The node count, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms.</returns>
+    /// <returns>
+    /// The node count, or <see langword="null"/> when the tree has more than <paramref name="maxTerms"/> terms, or when
+    /// building the shared BDD for this term ordering and rule shape would exceed the internal node budget (ticket 24).
+    /// </returns>
     public static int? BddNodeCount(Expression root, int maxTerms)
     {
         if (DistinctTerms(root).Count > maxTerms)
@@ -205,9 +235,16 @@ internal static class Analyzer
             return null;
         }
 
-        BddManager bdd = new();
-        _ = Build(root, bdd, [], []);
-        return bdd.NodeCount;
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
+        try
+        {
+            _ = Build(root, bdd, [], []);
+            return bdd.NodeCount;
+        }
+        catch (BddNodeBudgetExceededException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Collects the distinct terms of a tree.</summary>
@@ -409,10 +446,14 @@ internal static class Analyzer
     /// </summary>
     /// <param name="root">The tree.</param>
     /// <returns>The valuation, which is not safe for use from more than one thread.</returns>
+    /// <exception cref="BddNodeBudgetExceededException">
+    /// Building the shared BDD for this term ordering and rule shape would exceed the internal node budget. The caller
+    /// (<see cref="TruthTablePrinter"/>) catches this and reports its own "table too large" outcome.
+    /// </exception>
     internal static TermValuation CreateValuation(Expression root)
     {
         Dictionary<TermIdentity, int> variableIndex = [];
-        BddManager bdd = new();
+        BddManager bdd = new(BddManager.DefaultMaxBddNodes);
         DualRail rail = Build(root, bdd, variableIndex, []);
         TermIdentity[] terms = [.. variableIndex.OrderBy(pair => pair.Value).Select(pair => pair.Key)];
         return new TermValuation(terms, bdd, rail.Definite, rail.Possible);

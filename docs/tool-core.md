@@ -467,7 +467,7 @@ A file that is not well-formed YAML is a `TWT0003` error. An unknown member, an 
 | `Predicates` | The distinct predicate names. |
 | `OperatorHistogram` | The number of nodes of each operator, by its name in the JSON tree format, such as `and` or `atLeast`. |
 | `Variables`, `DataSources` | The distinct `from("source", "query")` references, and the distinct source names. |
-| `BddNodeCount` | The size of the Strong K3 analysis, or `null` over the analysis limit. |
+| `BddNodeCount` | The size of the Strong K3 analysis, or `null` over the analysis limit, or when building the shared diagram would exceed its internal node budget. |
 | `Constancy` | `Tautology` (always `True`), `Contradiction` (always `False`), `Contingent`, or `Undecided` over the analysis limit. |
 | `TruthTableRows`, `ClassicalTruthTableRows`, `TruthTableWithinCap` | 3 and 2 to the power of the distinct terms, and whether the terms are within the default truth-table cap of 8. |
 

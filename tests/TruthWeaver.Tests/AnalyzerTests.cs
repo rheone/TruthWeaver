@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using System.Diagnostics;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -381,6 +382,47 @@ public sealed class AnalyzerTests
 
         Assert.True(result.Succeeded);
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.AnalysisSkippedTooManyTerms);
+    }
+
+    /// <summary>
+    /// Ticket 24: within the raised term cap, a rule whose first-occurrence variable ordering is bad for its shape
+    /// (every <c>x</c> term ahead of every <c>y</c> term, scaled down from the ultra-review repro's n=24 to n=17, which
+    /// already needs about 2^17 BDD nodes per rail, past the default 100,000-node budget) must not hang or allocate
+    /// unboundedly: the analyzer's own node budget (reused from <c>BddManager.DefaultMaxBddNodes</c>) trips first and
+    /// <c>Analyze</c> reports the same graceful "skipped" outcome the term-count cap reports, in well under a second.
+    /// </summary>
+    [Fact]
+    public void Analyze_BadOrderingRulePastTheNodeBudget_SkipsGracefullyAndQuickly_Test()
+    {
+        const int PairCount = 17;
+        string[] xs = [.. Enumerable.Range(1, PairCount).Select(i => $"x{i}")];
+        string[] ys = [.. Enumerable.Range(1, PairCount).Select(i => $"y{i}")];
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        foreach (string name in xs.Concat(ys))
+        {
+            _ = registry.AddConstant(name, true);
+        }
+
+        // First-occurrence order puts every x ahead of every y: the first clause mentions only the x's, so the
+        // pairwise clauses that follow (x_i AND y_i) introduce each y only after every x is already ordered.
+        string firstClause = $"({string.Join(" AND ", xs)} AND FALSE)";
+        string[] pairClauses = [.. xs.Zip(ys, (x, y) => $"({x} AND {y})")];
+        string rule = string.Join(" OR ", [firstClause, .. pairClauses]);
+
+        RuleCompiler<RuleTestContext> compiler = new(registry.Build(), new CompilerOptions(MaxAnalysisTerms: 2 * PairCount));
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        CompilationResult<RuleTestContext> result = compiler.Compile(rule);
+        stopwatch.Stop();
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.AnalysisSkippedNodeBudgetExceeded, diagnostic.Code);
+        Assert.Equal(DiagnosticSeverity.Info, diagnostic.Severity);
+        Assert.True(
+            stopwatch.ElapsedMilliseconds < 1000,
+            $"Analysis past the node budget took {stopwatch.ElapsedMilliseconds} ms; it must be skipped quickly, not hang."
+        );
     }
 
     /// <summary>

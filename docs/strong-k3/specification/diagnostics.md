@@ -56,6 +56,7 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0042` | `UnknownCollection` | Error | Validate | On | A `FORALL`/`EXISTS` head names a collection that no `PredicateRegistryBuilder.AddCollection` call registered. The message suggests the nearest registered collection name. |
 | `TRE0043` | `MaxQuantifierDepthExceeded` | Error | Validate | On | A rule nests `FORALL`/`EXISTS` quantifiers deeper than the compiler option `MaxQuantifierDepth` allows. |
 | `TRE0044` | `ShadowedVariable` | Error | Validate | On | A nested `FORALL`/`EXISTS` reuses the bound variable name of an enclosing quantifier. Rename the inner quantifier's variable. |
+| `TRE0045` | `AnalysisSkippedNodeBudgetExceeded` | Info | Analyze | On | The analysis was skipped because building its decision diagram would exceed the analyzer's internal node budget, even though the rule's term count is within `MaxAnalysisTerms`. The rule still compiles. |
 
 A lint finding carries a suggested replacement.
 

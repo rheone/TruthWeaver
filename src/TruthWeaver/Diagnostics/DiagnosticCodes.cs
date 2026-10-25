@@ -260,4 +260,13 @@ public static class DiagnosticCodes
     /// (ADR-0010 decision 2). The span or path is the inner quantifier's head.
     /// </summary>
     public const string ShadowedVariable = "TRE0044";
+
+    /// <summary>
+    /// Constant/contradiction analysis stopped partway and was skipped because the shared decision diagram it was
+    /// building would need more nodes than the analyzer's internal node budget, even though the rule's distinct-term
+    /// count is within <c>CompilerOptions.MaxAnalysisTerms</c> (ticket 24). The diagram's size depends on the term
+    /// ordering and the rule's shape, not only on the term count, so a rule with few terms but an unlucky ordering can
+    /// still trip it. The rule still compiles.
+    /// </summary>
+    public const string AnalysisSkippedNodeBudgetExceeded = "TRE0045";
 }
