@@ -39,6 +39,10 @@ internal sealed class ChangeSetSearch
     /// <param name="target">The value the tree must take.</param>
     /// <param name="maxChangeSets">The most change sets to return.</param>
     /// <returns>The result, never <see cref="CounterfactualOutcome.Undecided"/>.</returns>
+    /// <exception cref="BddNodeBudgetExceededException">
+    /// Building the shared BDD for this term ordering and rule shape, or the search itself, would exceed the internal
+    /// node budget (ticket 24). <see cref="RuleCounterfactual"/> catches this and reports <see cref="CounterfactualOutcome.Undecided"/>.
+    /// </exception>
     public static CounterfactualResult Run(
         Expression root,
         IReadOnlyDictionary<TermIdentity, TruthValue> facts,

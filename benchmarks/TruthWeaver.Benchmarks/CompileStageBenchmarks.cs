@@ -62,7 +62,7 @@ public class CompileStageBenchmarks
 
         (RuleNode? parsed, IReadOnlyList<Diagnostic> _) = JsonTreeParser.Parse(this.ruleJson);
         this.parsedRoot = parsed!;
-        (Expression? tree, RuleNode _, IReadOnlyList<Diagnostic> _) = RuleNodeCompiler<BenchmarkContext>.Compile(
+        (Expression? tree, RuleNode _, IReadOnlyList<Diagnostic> _, _) = RuleNodeCompiler<BenchmarkContext>.Compile(
             this.parsedRoot,
             this.registry,
             this.options

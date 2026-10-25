@@ -96,7 +96,22 @@ internal static class TruthTablePrinter
             diagnostics = [];
         }
 
-        TermValuation valuation = Analyzer.CreateValuation(root);
+        TermValuation valuation;
+        try
+        {
+            valuation = Analyzer.CreateValuation(root);
+        }
+        catch (BddNodeBudgetExceededException)
+        {
+            // Within the term limit, the shared BDD for this term ordering and rule shape still grew past the
+            // analyzer's internal node budget (ticket 24): refuse the table the same way an over-cap term count does,
+            // rather than hanging or allocating unboundedly.
+            const string message =
+                "The truth table was not printed: building its value table's decision diagram for this rule would exceed the analyzer's internal node budget.";
+            diagnostics = [Diagnostic.Error(DiagnosticCodes.TruthTableTooLarge, message, SourceSpan.None)];
+            return false;
+        }
+
         LineWriter lines = new(writer);
         switch (options.Format)
         {

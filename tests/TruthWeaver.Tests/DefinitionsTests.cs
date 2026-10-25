@@ -164,6 +164,194 @@ public sealed class DefinitionsTests
     }
 
     /// <summary>
+    /// A cycle between two definitions that the rule body never reaches is reported at compile time (ticket 22),
+    /// not only once some later edit happens to use one of them: <c>DefinitionExpander.Expand</c> previously
+    /// walked only <c>document.Body</c>, so this cycle compiled with zero diagnostics. The single diagnostic
+    /// asserted below also confirms the cycle is reported once, not twice (once from each definition's own
+    /// validation walk).
+    /// </summary>
+    [Fact]
+    public void Compile_UnreachableDefinitionCycle_ReportsDefinitionCycleDetected_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isAdmin", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let a = b; let b = a; isAdmin");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionCycleDetected);
+        Assert.Contains("a", diagnostic.Message);
+        Assert.Contains("b", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A definition the rule body never reaches, but which is itself valid (no cycle, no unknown use), still
+    /// compiles with no diagnostic (ticket 22): validating every declared definition must not turn a merely
+    /// unused-but-fine definition into a false positive.
+    /// </summary>
+    [Fact]
+    public void Compile_UnreachableValidDefinition_CompilesWithoutDiagnostic_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isAdmin", true).AddConstant("a", true).Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let unused(x) = x AND a; isAdmin");
+
+        Assert.NotNull(result.CompiledRule);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    /// <summary>
+    /// Pins the node-budget isolation ticket 22's validation pass depends on: the reachable body here expands to
+    /// exactly 5 nodes (1 AND node + 4 terms), exactly at a 5-node <see cref="CompilerOptions.MaxNodeCount"/>, and an
+    /// unreachable definition's own body separately expands to 3 more. If the unreachable-definition validator
+    /// shared one running count with the reachable walk, the combined 8 nodes would trip
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> even though neither walk alone is over budget; a document
+    /// that already compiled under this budget must not start failing only because the new, unrelated validation
+    /// pass now also looks at its unreachable definitions.
+    /// </summary>
+    [Fact]
+    public void Compile_ReachableBodyAtExactBudgetWithSeparateUnreachableDefinition_StillCompiles_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("p0", true)
+                .AddConstant("p1", true)
+                .AddConstant("p2", true)
+                .AddConstant("p3", true)
+                .Build(),
+            new CompilerOptions(MaxNodeCount: 5)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let unused = p0 AND p1; p0 AND p1 AND p2 AND p3");
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(5, result.CompiledRule?.Metrics.NodeCount);
+    }
+
+    /// <summary>
+    /// A definition the rule body never reaches, whose own body uses a definition name that was never declared, is
+    /// reported too (ticket 22): JSON's explicit <c>use</c> node shape can name an undeclared definition directly,
+    /// unlike rule text (where an undeclared name parses as an ordinary predicate term, not a use).
+    /// </summary>
+    [Fact]
+    public void CompileJson_UnreachableDefinitionUsingUnknownDefinition_ReportsUnknownDefinition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "broken": { "body": { "op": "use", "name": "nope" } }
+              },
+              "predicate": "a"
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownDefinition);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A definition whose parameter list repeats a name (case-insensitively) is a compile error (ticket 20), not a
+    /// silent binding where <c>ExpandUse</c>'s case-insensitive parameter dictionary lets the later parameter
+    /// overwrite the earlier one's argument.
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let both(x, X) = x AND X; both(a, b)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Contains("both", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// The exact ticket 20 failure scenario: without the fix, <c>both(isOwner, isEditor)</c> compiled silently to
+    /// <c>isEditor AND isEditor</c>, dropping <c>isOwner</c>, so a rule that should evaluate <c>False</c> (isOwner is
+    /// False) instead evaluated <c>True</c>. The fix rejects the definition at compile time, so the rule never
+    /// reaches evaluation with the wrong meaning.
+    /// </summary>
+    [Fact]
+    public void Compile_DuplicateParameterDefinitionUsedWithDifferingArguments_FailsCompilationInsteadOfDroppingAnArgument_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("isOwner", false)
+                .AddConstant("isEditor", true)
+                .Build()
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let both(x, X) = x AND X; both(isOwner, isEditor)");
+
+        Assert.Null(result.CompiledRule);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+    }
+
+    /// <summary>A JSON definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "both": {
+                  "parameters": ["x", "X"],
+                  "body": {
+                    "op": "and",
+                    "operands": [{ "predicate": "x" }, { "predicate": "X" }]
+                  }
+                }
+              },
+              "op": "use",
+              "name": "both",
+              "operands": [{ "predicate": "a" }, { "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              both:
+                parameters: [x, X]
+                body:
+                  op: and
+                  operands:
+                    - predicate: x
+                    - predicate: X
+            op: use
+            name: both
+            operands:
+              - predicate: a
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
     /// A non-cyclic chain of uses deeper than <see cref="CompilerOptions.MaxDefinitionDepth"/> is a distinct compile
     /// error, independent of <c>MaxDepth</c> and the cycle check.
     /// </summary>
@@ -205,6 +393,77 @@ public sealed class DefinitionsTests
 
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
         Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A chain of definitions only 6 levels deep (well within the default <see cref="CompilerOptions.MaxDefinitionDepth"/>
+    /// of 8), where each level ANDs 12 uses of the one below, expands to millions of nodes if fully materialized
+    /// (12^6, about 3 million). Compiling it reports <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> quickly
+    /// instead of allocating the whole expansion before <c>RuleNodeCompiler.Build</c>'s own count ever runs
+    /// (ticket 04).
+    /// </summary>
+    [Fact]
+    public void Compile_ShallowHighFanoutDefinitionChain_ReportsMaxNodeCountInsteadOfExponentialBlowup_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build(),
+            new CompilerOptions(MaxNodeCount: 50)
+        );
+        string chain = BuildFanoutChain(depth: 6, fanout: 12);
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(chain);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// The same shallow, high-fanout blow-up as above, read through <see cref="RuleDefinitions.ReadText(string, CompilerOptions?)"/>
+    /// with no options supplied: the default <see cref="CompilerOptions.MaxNodeCount"/> of 512 is still far below the
+    /// roughly 3 million nodes the chain would expand to, so the walk that maps compiled nodes back to their sources
+    /// must be bounded too, not just <c>DefinitionExpander</c> (ticket 04, finding F3.1).
+    /// </summary>
+    [Fact]
+    public void ReadText_ShallowHighFanoutDefinitionChain_IsBoundedByDefaultMaxNodeCount_Test()
+    {
+        string chain = BuildFanoutChain(depth: 6, fanout: 12);
+
+        RuleDefinitions read = RuleDefinitions.ReadText(chain);
+
+        Assert.Contains(read.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// The node-count guard added for ticket 04 counts every node <see cref="DefinitionExpander"/> visits while
+    /// expanding, including each use site itself, not only the nodes the final expanded tree keeps: a depth-3,
+    /// fanout-3 chain (<c>BuildFanoutChain(3, 3)</c>) visits exactly 80 nodes while expanding (V(0)=2,
+    /// V(k)=2+3*V(k-1)), even though the final compiled tree keeps only 40 of them (1+3+9+27). A budget of exactly
+    /// 80 still compiles, with a final node count of 40; a budget one node smaller, 79, reports
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> during expansion, pinning the guard's off-by-one behavior
+    /// instead of only exercising it at a wide margin.
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionChainExpandingToExactlyItsVisitBudget_CompilesButOneFewerFails_Test()
+    {
+        string chain = BuildFanoutChain(depth: 3, fanout: 3);
+        PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("a", true)
+            .Build();
+
+        CompilationResult<RuleTestContext> atBudget = new RuleCompiler<RuleTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 80)
+        ).Compile(chain);
+        CompilationResult<RuleTestContext> oneOver = new RuleCompiler<RuleTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 79)
+        ).Compile(chain);
+
+        Assert.True(atBudget.Succeeded, string.Join("; ", atBudget.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(40, atBudget.CompiledRule?.Metrics.NodeCount);
+        Assert.False(oneOver.Succeeded);
+        Assert.Contains(oneOver.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
     }
 
     /// <summary>An unused definition is silent by default.</summary>
@@ -366,6 +625,25 @@ public sealed class DefinitionsTests
     private static CompiledRule<RuleTestContext> Compile(RuleCompiler<RuleTestContext> compiler, string text)
     {
         return compiler.Compile(text).CompiledRule ?? throw new InvalidOperationException($"'{text}' did not compile.");
+    }
+
+    /// <summary>
+    /// Builds <c>let</c> text for a chain of <paramref name="depth"/> definitions, each ANDing <paramref name="fanout"/>
+    /// uses of the one before it, so the fully expanded tree has roughly <paramref name="fanout"/>^<paramref name="depth"/>
+    /// nodes even though the chain itself is only <paramref name="depth"/> levels deep.
+    /// </summary>
+    private static string BuildFanoutChain(int depth, int fanout)
+    {
+        System.Text.StringBuilder text = new();
+        text.Append("let d0 = a;");
+        for (int level = 1; level <= depth; level++)
+        {
+            string body = string.Join(" AND ", Enumerable.Repeat($"d{level - 1}", fanout));
+            text.Append($" let d{level} = {body};");
+        }
+
+        text.Append($" d{depth}");
+        return text.ToString();
     }
 
     private static RuleCompiler<RuleTestContext> CreateCompiler()

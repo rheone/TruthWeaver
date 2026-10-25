@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using System.Diagnostics;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Parsing;
@@ -257,5 +258,64 @@ public sealed class DslParserTests
         Assert.Empty(diagnostics);
         RuleDocumentNode document = Assert.IsType<RuleDocumentNode>(root);
         Assert.IsType<TermNode>(document.Body);
+    }
+
+    /// <summary>
+    /// Ticket 25: comment-to-note attachment used to re-scan every token and every node extent for every comment
+    /// (NoteAttacher.FindTarget/Deepest), which made a comment-heavy input quadratic. Parsing an input with 4x as many
+    /// trailing-comment terms now takes close to 4x as long, not the ~16x a quadratic cost gives (the ticket's own
+    /// repro measured ~14x for a 4x increase before the fix).
+    /// </summary>
+    [Fact]
+    public void Parse_CommentHeavyInput_ScalesLinearlyNotQuadratically_Test()
+    {
+        string small = CommentHeavyRule(2_000);
+        string large = CommentHeavyRule(8_000);
+
+        // Warm up the JIT for each size so the first measured parse of either is not penalized by startup/tiering
+        // costs.
+        DslParser.Parse(small);
+        DslParser.Parse(large);
+
+        // Measure the two sizes interleaved, one pair per trial, and keep the fastest of each rather than a single
+        // sample. This suite's own pre-commit hook runs many test assemblies in parallel, and that background
+        // contention varies over the run, not just within it: measuring every small-input trial and only then
+        // every large-input trial lets a contention spike land under one size's whole measurement window and a
+        // quiet spell land under the other's, skewing the ratio even though each fastest-of-N value looks
+        // plausible on its own. Interleaving keeps every pair close together in time, so a spike affects both
+        // measurements of a pair together instead of confounding the comparison between them.
+        double smallElapsedMs = double.MaxValue;
+        double largeElapsedMs = double.MaxValue;
+        for (int trial = 0; trial < 9; trial++)
+        {
+            smallElapsedMs = Math.Min(smallElapsedMs, TimeParse(small));
+            largeElapsedMs = Math.Min(largeElapsedMs, TimeParse(large));
+        }
+
+        // Floor the small measurement so a near-zero denominator (a very fast machine) cannot inflate the ratio.
+        double ratio = largeElapsedMs / Math.Max(smallElapsedMs, 1.0);
+        string ratioMessage =
+            $"4x more comments took {ratio:F1}x longer ({smallElapsedMs:F2} ms -> {largeElapsedMs:F2} ms); expected close to linear growth, not quadratic.";
+        Assert.True(ratio < 8.0, ratioMessage);
+        Assert.True(
+            largeElapsedMs < 3_000,
+            $"Parsing 8,000 comments took {largeElapsedMs:F2} ms; expected well under 3 seconds."
+        );
+    }
+
+    // A double-millisecond reading (Elapsed.TotalMilliseconds), not the truncated-to-integer ElapsedMilliseconds:
+    // the small input here can finish in low single-digit milliseconds, where integer truncation alone is a large
+    // relative error and a separate source of ratio noise on top of scheduler contention.
+    private static double TimeParse(string text)
+    {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        DslParser.Parse(text);
+        stopwatch.Stop();
+        return stopwatch.Elapsed.TotalMilliseconds;
+    }
+
+    private static string CommentHeavyRule(int repeats)
+    {
+        return string.Concat(Enumerable.Repeat("a /* c */ AND ", repeats)) + "a";
     }
 }

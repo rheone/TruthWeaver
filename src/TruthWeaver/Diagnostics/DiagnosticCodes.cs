@@ -260,4 +260,22 @@ public static class DiagnosticCodes
     /// (ADR-0010 decision 2). The span or path is the inner quantifier's head.
     /// </summary>
     public const string ShadowedVariable = "TRE0044";
+
+    /// <summary>
+    /// Constant/contradiction analysis stopped partway and was skipped because the shared decision diagram it was
+    /// building would need more nodes than the analyzer's internal node budget, even though the rule's distinct-term
+    /// count is within <c>CompilerOptions.MaxAnalysisTerms</c> (ticket 24). The diagram's size depends on the term
+    /// ordering and the rule's shape, not only on the term count, so a rule with few terms but an unlucky ordering can
+    /// still trip it. The rule still compiles.
+    /// </summary>
+    public const string AnalysisSkippedNodeBudgetExceeded = "TRE0045";
+
+    /// <summary>
+    /// A <c>let</c> definition's own parameter list repeats a name (compared case-insensitively), in rule text, JSON,
+    /// YAML or <c>RuleBuilder</c> (ticket 20). Binding a use's arguments by parameter name would otherwise let a
+    /// later duplicate silently overwrite an earlier one, the same "no occurrence wins" rationale as
+    /// <see cref="DuplicateArgument"/> for a repeated predicate argument name. The span or path is the definition's
+    /// own declaration, not any particular use.
+    /// </summary>
+    public const string DuplicateDefinitionParameter = "TRE0046";
 }

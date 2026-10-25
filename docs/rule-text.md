@@ -104,6 +104,9 @@ A definition is document-scoped sugar, not a new kind of node, so it follows a f
 - **Unique, non-reserved names.** A definition's name must be unique (case-insensitively) within its document. It
   cannot reuse `let` or any other reserved word, `T`/`F`/`U`, or the name of a predicate registered with the
   compiler.
+- **Unique parameter names.** A definition's own parameter list cannot name the same parameter twice
+  (case-insensitively), such as `let both(x, X) = x AND X;`. Binding a use's arguments by name would otherwise let
+  the later parameter silently overwrite the earlier one, dropping an argument with no diagnostic.
 - **Order does not matter.** A use may name a definition declared earlier or later in the same document.
 - **Expansion counts toward the normal limits.** Once a use is expanded, its nodes are ordinary tree nodes: they
   count toward `CompilerOptions.MaxNodeCount` and `MaxDepth` exactly as if written out by hand.
@@ -113,11 +116,13 @@ A definition is document-scoped sugar, not a new kind of node, so it follows a f
 - **An unused definition is an opt-in lint**, `LintRules.UnusedDefinition`, off by default.
 
 Each rule is a distinct compile diagnostic, listed with the others in [Diagnostics](strong-k3/specification/diagnostics.md):
-a self- or mutual reference (`DefinitionCycleDetected`), a name collision (`DefinitionNameCollision`), a chain
-deeper than `MaxDefinitionDepth` (`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments
-(`DefinitionArgumentCountMismatch`), a use of a name that was never declared (`UnknownDefinition`), and the
-unused-definition lint (`UnusedDefinition`). A diagnostic's span always points at the use; one actually inside a
-definition's own body additionally names the definition.
+a self- or mutual reference (`DefinitionCycleDetected`), a name collision (`DefinitionNameCollision`), a repeated
+parameter name (`DuplicateDefinitionParameter`), a chain deeper than `MaxDefinitionDepth`
+(`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments (`DefinitionArgumentCountMismatch`), a use
+of a name that was never declared (`UnknownDefinition`), and the unused-definition lint (`UnusedDefinition`). A
+diagnostic's span always points at the use; one actually inside a definition's own body additionally names the
+definition. `DuplicateDefinitionParameter` is the exception: nothing about the definition's own declaration is a
+use, so its span always points at the declaration itself.
 
 ### Read the definitions of a document
 
@@ -127,7 +132,7 @@ Reading only parses the text: it does not need a predicate registry and it does 
 
 | Member | What it gives |
 | --- | --- |
-| `RuleDefinitions.ReadText(text)`, `RuleDefinitions.ReadJson(json)` | The definitions and uses of rule text or JSON. `YamlRuleDefinitions.ReadYaml(yaml)` reads YAML, and `YamlRuleDefinitions.ReadAs(source, format)` reads any of the three formats (package `TruthWeaver.Yaml`). |
+| `RuleDefinitions.ReadText(text, options?)`, `RuleDefinitions.ReadJson(json)` | The definitions and uses of rule text or JSON. `YamlRuleDefinitions.ReadYaml(yaml)` reads YAML, and `YamlRuleDefinitions.ReadAs(source, format)` reads any of the three formats (package `TruthWeaver.Yaml`). Reading is bounded the same way a compile is: an optional `CompilerOptions` (`CompilerOptions.Default` when omitted) caps the nodes the source-mapping walk below produces, so a document designed to make `let` expansion blow up reports `MaxNodeCountExceeded` instead of hanging or exhausting memory. Pass the same `CompilerOptions` the document was compiled with, including a non-default `MaxDefinitionDepth`, so `SourcesOf` reaches the same depth a real compile expanded to, instead of disagreeing with it. |
 | `Succeeded`, `Diagnostics` | `Succeeded` is `false` when the text has a syntax error. Reading does not throw for an authoring error: the diagnostics tell what is wrong. |
 | `Definitions` | Each `DefinitionDeclaration`: the name, the parameters, the path (`$.definitions.name`), and the spans of the declaration and its name. |
 | `Uses` | Each `DefinitionUse`: the name, the number of arguments, the definition whose body holds it (`null` in the rule), its path, its spans, and `ExpandedPaths`, the paths of its expansions in the compiled rule. |

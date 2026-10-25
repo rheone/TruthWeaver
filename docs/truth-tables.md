@@ -190,6 +190,8 @@ The limits count distinct terms. They apply to the classical table too, but a cl
 
 A table above the cap with `AllowLargerTable` set is printed and carries a `TRE0034` warning (`TruthTableCapRaised`). A refused table has a `TRE0035` error (`TruthTableTooLarge`). The [diagnostic reference](diagnostics.md) lists both codes.
 
+A table within both the cap and the term limit can still be refused: building the value table's shared decision diagram can need more nodes than its internal [node budget](rewriting-rules.md#the-node-budget) when the rule's term ordering is unlucky for its shape. This is rare and reports the same `TRE0035` error. Nothing is written either way.
+
 ## Writers and the Try form
 
 | Member | Result |

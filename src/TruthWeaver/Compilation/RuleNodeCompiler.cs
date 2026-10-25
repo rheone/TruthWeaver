@@ -68,20 +68,30 @@ internal sealed class RuleNodeCompiler<TContext>
     /// own root. Passed the same way as <paramref name="startQuantifierDepth"/>, so a nested quantifier that reuses
     /// an enclosing one's variable name is caught across the collection-binding boundary too (ADR-0010 decision 2).
     /// </param>
+    /// <param name="startNodeCount">
+    /// How many nodes an enclosing compile has already counted against <see cref="CompilerOptions.MaxNodeCount"/>; 0
+    /// for a rule's own root. A quantifier's collection binding passes its own running count when compiling the
+    /// body, so the body's nodes extend the same budget instead of starting a fresh one (ADR-0010 line 175: "a
+    /// quantifier counts as one node plus its body, once"), and <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>
+    /// fires against the combined total, at whichever node (outer or body) first crosses it.
+    /// </param>
     /// <returns>
     /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/> diagnostic was
     /// produced), the already-expanded raw tree <see cref="Build"/> actually built from (the same as
     /// <paramref name="root"/> when it declared no definitions; <c>NoteCollector</c> walks this one, not
-    /// <paramref name="root"/>, so a note inside a <c>let</c> body still lands on the right compiled node), and every
-    /// diagnostic raised while expanding and validating.
+    /// <paramref name="root"/>, so a note inside a <c>let</c> body still lands on the right compiled node), every
+    /// diagnostic raised while expanding and validating, and the running node count after this compile (<paramref
+    /// name="startNodeCount"/> plus however many nodes this call itself counted), for a caller compiling across a
+    /// collection-binding boundary to resume counting from.
     /// </returns>
-    public static (Expression? Tree, RuleNode ExpandedRoot, IReadOnlyList<Diagnostic> Diagnostics) Compile(
+    public static (Expression? Tree, RuleNode ExpandedRoot, IReadOnlyList<Diagnostic> Diagnostics, int NodeCount) Compile(
         RuleNode root,
         PredicateRegistry<TContext> registry,
         CompilerOptions options,
         int startDepth = 1,
         int startQuantifierDepth = 0,
-        IReadOnlyList<string>? inheritedVariables = null
+        IReadOnlyList<string>? inheritedVariables = null,
+        int startNodeCount = 0
     )
     {
         List<Diagnostic> expansionDiagnostics = [];
@@ -91,11 +101,14 @@ internal sealed class RuleNodeCompiler<TContext>
             expansionDiagnostics.AddRange(diagnosed);
         }
 
-        RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? []);
+        RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? [])
+        {
+            nodeCount = startNodeCount,
+        };
         Expression tree = compiler.Build(root, depth: startDepth);
         List<Diagnostic> diagnostics = [.. expansionDiagnostics, .. compiler.diagnostics];
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
-        return (hasErrors ? null : tree, root, diagnostics);
+        return (hasErrors ? null : tree, root, diagnostics, compiler.nodeCount);
     }
 
     /// <summary>Gets the path of a property of a JSON/YAML node, or <see langword="null"/> for a DSL node.</summary>
@@ -422,18 +435,24 @@ internal sealed class RuleNodeCompiler<TContext>
         }
 
         this.activeVariables.Add(node.Variable);
-        (Expression? bodyTree, IReadOnlyList<Diagnostic> bodyDiagnostics) = binding.CompileBody(
+        (Expression? bodyTree, IReadOnlyList<Diagnostic> bodyDiagnostics, int bodyNodeCount) = binding.CompileBody(
             node.Variable,
             node.Body,
             this.options,
             depth + 1,
             this.quantifierDepth,
-            this.activeVariables
+            this.activeVariables,
+            this.nodeCount
         );
         this.activeVariables.RemoveAt(this.activeVariables.Count - 1);
         this.quantifierDepth--;
 
         this.diagnostics.AddRange(bodyDiagnostics);
+
+        // The body compiled against this same running total (ADR-0010 line 175: a quantifier counts as one node
+        // plus its body, once), so resume counting from it: a later sibling, or another quantifier after this one,
+        // is checked against the combined tree rather than getting its own fresh MaxNodeCount allowance.
+        this.nodeCount = bodyNodeCount;
         if (bodyTree is null)
         {
             return FailedNode.Placeholder;
@@ -673,6 +692,12 @@ internal sealed class RuleNodeCompiler<TContext>
             string reason = inRange
                 ? $"the full range 0..{operandCount} is always True (a structural constant)"
                 : $"it must satisfy 0 <= min <= max <= {operandCount} for {operandCount} operand(s)";
+
+            // Point at whichever bound is actually out of range: a negative min, a max above the operand count, or
+            // (when both bounds are individually in range but inverted) min itself, since min > max is min's fault.
+            // The one remaining case, the full range 0..n, blames neither bound on its own; max is the convention
+            // there, as the threshold family always reports on k.
+            string? offendingPath = node.Min < 0 || node.Min > node.Max ? PathOf(node, "min") : PathOf(node, "max");
             this.diagnostics.Add(
                 Diagnostic.Error(
                     DiagnosticCodes.InvalidThresholdValue,
@@ -680,7 +705,7 @@ internal sealed class RuleNodeCompiler<TContext>
                     node.Span,
                     expected: $"0 <= min <= max <= {operandCount}, excluding the full range",
                     found: $"min={node.Min}, max={node.Max}",
-                    path: node.Path
+                    path: offendingPath
                 )
             );
             return FailedNode.Placeholder;

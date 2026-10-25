@@ -776,7 +776,12 @@ public abstract class RuleBuilder
     /// </remarks>
     /// <typeparam name="TContext">The application context type the compiler's registry evaluates against.</typeparam>
     /// <param name="compiler">The compiler to validate and build this tree with.</param>
-    /// <returns>The compilation result.</returns>
+    /// <returns>
+    /// The compilation result. A tree so deep that even the raised JSON nesting cap
+    /// (<see cref="JsonTreeParser.DocumentMaxDepth"/>, derived from <paramref name="compiler"/>'s
+    /// <c>CompilerOptions.MaxDepth</c>) cannot represent it reports <see cref="DiagnosticCodes.MalformedTree"/>
+    /// rather than throwing: this method never throws for an authoring error.
+    /// </returns>
     public CompilationResult<TContext> Compile<TContext>(RuleCompiler<TContext> compiler)
     {
         // A mistake that the JSON shape cannot carry (a repeated argument name) is reported here, before rendering.
@@ -789,8 +794,26 @@ public abstract class RuleBuilder
 
         // CompileJson(JsonElement), not CompileJson(string): the element overload never re-reads generated text
         // for a diagnostic's span, so every diagnostic here carries only its builder path and Diagnostic.Span.None.
-        using JsonDocument document = JsonDocument.Parse(this.ToJson());
-        return compiler.CompileJson(document.RootElement);
+        // The parse uses the same raised depth cap CompileJson(string) does (JsonTreeParser.DocumentMaxDepth), so a
+        // builder tree at this compiler's own CompilerOptions.MaxDepth round-trips through JSON instead of hitting
+        // JsonDocument's unrelated default cap of 64.
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(
+                this.ToJson(),
+                new JsonDocumentOptions { MaxDepth = JsonTreeParser.DocumentMaxDepth(compiler.Options.MaxDepth) }
+            );
+        }
+        catch (JsonException ex)
+        {
+            return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>([MalformedJson(ex)]));
+        }
+
+        using (document)
+        {
+            return compiler.CompileJson(document.RootElement);
+        }
     }
 
     /// <summary>Compiles this builder's tree without a result object: the <c>Try</c> form of <see cref="Compile{TContext}(RuleCompiler{TContext})"/>.</summary>
@@ -825,6 +848,28 @@ public abstract class RuleBuilder
         {
             operands[i].CollectProblems(TreePath.Index(operandsPath, i), problems);
         }
+    }
+
+    // Mirrors JsonTreeParser.SyntaxError's message shape, but a builder diagnostic never carries a Span (there is no
+    // source text the caller can see to locate) or a path past the document root: the generated JSON is itself
+    // beyond rendering at this point, not a specific builder node.
+    private static Diagnostic MalformedJson(JsonException ex)
+    {
+        string reason = ex.Message;
+        int detail = reason.IndexOf(" Path:", StringComparison.Ordinal);
+        if (detail >= 0)
+        {
+            reason = reason[..detail];
+        }
+
+        return Diagnostic.Error(
+            DiagnosticCodes.MalformedTree,
+            $"Malformed JSON: {ex.Message}",
+            SourceSpan.None,
+            expected: "well-formed JSON",
+            found: reason,
+            path: TreePath.Root
+        );
     }
 
     /// <summary>Rejects a null sequence and materialises it once, without folding, for the counted operators.</summary>
