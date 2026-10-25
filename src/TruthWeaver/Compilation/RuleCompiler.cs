@@ -33,15 +33,22 @@ public sealed class RuleCompiler<TContext>(
 )
 {
     private readonly PredicateRegistry<TContext> registry = registry;
-    private readonly CompilerOptions options = options ?? CompilerOptions.Default;
     private readonly ILogger logger = (ILogger?)logger ?? NullLogger.Instance;
+
+    /// <summary>
+    /// Gets this compiler's resource limits and mode. Internal, and visible to <c>TruthWeaver.Yaml</c> via
+    /// <c>InternalsVisibleTo</c>, so the YAML front end can pass <see cref="CompilerOptions.MaxDepth"/> down to its
+    /// own parser (<c>YamlTreeParser</c>) before the raw tree exists, the same way <see cref="Compile(string)"/> and
+    /// <see cref="CompileJson(string)"/> do for their own front ends.
+    /// </summary>
+    internal CompilerOptions Options { get; } = options ?? CompilerOptions.Default;
 
     /// <summary>Compiles canonical DSL rule text.</summary>
     /// <param name="dslText">The rule text.</param>
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> Compile(string dslText)
     {
-        (RuleNode root, IReadOnlyList<Diagnostic> parseDiagnostics) = DslParser.Parse(dslText);
+        (RuleNode root, IReadOnlyList<Diagnostic> parseDiagnostics) = DslParser.Parse(dslText, this.Options.MaxDepth);
         return this.CompileNode(root, parseDiagnostics);
     }
 
@@ -62,7 +69,11 @@ public sealed class RuleCompiler<TContext>(
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> CompileJson([StringSyntax(StringSyntaxAttribute.Json)] string json)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(json);
+        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(
+            json,
+            this.Options.MaxDepth,
+            this.Options.MaxNodeCount
+        );
         return this.CompileFromParsedJson(root, parseDiagnostics, json);
     }
 
@@ -76,7 +87,11 @@ public sealed class RuleCompiler<TContext>(
     /// <returns>The compilation result.</returns>
     public CompilationResult<TContext> CompileJson(JsonElement element)
     {
-        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(element);
+        (RuleNode? root, IReadOnlyList<Diagnostic> parseDiagnostics) = JsonTreeParser.Parse(
+            element,
+            this.Options.MaxDepth,
+            this.Options.MaxNodeCount
+        );
         return this.CompileFromParsedJson(root, parseDiagnostics);
     }
 
@@ -215,16 +230,16 @@ public sealed class RuleCompiler<TContext>(
             return new CompilationResult<TContext>(null, new EquatableArray<Diagnostic>(diagnostics));
         }
 
-        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics) =
-            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.options);
+        (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics, _) =
+            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.Options);
         diagnostics.AddRange(validationDiagnostics);
 
         if (tree is not null)
         {
-            diagnostics.AddRange(Analyzer.Analyze(tree, this.options));
-            if (this.options.Lints != LintRules.None)
+            diagnostics.AddRange(Analyzer.Analyze(tree, this.Options));
+            if (this.Options.Lints != LintRules.None)
             {
-                diagnostics.AddRange(Linter.Lint(tree, this.options));
+                diagnostics.AddRange(Linter.Lint(tree, this.Options));
             }
         }
 
@@ -239,7 +254,7 @@ public sealed class RuleCompiler<TContext>(
                 tree,
                 this.registry,
                 this.logger,
-                this.options,
+                this.Options,
                 NoteCollector.Collect(expandedRoot, tree)
             );
         }

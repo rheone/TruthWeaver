@@ -178,6 +178,119 @@ public sealed class YamlRuleExtensionsTests
         Assert.Equal("hasRole(role: \"null\")", result.CompiledRule!.CanonicalText);
     }
 
+    /// <summary>
+    /// A self-referencing YAML alias (an anchor aliased inside its own body, so YamlDotNet's loaded node graph is
+    /// cyclic rather than a tree) reports MalformedTree instead of recursing forever and overflowing the call stack
+    /// with an uncatchable StackOverflowException (ticket 03). Mirrors the <c>a: &amp;x [*x]</c> pattern already
+    /// pinned for <see cref="YamlDataSource"/> in <c>YamlDataSourceTests</c>, through the rule-compiling path instead
+    /// of the data-source path.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_SelfReferencingAlias_ReportsMalformedTreeInsteadOfHanging_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml("&r\nop: not\noperands: [*r]\n");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedTree);
+    }
+
+    /// <summary>
+    /// A YAML tree nested well beyond the default MaxDepth reports MaxDepthExceeded instead of overflowing the call
+    /// stack while TreeFormatReader.ReadNode walks it (ticket 03), which recurses once per level with no guard of
+    /// its own. The depth here is deliberately a few hundred, not thousands: YamlDotNet's own recursive-descent
+    /// loader (YamlStream.Load, outside this fix's reach) has its own, lower stack-overflow ceiling for flow-style
+    /// nesting, so a test that is "deep enough to prove the guard trips" must stay well under that ceiling too.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_NestedWellBeyondMaxDepth_ReportsMaxDepthInsteadOfCrashing_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(PredicateRegistry<YamlTestContext>.CreateBuilder().Build());
+        const int levels = 150;
+        string deeplyNested =
+            string.Concat(Enumerable.Repeat("{op: not, operands: [", levels))
+            + "{const: true}"
+            + string.Concat(Enumerable.Repeat("]}", levels));
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml(deeplyNested);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
+    /// <summary>
+    /// A YAML tree only 6 anchor/alias levels deep (well within the default MaxDepth of 32), where each level is an
+    /// <c>and</c> of 6 references to the one below (one of them the anchor's own definition, the rest aliases),
+    /// expands to tens of thousands of nodes if fully materialized (roughly 6^6). YamlNodeCursor.ElementsOf walks an
+    /// aliased node again in full on every reference with no count limit of its own, so this reports
+    /// MaxNodeCountExceeded quickly instead of hanging or exhausting memory while TreeFormatReader reads it
+    /// (ticket 05).
+    /// </summary>
+    [Fact]
+    public void CompileYaml_ShallowHighFanoutAliasChain_ReportsMaxNodeCountInsteadOfExponentialBlowup_Test()
+    {
+        RuleCompiler<YamlTestContext> compiler = new(
+            PredicateRegistry<YamlTestContext>.CreateBuilder().Build(),
+            new CompilerOptions(MaxNodeCount: 50)
+        );
+        string yaml = BuildAliasFanoutYaml(levels: 6, fanout: 6);
+
+        CompilationResult<YamlTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// Pins the YAML alias node-count guard added for ticket 05 at its exact boundary: a 3-level, fanout-3 alias
+    /// chain (<c>BuildAliasFanoutYaml(3, 3)</c>) visits exactly 40 nodes while reading (V(0)=1,
+    /// V(k)=1+3*V(k-1)), computed independently of <c>YamlNodeCursor</c>. Unlike a <c>let</c>-definition chain,
+    /// a YAML alias resolves straight to the aliased node with no extra indirection layer, so the visit count here
+    /// equals the final compiled tree's node count. A budget of exactly 40 still compiles; a budget one node
+    /// smaller, 39, reports <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_AliasChainExpandingToExactlyItsVisitBudget_CompilesButOneFewerFails_Test()
+    {
+        PredicateRegistry<YamlTestContext> registry = PredicateRegistry<YamlTestContext>.CreateBuilder().Build();
+        string yaml = BuildAliasFanoutYaml(levels: 3, fanout: 3);
+
+        CompilationResult<YamlTestContext> atBudget = new RuleCompiler<YamlTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 40)
+        ).CompileYaml(yaml);
+        CompilationResult<YamlTestContext> oneOver = new RuleCompiler<YamlTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 39)
+        ).CompileYaml(yaml);
+
+        Assert.True(atBudget.Succeeded, string.Join("; ", atBudget.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(40, atBudget.CompiledRule?.Metrics.NodeCount);
+        Assert.False(oneOver.Succeeded);
+        Assert.Contains(oneOver.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// Builds YAML tree-format text for a chain of <paramref name="levels"/> anchored <c>and</c> nodes, each
+    /// referencing the one below it <paramref name="fanout"/> times (once as the anchor's own definition, the rest
+    /// as aliases), so the fully expanded tree has roughly <paramref name="fanout"/>^<paramref name="levels"/> nodes
+    /// even though the YAML nests only <paramref name="levels"/> levels deep.
+    /// </summary>
+    private static string BuildAliasFanoutYaml(int levels, int fanout)
+    {
+        string level = "&a0 {const: true}";
+        for (int i = 1; i <= levels; i++)
+        {
+            string previousAnchor = $"a{i - 1}";
+            List<string> operands = [level];
+            operands.AddRange(Enumerable.Repeat($"*{previousAnchor}", fanout - 1));
+            level = $"&a{i} {{op: and, operands: [{string.Join(", ", operands)}]}}";
+        }
+
+        return level;
+    }
+
     /// <summary>A writer whose every write fails with a preset exception.</summary>
     private sealed class ThrowingWriter(Exception failure) : TextWriter
     {

@@ -24,7 +24,8 @@ using TruthWeaver.Rewriting;
 /// analysis are built, not counting the two terminals. Sub-graphs shared between the rails or between sub-expressions
 /// count once. It measures the cost of K3 analysis, not the size of a two-valued BDD. It is <see langword="null"/> when
 /// the rule has more than <see cref="Compilation.CompilerOptions.MaxAnalysisTerms"/> distinct terms, because the analysis
-/// is skipped there.
+/// is skipped there, or when building the shared diagram for this rule's term ordering and shape would exceed the
+/// analyzer's internal node budget even within that cap (ticket 24).
 /// </param>
 public sealed record RuleMetrics(long NodeCount, int Depth, int DistinctTermCount, int? BddNodeCount)
 {

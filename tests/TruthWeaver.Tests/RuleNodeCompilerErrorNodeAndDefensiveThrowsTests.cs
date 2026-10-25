@@ -32,11 +32,8 @@ public sealed class RuleNodeCompilerErrorNodeAndDefensiveThrowsTests
         SourceSpan span = new(0, 1);
         AndNode tree = new([new ConstantNode(TruthValue.True, span), new ErrorNode(span)], span);
 
-        (Expression? compiled, RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = RuleNodeCompiler<RuleTestContext>.Compile(
-            tree,
-            EmptyRegistry,
-            CompilerOptions.Default
-        );
+        (Expression? compiled, RuleNode _, IReadOnlyList<Diagnostic> diagnostics, _) =
+            RuleNodeCompiler<RuleTestContext>.Compile(tree, EmptyRegistry, CompilerOptions.Default);
 
         Assert.NotNull(compiled);
         Assert.Empty(diagnostics);

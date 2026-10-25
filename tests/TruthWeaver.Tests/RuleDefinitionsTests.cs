@@ -77,6 +77,75 @@ public sealed class RuleDefinitionsTests
     }
 
     /// <summary>
+    /// SourcesOf's walk uses the <see cref="CompilerOptions.MaxDefinitionDepth"/> the caller actually supplies, not a
+    /// hard-coded default (ticket 23). A 10-definition chain compiles cleanly under
+    /// <c>CompilerOptions(MaxDefinitionDepth: 12)</c> (above the default of 8), and reading the same text with the
+    /// same options reaches the same full depth; reading it with no options (the default of 8) truncates early.
+    /// </summary>
+    [Fact]
+    public void SourcesOf_ChainDeeperThanDefaultMaxDefinitionDepth_ReachesFullDepthWhenOptionsRaiseIt_Test()
+    {
+        CompilerOptions options = new(MaxDefinitionDepth: 12);
+        string chain = string.Join(" ", Enumerable.Range(0, 10).Select(i => i == 0 ? "let d0 = a;" : $"let d{i} = d{i - 1};"));
+        string text = $"{chain} d9";
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build(),
+            options
+        );
+
+        CompilationResult<RuleTestContext> compiled = compiler.Compile(text);
+        RuleDefinitions readWithMatchingOptions = RuleDefinitions.ReadText(text, options);
+        RuleDefinitions readWithDefaultOptions = RuleDefinitions.ReadText(text);
+
+        Assert.NotNull(compiled.CompiledRule);
+        Assert.DoesNotContain(compiled.Diagnostics, d => d.Code == DiagnosticCodes.MaxDefinitionDepthExceeded);
+        Assert.Equal("$.definitions.d0.body", readWithMatchingOptions.SourcesOf("$")[^1]);
+        Assert.NotEqual("$.definitions.d0.body", readWithDefaultOptions.SourcesOf("$")[^1]);
+    }
+
+    /// <summary>
+    /// <see cref="RuleDefinitions.ReadJson"/> accepts the same <see cref="CompilerOptions"/> as <see cref="RuleDefinitions.ReadText"/>
+    /// (ticket 23): reading the JSON tree form of a 10-definition chain with a raised <see cref="CompilerOptions.MaxDefinitionDepth"/>
+    /// reaches the same full depth that <see cref="RuleDefinitions.ReadText"/> does, and reading it with no options
+    /// (the default of 8) truncates early, exactly as it does for text.
+    /// </summary>
+    [Fact]
+    public void ReadJson_ChainDeeperThanDefaultMaxDefinitionDepth_ReachesFullDepthWhenOptionsRaiseIt_Test()
+    {
+        CompilerOptions options = new(MaxDefinitionDepth: 12);
+        string chain = string.Join(" ", Enumerable.Range(0, 10).Select(i => i == 0 ? "let d0 = a;" : $"let d{i} = d{i - 1};"));
+        string text = $"{chain} d9";
+        string json = RuleDefinitions.ReadText(text).PrintJson()!;
+
+        RuleDefinitions readWithMatchingOptions = RuleDefinitions.ReadJson(json, options);
+        RuleDefinitions readWithDefaultOptions = RuleDefinitions.ReadJson(json);
+
+        Assert.Equal("$.definitions.d0.body", readWithMatchingOptions.SourcesOf("$")[^1]);
+        Assert.NotEqual("$.definitions.d0.body", readWithDefaultOptions.SourcesOf("$")[^1]);
+    }
+
+    /// <summary>
+    /// <see cref="YamlRuleDefinitions.ReadYaml"/> accepts the same <see cref="CompilerOptions"/> as <see cref="RuleDefinitions.ReadText"/>
+    /// (ticket 23): reading the YAML tree form of a 10-definition chain with a raised <see cref="CompilerOptions.MaxDefinitionDepth"/>
+    /// reaches the same full depth that <see cref="RuleDefinitions.ReadText"/> does, and reading it with no options
+    /// (the default of 8) truncates early, exactly as it does for text.
+    /// </summary>
+    [Fact]
+    public void ReadYaml_ChainDeeperThanDefaultMaxDefinitionDepth_ReachesFullDepthWhenOptionsRaiseIt_Test()
+    {
+        CompilerOptions options = new(MaxDefinitionDepth: 12);
+        string chain = string.Join(" ", Enumerable.Range(0, 10).Select(i => i == 0 ? "let d0 = a;" : $"let d{i} = d{i - 1};"));
+        string text = $"{chain} d9";
+        string yaml = RuleDefinitions.ReadText(text).PrintYaml()!;
+
+        RuleDefinitions readWithMatchingOptions = YamlRuleDefinitions.ReadYaml(yaml, options);
+        RuleDefinitions readWithDefaultOptions = YamlRuleDefinitions.ReadYaml(yaml);
+
+        Assert.Equal("$.definitions.d0.body", readWithMatchingOptions.SourcesOf("$")[^1]);
+        Assert.NotEqual("$.definitions.d0.body", readWithDefaultOptions.SourcesOf("$")[^1]);
+    }
+
+    /// <summary>
     /// The printed tree keeps the definitions section and the use nodes, and compiles to the same rule as the source.
     /// </summary>
     [Fact]

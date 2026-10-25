@@ -40,23 +40,51 @@ internal sealed class DslParser
     // note, so the note attacher needs to know where the group began. Keyed by reference, as two equal nodes are distinct.
     private readonly Dictionary<RuleNode, (int Start, int End)> groups = [with(ReferenceEqualityComparer.Instance)];
 
+    // Guards the recursive-descent expression chain (ParseExpression -> ParseOrExpression -> ... ->
+    // ParseNotExpression -> ParsePrimary) against unbounded recursion: a parenthesized group, a ternary branch, a
+    // call-like operand list (ANY/ALL/threshold/BETWEEN/FORALL/EXISTS), a 'let' body, a use's arguments and one
+    // step of a NOT chain each count as one level. Without this, a deeply nested or long input (hundreds of
+    // thousands of '(' or 'NOT') overflows the call stack with an uncatchable StackOverflowException before
+    // RuleNodeCompiler.Build ever gets to apply CompilerOptions.MaxDepth to the finished tree. This counter is
+    // intentionally coarser than that later check (redundant parentheses count here even though they add no tree
+    // depth), trading a few legal-but-pointless inputs for a guard simple enough to reason about.
+    private readonly int maxDepth;
+
     // The current definition's declared parameters while its own body is being parsed, so a bare identifier matching
     // one is read as a ParameterReferenceNode rather than a term or a use; null outside a definition's body (ADR-0008
     // decision 5: definitions do not nest, so this is never more than one level deep).
     private IReadOnlySet<string>? currentParameters;
     private int position;
+    private int depth;
+
+    // How many delimiters ('(', '[', '{', or a stand-in for a missing call '(') are open at the cursor: each opener
+    // consumed adds one and each ExpectClose, which every opener is paired with, removes one. Error recovery reads it
+    // so a closer that an enclosing group is waiting for is left for that group's ExpectClose instead of being skipped.
+    private int openGroups;
+    private bool maxDepthReported;
+
+    // The diagnostics count at the moment the MaxDepthExceeded diagnostic was added. Once the guard trips, the
+    // recursive-descent machinery unwinds with tokens left unconsumed wherever it stopped early, which would
+    // otherwise cost a few bogus "expected closer"/"unexpected token" diagnostics purely as an artifact of bailing
+    // out mid-expression. RuleNodeCompiler.Build's own MaxDepth check has no such artifact (it just returns a
+    // placeholder and the enclosing operators build normally around it), so Parse() truncates back to this count
+    // to give the same single-diagnostic contract: callers (e.g. the validation tool) that treat "every error is a
+    // limit code" as "the rule is otherwise fine, just too deep" depend on that.
+    private int diagnosticsCeiling = int.MaxValue;
 
     private DslParser(
         string source,
         IReadOnlyList<Token> tokens,
         List<Diagnostic> diagnostics,
-        IReadOnlySet<string> definitionNames
+        IReadOnlySet<string> definitionNames,
+        int maxDepth
     )
     {
         this.source = source;
         this.tokens = tokens;
         this.diagnostics = diagnostics;
         this.definitionNames = definitionNames;
+        this.maxDepth = maxDepth;
     }
 
     private Token Current => this.tokens[this.position];
@@ -71,13 +99,19 @@ internal sealed class DslParser
 
     /// <summary>Parses DSL rule text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="source">The rule text.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound for the recursive-descent grammar (groups, call-like operand lists, ternary branches and
+    /// NOT chains), matching <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default. Exceeding it
+    /// is reported as <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code
+    /// <c>RuleNodeCompiler.Build</c> reports for a built tree that is too deep.
+    /// </param>
     /// <returns>The parsed root node and the diagnostics raised while parsing.</returns>
-    public static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string source)
+    public static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string source, int maxDepth = 32)
     {
         Lexer lexer = new(source);
         IReadOnlyList<Token> tokens = lexer.Tokenize();
         List<Diagnostic> diagnostics = [.. lexer.Diagnostics];
-        DslParser parser = new(source, tokens, diagnostics, CollectDefinitionNames(tokens));
+        DslParser parser = new(source, tokens, diagnostics, CollectDefinitionNames(tokens), maxDepth);
 
         List<DefinitionNode> definitions = [];
         while (parser.IsKeyword("LET"))
@@ -118,6 +152,15 @@ internal sealed class DslParser
                 ? body
                 : new RuleDocumentNode(definitions, body, SpanCovering(definitions[0].Span.Start, body.Span.End));
         NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
+
+        // Drop whatever "expected closer"/"unexpected token" noise the unwind above added once the depth guard
+        // tripped (see the field comment on diagnosticsCeiling): it is an artifact of bailing out mid-expression,
+        // not a second real problem with the rule.
+        if (diagnostics.Count > parser.diagnosticsCeiling)
+        {
+            diagnostics.RemoveRange(parser.diagnosticsCeiling, diagnostics.Count - parser.diagnosticsCeiling);
+        }
+
         return (root, diagnostics);
     }
 
@@ -249,6 +292,20 @@ internal sealed class DslParser
         };
     }
 
+    /// <summary>Whether a word is an infix operator word (<c>AND</c>, <c>OR</c>, <c>XOR</c> and the rest, aliases included), ignoring case.</summary>
+    private static bool IsInfixWord(string word)
+    {
+        return DslVocabulary.InfixWords.Contains(word, StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether a token can begin an operand: a word, a group opener or the symbolic NOT.</summary>
+    private static bool CanStartOperand(Token token)
+    {
+        return token.Kind == TokenKind.Identifier
+            || IsGroupOpener(token.Kind)
+            || (token.Kind == TokenKind.Operator && SymbolAlias(token.Text) == "NOT");
+    }
+
     private bool IsKeyword(string keyword)
     {
         return this.Current.Kind switch
@@ -376,16 +433,16 @@ internal sealed class DslParser
             return false;
         }
 
-        int depth = 0;
+        int bracketDepth = 0;
         for (int i = startToken; i < this.position; i++)
         {
-            depth += this.tokens[i].Kind switch
+            bracketDepth += this.tokens[i].Kind switch
             {
                 TokenKind.LParen or TokenKind.LBracket or TokenKind.LBrace => 1,
                 TokenKind.RParen or TokenKind.RBracket or TokenKind.RBrace => -1,
                 _ => 0,
             };
-            if (depth == 0)
+            if (bracketDepth == 0)
             {
                 return i == this.position - 1;
             }
@@ -396,7 +453,53 @@ internal sealed class DslParser
 
     private (RuleNode Node, string? BareInfix) ParseOrExpression()
     {
-        return this.ParseAndOrChain("OR", this.ParseAndExpression, (operands, span) => new OrNode(operands, span));
+        if (!this.TryEnterNesting())
+        {
+            return (new ErrorNode(this.Current.Span), null);
+        }
+
+        try
+        {
+            return this.ParseAndOrChain("OR", this.ParseAndExpression, (operands, span) => new OrNode(operands, span));
+        }
+        finally
+        {
+            this.depth--;
+        }
+    }
+
+    /// <summary>
+    /// Enters one level of the recursive-descent expression chain. Returns <see langword="false"/> once
+    /// <see cref="maxDepth"/> nesting levels are already open, in which case the caller must not descend any
+    /// further (it should return a placeholder instead, without a matching exit: a failed entry never happened).
+    /// The <see cref="DiagnosticCodes.MaxDepthExceeded"/> diagnostic is reported only once, no matter how many
+    /// guarded call sites are still unwinding above the first one to trip.
+    /// </summary>
+    private bool TryEnterNesting()
+    {
+        this.depth++;
+        if (this.depth <= this.maxDepth)
+        {
+            return true;
+        }
+
+        this.depth--;
+        if (!this.maxDepthReported)
+        {
+            this.maxDepthReported = true;
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.MaxDepthExceeded,
+                    $"Rule exceeds the maximum tree depth of {this.maxDepth}.",
+                    this.Current.Span,
+                    expected: $"nesting at most {this.maxDepth} deep",
+                    found: "deeper nesting"
+                )
+            );
+            this.diagnosticsCeiling = this.diagnostics.Count;
+        }
+
+        return false;
     }
 
     private (RuleNode Node, string? BareInfix) ParseAndExpression()
@@ -519,8 +622,23 @@ internal sealed class DslParser
         if (this.TryConsumeKeyword("NOT"))
         {
             int start = this.tokens[this.position - 1].Span.Start;
-            RuleNode operand = this.ParseNotExpression();
-            return new NotNode(operand, SpanCovering(start, operand.Span.End));
+
+            // A NOT chain recurses here directly, without going back through ParseOrExpression, so it needs its
+            // own guard: "NOT " repeated enough times is otherwise an unbounded self-recursion.
+            if (!this.TryEnterNesting())
+            {
+                return new ErrorNode(SpanCovering(start, this.Current.Span.End));
+            }
+
+            try
+            {
+                RuleNode operand = this.ParseNotExpression();
+                return new NotNode(operand, SpanCovering(start, operand.Span.End));
+            }
+            finally
+            {
+                this.depth--;
+            }
         }
 
         return this.ParsePrimary();
@@ -540,6 +658,7 @@ internal sealed class DslParser
             // '(', '[' and '{' are interchangeable; the node keeps no trace of which was written (ADR-0005 decision 9).
             Token opener = this.Current;
             this.position++;
+            this.openGroups++;
             RuleNode inner = this.ParseExpression();
             this.ExpectClose(opener);
 
@@ -702,11 +821,32 @@ internal sealed class DslParser
             return this.ParseUse();
         }
 
+        if (this.Current.Kind == TokenKind.Identifier && IsInfixWord(this.Current.Text))
+        {
+            return this.RejectInfixWordAsOperand();
+        }
+
         if (this.Current.Kind == TokenKind.Identifier)
         {
             return this.ParseTerm();
         }
 
+        this.ReportExpectedOperand();
+        SourceSpan errorSpan = this.Current.Span;
+
+        // Skip the bad token so parsing moves on, unless it is the end of input or a closer that an enclosing group is
+        // waiting for: that group's ExpectClose consumes it, so '(a AND )' does not also report the '(' as unclosed.
+        if (this.Current.Kind != TokenKind.Eof && !(IsGroupCloser(this.Current.Kind) && this.openGroups > 0))
+        {
+            this.position++;
+        }
+
+        return new ErrorNode(errorSpan);
+    }
+
+    /// <summary>Reports that the token at the cursor stands where an operand (a term, constant or group) must be.</summary>
+    private void ReportExpectedOperand()
+    {
         this.diagnostics.Add(
             Diagnostic.Error(
                 DiagnosticCodes.SyntaxError,
@@ -716,13 +856,91 @@ internal sealed class DslParser
                 found: DescribeFound(this.Current)
             )
         );
-        SourceSpan errorSpan = this.Current.Span;
-        if (this.Current.Kind != TokenKind.Eof)
+    }
+
+    /// <summary>
+    /// Reports an infix operator word that stands where an operand must be, as in <c>a AND OR</c> or <c>XOR(a, b)</c>,
+    /// as a syntax error at the word. Without this the word parses as a term name and the compiler reports a reserved
+    /// predicate name, which points the author at the wrong mistake. Recovery depends on what follows, so that one
+    /// mistake gives one diagnostic:
+    /// <list type="bullet">
+    /// <item><description>A call form (<c>XOR(...)</c>, which the language does not have): the word and its whole
+    /// parenthesized list are skipped.</description></item>
+    /// <item><description>A token that can start an operand (<c>a AND OR b</c>): the word stays in place. The operator
+    /// chain above this operand always accepts an infix word, so it reads the word as the operator after a missing
+    /// operand.</description></item>
+    /// <item><description>Anything else (the end of the rule, a closer, a comma): the word is skipped.</description></item>
+    /// </list>
+    /// </summary>
+    private ErrorNode RejectInfixWordAsOperand()
+    {
+        this.ReportExpectedOperand();
+        Token word = this.Current;
+        Token next = this.tokens[this.position + 1];
+        if (next.Kind == TokenKind.LParen)
+        {
+            this.position++;
+            this.SkipBalancedGroup();
+            return new ErrorNode(SpanCovering(word.Span.Start, this.tokens[this.position - 1].Span.End));
+        }
+
+        if (!CanStartOperand(next))
         {
             this.position++;
         }
 
-        return new ErrorNode(errorSpan);
+        return new ErrorNode(word.Span);
+    }
+
+    /// <summary>
+    /// Skips the group that opens at the cursor through its matching closer, counting every delimiter kind for nesting.
+    /// At the end of input it stops, so an unbalanced group does not add a second diagnostic to the one that caused the
+    /// skip.
+    /// </summary>
+    private void SkipBalancedGroup()
+    {
+        int nesting = 0;
+        do
+        {
+            if (IsGroupOpener(this.Current.Kind))
+            {
+                nesting++;
+            }
+            else if (IsGroupCloser(this.Current.Kind))
+            {
+                nesting--;
+            }
+
+            this.position++;
+        } while (nesting > 0 && this.Current.Kind != TokenKind.Eof);
+    }
+
+    /// <summary>
+    /// Skips the rest of a malformed argument up to the next ',', closer or ';' at the argument's own nesting level, or
+    /// the end of input. That token is not consumed, so the enclosing argument list resumes at a point it understands.
+    /// </summary>
+    private void SkipToArgumentEnd()
+    {
+        int nesting = 0;
+        while (this.Current.Kind != TokenKind.Eof)
+        {
+            TokenKind kind = this.Current.Kind;
+            if (nesting == 0 && (kind is TokenKind.Comma or TokenKind.Semicolon || IsGroupCloser(kind)))
+            {
+                return;
+            }
+
+            if (IsGroupOpener(kind))
+            {
+                nesting++;
+            }
+            else if (IsGroupCloser(kind))
+            {
+                nesting--;
+            }
+
+            this.position++;
+        }
     }
 
     private RuleNode ParseTerm()
@@ -735,6 +953,7 @@ internal sealed class DslParser
         {
             Token opener = this.Current;
             this.position++;
+            this.openGroups++;
             if (this.Current.Kind != TokenKind.RParen)
             {
                 arguments.Add(this.ParseArgument());
@@ -769,6 +988,7 @@ internal sealed class DslParser
         {
             Token opener = this.Current;
             this.position++;
+            this.openGroups++;
             if (this.Current.Kind != TokenKind.RParen)
             {
                 parameters.Add(this.ExpectParameterName());
@@ -818,6 +1038,7 @@ internal sealed class DslParser
         {
             Token opener = this.Current;
             this.position++;
+            this.openGroups++;
             if (this.Current.Kind != TokenKind.RParen)
             {
                 arguments.Add(this.ParseExpression());
@@ -1121,8 +1342,8 @@ internal sealed class DslParser
     /// <summary>
     /// Reads one integer literal for a threshold <c>k</c> or a BETWEEN bound. The text is parsed with the invariant
     /// culture, so the result does not depend on the host. A missing, fractional or out-of-range (for example
-    /// <c>1.5</c> or <c>99999999999</c>) value is an <see cref="DiagnosticCodes.InvalidThresholdValue"/> error, as in the tree formats; the number token is still consumed so parsing can
-    /// continue, and <c>0</c> is returned only as a placeholder next to that error.
+    /// <c>1.5</c> or <c>99999999999</c>) value is an <see cref="DiagnosticCodes.InvalidThresholdValue"/> error, as in the tree formats; the rest of the argument is skipped up to
+    /// the next ',' or closer so parsing can continue, and <c>0</c> is returned only as a placeholder next to that error.
     /// </summary>
     /// <param name="description">What is expected, as "name as OPERATOR's Nth argument", for the diagnostic.</param>
     private int ParseIntegerBound(string description)
@@ -1145,11 +1366,10 @@ internal sealed class DslParser
                 found: DescribeFound(this.Current)
             )
         );
-        if (this.Current.Kind == TokenKind.NumberLiteral)
-        {
-            this.position++;
-        }
 
+        // Skip the whole bad argument, not only a number token, so a forgotten bound (AtLeast(a, b, c)) is not read
+        // again as a misplaced operand by the closer check and the end-of-rule check.
+        this.SkipToArgumentEnd();
         return 0;
     }
 
@@ -1179,6 +1399,7 @@ internal sealed class DslParser
     private Token ExpectOpenParen()
     {
         Token opener = this.Current;
+        this.openGroups++;
         if (opener.Kind == TokenKind.LParen)
         {
             this.position++;
@@ -1216,6 +1437,7 @@ internal sealed class DslParser
     /// </summary>
     private void ExpectClose(Token opener)
     {
+        this.openGroups--;
         char expected = ClosingFor(opener.Kind);
         if (this.Current.Kind == ExpectedCloserKind(opener.Kind))
         {

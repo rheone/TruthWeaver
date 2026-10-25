@@ -40,7 +40,8 @@ public static class RuleCounterfactual
     /// <param name="options">The search settings. <see langword="null"/> searches for <c>True</c> with the defaults.</param>
     /// <returns>
     /// The change sets, <see cref="CounterfactualOutcome.NoChangeNeeded"/>, <see cref="CounterfactualOutcome.NonePossible"/>,
-    /// or <see cref="CounterfactualOutcome.Undecided"/> when the rule has more distinct terms than the term cap.
+    /// or <see cref="CounterfactualOutcome.Undecided"/> when the rule has more distinct terms than the term cap, or when
+    /// building its shared decision diagram would exceed the search's internal node budget (ticket 24).
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="facts"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A key of <paramref name="facts"/> or a fixed term is not a term of the rule.</exception>
@@ -75,7 +76,8 @@ public static class RuleCounterfactual
     /// <param name="options">The search settings. <see langword="null"/> searches for <c>True</c> with the defaults.</param>
     /// <returns>
     /// The change sets, <see cref="CounterfactualOutcome.NoChangeNeeded"/>, <see cref="CounterfactualOutcome.NonePossible"/>,
-    /// or <see cref="CounterfactualOutcome.Undecided"/> when the rule has more distinct terms than the term cap.
+    /// or <see cref="CounterfactualOutcome.Undecided"/> when the rule has more distinct terms than the term cap, or when
+    /// building its shared decision diagram would exceed the search's internal node budget (ticket 24).
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="decision"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
@@ -146,7 +148,17 @@ public static class RuleCounterfactual
             );
         }
 
-        return ChangeSetSearch.Run(root, known, fixedTerms, options.Target, options.MaxChangeSets);
+        try
+        {
+            return ChangeSetSearch.Run(root, known, fixedTerms, options.Target, options.MaxChangeSets);
+        }
+        catch (BddNodeBudgetExceededException exception)
+        {
+            // Within the term cap, the shared BDD for this term ordering and rule shape still grew past the search's
+            // internal node budget (ticket 24): report the same way the term-count cap does, rather than hanging or
+            // allocating unboundedly.
+            return new CounterfactualResult(CounterfactualOutcome.Undecided, [], false, exception.Message);
+        }
     }
 
     /// <summary>Maps the printed form of each distinct term of the rule to its identity.</summary>

@@ -37,14 +37,24 @@ internal interface ICollectionBinding<TContext>
     /// <param name="depth">The structural tree depth the body starts at (the quantifier node's own depth plus one).</param>
     /// <param name="quantifierDepth">How many quantifiers deep the body itself starts at (the quantifier node's own depth), for <see cref="CompilerOptions.MaxQuantifierDepth"/> across the collection-binding boundary.</param>
     /// <param name="enclosingVariables">The bound variable names already in scope from every enclosing quantifier, innermost last, for the shadowed-variable rule across the collection-binding boundary.</param>
-    /// <returns>The built body tree (or <see langword="null"/> on an error) and every diagnostic raised building it.</returns>
-    public (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics) CompileBody(
+    /// <param name="startNodeCount">
+    /// How many nodes the enclosing compile has already counted against <see cref="CompilerOptions.MaxNodeCount"/>
+    /// (the quantifier node itself included), so the body's nodes extend that same budget instead of starting a
+    /// fresh one (ADR-0010 line 175: "a quantifier counts as one node plus its body, once").
+    /// </param>
+    /// <returns>
+    /// The built body tree (or <see langword="null"/> on an error), every diagnostic raised building it, and the
+    /// running node count after compiling the body (<paramref name="startNodeCount"/> plus however many nodes the
+    /// body itself counted), for the caller to resume counting from.
+    /// </returns>
+    public (Expression? Tree, IReadOnlyList<Diagnostic> Diagnostics, int NodeCount) CompileBody(
         string variable,
         RuleNode body,
         CompilerOptions options,
         int depth,
         int quantifierDepth,
-        IReadOnlyList<string> enclosingVariables
+        IReadOnlyList<string> enclosingVariables,
+        int startNodeCount
     );
 
     /// <summary>

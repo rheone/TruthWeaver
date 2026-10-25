@@ -18,20 +18,43 @@ using TruthWeaver.Parsing;
 /// </summary>
 internal static class JsonTreeParser
 {
+    // Each rule-tree level this reader walks costs two JSON levels (the node object and its operands array), and a
+    // predicate's own args object or an array-literal argument adds one more without deepening the rule tree itself.
+    // Without this headroom, JsonDocument.Parse's own nesting cap (independent of maxDepth, and 64 by default) would
+    // reject a rule this reader's own maxDepth bound still allows, before TreeFormatReader ever gets to report
+    // DiagnosticCodes.MaxDepthExceeded with the rule's own depth, instead reporting a misleading "Malformed JSON".
+    private const int JsonDepthHeadroom = 16;
+
     /// <summary>Parses JSON tree text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="json">The JSON tree text.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound the reader applies while walking the tree, matching
+    /// <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default. Exceeding it is reported as
+    /// <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
+    /// built tree that is too deep. <see cref="JsonDocument"/> itself parses with <see cref="DocumentMaxDepth"/>'s
+    /// raised cap (not its own default of 64), so a rule this deep reaches that check instead of failing the JSON
+    /// parse first with a misleading syntax diagnostic.
+    /// </param>
+    /// <param name="maxNodeCount">
+    /// The node-count bound the reader applies while walking the tree, matching
+    /// <see cref="TruthWeaver.Compilation.CompilerOptions.MaxNodeCount"/>'s default. Exceeding it is reported as
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>, the same code <c>RuleNodeCompiler.Build</c> reports for a
+    /// built tree with too many nodes.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the JSON itself was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
     public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
-        [StringSyntax(StringSyntaxAttribute.Json)] string json
+        [StringSyntax(StringSyntaxAttribute.Json)] string json,
+        int maxDepth = 32,
+        int maxNodeCount = 512
     )
     {
         JsonDocument document;
         try
         {
-            document = JsonDocument.Parse(json);
+            document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = DocumentMaxDepth(maxDepth) });
         }
         catch (JsonException ex)
         {
@@ -41,19 +64,39 @@ internal static class JsonTreeParser
 
         using (document)
         {
-            return Parse(document.RootElement);
+            return Parse(document.RootElement, maxDepth, maxNodeCount);
         }
     }
 
     /// <summary>Parses an already-materialized JSON tree node (e.g. a subtree of a larger document) into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="element">The JSON tree node.</param>
+    /// <param name="maxDepth">The nesting bound, as for <see cref="Parse(string, int, int)"/>.</param>
+    /// <param name="maxNodeCount">The node-count bound, as for <see cref="Parse(string, int, int)"/>.</param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> if the element was malformed) and the
     /// diagnostics raised while parsing.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(JsonElement element)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(
+        JsonElement element,
+        int maxDepth = 32,
+        int maxNodeCount = 512
+    )
     {
-        return TreeFormatReader.Read(new JsonNodeCursor(element), JsonNodeCursor.Vocabulary);
+        return TreeFormatReader.Read(new JsonNodeCursor(element), JsonNodeCursor.Vocabulary, maxDepth, maxNodeCount);
+    }
+
+    /// <summary>
+    /// Computes the <see cref="JsonDocumentOptions.MaxDepth"/> to parse with, given the rule-tree nesting bound
+    /// (<see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>). See <see cref="JsonDepthHeadroom"/> for why
+    /// it is more than <paramref name="maxDepth"/> itself. Used here and by <c>RuleBuilder.Compile</c>, whose
+    /// JSON round trip (<c>ToJson</c> then <c>JsonDocument.Parse</c>) needs the same cap.
+    /// </summary>
+    /// <param name="maxDepth">The rule-tree nesting bound.</param>
+    /// <returns>The <see cref="JsonDocumentOptions.MaxDepth"/> to use, clamped to <see cref="int.MaxValue"/>.</returns>
+    internal static int DocumentMaxDepth(int maxDepth)
+    {
+        long scaled = (2L * maxDepth) + JsonDepthHeadroom;
+        return scaled > int.MaxValue ? int.MaxValue : (int)scaled;
     }
 
     /// <summary>Builds the diagnostic for text that is not JSON at all: the reader's message, its position, and the nearest valid ancestor.</summary>

@@ -437,6 +437,102 @@ public sealed class DslParserDiagnosticTests
         Assert.Null(DslVocabulary.DoubledSymbolFor('^'));
     }
 
+    /// <summary>
+    /// A group whose last operand is missing reports the missing operand once. The closer still closes the group, so
+    /// there is no false report that the '(' is unclosed.
+    /// </summary>
+    [Fact]
+    public void Parse_GroupWithMissingLastOperand_ReportsOnlyTheMissingOperand_Test()
+    {
+        Diagnostic diagnostic = Single("(a AND )");
+
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal("Expected a term, constant, or '(' but found ')'.", diagnostic.Message);
+        Assert.Equal("a term, constant or '('", diagnostic.Expected);
+        Assert.Equal("')'", diagnostic.Found);
+        Assert.Equal(new SourceSpan(7, 1), diagnostic.Span);
+    }
+
+    /// <summary>A stray closer with no group open is still skipped, so a missing operand at the top level gives one diagnostic.</summary>
+    [Fact]
+    public void Parse_MissingOperandBeforeUnmatchedCloser_ReportsOnlyTheMissingOperand_Test()
+    {
+        Diagnostic diagnostic = Single("a AND )");
+
+        Assert.Equal("Expected a term, constant, or '(' but found ')'.", diagnostic.Message);
+    }
+
+    /// <summary>
+    /// A threshold call whose k is missing reports the bad bound once: the operand in k's place is skipped up to the
+    /// next comma, so it is not reported again as a stray token.
+    /// </summary>
+    [Fact]
+    public void Parse_ThresholdWithMissingK_ReportsOnlyTheInvalidThreshold_Test()
+    {
+        Diagnostic diagnostic = Single("AtLeast(a, b, c)");
+
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        Assert.Equal("Expected an integer threshold as AtLeast's first argument.", diagnostic.Message);
+        Assert.Equal("'a'", diagnostic.Found);
+        Assert.Equal(new SourceSpan(8, 1), diagnostic.Span);
+    }
+
+    /// <summary>A BETWEEN bound that is an expression is skipped as a whole, so the remaining bound and operands still parse.</summary>
+    [Fact]
+    public void Parse_BetweenWithExpressionBound_ReportsOnlyTheInvalidBound_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("BETWEEN((a AND b), 2, c, d)");
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidThresholdValue, diagnostic.Code);
+        BetweenNode between = Assert.IsType<BetweenNode>(root);
+        Assert.Equal(2, between.Max);
+        Assert.Equal(2, between.Operands.Count);
+    }
+
+    /// <summary>An infix word where the right operand belongs is a syntax error at that word, not a predicate name.</summary>
+    [Fact]
+    public void Parse_InfixWordAsMissingRightOperand_ReportsASyntaxErrorAtTheWord_Test()
+    {
+        Diagnostic diagnostic = Single("a AND OR");
+
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal("Expected a term, constant, or '(' but found 'OR'.", diagnostic.Message);
+        Assert.Equal("'OR'", diagnostic.Found);
+        Assert.Equal(new SourceSpan(6, 2), diagnostic.Span);
+    }
+
+    /// <summary>
+    /// An infix word followed by an operand is read as the operator after the missing operand, so the rest of the rule
+    /// parses and the mistake gives one diagnostic.
+    /// </summary>
+    [Fact]
+    public void Parse_InfixWordAfterMissingOperand_KeepsTheWordAsTheOperator_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("a AND OR b");
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("Expected a term, constant, or '(' but found 'OR'.", diagnostic.Message);
+        OrNode or = Assert.IsType<OrNode>(root);
+        Assert.IsType<AndNode>(or.Operands[0]);
+        Assert.Equal("b", Assert.IsType<TermNode>(or.Operands[1]).PredicateName);
+    }
+
+    /// <summary>The call form of an infix operator is a syntax error at the operator word, and its argument list raises nothing more.</summary>
+    [Theory]
+    [InlineData("XOR()", "XOR")]
+    [InlineData("XOR(x: 1)", "XOR")]
+    [InlineData("and(a, b)", "and")]
+    [InlineData("c OR iff(a, (b))", "iff")]
+    public void Parse_InfixWordInCallForm_ReportsASyntaxErrorAtTheWord_Test(string source, string word)
+    {
+        Diagnostic diagnostic = Single(source);
+
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal($"Expected a term, constant, or '(' but found '{word}'.", diagnostic.Message);
+        Assert.Equal(new SourceSpan(source.IndexOf(word, StringComparison.Ordinal), word.Length), diagnostic.Span);
+    }
+
     private static IReadOnlyList<Diagnostic> Parse(string source)
     {
         return DslParser.Parse(source).Diagnostics;

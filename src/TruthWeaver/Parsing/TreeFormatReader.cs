@@ -18,6 +18,23 @@ internal sealed class TreeFormatReader
     private readonly TreeFormatVocabulary words;
     private readonly List<Diagnostic> diagnostics = [];
 
+    // Guards ReadNode's recursion (operands, a use's arguments, a quantifier's body) against an unbounded JSON or
+    // YAML tree: JsonDocument caps JSON nesting at 64 by default, but a caller that raises JsonDocumentOptions.MaxDepth
+    // can still hand CompileJson(JsonElement) a deeper element, and nothing bounds a YamlNode graph at all. Without
+    // this, a deeply nested document overflows the call stack with an uncatchable StackOverflowException before
+    // RuleNodeCompiler.Build ever gets to apply CompilerOptions.MaxDepth to the finished tree.
+    private readonly int maxDepth;
+
+    // Counts every node ReadNode visits, the same way DefinitionExpander counts the nodes it produces (ticket 04)
+    // and RuleNodeCompiler.Build counts the nodes it builds. maxDepth alone does not bound a YAML tree that uses
+    // anchors and aliases (ticket 05): YamlStream.Load resolves every alias to the same anchored YamlNode instance,
+    // so YamlNodeCursor's Elements/Members walk it again in full on every reference, and a document only a handful
+    // of levels deep can still expand to fanout^levels visits. Checking this on entry to ReadNode, before recursing
+    // into that node's own operands, keeps the work past the limit to O(1) per call: once the guard is already over
+    // budget, every sibling or ancestor operand still to be visited also trips the same check immediately instead of
+    // walking its own (possibly aliased) subtree.
+    private readonly NodeCountGuard nodeBudget;
+
     // Set by ReadUse: unlike the DSL (where ParseUse is reachable only for a name already scanned as a 'let'
     // declaration, so a bare use never appears without a document), a JSON/YAML 'use' node is its own explicit shape,
     // legal even when the document declared no 'definitions' at all (ADR-0008 decision 3 says "wherever a tree node is
@@ -31,21 +48,41 @@ internal sealed class TreeFormatReader
     // threading the scope through every recursive Read* method, is safe because definitions never nest (ADR-0008
     // decision 5): reading one body never re-enters ReadDefinitionEntry for another.
     private IReadOnlySet<string>? activeParameters;
+    private int depth;
+    private bool maxDepthReported;
 
-    private TreeFormatReader(TreeFormatVocabulary words)
+    private TreeFormatReader(TreeFormatVocabulary words, int maxDepth, int maxNodeCount)
     {
         this.words = words;
+        this.maxDepth = maxDepth;
+        this.nodeBudget = new NodeCountGuard(maxNodeCount);
     }
 
     /// <summary>Reads a tree document into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="root">The cursor positioned on the document's root node.</param>
     /// <param name="words">The format's own words for diagnostics.</param>
+    /// <param name="maxDepth">
+    /// The nesting bound, matching <see cref="TruthWeaver.Compilation.CompilerOptions.MaxDepth"/>'s default.
+    /// Exceeding it is reported as <see cref="DiagnosticCodes.MaxDepthExceeded"/>, the same code
+    /// <c>RuleNodeCompiler.Build</c> reports for a built tree that is too deep.
+    /// </param>
+    /// <param name="maxNodeCount">
+    /// The node-count bound, matching <see cref="TruthWeaver.Compilation.CompilerOptions.MaxNodeCount"/>'s default.
+    /// Exceeding it is reported as <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>, the same code
+    /// <c>RuleNodeCompiler.Build</c> reports for a built tree with too many nodes; here it catches a YAML document
+    /// whose anchors and aliases make it expand far past this count while still read as a small, shallow tree.
+    /// </param>
     /// <returns>
     /// The parsed root node (or <see langword="null"/> when the tree was malformed) and the diagnostics raised while reading.
     /// </returns>
-    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Read(ITreeNodeCursor root, TreeFormatVocabulary words)
+    public static (RuleNode? Root, IReadOnlyList<Diagnostic> Diagnostics) Read(
+        ITreeNodeCursor root,
+        TreeFormatVocabulary words,
+        int maxDepth = 32,
+        int maxNodeCount = 512
+    )
     {
-        TreeFormatReader reader = new(words);
+        TreeFormatReader reader = new(words, maxDepth, maxNodeCount);
 
         // A 'definitions' section sits alongside the document's own root node (ADR-0008 decision 3), never on a
         // nested node, so it is recognized here, once, rather than as a case of the generic node reader.
@@ -148,18 +185,51 @@ internal sealed class TreeFormatReader
 
     private RuleNode? ReadNode(ITreeNodeCursor node, string path)
     {
-        RuleNode? parsed = this.ReadNodeCore(node, path);
-        if (parsed is null || !this.TryReadNote(node, path, out string? note))
+        this.depth++;
+        if (this.depth > this.maxDepth)
         {
+            if (!this.maxDepthReported)
+            {
+                this.maxDepthReported = true;
+                this.Report(
+                    DiagnosticCodes.MaxDepthExceeded,
+                    $"Rule exceeds the maximum tree depth of {this.maxDepth}.",
+                    node.Span,
+                    $"nesting at most {this.maxDepth} deep",
+                    "deeper nesting",
+                    path
+                );
+            }
+
+            this.depth--;
             return null;
         }
 
-        return parsed with
+        if (!this.nodeBudget.TryCount(this.diagnostics, node.Span, path))
         {
-            Path = path,
-            Span = node.Span,
-            Note = note,
-        };
+            this.depth--;
+            return null;
+        }
+
+        try
+        {
+            RuleNode? parsed = this.ReadNodeCore(node, path);
+            if (parsed is null || !this.TryReadNote(node, path, out string? note))
+            {
+                return null;
+            }
+
+            return parsed with
+            {
+                Path = path,
+                Span = node.Span,
+                Note = note,
+            };
+        }
+        finally
+        {
+            this.depth--;
+        }
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using System.Text.Json;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Building;
 using TruthWeaver.Compilation;
@@ -156,6 +157,57 @@ public sealed class RuleBuilderTests
         Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
         Assert.Equal("$.operands[1].predicate", diagnostic.Path);
         Assert.Equal(SourceSpan.None, diagnostic.Span);
+    }
+
+    /// <summary>
+    /// A builder tree whose depth sits exactly at <see cref="CompilerOptions.MaxDepth"/>'s default (32) compiles
+    /// through <see cref="RuleBuilder.Compile{TContext}(RuleCompiler{TContext})"/>'s JSON round trip (ticket 14),
+    /// instead of its internal <c>JsonDocument.Parse(this.ToJson())</c> throwing at <see cref="JsonDocument"/>'s own,
+    /// unrelated default nesting cap of 64.
+    /// </summary>
+    [Fact]
+    public void Compile_NotChainAtDefaultMaxDepth_RoundTripsThroughJsonWithoutThrowing_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
+        );
+        RuleBuilder rule = RuleBuilder.Predicate("isManager");
+
+        // 31 NOTs over a predicate term = tree depth 32, the default MaxDepth.
+        for (int i = 0; i < 31; i++)
+        {
+            rule = RuleBuilder.Not(rule);
+        }
+
+        CompilationResult<RuleTestContext> result = rule.Compile(compiler);
+
+        Assert.True(result.Succeeded);
+    }
+
+    /// <summary>
+    /// A builder tree one level past <see cref="CompilerOptions.MaxDepth"/> reports
+    /// <see cref="DiagnosticCodes.MaxDepthExceeded"/> through the same round trip, not a thrown
+    /// <see cref="JsonException"/> (ticket 14): <see cref="RuleBuilder.Compile{TContext}(RuleCompiler{TContext})"/>
+    /// never throws for an authoring error, per the pipeline's own contract.
+    /// </summary>
+    [Fact]
+    public void Compile_NotChainOneLevelPastMaxDepth_ReportsMaxDepthExceededInsteadOfThrowing_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("isManager", true).Build()
+        );
+        RuleBuilder rule = RuleBuilder.Predicate("isManager");
+
+        // 32 NOTs over a predicate term = tree depth 33, one past the default MaxDepth.
+        for (int i = 0; i < 32; i++)
+        {
+            rule = RuleBuilder.Not(rule);
+        }
+
+        CompilationResult<RuleTestContext> result = rule.Compile(compiler);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
     }
 
     /// <summary>The constant builder round trips through the same pipeline as DSL text.</summary>
