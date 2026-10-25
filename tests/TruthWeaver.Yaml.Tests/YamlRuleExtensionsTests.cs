@@ -243,6 +243,35 @@ public sealed class YamlRuleExtensionsTests
     }
 
     /// <summary>
+    /// Pins the YAML alias node-count guard added for ticket 05 at its exact boundary: a 3-level, fanout-3 alias
+    /// chain (<c>BuildAliasFanoutYaml(3, 3)</c>) visits exactly 40 nodes while reading (V(0)=1,
+    /// V(k)=1+3*V(k-1)), computed independently of <c>YamlNodeCursor</c>. Unlike a <c>let</c>-definition chain,
+    /// a YAML alias resolves straight to the aliased node with no extra indirection layer, so the visit count here
+    /// equals the final compiled tree's node count. A budget of exactly 40 still compiles; a budget one node
+    /// smaller, 39, reports <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>.
+    /// </summary>
+    [Fact]
+    public void CompileYaml_AliasChainExpandingToExactlyItsVisitBudget_CompilesButOneFewerFails_Test()
+    {
+        PredicateRegistry<YamlTestContext> registry = PredicateRegistry<YamlTestContext>.CreateBuilder().Build();
+        string yaml = BuildAliasFanoutYaml(levels: 3, fanout: 3);
+
+        CompilationResult<YamlTestContext> atBudget = new RuleCompiler<YamlTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 40)
+        ).CompileYaml(yaml);
+        CompilationResult<YamlTestContext> oneOver = new RuleCompiler<YamlTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 39)
+        ).CompileYaml(yaml);
+
+        Assert.True(atBudget.Succeeded, string.Join("; ", atBudget.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(40, atBudget.CompiledRule?.Metrics.NodeCount);
+        Assert.False(oneOver.Succeeded);
+        Assert.Contains(oneOver.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
     /// Builds YAML tree-format text for a chain of <paramref name="levels"/> anchored <c>and</c> nodes, each
     /// referencing the one below it <paramref name="fanout"/> times (once as the anchor's own definition, the rest
     /// as aliases), so the fully expanded tree has roughly <paramref name="fanout"/>^<paramref name="levels"/> nodes

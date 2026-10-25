@@ -204,6 +204,35 @@ public sealed class DefinitionsTests
     }
 
     /// <summary>
+    /// Pins the node-budget isolation ticket 22's validation pass depends on: the reachable body here expands to
+    /// exactly 5 nodes (1 AND node + 4 terms), exactly at a 5-node <see cref="CompilerOptions.MaxNodeCount"/>, and an
+    /// unreachable definition's own body separately expands to 3 more. If the unreachable-definition validator
+    /// shared one running count with the reachable walk, the combined 8 nodes would trip
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> even though neither walk alone is over budget; a document
+    /// that already compiled under this budget must not start failing only because the new, unrelated validation
+    /// pass now also looks at its unreachable definitions.
+    /// </summary>
+    [Fact]
+    public void Compile_ReachableBodyAtExactBudgetWithSeparateUnreachableDefinition_StillCompiles_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("p0", true)
+                .AddConstant("p1", true)
+                .AddConstant("p2", true)
+                .AddConstant("p3", true)
+                .Build(),
+            new CompilerOptions(MaxNodeCount: 5)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let unused = p0 AND p1; p0 AND p1 AND p2 AND p3");
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(5, result.CompiledRule?.Metrics.NodeCount);
+    }
+
+    /// <summary>
     /// A definition the rule body never reaches, whose own body uses a definition name that was never declared, is
     /// reported too (ticket 22): JSON's explicit <c>use</c> node shape can name an undeclared definition directly,
     /// unlike rule text (where an undeclared name parses as an ordinary predicate term, not a use).
@@ -402,6 +431,39 @@ public sealed class DefinitionsTests
         RuleDefinitions read = RuleDefinitions.ReadText(chain);
 
         Assert.Contains(read.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
+    }
+
+    /// <summary>
+    /// The node-count guard added for ticket 04 counts every node <see cref="DefinitionExpander"/> visits while
+    /// expanding, including each use site itself, not only the nodes the final expanded tree keeps: a depth-3,
+    /// fanout-3 chain (<c>BuildFanoutChain(3, 3)</c>) visits exactly 80 nodes while expanding (V(0)=2,
+    /// V(k)=2+3*V(k-1)), even though the final compiled tree keeps only 40 of them (1+3+9+27). A budget of exactly
+    /// 80 still compiles, with a final node count of 40; a budget one node smaller, 79, reports
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/> during expansion, pinning the guard's off-by-one behavior
+    /// instead of only exercising it at a wide margin.
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionChainExpandingToExactlyItsVisitBudget_CompilesButOneFewerFails_Test()
+    {
+        string chain = BuildFanoutChain(depth: 3, fanout: 3);
+        PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("a", true)
+            .Build();
+
+        CompilationResult<RuleTestContext> atBudget = new RuleCompiler<RuleTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 80)
+        ).Compile(chain);
+        CompilationResult<RuleTestContext> oneOver = new RuleCompiler<RuleTestContext>(
+            registry,
+            new CompilerOptions(MaxNodeCount: 79)
+        ).Compile(chain);
+
+        Assert.True(atBudget.Succeeded, string.Join("; ", atBudget.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(40, atBudget.CompiledRule?.Metrics.NodeCount);
+        Assert.False(oneOver.Succeeded);
+        Assert.Contains(oneOver.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
     }
 
     /// <summary>An unused definition is silent by default.</summary>

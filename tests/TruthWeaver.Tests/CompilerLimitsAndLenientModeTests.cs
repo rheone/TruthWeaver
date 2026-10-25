@@ -40,6 +40,32 @@ public sealed class CompilerLimitsAndLenientModeTests
     }
 
     /// <summary>
+    /// Pins the DSL parser's own nesting guard (ticket 03) at its exact boundary, not only at a wide margin: the
+    /// guard's single entry per NOT, plus the one entry ParseOrExpression makes around the whole top-level
+    /// expression, means a NOT chain of <c>MaxDepth - 1</c> NOTs peaks at exactly <c>MaxDepth</c> nesting levels and
+    /// still compiles, while one NOT more peaks at <c>MaxDepth + 1</c> and is rejected by the parser's guard, before
+    /// RuleNodeCompiler.Build's own (looser, by exactly this one level) structural-depth check ever runs.
+    /// </summary>
+    [Fact]
+    public void Compile_NotChainAtExactDepthBoundary_CompilesOneMoreNotFails_Test()
+    {
+        PredicateRegistry<RuleTestContext> registry = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("a", true)
+            .Build();
+        RuleCompiler<RuleTestContext> compiler = new(registry, new CompilerOptions(MaxDepth: 5));
+        string atBoundary = string.Concat(Enumerable.Repeat("NOT ", 4)) + "a";
+        string oneMore = string.Concat(Enumerable.Repeat("NOT ", 5)) + "a";
+
+        CompilationResult<RuleTestContext> atBoundaryResult = compiler.Compile(atBoundary);
+        CompilationResult<RuleTestContext> oneMoreResult = compiler.Compile(oneMore);
+
+        Assert.True(atBoundaryResult.Succeeded, string.Join("; ", atBoundaryResult.Diagnostics.Select(d => d.Message)));
+        Assert.False(oneMoreResult.Succeeded);
+        Assert.Contains(oneMoreResult.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+    }
+
+    /// <summary>
     /// A NOT chain thousands of levels deep, well beyond the default MaxDepth, reports MaxDepthExceeded instead of
     /// overflowing the call stack with an uncatchable StackOverflowException (ticket 03). ParseNotExpression
     /// recurses once per NOT with no guard of its own, so this exercises that guard directly.
@@ -139,6 +165,31 @@ public sealed class CompilerLimitsAndLenientModeTests
         CompilationResult<QuantifierBudgetContext> result = compiler.Compile(oneQuantifier);
 
         Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+    }
+
+    /// <summary>
+    /// Pins ticket 10's running-node-count threading at its exact boundary: two quantifiers ANDed together, each
+    /// body 1 (quantifier) + 1 (AND) + 8 ("elementTrue" terms) = 10 nodes, plus the outer AND, total exactly
+    /// 1 + 2*10 = 21 nodes. A budget of exactly 21 still compiles; a budget one node smaller, 20, reports
+    /// <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>, instead of each quantifier body silently starting over
+    /// at a fresh allowance and never adding its count back to the outer total.
+    /// </summary>
+    [Fact]
+    public void Limits_TwoQuantifiersCombiningToExactlyMaxNodeCount_CompileOneFewerFails_Test()
+    {
+        string body = string.Join(" AND ", Enumerable.Repeat("elementTrue", 8));
+        string oneQuantifier = $"FORALL(x IN items, {body})";
+        string twoQuantifiers = string.Join(" AND ", Enumerable.Repeat(oneQuantifier, 2));
+
+        CompilationResult<QuantifierBudgetContext> atBudget = CreateQuantifierCompiler(new CompilerOptions(MaxNodeCount: 21))
+            .Compile(twoQuantifiers);
+        CompilationResult<QuantifierBudgetContext> oneOver = CreateQuantifierCompiler(new CompilerOptions(MaxNodeCount: 20))
+            .Compile(twoQuantifiers);
+
+        Assert.True(atBudget.Succeeded, string.Join("; ", atBudget.Diagnostics.Select(d => d.Message)));
+        Assert.Equal(21, atBudget.CompiledRule?.Metrics.NodeCount);
+        Assert.False(oneOver.Succeeded);
+        Assert.Contains(oneOver.Diagnostics, d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
     }
 
     /// <summary>A rule with more distinct terms than the analysis cap compiles and reports an information skip.</summary>
