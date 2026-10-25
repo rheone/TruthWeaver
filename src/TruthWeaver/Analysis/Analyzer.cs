@@ -702,12 +702,25 @@ internal static class Analyzer
     private static DualRail AtLeast(BddManager bdd, IReadOnlyList<DualRail> operands, int k)
     {
         return new DualRail(
-            AtLeastBdd(bdd, [.. operands.Select(o => o.Definite)], k, 0),
-            AtLeastBdd(bdd, [.. operands.Select(o => o.Possible)], k, 0)
+            AtLeastBdd(bdd, [.. operands.Select(o => o.Definite)], k, 0, []),
+            AtLeastBdd(bdd, [.. operands.Select(o => o.Possible)], k, 0, [])
         );
     }
 
-    private static int AtLeastBdd(BddManager bdd, IReadOnlyList<int> operandIds, int k, int fromIndex)
+    /// <summary>
+    /// "At least <paramref name="k"/> of <c>operandIds[fromIndex..]</c> are true", by Shannon expansion on the first
+    /// remaining operand. The two branches reach the same <c>(k, fromIndex)</c> sub-problems along many paths, so without
+    /// <paramref name="memo"/> the call count grows like <c>C(n, k)</c> even though the ITE cache keeps the node count
+    /// small; with it each sub-problem is built once, which bounds the work at <c>O(n * k)</c> BDD operations. The memo is
+    /// only valid for one operand list, so each top-level call passes a fresh one.
+    /// </summary>
+    private static int AtLeastBdd(
+        BddManager bdd,
+        IReadOnlyList<int> operandIds,
+        int k,
+        int fromIndex,
+        Dictionary<(int K, int FromIndex), int> memo
+    )
     {
         int remaining = operandIds.Count - fromIndex;
         if (k <= 0)
@@ -720,9 +733,16 @@ internal static class Analyzer
             return BddManager.False;
         }
 
-        int withFirstTrue = bdd.And(operandIds[fromIndex], AtLeastBdd(bdd, operandIds, k - 1, fromIndex + 1));
-        int withoutFirst = bdd.And(bdd.Not(operandIds[fromIndex]), AtLeastBdd(bdd, operandIds, k, fromIndex + 1));
-        return bdd.Or(withFirstTrue, withoutFirst);
+        if (memo.TryGetValue((k, fromIndex), out int cached))
+        {
+            return cached;
+        }
+
+        int withFirstTrue = bdd.And(operandIds[fromIndex], AtLeastBdd(bdd, operandIds, k - 1, fromIndex + 1, memo));
+        int withoutFirst = bdd.And(bdd.Not(operandIds[fromIndex]), AtLeastBdd(bdd, operandIds, k, fromIndex + 1, memo));
+        int result = bdd.Or(withFirstTrue, withoutFirst);
+        memo[(k, fromIndex)] = result;
+        return result;
     }
 
     /// <summary>"Exactly <paramref name="k"/> operands are true": <c>AtLeast(k) AND NOT AtLeast(k + 1)</c>.</summary>

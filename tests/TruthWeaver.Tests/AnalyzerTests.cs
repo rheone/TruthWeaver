@@ -226,6 +226,44 @@ public sealed class AnalyzerTests
     }
 
     /// <summary>
+    /// The analysis of a threshold costs polynomial work in its operand count. <c>AtLeast(n, a1..an, a1..an)</c> has
+    /// <c>2n</c> operands and <c>k = n</c>, and it stays inside the default node and distinct-term limits. A plain
+    /// Shannon expansion without a memo makes about <c>C(2n, n)</c> calls per rail (about <c>1e8</c> for <c>n = 15</c>
+    /// and <c>1e11</c> for <c>n = 20</c>), so <c>Compile</c> would not return inside the timeout.
+    /// </summary>
+    [Theory(Timeout = 10_000)]
+    [InlineData(15)]
+    [InlineData(20)]
+    public async Task Compile_AtLeastOverManyRepeatedOperands_CompletesInPolynomialTime_Test(int distinctTerms)
+    {
+        PredicateRegistryBuilder<RuleTestContext> registry = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        string[] names = [.. Enumerable.Range(1, distinctTerms).Select(i => $"a{i}")];
+        foreach (string name in names)
+        {
+            registry.AddConstant(name, true);
+        }
+
+        RuleCompiler<RuleTestContext> compiler = new(registry.Build());
+        string operands = string.Join(", ", names);
+        string rule = $"AtLeast({distinctTerms}, {operands}, {operands})";
+
+        CompilationResult<RuleTestContext> result = await Task.Run(
+            () => compiler.Compile(rule),
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(result.Succeeded);
+        Assert.DoesNotContain(
+            result.Diagnostics,
+            d =>
+                d.Code
+                    is DiagnosticCodes.AnalysisSkippedTooManyTerms
+                        or DiagnosticCodes.StructuralTautology
+                        or DiagnosticCodes.StructuralContradiction
+        );
+    }
+
+    /// <summary>
     /// A K3 verdict is found even when the constant is combined with a sub-expression that can stay unknown:
     /// <c>(A OR NOT A) AND FALSE</c> is <c>False</c> whatever <c>A</c> is.
     /// </summary>
