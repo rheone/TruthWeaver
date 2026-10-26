@@ -419,6 +419,30 @@ public class PolicySetTests
         Assert.False(decision.IsPermitted);
     }
 
+    /// <summary>
+    /// A shared fault-budget abort makes a deny-overrides outcome depend on priority. The faulting permit runs first
+    /// and spends the budget, so the deny answers <c>Unknown</c> and the set is Indeterminate. With the deny first, it
+    /// is <c>True</c> before the abort, so the set denies.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SharedFaultBudgetAbort_OutcomeDependsOnPriority_Test()
+    {
+        EvaluationOptions options = new(FaultBudget: 1);
+        PolicyDecision permitFirst = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("staff", Faulting, priority: 10), Deny("blocked", True, priority: 0)]
+        ).EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken);
+        PolicyDecision denyFirst = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("staff", Faulting, priority: 0), Deny("blocked", True, priority: 10)]
+        ).EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(PolicyOutcome.Indeterminate, permitFirst.Outcome);
+        Assert.Equal(PolicyOutcome.Deny, denyFirst.Outcome);
+    }
+
     /// <summary>The constructor rejects two policies with the same identifier.</summary>
     [Fact]
     public void Constructor_DuplicatePolicyIds_Throws_Test()

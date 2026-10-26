@@ -47,9 +47,11 @@ semantics that a flat set with targets cannot express.
 
 A higher priority is evaluated first and equal priorities keep the order given to the constructor. For
 `FirstApplicable` this is the order of the walk, so priority decides which policy wins. For the two overriding
-algorithms the result does not depend on the order. Priority then decides only which policies are evaluated before the
-walk stops early, and which results appear first in the `PolicyDecision`. A priority never changes an outcome by size
-alone.
+algorithms the result does not depend on the order, as long as no shared budget abort fires during the set's evaluation.
+Once a shared `FaultBudget` or `MaxElementEvaluations` abort fires, every rule that runs after it answers `Unknown`, so a
+later-priority rule can be forced to `Unknown` where an earlier position would have let it decide. In that case the
+outcome can depend on priority. Priority then decides only which policies are evaluated before the walk stops early, and
+which results appear first in the `PolicyDecision`. A priority never changes an outcome by size alone.
 
 ### 5. Three algorithms, all fail-closed on `Unknown`
 

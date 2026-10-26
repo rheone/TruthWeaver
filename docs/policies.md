@@ -59,7 +59,7 @@ An `Unknown` policy is never a silent permit under deny-overrides, and never a s
 
 ## Priority
 
-A policy with a higher priority is evaluated first. Equal priorities keep the order in which the policies were given. Under `FirstApplicable` this decides which policy wins. Under the two overriding algorithms the outcome does not depend on the order. Priority then decides which policies run before the evaluation stops, and the order of the results.
+A policy with a higher priority is evaluated first. Equal priorities keep the order in which the policies were given. Under `FirstApplicable` this decides which policy wins. Under the two overriding algorithms the outcome does not depend on the order, as long as no shared budget abort fires during the set's evaluation. A shared `FaultBudget` or `MaxElementEvaluations` abort, described under [Shared predicates](#shared-predicates), makes every rule that runs after it answer `Unknown`. A later-priority rule can then be forced to `Unknown` where an earlier position would have let it decide, so the outcome can depend on priority. Priority then decides which policies run before the evaluation stops, and the order of the results.
 
 Evaluation stops early. The overriding algorithms stop at the first definite result of the overriding effect. `FirstApplicable` stops at the first policy that is not `False`. A policy that was not reached is not in `PolicyDecision.Results`.
 

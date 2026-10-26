@@ -1,6 +1,6 @@
 # 40 - A shared fault budget makes the overriding policy outcome depend on priority, against ADR-0015 section 4
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F9 Policies
