@@ -84,6 +84,20 @@ A `FORALL`/`EXISTS` quantifier's own fault (a throwing collection selector, `Eva
 | `Results` | The `PolicyResult` of each evaluated policy: its id, effect and whether it applies. |
 | `IsPermitted` | `true` only for `Permit`. It is `Decision.IsSatisfied`, so it fails closed. |
 
+## The trace
+
+Set `EvaluationOptions.IncludeTrace` to `true` to get a trace of the set's evaluation in `PolicyDecision.Decision.Trace`. It is one flat trace of every rule that ran, in evaluation order. The text of each entry starts with the rule that the entry comes from:
+
+| Prefix | Rule |
+| --- | --- |
+| `set target: ` | The target of the set. |
+| `policy '<id>' target: ` | The target of the policy with that id. |
+| `policy '<id>' condition: ` | The condition of the policy with that id. |
+
+A rule that did not run has no entries. For example, a policy whose target is `False` has no condition entries, and the policies after the one that decided the outcome have no entries. A term that an earlier rule already evaluated still has an entry in each rule that references it.
+
+Without `IncludeTrace`, `Decision.Trace` is `null` and the set collects no trace. The set's `Decision.TraceTree` is always `null`, because the set has no single expression tree.
+
 ## Errors
 
 A constructor throws `ArgumentException` for a blank id, a duplicate policy id or an undefined enum value. A rule that faults does not throw: it is `Unknown` and the fault is in `Decision.Faults`. Cancellation of the caller token, or the `EvaluationOptions.Timeout` of a rule, throws `OperationCanceledException`.

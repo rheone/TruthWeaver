@@ -490,6 +490,85 @@ public class PolicySetTests
         Assert.Equal(PolicyOutcome.Deny, denyFirst.Outcome);
     }
 
+    /// <summary>
+    /// With <see cref="EvaluationOptions.IncludeTrace"/> the set's decision carries one flat trace of every rule that ran,
+    /// in evaluation order, each entry labeled with the rule it came from. A policy whose target is False never runs
+    /// its condition, so the condition has no entries.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTrace_DecisionCarriesLabeledTraceOfEveryRuleThatRan_Test()
+    {
+        PolicySet<object> set = new(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("p", False), Deny("outside", True, target: False), Deny("d", True)],
+            True
+        );
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(decision.Decision.Trace);
+        Assert.Equal(
+            ["set target: yes", "policy 'p' condition: no", "policy 'outside' target: no", "policy 'd' condition: yes"],
+            decision.Decision.Trace.Entries.Select(entry => entry.Text)
+        );
+        Assert.Equal(
+            [TruthValue.True, TruthValue.False, TruthValue.False, TruthValue.True],
+            decision.Decision.Trace.Entries.Select(entry => entry.Result)
+        );
+    }
+
+    /// <summary>
+    /// A term that an earlier rule already evaluated runs once, but each rule that references it still has its own
+    /// labeled trace entry for it.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTraceWithTermSharedByTwoRules_EachRuleHasAnEntry_Test()
+    {
+        int calls = 0;
+        CompiledRule<object> first = CompileSharing(
+            "shared",
+            (_, _, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(TruthValue.False);
+            }
+        );
+        CompiledRule<object> second = CompileSharing("shared", (_, _, _) => ValueTask.FromResult(TruthValue.False));
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", first), Deny("d", second)]);
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1, calls);
+        Assert.NotNull(decision.Decision.Trace);
+        Assert.Equal(
+            ["policy 'p' condition: shared", "policy 'd' condition: shared"],
+            decision.Decision.Trace.Entries.Select(entry => entry.Text)
+        );
+    }
+
+    /// <summary>Without <see cref="EvaluationOptions.IncludeTrace"/> the set's decision has no trace.</summary>
+    [Fact]
+    public async Task EvaluateAsync_TraceNotRequested_DecisionHasNoTrace_Test()
+    {
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", True)], True);
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Null(decision.Decision.Trace);
+    }
+
     /// <summary>The constructor rejects two policies with the same identifier.</summary>
     [Fact]
     public void Constructor_DuplicatePolicyIds_Throws_Test()

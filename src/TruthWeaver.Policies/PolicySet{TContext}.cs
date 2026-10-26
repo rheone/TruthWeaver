@@ -93,12 +93,16 @@ public sealed class PolicySet<TContext>
     {
         List<Fault> faults = [];
         List<PolicyResult> results = [];
+        bool includeTrace = (options ?? EvaluationOptions.Default).IncludeTrace;
+
+        // Null unless the caller asked for a trace, so a set evaluated without one does no trace work of its own.
+        List<TraceEntry>? trace = includeTrace ? [] : null;
 
         // One EvaluationState for the whole set's evaluation: the set's target, every policy's target and every
         // policy's condition share it, so a term common to several of those rules runs once (feature backlog 08). The
         // fault budget and the per-term memo are then whole-set concepts, like EvaluationState already is for one
         // rule's own nested quantifiers.
-        EvaluationState sharedState = new((options ?? EvaluationOptions.Default).IncludeTrace);
+        EvaluationState sharedState = new(includeTrace);
 
         TruthValue setTarget = TruthValue.True;
         if (this.Target is not null)
@@ -111,12 +115,14 @@ public sealed class PolicySet<TContext>
                     options,
                     sharedState,
                     faults,
+                    "set target",
+                    trace,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
             if (setTarget == TruthValue.False)
             {
-                return Build(PolicyOutcome.NotApplicable, faults, results);
+                return Build(PolicyOutcome.NotApplicable, faults, trace, results);
             }
         }
 
@@ -130,6 +136,7 @@ public sealed class PolicySet<TContext>
                     options,
                     sharedState,
                     faults,
+                    trace,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -149,7 +156,7 @@ public sealed class PolicySet<TContext>
             outcome = PolicyOutcome.Indeterminate;
         }
 
-        return Build(outcome, faults, results);
+        return Build(outcome, faults, trace, results);
     }
 
     // Evaluates one rule against the set's shared state and attributes to the caller's aggregate fault list only
@@ -157,6 +164,10 @@ public sealed class PolicySet<TContext>
     // most once there (the memo answers a repeat without invoking the predicate again), but every rule that
     // references it still lists that one fault in its own decision, exactly as it would if the rules did not share
     // state (feature backlog 08).
+    //
+    // When a trace is requested, the rule's decision carries the whole shared trace so far. Every earlier rule's
+    // entries are already in the set's trace, so only the entries past its count are this rule's own. They are
+    // appended with the rule's label, in the same "scope: text" form a quantifier uses for its elements.
     private static async Task<TruthValue> RunAsync(
         CompiledRule<TContext> rule,
         TContext context,
@@ -165,6 +176,8 @@ public sealed class PolicySet<TContext>
         EvaluationOptions? options,
         EvaluationState sharedState,
         List<Fault> faults,
+        string label,
+        List<TraceEntry>? trace,
         CancellationToken cancellationToken
     )
     {
@@ -172,10 +185,20 @@ public sealed class PolicySet<TContext>
             .ConfigureAwait(false);
         IReadOnlySet<TermIdentity> ownTerms = rule.TermIdentities;
         faults.AddRange(decision.Faults.Where(fault => ownTerms.Contains(fault.Term)));
+        if (trace is not null && decision.Trace is { } ruleTrace)
+        {
+            trace.AddRange(ruleTrace.Entries.Skip(trace.Count).Select(entry => entry with { Text = $"{label}: {entry.Text}" }));
+        }
+
         return decision.Result;
     }
 
-    private static PolicyDecision Build(PolicyOutcome outcome, List<Fault> faults, List<PolicyResult> results)
+    private static PolicyDecision Build(
+        PolicyOutcome outcome,
+        List<Fault> faults,
+        List<TraceEntry>? trace,
+        List<PolicyResult> results
+    )
     {
         // A permit is True, an Indeterminate is Unknown, and a deny or nothing applicable is False (default deny).
         TruthValue result = outcome switch
@@ -186,7 +209,11 @@ public sealed class PolicySet<TContext>
         };
         return new PolicyDecision(
             outcome,
-            new Decision(result, new EquatableArray<Fault>(faults)),
+            new Decision(
+                result,
+                new EquatableArray<Fault>(faults),
+                trace is null ? null : new Trace(new EquatableArray<TraceEntry>(trace))
+            ),
             new EquatableArray<PolicyResult>(results)
         );
     }
@@ -200,6 +227,7 @@ public sealed class PolicySet<TContext>
         EvaluationOptions? options,
         EvaluationState sharedState,
         List<Fault> faults,
+        List<TraceEntry>? trace,
         CancellationToken cancellationToken
     )
     {
@@ -214,6 +242,8 @@ public sealed class PolicySet<TContext>
                     options,
                     sharedState,
                     faults,
+                    $"policy '{policy.Id}' target",
+                    trace,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -231,6 +261,8 @@ public sealed class PolicySet<TContext>
                 options,
                 sharedState,
                 faults,
+                $"policy '{policy.Id}' condition",
+                trace,
                 cancellationToken
             )
             .ConfigureAwait(false);
