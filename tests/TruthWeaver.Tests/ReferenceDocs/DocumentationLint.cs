@@ -30,8 +30,11 @@ internal static partial class DocumentationLint
 
     private static readonly string[] StopList = ["docs/adr/", "docs/agents/", ".scratch/", ".agents/", ".claude/"];
 
-    // Directories that hold build output, caches or tool state, never project documentation.
-    private static readonly string[] NonSourceSegments = ["bin", "obj", "node_modules", ".git", ".codegraph", ".vs"];
+    // Directories that hold build output, caches or tool state, never project documentation. `.claude` is already
+    // in the stop list below for link targets; excluding it here too stops a file that happens to live under it
+    // (for example a dispatched agent's git worktree at `.claude/worktrees/`, a full nested copy of the repo) from
+    // being enumerated as a source file at all, the same way `.git` never is.
+    private static readonly string[] NonSourceSegments = ["bin", "obj", "node_modules", ".git", ".codegraph", ".vs", ".claude"];
 
     // Root files that describe the project and its tooling; they may point at ADRs and tickets.
     private static readonly string[] NavigationFiles = ["README.md", "CONTEXT.md", "CLAUDE.md", "AGENTS.md"];

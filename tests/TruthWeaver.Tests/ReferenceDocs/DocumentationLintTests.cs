@@ -145,6 +145,7 @@ public sealed class DocumentationLintTests
             Write(root, "docs/sub/README.md", "[optout](../optout.md)");
             Write(root, ".agents/skills/x/README.md", "third party");
             Write(root, "src/bin/Debug/README.md", "build output");
+            Write(root, ".claude/worktrees/agent-x/README.md", "a dispatched agent's git worktree, a nested repo copy");
 
             IReadOnlyList<string> found = DocumentationLint.InScope(root);
 
