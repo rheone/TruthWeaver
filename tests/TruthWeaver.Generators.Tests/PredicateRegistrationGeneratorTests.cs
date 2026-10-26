@@ -304,6 +304,43 @@ public sealed class PredicateRegistrationGeneratorTests
     }
 
     /// <summary>
+    /// Two parameters whose names differ only in case (here <c>role</c> and <c>Role</c>) are the same argument name
+    /// once the registry matches argument names ignoring case, so this is error TWG009 at the second parameter, and
+    /// the method is not registered. Without this diagnostic, the build would succeed and
+    /// <c>PredicateRegistryBuilder.RejectCaseVariantArguments</c> would throw at run time when the generated
+    /// <c>Register</c> call reached it.
+    /// </summary>
+    [Fact]
+    public void Generator_CaseCollidingParameterNames_ReportsTwg009_Test()
+    {
+        const string source = """
+            using TruthWeaver.Abstractions;
+            using TruthWeaver.Generators;
+
+            public sealed record User(string Name);
+
+            public static partial class OrderPredicates
+            {
+                [Predicate("hasAccess", "Has access", "Does the user have access?")]
+                public static TruthValue HasAccess(User u, string role, string Role = "x")
+                {
+                    return TruthValue.True;
+                }
+            }
+            """;
+
+        GeneratorRun run = GeneratorHarness.Run(source);
+
+        Diagnostic diagnostic = Assert.Single(run.GeneratorDiagnostics);
+        Assert.Equal("TWG009", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        string message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        Assert.Contains("'role'", message, StringComparison.Ordinal);
+        Assert.Contains("'Role'", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hasAccess", run.GeneratedSource, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Predicates of two context types in one nested partial type get one <c>Register</c> overload per context type. The
     /// overload for an internal context type is internal, so the generated code compiles with no accessibility error.
     /// </summary>

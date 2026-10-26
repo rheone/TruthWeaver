@@ -64,6 +64,12 @@ internal static class PredicateMethodReader
 
         Dictionary<string, string> descriptions = ReadParameterDescriptions(method, cancellationToken);
 
+        // Argument names reach the registry case-insensitively (PredicateRegistryBuilder.RejectCaseVariantArguments),
+        // so two parameters that differ only in case (role, Role) are the same argument name once registered. C#
+        // allows the declaration; this tracks each argument name seen so far to catch the collision at build time,
+        // before it can reach that run-time check.
+        Dictionary<string, string> argumentNamesSeen = [with(StringComparer.OrdinalIgnoreCase)];
+
         ImmutableArray<PredicateParameter>.Builder parameters = ImmutableArray.CreateBuilder<PredicateParameter>();
         for (int index = 0; index < method.Parameters.Length; index++)
         {
@@ -110,6 +116,22 @@ internal static class PredicateMethodReader
                 );
                 continue;
             }
+
+            if (argumentNamesSeen.TryGetValue(parameter.Name, out string? collidingName))
+            {
+                diagnostics.Add(
+                    DiagnosticInfo.Create(
+                        GeneratorDiagnostics.CaseCollidingParameterNames,
+                        parameter.Locations.FirstOrDefault(),
+                        parameter.Name,
+                        method.Name,
+                        collidingName
+                    )
+                );
+                continue;
+            }
+
+            argumentNamesSeen.Add(parameter.Name, parameter.Name);
 
             descriptions.TryGetValue(parameter.Name, out string? description);
             parameters.Add(

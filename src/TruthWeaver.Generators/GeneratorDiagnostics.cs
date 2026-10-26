@@ -90,4 +90,14 @@ internal static class GeneratorDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>TWG009: two parameters of one predicate method whose names differ only in case.</summary>
+    public static readonly DiagnosticDescriptor CaseCollidingParameterNames = new(
+        "TWG009",
+        "Predicate method has argument names that collide when case is ignored",
+        "Parameter '{0}' of predicate method '{1}' has the same name as parameter '{2}' when case is ignored. Argument names are case-insensitive, so give them different names.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

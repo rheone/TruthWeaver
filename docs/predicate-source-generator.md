@@ -141,6 +141,7 @@ Each diagnostic is a build error. The generator registers no method that has an 
 | `TWG006` | A default value with no literal form, for example `null` or `default` of a `Guid`. |
 | `TWG007` | A predicate name that the rule text reads as a keyword, such as `any` or `Between`, in any case. See [Grammar](rule-text.md#grammar). |
 | `TWG008` | A predicate name that is not a valid DSL identifier, such as `has-role`: an identifier starts with a letter or `_` and continues with letters, digits or `_` only. See [Grammar](rule-text.md#grammar). |
+| `TWG009` | Two parameters whose names differ only in case, for example `role` and `Role`. Argument names are not case-sensitive, the same as in `PredicateRegistryBuilder<TContext>`. |
 
 ## Limits
 
