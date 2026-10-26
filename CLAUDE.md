@@ -33,10 +33,13 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 - Operator set: the Strong Kleene (K3) connectives are `NOT`, `AND`, `OR`, `IMPLIES`, `EQUIVALENT`, `XOR`, `NAND`, `NOR`, `PARITY` (n-ary parity, formerly `NXOR`), the cardinality operators (`AtLeast`/`AtMost`/`Exactly`/`ExactlyOne`, threshold family, `ANY`/`ALL`/`NONE`/`BETWEEN`) and `If`. `COALESCE` and `IsTrue`/`IsFalse`/`IsUnknown`/`IsKnown` are external operators (not information-monotone), so the "no tautologies" theorem and `NAND`/`NOR` expressiveness do not extend to them. `Project` and `Collapse` are `Decision` methods (TruthWeaver terms), not rule operators.
 - Evaluation is Strong Kleene (K3) over `TruthValue` (`True`/`False`/`Unknown`); predicate exceptions and a predicate's own timeouts or cancellations become `Unknown` plus a `Fault` (ADR-0001, ADR-0002). `EvaluationOptions.Timeout` and caller cancellation throw `OperationCanceledException` and are not faults. `FaultBudget = N` aborts when the Nth fault is recorded; `null` is unlimited and a value below 1 is rejected. `Decision.IsSatisfied` is fail-closed.
 - Domain terms are in `CONTEXT.md`; accepted decisions are in `docs/adr/`.
+- Cross-cutting evaluation-path logic that does not need `TContext` (fault recording, trace labeling) gets its own small `internal static` class beside `TraceText`, `QuantifierText` and `K3Logic` in `src/TruthWeaver/Evaluation/` - not a static member of `Evaluator<TContext>` (an unused type parameter) or `EvaluationState` (it does not own the logger or options such code needs).
 
 ## In-flight work
 
 The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/`, tickets 01-31) is complete: [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) is the authority for the operator set, notation, boundaries, rewrites and diagnostics, and supersedes the operator-set, alias and `XOR`/`XNOR` decisions in ADR-0003 (marked in place). Open owner questions are summarised at the top of `.scratch/k3-conformance/issues-log.md`. The predicate catalog gap list (`.scratch/predicate-catalog/k3-gap-list.md`) is closed: every inventory predicate is implemented. Do not implement from `.scratch/k3-conformance/_superseded/` or `.scratch/engine-v1`. Material in `.tmp/` is reference only and may be subtly wrong; verify it.
+
+A restructured multi-branch or multi-bundle plan (a new split of a ticket backlog across branches or bundles) is written to a durable `.scratch/<effort>/handoff-<date>.md` before any agent is dispatched against it. A plan that exists only in chat, an unsaved buffer or session scratch does not survive a context clear or a new session.
 
 ## Development rules
 
@@ -116,7 +119,7 @@ Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standar
 
 ## Git
 
-- Use work trees when appropriate
+- Use work trees when appropriate - including for a dispatched ticket-implementation agent whenever the coordinator might keep working in this checkout while it runs (the normal case: a dispatched agent runs in the background here regardless of how it was launched).
 - Husky.Net provides local pre-commit validation, installed automatically by the first `dotnet restore` of a clone (skipped when `CI=true` or `HUSKY=0`). The hook formats fully staged C# files (`scripts/format-staged.cs`: `csharpier format`, then `dotnet format`) and re-stages them, so a commit never fails on formatting. A partly staged C# file is only checked and fails the commit if it needs formatting, because re-staging it would stage the unstaged edits: format it, then stage the hunks you want. Build and test still fail the commit on a real error. Roslynator runs in CI and in the validation above, not in the hook.
 - Line endings: `.gitattributes` sets `* text=auto eol=lf`, so working-tree text files are LF on every platform; only `*.bat`, `*.cmd` and `*.sln` are CRLF. `.editorconfig` (`end_of_line`) and CSharpier agree, and `dotnet format --verify-no-changes` reports a deviation. There is no separate line-ending check. A global `core.autocrlf=true` does not change this: `eol=lf` takes precedence, and a fresh clone is LF either way. If Git warns that LF will be replaced by CRLF, run `git add --renormalize .`.
 - CI is authoritative; hooks provide fast local feedback.
@@ -126,6 +129,7 @@ Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standar
 - Treat this file as repository-level development guidance.
 - Inspect existing conventions before making broad changes.
 - Do not modify generated or configuration files unnecessarily.
+- Before resuming or restarting a multi-ticket effort after a context clear, a new session, or a stated pause, check `ListAgents` for an already-running dispatch on the same branch before editing. A background bundle survives a context clear in the same session; nothing else will surface it.
 
 ## Agent skills
 

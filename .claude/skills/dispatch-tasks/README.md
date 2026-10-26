@@ -1,6 +1,6 @@
 # dispatch-tasks
 
-**Version 2.0.0**
+**Version 2.0.1**
 
 A Claude Code skill that hands work to sub-agents and keeps the main thread posted as each piece lands. It packs tasks into as few agents as the work allows, proposes that plan for approval, and tracks the run to a single summary.
 
@@ -76,9 +76,16 @@ Fan-out, pipeline, map-reduce, review loop and speculative. The skill recommends
 
 - Worktree integration relies on the agent to merge; it has not been exercised against a real multi-bundle run.
 - A background bundle that was running when the session ended cannot be reattached. Resume lists it and asks whether to dispatch it again.
+- Confirmed by an incident: a bundle dispatched to run in the main checkout (no worktree, because nothing else was dispatched beside it) kept running across a `/clear` of the same session. The coordinator, having lost the plan, started independent manual edits to the same files; the bundle's own validation run hit the resulting broken build and reverted it as debris before either side knew the other existed. Every dispatch is asynchronous here regardless of bundle count (see SKILL.md step 5), so this is the normal case, not a rare race - worktree isolation and the resume check in [run-state.md](run-state.md) now account for it.
 - The `SKILLS` directory name is upper case; the Claude Code convention is `skills`.
 
 ## Version history
+
+### 2.0.1
+
+- Worktree isolation now triggers on coordinator-collision risk (the normal case), not only on another bundle running beside it.
+- Resume checks for a live state file before any new ticket-dispatch work starts, not only when explicitly invoked to continue a run, and calls `ListAgents` to tell a still-running bundle from a lost one.
+- Corrected step 5: every dispatch is asynchronous here regardless of bundle count; dropped the stale `run_in_background: false` synchronous-blocking claim.
 
 ### 2.0.0
 
