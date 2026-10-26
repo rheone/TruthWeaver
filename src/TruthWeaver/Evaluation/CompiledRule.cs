@@ -108,11 +108,15 @@ public sealed partial class CompiledRule<TContext>
     internal NoteLookup? NoteLookup => this.noteLookup.Value;
 
     /// <summary>
-    /// Gets the identity of each term this rule references, once each. Internal: visible to
-    /// <c>TruthWeaver.Policies</c> via <c>InternalsVisibleTo</c>, which attributes a fault recorded for a shared
-    /// <see cref="EvaluationState"/> back to every rule of a policy set whose own terms include it, since a term
-    /// evaluated once for a shared state records its fault once there, not once per rule that references it
-    /// (feature backlog 08).
+    /// Gets the identity of each term this rule references, once each, plus one synthetic identity
+    /// <c>TermIdentity(collectionName, [])</c> per collection a quantifier of this rule ranges over. Internal:
+    /// visible to <c>TruthWeaver.Policies</c> via <c>InternalsVisibleTo</c>, which attributes a fault recorded for
+    /// a shared <see cref="EvaluationState"/> back to every rule of a policy set whose own terms (or, for a
+    /// quantifier, whose own collection references) include it, since a term or collection fault raised once for a
+    /// shared state records its fault once there, not once per rule that references it (feature backlog 08). The
+    /// collection identities use the same <c>TermIdentity(collectionName, [])</c> shape a quantifier's own fault is
+    /// recorded against (a throwing selector, <see cref="EvaluationOptions.MaxElementEvaluations"/>, or an
+    /// unregistered collection), so that fault is attributed here the same way a predicate term's is.
     /// </summary>
     internal IReadOnlySet<TermIdentity> TermIdentities => this.termIdentities.Value;
 
@@ -156,6 +160,16 @@ public sealed partial class CompiledRule<TContext>
             }
             else if (node is not ConstantExpression)
             {
+                // A quantifier's own fault (a throwing selector, MaxElementEvaluations, or an unregistered
+                // collection) is recorded against TermIdentity(CollectionName, []), not against a TermExpression
+                // in its body (CollectionBinding.cs, Evaluator.cs). Adding that identity here, alongside the
+                // body's own term identities, is what lets PolicySet's per-rule fault filter (which matches
+                // TermIdentities) recognize such a fault as this rule's own.
+                if (node is QuantifierExpression quantifier)
+                {
+                    identities.Add(new TermIdentity(quantifier.CollectionName, []));
+                }
+
                 foreach (Expression operand in ExpressionShape.Of(node).Operands)
                 {
                     pending.Push(operand);

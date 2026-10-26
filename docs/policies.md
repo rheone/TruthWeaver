@@ -71,6 +71,8 @@ This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a who
 
 The element bound (`EvaluationOptions.MaxElementEvaluations`) is a whole-set bound too. Every quantifier element that any rule of the set evaluates counts against one total for the set's evaluation. A set of policies that each stay within the bound alone can exceed it together. When the total reaches the bound, the set aborts: every rule still to run answers `Unknown`, and the limit is recorded as a fault in `PolicyDecision.Decision.Faults`. A host with a set of many quantifier-heavy policies raises `MaxElementEvaluations` in the options that it passes to `EvaluateAsync`.
 
+A `FORALL`/`EXISTS` quantifier's own fault (a throwing collection selector, `EvaluationOptions.MaxElementEvaluations` exceeded, or an unregistered collection) lists in `PolicyDecision.Decision.Faults` the same way: it belongs to every rule of the set that quantifies over that collection, and to no other rule.
+
 ## The decision
 
 `PolicyDecision` has these members.

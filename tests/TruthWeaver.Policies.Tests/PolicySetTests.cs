@@ -281,6 +281,53 @@ public class PolicySetTests
     }
 
     /// <summary>
+    /// A policy condition's quantifier whose collection selector throws is Unknown with a fault recorded against
+    /// the collection itself (<c>TermIdentity(collectionName, [])</c>, ADR-0010 decision 4), not against a
+    /// predicate term. The set's per-rule fault filter must still carry that fault into the decision, and must
+    /// not leak it onto an unrelated policy that never references that collection (ticket 18).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_PolicyConditionCollectionSelectorThrows_IncludesTheFaultAndExcludesItFromAnUnrelatedPolicy_Test()
+    {
+        PolicyDecision decision = await new PolicySet<CollectionContext>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [
+                new Policy<CollectionContext>("p", PolicyEffect.Permit, CompileTrue()),
+                new Policy<CollectionContext>("d", PolicyEffect.Deny, CompileExistsOverThrowingSelector()),
+            ]
+        ).EvaluateAsync(new CollectionContext(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+        Fault fault = Assert.Single(decision.Decision.Faults);
+        Assert.Equal(new TermIdentity("orders", []), fault.Term);
+    }
+
+    /// <summary>
+    /// A policy condition's quantifier that exceeds <see cref="EvaluationOptions.MaxElementEvaluations"/> is
+    /// Unknown with a fault recorded against the collection itself, the same identity shape a throwing selector's
+    /// fault uses. The set's per-rule fault filter must carry that fault into the decision too (ticket 18).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_PolicyConditionElementEvaluationLimitExceeded_IncludesTheFaultInTheDecision_Test()
+    {
+        PolicyDecision decision = await new PolicySet<CollectionContext>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [new Policy<CollectionContext>("d", PolicyEffect.Deny, CompileForAllOverOrders())]
+        ).EvaluateAsync(
+            new CollectionContext { Orders = [TruthValue.True, TruthValue.True] },
+            options: new EvaluationOptions(MaxElementEvaluations: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+        Fault fault = Assert.Single(decision.Decision.Faults);
+        Assert.Equal(new TermIdentity("orders", []), fault.Term);
+        Assert.IsType<ElementEvaluationLimitExceededException>(fault.Exception);
+    }
+
+    /// <summary>
     /// A predicate shared by two policy conditions is evaluated once per context: the set shares one
     /// <c>EvaluationState</c> across its rules, so the second rule's identical term hits the first rule's memo
     /// entry instead of invoking the predicate again (feature backlog 08).
@@ -548,5 +595,60 @@ public class PolicySetTests
     )
     {
         return new PolicySet<object>("set", algorithm, policies, setTarget).EvaluateAsync(new object());
+    }
+
+    // Compiles a trivial, always-True rule over CollectionContext that references no collection, so a test can
+    // pair it with a collection-faulting rule to check the fault is not leaked onto this unrelated policy.
+    private static CompiledRule<CollectionContext> CompileTrue()
+    {
+        (
+            PredicateSchema schema,
+            Func<CollectionContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
+        ) = FakePredicates.Returning<CollectionContext>("yes", TruthValue.True);
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>.CreateBuilder();
+        builder.Add(schema, evaluate);
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("yes").GetRuleOrThrow();
+    }
+
+    // An EXISTS quantifier over a collection named "orders" whose selector always throws (ADR-0010 decision 4):
+    // evaluating it faults once, against TermIdentity("orders", []), not against the "isOverdue" element term.
+    private static CompiledRule<CollectionContext> CompileExistsOverThrowingSelector()
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>
+            .CreateBuilder()
+            .AddCollection<TruthValue>(
+                "orders",
+                _ => throw new InvalidOperationException("The orders service is offline."),
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("isOverdue", "isOverdue", "True iff the order is overdue."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("EXISTS(o IN orders, isOverdue)").GetRuleOrThrow();
+    }
+
+    // A FORALL quantifier over a real (non-throwing) "orders" collection, for the MaxElementEvaluations test: every
+    // element answers True, so nothing short-circuits the loop before the element limit aborts it.
+    private static CompiledRule<CollectionContext> CompileForAllOverOrders()
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>
+            .CreateBuilder()
+            .AddCollection(
+                "orders",
+                ctx => ctx.Orders,
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("isOverdue", "isOverdue", "True iff the order is overdue."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("FORALL(o IN orders, isOverdue)").GetRuleOrThrow();
+    }
+
+    /// <summary>A context with a collection property, for the quantifier fault tests.</summary>
+    private sealed class CollectionContext
+    {
+        public IReadOnlyList<TruthValue>? Orders { get; init; }
     }
 }
