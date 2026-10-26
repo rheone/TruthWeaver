@@ -458,7 +458,12 @@ internal sealed class RuleNodeCompiler<TContext>
             return FailedNode.Placeholder;
         }
 
-        return new QuantifierExpression(node.Kind, node.Variable, node.CollectionName, bodyTree);
+        // The collection lookup above is case-insensitive, so the compiled expression carries the binding's
+        // registered name rather than node.CollectionName as the author wrote it - the same way a term's identity
+        // always carries its predicate's registered name. Every downstream text production (TraceText, the
+        // canonical/tree/equation printers, the evaluator's defensive description) reads this field, so they all
+        // agree with the collection binding's own runtime trace label (ultra-review ticket 12).
+        return new QuantifierExpression(node.Kind, node.Variable, binding.Name, bodyTree);
     }
 
     private Expression BuildVariadic(

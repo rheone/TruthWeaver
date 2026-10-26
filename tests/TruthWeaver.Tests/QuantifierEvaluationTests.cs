@@ -223,6 +223,46 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// A quantifier written with different casing than its collection's registration (the collection is registered
+    /// as "items") gets a trace label matching its canonical text (ultra-review ticket 12): the compiled expression
+    /// carries the collection's registered name downstream, the same way a term's label is always its predicate's
+    /// registered name rather than however the rule author wrote it.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_CollectionWrittenWithDifferentCasingThanRegistered_TraceLabelMatchesCanonicalText_Test()
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile("FORALL(x IN Items, elementTrue)").GetRuleOrThrow();
+
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal("FORALL(x IN items)", decision.TraceTree!.Text);
+        Assert.Equal("FORALL(x IN items, elementTrue)", rule.CanonicalText);
+    }
+
+    /// <summary>
+    /// A <see cref="RuleCoverage"/> built from a decision of a rule whose quantifier was written with different
+    /// casing than its collection's registration no longer throws a trace/rule mismatch (ultra-review ticket 12).
+    /// </summary>
+    [Fact]
+    public async Task ForAll_CollectionWrittenWithDifferentCasingThanRegistered_RuleCoverageDoesNotThrow_Test()
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile("FORALL(x IN Items, elementTrue)").GetRuleOrThrow();
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        RuleCoverage coverage = RuleCoverage.FromDecisions(rule, [decision]);
+
+        Assert.Equal(rule.CanonicalText, coverage.Rule);
+    }
+
+    /// <summary>
     /// Over <see cref="EvaluationOptions.MaxElementEvaluations"/>, the quantifier is <c>Unknown</c> with exactly one
     /// extra fault for the collection and the evaluation aborts - not an exception (ADR-0010 decision 6).
     /// </summary>

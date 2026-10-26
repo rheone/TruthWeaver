@@ -44,7 +44,7 @@ For a collection of elements `e1, ..., en`, with `vi` the value of the body for 
 | YAML | `op: forall`, `var: line`, `in: lines` and an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.ForAll(string variable, string collection, RuleBuilder body)` |
 
-`FORALL` is a call form with no precedence, like `PARITY` and `If`. `FORALL` is a reserved word, so a predicate cannot be named `FORALL`. `IN` is reserved only at the head of a quantifier, so a predicate named `In` is not affected. The tree printers write `FORALL line IN lines`, or `∀ line ∈ lines` in the symbolic style. The symbols `∀` and `∃` are not accepted as input.
+`FORALL` is a call form with no precedence, like `PARITY` and `If`. `FORALL` is a reserved word, so a predicate cannot be named `FORALL`. `IN` is reserved only at the head of a quantifier, so a predicate named `In` is not affected. The tree printers write `FORALL line IN lines`, or `∀ line ∈ lines` in the symbolic style. The symbols `∀` and `∃` are not accepted as input. The collection name lookup is case-insensitive, and the compiled rule's canonical text and trace label always show the collection's registered casing, whatever casing the rule used.
 
 ## Aliases
 
