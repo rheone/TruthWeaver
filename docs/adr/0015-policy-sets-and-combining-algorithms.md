@@ -36,7 +36,10 @@ point of a target. A `False` condition makes the policy not applicable even when
 
 `PolicySet<TContext>` holds an id, a `CombiningAlgorithm`, its policies and an optional target rule. A `False` set target
 gives `NotApplicable` and evaluates no policy. An `Unknown` set target keeps `NotApplicable` as it is and turns any other
-outcome into `Indeterminate`, because the set may not apply at all. The set is immutable: it copies the policies.
+outcome into `Indeterminate`, because the set may not apply at all. The set is immutable: it copies the policies. All rules of a set share one evaluation state, so the per-call bounds
+(`FaultBudget` and `MaxElementEvaluations` in the `EvaluationOptions` of the call) are whole-set bounds, not per-rule
+allowances. A set does not give each rule its own allowance, because that would multiply the resource cost of a set by
+its number of rules.
 Policy ids are unique in a set. A set does not contain a set. Nesting is not needed for the first slice and adds no
 semantics that a flat set with targets cannot express.
 

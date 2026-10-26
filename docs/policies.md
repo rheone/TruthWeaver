@@ -69,6 +69,8 @@ A set evaluates the target, every policy's target and every policy's condition a
 
 This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a whole-set concept: once the Nth fault is recorded anywhere in the set's evaluation, every rule still to run answers `Unknown` for the rest of its own evaluation, the same way a fault budget aborts within one rule. A shared term that faults still counts once, not once per rule, so a budget is not spent faster by two rules naming the same predicate; each rule that references the faulting term still lists that one fault in `PolicyDecision.Decision.Faults`.
 
+The element bound (`EvaluationOptions.MaxElementEvaluations`) is a whole-set bound too. Every quantifier element that any rule of the set evaluates counts against one total for the set's evaluation. A set of policies that each stay within the bound alone can exceed it together. When the total reaches the bound, the set aborts: every rule still to run answers `Unknown`, and the limit is recorded as a fault in `PolicyDecision.Decision.Faults`. A host with a set of many quantifier-heavy policies raises `MaxElementEvaluations` in the options that it passes to `EvaluateAsync`.
+
 ## The decision
 
 `PolicyDecision` has these members.
