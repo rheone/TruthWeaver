@@ -159,7 +159,7 @@ var user = YamlDataSource.Parse("minAge: 18\nroles: [admin, auditor]\n");
 
 `Parse` throws `JsonException` (or `YamlException`) when the text is malformed. Use `TryParse` for a document that a
 user edits or that comes from outside the host. It returns `false` and sets `error` instead of throwing. For YAML,
-a duplicate mapping key and an alias that refers to its own ancestor are also errors. The error text gives the
+a duplicate mapping key, a mapping key that is a sequence or mapping, and an alias that refers to its own ancestor are also errors. The error text gives the
 position of the problem and never repeats document content, because the content can be sensitive. A null argument
 still throws `ArgumentNullException`.
 

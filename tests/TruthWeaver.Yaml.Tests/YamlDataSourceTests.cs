@@ -207,6 +207,30 @@ public sealed class YamlDataSourceTests
         Assert.DoesNotContain("hunter2", error);
     }
 
+    /// <summary>A sequence or mapping used as a mapping key is rejected, because JSON cannot key an object by it and two such keys would collide.</summary>
+    [Theory]
+    [InlineData("? [a]\n: 1\n? [b]\n: 2\n")]
+    [InlineData("? {a: 1}\n: 2\n")]
+    public void Parse_NonScalarMappingKey_ThrowsYamlException_Test(string yaml)
+    {
+        Assert.ThrowsAny<YamlException>(() => YamlDataSource.Parse(yaml));
+    }
+
+    /// <summary>A non-scalar mapping key makes <c>TryParse</c> return false with an error on the key's line, and never repeats the key's content.</summary>
+    [Theory]
+    [InlineData("a: 1\n? [hunter2]\n: 2\n")]
+    [InlineData("a: 1\n? {hunter2: 1}\n: 2\n")]
+    public void TryParse_NonScalarMappingKey_ErrorIsPositionedWithoutContent_Test(string yaml)
+    {
+        bool parsed = YamlDataSource.TryParse(yaml, out YamlDataSource? source, out string? error);
+
+        Assert.False(parsed);
+        Assert.Null(source);
+        Assert.NotNull(error);
+        Assert.Contains("line 2", error);
+        Assert.DoesNotContain("hunter2", error);
+    }
+
     /// <summary>A well-formed document gives a source that answers queries exactly as <c>Parse</c> does.</summary>
     [Fact]
     public async Task TryParse_WellFormedYaml_ReturnsAWorkingSource_Test()
