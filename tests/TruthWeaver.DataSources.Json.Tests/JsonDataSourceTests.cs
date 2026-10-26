@@ -1,6 +1,7 @@
 namespace TruthWeaver.DataSources.Json.Tests;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
@@ -95,6 +96,84 @@ public sealed class JsonDataSourceTests
         Assert.False(result.Succeeded);
         Assert.Equal(DataQueryErrorKind.UnsupportedType, result.ErrorKind);
         Assert.DoesNotContain("adult", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A node built from a CLR <see cref="Guid"/> reports a <c>String</c> kind but cannot actually be read as text, so it
+    /// is reported as an unsupported type, never thrown (ticket 30).
+    /// </summary>
+    [Fact]
+    public async Task QueryAsync_NodeHoldsAClrGuid_ReportsUnsupportedType_Test()
+    {
+        JsonDataSource source = JsonDataSource.Create(new JsonObject { ["x"] = JsonValue.Create(Guid.NewGuid()) });
+
+        DataQueryResult result = await source.QueryAsync("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(DataQueryErrorKind.UnsupportedType, result.ErrorKind);
+        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>A node built from a CLR <see cref="DateTimeOffset"/> is likewise an unsupported type, never thrown.</summary>
+    [Fact]
+    public async Task QueryAsync_NodeHoldsAClrDateTimeOffset_ReportsUnsupportedType_Test()
+    {
+        JsonDataSource source = JsonDataSource.Create(new JsonObject { ["x"] = JsonValue.Create(DateTimeOffset.UtcNow) });
+
+        DataQueryResult result = await source.QueryAsync("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(DataQueryErrorKind.UnsupportedType, result.ErrorKind);
+        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>A node built from a CLR <see cref="char"/> is likewise an unsupported type, never thrown.</summary>
+    [Fact]
+    public async Task QueryAsync_NodeHoldsAClrChar_ReportsUnsupportedType_Test()
+    {
+        JsonDataSource source = JsonDataSource.Create(new JsonObject { ["x"] = JsonValue.Create('x') });
+
+        DataQueryResult result = await source.QueryAsync("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(DataQueryErrorKind.UnsupportedType, result.ErrorKind);
+        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>A node built from a CLR <see cref="double.NaN"/> reports a <c>Number</c> kind but has no JSON text, so it
+    /// is also reported as an unsupported type, never thrown.</summary>
+    [Fact]
+    public async Task QueryAsync_NodeHoldsClrNaN_ReportsUnsupportedType_Test()
+    {
+        JsonDataSource source = JsonDataSource.Create(new JsonObject { ["x"] = JsonValue.Create(double.NaN) });
+
+        DataQueryResult result = await source.QueryAsync("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(DataQueryErrorKind.UnsupportedType, result.ErrorKind);
+        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>End to end: a variable that resolves to a CLR-backed node with no JSON text is a type-mismatch fault, not a crash.</summary>
+    [Fact]
+    public async Task EvaluateAsync_VariableResolvesToAClrGuidNode_IsUnknownWithATypeMismatchFault_Test()
+    {
+        CompiledRule<object?> rule = Compile("takesString(v: from(\"doc\", \"$.id\"))");
+        DataSources sources = new() { ["doc"] = JsonDataSource.Create(new JsonObject { ["id"] = Guid.NewGuid() }) };
+
+        Decision decision = await rule.EvaluateAsync(
+            null,
+            new NoServices(),
+            sources,
+            null,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        VariableResolutionException fault = Assert.IsType<VariableResolutionException>(
+            Assert.Single(decision.Faults).Exception
+        );
+        Assert.Equal(VariableFailureKind.TypeMismatch, fault.Kind);
     }
 
     /// <summary>A query that is not valid JSONPath is reported as a malformed query, as data.</summary>
@@ -340,6 +419,7 @@ public sealed class JsonDataSourceTests
             {
                 ("takesInt64", LiteralKind.Int64),
                 ("takesInt64s", LiteralKind.Int64Array),
+                ("takesString", LiteralKind.String),
             }
         )
         {

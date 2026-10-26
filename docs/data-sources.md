@@ -142,7 +142,8 @@ model as JSON, so one query works against either.
 `JsonDataSource` (package `TruthWeaver.DataSources.Json`) wraps a JSON document. A matched string, number or boolean
 becomes a literal of its natural kind (an integer that fits is an `Int64`, any other number a `Decimal`); a matched
 object, array or `null` has no literal equivalent and is reported as an unsupported type, so select their members
-(`$.roles[*]`) instead.
+(`$.roles[*]`) instead. A node built from a CLR value that has no JSON text, such as a `Guid`, `DateTimeOffset` or
+`char` value, or a non-finite number such as `NaN`, is reported as an unsupported type too, never thrown.
 
 ```csharp
 var user = JsonDataSource.Parse("""{ "minAge": 18, "roles": ["admin", "auditor"] }""");
