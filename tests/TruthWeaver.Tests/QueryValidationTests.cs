@@ -166,6 +166,41 @@ public sealed class QueryValidationTests
         Assert.Null(declarations["unknown"]);
     }
 
+    /// <summary>
+    /// A quantifier variable that shadows a declared outer source gets no compile-time query-syntax validator for its
+    /// own <c>from(variable, ...)</c> queries inside the body, because the element source (its own dialect, unknown at
+    /// compile time) is what resolves at evaluation, not the outer source of the same name (ticket 33). A query that is
+    /// valid for the element source's dialect but would be rejected by the outer source's validator compiles cleanly.
+    /// </summary>
+    [Fact]
+    public void Compile_QuantifierVariableShadowsOuterSource_ElementDialectQueryCompiles_Test()
+    {
+        IQueryValidator outerValidator = Rejecting("not valid JSONPath", 0);
+        DataSourceDeclarations declarations = new() { ["line"] = outerValidator };
+        RuleCompiler<LineContext> compiler = CreateLineCompiler(declarations);
+
+        CompilationResult<LineContext> result = compiler.Compile(
+            "FORALL(line IN lines, qtyAbove(n: from(\"line\", \"total\")))"
+        );
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        outerValidator.DidNotReceiveWithAnyArgs().Validate(default!);
+    }
+
+    /// <summary>A quantifier variable that does not shadow any outer source leaves that outer source's validator applying inside the body, unaffected by the fix above.</summary>
+    [Fact]
+    public void Compile_QuantifierVariableDoesNotShadowOuterSource_OuterValidatorStillAppliesInTheBody_Test()
+    {
+        IQueryValidator outerValidator = Rejecting("unexpected token", 0);
+        DataSourceDeclarations declarations = new() { ["cfg"] = outerValidator };
+        RuleCompiler<LineContext> compiler = CreateLineCompiler(declarations);
+
+        CompilationResult<LineContext> result = compiler.Compile("FORALL(line IN lines, qtyAbove(n: from(\"cfg\", \"bad\")))");
+
+        Assert.False(result.Succeeded);
+        Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.MalformedDataQuery);
+    }
+
     /// <summary>Declaring a bare name again never discards a validator that was already given.</summary>
     [Fact]
     public void DataSourceDeclarations_BareAddAfterValidator_KeepsTheValidator_Test()
@@ -217,4 +252,34 @@ public sealed class QueryValidationTests
             .Build();
         return new RuleCompiler<RuleTestContext>(registry, new CompilerOptions(DataSources: declarations));
     }
+
+    private static RuleCompiler<LineContext> CreateLineCompiler(DataSourceDeclarations declarations)
+    {
+        PredicateRegistryBuilder<LineContext> builder = PredicateRegistry<LineContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                ctx => ctx.Lines,
+                elements =>
+                    elements.Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "Test predicate, always true.",
+                            [new PredicateArgumentSchema("n", "The threshold.", LiteralKind.Int64)]
+                        ),
+                        (_, _, _) => ValueTask.FromResult(TruthValue.True)
+                    ),
+                line => new FakeDataSource().With("total", (long)line.Qty)
+            );
+        return new RuleCompiler<LineContext>(builder.Build(), new CompilerOptions(DataSources: declarations));
+    }
+
+    /// <summary>A minimal context with one quantifiable collection, for the shadowing tests above.</summary>
+    private sealed class LineContext
+    {
+        public List<LineItem> Lines { get; } = [];
+    }
+
+    private sealed record LineItem(int Qty);
 }

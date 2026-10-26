@@ -141,6 +141,41 @@ public sealed class PredicateRegistrationGeneratorTests
     }
 
     /// <summary>
+    /// A predicate named with something the DSL's identifier grammar forbids (here a hyphen) is error TWG008 at the
+    /// method, and the name is not registered: rule text could never write a term with this name, matching the
+    /// check <c>PredicateRegistryBuilder.AddDescriptor</c> applies at registration (ticket 32).
+    /// </summary>
+    [Theory]
+    [InlineData("has-role")]
+    [InlineData("has role")]
+    [InlineData("1role")]
+    public void Generator_InvalidPredicateName_ReportsTwg008_Test(string name)
+    {
+        string source = $$"""
+            using TruthWeaver.Abstractions;
+            using TruthWeaver.Generators;
+
+            public sealed record Account(bool Active);
+
+            public static partial class AccountPredicates
+            {
+                [Predicate("{{name}}", "Not an identifier", "A name the DSL's identifier grammar forbids.")]
+                public static TruthValue NotAnIdentifier(Account account)
+                {
+                    return TruthValue.True;
+                }
+            }
+            """;
+
+        GeneratorRun run = GeneratorHarness.Run(source);
+
+        Diagnostic diagnostic = Assert.Single(run.GeneratorDiagnostics);
+        Assert.Equal("TWG008", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains($"'{name}'", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// A method that returns something other than <c>TruthValue</c>, <c>ValueTask&lt;TruthValue&gt;</c> or
     /// <c>Task&lt;TruthValue&gt;</c> (here <see cref="bool"/>) is error TWG003, and the method is not registered.
     /// </summary>
@@ -266,6 +301,43 @@ public sealed class PredicateRegistrationGeneratorTests
         Assert.Equal("TWG006", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.DoesNotContain("isActive", run.GeneratedSource, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Two parameters whose names differ only in case (here <c>role</c> and <c>Role</c>) are the same argument name
+    /// once the registry matches argument names ignoring case, so this is error TWG009 at the second parameter, and
+    /// the method is not registered. Without this diagnostic, the build would succeed and
+    /// <c>PredicateRegistryBuilder.RejectCaseVariantArguments</c> would throw at run time when the generated
+    /// <c>Register</c> call reached it.
+    /// </summary>
+    [Fact]
+    public void Generator_CaseCollidingParameterNames_ReportsTwg009_Test()
+    {
+        const string source = """
+            using TruthWeaver.Abstractions;
+            using TruthWeaver.Generators;
+
+            public sealed record User(string Name);
+
+            public static partial class OrderPredicates
+            {
+                [Predicate("hasAccess", "Has access", "Does the user have access?")]
+                public static TruthValue HasAccess(User u, string role, string Role = "x")
+                {
+                    return TruthValue.True;
+                }
+            }
+            """;
+
+        GeneratorRun run = GeneratorHarness.Run(source);
+
+        Diagnostic diagnostic = Assert.Single(run.GeneratorDiagnostics);
+        Assert.Equal("TWG009", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        string message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        Assert.Contains("'role'", message, StringComparison.Ordinal);
+        Assert.Contains("'Role'", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hasAccess", run.GeneratedSource, StringComparison.Ordinal);
     }
 
     /// <summary>

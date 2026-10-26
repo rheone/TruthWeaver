@@ -1,6 +1,6 @@
 # 44 - The generator does not detect argument names that differ only in case; Register throws at run time
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts

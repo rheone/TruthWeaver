@@ -1,6 +1,6 @@
 # 31 - NoMatch, AmbiguousMatch and non-scalar matches are classified as SourceError or TypeMismatch inconsistently between TryGetAsync/GetAsync, variables and the evaluator
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F8 Predicate+DataSource concepts; L5 Least surprise

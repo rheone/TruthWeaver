@@ -142,7 +142,8 @@ model as JSON, so one query works against either.
 `JsonDataSource` (package `TruthWeaver.DataSources.Json`) wraps a JSON document. A matched string, number or boolean
 becomes a literal of its natural kind (an integer that fits is an `Int64`, any other number a `Decimal`); a matched
 object, array or `null` has no literal equivalent and is reported as an unsupported type, so select their members
-(`$.roles[*]`) instead.
+(`$.roles[*]`) instead. A node built from a CLR value that has no JSON text, such as a `Guid`, `DateTimeOffset` or
+`char` value, or a non-finite number such as `NaN`, is reported as an unsupported type too, never thrown.
 
 ```csharp
 var user = JsonDataSource.Parse("""{ "minAge": 18, "roles": ["admin", "auditor"] }""");
@@ -159,7 +160,7 @@ var user = YamlDataSource.Parse("minAge: 18\nroles: [admin, auditor]\n");
 
 `Parse` throws `JsonException` (or `YamlException`) when the text is malformed. Use `TryParse` for a document that a
 user edits or that comes from outside the host. It returns `false` and sets `error` instead of throwing. For YAML,
-a duplicate mapping key and an alias that refers to its own ancestor are also errors. The error text gives the
+a duplicate mapping key, a mapping key that is a sequence or mapping, and an alias that refers to its own ancestor are also errors. The error text gives the
 position of the problem and never repeats document content, because the content can be sensitive. A null argument
 still throws `ArgumentNullException`.
 
@@ -352,9 +353,14 @@ public interface IDataSource
 ```
 
 - Convert each matched node to a `LiteralValue`. A node with no literal equivalent, such as an object, is
-  reported as an unsupported type in the result.
+  reported as an unsupported type in the result; both the eager `TryGetAsync<T>`/`GetAsync<T>` read and a
+  variable classify it as `TypeMismatch`.
 - Report a malformed query or a failing backend as an error inside `DataQueryResult`. The engine also catches
   a thrown exception, but an error you return carries a better message.
+- `QueryAsync` can also answer a scalar query with `NoMatch` or `AmbiguousMatch` (the kinds `ScopeAsync` reports
+  for the same situation); both the eager read and a variable classify them as `Missing`/`Ambiguous` rather than
+  a generic source error, so a backend that can tell "no row" or "more than one row" apart from an outage
+  should report it that way.
 - Report a scope query that is malformed, matches no node or matches several as a failed `DataScopeResult`
   (`DataScopeResult.Failure`). Do not throw for these.
 - Honour the cancellation token. If the source gives up on its own (it throws a timeout or its own cancellation) the term

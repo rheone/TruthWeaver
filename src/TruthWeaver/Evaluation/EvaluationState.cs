@@ -63,7 +63,11 @@ internal sealed class EvaluationState(bool collectTrace = true)
     /// <summary>Gets the zero-match array references of a term, keyed the same way as <see cref="Memo"/>.</summary>
     public Dictionary<MemoKey, List<VariableReference>> ZeroMatchReferences { get; } = [];
 
-    /// <summary>Gets the per-evaluation data-source query memo, keyed by the element scope path plus the reference.</summary>
+    /// <summary>
+    /// Gets the per-evaluation data-source query memo, keyed by the memoization scope path the named source was bound
+    /// at (a quantifier element's own source at that element's path, every other source at <see langword="null"/>)
+    /// plus the reference, so each <c>(source, query)</c> pair is queried at most once (ADR-0006 decision 11).
+    /// </summary>
     public Dictionary<(string? Scope, VariableReference Reference), SourceAnswer> SourceAnswers { get; } = [];
 
     /// <summary>

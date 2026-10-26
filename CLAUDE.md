@@ -86,6 +86,8 @@ dotnet test tests/TruthWeaver.Tests --filter-class "*KleeneOperatorTests"
 dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 ```
 
+`--filter-class`/`--filter-method` take one wildcard pattern, not a `|`-separated list - run one command per pattern.
+
 ## Formatting
 
 - CSharpier is the authoritative C# formatter.

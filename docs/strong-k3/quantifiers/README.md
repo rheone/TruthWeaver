@@ -56,6 +56,12 @@ Because a `null` collection is `Unknown`, `FORALL(x IN c, True)` is not the cons
 
 A body reads the element in two ways, and can mix both in one body. A typed element predicate, such as `inStock`, is registered on the collection. An untyped read, `from(line, "$.qty")`, treats the element as a data source of its own. The second way works only when the host registered the collection with an element source. Without one, the read is the undeclared data source diagnostic `TRE0024`. In the trace, a body term with a `from(...)` read ends with the outcome of each reference, for example `[from("line", "$.qty"): resolved]`, as a term outside a quantifier does.
 
+If the bound variable has the same name as a data source declared outside the quantifier, the element source wins inside the body: `from(line, ...)` always reads the element, never the outer source. Because the two can use different query dialects, the compiler checks a query against neither source's syntax validator inside the body; a query malformed for both still fails only when the element source itself reports it, at evaluation.
+
+The element source runs one time for each element, at the first read of that element, however many different queries the body makes.
+
+A body can also read a data source that the evaluation supplies, for example `from("cfg", "$.limit")`. Each query to such a source runs one time in the evaluation. All elements get the same answer.
+
 ## Analysis and rewrites
 
 The analyzer, `RuleEquivalence`, `RuleImplication` and `RuleOverlap` treat a quantifier as one opaque atom. The atom is keyed by its canonical text, which includes the body. Two quantifiers with the same text are the same atom. Two quantifiers with equivalent bodies that are written differently are different atoms. The results stay correct, but they can be incomplete across such rewordings.

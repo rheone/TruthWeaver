@@ -178,6 +178,28 @@ public sealed class VariableResolutionTests
         Assert.Equal(VariableFailureKind.TypeMismatch, FaultKind(Assert.Single(decision.Faults)));
     }
 
+    /// <summary>A source that reports a scalar query matching no node as data (ticket 31) is a missing fault, the same outcome a well-behaved <c>ScopeAsync</c>-style source already gets for the same situation.</summary>
+    [Fact]
+    public async Task EvaluateAsync_SourceReportsNoMatch_IsAMissingFault_Test()
+    {
+        FakeDataSource source = new FakeDataSource().Failing("$.q", "no row", DataQueryErrorKind.NoMatch);
+
+        Decision decision = await EvaluateAsync("takesString", source);
+
+        Assert.Equal(VariableFailureKind.Missing, FaultKind(Assert.Single(decision.Faults)));
+    }
+
+    /// <summary>A source that reports a scalar query matching several nodes as data (ticket 31) is an ambiguous fault.</summary>
+    [Fact]
+    public async Task EvaluateAsync_SourceReportsAmbiguousMatch_IsAnAmbiguousFault_Test()
+    {
+        FakeDataSource source = new FakeDataSource().Failing("$.q", "many rows", DataQueryErrorKind.AmbiguousMatch);
+
+        Decision decision = await EvaluateAsync("takesString", source);
+
+        Assert.Equal(VariableFailureKind.Ambiguous, FaultKind(Assert.Single(decision.Faults)));
+    }
+
     /// <summary>An error returned as data (a failing backend) is a source-error fault carrying the source's message.</summary>
     [Fact]
     public async Task EvaluateAsync_SourceReturnsFailure_IsUnknownWithASourceErrorFault_Test()

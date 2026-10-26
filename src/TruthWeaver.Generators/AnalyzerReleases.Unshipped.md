@@ -12,3 +12,5 @@ TWG004 | TruthWeaver.Generators | Error | GeneratorDiagnostics
 TWG005 | TruthWeaver.Generators | Error | GeneratorDiagnostics
 TWG006 | TruthWeaver.Generators | Error | GeneratorDiagnostics
 TWG007 | TruthWeaver.Generators | Error | GeneratorDiagnostics
+TWG008 | TruthWeaver.Generators | Error | GeneratorDiagnostics
+TWG009 | TruthWeaver.Generators | Error | GeneratorDiagnostics

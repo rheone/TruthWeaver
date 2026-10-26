@@ -1,6 +1,6 @@
 # 46 - YAML mapping keys that are not scalars collapse to an empty-string key and overwrite data
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts

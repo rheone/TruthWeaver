@@ -199,10 +199,15 @@ internal sealed class CollectionBinding<TContext, TItem>(
             }
 
             state.ElementEvaluations++;
-            Element<TContext, TItem> elementContext = new(context, elements[i], i);
-            DataSources? elementDataSources = elementSource is null
-                ? dataSources
-                : WithElementSource(dataSources, variable, elements[i], elementSource);
+            TItem item = elements[i];
+            Element<TContext, TItem> elementContext = new(context, item, i);
+            DataSources? elementDataSources = dataSources;
+            if (elementSource is not null)
+            {
+                LazyElementDataSource element = new(() => elementSource(item), elementMemoScope);
+                elementDataSources = WithElementSource(dataSources, variable, element);
+            }
+
             Evaluator<Element<TContext, TItem>> nested = new(
                 elementContext,
                 services,
@@ -237,7 +242,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
     /// <summary>
     /// Declares <paramref name="variable"/> as a data source name for the body's own compile pass (ADR-0010
-    /// decision 3), copying every name already declared on <paramref name="options"/> (keeping each one's
+    /// decision 3), copying every other name already declared on <paramref name="options"/> (keeping each one's
     /// validator, if any) so the body still sees every outer-declared source besides its own element binding.
     /// </summary>
     private static CompilerOptions DeclareElementSource(CompilerOptions options, string variable)
@@ -247,6 +252,14 @@ internal sealed class CollectionBinding<TContext, TItem>(
         {
             foreach (string outerName in outer)
             {
+                // The element variable always wins over an outer source of the same name at evaluation
+                // (WithElementSource below), so its outer validator is skipped here rather than copied: copying it
+                // would check from(variable, ...) against a dialect the body can never actually reach (ticket 33).
+                if (string.Equals(outerName, variable, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 if (outer[outerName] is { } validator)
                 {
                     declared.Add(outerName, validator);
@@ -258,28 +271,25 @@ internal sealed class CollectionBinding<TContext, TItem>(
             }
         }
 
-        // A bare declaration never overwrites a validator the name already carries (DataSourceDeclarations.Add's
-        // own contract), so a variable name that happens to shadow an outer declared source keeps that source's
-        // validator; only an undeclared variable name gains one here, with no validator (the query is the body's
-        // own JSONPath/etc. into the element, whose dialect this binding does not know).
+        // The element's own dialect is unknown at compile time, so the variable is declared with no validator here.
+        // Skipping the outer entry above (when it shares the variable's name) guarantees this bare declaration is
+        // the first one for the name, since DataSourceDeclarations.Add's own contract never overwrites a validator
+        // a name already carries.
         declared.Add(variable);
         return options with { DataSources = declared };
     }
 
     /// <summary>
     /// Builds the <see cref="DataSources"/> one element's nested evaluator resolves <c>from(...)</c> against
-    /// (ADR-0010 decision 3): the element's own projected source under <paramref name="variable"/>, plus every
-    /// outer-supplied source under a different name. The element binding takes priority over a like-named
-    /// outer-supplied source, because inside the body <paramref name="variable"/> names the element, lexically.
+    /// (ADR-0010 decision 3): the element's own projected source (<paramref name="element"/>) under
+    /// <paramref name="variable"/>, plus every outer-supplied source under a different name. The element binding
+    /// takes priority over a like-named outer-supplied source, because inside the body <paramref name="variable"/>
+    /// names the element, lexically. Every outer source is passed on as the same instance, which is what lets the
+    /// evaluator key its answers at the scope that source was bound at.
     /// </summary>
-    private static DataSources WithElementSource(
-        DataSources? outer,
-        string variable,
-        TItem item,
-        Func<TItem, IDataSource> projector
-    )
+    private static DataSources WithElementSource(DataSources? outer, string variable, LazyElementDataSource element)
     {
-        DataSources merged = new() { { variable, new LazyElementDataSource<TItem>(item, projector) } };
+        DataSources merged = new() { { variable, element } };
         if (outer is not null)
         {
             foreach (KeyValuePair<string, IDataSource> entry in outer)

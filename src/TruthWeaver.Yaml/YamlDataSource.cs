@@ -17,7 +17,7 @@ using YamlDotNet.RepresentationModel;
 /// Scalars read as the YAML 1.2 core schema does, restricted to what JSON can express: a quoted, block or <c>!!str</c> scalar
 /// is always a string; a plain <c>true</c>/<c>false</c> (any case) is a boolean; a plain number written in JSON's number
 /// grammar is a number; a plain <c>null</c>, <c>~</c> or empty value is null; any other plain scalar is a string (so
-/// <c>yes</c>, <c>007</c> and <c>2026-10-03</c> stay strings). A mapping key is read as its text. An alias reads as a copy of
+/// <c>yes</c>, <c>007</c> and <c>2026-10-03</c> stay strings). A scalar mapping key is read as its text; a sequence or mapping used as a key is an error. An alias reads as a copy of
 /// its anchor. Only the first document of a stream is read.
 /// </remarks>
 public sealed partial class YamlDataSource : IDataSource
@@ -32,7 +32,7 @@ public sealed partial class YamlDataSource : IDataSource
     /// <summary>Creates a source over YAML text.</summary>
     /// <param name="yaml">The YAML document. An empty stream is a document with no data.</param>
     /// <returns>A source whose queries are absolute within the first document of <paramref name="yaml"/>.</returns>
-    /// <exception cref="YamlException">Thrown when <paramref name="yaml"/> is not well-formed YAML (including duplicate mapping keys) or an alias refers to its own ancestor. The document comes from the host, not from a rule, so a malformed one is a configuration error rather than data.</exception>
+    /// <exception cref="YamlException">Thrown when <paramref name="yaml"/> is not well-formed YAML (including duplicate mapping keys and mapping keys that are sequences or mappings) or an alias refers to its own ancestor. The document comes from the host, not from a rule, so a malformed one is a configuration error rather than data.</exception>
     public static YamlDataSource Parse(string yaml)
     {
         ArgumentNullException.ThrowIfNull(yaml);
@@ -47,7 +47,7 @@ public sealed partial class YamlDataSource : IDataSource
     /// <summary>Creates a source over YAML text without throwing when the text is malformed, for host code that reads untrusted or user-edited documents.</summary>
     /// <param name="yaml">The YAML document. An empty stream is a document with no data.</param>
     /// <param name="source">The source when the text is well-formed; otherwise <see langword="null"/>.</param>
-    /// <param name="error">When parsing fails (malformed YAML, a duplicate mapping key or an alias that refers to its own ancestor), a description with the line and column where the problem starts. It never repeats document content, because the document may hold sensitive data. Otherwise <see langword="null"/>.</param>
+    /// <param name="error">When parsing fails (malformed YAML, a duplicate mapping key, a mapping key that is a sequence or mapping, or an alias that refers to its own ancestor), a description with the line and column where the problem starts. It never repeats document content, because the document may hold sensitive data. Otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> when <paramref name="yaml"/> is a valid document; <see langword="false"/> otherwise.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="yaml"/> is <see langword="null"/>, which is a programming error and not a malformed document.</exception>
     /// <seealso cref="Parse"/>
@@ -136,9 +136,18 @@ public sealed partial class YamlDataSource : IDataSource
             JsonObject obj = [];
             foreach (KeyValuePair<YamlNode, YamlNode> entry in ((YamlMappingNode)node).Children)
             {
-                // JSON keys are strings, so a key that is not a plain scalar is read as its text; a later duplicate wins.
-                string key = entry.Key is YamlScalarNode { Value: { } text } ? text : string.Empty;
-                obj[key] = ToJson(entry.Value, ancestors);
+                // JSON keys are strings, so a scalar key is read as its text. A sequence or mapping key has no text, and reading
+                // every such key as "" would let the later one overwrite the earlier, so it is rejected at its own position.
+                if (entry.Key is not YamlScalarNode key)
+                {
+                    throw new YamlException(
+                        entry.Key.Start,
+                        entry.Key.End,
+                        "A mapping key must be a scalar, because a JSON property name is text."
+                    );
+                }
+
+                obj[key.Value ?? string.Empty] = ToJson(entry.Value, ancestors);
             }
 
             return obj;

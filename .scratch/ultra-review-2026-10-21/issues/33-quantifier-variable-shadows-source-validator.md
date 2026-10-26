@@ -1,6 +1,6 @@
 # 33 - A quantifier variable that shadows a declared source keeps the hidden source validator for element queries
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F8 Predicate+DataSource concepts

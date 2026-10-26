@@ -12,7 +12,10 @@ using Meziantou.Framework.Json;
 /// <c>true</c>/<c>false</c> are booleans. The engine then applies the conversions ADR-0006 decision 7 allows (a string to a
 /// date or GUID, an integer to a decimal, a whole decimal to an integer), so this source never guesses what the argument
 /// wants. An object, an array and <c>null</c> have no literal equivalent and are reported as
-/// <see cref="DataQueryErrorKind.UnsupportedType"/>; select their members instead (<c>$.roles[*]</c>).
+/// <see cref="DataQueryErrorKind.UnsupportedType"/>; select their members instead (<c>$.roles[*]</c>). The same is
+/// true of a node built from a CLR value JSON cannot represent as text, such as a <see cref="Guid"/>,
+/// <see cref="DateTimeOffset"/> or <see cref="char"/> value, or a non-finite <see cref="double"/> or <see cref="float"/>
+/// such as <see cref="double.NaN"/>.
 /// </summary>
 /// <remarks>
 /// The document is held as a <see cref="JsonNode"/> tree and is never modified, so one instance is safe to share across
@@ -155,8 +158,17 @@ public sealed class JsonDataSource : IDataSource
                 switch (value.GetValueKind())
                 {
                     case JsonValueKind.String:
-                        literal = LiteralValue.OfString(value.GetValue<string>());
-                        return true;
+                        // A JsonValue built from a CLR Guid, DateTimeOffset or char (JsonValue.Create or an implicit
+                        // JsonNode conversion) reports this kind too, but is not actually backed by text; TryGetValue
+                        // reports that as a failed conversion instead of throwing (ticket 30).
+                        if (value.TryGetValue(out string? text))
+                        {
+                            literal = LiteralValue.OfString(text);
+                            return true;
+                        }
+
+                        unsupportedKind = "a string-kind value that cannot be read as text";
+                        return false;
                     case JsonValueKind.True or JsonValueKind.False:
                         literal = LiteralValue.OfBoolean(value.GetValue<bool>());
                         return true;
@@ -187,7 +199,20 @@ public sealed class JsonDataSource : IDataSource
         [NotNullWhen(false)] out string? unsupportedKind
     )
     {
-        string text = value.ToJsonString();
+        string text;
+        try
+        {
+            text = value.ToJsonString();
+        }
+        catch (ArgumentException)
+        {
+            // A CLR double/float NaN or +/-Infinity reports this kind too, but JSON has no literal for a non-finite
+            // number, so ToJsonString throws; report it as data instead of letting the exception escape (ticket 30).
+            literal = default;
+            unsupportedKind = "a non-finite number (NaN or infinity)";
+            return false;
+        }
+
         if (long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long integer))
         {
             literal = LiteralValue.OfInt64(integer);

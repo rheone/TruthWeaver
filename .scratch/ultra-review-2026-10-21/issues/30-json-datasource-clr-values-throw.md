@@ -1,6 +1,6 @@
 # 30 - JsonDataSource throws instead of converting when a node holds a CLR value (Guid, DateTimeOffset, char, NaN)
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F8 Predicate+DataSource concepts

@@ -79,6 +79,29 @@ internal static class VariableConversion
         return true;
     }
 
+    /// <summary>
+    /// Classifies a <see cref="DataQueryResult"/> or <see cref="DataScopeResult"/> error the same way for every path
+    /// that reads an <see cref="IDataSource"/> query (ADR-0006 decision 9, ticket 31), so the eager
+    /// <see cref="TruthWeaver.Building.DataSourceExtensions.TryGetAsync{T}"/> read and the deferred evaluator read of
+    /// the same data always agree. A node with no literal equivalent can never fit the argument, so it is a type
+    /// mismatch. A scalar query that matched no node or several nodes is missing/ambiguous, the outcome a
+    /// well-behaved <c>ScopeAsync</c>-style source already gets for the same situation (the two kinds are documented
+    /// for <c>ScopeAsync</c>, but nothing stops a <c>QueryAsync</c> implementation from reporting them too). Anything
+    /// else, a malformed query or a failing backend, is a source error.
+    /// </summary>
+    /// <param name="kind">The reported error kind.</param>
+    /// <returns>The <see cref="VariableFailureKind"/> to record.</returns>
+    internal static VariableFailureKind ClassifyQueryError(DataQueryErrorKind kind)
+    {
+        return kind switch
+        {
+            DataQueryErrorKind.UnsupportedType => VariableFailureKind.TypeMismatch,
+            DataQueryErrorKind.NoMatch => VariableFailureKind.Missing,
+            DataQueryErrorKind.AmbiguousMatch => VariableFailureKind.Ambiguous,
+            _ => VariableFailureKind.SourceError,
+        };
+    }
+
     /// <summary>Gets a value indicating whether <paramref name="kind"/> is one of the array kinds.</summary>
     internal static bool IsArrayKind(LiteralKind kind)
     {

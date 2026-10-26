@@ -1,6 +1,6 @@
 # 45 - The element projector and outer data sources run per distinct query, not as ADR-0010 and ADR-0006 decision 11 state
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts

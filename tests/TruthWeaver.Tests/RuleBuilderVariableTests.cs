@@ -277,6 +277,55 @@ public sealed class RuleBuilderVariableTests
         Assert.DoesNotContain("hunter2", result.ErrorMessage, StringComparison.Ordinal);
     }
 
+    /// <summary>A source that throws (for example an HTTP backend failure) is a source error result, not an escaped exception.</summary>
+    [Fact]
+    public async Task TryGetAsync_SourceThrows_ReturnsSourceErrorResult_Test()
+    {
+        ThrowingSource source = new(new HttpRequestException("backend unavailable"));
+
+        DataReadResult<long> result = await source.TryGetAsync<long>("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(VariableFailureKind.SourceError, result.FailureKind);
+    }
+
+    /// <summary>Cancellation of the caller's own token is not a source failure, so it propagates unchanged.</summary>
+    [Fact]
+    public async Task TryGetAsync_CallerCancelled_PropagatesCancellation_Test()
+    {
+        using CancellationTokenSource cancellation = new();
+        await cancellation.CancelAsync();
+        ThrowingSource source = new(new OperationCanceledException(cancellation.Token));
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await source.TryGetAsync<long>("$.x", cancellation.Token)
+        );
+    }
+
+    /// <summary>
+    /// A source reporting an error as data classifies the same way <see cref="Evaluation.Evaluator{TContext}"/> does for a
+    /// deferred variable (ticket 31): a node with no literal equivalent is a type mismatch, a scalar query that matched
+    /// nothing or several nodes is missing/ambiguous, and anything else is a source error.
+    /// </summary>
+    [Theory]
+    [InlineData(DataQueryErrorKind.UnsupportedType, VariableFailureKind.TypeMismatch)]
+    [InlineData(DataQueryErrorKind.NoMatch, VariableFailureKind.Missing)]
+    [InlineData(DataQueryErrorKind.AmbiguousMatch, VariableFailureKind.Ambiguous)]
+    [InlineData(DataQueryErrorKind.MalformedQuery, VariableFailureKind.SourceError)]
+    [InlineData(DataQueryErrorKind.SourceFailure, VariableFailureKind.SourceError)]
+    public async Task TryGetAsync_SourceReportsAnErrorKind_ClassifiesLikeTheEvaluatorDoes_Test(
+        DataQueryErrorKind errorKind,
+        VariableFailureKind expected
+    )
+    {
+        StubSource source = new(DataQueryResult.Failure(errorKind, "an object"));
+
+        DataReadResult<long> result = await source.TryGetAsync<long>("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(expected, result.FailureKind);
+    }
+
     /// <summary>An unsupported type is a programmer error, so the result form throws like <c>GetAsync</c>.</summary>
     [Fact]
     public Task TryGetAsync_UnsupportedType_ThrowsNotSupported_Test()
@@ -319,6 +368,20 @@ public sealed class RuleBuilderVariableTests
             )
             .Build();
         return new RuleCompiler<RuleTestContext>(registry, new CompilerOptions(DataSources: declarations));
+    }
+
+    /// <summary>A data source whose query always throws the given exception.</summary>
+    private sealed class ThrowingSource(Exception exception) : IDataSource
+    {
+        public ValueTask<DataQueryResult> QueryAsync(string query, CancellationToken cancellationToken)
+        {
+            throw exception;
+        }
+
+        public ValueTask<DataScopeResult> ScopeAsync(string query, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     /// <summary>A data source that always gives one canned answer.</summary>

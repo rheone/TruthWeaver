@@ -52,11 +52,25 @@ public static class DataSourceExtensions
         ArgumentNullException.ThrowIfNull(query);
 
         LiteralKind kind = KindOf(typeof(T));
-        DataQueryResult result = await source.QueryAsync(query, cancellationToken).ConfigureAwait(false);
+        DataQueryResult result;
+        try
+        {
+            result = await source.QueryAsync(query, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            // Same rule as the evaluator: a source's own failure is a SourceError, while cancellation of the caller's
+            // token propagates. The exception's type is reported, never its message, which may carry data.
+            return DataReadResult<T>.Failure(
+                VariableFailureKind.SourceError,
+                $"The data source could not answer the query (source threw {ex.GetType().Name})."
+            );
+        }
+
         if (result.ErrorKind is { } errorKind)
         {
             return DataReadResult<T>.Failure(
-                VariableFailureKind.SourceError,
+                VariableConversion.ClassifyQueryError(errorKind),
                 $"The data source could not answer the query ({errorKind}): {result.ErrorMessage}"
             );
         }

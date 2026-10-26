@@ -97,6 +97,14 @@ internal sealed class DslParser
         return ReservedWords.Contains(identifier);
     }
 
+    /// <summary>Determines whether <paramref name="identifier"/> matches the DSL's identifier grammar: a letter or '_' first, then letters, digits or '_'.</summary>
+    /// <param name="identifier">The candidate name.</param>
+    /// <returns><see langword="true"/> if <paramref name="identifier"/> is a syntactically valid identifier.</returns>
+    public static bool IsValidIdentifier(string identifier)
+    {
+        return IdentifierSyntax.IsValidIdentifier(identifier);
+    }
+
     /// <summary>Parses DSL rule text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="source">The rule text.</param>
     /// <param name="maxDepth">

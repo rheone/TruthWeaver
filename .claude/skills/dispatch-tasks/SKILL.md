@@ -4,7 +4,7 @@ description: Dispatch work to sub-agents (serially, in parallel, or in dependenc
 argument-hint: "What should be dispatched (a list, tickets, or a plan), and serially or in parallel?"
 license: Apache-2.0
 metadata:
-  version: "2.0.2"
+  version: "2.0.3"
   tools: "Agent, ToolSearch, CronCreate, CronDelete"
   author: Robert H. Engelhardt <rheone@gmail.com>
 

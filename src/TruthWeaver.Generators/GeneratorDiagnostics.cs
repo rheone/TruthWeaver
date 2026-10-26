@@ -80,4 +80,24 @@ internal static class GeneratorDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>TWG008: a predicate name that is not a valid DSL identifier.</summary>
+    public static readonly DiagnosticDescriptor InvalidPredicateName = new(
+        "TWG008",
+        "Invalid predicate name",
+        "Predicate method '{0}' uses the name '{1}', which is not a valid DSL identifier: an identifier starts with a letter or '_' and continues with letters, digits or '_' only. Choose a name that fits this grammar.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
+
+    /// <summary>TWG009: two parameters of one predicate method whose names differ only in case.</summary>
+    public static readonly DiagnosticDescriptor CaseCollidingParameterNames = new(
+        "TWG009",
+        "Predicate method has argument names that collide when case is ignored",
+        "Parameter '{0}' of predicate method '{1}' has the same name as parameter '{2}' when case is ignored. Argument names are case-insensitive, so give them different names.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

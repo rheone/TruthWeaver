@@ -17,7 +17,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <summary>Registers a class-based predicate, resolved from the per-evaluation <see cref="IServiceProvider"/>.</summary>
     /// <typeparam name="TPredicate">The predicate implementation type.</typeparam>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is not a valid DSL identifier or is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add<TPredicate>()
         where TPredicate : IPredicate<TContext>
     {
@@ -30,7 +30,7 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <param name="schema">The predicate's schema.</param>
     /// <param name="evaluate">The stateless evaluation function.</param>
     /// <returns>This builder, for chaining.</returns>
-    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
+    /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is not a valid DSL identifier or is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add(
         PredicateSchema schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
@@ -69,7 +69,10 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// </param>
     /// <returns>This builder, for chaining.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="name"/>, <paramref name="selector"/> or <paramref name="elements"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">A collection with the same name (case-insensitive) is already registered on this builder.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is not a valid DSL identifier, is a reserved DSL keyword, or a collection with the
+    /// same name (case-insensitive) is already registered on this builder.
+    /// </exception>
     public PredicateRegistryBuilder<TContext> AddCollection<TItem>(
         string name,
         Func<TContext, IEnumerable<TItem>?> selector,
@@ -80,6 +83,7 @@ public sealed class PredicateRegistryBuilder<TContext>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(selector);
         ArgumentNullException.ThrowIfNull(elements);
+        RejectUnwritableName("collection", name);
 
         PredicateRegistryBuilder<Element<TContext, TItem>> elementBuilder = new();
         elements(elementBuilder);
@@ -121,16 +125,37 @@ public sealed class PredicateRegistryBuilder<TContext>
         }
     }
 
-    private void AddDescriptor(string name, PredicateDescriptor<TContext> descriptor)
+    /// <summary>
+    /// Rejects a name rule text can never write as a bare term: one that does not match the DSL's identifier
+    /// grammar (<see cref="IdentifierSyntax"/>: a letter or '_' first, then letters, digits or '_') or that the
+    /// parser reads as a keyword. Shared by predicate and collection registration, which both fail this way rather
+    /// than succeeding here and breaking later at print/re-parse time, the round-trip guarantee RuleFormat already
+    /// promises.
+    /// </summary>
+    /// <param name="kind">"predicate" or "collection", for the exception message.</param>
+    /// <param name="name">The candidate name.</param>
+    private static void RejectUnwritableName(string kind, string name)
     {
-        if (DslParser.IsReservedWord(name))
+        if (!DslParser.IsValidIdentifier(name))
         {
             throw new ArgumentException(
-                $"A predicate cannot be named '{name}': the name is reserved, because rule text reads it as a keyword (the check ignores case). Choose another name.",
+                $"A {kind} cannot be named '{name}': the name is not a valid DSL identifier (a letter or '_' first, then letters, digits or '_' only), so rule text could never write a term with this name. Choose another name.",
                 nameof(name)
             );
         }
 
+        if (DslParser.IsReservedWord(name))
+        {
+            throw new ArgumentException(
+                $"A {kind} cannot be named '{name}': the name is reserved, because rule text reads it as a keyword (the check ignores case). Choose another name.",
+                nameof(name)
+            );
+        }
+    }
+
+    private void AddDescriptor(string name, PredicateDescriptor<TContext> descriptor)
+    {
+        RejectUnwritableName("predicate", name);
         RejectCaseVariantArguments(name, descriptor.Schema);
         string key = name.ToUpperInvariant();
         if (!this.descriptorsByName.TryAdd(key, descriptor))

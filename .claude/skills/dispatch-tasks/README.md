@@ -1,6 +1,6 @@
 # dispatch-tasks
 
-**Version 2.0.2**
+**Version 2.0.3**
 
 A Claude Code skill that hands work to sub-agents and keeps the main thread posted as each piece lands. It packs tasks into as few agents as the work allows, proposes that plan for approval, and tracks the run to a single summary.
 
@@ -78,9 +78,14 @@ Fan-out, pipeline, map-reduce, review loop and speculative. The skill recommends
 - A background bundle that was running when the session ended cannot be reattached. Resume lists it and asks whether to dispatch it again.
 - Confirmed by an incident: a bundle dispatched to run in the main checkout (no worktree, because nothing else was dispatched beside it) kept running across a `/clear` of the same session. The coordinator, having lost the plan, started independent manual edits to the same files; the bundle's own validation run hit the resulting broken build and reverted it as debris before either side knew the other existed. Every dispatch is asynchronous here regardless of bundle count (see SKILL.md step 5), so this is the normal case, not a rare race - worktree isolation and the resume check in [run-state.md](run-state.md) now account for it.
 - Also confirmed: a dispatched bundle can be cut off mid-task by an account-wide rate limit (an interruption, not a failure - its work is saved and it resumes cleanly via `SendMessage`, per the Escalation section of [packing.md](packing.md)). And two concurrently-dispatched bundles that both touch one shared test helper can cherry-pick/merge with no conflict markers yet still not compile, because a line-based merge has no way to see a signature one bundle changed and the other's new call site still assumes - caught by the project's own build, not by git. Neither needs a new guardrail; both need the coordinator to expect them (see SKILL.md step 7).
+- Confirmed a second time, sharper: two concurrently-dispatched bundles independently claimed the same scarce identifier (a diagnostic code) for two unrelated diagnostics. One bundle's own dry-run merge check against the target branch (added to the prompt in 2.0.3 after this incident) correctly predicted its own conflict; the identifier collision itself was only caught because two of several affected files happened to textually conflict - a third file saw no conflict at all (both bundles added an identically-worded line, so git silently kept one copy). When the project has a reasonable way to check a scarce-identifier invariant (a uniqueness test, a linter rule), add one; it catches what a lucky conflict might not.
 - The `SKILLS` directory name is upper case; the Claude Code convention is `skills`.
 
 ## Version history
+
+### 2.0.3
+
+- Bundle prompt asks a bundle to dry-run its diff against the target branch's current state before reporting, when a sibling bundle is running beside it, and to name a likely conflict area in its Handoff even without seeing the sibling's actual diff.
 
 ### 2.0.2
 

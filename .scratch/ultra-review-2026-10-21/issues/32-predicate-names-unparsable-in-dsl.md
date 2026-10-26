@@ -1,6 +1,6 @@
 # 32 - Registry and generator accept predicate and collection names that rule text cannot express
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F8 Predicate+DataSource concepts
