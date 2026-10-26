@@ -26,7 +26,7 @@ The caller can pass evaluation options. `Mode` selects the evaluation mode below
 
 `EvaluationMode.ShortCircuit` is the default. Operands run from left to right, and an Operation stops when its result is settled. A skipped operand is recorded as `NotEvaluated`, and its predicates do not run.
 
-`EvaluationMode.Exhaustive` runs every reachable term and collects every fault. It changes which terms run and which faults the `Decision` holds. It never changes `Result`.
+`EvaluationMode.Exhaustive` runs every reachable term and collects every fault. It changes which terms run and which faults the `Decision` holds. It never changes `Result`, provided no `FaultBudget` abort fires. When a `FaultBudget` abort does fire, `Exhaustive` and `ShortCircuit` can disagree on `Result`. `Exhaustive` reaches and faults on terms that `ShortCircuit` would have skipped, so the abort stops each mode after a different set of operands.
 
 | Operation | In `ShortCircuit` mode |
 | --- | --- |

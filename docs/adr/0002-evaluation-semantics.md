@@ -142,7 +142,15 @@ An `EvaluationMode.Exhaustive` option evaluates every reachable term (no
 short-circuit) and collects every fault, for diagnostic/support use. This
 mode never changes `Decision.Result` - it only changes which terms run and
 what the trace/fault list contains - and that invariant must hold for any
-future change to this mode.
+future change to this mode, **provided no `FaultBudget` abort fires**. A
+`FaultBudget` is itself an opt-in resource guard that stops evaluation at
+the Nth fault; combined with `Exhaustive`, the two options can run
+genuinely different sets of operands, because `Exhaustive` reaches and
+faults on terms that `ShortCircuit` would have skipped. When a budget's
+abort fires, `Exhaustive` and `ShortCircuit` can disagree on
+`Decision.Result`, because they evaluated different operands, not because
+either mode broke its own rules. This is a known, accepted consequence of
+combining the two options, not a defect.
 
 ### Faults absorb, they don't abort
 

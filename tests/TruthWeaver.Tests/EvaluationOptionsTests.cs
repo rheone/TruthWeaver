@@ -329,6 +329,52 @@ public sealed class EvaluationOptionsTests
         Assert.Equal(new TraceEntry("AND", TruthValue.Unknown, false), decision.Trace.Entries[^1]);
     }
 
+    /// <summary>
+    /// With a <c>FaultBudget</c> of 1, <c>ShortCircuit</c> mode's inner <c>OR</c> stops at the definite <c>isOn</c>,
+    /// so the faulting <c>boom</c> never runs and the outer <c>AND</c> settles on the definite <c>isOff</c>: no
+    /// abort fires at all. Paired with <see cref="EvaluateAsync_FaultBudgetAbortUnderExhaustive_SkipsAnOperandShortCircuitWouldHaveReached_Test"/>,
+    /// this documents that the two modes evaluate different operands under a budget, per ADR-0002's "Exhaustive
+    /// never changes Result" invariant, scoped to "no <c>FaultBudget</c> abort fires".
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortUnderShortCircuit_NeverFiresBecauseTheFaultingOperandIsSkipped_Test()
+    {
+        CompiledRule<RuleTestContext> rule = CompileFaultBudgetDisagreementRule();
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(FaultBudget: 1, Mode: EvaluationMode.ShortCircuit),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.False, decision.Result);
+        Assert.Empty(decision.Faults);
+    }
+
+    /// <summary>
+    /// With the same rule and <c>FaultBudget</c> of 1, <c>Exhaustive</c> mode's inner <c>OR</c> does not stop at
+    /// <c>isOn</c>, so the faulting <c>boom</c> also runs, reaching the budget and aborting the evaluation; the
+    /// abort then skips <c>isOff</c>, which folds into the outer <c>AND</c> as <c>Unknown</c>. The result disagrees
+    /// with <see cref="EvaluateAsync_FaultBudgetAbortUnderShortCircuit_NeverFiresBecauseTheFaultingOperandIsSkipped_Test"/>
+    /// because the two modes evaluated different operands, not because either mode is wrong.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortUnderExhaustive_SkipsAnOperandShortCircuitWouldHaveReached_Test()
+    {
+        CompiledRule<RuleTestContext> rule = CompileFaultBudgetDisagreementRule();
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(FaultBudget: 1, Mode: EvaluationMode.Exhaustive),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.Single(decision.Faults);
+    }
+
     /// <summary>Genuine cancellation propagates rather than being recorded as a fault.</summary>
     [Fact]
     public async Task Cancellation_Genuine_PropagatesRatherThanRecordedAsFault_Test()
@@ -417,6 +463,20 @@ public sealed class EvaluationOptionsTests
             options: new EvaluationOptions(FaultBudget: 1, IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
         );
+    }
+
+    // Shared by the two FaultBudget-disagreement tests: "boom" throws, "isOn" is True, "isOff" is False.
+    private static CompiledRule<RuleTestContext> CompileFaultBudgetDisagreementRule()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddThrowing("boom")
+                .AddConstant("isOn", true)
+                .AddConstant("isOff", false)
+                .Build()
+        );
+        return compiler.Compile("(isOn OR boom) AND isOff").GetRuleOrThrow();
     }
 
     private static Task<Decision> EvaluateWithTraceAsync(EvaluationOptions options)

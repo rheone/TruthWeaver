@@ -1,6 +1,6 @@
 # 09 - With FaultBudget set, Exhaustive mode changes Decision.Result, against the ADR-0002 invariant
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F4 Evaluation
