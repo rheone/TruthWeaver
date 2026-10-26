@@ -237,7 +237,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
     /// <summary>
     /// Declares <paramref name="variable"/> as a data source name for the body's own compile pass (ADR-0010
-    /// decision 3), copying every name already declared on <paramref name="options"/> (keeping each one's
+    /// decision 3), copying every other name already declared on <paramref name="options"/> (keeping each one's
     /// validator, if any) so the body still sees every outer-declared source besides its own element binding.
     /// </summary>
     private static CompilerOptions DeclareElementSource(CompilerOptions options, string variable)
@@ -247,6 +247,14 @@ internal sealed class CollectionBinding<TContext, TItem>(
         {
             foreach (string outerName in outer)
             {
+                // The element variable always wins over an outer source of the same name at evaluation
+                // (WithElementSource below), so its outer validator is skipped here rather than copied: copying it
+                // would check from(variable, ...) against a dialect the body can never actually reach (ticket 33).
+                if (string.Equals(outerName, variable, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 if (outer[outerName] is { } validator)
                 {
                     declared.Add(outerName, validator);
@@ -258,10 +266,10 @@ internal sealed class CollectionBinding<TContext, TItem>(
             }
         }
 
-        // A bare declaration never overwrites a validator the name already carries (DataSourceDeclarations.Add's
-        // own contract), so a variable name that happens to shadow an outer declared source keeps that source's
-        // validator; only an undeclared variable name gains one here, with no validator (the query is the body's
-        // own JSONPath/etc. into the element, whose dialect this binding does not know).
+        // The element's own dialect is unknown at compile time, so the variable is declared with no validator here.
+        // Skipping the outer entry above (when it shares the variable's name) guarantees this bare declaration is
+        // the first one for the name, since DataSourceDeclarations.Add's own contract never overwrites a validator
+        // a name already carries.
         declared.Add(variable);
         return options with { DataSources = declared };
     }
