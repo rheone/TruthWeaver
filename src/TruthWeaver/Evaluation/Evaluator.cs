@@ -3,7 +3,6 @@ namespace TruthWeaver.Evaluation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TruthWeaver.Ast;
-using TruthWeaver.Logging;
 using TruthWeaver.Metrics;
 using TruthWeaver.Registry;
 using Activity = System.Diagnostics.Activity;
@@ -741,15 +740,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
-        this.state.Faults.Add(new Fault(identity, ex, this.scope));
-        EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
-        TruthWeaverMetrics.FaultRecorded();
-
-        // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.
-        if (this.options.FaultBudget is { } budget && this.state.Faults.Count >= budget)
-        {
-            this.state.Aborted = true;
-        }
+        FaultRecorder.Record(this.state, this.logger, this.options, this.scope, identity, ex);
     }
 
     /// <summary>

@@ -10,7 +10,7 @@ One `Meter` named `TruthWeaver` has three counters.
 | Instrument | Unit | Counts | Tags |
 | --- | --- | --- | --- |
 | `truthweaver.evaluations` | `{evaluation}` | Completed `CompiledRule.EvaluateAsync` calls. | none |
-| `truthweaver.faults` | `{fault}` | Predicate and variable faults that the evaluator records. | none |
+| `truthweaver.faults` | `{fault}` | Predicate, variable and collection faults that the evaluator records (a throwing selector, or an exceeded element-evaluation limit). | none |
 | `truthweaver.compile_diagnostics` | `{diagnostic}` | Diagnostics that the compiler raises. | `severity` |
 
 Subscribe with `AddMeter("TruthWeaver")` in OpenTelemetry, or with a `MeterListener`.

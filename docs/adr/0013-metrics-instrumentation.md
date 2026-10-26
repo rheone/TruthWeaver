@@ -30,7 +30,7 @@ to the abstraction the platform provides and nothing beyond it.
 | Instrument | Unit | Incremented | Tags |
 | --- | --- | --- | --- |
 | `truthweaver.evaluations` | `{evaluation}` | When one rule evaluation completes, once per `CompiledRule.EvaluateAsync` call. | none |
-| `truthweaver.faults` | `{fault}` | When a predicate or a variable resolution fault is recorded for a term. | none |
+| `truthweaver.faults` | `{fault}` | When a predicate or a variable resolution fault is recorded for a term, or a collection fault (a throwing selector, or an exceeded element-evaluation limit) is recorded for a quantifier. | none |
 | `truthweaver.compile_diagnostics` | `{diagnostic}` | When the compiler raises one diagnostic. | `severity` (`Info`, `Warning`, `Error`) |
 
 The counters sit at the same points where structured logging already reports an event (the evaluation end, a recorded
@@ -67,11 +67,12 @@ sensitivity point above.
 - The `truthweaver.evaluations` counter counts calls of `EvaluateAsync`. A batch call counts one evaluation for each
   context ([ADR-0012](0012-batch-evaluation.md)). An evaluation that is cancelled or that exceeds its timeout throws
   before the count and is not counted.
-- The fault counter counts the faults that the evaluator records for a predicate or a variable. The fault that a
-  collection selector raises, and the fault for the element-evaluation limit
-  ([ADR-0010](0010-forall-exists-quantifiers.md)), are added to the decision directly and are not yet counted, so the
-  sum of the counter can be lower than the sum of `Decision.Faults`. This is a gap in the shipped code, not a decision.
-  It needs a fix or a statement; this ADR records it so that a dashboard author is not surprised.
+- The fault counter counts the faults that the evaluator records for a predicate, a variable, or a collection (the
+  fault a selector raises, and the fault for the element-evaluation limit,
+  [ADR-0010](0010-forall-exists-quantifiers.md)). Update (2026-10-26, ultra-review ticket 51): a collection fault
+  used to add straight to `Decision.Faults` without going through the counter or the log, so the counter's sum could
+  be lower than the sum of `Decision.Faults`. It now goes through the same fault-recording path a predicate fault
+  already used, so the counter's sum always matches.
 - The XML documentation of `TruthWeaverMetrics` names `TruthWeaverMetrics.MeterName` in an `AddMeter` example. The
   type is internal, so the example does not compile for a host. The documentation should show the string.
 

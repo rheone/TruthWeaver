@@ -2,6 +2,7 @@ namespace TruthWeaver.Tests;
 
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
@@ -32,6 +33,82 @@ public sealed class LoggingTests
         Assert.Equal("flaky", call.Field("Term"));
         Assert.NotNull(call.Exception);
         Assert.IsType<InvalidOperationException>(call.Exception);
+    }
+
+    /// <summary>
+    /// A throwing collection selector logs a structured warning for the collection, the same as a faulting
+    /// predicate (ultra-review ticket 51): a collection-level fault shares the evaluator's central
+    /// fault-recording path rather than bypassing it.
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_ThrowingCollectionSelector_LogsStructuredWarning_Test()
+    {
+        ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddCollection<TruthValue>(
+                    "items",
+                    _ => throw new InvalidOperationException("selector fault"),
+                    elements =>
+                        elements.Add(
+                            PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                            (e, _, _) => ValueTask.FromResult(e.Item)
+                        )
+                )
+                .Build(),
+            logger: logger
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("FORALL(x IN items, elementTrue)").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        LoggerTestExtensions.LoggedCall call = Assert.Single(logger.GetLoggedCalls(), c => c.Level == LogLevel.Warning);
+        Assert.Equal("items", call.Field("Term"));
+        Assert.NotNull(call.Exception);
+        Assert.IsType<InvalidOperationException>(call.Exception);
+    }
+
+    /// <summary>
+    /// Exceeding <see cref="EvaluationOptions.MaxElementEvaluations"/> logs a structured warning for the collection,
+    /// the same as a faulting predicate (ultra-review ticket 51).
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_MaxElementEvaluationsExceeded_LogsStructuredWarning_Test()
+    {
+        ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddCollection<TruthValue>(
+                    "items",
+                    _ => Enumerable.Repeat(TruthValue.True, 10),
+                    elements =>
+                        elements.Add(
+                            PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                            (e, _, _) => ValueTask.FromResult(e.Item)
+                        )
+                )
+                .Build(),
+            logger: logger
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("FORALL(x IN items, elementTrue)").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(MaxElementEvaluations: 3),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        LoggerTestExtensions.LoggedCall call = Assert.Single(logger.GetLoggedCalls(), c => c.Level == LogLevel.Warning);
+        Assert.Equal("items", call.Field("Term"));
+        Assert.NotNull(call.Exception);
+        Assert.IsType<ElementEvaluationLimitExceededException>(call.Exception);
     }
 
     /// <summary>Compiling a rule with a diagnostic logs one structured event per diagnostic.</summary>

@@ -109,11 +109,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
             // hit never re-raises the fault that produced it.
             if (firstMaterialization)
             {
-                state.Faults.Add(new Fault(new TermIdentity(name, []), materialization.Fault!, outerScope));
-                if (options.FaultBudget is { } budget && state.Faults.Count >= budget)
-                {
-                    state.Aborted = true;
-                }
+                FaultRecorder.Record(state, logger, options, outerScope, new TermIdentity(name, []), materialization.Fault!);
             }
 
             AddFlat(TruthValue.Unknown, false);
@@ -182,13 +178,15 @@ internal sealed class CollectionBinding<TContext, TItem>(
             if (state.ElementEvaluations >= options.MaxElementEvaluations)
             {
                 // ADR-0010 decision 6: over the bound, the current quantifier is Unknown with one fault and the
-                // whole evaluation aborts, the same way the fault budget aborts.
-                state.Faults.Add(
-                    new Fault(
-                        new TermIdentity(name, []),
-                        new ElementEvaluationLimitExceededException(options.MaxElementEvaluations),
-                        outerScope
-                    )
+                // whole evaluation aborts, the same way the fault budget aborts - unconditionally here, so it
+                // still aborts even when the fault budget itself has not been reached.
+                FaultRecorder.Record(
+                    state,
+                    logger,
+                    options,
+                    outerScope,
+                    new TermIdentity(name, []),
+                    new ElementEvaluationLimitExceededException(options.MaxElementEvaluations)
                 );
                 state.Aborted = true;
                 elementLimitExceeded = true;

@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tests;
 
 using System.Diagnostics.Metrics;
+using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
@@ -48,6 +49,73 @@ public sealed class MetricsTests
         await rule.EvaluateAsync(
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(1L, collector.Measurements);
+    }
+
+    /// <summary>
+    /// A throwing collection selector increments the faults counter, the same as a faulting predicate (ultra-review
+    /// ticket 51).
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_ThrowingCollectionSelector_IncrementsFaultsCounter_Test()
+    {
+        using MeasurementCollector collector = new("truthweaver.faults");
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddCollection<TruthValue>(
+                    "items",
+                    _ => throw new InvalidOperationException("selector fault"),
+                    elements =>
+                        elements.Add(
+                            PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                            (e, _, _) => ValueTask.FromResult(e.Item)
+                        )
+                )
+                .Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("FORALL(x IN items, elementTrue)").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(1L, collector.Measurements);
+    }
+
+    /// <summary>
+    /// Exceeding <see cref="EvaluationOptions.MaxElementEvaluations"/> increments the faults counter, the same as a
+    /// faulting predicate (ultra-review ticket 51).
+    /// </summary>
+    [Fact]
+    public async Task Evaluate_MaxElementEvaluationsExceeded_IncrementsFaultsCounter_Test()
+    {
+        using MeasurementCollector collector = new("truthweaver.faults");
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddCollection<TruthValue>(
+                    "items",
+                    _ => Enumerable.Repeat(TruthValue.True, 10),
+                    elements =>
+                        elements.Add(
+                            PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                            (e, _, _) => ValueTask.FromResult(e.Item)
+                        )
+                )
+                .Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("FORALL(x IN items, elementTrue)").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(MaxElementEvaluations: 3),
             cancellationToken: TestContext.Current.CancellationToken
         );
 
