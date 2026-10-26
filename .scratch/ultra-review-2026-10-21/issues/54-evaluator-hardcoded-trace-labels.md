@@ -1,6 +1,6 @@
 # 54 - Evaluator hard-codes operator trace labels instead of reading OperatorDefinitions
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation

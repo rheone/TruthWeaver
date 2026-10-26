@@ -29,8 +29,18 @@ internal static class TraceText
             return $"{label}({q.Variable} IN {q.CollectionName})";
         }
 
-        NodeShape shape = ExpressionShape.Of(node);
+        return LabelOf(ExpressionShape.Of(node));
+    }
 
+    /// <summary>
+    /// Gets the display label an operator node of <paramref name="shape"/> shows. The evaluator calls this for an
+    /// evaluated node and this type's own <see cref="Of"/> calls it for a skipped node, so the two paths read the
+    /// same table and a label change in it reaches both identically.
+    /// </summary>
+    /// <param name="shape">The node's structural shape.</param>
+    /// <returns>The operator's display label, with its threshold and bound filled in.</returns>
+    public static string LabelOf(NodeShape shape)
+    {
         // Labels come from the operator table; the completeness test guarantees every operator has one, so the
         // op-name fallback is only reachable for a node that skipped the table.
         return OperatorDefinitions.TryGet(shape.OpName, out OperatorDefinition? definition)
