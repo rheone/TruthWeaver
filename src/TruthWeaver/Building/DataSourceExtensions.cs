@@ -70,7 +70,7 @@ public static class DataSourceExtensions
         if (result.ErrorKind is { } errorKind)
         {
             return DataReadResult<T>.Failure(
-                VariableFailureKind.SourceError,
+                VariableConversion.ClassifyQueryError(errorKind),
                 $"The data source could not answer the query ({errorKind}): {result.ErrorMessage}"
             );
         }

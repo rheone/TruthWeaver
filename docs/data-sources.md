@@ -353,9 +353,14 @@ public interface IDataSource
 ```
 
 - Convert each matched node to a `LiteralValue`. A node with no literal equivalent, such as an object, is
-  reported as an unsupported type in the result.
+  reported as an unsupported type in the result; both the eager `TryGetAsync<T>`/`GetAsync<T>` read and a
+  variable classify it as `TypeMismatch`.
 - Report a malformed query or a failing backend as an error inside `DataQueryResult`. The engine also catches
   a thrown exception, but an error you return carries a better message.
+- `QueryAsync` can also answer a scalar query with `NoMatch` or `AmbiguousMatch` (the kinds `ScopeAsync` reports
+  for the same situation); both the eager read and a variable classify them as `Missing`/`Ambiguous` rather than
+  a generic source error, so a backend that can tell "no row" or "more than one row" apart from an outage
+  should report it that way.
 - Report a scope query that is malformed, matches no node or matches several as a failed `DataScopeResult`
   (`DataScopeResult.Failure`). Do not throw for these.
 - Honour the cancellation token. If the source gives up on its own (it throws a timeout or its own cancellation) the term

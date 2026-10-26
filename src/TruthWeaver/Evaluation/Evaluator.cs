@@ -885,12 +885,8 @@ internal sealed class Evaluator<TContext>(
 
         if (result.ErrorKind is { } errorKind)
         {
-            // A node with no literal equivalent (an object) can never fit the argument, so it is a type mismatch;
-            // a malformed query or failing backend is a source error.
-            VariableFailureKind kind =
-                errorKind == DataQueryErrorKind.UnsupportedType
-                    ? VariableFailureKind.TypeMismatch
-                    : VariableFailureKind.SourceError;
+            // Classified the same way as the eager DataSourceExtensions.TryGetAsync read of the same data (ticket 31).
+            VariableFailureKind kind = VariableConversion.ClassifyQueryError(errorKind);
             return SourceAnswer.Failed(
                 new VariableResolutionException(reference, kind, $"{reference}: {errorKind}: {result.ErrorMessage}")
             );

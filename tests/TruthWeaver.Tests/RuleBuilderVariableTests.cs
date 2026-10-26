@@ -302,6 +302,30 @@ public sealed class RuleBuilderVariableTests
         );
     }
 
+    /// <summary>
+    /// A source reporting an error as data classifies the same way <see cref="Evaluation.Evaluator{TContext}"/> does for a
+    /// deferred variable (ticket 31): a node with no literal equivalent is a type mismatch, a scalar query that matched
+    /// nothing or several nodes is missing/ambiguous, and anything else is a source error.
+    /// </summary>
+    [Theory]
+    [InlineData(DataQueryErrorKind.UnsupportedType, VariableFailureKind.TypeMismatch)]
+    [InlineData(DataQueryErrorKind.NoMatch, VariableFailureKind.Missing)]
+    [InlineData(DataQueryErrorKind.AmbiguousMatch, VariableFailureKind.Ambiguous)]
+    [InlineData(DataQueryErrorKind.MalformedQuery, VariableFailureKind.SourceError)]
+    [InlineData(DataQueryErrorKind.SourceFailure, VariableFailureKind.SourceError)]
+    public async Task TryGetAsync_SourceReportsAnErrorKind_ClassifiesLikeTheEvaluatorDoes_Test(
+        DataQueryErrorKind errorKind,
+        VariableFailureKind expected
+    )
+    {
+        StubSource source = new(DataQueryResult.Failure(errorKind, "an object"));
+
+        DataReadResult<long> result = await source.TryGetAsync<long>("$.x", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(expected, result.FailureKind);
+    }
+
     /// <summary>An unsupported type is a programmer error, so the result form throws like <c>GetAsync</c>.</summary>
     [Fact]
     public Task TryGetAsync_UnsupportedType_ThrowsNotSupported_Test()
