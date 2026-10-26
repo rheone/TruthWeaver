@@ -65,12 +65,28 @@ public sealed class PredicateRegistrationGenerator : IIncrementalGenerator
     /// <summary>
     /// Keeps the first method for each predicate name and reports TWG002 for each later one. The names are compared
     /// the way <c>PredicateRegistryBuilder</c> compares them, so a duplicate fails the build instead of the registration.
+    /// Also reports TWG008 for a name that is not a valid DSL identifier and TWG007 for one that is reserved,
+    /// matching the checks <c>PredicateRegistryBuilder.AddDescriptor</c> applies at registration (ticket 32), so
+    /// such a name fails the build instead of compiling and breaking later at print/re-parse time.
     /// </summary>
     private static IEnumerable<PredicateMethod> Distinct(SourceProductionContext output, IEnumerable<PredicateMethod> methods)
     {
         Dictionary<string, PredicateMethod> byName = [with(StringComparer.Ordinal)];
         foreach (PredicateMethod method in methods)
         {
+            if (!IdentifierSyntax.IsValidIdentifier(method.PredicateName))
+            {
+                output.ReportDiagnostic(
+                    Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidPredicateName,
+                        method.Location?.ToLocation(),
+                        method.MethodName,
+                        method.PredicateName
+                    )
+                );
+                continue;
+            }
+
             if (ReservedWords.Contains(method.PredicateName))
             {
                 output.ReportDiagnostic(

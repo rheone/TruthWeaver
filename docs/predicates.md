@@ -182,7 +182,7 @@ Each `TypePredicates` test has two overloads under one name. The `string?` overl
 
 ## Collections for quantifiers
 
-`PredicateRegistryBuilder<TContext>.AddCollection<TItem>` registers a named collection that `FORALL` and `EXISTS` can range over. It takes the collection name, a selector from `TContext` to `IEnumerable<TItem>?`, and a delegate that registers the element predicates on a nested builder of type `PredicateRegistryBuilder<Element<TContext, TItem>>`. An element predicate reads `Element<TOuter, TItem>`: `Outer` is the outer context, `Item` is the element and `Index` is its position. A nested collection registers on the element builder. A collection name is unique ignoring case, and it is a namespace of its own, separate from predicate names.
+`PredicateRegistryBuilder<TContext>.AddCollection<TItem>` registers a named collection that `FORALL` and `EXISTS` can range over. It takes the collection name, a selector from `TContext` to `IEnumerable<TItem>?`, and a delegate that registers the element predicates on a nested builder of type `PredicateRegistryBuilder<Element<TContext, TItem>>`. An element predicate reads `Element<TOuter, TItem>`: `Outer` is the outer context, `Item` is the element and `Index` is its position. A nested collection registers on the element builder. A collection name is unique ignoring case, and it is a namespace of its own, separate from predicate names. It must also be a valid DSL identifier and not a reserved word, the same rule a predicate name follows (see [Grammar](rule-text.md#grammar)); registering a collection with a name that breaks either rule throws an `ArgumentException`.
 
 ```csharp
 builder.AddCollection<OrderLine>(

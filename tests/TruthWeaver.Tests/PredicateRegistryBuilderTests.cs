@@ -4,7 +4,11 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Registry;
 using TruthWeaver.Tests.TestSupport;
 
-/// <summary>Ticket 09: duplicate predicate name registration is rejected, case-insensitively, for both registration overloads.</summary>
+/// <summary>
+/// Ticket 09: duplicate predicate name registration is rejected, case-insensitively, for both registration
+/// overloads. Ticket 32: a predicate or collection name that is not a valid DSL identifier, or is a reserved
+/// word, is rejected at registration too.
+/// </summary>
 public sealed class PredicateRegistryBuilderTests
 {
     /// <summary>Registering two class based predicates under the same name throws.</summary>
@@ -67,5 +71,87 @@ public sealed class PredicateRegistryBuilderTests
 
         Assert.Contains($"'{name}'", exception.Message, StringComparison.Ordinal);
         Assert.Contains("reserved", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A predicate named with something the DSL's identifier grammar forbids (a hyphen, a dot, a space, or an empty
+    /// or digit-led name) is rejected at registration. Without this check, the name would compile from JSON/YAML,
+    /// but <c>CompiledRule.PrintRuleText()</c> would emit it verbatim and re-parsing would split it into unrelated
+    /// tokens (e.g. "has-role" re-reads as "has - role"), breaking RuleFormat's round-trip guarantee.
+    /// </summary>
+    [Theory]
+    [InlineData("has-role")]
+    [InlineData("has.role")]
+    [InlineData("has role")]
+    [InlineData("")]
+    [InlineData("1role")]
+    public void Registering_a_predicate_with_a_non_identifier_name_throws_Test(string name)
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => builder.AddConstant(name, value: true));
+
+        Assert.Contains("identifier", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>A name that does match the DSL's identifier grammar is registered without error.</summary>
+    [Fact]
+    public void Registering_a_predicate_with_a_valid_identifier_name_succeeds_Test()
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>
+            .CreateBuilder()
+            .AddConstant("has_Role2", value: true);
+
+        Assert.NotNull(builder.Build());
+    }
+
+    /// <summary>
+    /// A collection named with something the DSL's identifier grammar forbids is rejected at registration, the same
+    /// way a predicate name is: <c>AddCollection</c> previously had no name check at all.
+    /// </summary>
+    [Theory]
+    [InlineData("has-items")]
+    [InlineData("")]
+    public void Registering_a_collection_with_a_non_identifier_name_throws_Test(string name)
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>.CreateBuilder();
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            builder.AddCollection<TruthValue>(name, ctx => ctx.Items, _ => { })
+        );
+
+        Assert.Contains("identifier", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>A collection named like a DSL keyword is rejected at registration, the same way a predicate name is.</summary>
+    [Theory]
+    [InlineData("and")]
+    [InlineData("FORALL")]
+    public void Registering_a_collection_named_like_a_keyword_throws_naming_the_word_Test(string name)
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>.CreateBuilder();
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            builder.AddCollection<TruthValue>(name, ctx => ctx.Items, _ => { })
+        );
+
+        Assert.Contains($"'{name}'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("reserved", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A collection named with a valid, non-reserved identifier is registered without error.</summary>
+    [Fact]
+    public void Registering_a_collection_with_a_valid_identifier_name_succeeds_Test()
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>
+            .CreateBuilder()
+            .AddCollection<TruthValue>("items", ctx => ctx.Items, _ => { });
+
+        Assert.NotNull(builder.Build());
+    }
+
+    private sealed class CollectionContext
+    {
+        public List<TruthValue> Items { get; init; } = [];
     }
 }

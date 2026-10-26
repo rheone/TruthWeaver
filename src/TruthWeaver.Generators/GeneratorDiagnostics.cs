@@ -80,4 +80,14 @@ internal static class GeneratorDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>TWG008: a predicate name that is not a valid DSL identifier.</summary>
+    public static readonly DiagnosticDescriptor InvalidPredicateName = new(
+        "TWG008",
+        "Invalid predicate name",
+        "Predicate method '{0}' uses the name '{1}', which is not a valid DSL identifier: an identifier starts with a letter or '_' and continues with letters, digits or '_' only. Choose a name that fits this grammar.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

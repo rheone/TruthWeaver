@@ -140,6 +140,7 @@ Each diagnostic is a build error. The generator registers no method that has an 
 | `TWG005` | A declaring type, or a type around it, that is not `partial` or is generic. |
 | `TWG006` | A default value with no literal form, for example `null` or `default` of a `Guid`. |
 | `TWG007` | A predicate name that the rule text reads as a keyword, such as `any` or `Between`, in any case. See [Grammar](rule-text.md#grammar). |
+| `TWG008` | A predicate name that is not a valid DSL identifier, such as `has-role`: an identifier starts with a letter or `_` and continues with letters, digits or `_` only. See [Grammar](rule-text.md#grammar). |
 
 ## Limits
 
