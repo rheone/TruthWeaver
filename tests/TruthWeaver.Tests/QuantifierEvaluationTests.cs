@@ -199,6 +199,70 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// The elements a fault-budget abort skips count as <c>Unknown</c>: the inspection makes the first element's body
+    /// definite (<c>False</c> for <c>EXISTS</c>, <c>True</c> for <c>FORALL</c>), but the skipped second element could
+    /// still decide the quantifier, so it is <c>Unknown</c>.
+    /// </summary>
+    /// <param name="text">The quantifier rule.</param>
+    [Theory]
+    [InlineData("EXISTS(x IN items, IsTrue(throwsAlways))")]
+    [InlineData("FORALL(x IN items, IsUnknown(throwsAlways))")]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsTheRemainingElements_FoldsThemAsUnknown_Test(string text)
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile(text).GetRuleOrThrow();
+
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.True] },
+            options: new EvaluationOptions(FaultBudget: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.Single(decision.Faults);
+        Assert.True(decision.TraceTree!.Children[1].NotEvaluated);
+    }
+
+    /// <summary>
+    /// A quantifier written with different casing than its collection's registration (the collection is registered
+    /// as "items") gets a trace label matching its canonical text (ultra-review ticket 12): the compiled expression
+    /// carries the collection's registered name downstream, the same way a term's label is always its predicate's
+    /// registered name rather than however the rule author wrote it.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_CollectionWrittenWithDifferentCasingThanRegistered_TraceLabelMatchesCanonicalText_Test()
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile("FORALL(x IN Items, elementTrue)").GetRuleOrThrow();
+
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal("FORALL(x IN items)", decision.TraceTree!.Text);
+        Assert.Equal("FORALL(x IN items, elementTrue)", rule.CanonicalText);
+    }
+
+    /// <summary>
+    /// A <see cref="RuleCoverage"/> built from a decision of a rule whose quantifier was written with different
+    /// casing than its collection's registration no longer throws a trace/rule mismatch (ultra-review ticket 12).
+    /// </summary>
+    [Fact]
+    public async Task ForAll_CollectionWrittenWithDifferentCasingThanRegistered_RuleCoverageDoesNotThrow_Test()
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile("FORALL(x IN Items, elementTrue)").GetRuleOrThrow();
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        RuleCoverage coverage = RuleCoverage.FromDecisions(rule, [decision]);
+
+        Assert.Equal(rule.CanonicalText, coverage.Rule);
+    }
+
+    /// <summary>
     /// Over <see cref="EvaluationOptions.MaxElementEvaluations"/>, the quantifier is <c>Unknown</c> with exactly one
     /// extra fault for the collection and the evaluation aborts - not an exception (ADR-0010 decision 6).
     /// </summary>
@@ -255,6 +319,30 @@ public sealed class QuantifierEvaluationTests
         );
 
         Assert.Contains(decision.Trace!.Entries, entry => entry.Text.StartsWith("x[0]: elementTrue", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// An operator inside a quantifier body adds its own flat trace entry, prefixed with the element scope path like
+    /// the body's term entries, between the body's term entry and the quantifier's own entry.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_TraceWithOperatorInBody_FlatLogRecordsTheScopedOperator_Test()
+    {
+        CompilationResult<QuantifierContext> result = RuleBuilder
+            .ForAll("x", "items", RuleBuilder.Not(RuleBuilder.Predicate("elementTrue")))
+            .Compile(CreateCompiler());
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, decision.Trace!.Entries.Count);
+        Assert.StartsWith("x[0]: elementTrue", decision.Trace.Entries[0].Text, StringComparison.Ordinal);
+        Assert.Equal(new TraceEntry("x[0]: NOT", TruthValue.False, false), decision.Trace.Entries[1]);
+        Assert.Equal(new TraceEntry("FORALL(x IN items)", TruthValue.False, false), decision.Trace.Entries[2]);
     }
 
     /// <summary>

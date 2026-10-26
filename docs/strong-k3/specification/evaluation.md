@@ -20,13 +20,13 @@ A predicate answers `True`, `False` or `Unknown`. An answer of `Unknown` is a no
 
 A predicate that cannot answer is a fault. A thrown exception, or a predicate's own timeout or cancellation, gives the term the value `Unknown` and records a fault on the `Decision`. Cancellation of the evaluation itself is not a fault: it throws `OperationCanceledException`. The rest of the expression sees `Unknown`. A fault never changes the rules of an Operation. `False` still settles `AND`, and `True` still settles `OR`, whether or not another operand faulted.
 
-The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. When it expires, the evaluation throws `OperationCanceledException` and does not record a fault. `FaultBudget` stops the evaluation as soon as that many faults are recorded, so a budget of 1 stops at the first fault. `null` means no limit, and a budget below 1 throws `ArgumentOutOfRangeException`. `IncludeTrace` fills `Decision.Trace`, the flat log of the trace. It is `false` by default, and `Decision.Trace` is then `null`. `Decision.TraceTree` is always filled.
+The caller can pass evaluation options. `Mode` selects the evaluation mode below. `Timeout` is an overall time bound for the evaluation. When it expires, the evaluation throws `OperationCanceledException` and does not record a fault. `FaultBudget` stops the evaluation as soon as that many faults are recorded, so a budget of 1 stops at the first fault. Each term, operand or quantifier element not yet run when the evaluation stops counts as `Unknown` in the result. `null` means no limit, and a budget below 1 throws `ArgumentOutOfRangeException`. `IncludeTrace` fills `Decision.Trace`, the flat log of the trace. The log has one entry for each constant, term, operator and quantifier that the evaluation visited or skipped, and for each repeat lookup of a term answered from memoization. The entry of an operator or a quantifier comes after the entries of its operands, because its result is known only after them. `IncludeTrace` is `false` by default, and `Decision.Trace` is then `null`. `Decision.TraceTree` is always filled.
 
 ## Evaluation modes
 
 `EvaluationMode.ShortCircuit` is the default. Operands run from left to right, and an Operation stops when its result is settled. A skipped operand is recorded as `NotEvaluated`, and its predicates do not run.
 
-`EvaluationMode.Exhaustive` runs every reachable term and collects every fault. It changes which terms run and which faults the `Decision` holds. It never changes `Result`.
+`EvaluationMode.Exhaustive` runs every reachable term and collects every fault. It changes which terms run and which faults the `Decision` holds. It never changes `Result`, provided no `FaultBudget` abort fires. When a `FaultBudget` abort does fire, `Exhaustive` and `ShortCircuit` can disagree on `Result`. `Exhaustive` reaches and faults on terms that `ShortCircuit` would have skipped, so the abort stops each mode after a different set of operands.
 
 | Operation | In `ShortCircuit` mode |
 | --- | --- |

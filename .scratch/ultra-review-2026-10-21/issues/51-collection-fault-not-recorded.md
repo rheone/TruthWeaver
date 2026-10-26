@@ -1,6 +1,6 @@
 # 51 - Collection-level faults skip RecordFault: no log, no fault metric
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation

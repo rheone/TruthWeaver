@@ -1,6 +1,6 @@
 # 01 - A fault-budget abort drops skipped AND/OR/COALESCE/quantifier operands, so an aborted evaluation can return a definite result
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: high
 Lens: F4 Evaluation; F9 Policies
@@ -78,10 +78,10 @@ Severity: high. Fail-open is only possible with FaultBudget set and a faulting t
 - `Decision.Result`/`Decision.IsSatisfied` for a chain containing a faulting term wrapped in an inspection (IsTrue/IsFalse/IsKnown/IsUnknown), under a `FaultBudget` that aborts mid-chain.
 
 **Acceptance criteria:**
-- [ ] `IsUnknown(boom) AND isOff` with `FaultBudget = 1` and `boom` throwing: the result is Unknown, not True, and `IsSatisfied` is correspondingly not satisfied.
-- [ ] The equivalent OR and COALESCE cases, and a quantifier whose remaining elements are skipped by the same abort, fold the skipped operands as Unknown.
-- [ ] A policy-set scenario (DenyOverrides, a faulting term wrapped in an inspection) that previously resolved to a definite Permit now resolves to Indeterminate/Unknown as appropriate.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `IsUnknown(boom) AND isOff` with `FaultBudget = 1` and `boom` throwing: the result is Unknown, not True, and `IsSatisfied` is correspondingly not satisfied.
+- [x] The equivalent OR and COALESCE cases, and a quantifier whose remaining elements are skipped by the same abort, fold the skipped operands as Unknown.
+- [x] A policy-set scenario (DenyOverrides, a faulting term wrapped in an inspection) that previously resolved to a definite Permit now resolves to Indeterminate/Unknown as appropriate.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Changing `FaultBudget`'s semantics for non-chain (single-node) evaluation, which already folds skipped terms as Unknown correctly.

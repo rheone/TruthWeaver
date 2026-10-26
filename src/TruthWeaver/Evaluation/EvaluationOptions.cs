@@ -6,7 +6,8 @@ namespace TruthWeaver.Evaluation;
 /// </summary>
 /// <param name="FaultBudget">
 /// Evaluation aborts when the number of recorded faults reaches this value, so a budget of 1 aborts on the first fault.
-/// <see langword="null"/> (the default) means unlimited. A value below 1 makes
+/// Every term, operand or quantifier element not yet run when the evaluation aborts counts as
+/// <see cref="Abstractions.TruthValue.Unknown"/> in the result. <see langword="null"/> (the default) means unlimited. A value below 1 makes
 /// <c>CompiledRule.EvaluateAsync</c> throw <see cref="ArgumentOutOfRangeException"/>.
 /// </param>
 /// <param name="Mode">Whether short-circuiting applies (<see cref="EvaluationMode.ShortCircuit"/>) or every reachable term runs (<see cref="EvaluationMode.Exhaustive"/>).</param>

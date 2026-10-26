@@ -186,6 +186,7 @@ public sealed class DecisionRecordTests
                 "hasRole(role: <omitted>)",
                 "check(at: <omitted>, b: <omitted>, d: <omitted>, id: <omitted>, list: <omitted>, n: <omitted>, names: <omitted>)",
                 "takesInt64(v: from(\"user\", \"$.age\")) [from(\"user\", \"$.age\"): unsupplied source]",
+                "AND",
             ],
             record.Decision.Trace!.Entries.Select(entry => entry.Text)
         );

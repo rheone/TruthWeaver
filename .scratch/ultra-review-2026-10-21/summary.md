@@ -79,3 +79,4 @@ Triage note: ticket 11 describes a trade-off that ADR-0010 decision 8 documents 
 | [65](issues/65-nullbehaviorscope-dispose-order.md) | low | CONFIRMED (verified) | Disposing NullBehaviorScope instances out of order can restore a disposed scope | F7.7 |
 | [66](issues/66-simplify-docs-between-none.md) | low | CONFIRMED (verified) | BETWEEN and NONE pages say Simplify keeps the node; Simplify rewrites it when an operand is a constant | L2.5 |
 | [67](issues/67-explainer-faulted-vs-skipped-wording.md) | low | CONFIRMED (verified) | The explainer words for faulted (could not be evaluated) and skipped (not evaluated) are near-identical | L5.4 |
+| [68](issues/68-faulted-log-message-says-predicate-for-collection-faults.md) | low | CONFIRMED | EvaluationLog.PredicateFaulted's message text says "Predicate fault" for a collection-level fault, since ticket 51 routed collection faults onto the same shared path | (filed from the Bundle D retro) |

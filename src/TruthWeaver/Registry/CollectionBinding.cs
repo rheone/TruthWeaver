@@ -109,11 +109,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
             // hit never re-raises the fault that produced it.
             if (firstMaterialization)
             {
-                state.Faults.Add(new Fault(new TermIdentity(name, []), materialization.Fault!, outerScope));
-                if (options.FaultBudget is { } budget && state.Faults.Count >= budget)
-                {
-                    state.Aborted = true;
-                }
+                FaultRecorder.Record(state, logger, options, outerScope, new TermIdentity(name, []), materialization.Fault!);
             }
 
             AddFlat(TruthValue.Unknown, false);
@@ -145,8 +141,8 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
         // Set only when THIS quantifier's own loop hits MaxElementEvaluations (ADR-0010 decision 6): the elements
         // this quantifier never reached could still have decided it, so its result is forced Unknown regardless of
-        // what the elements reached so far folded to: unlike a fault-budget abort (which, "exactly as today",
-        // keeps whatever the fold reached before the remaining elements were skipped).
+        // what the elements reached so far folded to. A fault-budget abort instead folds each skipped element as
+        // Unknown, so an element already at the stop value keeps the quantifier definite.
         bool elementLimitExceeded = false;
         List<TraceNode> children = [];
         for (int i = 0; i < elements.Count; i++)
@@ -164,19 +160,33 @@ internal sealed class CollectionBinding<TContext, TItem>(
             {
                 TraceNode skippedBody = new(TraceText.Of(body), null, true, EquatableArray<TraceNode>.Empty);
                 children.Add(new TraceNode(elementLabel, null, true, new EquatableArray<TraceNode>([skippedBody])));
+
+                // An element skipped by an abort could still decide the quantifier, so it counts as Unknown, like an
+                // operand an AND/OR chain skips on abort. A short-circuit skip needs no fold: the accumulator already
+                // holds the stop value, which Unknown cannot change.
+                if (!stop)
+                {
+                    accumulator =
+                        kind == QuantifierKind.ForAll
+                            ? K3Logic.And(accumulator, TruthValue.Unknown)
+                            : K3Logic.Or(accumulator, TruthValue.Unknown);
+                }
+
                 continue;
             }
 
             if (state.ElementEvaluations >= options.MaxElementEvaluations)
             {
                 // ADR-0010 decision 6: over the bound, the current quantifier is Unknown with one fault and the
-                // whole evaluation aborts, the same way the fault budget aborts.
-                state.Faults.Add(
-                    new Fault(
-                        new TermIdentity(name, []),
-                        new ElementEvaluationLimitExceededException(options.MaxElementEvaluations),
-                        outerScope
-                    )
+                // whole evaluation aborts, the same way the fault budget aborts - unconditionally here, so it
+                // still aborts even when the fault budget itself has not been reached.
+                FaultRecorder.Record(
+                    state,
+                    logger,
+                    options,
+                    outerScope,
+                    new TermIdentity(name, []),
+                    new ElementEvaluationLimitExceededException(options.MaxElementEvaluations)
                 );
                 state.Aborted = true;
                 elementLimitExceeded = true;

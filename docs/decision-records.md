@@ -138,6 +138,11 @@ With `new EvaluationOptions(IncludeTrace: true)`, the default `DecisionJsonOptio
       "text": "hasRole(role: <omitted>)",
       "result": "True",
       "notEvaluated": false
+    },
+    {
+      "text": "OR",
+      "result": "True",
+      "notEvaluated": false
     }
   ],
   "traceTree": {

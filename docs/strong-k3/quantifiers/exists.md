@@ -44,7 +44,7 @@ For a collection of elements `e1, ..., en`, with `vi` the value of the body for 
 | YAML | `op: exists`, `var: line`, `in: lines` and an `operands:` list of exactly one item |
 | `RuleBuilder` | `RuleBuilder.Exists(string variable, string collection, RuleBuilder body)` |
 
-`EXISTS` is a call form with no precedence, like `PARITY` and `If`. `EXISTS` is a reserved word, so a predicate cannot be named `EXISTS`. `IN` is reserved only at the head of a quantifier, so a predicate named `In` is not affected. The tree printers write `EXISTS line IN lines`, or `∃ line ∈ lines` in the symbolic style. The symbols `∀` and `∃` are not accepted as input.
+`EXISTS` is a call form with no precedence, like `PARITY` and `If`. `EXISTS` is a reserved word, so a predicate cannot be named `EXISTS`. `IN` is reserved only at the head of a quantifier, so a predicate named `In` is not affected. The tree printers write `EXISTS line IN lines`, or `∃ line ∈ lines` in the symbolic style. The symbols `∀` and `∃` are not accepted as input. The collection name lookup is case-insensitive, and the compiled rule's canonical text and trace label always show the collection's registered casing, whatever casing the rule used.
 
 ## Aliases
 

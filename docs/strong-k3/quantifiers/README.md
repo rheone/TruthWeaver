@@ -48,7 +48,7 @@ Because a `null` collection is `Unknown`, `FORALL(x IN c, True)` is not the cons
 - Elements run in selector order. The selector runs at most once for each evaluation, and its result is kept as a list.
 - In `ShortCircuit` mode, `FORALL` stops at the first `False` element and `EXISTS` at the first `True` element. The elements that do not run are recorded as `NotEvaluated`. In `Exhaustive` mode every element runs. The mode never changes the result.
 - A term that is repeated inside one element is one call. The same term in two elements is two calls, because the element is different.
-- The fault budget is one budget for the whole evaluation. A fault inside a body carries the element it came from in `Fault.Scope`, for example `lines[2]`, or `lines[2]/details[0]` for a nested quantifier. `Scope` is `null` for a fault outside any quantifier.
+- The fault budget is one budget for the whole evaluation. When the budget stops the evaluation, each element not yet run is recorded as `NotEvaluated` and counts as `Unknown`. A fault inside a body carries the element it came from in `Fault.Scope`, for example `lines[2]`, or `lines[2]/details[0]` for a nested quantifier. `Scope` is `null` for a fault outside any quantifier.
 - A quantifier node in the trace has one child for each element, not one for each written operand. Each child is labelled `variable[index]` and holds the trace of the body for that element. An empty collection has no children.
 - Quantifiers can nest, up to `CompilerOptions.MaxQuantifierDepth` (default 2). A nested quantifier cannot reuse the variable name of an enclosing one. `MaxElementEvaluations` (default 10,000) counts every body run in all quantifiers, so nested quantifiers multiply.
 

@@ -3,7 +3,6 @@ namespace TruthWeaver.Evaluation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TruthWeaver.Ast;
-using TruthWeaver.Logging;
 using TruthWeaver.Metrics;
 using TruthWeaver.Registry;
 using Activity = System.Diagnostics.Activity;
@@ -163,19 +162,40 @@ internal sealed class Evaluator<TContext>(
                 return await this.EvalTermAsync(t).ConfigureAwait(false);
             case QuantifierExpression q:
                 return await this.EvalQuantifierAsync(q).ConfigureAwait(false);
+            default:
+                // An operator node's flat entry is recorded here, after its operands' entries, because its result
+                // is only known once they are evaluated (a quantifier's binding records its entry the same way).
+                // The entry reuses the trace tree node's label, so both views show the same text for the node.
+                EvalResult result = await this.EvalOperatorAsync(node).ConfigureAwait(false);
+                this.AddTraceEntry(result.Node.Text, result.Value, false);
+                return result;
+        }
+    }
+
+    /// <summary>
+    /// Evaluates an operator node (every node kind except a constant, a term and a quantifier). The caller records the
+    /// node's flat trace entry; this method builds only its value and trace tree node.
+    /// </summary>
+    private async ValueTask<EvalResult> EvalOperatorAsync(Expression node)
+    {
+        switch (node)
+        {
             case NotExpression:
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 EvalResult operand = await this.EvalAsync(shape.Operands[0]).ConfigureAwait(false);
                 TruthValue value = K3Logic.Not(operand.Value);
-                return new EvalResult(value, new TraceNode("NOT", value, false, new EquatableArray<TraceNode>([operand.Node])));
+                return new EvalResult(
+                    value,
+                    new TraceNode(TraceText.LabelOf(shape), value, false, new EquatableArray<TraceNode>([operand.Node]))
+                );
             }
 
             case AndExpression:
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 return await this.EvalChainAsync(
-                        "AND",
+                        TraceText.LabelOf(shape),
                         shape.Operands,
                         TruthValue.True,
                         K3Logic.And,
@@ -188,7 +208,7 @@ internal sealed class Evaluator<TContext>(
             {
                 NodeShape shape = ExpressionShape.Of(node);
                 return await this.EvalChainAsync(
-                        "OR",
+                        TraceText.LabelOf(shape),
                         shape.Operands,
                         TruthValue.False,
                         K3Logic.Or,
@@ -203,7 +223,7 @@ internal sealed class Evaluator<TContext>(
                 // exhaustive mode) they are skipped and marked as such, exactly like AND/OR short-circuit.
                 NodeShape shape = ExpressionShape.Of(node);
                 return await this.EvalChainAsync(
-                        "COALESCE",
+                        TraceText.LabelOf(shape),
                         shape.Operands,
                         TruthValue.Unknown,
                         (accumulated, next) => accumulated == TruthValue.Unknown ? next : accumulated,
@@ -214,11 +234,12 @@ internal sealed class Evaluator<TContext>(
 
             case InspectionExpression inspection:
             {
-                EvalResult operand = await this.EvalAsync(inspection.Operand).ConfigureAwait(false);
+                NodeShape shape = ExpressionShape.Of(node);
+                EvalResult operand = await this.EvalAsync(shape.Operands[0]).ConfigureAwait(false);
                 TruthValue value = K3Logic.Inspect(inspection.Kind, operand.Value);
                 return new EvalResult(
                     value,
-                    new TraceNode(inspection.Kind.ToString(), value, false, new EquatableArray<TraceNode>([operand.Node]))
+                    new TraceNode(TraceText.LabelOf(shape), value, false, new EquatableArray<TraceNode>([operand.Node]))
                 );
             }
 
@@ -232,7 +253,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Xor(results[0].Value, results[1].Value);
                 return new EvalResult(
                     value,
-                    new TraceNode("XOR", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -243,7 +269,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Equivalent(results[0].Value, results[1].Value);
                 return new EvalResult(
                     value,
-                    new TraceNode("EQUIVALENT", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -254,7 +285,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Implies(results[0].Value, results[1].Value);
                 return new EvalResult(
                     value,
-                    new TraceNode("IMPLIES", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -265,7 +301,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Nand(results[0].Value, results[1].Value);
                 return new EvalResult(
                     value,
-                    new TraceNode("NAND", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -276,7 +317,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Nor(results[0].Value, results[1].Value);
                 return new EvalResult(
                     value,
-                    new TraceNode("NOR", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -287,7 +333,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Parity([.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
-                    new TraceNode("PARITY", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -299,7 +350,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Threshold(ThresholdComparison.AtLeast, 1, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
-                    new TraceNode("ANY", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -315,7 +371,12 @@ internal sealed class Evaluator<TContext>(
                 );
                 return new EvalResult(
                     value,
-                    new TraceNode("ALL", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -327,7 +388,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Threshold(ThresholdComparison.AtMost, 0, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
-                    new TraceNode("NONE", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -340,7 +406,12 @@ internal sealed class Evaluator<TContext>(
                 TruthValue value = K3Logic.Threshold(ThresholdComparison.Exactly, 1, [.. results.Select(r => r.Value)]);
                 return new EvalResult(
                     value,
-                    new TraceNode("ExactlyOne", value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -354,10 +425,14 @@ internal sealed class Evaluator<TContext>(
                     K3Logic.Threshold(ThresholdComparison.AtLeast, bt.Min, operandValues),
                     K3Logic.Threshold(ThresholdComparison.AtMost, bt.Max, operandValues)
                 );
-                string description = TraceText.Of(node);
                 return new EvalResult(
                     value,
-                    new TraceNode(description, value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -368,10 +443,14 @@ internal sealed class Evaluator<TContext>(
                 NodeShape shape = ExpressionShape.Of(node);
                 IReadOnlyList<EvalResult> results = await this.EvalAllAsync(shape.Operands).ConfigureAwait(false);
                 TruthValue value = K3Logic.Threshold(th.Comparison, th.K, [.. results.Select(r => r.Value)]);
-                string description = $"{shape.OpName}({shape.K})";
                 return new EvalResult(
                     value,
-                    new TraceNode(description, value, false, new EquatableArray<TraceNode>(results.Select(r => r.Node)))
+                    new TraceNode(
+                        TraceText.LabelOf(shape),
+                        value,
+                        false,
+                        new EquatableArray<TraceNode>(results.Select(r => r.Node))
+                    )
                 );
             }
 
@@ -408,9 +487,10 @@ internal sealed class Evaluator<TContext>(
             // No branch can be chosen: the answer is only certain when both branches agree on a definite value.
             _ => whenTrue.Value == whenFalse.Value ? whenTrue.Value : TruthValue.Unknown,
         };
+        string label = TraceText.LabelOf(ExpressionShape.Of(node));
         return new EvalResult(
             value,
-            new TraceNode("If", value, false, new EquatableArray<TraceNode>([condition.Node, whenTrue.Node, whenFalse.Node]))
+            new TraceNode(label, value, false, new EquatableArray<TraceNode>([condition.Node, whenTrue.Node, whenFalse.Node]))
         );
     }
 
@@ -465,11 +545,13 @@ internal sealed class Evaluator<TContext>(
     }
 
     /// <summary>
-    /// Folds the operands of an <c>AND</c> or <c>OR</c> chain from left to right, starting from <paramref name="identity"/>
-    /// (<c>True</c> for <c>AND</c>, <c>False</c> for <c>OR</c>). Once an operand produces a value for which
-    /// <paramref name="stops"/> holds, the rest are skipped and recorded as <c>NotEvaluated</c>, unless
-    /// <see cref="EvaluationMode.Exhaustive"/> is on. The fold is the Strong Kleene minimum or maximum, so stopping never
-    /// changes the result.
+    /// Folds the operands of an <c>AND</c>, <c>OR</c> or <c>COALESCE</c> chain from left to right, starting from
+    /// <paramref name="identity"/> (<c>True</c> for <c>AND</c>, <c>False</c> for <c>OR</c>, <c>Unknown</c> for
+    /// <c>COALESCE</c>). Once an operand produces a value for which <paramref name="stops"/> holds, the rest are skipped
+    /// and recorded as <c>NotEvaluated</c>, unless <see cref="EvaluationMode.Exhaustive"/> is on. The stop value absorbs
+    /// every later operand, so a short-circuit stop never changes the result. An operand skipped because the fault
+    /// budget aborted the evaluation is also recorded as <c>NotEvaluated</c>, and it folds into the result as
+    /// <c>Unknown</c>, because its real value could still change the result.
     /// </summary>
     private async ValueTask<EvalResult> EvalChainAsync(
         string description,
@@ -490,6 +572,15 @@ internal sealed class Evaluator<TContext>(
                 string skippedDescription = TraceText.Of(operand);
                 this.AddTraceEntry(skippedDescription, null, true);
                 children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
+
+                // An operand skipped by a fault-budget abort could still decide the chain, so it counts as Unknown,
+                // as a skipped single node does in EvalAsync. A short-circuit skip needs no fold: the accumulator
+                // already holds the stop value, which Unknown cannot change.
+                if (!stop)
+                {
+                    accumulator = combine(accumulator, TruthValue.Unknown);
+                }
+
                 continue;
             }
 
@@ -649,15 +740,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
-        this.state.Faults.Add(new Fault(identity, ex, this.scope));
-        EvaluationLog.PredicateFaulted(this.logger, identity.ToString(), ex.Message, ex);
-        TruthWeaverMetrics.FaultRecorded();
-
-        // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.
-        if (this.options.FaultBudget is { } budget && this.state.Faults.Count >= budget)
-        {
-            this.state.Aborted = true;
-        }
+        FaultRecorder.Record(this.state, this.logger, this.options, this.scope, identity, ex);
     }
 
     /// <summary>

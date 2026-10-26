@@ -1,6 +1,6 @@
 # 12 - Quantifier trace label uses the registered collection name; canonical text uses the name as written
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: L2 Cardinality+quantifiers

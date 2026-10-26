@@ -4,7 +4,7 @@ description: Dispatch work to sub-agents (serially, in parallel, or in dependenc
 argument-hint: "What should be dispatched (a list, tickets, or a plan), and serially or in parallel?"
 license: Apache-2.0
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
   tools: "Agent, ToolSearch, CronCreate, CronDelete"
   author: Robert H. Engelhardt <rheone@gmail.com>
 
@@ -27,8 +27,8 @@ The unit of dispatch is a **bundle**: the tasks one sub-agent carries. Each sub-
    Done when: the user approved the plan or replaced it.
 
 5. **Dispatch.** Build each bundle's prompt from [bundle-prompt.md](bundle-prompt.md). A bundle is **ready** when every dependency of its tasks that lies outside the bundle is done. Dispatch ready bundles up to the concurrency cap, all in one message.
-    - A lone ready bundle (the usual case in a chain) runs with `run_in_background: false`, so its report arrives before the next prompt is built. Several ready bundles run with `run_in_background: true`; each completion notification dispatches whatever just became ready, and queued bundles take freed slots at once.
-    - A bundle that writes and can run beside another writing bundle gets `isolation: "worktree"`. Other bundles run in this checkout. Feed a dependent bundle only the `Handoff` lines of its predecessors.
+    - Every dispatched bundle runs in the background and reports back asynchronously, regardless of how many bundles are ready at once - there is no synchronous, blocking dispatch. A lone ready bundle (the usual case in a chain) still frees the main thread; do not touch files the bundle owns until its completion notification lands.
+    - A bundle that writes to the checkout gets `isolation: "worktree"` whenever the coordinator might also touch the checkout before that bundle reports back - which is the normal case, not an edge case, since the coordinator is free to keep working the moment dispatch returns. Skip the worktree only when the plan commits to leaving the checkout untouched, and nothing else dispatched, until that bundle's completion notification lands. Feed a dependent bundle only the `Handoff` lines of its predecessors.
     - A failed task is retried once as a new bundle one tier up, with the failure in its prompt (see [packing.md](packing.md)). When the blocker needs a user decision, ask instead. A task still failing after that ends its dependent tail, and independent bundles keep going.
    Done when: every bundle is dispatched, queued, or aborted with a stated reason.
 
