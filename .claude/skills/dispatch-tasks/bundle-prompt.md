@@ -15,13 +15,14 @@ Tasks:
 
 Verify each task with the narrowest check that covers your change (the project documents its targeted test and build commands). The full validation runs once after integration.
 If a task fails, continue with the later tasks that do not depend on it and mark the dependent ones skipped.
+Before you report, when another bundle is running beside you against the same target branch: check your diff against that branch's current state (a dry-run merge, if your tools support one) and name any likely conflict area in your Handoff, even without seeing the sibling's actual diff - a clean exit from your own worktree is not evidence the integration will be clean too.
 
 Reply in exactly this shape:
 Task 1: done | failed | skipped - <one-line outcome>
   files: <paths changed>
   checked: <what you ran and its result>
   blocker: <only when failed or skipped>
-Handoff: <facts a later bundle needs, 5 lines at most; omit when none>
+Handoff: <facts a later bundle needs, 5 lines at most; a likely conflict area from the check above; omit when none>
 ```
 
 Chain bundles after the first also get the prior report's `Handoff` lines under "Context every task shares". Pass only those lines; the prior full report stays in this thread.
