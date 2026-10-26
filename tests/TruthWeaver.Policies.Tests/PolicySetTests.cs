@@ -557,7 +557,7 @@ public class PolicySetTests
     public async Task EvaluateAsync_IncludeTraceWithTermSharedByTwoRules_EachRuleHasAnEntry_Test()
     {
         int calls = 0;
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "shared",
             (_, _, _) =>
             {
@@ -565,7 +565,8 @@ public class PolicySetTests
                 return ValueTask.FromResult(TruthValue.False);
             }
         );
-        CompiledRule<object> second = CompileSharing("shared", (_, _, _) => ValueTask.FromResult(TruthValue.False));
+        CompiledRule<object> first = CompileSharing(registry, "shared");
+        CompiledRule<object> second = CompileSharing(registry, "shared");
         PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", first), Deny("d", second)]);
 
         PolicyDecision decision = await set.EvaluateAsync(
