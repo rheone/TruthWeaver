@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** on-hold (do not start or dispatch until the owner triggers the effort) (the owner may approve this ticket alone before the trigger)
+**Status:** needs-triage (do not start or dispatch until the owner triggers the effort) (the owner may approve this ticket alone before the trigger)
 
 - [ ] `CLAUDE.md` states the rule
 - [ ] The guard test fails on a new reference in a file not on the baseline, and a test fails if a baseline entry no longer offends

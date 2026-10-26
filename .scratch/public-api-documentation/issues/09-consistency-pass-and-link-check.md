@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 04, 05, 06, 07, 08
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** needs-triage (do not start or dispatch until the owner approves explicitly)
 
 - [ ] The inventory from ticket 01 re-run shows no uncovered public type
 - [ ] `DocumentationLint` baseline has not grown

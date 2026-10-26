@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** needs-triage (do not start or dispatch until the owner approves explicitly)
 
 - [ ] Every gap the inventory lists for this package is closed or recorded as intentionally undocumented, with the reason
 - [ ] The package README exists and links into `docs/`: short for every package except the main `TruthWeaver` package, which keeps the full root README; it is the package's NuGet readme (`PackageReadmeFile`)

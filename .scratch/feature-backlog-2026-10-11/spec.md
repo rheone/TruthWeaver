@@ -1,6 +1,6 @@
 # Feature backlog from the 2026-10-11 brainstorm
 
-**Status:** grilled 2026-10-11. Ready tickets and spikes may start; on-hold tickets wait for explicit owner approval.
+**Status:** grilled 2026-10-11. Ready tickets and spikes may start; needs-triage tickets wait for explicit owner approval.
 
 Source: a brainstorm of features a user would expect from a project this broad, checked against the repository on 2026-10-11 (none of these exist unless noted). 25 candidates were considered.
 

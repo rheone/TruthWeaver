@@ -6,7 +6,7 @@
 
 **Blocked by:** 11b-4, 11b-5
 
-**Status:** on-hold (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
 
 - [ ] Property tests cover expansion equality, call agreement and cycle detection
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes

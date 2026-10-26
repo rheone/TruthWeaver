@@ -6,7 +6,7 @@
 
 **Blocked by:** 11b-3
 
-**Status:** on-hold (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
 
 - [ ] A reference round-trips through rule text, JSON, YAML and the builder to equal trees
 - [ ] `rule-tree.schema.json` accepts a valid reference and rejects a malformed one

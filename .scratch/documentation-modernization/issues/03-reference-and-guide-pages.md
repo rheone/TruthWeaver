@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** on-hold (do not start or dispatch until the owner triggers the effort)
+**Status:** needs-triage (do not start or dispatch until the owner triggers the effort)
 
 - [ ] No behind-the-scenes reference remains in these files
 - [ ] Prose passes `humanizer` and `voice-of-robert`; dialect passes `github-markdown`

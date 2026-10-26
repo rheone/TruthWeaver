@@ -4,7 +4,7 @@
 
 **Blocked by:** a consumer that needs it
 
-**Status:** deferred
+**Status:** needs-triage
 
 - [ ] A consumer need is identified and the owner confirms the scope
 - [ ] `Diagnostic.Properties` (if wanted) is an optional string map, with `Expected` and `Found` unchanged

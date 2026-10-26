@@ -1,6 +1,6 @@
 # Rule linting: follow-ups
 
-**Status:** done (tickets 01 to 03); ticket 04 deferred
+**Status:** done (tickets 01 to 03); ticket 04 needs-triage
 
 Source: [library-roadmap](../library-roadmap/spec.md) ("Rule linting" residual and "Lint follow-ups"), and the "Not done" notes in
 [k3-hardening 09](../k3-hardening/issues/09-analyzer-lint-rules-for-new-operators.md).

@@ -133,6 +133,10 @@ Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standar
 
 Issues are tracked as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+Five canonical roles, label strings equal to their names (no repo-specific overrides). See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

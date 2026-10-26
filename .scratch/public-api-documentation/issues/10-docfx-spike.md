@@ -4,7 +4,7 @@
 
 **Blocked by:** 09
 
-**Status:** on-hold (do not start or dispatch until the owner approves explicitly)
+**Status:** needs-triage (do not start or dispatch until the owner approves explicitly)
 
 - [ ] A written report in the ticket body lists each markdown feature as renders, renders differently, or breaks
 - [ ] The report gives a go or no-go with the estimated fixes and CI steps

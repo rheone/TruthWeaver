@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** on-hold (do not start or dispatch until the owner triggers the effort)
+**Status:** needs-triage (do not start or dispatch until the owner triggers the effort)
 
 - [ ] Every message and description is reviewed against the documentation standard
 - [ ] `docs/strong-k3/specification/diagnostics.md` and `docs/cli.md` match the final wording

@@ -6,7 +6,7 @@
 
 **Blocked by:** 11b-1
 
-**Status:** on-hold (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
 
 - [ ] `rule("x")` equals the library rule's tree in the compiled result, and evaluates the same
 - [ ] A matching pin compiles; a stale pin gives a diagnostic naming the rule and both hashes

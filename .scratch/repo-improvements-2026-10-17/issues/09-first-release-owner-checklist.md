@@ -14,7 +14,7 @@
 
 **Blocked by:** 07, 08
 
-**Status:** needs-owner-action
+**Status:** needs-triage
 
 - [ ] Each step above is done by the owner and ticked here
 - [ ] The rehearsal tag `v1.0.0-rc.1` published all twelve packages

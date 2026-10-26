@@ -6,7 +6,7 @@
 
 **Blocked by:** 11
 
-**Status:** on-hold (design grilled and confirmed 2026-10-17; do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (design grilled and confirmed 2026-10-17; do not start or dispatch until the owner releases the sub-tickets)
 
 ## Decisions (owner, 2026-10-17)
 
