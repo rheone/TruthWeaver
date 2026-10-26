@@ -4,7 +4,7 @@ description: Dispatch work to sub-agents (serially, in parallel, or in dependenc
 argument-hint: "What should be dispatched (a list, tickets, or a plan), and serially or in parallel?"
 license: Apache-2.0
 metadata:
-  version: "2.0.1"
+  version: "2.0.2"
   tools: "Agent, ToolSearch, CronCreate, CronDelete"
   author: Robert H. Engelhardt <rheone@gmail.com>
 
@@ -37,6 +37,7 @@ The unit of dispatch is a **bundle**: the tasks one sub-agent carries. Each sub-
    Done when: every row is checked with an outcome or marked aborted.
 
 7. **Integrate.** Applies to bundles that wrote in a worktree. Bring each one's changes into this checkout in completion order, leaving them uncommitted, and before any bundle that depends on it starts. On a conflict, stop and show it to the user. Then run the project's required validation (from `CLAUDE.md` / `AGENTS.md`) once, in this checkout. Workers ran only the narrowest check that covers their change.
+    - A clean merge (no conflict markers) is not proof the result is correct when two concurrently-dispatched bundles touched the same shared helper or test-infrastructure file: one can change a signature or shape the other's new call site still assumes, and a line-based merge has no way to see that. Running the project's build (or its own commit hook, if it has one) is what actually proves the integration, not the absence of a conflict.
    Done when: every worktree's changes are in this checkout or reported as conflicted, and the validation result is reported.
 
 8. **Close out.** Cancel the heartbeat if one was armed. When the plan included ticket status updates and validation passed, update each finished ticket per the tracker's convention. Then post one summary: each task with its outcome, aborted ones included, plus each bundle's reported token and duration usage when the result carries it, so [packing.md](packing.md) weights can be tuned.

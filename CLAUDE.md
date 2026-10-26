@@ -75,7 +75,7 @@ dotnet format --verify-no-changes --severity info
 dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 ```
 
-The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
+The last three (the formatter/analyzer gates) run as one command: `dotnet run scripts/format-all.cs -- --check-only` (see Formatting below). The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
 
 ### Running a subset of tests
 

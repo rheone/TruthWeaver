@@ -1,6 +1,6 @@
 # dispatch-tasks
 
-**Version 2.0.1**
+**Version 2.0.2**
 
 A Claude Code skill that hands work to sub-agents and keeps the main thread posted as each piece lands. It packs tasks into as few agents as the work allows, proposes that plan for approval, and tracks the run to a single summary.
 
@@ -77,9 +77,15 @@ Fan-out, pipeline, map-reduce, review loop and speculative. The skill recommends
 - Worktree integration relies on the agent to merge; it has not been exercised against a real multi-bundle run.
 - A background bundle that was running when the session ended cannot be reattached. Resume lists it and asks whether to dispatch it again.
 - Confirmed by an incident: a bundle dispatched to run in the main checkout (no worktree, because nothing else was dispatched beside it) kept running across a `/clear` of the same session. The coordinator, having lost the plan, started independent manual edits to the same files; the bundle's own validation run hit the resulting broken build and reverted it as debris before either side knew the other existed. Every dispatch is asynchronous here regardless of bundle count (see SKILL.md step 5), so this is the normal case, not a rare race - worktree isolation and the resume check in [run-state.md](run-state.md) now account for it.
+- Also confirmed: a dispatched bundle can be cut off mid-task by an account-wide rate limit (an interruption, not a failure - its work is saved and it resumes cleanly via `SendMessage`, per the Escalation section of [packing.md](packing.md)). And two concurrently-dispatched bundles that both touch one shared test helper can cherry-pick/merge with no conflict markers yet still not compile, because a line-based merge has no way to see a signature one bundle changed and the other's new call site still assumes - caught by the project's own build, not by git. Neither needs a new guardrail; both need the coordinator to expect them (see SKILL.md step 7).
 - The `SKILLS` directory name is upper case; the Claude Code convention is `skills`.
 
 ## Version history
+
+### 2.0.2
+
+- Escalation distinguishes an interrupted bundle (rate limit, timeout - resume the same agent) from a failed one (wrong output - retry a tier up).
+- Integrate notes that a clean cherry-pick/merge is not proof of a correct result when sibling bundles touched the same shared helper or test file; the build is what proves it.
 
 ### 2.0.1
 

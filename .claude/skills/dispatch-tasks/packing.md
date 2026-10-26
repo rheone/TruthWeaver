@@ -28,6 +28,8 @@ Each tier maps to a model: mechanical to the cheapest model the `Agent` tool off
 
 A failed task is retried once, as a new bundle on the next tier up (mechanical to standard, standard to judgment). The retry prompt carries the task, the failure's blocker, and the files the first attempt changed. Judgment has no tier above it, so its failures go to the user.
 
+An interrupted bundle is not a failed one: a rate limit, a timeout, or another infrastructure error that cuts a bundle off mid-task leaves its work saved, not wrong. Resume it with `SendMessage` to the same agent once the interruption clears, picking up exactly where it stopped - never dispatch a fresh bundle for the same tasks, which redoes real work and spends tokens twice. Only a genuine wrong-output failure gets the retry-a-tier-up treatment above.
+
 ## Bin-pack
 
 Starting values, not measured: **budget 8 points** and **at most 6 tasks** per bundle. Tune them from the usage that step 8 of SKILL.md records.
