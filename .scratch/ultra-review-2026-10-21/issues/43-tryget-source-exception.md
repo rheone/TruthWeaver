@@ -1,6 +1,6 @@
 # 43 - TryGetAsync does not catch a source exception, so its result-instead-of-throwing contract fails
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts
