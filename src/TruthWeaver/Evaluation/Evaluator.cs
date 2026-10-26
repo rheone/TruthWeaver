@@ -546,11 +546,13 @@ internal sealed class Evaluator<TContext>(
     }
 
     /// <summary>
-    /// Folds the operands of an <c>AND</c> or <c>OR</c> chain from left to right, starting from <paramref name="identity"/>
-    /// (<c>True</c> for <c>AND</c>, <c>False</c> for <c>OR</c>). Once an operand produces a value for which
-    /// <paramref name="stops"/> holds, the rest are skipped and recorded as <c>NotEvaluated</c>, unless
-    /// <see cref="EvaluationMode.Exhaustive"/> is on. The fold is the Strong Kleene minimum or maximum, so stopping never
-    /// changes the result.
+    /// Folds the operands of an <c>AND</c>, <c>OR</c> or <c>COALESCE</c> chain from left to right, starting from
+    /// <paramref name="identity"/> (<c>True</c> for <c>AND</c>, <c>False</c> for <c>OR</c>, <c>Unknown</c> for
+    /// <c>COALESCE</c>). Once an operand produces a value for which <paramref name="stops"/> holds, the rest are skipped
+    /// and recorded as <c>NotEvaluated</c>, unless <see cref="EvaluationMode.Exhaustive"/> is on. The stop value absorbs
+    /// every later operand, so a short-circuit stop never changes the result. An operand skipped because the fault
+    /// budget aborted the evaluation is also recorded as <c>NotEvaluated</c>, and it folds into the result as
+    /// <c>Unknown</c>, because its real value could still change the result.
     /// </summary>
     private async ValueTask<EvalResult> EvalChainAsync(
         string description,
@@ -571,6 +573,15 @@ internal sealed class Evaluator<TContext>(
                 string skippedDescription = TraceText.Of(operand);
                 this.AddTraceEntry(skippedDescription, null, true);
                 children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
+
+                // An operand skipped by a fault-budget abort could still decide the chain, so it counts as Unknown,
+                // as a skipped single node does in EvalAsync. A short-circuit skip needs no fold: the accumulator
+                // already holds the stop value, which Unknown cannot change.
+                if (!stop)
+                {
+                    accumulator = combine(accumulator, TruthValue.Unknown);
+                }
+
                 continue;
             }
 

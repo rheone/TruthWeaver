@@ -396,6 +396,29 @@ public class PolicySetTests
         Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "p3").Applies);
     }
 
+    /// <summary>
+    /// A deny condition whose chain a fault-budget abort cuts short does not let a permit through: the faulting
+    /// <c>broken</c> inside <c>IsTrue</c> gives a definite <c>False</c>, but the skipped <c>yes</c> counts as
+    /// <c>Unknown</c>, so the deny is <c>Unknown</c> and deny-overrides answers Indeterminate.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_DenyOverridesWithDenyConditionCutShortByTheFaultBudget_IsIndeterminate_Test()
+    {
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("staff", True), Deny("blocked", Compile("IsTrue(broken) OR yes"))]
+        ).EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(FaultBudget: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+        Assert.Equal(TruthValue.Unknown, decision.Results.Single(result => result.PolicyId == "blocked").Applies);
+        Assert.False(decision.IsPermitted);
+    }
+
     /// <summary>The constructor rejects two policies with the same identifier.</summary>
     [Fact]
     public void Constructor_DuplicatePolicyIds_Throws_Test()

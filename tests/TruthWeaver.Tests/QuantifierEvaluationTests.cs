@@ -199,6 +199,30 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// The elements a fault-budget abort skips count as <c>Unknown</c>: the inspection makes the first element's body
+    /// definite (<c>False</c> for <c>EXISTS</c>, <c>True</c> for <c>FORALL</c>), but the skipped second element could
+    /// still decide the quantifier, so it is <c>Unknown</c>.
+    /// </summary>
+    /// <param name="text">The quantifier rule.</param>
+    [Theory]
+    [InlineData("EXISTS(x IN items, IsTrue(throwsAlways))")]
+    [InlineData("FORALL(x IN items, IsUnknown(throwsAlways))")]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsTheRemainingElements_FoldsThemAsUnknown_Test(string text)
+    {
+        CompiledRule<QuantifierContext> rule = CreateCompiler().Compile(text).GetRuleOrThrow();
+
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True, TruthValue.True] },
+            options: new EvaluationOptions(FaultBudget: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.Single(decision.Faults);
+        Assert.True(decision.TraceTree!.Children[1].NotEvaluated);
+    }
+
+    /// <summary>
     /// Over <see cref="EvaluationOptions.MaxElementEvaluations"/>, the quantifier is <c>Unknown</c> with exactly one
     /// extra fault for the collection and the evaluation aborts - not an exception (ADR-0010 decision 6).
     /// </summary>

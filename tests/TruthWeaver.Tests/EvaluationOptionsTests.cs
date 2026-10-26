@@ -264,6 +264,71 @@ public sealed class EvaluationOptionsTests
         Assert.Contains(decision.Trace!.Entries, e => e.NotEvaluated);
     }
 
+    /// <summary>
+    /// An <c>AND</c> operand skipped by a fault-budget abort counts as <c>Unknown</c>: the inspection makes the first
+    /// operand a definite <c>True</c>, but the skipped <c>isOff</c> could still be <c>False</c>, so the rule is
+    /// <c>Unknown</c> and not satisfied.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsAnAndOperand_FoldsTheSkippedOperandAsUnknown_Test()
+    {
+        Decision decision = await EvaluateAbortingRuleAsync("IsUnknown(boom) AND isOff");
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.False(decision.IsSatisfied);
+        Assert.Single(decision.Faults);
+    }
+
+    /// <summary>
+    /// An <c>OR</c> operand skipped by a fault-budget abort counts as <c>Unknown</c>: the inspection makes the first
+    /// operand a definite <c>False</c>, but the skipped <c>isOn</c> could still be <c>True</c>, so the rule is
+    /// <c>Unknown</c>.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsAnOrOperand_FoldsTheSkippedOperandAsUnknown_Test()
+    {
+        Decision decision = await EvaluateAbortingRuleAsync("IsTrue(boom) OR isOn");
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.False(decision.IsSatisfied);
+    }
+
+    /// <summary>
+    /// A <c>COALESCE</c> operand skipped by a fault-budget abort counts as <c>Unknown</c>: the first operand is
+    /// <c>Unknown</c> (its own skipped <c>isOff</c> is <c>Unknown</c>), and the skipped <c>isOn</c> adds no definite
+    /// value, so the rule is <c>Unknown</c> and not the <c>True</c> of <c>isOn</c>.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsACoalesceOperand_FoldsTheSkippedOperandAsUnknown_Test()
+    {
+        Decision decision = await EvaluateAbortingRuleAsync("COALESCE(IsUnknown(boom) AND isOff, isOn)");
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.False(decision.IsSatisfied);
+    }
+
+    /// <summary>
+    /// A fault-budget abort does not change the result of an <c>AND</c> that already holds a <c>False</c> operand: a
+    /// skipped operand counts as <c>Unknown</c>, and <c>False AND Unknown</c> is <c>False</c>.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortAfterADecidingAndOperand_KeepsTheDefiniteResult_Test()
+    {
+        Decision decision = await EvaluateAbortingRuleAsync("IsKnown(boom) AND isOn");
+
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>The skipped operand of an aborted chain stays marked as not evaluated in the trace.</summary>
+    [Fact]
+    public async Task EvaluateAsync_FaultBudgetAbortSkipsAnAndOperand_MarksTheSkippedOperandNotEvaluated_Test()
+    {
+        Decision decision = await EvaluateAbortingRuleAsync("IsUnknown(boom) AND isOff");
+
+        Assert.Contains(new TraceEntry("isOff", null, true), decision.Trace!.Entries);
+        Assert.Equal(new TraceEntry("AND", TruthValue.Unknown, false), decision.Trace.Entries[^1]);
+    }
+
     /// <summary>Genuine cancellation propagates rather than being recorded as a fault.</summary>
     [Fact]
     public async Task Cancellation_Genuine_PropagatesRatherThanRecordedAsFault_Test()
@@ -328,6 +393,28 @@ public sealed class EvaluationOptionsTests
             new RuleTestContext(),
             EmptyServiceProvider.Instance,
             options: new EvaluationOptions(FaultBudget: budget, IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+    }
+
+    // Evaluates rule text under a fault budget of 1, where "boom" throws (so the first fault aborts the evaluation),
+    // "isOn" is True and "isOff" is False.
+    private static Task<Decision> EvaluateAbortingRuleAsync(string text)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddThrowing("boom")
+                .AddConstant("isOn", true)
+                .AddConstant("isOff", false)
+                .Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile(text).GetRuleOrThrow();
+
+        return rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(FaultBudget: 1, IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
         );
     }
