@@ -258,6 +258,30 @@ public sealed class QuantifierEvaluationTests
     }
 
     /// <summary>
+    /// An operator inside a quantifier body adds its own flat trace entry, prefixed with the element scope path like
+    /// the body's term entries, between the body's term entry and the quantifier's own entry.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_TraceWithOperatorInBody_FlatLogRecordsTheScopedOperator_Test()
+    {
+        CompilationResult<QuantifierContext> result = RuleBuilder
+            .ForAll("x", "items", RuleBuilder.Not(RuleBuilder.Predicate("elementTrue")))
+            .Compile(CreateCompiler());
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new QuantifierContext { Items = [TruthValue.True] },
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, decision.Trace!.Entries.Count);
+        Assert.StartsWith("x[0]: elementTrue", decision.Trace.Entries[0].Text, StringComparison.Ordinal);
+        Assert.Equal(new TraceEntry("x[0]: NOT", TruthValue.False, false), decision.Trace.Entries[1]);
+        Assert.Equal(new TraceEntry("FORALL(x IN items)", TruthValue.False, false), decision.Trace.Entries[2]);
+    }
+
+    /// <summary>
     /// A fault raised inside an element's body carries that element's scope path on <see cref="Fault.Scope"/>
     /// (ADR-0010 decision 7), so it is distinguishable from a fault on the term in general.
     /// </summary>

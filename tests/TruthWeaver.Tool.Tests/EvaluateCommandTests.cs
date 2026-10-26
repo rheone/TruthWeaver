@@ -57,7 +57,9 @@ public sealed class EvaluateCommandTests
         Assert.Equal(0, run.ExitCode);
         Assert.Equal("False", run.Json["result"]!["result"]!.GetValue<string>());
         Assert.Equal("Exhaustive", run.Json["result"]!["decision"]!["options"]!["mode"]!.GetValue<string>());
-        Assert.Equal(2, run.Json["result"]!["decision"]!["trace"]!.AsArray().Count);
+
+        // Two term entries and the AND node's own entry: the flat trace records operator nodes too.
+        Assert.Equal(3, run.Json["result"]!["decision"]!["trace"]!.AsArray().Count);
     }
 
     /// <summary>A stub file with an invalid value is a TWT0009 error with exit code 2.</summary>

@@ -163,6 +163,24 @@ internal sealed class Evaluator<TContext>(
                 return await this.EvalTermAsync(t).ConfigureAwait(false);
             case QuantifierExpression q:
                 return await this.EvalQuantifierAsync(q).ConfigureAwait(false);
+            default:
+                // An operator node's flat entry is recorded here, after its operands' entries, because its result
+                // is only known once they are evaluated (a quantifier's binding records its entry the same way).
+                // The entry reuses the trace tree node's label, so both views show the same text for the node.
+                EvalResult result = await this.EvalOperatorAsync(node).ConfigureAwait(false);
+                this.AddTraceEntry(result.Node.Text, result.Value, false);
+                return result;
+        }
+    }
+
+    /// <summary>
+    /// Evaluates an operator node (every node kind except a constant, a term and a quantifier). The caller records the
+    /// node's flat trace entry; this method builds only its value and trace tree node.
+    /// </summary>
+    private async ValueTask<EvalResult> EvalOperatorAsync(Expression node)
+    {
+        switch (node)
+        {
             case NotExpression:
             {
                 NodeShape shape = ExpressionShape.Of(node);

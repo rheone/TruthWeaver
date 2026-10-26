@@ -38,14 +38,93 @@ public sealed class EvaluationOptionsTests
         Assert.NotNull(decision.TraceTree);
     }
 
-    /// <summary>With <see cref="EvaluationOptions.IncludeTrace"/> the flat trace holds one entry for each node visited.</summary>
+    /// <summary>
+    /// With <see cref="EvaluationOptions.IncludeTrace"/> the flat trace holds one entry for each node visited,
+    /// operators included, and an operator's entry follows the entries of its operands.
+    /// </summary>
     [Fact]
     public async Task EvaluateAsync_IncludeTrace_FillsTheFlatTrace_Test()
     {
         Decision decision = await EvaluateWithTraceAsync(new EvaluationOptions(IncludeTrace: true));
 
+        // The flat trace shape changed deliberately (ultra-review ticket 52): it held only the leaves ["a", "b"]
+        // before; it now also holds the AND node's own entry, after its operands, carrying the operator's result.
         Assert.NotNull(decision.Trace);
-        Assert.Equal(["a", "b"], decision.Trace.Entries.Select(e => e.Text));
+        Assert.Equal(
+            [
+                new TraceEntry("a", TruthValue.True, false),
+                new TraceEntry("b", TruthValue.True, false),
+                new TraceEntry("AND", TruthValue.True, false),
+            ],
+            decision.Trace.Entries
+        );
+    }
+
+    /// <summary>
+    /// Nested operators each add their own flat trace entry after their operands' entries, and an operand skipped by
+    /// short-circuiting keeps its not-evaluated entry ahead of the operator that skipped it.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTraceWithNestedOperators_RecordsEveryOperatorAfterItsOperands_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).AddConstant("b", true).Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("NOT (a OR b)").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(
+            [
+                new TraceEntry("a", TruthValue.True, false),
+                new TraceEntry("b", null, true),
+                new TraceEntry("OR", TruthValue.True, false),
+                new TraceEntry("NOT", TruthValue.False, false),
+            ],
+            decision.Trace!.Entries
+        );
+    }
+
+    /// <summary>
+    /// Every operator kind adds its own flat trace entry last, after its operands, and that entry shows the same text
+    /// and result as the root node of the trace tree.
+    /// </summary>
+    /// <param name="ruleText">A rule whose root is the operator under test.</param>
+    [Theory]
+    [InlineData("a XOR b")]
+    [InlineData("a IMPLIES b")]
+    [InlineData("If(a, b, c)")]
+    [InlineData("COALESCE(a, b)")]
+    [InlineData("IsTrue(a)")]
+    [InlineData("AtLeast(1, a, b, c)")]
+    [InlineData("ExactlyOne(a, b, c)")]
+    public async Task EvaluateAsync_IncludeTraceWithOperatorRoot_RecordsTheOperatorEntryLast_Test(string ruleText)
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("a", true)
+                .AddConstant("b", false)
+                .AddConstant("c", true)
+                .Build()
+        );
+        CompilationResult<RuleTestContext> compiled = compiler.Compile(ruleText);
+        Assert.True(compiled.Succeeded, string.Join("; ", compiled.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await compiled.CompiledRule!.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(new TraceEntry(decision.TraceTree!.Text, decision.TraceTree.Result, false), decision.Trace!.Entries[^1]);
+        Assert.Equal(decision.TraceTree.Children.Count + 1, decision.Trace.Entries.Count);
     }
 
     /// <summary>A budget below 1 is rejected, because no evaluation could stay within it.</summary>

@@ -1,6 +1,6 @@
 # 52 - The flat trace logs no operator nodes, but CONTEXT.md and EvaluationOptions.IncludeTrace say it does
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation
