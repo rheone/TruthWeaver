@@ -330,13 +330,14 @@ public class PolicySetTests
     /// <summary>
     /// A predicate shared by two policy conditions is evaluated once per context: the set shares one
     /// <c>EvaluationState</c> across its rules, so the second rule's identical term hits the first rule's memo
-    /// entry instead of invoking the predicate again (feature backlog 08).
+    /// entry instead of invoking the predicate again (feature backlog 08). Both rules are compiled against the
+    /// same registry (the common case, ticket 34), which is exactly when this sharing applies.
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_PredicateSharedByTwoPolicyConditions_IsEvaluatedOnce_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "shared",
             (_, _, _) =>
             {
@@ -344,14 +345,8 @@ public class PolicySetTests
                 return ValueTask.FromResult(TruthValue.True);
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "shared",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                return ValueTask.FromResult(TruthValue.True);
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "shared");
+        CompiledRule<object> second = CompileSharing(registry, "shared");
 
         // DenyOverrides never stops early for a Permit policy (it only stops at a definite Deny), so both
         // policies run and the sharing is actually exercised.
@@ -369,13 +364,14 @@ public class PolicySetTests
     /// <summary>
     /// A faulting predicate shared by two policy conditions faults once (the second rule's term hits the memo
     /// without invoking the predicate again), but each policy that references it still lists the fault in the
-    /// set's decision, exactly as it would without sharing (feature backlog 08).
+    /// set's decision, exactly as it would without sharing (feature backlog 08). Both rules are compiled against
+    /// the same registry (the common case, ticket 34).
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_FaultingPredicateSharedByTwoPolicyConditions_FaultsOnceButEachPolicyListsIt_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "sharedFault",
             (_, _, _) =>
             {
@@ -383,14 +379,8 @@ public class PolicySetTests
                 throw new InvalidOperationException("The service is offline.");
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "sharedFault",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                throw new InvalidOperationException("The service is offline.");
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "sharedFault");
+        CompiledRule<object> second = CompileSharing(registry, "sharedFault");
 
         PolicyDecision decision = await new PolicySet<object>(
             "set",
@@ -406,13 +396,14 @@ public class PolicySetTests
     /// <summary>
     /// A fault shared by two policy conditions counts once against the set's fault budget, not once per policy
     /// that references it: a third, unrelated policy still runs normally under a budget that only the doubled
-    /// count would have reached (feature backlog 08).
+    /// count would have reached (feature backlog 08). Both rules are compiled against the same registry (the
+    /// common case, ticket 34).
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_FaultSharedByTwoPolicyConditions_CountsOnceAgainstTheFaultBudget_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "sharedFault2",
             (_, _, _) =>
             {
@@ -420,14 +411,8 @@ public class PolicySetTests
                 throw new InvalidOperationException("The service is offline.");
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "sharedFault2",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                throw new InvalidOperationException("The service is offline.");
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "sharedFault2");
+        CompiledRule<object> second = CompileSharing(registry, "sharedFault2");
 
         PolicyDecision decision = await new PolicySet<object>(
             "set",
@@ -441,6 +426,48 @@ public class PolicySetTests
 
         Assert.Equal(1, calls[0]);
         Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "p3").Applies);
+    }
+
+    /// <summary>
+    /// Ticket 34: two policies' conditions that resolve to the same term identity (<c>isAdmin</c>, no arguments)
+    /// but are compiled against different <c>PredicateRegistry</c> instances evaluate independently instead of
+    /// one sharing the other's memoized answer. The deny policy's condition is compiled
+    /// <see cref="CompilationMode.Lenient"/> against a registry with no <c>isAdmin</c> predicate, so its term
+    /// memoizes <see cref="TruthValue.Unknown"/> plus a fault; the permit policy's condition is compiled against a
+    /// different registry where <c>isAdmin</c> is registered and always answers <see cref="TruthValue.True"/>.
+    /// Before the fix, the memo key ignored the registry, so the permit policy's identical term identity hit the
+    /// deny policy's cached Unknown and the set could never permit.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SameTermIdentityCompiledAgainstDifferentRegistries_EachEvaluatesItsOwnPredicate_Test()
+    {
+        CompiledRule<object> missingAdminCondition = new RuleCompiler<object>(
+            PredicateRegistry<object>.CreateBuilder().Build(),
+            CompilerOptions.Default with
+            {
+                Mode = CompilationMode.Lenient,
+            }
+        )
+            .Compile("isAdmin")
+            .GetRuleOrThrow();
+
+        PredicateRegistryBuilder<object> adminBuilder = PredicateRegistry<object>.CreateBuilder();
+        Add(adminBuilder, FakePredicates.Returning<object>("isAdmin", TruthValue.True));
+        CompiledRule<object> hasAdminCondition = new RuleCompiler<object>(adminBuilder.Build())
+            .Compile("isAdmin")
+            .GetRuleOrThrow();
+
+        // PermitOverrides: a definite permit wins regardless of the deny policy's Unknown, so the assertion below
+        // isolates whether the permit policy's own predicate ran (True) or inherited the deny policy's cached
+        // Unknown answer (the pre-fix bug).
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.PermitOverrides,
+            [Deny("missingAdmin", missingAdminCondition), Permit("hasAdmin", hasAdminCondition)]
+        ).EvaluateAsync(new object(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "hasAdmin").Applies);
+        Assert.Equal(PolicyOutcome.Permit, decision.Outcome);
     }
 
     /// <summary>
@@ -634,17 +661,24 @@ public class PolicySetTests
         builder.Add(fake.Schema, fake.Evaluate);
     }
 
-    // Compiles a single-term rule over one named, no-argument predicate, so the same term identity (predicate
-    // name, no arguments) is produced by two different CompiledRule instances compiled from two different
-    // registries, and a shared PolicySet evaluation state can memoize across them.
-    private static CompiledRule<object> CompileSharing(
+    // Builds a registry with one named, no-argument predicate. Two rules compiled separately against the SAME
+    // registry instance (CompileSharing below) produce the same term identity (predicate name, no arguments) AND
+    // the same registry component of the memo key, so a shared PolicySet evaluation state memoizes across them
+    // (the common case, ticket 34).
+    private static PredicateRegistry<object> SharedRegistry(
         string predicateName,
         Func<object, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
     )
     {
         PredicateRegistryBuilder<object> builder = PredicateRegistry<object>.CreateBuilder();
         builder.Add(PredicateSchema.NoArguments(predicateName, predicateName, "Registered for a test."), evaluate);
-        return new RuleCompiler<object>(builder.Build()).Compile(predicateName).GetRuleOrThrow();
+        return builder.Build();
+    }
+
+    // Compiles a single-term rule naming predicateName against the given registry.
+    private static CompiledRule<object> CompileSharing(PredicateRegistry<object> registry, string predicateName)
+    {
+        return new RuleCompiler<object>(registry).Compile(predicateName).GetRuleOrThrow();
     }
 
     private static Policy<object> Permit(

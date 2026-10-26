@@ -65,7 +65,7 @@ Evaluation stops early. The overriding algorithms stop at the first definite res
 
 ## Shared predicates
 
-A set evaluates the target, every policy's target and every policy's condition against one shared evaluation state for a context, so a predicate common to several of those rules runs once, not once per rule that references it. Two terms share this way when their predicate name and arguments are the same, whichever rule compiled them.
+A set evaluates the target, every policy's target and every policy's condition against one shared evaluation state for a context, so a predicate common to several of those rules runs once, not once per rule that references it. Two terms share this way when their predicate name and arguments are the same and the rules were compiled against the same predicate registry. Rules compiled against different registries never share a term, even when the name and arguments match: a `PolicySet` whose policies mix registries (a different compile mode, or a different implementation bound to the same predicate name) always evaluates each rule's own predicate.
 
 This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a whole-set concept: once the Nth fault is recorded anywhere in the set's evaluation, every rule still to run answers `Unknown` for the rest of its own evaluation, the same way a fault budget aborts within one rule. A shared term that faults still counts once, not once per rule, so a budget is not spent faster by two rules naming the same predicate; each rule that references the faulting term still lists that one fault in `PolicyDecision.Decision.Faults`.
 
