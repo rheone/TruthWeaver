@@ -1,6 +1,6 @@
 # 18 - Collection-level faults (selector, element limit, missing collection) are dropped from PolicyDecision.Decision.Faults
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F9 Policies; F4 Evaluation

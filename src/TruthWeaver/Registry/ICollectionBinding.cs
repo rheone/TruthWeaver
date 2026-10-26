@@ -73,6 +73,13 @@ internal interface ICollectionBinding<TContext>
     /// <param name="dataSources">The data sources supplied to this evaluation.</param>
     /// <param name="outerScope">The enclosing display scope path (built from bound variable names), or <see langword="null"/> outside any quantifier. Labels <see cref="Fault.Scope"/> and the flat trace log (ADR-0010 decision 7).</param>
     /// <param name="outerMemoScope">The enclosing memoization scope path (built from registered collection names), or <see langword="null"/> outside any quantifier (ADR-0010 decision 5). Different from <paramref name="outerScope"/>: it is what the selector-materialization cache and a nested evaluator's term memo key are built from.</param>
+    /// <param name="outerRegistry">
+    /// The <c>PredicateRegistry&lt;TContext&gt;</c> this quantifier is being evaluated under (the calling
+    /// <c>Evaluator&lt;TContext&gt;</c>'s own registry), upcast to <see langword="object"/> (a reference-type
+    /// conversion) so this non-generic-over-<c>TContext</c> interface can carry it. Compared by reference as the
+    /// registry component of <see cref="EvaluationState.CollectionMaterializations"/>'s key (ticket 34), so a
+    /// like-named collection registered on a different registry never reuses this one's materialized elements.
+    /// </param>
     /// <param name="cancellationToken">Cancels the evaluation.</param>
     /// <returns>The quantifier's value and its trace node (one child per element).</returns>
     public ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -87,6 +94,7 @@ internal interface ICollectionBinding<TContext>
         DataSources? dataSources,
         string? outerScope,
         string? outerMemoScope,
+        object outerRegistry,
         CancellationToken cancellationToken
     );
 }

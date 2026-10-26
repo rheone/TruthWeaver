@@ -538,6 +538,7 @@ internal sealed class Evaluator<TContext>(
                 this.dataSources,
                 this.scope,
                 this.memoScope,
+                this.registry,
                 this.cancellationToken
             )
             .ConfigureAwait(false);
@@ -613,7 +614,11 @@ internal sealed class Evaluator<TContext>(
     private async ValueTask<EvalResult> EvalTermAsync(TermExpression term)
     {
         string description = term.Identity.ToString();
-        (string? Scope, TermIdentity Identity) key = (this.memoScope, term.Identity);
+
+        // The registry component (ticket 34) keys this term to the registry that resolves it: a PolicySet shares
+        // one EvaluationState across rules that may be compiled against different registries, and without it two
+        // such rules could produce an equal TermIdentity for what is actually a different predicate.
+        (string? Scope, object Registry, TermIdentity Identity) key = (this.memoScope, this.registry, term.Identity);
         if (term.IsUnknownPredicate)
         {
             // An unregistered predicate compiled under CompilationMode.Lenient is a permanent Unknown fault on its
@@ -652,7 +657,7 @@ internal sealed class Evaluator<TContext>(
     }
 
     /// <summary>Returns the trace text of a term: its resolved-value form when one was recorded, followed by the outcome of each variable reference and a note for each array reference that matched no node.</summary>
-    private string Annotated((string? Scope, TermIdentity Identity) key, string description)
+    private string Annotated((string? Scope, object Registry, TermIdentity Identity) key, string description)
     {
         string text = this.state.ValueDescriptions.GetValueOrDefault(key, description);
 
@@ -715,7 +720,7 @@ internal sealed class Evaluator<TContext>(
 
             if (this.options.IncludeResolvedValues && identity.Variables.Count > 0)
             {
-                this.state.ValueDescriptions[(this.memoScope, identity)] = DescribeWithValues(identity, values);
+                this.state.ValueDescriptions[(this.memoScope, this.registry, identity)] = DescribeWithValues(identity, values);
             }
 
             PredicateArguments args = new(values);
@@ -790,7 +795,7 @@ internal sealed class Evaluator<TContext>(
                 if (answer.Matches.Count == 0 && VariableConversion.IsArrayKind(argument.Type))
                 {
                     // An empty array is a valid argument, so only the trace says the query found nothing.
-                    (string? Scope, TermIdentity Identity) key = (this.memoScope, identity);
+                    (string? Scope, object Registry, TermIdentity Identity) key = (this.memoScope, this.registry, identity);
                     if (!this.state.ZeroMatchReferences.TryGetValue(key, out List<VariableReference>? noted))
                     {
                         noted = [];
@@ -814,8 +819,9 @@ internal sealed class Evaluator<TContext>(
             }
         }
 
-        // Keyed by the memoization scope, as Annotated reads it, so a term inside a quantifier body keeps its notes.
-        this.state.VariableOutcomes[(this.memoScope, identity)] = outcomes;
+        // Keyed by the memoization scope and registry, as Annotated reads it, so a term inside a quantifier body
+        // keeps its notes.
+        this.state.VariableOutcomes[(this.memoScope, this.registry, identity)] = outcomes;
         return resolved;
     }
 

@@ -1,6 +1,6 @@
 # 35 - MaxElementEvaluations is a whole-set bound but documented as per evaluation
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F9 Policies

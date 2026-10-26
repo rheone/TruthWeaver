@@ -66,6 +66,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
         DataSources? dataSources,
         string? outerScope,
         string? outerMemoScope,
+        object outerRegistry,
         CancellationToken cancellationToken
     )
     {
@@ -83,7 +84,9 @@ internal sealed class CollectionBinding<TContext, TItem>(
         // evaluation. The cache key is the enclosing memoization scope (the outer element) plus this collection's
         // registered name (the binding); a second quantifier over the same binding at the same outer element, even
         // under a different bound variable, reuses the first call's outcome instead of invoking the selector again.
-        (string? OuterScope, string Binding) materializationKey = (outerMemoScope, name);
+        // The registry component (ticket 34) keys the materialization to the registry this quantifier is being
+        // evaluated under, so a like-named collection registered on a different registry never reuses it.
+        (string? OuterScope, object Registry, string Binding) materializationKey = (outerMemoScope, outerRegistry, name);
         bool firstMaterialization = !state.CollectionMaterializations.TryGetValue(
             materializationKey,
             out CollectionMaterialization materialization

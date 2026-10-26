@@ -36,7 +36,10 @@ point of a target. A `False` condition makes the policy not applicable even when
 
 `PolicySet<TContext>` holds an id, a `CombiningAlgorithm`, its policies and an optional target rule. A `False` set target
 gives `NotApplicable` and evaluates no policy. An `Unknown` set target keeps `NotApplicable` as it is and turns any other
-outcome into `Indeterminate`, because the set may not apply at all. The set is immutable: it copies the policies.
+outcome into `Indeterminate`, because the set may not apply at all. The set is immutable: it copies the policies. All rules of a set share one evaluation state, so the per-call bounds
+(`FaultBudget` and `MaxElementEvaluations` in the `EvaluationOptions` of the call) are whole-set bounds, not per-rule
+allowances. A set does not give each rule its own allowance, because that would multiply the resource cost of a set by
+its number of rules.
 Policy ids are unique in a set. A set does not contain a set. Nesting is not needed for the first slice and adds no
 semantics that a flat set with targets cannot express.
 
@@ -44,9 +47,11 @@ semantics that a flat set with targets cannot express.
 
 A higher priority is evaluated first and equal priorities keep the order given to the constructor. For
 `FirstApplicable` this is the order of the walk, so priority decides which policy wins. For the two overriding
-algorithms the result does not depend on the order. Priority then decides only which policies are evaluated before the
-walk stops early, and which results appear first in the `PolicyDecision`. A priority never changes an outcome by size
-alone.
+algorithms the result does not depend on the order, as long as no shared budget abort fires during the set's evaluation.
+Once a shared `FaultBudget` or `MaxElementEvaluations` abort fires, every rule that runs after it answers `Unknown`, so a
+later-priority rule can be forced to `Unknown` where an earlier position would have let it decide. In that case the
+outcome can depend on priority. Priority then decides only which policies are evaluated before the walk stops early, and
+which results appear first in the `PolicyDecision`. A priority never changes an outcome by size alone.
 
 ### 5. Three algorithms, all fail-closed on `Unknown`
 

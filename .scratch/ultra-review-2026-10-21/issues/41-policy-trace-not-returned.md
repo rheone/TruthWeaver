@@ -1,6 +1,6 @@
 # 41 - IncludeTrace collects a trace that PolicyDecision never returns
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: low
 Lens: F9 Policies

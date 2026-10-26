@@ -1,6 +1,6 @@
 # 34 - The term memo is shared across rules compiled with different registries in one PolicySet
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F9 Policies

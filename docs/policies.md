@@ -59,15 +59,19 @@ An `Unknown` policy is never a silent permit under deny-overrides, and never a s
 
 ## Priority
 
-A policy with a higher priority is evaluated first. Equal priorities keep the order in which the policies were given. Under `FirstApplicable` this decides which policy wins. Under the two overriding algorithms the outcome does not depend on the order. Priority then decides which policies run before the evaluation stops, and the order of the results.
+A policy with a higher priority is evaluated first. Equal priorities keep the order in which the policies were given. Under `FirstApplicable` this decides which policy wins. Under the two overriding algorithms the outcome does not depend on the order, as long as no shared budget abort fires during the set's evaluation. A shared `FaultBudget` or `MaxElementEvaluations` abort, described under [Shared predicates](#shared-predicates), makes every rule that runs after it answer `Unknown`. A later-priority rule can then be forced to `Unknown` where an earlier position would have let it decide, so the outcome can depend on priority. Priority then decides which policies run before the evaluation stops, and the order of the results.
 
 Evaluation stops early. The overriding algorithms stop at the first definite result of the overriding effect. `FirstApplicable` stops at the first policy that is not `False`. A policy that was not reached is not in `PolicyDecision.Results`.
 
 ## Shared predicates
 
-A set evaluates the target, every policy's target and every policy's condition against one shared evaluation state for a context, so a predicate common to several of those rules runs once, not once per rule that references it. Two terms share this way when their predicate name and arguments are the same, whichever rule compiled them.
+A set evaluates the target, every policy's target and every policy's condition against one shared evaluation state for a context, so a predicate common to several of those rules runs once, not once per rule that references it. Two terms share this way when their predicate name and arguments are the same and the rules were compiled against the same predicate registry. Rules compiled against different registries never share a term, even when the name and arguments match: a `PolicySet` whose policies mix registries (a different compile mode, or a different implementation bound to the same predicate name) always evaluates each rule's own predicate.
 
 This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a whole-set concept: once the Nth fault is recorded anywhere in the set's evaluation, every rule still to run answers `Unknown` for the rest of its own evaluation, the same way a fault budget aborts within one rule. A shared term that faults still counts once, not once per rule, so a budget is not spent faster by two rules naming the same predicate; each rule that references the faulting term still lists that one fault in `PolicyDecision.Decision.Faults`.
+
+The element bound (`EvaluationOptions.MaxElementEvaluations`) is a whole-set bound too. Every quantifier element that any rule of the set evaluates counts against one total for the set's evaluation. A set of policies that each stay within the bound alone can exceed it together. When the total reaches the bound, the set aborts: every rule still to run answers `Unknown`, and the limit is recorded as a fault in `PolicyDecision.Decision.Faults`. A host with a set of many quantifier-heavy policies raises `MaxElementEvaluations` in the options that it passes to `EvaluateAsync`.
+
+A `FORALL`/`EXISTS` quantifier's own fault (a throwing collection selector, `EvaluationOptions.MaxElementEvaluations` exceeded, or an unregistered collection) lists in `PolicyDecision.Decision.Faults` the same way: it belongs to every rule of the set that quantifies over that collection, and to no other rule.
 
 ## The decision
 
@@ -79,6 +83,20 @@ This sharing also makes the fault budget (`EvaluationOptions.FaultBudget`) a who
 | `Decision` | A `Decision` with `True` for `Permit`, `Unknown` for `Indeterminate`, and `False` for `Deny` and `NotApplicable`. Its faults come from every rule that ran. |
 | `Results` | The `PolicyResult` of each evaluated policy: its id, effect and whether it applies. |
 | `IsPermitted` | `true` only for `Permit`. It is `Decision.IsSatisfied`, so it fails closed. |
+
+## The trace
+
+Set `EvaluationOptions.IncludeTrace` to `true` to get a trace of the set's evaluation in `PolicyDecision.Decision.Trace`. It is one flat trace of every rule that ran, in evaluation order. The text of each entry starts with the rule that the entry comes from:
+
+| Prefix | Rule |
+| --- | --- |
+| `set target: ` | The target of the set. |
+| `policy '<id>' target: ` | The target of the policy with that id. |
+| `policy '<id>' condition: ` | The condition of the policy with that id. |
+
+A rule that did not run has no entries. For example, a policy whose target is `False` has no condition entries, and the policies after the one that decided the outcome have no entries. A term that an earlier rule already evaluated still has an entry in each rule that references it.
+
+Without `IncludeTrace`, `Decision.Trace` is `null` and the set collects no trace. The set's `Decision.TraceTree` is always `null`, because the set has no single expression tree.
 
 ## Errors
 

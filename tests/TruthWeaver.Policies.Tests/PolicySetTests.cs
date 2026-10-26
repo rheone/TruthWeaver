@@ -281,15 +281,63 @@ public class PolicySetTests
     }
 
     /// <summary>
+    /// A policy condition's quantifier whose collection selector throws is Unknown with a fault recorded against
+    /// the collection itself (<c>TermIdentity(collectionName, [])</c>, ADR-0010 decision 4), not against a
+    /// predicate term. The set's per-rule fault filter must still carry that fault into the decision, and must
+    /// not leak it onto an unrelated policy that never references that collection (ticket 18).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_PolicyConditionCollectionSelectorThrows_IncludesTheFaultAndExcludesItFromAnUnrelatedPolicy_Test()
+    {
+        PolicyDecision decision = await new PolicySet<CollectionContext>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [
+                new Policy<CollectionContext>("p", PolicyEffect.Permit, CompileTrue()),
+                new Policy<CollectionContext>("d", PolicyEffect.Deny, CompileExistsOverThrowingSelector()),
+            ]
+        ).EvaluateAsync(new CollectionContext(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+        Fault fault = Assert.Single(decision.Decision.Faults);
+        Assert.Equal(new TermIdentity("orders", []), fault.Term);
+    }
+
+    /// <summary>
+    /// A policy condition's quantifier that exceeds <see cref="EvaluationOptions.MaxElementEvaluations"/> is
+    /// Unknown with a fault recorded against the collection itself, the same identity shape a throwing selector's
+    /// fault uses. The set's per-rule fault filter must carry that fault into the decision too (ticket 18).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_PolicyConditionElementEvaluationLimitExceeded_IncludesTheFaultInTheDecision_Test()
+    {
+        PolicyDecision decision = await new PolicySet<CollectionContext>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [new Policy<CollectionContext>("d", PolicyEffect.Deny, CompileForAllOverOrders())]
+        ).EvaluateAsync(
+            new CollectionContext { Orders = [TruthValue.True, TruthValue.True] },
+            options: new EvaluationOptions(MaxElementEvaluations: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
+        Fault fault = Assert.Single(decision.Decision.Faults);
+        Assert.Equal(new TermIdentity("orders", []), fault.Term);
+        Assert.IsType<ElementEvaluationLimitExceededException>(fault.Exception);
+    }
+
+    /// <summary>
     /// A predicate shared by two policy conditions is evaluated once per context: the set shares one
     /// <c>EvaluationState</c> across its rules, so the second rule's identical term hits the first rule's memo
-    /// entry instead of invoking the predicate again (feature backlog 08).
+    /// entry instead of invoking the predicate again (feature backlog 08). Both rules are compiled against the
+    /// same registry (the common case, ticket 34), which is exactly when this sharing applies.
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_PredicateSharedByTwoPolicyConditions_IsEvaluatedOnce_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "shared",
             (_, _, _) =>
             {
@@ -297,14 +345,8 @@ public class PolicySetTests
                 return ValueTask.FromResult(TruthValue.True);
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "shared",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                return ValueTask.FromResult(TruthValue.True);
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "shared");
+        CompiledRule<object> second = CompileSharing(registry, "shared");
 
         // DenyOverrides never stops early for a Permit policy (it only stops at a definite Deny), so both
         // policies run and the sharing is actually exercised.
@@ -322,13 +364,14 @@ public class PolicySetTests
     /// <summary>
     /// A faulting predicate shared by two policy conditions faults once (the second rule's term hits the memo
     /// without invoking the predicate again), but each policy that references it still lists the fault in the
-    /// set's decision, exactly as it would without sharing (feature backlog 08).
+    /// set's decision, exactly as it would without sharing (feature backlog 08). Both rules are compiled against
+    /// the same registry (the common case, ticket 34).
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_FaultingPredicateSharedByTwoPolicyConditions_FaultsOnceButEachPolicyListsIt_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "sharedFault",
             (_, _, _) =>
             {
@@ -336,14 +379,8 @@ public class PolicySetTests
                 throw new InvalidOperationException("The service is offline.");
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "sharedFault",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                throw new InvalidOperationException("The service is offline.");
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "sharedFault");
+        CompiledRule<object> second = CompileSharing(registry, "sharedFault");
 
         PolicyDecision decision = await new PolicySet<object>(
             "set",
@@ -359,13 +396,14 @@ public class PolicySetTests
     /// <summary>
     /// A fault shared by two policy conditions counts once against the set's fault budget, not once per policy
     /// that references it: a third, unrelated policy still runs normally under a budget that only the doubled
-    /// count would have reached (feature backlog 08).
+    /// count would have reached (feature backlog 08). Both rules are compiled against the same registry (the
+    /// common case, ticket 34).
     /// </summary>
     [Fact]
     public async Task EvaluateAsync_FaultSharedByTwoPolicyConditions_CountsOnceAgainstTheFaultBudget_Test()
     {
         int[] calls = [0];
-        CompiledRule<object> first = CompileSharing(
+        PredicateRegistry<object> registry = SharedRegistry(
             "sharedFault2",
             (_, _, _) =>
             {
@@ -373,14 +411,8 @@ public class PolicySetTests
                 throw new InvalidOperationException("The service is offline.");
             }
         );
-        CompiledRule<object> second = CompileSharing(
-            "sharedFault2",
-            (_, _, _) =>
-            {
-                calls[0]++;
-                throw new InvalidOperationException("The service is offline.");
-            }
-        );
+        CompiledRule<object> first = CompileSharing(registry, "sharedFault2");
+        CompiledRule<object> second = CompileSharing(registry, "sharedFault2");
 
         PolicyDecision decision = await new PolicySet<object>(
             "set",
@@ -394,6 +426,48 @@ public class PolicySetTests
 
         Assert.Equal(1, calls[0]);
         Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "p3").Applies);
+    }
+
+    /// <summary>
+    /// Ticket 34: two policies' conditions that resolve to the same term identity (<c>isAdmin</c>, no arguments)
+    /// but are compiled against different <c>PredicateRegistry</c> instances evaluate independently instead of
+    /// one sharing the other's memoized answer. The deny policy's condition is compiled
+    /// <see cref="CompilationMode.Lenient"/> against a registry with no <c>isAdmin</c> predicate, so its term
+    /// memoizes <see cref="TruthValue.Unknown"/> plus a fault; the permit policy's condition is compiled against a
+    /// different registry where <c>isAdmin</c> is registered and always answers <see cref="TruthValue.True"/>.
+    /// Before the fix, the memo key ignored the registry, so the permit policy's identical term identity hit the
+    /// deny policy's cached Unknown and the set could never permit.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SameTermIdentityCompiledAgainstDifferentRegistries_EachEvaluatesItsOwnPredicate_Test()
+    {
+        CompiledRule<object> missingAdminCondition = new RuleCompiler<object>(
+            PredicateRegistry<object>.CreateBuilder().Build(),
+            CompilerOptions.Default with
+            {
+                Mode = CompilationMode.Lenient,
+            }
+        )
+            .Compile("isAdmin")
+            .GetRuleOrThrow();
+
+        PredicateRegistryBuilder<object> adminBuilder = PredicateRegistry<object>.CreateBuilder();
+        Add(adminBuilder, FakePredicates.Returning<object>("isAdmin", TruthValue.True));
+        CompiledRule<object> hasAdminCondition = new RuleCompiler<object>(adminBuilder.Build())
+            .Compile("isAdmin")
+            .GetRuleOrThrow();
+
+        // PermitOverrides: a definite permit wins regardless of the deny policy's Unknown, so the assertion below
+        // isolates whether the permit policy's own predicate ran (True) or inherited the deny policy's cached
+        // Unknown answer (the pre-fix bug).
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.PermitOverrides,
+            [Deny("missingAdmin", missingAdminCondition), Permit("hasAdmin", hasAdminCondition)]
+        ).EvaluateAsync(new object(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "hasAdmin").Applies);
+        Assert.Equal(PolicyOutcome.Permit, decision.Outcome);
     }
 
     /// <summary>
@@ -417,6 +491,110 @@ public class PolicySetTests
         Assert.Equal(PolicyOutcome.Indeterminate, decision.Outcome);
         Assert.Equal(TruthValue.Unknown, decision.Results.Single(result => result.PolicyId == "blocked").Applies);
         Assert.False(decision.IsPermitted);
+    }
+
+    /// <summary>
+    /// A shared fault-budget abort makes a deny-overrides outcome depend on priority. The faulting permit runs first
+    /// and spends the budget, so the deny answers <c>Unknown</c> and the set is Indeterminate. With the deny first, it
+    /// is <c>True</c> before the abort, so the set denies.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SharedFaultBudgetAbort_OutcomeDependsOnPriority_Test()
+    {
+        EvaluationOptions options = new(FaultBudget: 1);
+        PolicyDecision permitFirst = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("staff", Faulting, priority: 10), Deny("blocked", True, priority: 0)]
+        ).EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken);
+        PolicyDecision denyFirst = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("staff", Faulting, priority: 0), Deny("blocked", True, priority: 10)]
+        ).EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(PolicyOutcome.Indeterminate, permitFirst.Outcome);
+        Assert.Equal(PolicyOutcome.Deny, denyFirst.Outcome);
+    }
+
+    /// <summary>
+    /// With <see cref="EvaluationOptions.IncludeTrace"/> the set's decision carries one flat trace of every rule that ran,
+    /// in evaluation order, each entry labeled with the rule it came from. A policy whose target is False never runs
+    /// its condition, so the condition has no entries.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTrace_DecisionCarriesLabeledTraceOfEveryRuleThatRan_Test()
+    {
+        PolicySet<object> set = new(
+            "set",
+            CombiningAlgorithm.DenyOverrides,
+            [Permit("p", False), Deny("outside", True, target: False), Deny("d", True)],
+            True
+        );
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(decision.Decision.Trace);
+        Assert.Equal(
+            ["set target: yes", "policy 'p' condition: no", "policy 'outside' target: no", "policy 'd' condition: yes"],
+            decision.Decision.Trace.Entries.Select(entry => entry.Text)
+        );
+        Assert.Equal(
+            [TruthValue.True, TruthValue.False, TruthValue.False, TruthValue.True],
+            decision.Decision.Trace.Entries.Select(entry => entry.Result)
+        );
+    }
+
+    /// <summary>
+    /// A term that an earlier rule already evaluated runs once, but each rule that references it still has its own
+    /// labeled trace entry for it.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_IncludeTraceWithTermSharedByTwoRules_EachRuleHasAnEntry_Test()
+    {
+        int calls = 0;
+        PredicateRegistry<object> registry = SharedRegistry(
+            "shared",
+            (_, _, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(TruthValue.False);
+            }
+        );
+        CompiledRule<object> first = CompileSharing(registry, "shared");
+        CompiledRule<object> second = CompileSharing(registry, "shared");
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", first), Deny("d", second)]);
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1, calls);
+        Assert.NotNull(decision.Decision.Trace);
+        Assert.Equal(
+            ["policy 'p' condition: shared", "policy 'd' condition: shared"],
+            decision.Decision.Trace.Entries.Select(entry => entry.Text)
+        );
+    }
+
+    /// <summary>Without <see cref="EvaluationOptions.IncludeTrace"/> the set's decision has no trace.</summary>
+    [Fact]
+    public async Task EvaluateAsync_TraceNotRequested_DecisionHasNoTrace_Test()
+    {
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", True)], True);
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Null(decision.Decision.Trace);
     }
 
     /// <summary>The constructor rejects two policies with the same identifier.</summary>
@@ -484,17 +662,24 @@ public class PolicySetTests
         builder.Add(fake.Schema, fake.Evaluate);
     }
 
-    // Compiles a single-term rule over one named, no-argument predicate, so the same term identity (predicate
-    // name, no arguments) is produced by two different CompiledRule instances compiled from two different
-    // registries, and a shared PolicySet evaluation state can memoize across them.
-    private static CompiledRule<object> CompileSharing(
+    // Builds a registry with one named, no-argument predicate. Two rules compiled separately against the SAME
+    // registry instance (CompileSharing below) produce the same term identity (predicate name, no arguments) AND
+    // the same registry component of the memo key, so a shared PolicySet evaluation state memoizes across them
+    // (the common case, ticket 34).
+    private static PredicateRegistry<object> SharedRegistry(
         string predicateName,
         Func<object, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
     )
     {
         PredicateRegistryBuilder<object> builder = PredicateRegistry<object>.CreateBuilder();
         builder.Add(PredicateSchema.NoArguments(predicateName, predicateName, "Registered for a test."), evaluate);
-        return new RuleCompiler<object>(builder.Build()).Compile(predicateName).GetRuleOrThrow();
+        return builder.Build();
+    }
+
+    // Compiles a single-term rule naming predicateName against the given registry.
+    private static CompiledRule<object> CompileSharing(PredicateRegistry<object> registry, string predicateName)
+    {
+        return new RuleCompiler<object>(registry).Compile(predicateName).GetRuleOrThrow();
     }
 
     private static Policy<object> Permit(
@@ -524,5 +709,60 @@ public class PolicySetTests
     )
     {
         return new PolicySet<object>("set", algorithm, policies, setTarget).EvaluateAsync(new object());
+    }
+
+    // Compiles a trivial, always-True rule over CollectionContext that references no collection, so a test can
+    // pair it with a collection-faulting rule to check the fault is not leaked onto this unrelated policy.
+    private static CompiledRule<CollectionContext> CompileTrue()
+    {
+        (
+            PredicateSchema schema,
+            Func<CollectionContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
+        ) = FakePredicates.Returning<CollectionContext>("yes", TruthValue.True);
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>.CreateBuilder();
+        builder.Add(schema, evaluate);
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("yes").GetRuleOrThrow();
+    }
+
+    // An EXISTS quantifier over a collection named "orders" whose selector always throws (ADR-0010 decision 4):
+    // evaluating it faults once, against TermIdentity("orders", []), not against the "isOverdue" element term.
+    private static CompiledRule<CollectionContext> CompileExistsOverThrowingSelector()
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>
+            .CreateBuilder()
+            .AddCollection<TruthValue>(
+                "orders",
+                _ => throw new InvalidOperationException("The orders service is offline."),
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("isOverdue", "isOverdue", "True iff the order is overdue."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("EXISTS(o IN orders, isOverdue)").GetRuleOrThrow();
+    }
+
+    // A FORALL quantifier over a real (non-throwing) "orders" collection, for the MaxElementEvaluations test: every
+    // element answers True, so nothing short-circuits the loop before the element limit aborts it.
+    private static CompiledRule<CollectionContext> CompileForAllOverOrders()
+    {
+        PredicateRegistryBuilder<CollectionContext> builder = PredicateRegistry<CollectionContext>
+            .CreateBuilder()
+            .AddCollection(
+                "orders",
+                ctx => ctx.Orders,
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("isOverdue", "isOverdue", "True iff the order is overdue."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        return new RuleCompiler<CollectionContext>(builder.Build()).Compile("FORALL(o IN orders, isOverdue)").GetRuleOrThrow();
+    }
+
+    /// <summary>A context with a collection property, for the quantifier fault tests.</summary>
+    private sealed class CollectionContext
+    {
+        public IReadOnlyList<TruthValue>? Orders { get; init; }
     }
 }
