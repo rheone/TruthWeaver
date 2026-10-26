@@ -894,8 +894,133 @@ public sealed class QuantifierEvaluationTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.UnknownPredicate);
     }
 
-    private static RuleCompiler<LinesContext> CreateLinesCompiler()
+    /// <summary>
+    /// A body with several distinct <c>from(variable, ...)</c> queries over one element runs the element-to-data-source
+    /// projection once for that element, at its first query, not once for each query (ADR-0010 amendment: "the delegate
+    /// runs at the first query of that element").
+    /// </summary>
+    [Fact]
+    public async Task ForAll_BodyReadsElementWithSeveralQueries_ProjectsEachElementOnce_Test()
     {
+        int projections = 0;
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler(line =>
+        {
+            projections++;
+            return new FakeDataSource().With("$.qty", (long)line.Qty).With("$.min", 1L).With("$.max", 9L);
+        });
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll(
+                "line",
+                "lines",
+                RuleBuilder.And(
+                    RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))),
+                    RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.min"))),
+                    RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.max")))
+                )
+            )
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5), new LineItem(3)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Equal(2, projections);
+    }
+
+    /// <summary>
+    /// A projection that throws runs once for the element, however many distinct queries the body makes: the exception
+    /// is kept, and each query still becomes its own source-error fault.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_ElementSourceProjectorThrowsWithSeveralQueries_ProjectsOnceAndFaultsEachQuery_Test()
+    {
+        int projections = 0;
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler(_ =>
+        {
+            projections++;
+            throw new InvalidOperationException("projection fault");
+        });
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll(
+                "line",
+                "lines",
+                RuleBuilder.And(
+                    RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))),
+                    RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.min")))
+                )
+            )
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5)] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Assert.Equal(1, projections);
+        Assert.Equal(2, decision.Faults.Count);
+    }
+
+    /// <summary>
+    /// A body that reads an outer-supplied data source the element binding does not shadow queries that source once
+    /// for the whole evaluation, not once for each element (ADR-0006 decision 11: each <c>(source, query)</c> pair is
+    /// queried at most once within one evaluation), so every element sees the same answer.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_BodyReadsOuterSource_QueriesItOncePerEvaluation_Test()
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler(options: new CompilerOptions(DataSources: ["cfg"]));
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("cfg", "$.limit"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        FakeDataSource cfg = new FakeDataSource().With("$.limit", 1L);
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5), new LineItem(3), new LineItem(7)] },
+            dataSources: new DataSources { ["cfg"] = cfg },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Equal(["$.limit"], cfg.Queries);
+    }
+
+    /// <summary>
+    /// A body that reads the element's own source, under a name that shadows an outer-supplied source, still queries
+    /// each element's own projected source: the outer source is never queried and one element's answer never stands in
+    /// for another's.
+    /// </summary>
+    [Fact]
+    public async Task ForAll_ElementBindingShadowsOuterSource_QueriesEachElementsOwnSource_Test()
+    {
+        RuleCompiler<LinesContext> compiler = CreateLinesCompiler(options: new CompilerOptions(DataSources: ["line"]));
+        CompilationResult<LinesContext> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(compiler);
+        Assert.True(result.Succeeded, string.Join("; ", result.Diagnostics.Select(d => d.Message)));
+        FakeDataSource outer = new FakeDataSource().With("$.qty", 1L);
+
+        Decision decision = await result.CompiledRule!.EvaluateAsync(
+            new LinesContext { Lines = [new LineItem(5), new LineItem(0)] },
+            dataSources: new DataSources { ["line"] = outer },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.False, decision.Result);
+        Assert.Empty(outer.Queries);
+    }
+
+    private static RuleCompiler<LinesContext> CreateLinesCompiler(
+        Func<LineItem, IDataSource>? projector = null,
+        CompilerOptions? options = null
+    )
+    {
+        projector ??= line => line.ScriptQty ? new FakeDataSource().With("$.qty", (long)line.Qty) : new FakeDataSource();
         PredicateRegistryBuilder<LinesContext> builder = PredicateRegistry<LinesContext>
             .CreateBuilder()
             .AddCollection(
@@ -911,9 +1036,9 @@ public sealed class QuantifierEvaluationTests
                         ),
                         (_, args, _) => ValueTask.FromResult(args.GetInt64("n") > 0 ? TruthValue.True : TruthValue.False)
                     ),
-                line => line.ScriptQty ? new FakeDataSource().With("$.qty", (long)line.Qty) : new FakeDataSource()
+                projector
             );
-        return new RuleCompiler<LinesContext>(builder.Build());
+        return new RuleCompiler<LinesContext>(builder.Build(), options ?? CompilerOptions.Default);
     }
 
     private static RuleCompiler<QuantifierContext> CreateCompiler(

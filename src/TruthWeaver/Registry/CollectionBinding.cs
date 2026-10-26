@@ -199,10 +199,15 @@ internal sealed class CollectionBinding<TContext, TItem>(
             }
 
             state.ElementEvaluations++;
-            Element<TContext, TItem> elementContext = new(context, elements[i], i);
-            DataSources? elementDataSources = elementSource is null
-                ? dataSources
-                : WithElementSource(dataSources, variable, elements[i], elementSource);
+            TItem item = elements[i];
+            Element<TContext, TItem> elementContext = new(context, item, i);
+            DataSources? elementDataSources = dataSources;
+            if (elementSource is not null)
+            {
+                LazyElementDataSource element = new(() => elementSource(item), elementMemoScope);
+                elementDataSources = WithElementSource(dataSources, variable, element);
+            }
+
             Evaluator<Element<TContext, TItem>> nested = new(
                 elementContext,
                 services,
@@ -276,18 +281,15 @@ internal sealed class CollectionBinding<TContext, TItem>(
 
     /// <summary>
     /// Builds the <see cref="DataSources"/> one element's nested evaluator resolves <c>from(...)</c> against
-    /// (ADR-0010 decision 3): the element's own projected source under <paramref name="variable"/>, plus every
-    /// outer-supplied source under a different name. The element binding takes priority over a like-named
-    /// outer-supplied source, because inside the body <paramref name="variable"/> names the element, lexically.
+    /// (ADR-0010 decision 3): the element's own projected source (<paramref name="element"/>) under
+    /// <paramref name="variable"/>, plus every outer-supplied source under a different name. The element binding
+    /// takes priority over a like-named outer-supplied source, because inside the body <paramref name="variable"/>
+    /// names the element, lexically. Every outer source is passed on as the same instance, which is what lets the
+    /// evaluator key its answers at the scope that source was bound at.
     /// </summary>
-    private static DataSources WithElementSource(
-        DataSources? outer,
-        string variable,
-        TItem item,
-        Func<TItem, IDataSource> projector
-    )
+    private static DataSources WithElementSource(DataSources? outer, string variable, LazyElementDataSource element)
     {
-        DataSources merged = new() { { variable, new LazyElementDataSource<TItem>(item, projector) } };
+        DataSources merged = new() { { variable, element } };
         if (outer is not null)
         {
             foreach (KeyValuePair<string, IDataSource> entry in outer)

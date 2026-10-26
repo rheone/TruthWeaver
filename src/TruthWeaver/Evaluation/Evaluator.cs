@@ -828,7 +828,18 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Asks the named source a query, once per evaluation; a failure is stored and replayed like a value.</summary>
     private async ValueTask<SourceAnswer> QuerySourceAsync(VariableReference reference)
     {
-        (string? Scope, VariableReference Reference) key = (this.memoScope, reference);
+        // ADR-0006 decision 11: each (source, query) pair is queried at most once within one evaluation. The key's
+        // scope is where the named source was bound, not where this evaluator runs: a quantifier element's own
+        // source is bound at that element's memo scope, and every other source at the evaluation's root (null).
+        // Keying by this evaluator's memoScope instead would re-query an outer source once per element, and a live
+        // source could then give two elements of one evaluation different answers.
+        string? sourceScope =
+            this.dataSources is not null
+            && this.dataSources.TryGet(reference.Source, out IDataSource? source)
+            && source is LazyElementDataSource element
+                ? element.MemoScope
+                : null;
+        (string? Scope, VariableReference Reference) key = (sourceScope, reference);
         if (this.state.SourceAnswers.TryGetValue(key, out SourceAnswer? known))
         {
             return known;
