@@ -380,6 +380,39 @@ public sealed class DefinitionsTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDefinitionDepthExceeded);
     }
 
+    /// <summary>
+    /// A chain of definitions, each adding one <c>NOT</c> over the use below it, is shallow as written (every
+    /// definition's own body is a single <c>NOT</c>, and the main body is a bare identifier), so the parser's own
+    /// depth guard - which only ever sees one definition's text at a time - never trips. Once
+    /// <see cref="DefinitionExpander"/> inlines the whole chain, the expanded tree nests one <c>NOT</c> per
+    /// definition, past <c>MaxDepth</c>, and <c>RuleNodeCompiler.Build</c>'s own depth check reports it (the same
+    /// code the parser's guard would have reported, had the written text itself been this deep).
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionChainShallowAsWrittenButDeepAfterExpansion_ReportsMaxDepthExceeded_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build(),
+            new CompilerOptions(MaxDepth: 5, MaxDefinitionDepth: 20)
+        );
+        string chain = string.Join(
+            " ",
+            Enumerable.Range(0, 9).Select(i => i == 0 ? "let d0 = NOT a;" : $"let d{i} = NOT d{i - 1};")
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"{chain} d8");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+        Assert.Equal("Rule exceeds the maximum tree depth of 5.", diagnostic.Message);
+        Assert.Equal("nesting at most 5 deep", diagnostic.Expected);
+        Assert.Equal("deeper nesting", diagnostic.Found);
+
+        // A DSL-origin node locates by Span, not Path (Path is JSON/YAML-only), so this is the correct value here,
+        // not an unasserted gap.
+        Assert.Null(diagnostic.Path);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>Expanding a use that would overrun <see cref="CompilerOptions.MaxNodeCount"/> reports the normal node-count error, with no special-casing for where the nodes came from.</summary>
     [Fact]
     public void Compile_UseExpandingPastMaxNodeCount_ReportsMaxNodeCountExceeded_Test()
