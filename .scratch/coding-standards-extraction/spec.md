@@ -1,6 +1,6 @@
 # Split CODING_STANDARDS.md out of CLAUDE.md
 
-**Status:** filed 2026-10-26 from the `/retro` on the Bundle D session (ultra-review tickets 09, 12, 51). Not yet triaged - this is a candidate the retro surfaced, not a decided scope.
+**Status:** needs-triage (filed 2026-10-26 from the `/retro` on the Bundle D session, ultra-review tickets 09, 12, 51); a candidate the retro surfaced, not a decided scope.
 
 Source: `CLAUDE.md` carries both navigation pointers and judgement-call coding standards in one file, loaded into every agent's context on every turn in this repo. The `writing-for-agents`/`retro` model treats judgement-call standards as review-time-only material (a separate `CODING_STANDARDS.md`, read by the reviewer agent, not the implementer), kept out of the always-loaded context. This session's own findings (where fault-recording helpers belong, the worktree-per-dispatched-agent rule) landed as new `CLAUDE.md` bullets for lack of anywhere else to put them, growing the always-loaded file further.
 

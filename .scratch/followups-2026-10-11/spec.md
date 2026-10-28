@@ -1,6 +1,6 @@
 # Follow-ups from the 2026-10-11 grilling
 
-**Status:** grilled 2026-10-11, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-11)
 
 Source: the open decisions after the `api-consistency-and-printers` run. Packages are unpublished, so breaking changes are allowed and recorded in `CHANGELOG.md`.
 

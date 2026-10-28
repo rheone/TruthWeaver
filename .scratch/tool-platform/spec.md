@@ -1,6 +1,6 @@
 # Tool platform: shared core, CLI and import/export
 
-**Status:** grilled 2026-10-11, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-11)
 
 The `truthweaver` command line and the terminal UI are real tools, not supplements. They have roughly the same functionality and share one UI-free core. This spec covers the core, the library additions it needs, and the CLI. The TUI is in [tui-workbench](../tui-workbench/spec.md). It replaces the CLI scope of ticket 16 in [feature-backlog-2026-10-11](../feature-backlog-2026-10-11/spec.md).
 

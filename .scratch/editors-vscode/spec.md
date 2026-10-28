@@ -1,6 +1,6 @@
 # VS Code rule-text extension: QOL and generator
 
-**Status:** grilled 2026-10-24, ready for implementation (ticket 02 needs-triage, ticket 03 wontfix)
+**Status:** ready-for-agent (grilled 2026-10-24; ticket 02 needs-triage, ticket 03 wontfix)
 
 Source: a `/grill-with-docs` session scoping follow-up quality-of-life and value-add work for `editors/vscode/`, the unpublished, code-free TextMate grammar extension for rule text. Four candidates were raised (grammar/manifest QOL, a generator script, devcontainer auto-register, a rule-text language server); this spec records what ships now versus what's deferred.
 

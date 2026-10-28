@@ -1,6 +1,6 @@
 # Rule-text language server: shared coloring, diagnostics and hover across VS Code, Visual Studio and the TUI's future
 
-**Status:** grilled 2026-10-24, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-24)
 
 Source: a `/grilling` session that grew out of `.scratch/editors-vscode/` scoping, prompted by "can this grammar be caught and recognized in both Visual Studio and VS Code for richer editing and information." Supersedes the placeholder at `.scratch/editors-vscode/issues/03-rule-text-language-server.md`.
 

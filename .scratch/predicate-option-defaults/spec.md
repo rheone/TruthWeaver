@@ -1,6 +1,6 @@
 # Predicate option defaults
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-10)
 
 Source: a discovery pass over every optional setting in the built-in predicates (2026-10-10).
 

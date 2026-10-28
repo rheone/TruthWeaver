@@ -1,6 +1,6 @@
 # Library roadmap: feature candidates, impact/complexity, and verdicts
 
-**Status:** closed 2026-10-09 (decisions below). Re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
+**Status:** done (closed 2026-10-09; decisions below). Re-scored 2026-10-03 (see [Re-score](#re-score-2026-10-03-k3-hardening-ticket-01))
 
 ## Purpose
 

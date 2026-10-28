@@ -1,6 +1,6 @@
 # History cleanup: rewrite origin/main into a themed, attribution-clean history
 
-**Status:** proposed, awaiting approval. Nothing in this plan has been executed.
+**Status:** needs-triage (proposed, awaiting approval). Nothing in this plan has been executed.
 
 Decided in the 2026-10-25 grilling session (scope, grouping, attribution, backup, force-push, verification, branch cleanup, commit style, theme source).
 

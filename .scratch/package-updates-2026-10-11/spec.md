@@ -1,6 +1,6 @@
 # External package updates
 
-**Status:** grilled 2026-10-11, ready for implementation. Highest priority: run these tickets before the other backlog work.
+**Status:** ready-for-agent (grilled 2026-10-11). Highest priority: run these tickets before the other backlog work.
 
 Goal: every external package and tool is on its latest stable release (no pre-release), and any issue the update causes is fixed at its cause. Checked against the NuGet index on 2026-10-11.
 

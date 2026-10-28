@@ -1,6 +1,6 @@
 # Rewrite tooling: soundness checks, normal forms, evaluation order and provenance
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-10)
 
 Source: [library-roadmap](../library-roadmap/spec.md) ("Not now" NNF print mode), the simplification discussion of 2026-10-10,
 and [deferred-features](../deferred-features/spec.md).

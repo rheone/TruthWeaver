@@ -1,6 +1,6 @@
 # Project READMEs
 
-**Status:** grilled 2026-10-17, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-17)
 
 ## Goal
 

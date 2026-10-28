@@ -1,6 +1,6 @@
 # Architecture deepening, round 2
 
-**Status:** grilled 2026-10-10, ready for implementation
+**Status:** ready-for-agent (grilled 2026-10-10)
 
 Source: the 2026-10-10 architecture review (`/improve-codebase-architecture`) over the files with the most churn since 2026-09-20. It follows [architecture-deepening](../architecture-deepening/spec.md), which is done.
 

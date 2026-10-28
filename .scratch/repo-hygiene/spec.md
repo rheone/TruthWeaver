@@ -1,5 +1,6 @@
 # Repo hygiene: line endings, file-type config and commit hook
-n**Status:** done
+
+**Status:** done
 
 Decided in the 2026-10-03 owner grilling session (Q17, Q13-14).
 
@@ -11,7 +12,7 @@ Tickets are in `issues/`.
 
 ## Follow-up: convention enforcement (2026-10-10)
 
-**Status:** tickets 03 to 08 done. Tickets 01 and 02 stay done.
+**Status:** done. Tickets 03 to 08 done; tickets 01 and 02 stay done.
 
 A scan on branch `roadmap-tickets` found five places where a written rule has no check, or a disabled check has no review date.
 The scan used grep only. Each ticket starts by confirming its numbers.

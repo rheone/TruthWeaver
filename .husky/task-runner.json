@@ -92,6 +92,21 @@
       ]
     },
     {
+      "name": "validate-triage-labels",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "scripts/validate-triage-labels.cs"
+      ],
+      "include": [
+        ".scratch/**/issues/**/*.md",
+        ".scratch/**/spec.md",
+        ".scratch/**/plan.md",
+        ".scratch/**/map.md"
+      ]
+    },
+    {
       "name": "doc-tests",
       "group": "pre-commit",
       "command": "dotnet",

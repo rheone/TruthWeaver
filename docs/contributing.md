@@ -177,6 +177,16 @@ dotnet run scripts/normalize-text.cs -- --check-only
 dotnet run scripts/normalize-text.cs -- docs/contributing.md README.md
 ```
 
+`scripts/validate-triage-labels.cs` checks every `Status:`/`**Status:**` line in an issue file
+(`.scratch/<effort>/issues/*.md`) or an effort's top-level `spec.md`, `plan.md` or `map.md`: it must lead with one of
+the five triage labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) or `done`,
+case-insensitively. It is wired into the pre-commit hook (`.husky/task-runner.json`) and exits with code 1 when any
+line does not:
+
+```powershell
+dotnet run scripts/validate-triage-labels.cs
+```
+
 `scripts/format-data.cs` runs the pinned Prettier over the JSON, YAML and YML files, and only checks that the test
 fixture folders parse. It needs Node.js and stops with a message and exit code 1 when `node` is not on `PATH`. Pass
 `--check-only` to exit with code 1 when a file needs formatting. Pass file paths to limit the run to those files:

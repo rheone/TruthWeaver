@@ -1,6 +1,6 @@
 # Ultra review plan - 2026-10-21 (bounded)
 
-Status: phases 2-4 done on 2026-10-21 (results in `summary.md` and `issues/`); phase 1 (K3 oracle) not yet written
+Status: ready-for-agent (phases 2-4 done on 2026-10-21; results in `summary.md` and `issues/`. Phase 1, the K3 oracle, not yet written)
 
 Run notes:
 

@@ -1,6 +1,6 @@
 # K3 external verification: prove every operator against Strong Kleene sources
 
-**Status:** grilled 2026-10-26, ready for implementation (tickets 01-05, all unblocked)
+**Status:** ready-for-agent (grilled 2026-10-26; tickets 01-05, all unblocked)
 
 Source: a `/grilling` session scoped directly by the owner, who framed it as foundational: "the fundamental reason this library exists" is that the K3 expression language's truth-seeking be provably correct, cross-checked against external Strong Kleene Logic (K3) sources, with a check for any standard operator missing from the implementation.
 

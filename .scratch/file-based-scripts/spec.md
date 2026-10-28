@@ -1,6 +1,6 @@
 # File-based repository scripts
 
-**Status:** tickets 01 to 08 are done.
+**Status:** done (tickets 01 to 08).
 
 ## Goal
 

@@ -1,6 +1,6 @@
 # Repository improvements, 2026-10-17
 
-**Status:** grilled 2026-10-17. Tickets 01 to 08 and 10 to 16 are done. Ticket 09 (owner checklist) is open: the first release has twelve packages including `TruthWeaver.Tool.Tui`, and the `PackageIcon` decision is deferred.
+**Status:** needs-triage (grilled 2026-10-17). Tickets 01 to 08 and 10 to 16 are done. Ticket 09 (owner checklist) is open: the first release has twelve packages including `TruthWeaver.Tool.Tui`, and the `PackageIcon` decision is deferred.
 
 Source: a nine-part owner request (repo layout, missed improvements, package updates, `Unknown` consistency, implicit usings, global packages, CPM, XML docs, NuGet release). An audit came first; this folder holds only the gaps.
 
