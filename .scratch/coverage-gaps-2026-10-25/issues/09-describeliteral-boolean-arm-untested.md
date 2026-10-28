@@ -1,6 +1,6 @@
 # 09 - RuleNodeCompiler.DescribeLiteral's Boolean arm has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Compilation (src/TruthWeaver/Compilation/RuleNodeCompiler.cs)
