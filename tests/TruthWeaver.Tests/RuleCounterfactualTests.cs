@@ -198,6 +198,43 @@ public sealed class RuleCounterfactualTests
         Assert.Contains("2", result.Reason, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Within the configured term cap, a rule shaped so the search's shared BDD construction exceeds the internal
+    /// node budget (ticket 24) reports <c>Undecided</c> with the exception's message, rather than hanging or
+    /// throwing.
+    /// </summary>
+    [Fact]
+    public void FindChanges_RulePastTheNodeBudget_ReportsUndecidedWithTheExceptionMessage_Test()
+    {
+        const int PairCount = 17;
+        string[] xs = [.. Enumerable.Range(1, PairCount).Select(i => $"x{i}")];
+        string[] ys = [.. Enumerable.Range(1, PairCount).Select(i => $"y{i}")];
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        foreach (string name in xs.Concat(ys))
+        {
+            builder.AddConstant(name, true);
+        }
+
+        // The bad interleaved order ("every x before every y") fixes the variable order before the pairwise AND-OR
+        // is built under it, forcing the exponential-under-that-order shape (the same two shapes BddNodeBudgetTests
+        // uses for the comparison tools, combined into one rule here since the search takes one tree, not two).
+        string badOrder = string.Join(" OR ", xs.Concat(ys));
+        string pairs = string.Join(" OR ", xs.Zip(ys, (x, y) => $"({x} AND {y})"));
+        CompiledRule<RuleTestContext> rule = new RuleCompiler<RuleTestContext>(builder.Build())
+            .Compile($"({badOrder}) AND ({pairs})")
+            .GetRuleOrThrow();
+
+        CounterfactualResult result = RuleCounterfactual.FindChanges(
+            rule,
+            new Dictionary<string, TruthValue>(),
+            new CounterfactualOptions(MaxAnalysisTerms: 2 * PairCount)
+        );
+
+        Assert.Equal(CounterfactualOutcome.Undecided, result.Outcome);
+        Assert.Empty(result.ChangeSets);
+        Assert.Contains("budget", result.Reason, StringComparison.Ordinal);
+    }
+
     /// <summary>A fact keyed by a name that is not a term of the rule is refused.</summary>
     [Fact]
     public void FindChanges_FactThatIsNotATerm_ThrowsArgumentException_Test()
