@@ -61,6 +61,37 @@ public sealed class ExplainTests
         Assert.DoesNotContain("faulted", sentence, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A quantifier term that decides the result is named in the explanation sentence by its own canonical text
+    /// (it has no predicate schema of its own to supply a nicer label), not left out or blank.
+    /// </summary>
+    [Fact]
+    public async Task Explain_QuantifierDecidesTheResult_NamesTheQuantifierAtomByItsCanonicalText_Test()
+    {
+        PredicateRegistryBuilder<QuantifierExplainContext> builder = PredicateRegistry<QuantifierExplainContext>
+            .CreateBuilder()
+            .AddCollection(
+                "items",
+                ctx => ctx.Items,
+                elements =>
+                    elements.Add(
+                        PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                        (e, _, _) => ValueTask.FromResult(e.Item)
+                    )
+            );
+        CompiledRule<QuantifierExplainContext> rule = new RuleCompiler<QuantifierExplainContext>(builder.Build())
+            .Compile("FORALL(x IN items, elementTrue)")
+            .CompiledRule!;
+        Decision decision = await rule.EvaluateAsync(
+            new QuantifierExplainContext { Items = [TruthValue.True, TruthValue.True] },
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        string sentence = rule.Explain(decision);
+
+        Assert.Equal("Satisfied because FORALL(x IN items, elementTrue) is true.", sentence);
+    }
+
     /// <summary>A rule with no term gives only the head.</summary>
     [Fact]
     public async Task Explain_RuleWithoutTerms_GivesOnlyTheResult_Test()
@@ -164,5 +195,10 @@ public sealed class ExplainTests
     private static Task<Decision> EvaluateAsync(CompiledRule<string> rule, string context)
     {
         return rule.EvaluateAsync(context, cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    private sealed class QuantifierExplainContext
+    {
+        public TruthValue[]? Items { get; set; }
     }
 }
