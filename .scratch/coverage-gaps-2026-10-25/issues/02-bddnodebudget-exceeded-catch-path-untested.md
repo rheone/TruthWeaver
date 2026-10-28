@@ -1,6 +1,6 @@
 # 02 - Analyzer.Profile and BddNodeCount's BddNodeBudgetExceededException catch path has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: critical
 Slice: Analysis (src/TruthWeaver/Analysis/Analyzer.cs)
