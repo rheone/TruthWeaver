@@ -1,6 +1,6 @@
 # 05 - NandNorExpander's SubsetCost resource-bailout path has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Rewriting (src/TruthWeaver/Rewriting/NandNorExpander.cs)
