@@ -21,6 +21,37 @@ public sealed class DslParserTests
         );
     }
 
+    /// <summary>A quantifier head with the <c>IN</c> keyword omitted (the collection name sits where it belongs) raises a single syntax error naming what was found there.</summary>
+    [Fact]
+    public void Parse_QuantifierMissingIn_RaisesSyntaxErrorExpectedInWithNoCascade_Test()
+    {
+        (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("FORALL(x items, elementTrue)");
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal("Expected 'IN' but found 'items'.", diagnostic.Message);
+        Assert.Equal("'IN'", diagnostic.Expected);
+        Assert.Equal("'items'", diagnostic.Found);
+    }
+
+    /// <summary>
+    /// A quantifier head with the <c>IN</c> keyword misspelled raises a syntax error naming the misspelling as its
+    /// first diagnostic. Unlike the omitted-keyword case, the misspelled identifier is then consumed as the
+    /// collection name (the same recovery), but what follows it is no longer the comma the grammar expects there, so
+    /// this shape does cascade into follow-on diagnostics.
+    /// </summary>
+    [Fact]
+    public void Parse_QuantifierMisspelledIn_RaisesSyntaxErrorExpectedInFirst_Test()
+    {
+        (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("FORALL(x INN items, elementTrue)");
+
+        Diagnostic diagnostic = diagnostics[0];
+        Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
+        Assert.Equal("Expected 'IN' but found 'INN'.", diagnostic.Message);
+        Assert.Equal("'IN'", diagnostic.Expected);
+        Assert.Equal("'INN'", diagnostic.Found);
+    }
+
     /// <summary>Mixing XOR with AND or OR without parentheses raises ambiguous operator mixing.</summary>
     [Fact]
     public void Mixing_XorWithAndOr_RaisesAmbiguousOperatorMixing_Test()
