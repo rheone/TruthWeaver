@@ -1,6 +1,6 @@
 # 01 - CompiledRule's shared-state EvaluateAsync overload has no test for its Timeout branch
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Evaluation (src/TruthWeaver/Evaluation/CompiledRule.Evaluation.cs)

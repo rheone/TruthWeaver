@@ -233,6 +233,32 @@ public sealed class EvaluationOptionsTests
         );
     }
 
+    /// <summary>
+    /// The internal shared-state overload used by <c>TruthWeaver.Policies</c> has the same timeout behavior as the
+    /// public overload: a timeout cancels an in-flight evaluation and is not recorded as a fault in the shared state.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SharedStateOverloadWithTimeoutExpiring_ThrowsWithoutRecordingAFault_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddDelayed("slow", TimeSpan.FromSeconds(5), true).Build()
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("slow").CompiledRule!;
+        EvaluationState sharedState = new(collectTrace: false);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            rule.EvaluateAsync(
+                new RuleTestContext(),
+                sharedState,
+                EmptyServiceProvider.Instance,
+                options: new EvaluationOptions(Timeout: TimeSpan.FromMilliseconds(50)),
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
+
+        Assert.Empty(sharedState.Faults);
+    }
+
     /// <summary>Evaluation is unaffected when no timeout is configured.</summary>
     [Fact]
     public async Task Timeout_NotConfigured_LeavesEvaluationUnaffected_Test()
