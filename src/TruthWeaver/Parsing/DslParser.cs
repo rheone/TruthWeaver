@@ -116,6 +116,32 @@ internal sealed class DslParser
     /// <returns>The parsed root node and the diagnostics raised while parsing.</returns>
     public static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics) Parse(string source, int maxDepth = 32)
     {
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics, long _) = ParseCore(source, maxDepth);
+        return (root, diagnostics);
+    }
+
+    /// <summary>
+    /// <see cref="Parse"/>, plus <see cref="NoteAttacher.Attach"/>'s step count: a deterministic, machine-independent
+    /// proxy for comment-to-note attachment's cost, for a test to assert it scales linearly with the input rather
+    /// than quadratically (a wall-clock measurement of the same thing is noisy under load). Test-only; production
+    /// code has no use for the count and calls <see cref="Parse"/>.
+    /// </summary>
+    /// <param name="source">The rule text.</param>
+    /// <param name="maxDepth">As for <see cref="Parse"/>.</param>
+    /// <returns>The parsed root node, the diagnostics, and the note-attachment step count.</returns>
+    internal static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics, long NoteAttachSteps) ParseWithNoteAttachSteps(
+        string source,
+        int maxDepth = 32
+    )
+    {
+        return ParseCore(source, maxDepth);
+    }
+
+    private static (RuleNode Root, IReadOnlyList<Diagnostic> Diagnostics, long NoteAttachSteps) ParseCore(
+        string source,
+        int maxDepth
+    )
+    {
         Lexer lexer = new(source);
         IReadOnlyList<Token> tokens = lexer.Tokenize();
         List<Diagnostic> diagnostics = [.. lexer.Diagnostics];
@@ -159,7 +185,7 @@ internal sealed class DslParser
             definitions.Count == 0
                 ? body
                 : new RuleDocumentNode(definitions, body, SpanCovering(definitions[0].Span.Start, body.Span.End));
-        NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
+        long noteAttachSteps = NoteAttacher.Attach(root, lexer.Comments, tokens, source, parser.groups);
 
         // Drop whatever "expected closer"/"unexpected token" noise the unwind above added once the depth guard
         // tripped (see the field comment on diagnosticsCeiling): it is an artifact of bailing out mid-expression,
@@ -169,7 +195,7 @@ internal sealed class DslParser
             diagnostics.RemoveRange(parser.diagnosticsCeiling, diagnostics.Count - parser.diagnosticsCeiling);
         }
 
-        return (root, diagnostics);
+        return (root, diagnostics, noteAttachSteps);
     }
 
     /// <summary>
