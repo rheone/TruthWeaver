@@ -1,6 +1,6 @@
 # 16 - PredicateHarness.CancellationOutcomeAsync has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Testing (src/TruthWeaver.Testing/Harness/PredicateHarness.cs)
