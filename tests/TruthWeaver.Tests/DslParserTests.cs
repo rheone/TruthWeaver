@@ -106,6 +106,20 @@ public sealed class DslParserTests
         Assert.Contains("Expected a term, constant, or '('", diagnostic.Message);
     }
 
+    /// <summary>
+    /// A comment attaches to a node of the parsed tree, so a rule that is a bare, unrecoverable parse error at the
+    /// root (no node to measure an extent for) parses without throwing and drops the comment rather than attaching
+    /// it anywhere.
+    /// </summary>
+    [Fact]
+    public void Parse_CommentOverABareParseErrorRoot_DropsTheCommentWithoutThrowing_Test()
+    {
+        (RuleNode root, IReadOnlyList<Diagnostic> _) = DslParser.Parse("// a comment\n)");
+
+        Assert.IsType<ErrorNode>(root);
+        Assert.Null(root.Note);
+    }
+
     /// <summary>A threshold that omits its integer first argument raises a diagnostic and defaults k to zero.</summary>
     [Fact]
     public void Threshold_OmittedInteger_RaisesDiagnosticAndDefaultsKToZero_Test()
