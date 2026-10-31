@@ -1,6 +1,6 @@
 # 08 - NoteAttacher.Attach's "no extent found" early return has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Parsing (src/TruthWeaver/Parsing/NoteAttacher.cs)

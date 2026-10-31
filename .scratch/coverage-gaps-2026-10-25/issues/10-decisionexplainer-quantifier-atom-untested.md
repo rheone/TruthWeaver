@@ -1,6 +1,6 @@
 # 10 - DecisionExplainer.Collect's quantifier-atom case has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Evaluation (src/TruthWeaver/Evaluation/DecisionExplainer.cs)

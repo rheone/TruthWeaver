@@ -75,7 +75,7 @@
        RequiresUnreferencedCode/RequiresDynamicCode). No other project may reference it; an architecture test checks the
        tool core. -->
   <ItemGroup>
-    <PackageVersion Include="System.CommandLine" Version="2.0.13" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.14" />
   </ItemGroup>
   <!-- Terminal.Gui - the terminal UI (TruthWeaver.Tool.Tui) only: windows, the text editor, dialogs and key bindings.
        2.5.0 is the newest stable release (MIT, a net10.0 build that marks itself IsTrimmable and IsAotCompatible); the
@@ -121,7 +121,7 @@
        JSON fixtures (ticket: JSON Schema for the rule tree). Not referenced by any shipping project;
        the schema itself is packaged as a plain content file, not consumed by production code. -->
   <ItemGroup>
-    <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.5.0" />
   </ItemGroup>
   <!-- CsCheck - test-project-only, property-based/generative testing for the DSL printer/parser
        round-trip (ticket: DSL round-trip property testing). Chosen over FsCheck: pure C# (no F#

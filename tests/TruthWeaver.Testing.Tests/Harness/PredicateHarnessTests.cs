@@ -31,6 +31,51 @@ public sealed class PredicateHarnessTests
         Assert.Contains(report.Outcomes, o => o.Check == PredicateHarnessCheck.Cancellation);
     }
 
+    /// <summary>A predicate that ignores its cancellation token and returns a value anyway is reported as not observing it.</summary>
+    [Fact]
+    public async Task RunAsync_PredicateIgnoresCancellationToken_ReportsItDidNotObserveTheToken_Test()
+    {
+        PredicateHarnessReport report = await RunMinAgeAsync(
+            (_, args, _) =>
+            {
+                _ = args.GetInt64("min");
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+
+        PredicateHarnessOutcome cancellation = Assert.Single(
+            report.Outcomes,
+            o => o.Check == PredicateHarnessCheck.Cancellation
+        );
+        Assert.Equal(PredicateHarnessStatus.Observed, cancellation.Status);
+        Assert.Contains("did not observe the cancelled token", cancellation.Detail, StringComparison.Ordinal);
+        Assert.Equal(TruthValue.True, cancellation.Value);
+        Assert.Null(cancellation.Exception);
+    }
+
+    /// <summary>A predicate that throws <see cref="OperationCanceledException"/> when its token is cancelled is reported as having observed it.</summary>
+    [Fact]
+    public async Task RunAsync_PredicateThrowsOperationCanceledExceptionWhenCancelled_ReportsItObservedTheToken_Test()
+    {
+        PredicateHarnessReport report = await RunMinAgeAsync(
+            (_, args, token) =>
+            {
+                args.GetInt64("min");
+                token.ThrowIfCancellationRequested();
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+
+        PredicateHarnessOutcome cancellation = Assert.Single(
+            report.Outcomes,
+            o => o.Check == PredicateHarnessCheck.Cancellation
+        );
+        Assert.Equal(PredicateHarnessStatus.Observed, cancellation.Status);
+        Assert.Contains("Threw OperationCanceledException", cancellation.Detail, StringComparison.Ordinal);
+        Assert.Null(cancellation.Value);
+        Assert.IsType<OperationCanceledException>(cancellation.Exception);
+    }
+
     /// <summary>A predicate that answers differently on a repeat call fails the determinism check.</summary>
     [Fact]
     public async Task RunAsync_PredicateGivesDifferentAnswers_FailsDeterminism_Test()

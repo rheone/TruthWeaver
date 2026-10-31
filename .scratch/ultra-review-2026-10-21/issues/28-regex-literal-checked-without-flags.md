@@ -56,3 +56,7 @@ not verified (medium or low)
 
 **Out of scope:**
 - Changing how flags are validated once known at evaluation time (already correct).
+
+### Resolution
+
+`RegexPredicates.ValidateArguments` skips the literal-pattern check when `args.IsDeferred("flags")`. A literal or omitted `flags` is validated as before. Tests: `RegexPredicatesTests`. Docs: `docs/strong-k3/predicates/regex-ismatch.md`.

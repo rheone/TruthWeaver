@@ -265,7 +265,9 @@ internal static class NormalForms
                 AndExpression a => this.JoinOperands(a.Operands, negate, andJoin: !negate),
                 OrExpression o => this.JoinOperands(o.Operands, negate, andJoin: negate),
 
-                // Not information-monotone: no NOT is pushed in, but the operands below are normalized.
+                // Kept as atoms: no NOT is pushed in, but the operands below are normalized. COALESCE and the inspections
+                // are not information-monotone. If is monotone, but it stays whole to keep the form compact (expanding it
+                // roughly triples its size), and Analyzer.Build handles it as its own primitive, so nothing needs it expanded here.
                 CoalesceExpression or InspectionExpression or IfExpression => NnfSupport.Literal(
                     ExpressionTools.MapChildren(node, child => this.Visit(child, false)),
                     negate

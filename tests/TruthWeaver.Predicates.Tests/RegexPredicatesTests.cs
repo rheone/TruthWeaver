@@ -5,6 +5,9 @@ using TruthWeaver.Abstractions;
 
 public class RegexPredicatesTests
 {
+    // Valid under the x flag only: the parenthesis sits inside a comment there, and is unbalanced without the flag.
+    private const string PatternValidOnlyUnderX = "^a+ # one or more (a's";
+
     /// <summary>IsMatch returns true for a matching pattern.</summary>
     [Fact]
     public async Task IsMatch_MatchingPattern_ReturnsTrue_Test()
@@ -352,6 +355,52 @@ public class RegexPredicatesTests
         PredicateSchema schema = RegexPredicates.IsMatch<TestContext>("a", c => c.Value).Schema;
 
         Assert.Empty(schema.ArgumentValidator!(Args(("pattern", "a b"), ("flags", "imsnx"))));
+    }
+
+    /// <summary>
+    /// A literal pattern that is valid only under a flag the data source will supply is not checked at compile time,
+    /// because the real options are unknown. Checking it under no options rejected a rule that evaluates correctly.
+    /// </summary>
+    [Fact]
+    public void ArgumentValidator_PatternWithFlagsFromDataSource_ReturnsNoProblem_Test()
+    {
+        PredicateSchema[] schemas =
+        [
+            RegexPredicates.IsMatch<TestContext>("a", c => c.Value).Schema,
+            RegexPredicates.IsNotMatch<TestContext>("a", c => c.Value).Schema,
+        ];
+        PredicateArguments args = new(
+            new Dictionary<string, LiteralValue> { ["pattern"] = LiteralValue.OfString(PatternValidOnlyUnderX) },
+            new HashSet<string> { "flags" }
+        );
+
+        Assert.All(schemas, schema => Assert.Empty(schema.ArgumentValidator!(args)));
+    }
+
+    /// <summary>The same pattern is still rejected when the flags are omitted or are a literal without <c>x</c>.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("i")]
+    public void ArgumentValidator_PatternValidOnlyUnderXWithoutXFlag_ReturnsOneProblem_Test(string? flags)
+    {
+        PredicateSchema schema = RegexPredicates.IsMatch<TestContext>("a", c => c.Value).Schema;
+        PredicateArguments args = flags is null
+            ? Args("pattern", PatternValidOnlyUnderX)
+            : Args(("pattern", PatternValidOnlyUnderX), ("flags", flags));
+
+        PredicateArgumentProblem problem = Assert.Single(schema.ArgumentValidator!(args));
+
+        Assert.Contains("'pattern'", problem.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>The same pattern passes with a literal <c>x</c> flag.</summary>
+    [Fact]
+    public void ArgumentValidator_PatternValidOnlyUnderXWithXFlag_ReturnsNoProblem_Test()
+    {
+        PredicateSchema schema = RegexPredicates.IsMatch<TestContext>("a", c => c.Value).Schema;
+
+        Assert.Empty(schema.ArgumentValidator!(Args(("pattern", PatternValidOnlyUnderX), ("flags", "x"))));
     }
 
     /// <summary>The validator accepts a valid pattern and skips a pattern that is absent because a data source supplies it.</summary>

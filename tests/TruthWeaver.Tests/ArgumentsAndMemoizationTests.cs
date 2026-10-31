@@ -57,6 +57,18 @@ public sealed class ArgumentsAndMemoizationTests
         );
     }
 
+    /// <summary>A boolean-literal argument mismatched against a string-typed parameter names the literal as "the boolean &lt;value&gt;" in the diagnostic's found text.</summary>
+    [Fact]
+    public void Arguments_TypeMismatchWithBooleanLiteral_DescribesItAsTheBoolean_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CompilerWithHasRole();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("hasRole(role: true)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.ArgumentTypeMismatch);
+        Assert.Equal("the boolean true", diagnostic.Found);
+    }
+
     /// <summary>Argument order in the source text does not affect term identity.</summary>
     [Fact]
     public void Identity_ArgumentOrderInSource_DoesNotAffectIdentity_Test()

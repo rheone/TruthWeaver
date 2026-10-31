@@ -31,7 +31,14 @@ internal static class NoteAttacher
     /// <param name="tokens">The token stream the tree was parsed from.</param>
     /// <param name="source">The rule text.</param>
     /// <param name="groups">The extent of each node that was written inside grouping delimiters, delimiters included.</param>
-    public static void Attach(
+    /// <returns>
+    /// The total number of token-cursor advances <see cref="ScanTokens"/> made across every comment: a deterministic,
+    /// machine-independent proxy for the work this method did, for a test to assert scales linearly with the input
+    /// rather than quadratically (ticket 25 fixed a quadratic re-scan here; this count is what a regression of that
+    /// fix would blow up, where a wall-clock measurement is noisy under load). <see langword="0"/> when there are no
+    /// comments or nothing to attach to.
+    /// </returns>
+    public static long Attach(
         RuleNode root,
         IReadOnlyList<Comment> comments,
         IReadOnlyList<Token> tokens,
@@ -41,23 +48,24 @@ internal static class NoteAttacher
     {
         if (comments.Count == 0)
         {
-            return;
+            return 0;
         }
 
         List<Extent> extents = [];
         Measure(root, 0, groups, extents);
         if (extents.Count == 0)
         {
-            return;
+            return 0;
         }
 
         NodeIndex index = NodeIndex.Build(extents);
 
         Dictionary<RuleNode, List<string>> pieces = [with(ReferenceEqualityComparer.Instance)];
         int tokenCursor = 0;
+        long scanSteps = 0;
         foreach (Comment comment in comments)
         {
-            (int? previousEnd, int? nextStart) = ScanTokens(tokens, comment, ref tokenCursor);
+            (int? previousEnd, int? nextStart) = ScanTokens(tokens, comment, ref tokenCursor, ref scanSteps);
             RuleNode target = FindTarget(comment, previousEnd, nextStart, source, index);
             if (!pieces.TryGetValue(target, out List<string>? list))
             {
@@ -72,6 +80,8 @@ internal static class NoteAttacher
         {
             node.Note = NoteText.Normalize(string.Join('\n', list));
         }
+
+        return scanSteps;
     }
 
     /// <summary>
@@ -80,11 +90,21 @@ internal static class NoteAttacher
     /// <see cref="Attach"/> iterates are in source order, so <paramref name="cursor"/> only ever moves forward across
     /// the whole comment list; a token it has already stepped past for an earlier comment is never revisited.
     /// </summary>
-    private static (int? PreviousEnd, int? NextStart) ScanTokens(IReadOnlyList<Token> tokens, Comment comment, ref int cursor)
+    /// <param name="tokens">The token stream, in source order.</param>
+    /// <param name="comment">The comment to locate.</param>
+    /// <param name="cursor">The shared forward cursor into <paramref name="tokens"/>, advanced in place.</param>
+    /// <param name="steps">Accrues one for every cursor advance, across every comment in one <see cref="Attach"/> call.</param>
+    private static (int? PreviousEnd, int? NextStart) ScanTokens(
+        IReadOnlyList<Token> tokens,
+        Comment comment,
+        ref int cursor,
+        ref long steps
+    )
     {
         while (cursor < tokens.Count && tokens[cursor].Kind != TokenKind.Eof && tokens[cursor].Span.End <= comment.Span.Start)
         {
             cursor++;
+            steps++;
         }
 
         int? previousEnd = cursor > 0 ? tokens[cursor - 1].Span.End : null;

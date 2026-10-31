@@ -79,3 +79,7 @@ Decision: keep `If` as an NNF/CNF/DNF atom (no rewriting-behavior change); fix o
 **Out of scope:**
 - Expanding `If` through `AND`/`OR`/`NOT` in NNF/CNF/DNF — considered (finding F5.4) and explicitly not chosen.
 - Any change to `Analyzer.Build`'s BDD-based handling of `If` (already correct).
+
+### Resolution
+
+The `NormalForms.cs` comment and `docs/rewriting-rules.md` now say `If` stays an atom by design (compactness, and `Analyzer.Build` handles it natively), not because it is non-monotone. No behavior change. `NormalFormTests` gained a CNF/DNF characterization test for `If`.

@@ -60,6 +60,12 @@ internal static class DefinitionExpander
                 continue;
             }
 
+            if (ReservedParameterName(definition.Parameters) is { } reservedParameter)
+            {
+                diagnostics.Add(ReservedParameterDiagnostic(definition, reservedParameter));
+                continue;
+            }
+
             definitionsByName[definition.Name] = definition;
             unused.Add(definition.Name);
         }
@@ -151,6 +157,29 @@ internal static class DefinitionExpander
         return parameters
             .Where((name, index) => parameters.Take(index).Contains(name, StringComparer.OrdinalIgnoreCase))
             .FirstOrDefault();
+    }
+
+    // Returns the first parameter name (as written) that is a reserved word, or null when none is. The rule text parser
+    // reads a reserved word as its keyword or constant before it looks at the enclosing definition's parameters, so such
+    // a parameter is never referenced: a constant spelling drops the use's argument with no diagnostic and any other
+    // word fails with a parse error, while JSON, YAML and RuleBuilder read the same name as the parameter. Rejecting the
+    // name keeps the four formats on one rule.
+    private static string? ReservedParameterName(IReadOnlyList<string> parameters)
+    {
+        return parameters.FirstOrDefault(DslParser.IsReservedWord);
+    }
+
+    private static Diagnostic ReservedParameterDiagnostic(DefinitionNode definition, string parameter)
+    {
+        return Diagnostic.Error(
+            DiagnosticCodes.DefinitionNameCollision,
+            $"Parameter '{parameter}' of definition '{definition.Name}' is a reserved word.",
+            definition.NameSpan,
+            expected: "a parameter name that is not a reserved word (compared case-insensitively)",
+            found: $"'{parameter}', which is a reserved word",
+            suggestion: new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Rename the '{parameter}' parameter."),
+            path: definition.NamePath
+        );
     }
 
     // The span and path are the definition's own declaration, not any particular use: a repeated parameter name is
@@ -387,7 +416,18 @@ internal static class DefinitionExpander
             }
 
             List<string> nextChain = [.. chain, use.Name];
-            return this.ExpandNode(definition.Body, bound, nextChain, unused);
+            RuleNode expanded = this.ExpandNode(definition.Body, bound, nextChain, unused);
+
+            // The use's own note belongs on the node it expands to, ahead of any note that node already has. The copy
+            // matters: the expansion can be a node shared with the definition body or with a bound argument (a body of
+            // a bare term or a bare parameter), and setting the note on it would leak it into every other use.
+            if (use.Note is not { } useNote)
+            {
+                return expanded;
+            }
+
+            string combinedNote = expanded.Note is { } bodyNote ? $"{useNote}\n{bodyNote}" : useNote;
+            return expanded with { Note = combinedNote };
         }
     }
 }

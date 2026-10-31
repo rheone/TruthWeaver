@@ -238,6 +238,9 @@ them silently would be a security bug in an authorization consumer).
 Argument **names** are case-**insensitive** (`Role:` and `role:` are the same argument), like predicate names.
 Argument **order** in the source text does not affect identity. Array-valued
 arguments **are** order-sensitive.
+A decimal argument drops its trailing zeros (`1.50` and `1.5` are one value, and print as `1.5`). A date and time
+argument is the same instant at a UTC offset (`"2024-01-01T02:00:00+02:00"` and `"2024-01-01T00:00:00Z"` are one
+value, and print with `+00:00`), so a predicate never sees the written offset. Equal values always print the same.
 
 ## Equivalency rules
 

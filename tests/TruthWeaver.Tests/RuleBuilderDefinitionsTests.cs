@@ -193,6 +193,56 @@ public sealed class RuleBuilderDefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>A note set with <c>WithNote</c> on a builder use is kept on the expanded node, matching rule text.</summary>
+    [Fact]
+    public void Compile_NoteOnBuilderUse_KeepsTheNote_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        RuleDefinition adult = RuleBuilder.Define("adult", RuleBuilder.Predicate("a"));
+        RuleBuilder builder = RuleBuilder.Use("adult").WithNote("age gate").WithDefinitions(adult);
+
+        CompiledRule<RuleTestContext> rule =
+            builder.Compile(compiler).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+    }
+
+    /// <summary>A builder definition whose parameter is spelled as a constant is a name collision, matching rule text.</summary>
+    [Fact]
+    public void Compile_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        RuleDefinition gate = RuleBuilder.Define(
+            "gate",
+            ["t"],
+            RuleBuilder.And(RuleBuilder.Predicate("t"), RuleBuilder.Predicate("a"))
+        );
+        RuleBuilder builder = RuleBuilder.Use("gate", RuleBuilder.Predicate("b")).WithDefinitions(gate);
+
+        CompilationResult<RuleTestContext> result = builder.Compile(compiler);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A builder definition whose parameter is spelled as a reserved word is a name collision, matching rule text.</summary>
+    [Fact]
+    public void Compile_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        RuleDefinition gate = RuleBuilder.Define(
+            "gate",
+            ["and"],
+            RuleBuilder.And(RuleBuilder.Predicate("and"), RuleBuilder.Predicate("a"))
+        );
+        RuleBuilder builder = RuleBuilder.Use("gate", RuleBuilder.Predicate("b")).WithDefinitions(gate);
+
+        CompilationResult<RuleTestContext> result = builder.Compile(compiler);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A definition named after a predicate registered with the compiler is a name collision, matching rule text.</summary>
     [Fact]
     public void Compile_DefinitionNamedAfterRegisteredPredicate_ReportsDefinitionNameCollision_Test()

@@ -1,6 +1,6 @@
 # 06 - NandNorExpander.ConvertThreshold's vacuous-constant-threshold shortcut has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Rewriting (src/TruthWeaver/Rewriting/NandNorExpander.cs)
