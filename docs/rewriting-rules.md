@@ -317,7 +317,7 @@ if (rule.TryToCnf(out CompiledRule<MyContext>? cnf, out _))
 
 A literal is a term or the `NOT` of a term. The Strong Kleene connectives form a distributive lattice with De Morgan negation, so distribution is an identity. No classical complement law is used, so `a AND NOT a` and `a OR NOT a` stay as written. Idempotence holds, so a repeated literal in a clause and a repeated clause are dropped. Rewriting a rewritten rule changes nothing.
 
-- `COALESCE`, the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) and `If` are not information-monotone, so each is an atom. No `NOT` is pushed into it. The operands inside it are normalized.
+- `COALESCE` and the inspections (`IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`) are not information-monotone, so each is an atom. `If` is monotone, but it also stays an atom, because expanding it into `AND`, `OR` and `NOT` makes the rule larger and the analysis does not need it. No `NOT` is pushed into an atom. The operands inside it are normalized.
 - A normal form can be larger than the rule, and CNF and DNF can grow exponentially. `CompilerOptions.MaxRewriteNodeCount` caps each form (see [Size cap](#size-cap)). A larger result is not built: `CompiledRule` is `null` and one `TRE0016` error is returned. [Size of each form](rewriting-normal-form-examples.md#size-of-each-form) has measured numbers.
 - Distribution and de-duplication can change which predicates run and which faults appear. The value never changes.
 
@@ -372,7 +372,7 @@ Four more points follow from the same logic:
 
 - Distribution is exact. `AND` and `OR` form a distributive lattice, so CNF and DNF have the same value as the rule for all three values of every term.
 - Idempotence holds, so a repeated literal in a clause and a repeated clause are dropped.
-- Atoms stay whole. A `NOT` is not pushed into `COALESCE`, an inspection or `If`.
+- Atoms stay whole. A `NOT` is not pushed into `COALESCE`, an inspection or `If`. `If` is an atom by choice, not because it is non-monotone.
 - A normal form keeps the value, not the evaluation order. It can run the predicates in a different order and report different faults.
 
 In this rule, the `NOT` of the `AND` splits into two `NOT`s. Neither enters `IsTrue(isDineIn)`:
