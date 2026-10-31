@@ -58,3 +58,7 @@ Decision: normalize at construction (fix the decimal scale and the `DateTimeOffs
 
 **Out of scope:**
 - Widening `Equals`/`GetHashCode` to include scale/offset — considered and explicitly not chosen.
+
+### Resolution
+
+`LiteralValue.OfDecimal` drops trailing zeros and `OfDateTimeOffset` stores the instant at a UTC offset, so equal values print the same. The first plan (keep one fraction digit) was dropped: a whole decimal then printed as `1.0` and no longer matched the Int64 `1` in Tool.Core stub keys. Visible effects: a predicate reads a UTC offset, never the written one; a data-source decimal `18.0` reads as `18`. Docs: `CONTEXT.md` term identity. Tests: `LiteralValueTests`, `LiteralIdentityTests`; expectations updated in `CanonicalPrinterTests`, `DecisionRecordTests` and `JsonDataSourceTests`.
