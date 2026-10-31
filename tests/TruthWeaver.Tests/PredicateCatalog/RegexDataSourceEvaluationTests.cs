@@ -45,6 +45,38 @@ public sealed class RegexDataSourceEvaluationTests
         Assert.IsType<ArgumentException>(fault.Exception, exactMatch: false);
     }
 
+    /// <summary>
+    /// A literal pattern that is valid only under a flag the data source supplies compiles, and evaluates under that
+    /// flag. Checked under no options at compile time, the unbalanced parenthesis in the comment was rejected (TRE0026).
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_LiteralPatternValidOnlyUnderFlagFromDataSource_CompilesAndMatches_Test()
+    {
+        CompiledRule<Text> rule = Compile("isMatch(pattern: \"^a+ # one or more (a's\", flags: from(\"config\", \"$.flags\"))");
+        FakeDataSource source = new FakeDataSource().With("$.flags", "x");
+        DataSources sources = new() { ["config"] = source };
+
+        Decision decision = await rule.EvaluateAsync(new Text("aaa"), dataSources: sources, cancellationToken: Token);
+
+        Assert.Equal(TruthValue.True, decision.Result);
+        Assert.Empty(decision.Faults);
+    }
+
+    /// <summary>The same rule faults, not fails to compile, when the data source supplies flags under which the literal pattern is invalid.</summary>
+    [Fact]
+    public async Task EvaluateAsync_LiteralPatternInvalidUnderFlagFromDataSource_IsUnknownWithAFault_Test()
+    {
+        CompiledRule<Text> rule = Compile("isMatch(pattern: \"^a+ # one or more (a's\", flags: from(\"config\", \"$.flags\"))");
+        FakeDataSource source = new FakeDataSource().With("$.flags", "i");
+        DataSources sources = new() { ["config"] = source };
+
+        Decision decision = await rule.EvaluateAsync(new Text("aaa"), dataSources: sources, cancellationToken: Token);
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        Fault fault = Assert.Single(decision.Faults);
+        Assert.IsType<ArgumentException>(fault.Exception, exactMatch: false);
+    }
+
     /// <summary>A good <c>pattern</c> and <c>flags</c> from <c>from(...)</c> with a null selected string is <c>Unknown</c> with no fault.</summary>
     [Fact]
     public async Task EvaluateAsync_GoodDataSourcePatternWithNullSelection_IsUnknownWithoutAFault_Test()
