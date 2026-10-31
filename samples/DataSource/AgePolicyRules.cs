@@ -3,7 +3,6 @@ namespace TruthWeaver.Samples.DataSource;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.DataSources.Json;
-using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
 
 /// <summary>

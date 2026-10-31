@@ -296,6 +296,91 @@ public sealed class DefinitionsTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
     }
 
+    /// <summary>
+    /// A definition parameter spelled as a constant is a name collision. Without the check, <c>t</c> in the body was
+    /// read as <c>True</c>, so <c>gate(isBanned)</c> compiled silently to <c>True AND isAdult</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("t")]
+    [InlineData("F")]
+    [InlineData("u")]
+    [InlineData("true")]
+    [InlineData("False")]
+    [InlineData("UNKNOWN")]
+    public void Compile_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test(string parameter)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let gate({parameter}) = a AND b; gate(c)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Contains($"'{parameter}'", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A parameter whose name only starts with or contains a constant spelling, such as <c>truthy</c> or <c>total</c>, is still a valid parameter.</summary>
+    [Fact]
+    public void Compile_DefinitionParameterContainingConstantSpelling_Compiles_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let gate(truthy, total) = truthy AND total; gate(a, b)");
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.NotNull(result.CompiledRule);
+    }
+
+    /// <summary>A JSON definition whose parameter is spelled as a constant is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "gate": {
+                  "parameters": ["t"],
+                  "body": { "op": "and", "operands": [{ "predicate": "t" }, { "predicate": "a" }] }
+                }
+              },
+              "op": "use",
+              "name": "gate",
+              "operands": [{ "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition whose parameter is spelled as a constant is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              gate:
+                parameters: [t]
+                body:
+                  op: and
+                  operands:
+                    - predicate: t
+                    - predicate: a
+            op: use
+            name: gate
+            operands:
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A JSON definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
     [Fact]
     public void CompileJson_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()

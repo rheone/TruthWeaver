@@ -14,6 +14,21 @@ using TruthWeaver.Registry;
 /// </summary>
 internal static class DefinitionExpander
 {
+    // The rule text reads a bare T, F, U, True, False or Unknown as the constant before it looks at the enclosing
+    // definition's parameters, so a parameter with one of these names would never be referenced and its argument would
+    // be dropped with no diagnostic, while JSON, YAML and RuleBuilder read the same name as the parameter. Rejecting
+    // the name keeps the four formats on one tree.
+    private static readonly HashSet<string> ConstantSpellings =
+    [
+        with(StringComparer.OrdinalIgnoreCase),
+        "T",
+        "F",
+        "U",
+        "True",
+        "False",
+        "Unknown",
+    ];
+
     /// <summary>Expands every <c>let</c> use in <paramref name="document"/>.</summary>
     /// <param name="document">The parsed document, with its declarations and its single value expression.</param>
     /// <param name="registry">The predicate registry, consulted only to detect a definition name that collides with a registered predicate.</param>
@@ -57,6 +72,12 @@ internal static class DefinitionExpander
             if (DuplicateParameterName(definition.Parameters) is { } duplicateParameter)
             {
                 diagnostics.Add(DuplicateParameterDiagnostic(definition, duplicateParameter));
+                continue;
+            }
+
+            if (ConstantSpelledParameterName(definition.Parameters) is { } constantParameter)
+            {
+                diagnostics.Add(ConstantParameterDiagnostic(definition, constantParameter));
                 continue;
             }
 
@@ -151,6 +172,25 @@ internal static class DefinitionExpander
         return parameters
             .Where((name, index) => parameters.Take(index).Contains(name, StringComparer.OrdinalIgnoreCase))
             .FirstOrDefault();
+    }
+
+    // Returns the first parameter name (as written) that spells a constant, or null when none does.
+    private static string? ConstantSpelledParameterName(IReadOnlyList<string> parameters)
+    {
+        return parameters.FirstOrDefault(ConstantSpellings.Contains);
+    }
+
+    private static Diagnostic ConstantParameterDiagnostic(DefinitionNode definition, string parameter)
+    {
+        return Diagnostic.Error(
+            DiagnosticCodes.DefinitionNameCollision,
+            $"Parameter '{parameter}' of definition '{definition.Name}' clashes with a spelling of a constant.",
+            definition.NameSpan,
+            expected: "a parameter name other than T, F, U, True, False or Unknown (compared case-insensitively)",
+            found: $"'{parameter}', which clashes with a spelling of a constant",
+            suggestion: new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Rename the '{parameter}' parameter."),
+            path: definition.NamePath
+        );
     }
 
     // The span and path are the definition's own declaration, not any particular use: a repeated parameter name is

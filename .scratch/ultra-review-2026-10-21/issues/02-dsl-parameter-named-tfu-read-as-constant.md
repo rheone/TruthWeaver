@@ -85,3 +85,7 @@ Decision: reject the name at compile time, not "parameter wins over the constant
 **Out of scope:**
 - Changing how T/F/U/True/False/Unknown are read as constants anywhere else (term position, definition names, etc.) — this is scoped to parameter declarations only.
 - Making the parameter shadow the constant instead of rejecting it (considered and explicitly not chosen).
+
+### Resolution
+
+`DefinitionExpander` rejects a parameter spelled `t`, `f`, `u`, `true`, `false` or `unknown` (case-insensitive) with `DefinitionNameCollision` (TRE0037), on the definition's name span. The check sits beside the existing duplicate-parameter check, so DSL, JSON, YAML and `RuleBuilder` all get it. Tests: `DefinitionsTests` and `RuleBuilderDefinitionsTests`. Docs: `docs/rule-text.md`, `docs/strong-k3/specification/diagnostics.md`.

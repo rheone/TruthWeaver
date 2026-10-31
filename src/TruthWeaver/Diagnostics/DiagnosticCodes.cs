@@ -212,7 +212,8 @@ public static class DiagnosticCodes
     /// <summary>
     /// A <c>let</c> definition's name clashes with another definition already declared in the same document, a
     /// reserved word (including <c>let</c> itself and <c>T</c>/<c>F</c>/<c>U</c>), or a predicate name registered with
-    /// the compiler (ADR-0008 decision 6). The span is the definition's own name, not a use of it.
+    /// the compiler (ADR-0008 decision 6), or one of its parameters is spelled as a constant (<c>T</c>, <c>F</c>, <c>U</c>,
+    /// <c>True</c>, <c>False</c>, <c>Unknown</c>). The span is the definition's own name, not a use of it.
     /// </summary>
     public const string DefinitionNameCollision = "TRE0037";
 
