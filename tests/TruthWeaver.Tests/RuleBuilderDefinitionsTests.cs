@@ -225,6 +225,24 @@ public sealed class RuleBuilderDefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>A builder definition whose parameter is spelled as a reserved word is a name collision, matching rule text.</summary>
+    [Fact]
+    public void Compile_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        RuleDefinition gate = RuleBuilder.Define(
+            "gate",
+            ["and"],
+            RuleBuilder.And(RuleBuilder.Predicate("and"), RuleBuilder.Predicate("a"))
+        );
+        RuleBuilder builder = RuleBuilder.Use("gate", RuleBuilder.Predicate("b")).WithDefinitions(gate);
+
+        CompilationResult<RuleTestContext> result = builder.Compile(compiler);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A definition named after a predicate registered with the compiler is a name collision, matching rule text.</summary>
     [Fact]
     public void Compile_DefinitionNamedAfterRegisteredPredicate_ReportsDefinitionNameCollision_Test()

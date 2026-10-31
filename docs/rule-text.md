@@ -79,7 +79,8 @@ a constant could appear. `let name(p1, p2, ...) = expression;` declares one with
 to its arguments like a call, `name(arg1, arg2, ...)`, each argument itself a term, a constant, or any other
 sub-expression (the same things an `AND`/`OR` operand can be). Inside the definition's own body, each parameter is
 used the same way: a bare name wherever a term, constant or sub-expression could appear. A parameter cannot be
-named `T`, `F`, `U`, `True`, `False` or `Unknown`: the compiler rejects it with `DefinitionNameCollision`.
+a reserved word, such as `T`, `True`, `not`, `and` or `any` (the comparison ignores case): the compiler rejects it with
+`DefinitionNameCollision`.
 
 <!-- doctest:rule definitions -->
 ```text
@@ -117,7 +118,7 @@ A definition is document-scoped sugar, not a new kind of node, so it follows a f
 - **An unused definition is an opt-in lint**, `LintRules.UnusedDefinition`, off by default.
 
 Each rule is a distinct compile diagnostic, listed with the others in [Diagnostics](strong-k3/specification/diagnostics.md):
-a self- or mutual reference (`DefinitionCycleDetected`), a name collision, including a parameter spelled as a constant (`DefinitionNameCollision`), a repeated
+a self- or mutual reference (`DefinitionCycleDetected`), a name collision, including a parameter that is a reserved word (`DefinitionNameCollision`), a repeated
 parameter name (`DuplicateDefinitionParameter`), a chain deeper than `MaxDefinitionDepth`
 (`MaxDefinitionDepthExceeded`), a use with the wrong number of arguments (`DefinitionArgumentCountMismatch`), a use
 of a name that was never declared (`UnknownDefinition`), and the unused-definition lint (`UnusedDefinition`). A

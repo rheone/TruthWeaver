@@ -14,21 +14,6 @@ using TruthWeaver.Registry;
 /// </summary>
 internal static class DefinitionExpander
 {
-    // The rule text reads a bare T, F, U, True, False or Unknown as the constant before it looks at the enclosing
-    // definition's parameters, so a parameter with one of these names would never be referenced and its argument would
-    // be dropped with no diagnostic, while JSON, YAML and RuleBuilder read the same name as the parameter. Rejecting
-    // the name keeps the four formats on one tree.
-    private static readonly HashSet<string> ConstantSpellings =
-    [
-        with(StringComparer.OrdinalIgnoreCase),
-        "T",
-        "F",
-        "U",
-        "True",
-        "False",
-        "Unknown",
-    ];
-
     /// <summary>Expands every <c>let</c> use in <paramref name="document"/>.</summary>
     /// <param name="document">The parsed document, with its declarations and its single value expression.</param>
     /// <param name="registry">The predicate registry, consulted only to detect a definition name that collides with a registered predicate.</param>
@@ -75,9 +60,9 @@ internal static class DefinitionExpander
                 continue;
             }
 
-            if (ConstantSpelledParameterName(definition.Parameters) is { } constantParameter)
+            if (ReservedParameterName(definition.Parameters) is { } reservedParameter)
             {
-                diagnostics.Add(ConstantParameterDiagnostic(definition, constantParameter));
+                diagnostics.Add(ReservedParameterDiagnostic(definition, reservedParameter));
                 continue;
             }
 
@@ -174,20 +159,24 @@ internal static class DefinitionExpander
             .FirstOrDefault();
     }
 
-    // Returns the first parameter name (as written) that spells a constant, or null when none does.
-    private static string? ConstantSpelledParameterName(IReadOnlyList<string> parameters)
+    // Returns the first parameter name (as written) that is a reserved word, or null when none is. The rule text parser
+    // reads a reserved word as its keyword or constant before it looks at the enclosing definition's parameters, so such
+    // a parameter is never referenced: a constant spelling drops the use's argument with no diagnostic and any other
+    // word fails with a parse error, while JSON, YAML and RuleBuilder read the same name as the parameter. Rejecting the
+    // name keeps the four formats on one rule.
+    private static string? ReservedParameterName(IReadOnlyList<string> parameters)
     {
-        return parameters.FirstOrDefault(ConstantSpellings.Contains);
+        return parameters.FirstOrDefault(DslParser.IsReservedWord);
     }
 
-    private static Diagnostic ConstantParameterDiagnostic(DefinitionNode definition, string parameter)
+    private static Diagnostic ReservedParameterDiagnostic(DefinitionNode definition, string parameter)
     {
         return Diagnostic.Error(
             DiagnosticCodes.DefinitionNameCollision,
-            $"Parameter '{parameter}' of definition '{definition.Name}' clashes with a spelling of a constant.",
+            $"Parameter '{parameter}' of definition '{definition.Name}' is a reserved word.",
             definition.NameSpan,
-            expected: "a parameter name other than T, F, U, True, False or Unknown (compared case-insensitively)",
-            found: $"'{parameter}', which clashes with a spelling of a constant",
+            expected: "a parameter name that is not a reserved word (compared case-insensitively)",
+            found: $"'{parameter}', which is a reserved word",
             suggestion: new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Rename the '{parameter}' parameter."),
             path: definition.NamePath
         );

@@ -318,6 +318,87 @@ public sealed class DefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A definition parameter spelled as any other reserved word is a name collision. Rule text read <c>not</c>, <c>any</c>
+    /// and the other prefix and call words as the keyword, so the body failed with a parse error, while JSON, YAML and
+    /// <c>RuleBuilder</c> accepted the same name. The infix words (<c>and</c>, <c>or</c>) compiled in rule text and are
+    /// rejected too, so the reserved-word set is one rule in every format.
+    /// </summary>
+    [Theory]
+    [InlineData("and")]
+    [InlineData("OR")]
+    [InlineData("xor")]
+    [InlineData("implies")]
+    [InlineData("let")]
+    [InlineData("not")]
+    [InlineData("Any")]
+    [InlineData("coalesce")]
+    [InlineData("if")]
+    [InlineData("isTrue")]
+    [InlineData("atLeast")]
+    [InlineData("forall")]
+    public void Compile_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test(string parameter)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let gate({parameter}) = a AND b; gate(a)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Contains($"'{parameter}'", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A JSON definition whose parameter is a reserved word is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "gate": {
+                  "parameters": ["and"],
+                  "body": { "op": "and", "operands": [{ "predicate": "and" }, { "predicate": "a" }] }
+                }
+              },
+              "op": "use",
+              "name": "gate",
+              "operands": [{ "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition whose parameter is a reserved word is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              gate:
+                parameters: [and]
+                body:
+                  op: and
+                  operands:
+                    - predicate: and
+                    - predicate: a
+            op: use
+            name: gate
+            operands:
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A parameter whose name only starts with or contains a constant spelling, such as <c>truthy</c> or <c>total</c>, is still a valid parameter.</summary>
     [Fact]
     public void Compile_DefinitionParameterContainingConstantSpelling_Compiles_Test()

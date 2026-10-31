@@ -1,6 +1,6 @@
 # 73 - A definition parameter named after a DSL keyword (`and`, `not`, `if`, `any` ...) is not checked
 
-Status: needs-triage
+Status: done
 Category: bug
 Severity: unverified
 Lens: F2 Parsing
@@ -25,3 +25,11 @@ Not verified: the exact behavior per keyword has not been traced or tested. Tria
 - A test fails before the fix and passes after, in every format.
 - The page that describes the behavior states the current truth.
 - The validation list in CLAUDE.md passes.
+
+## Triage result (2026-10-31)
+
+Probed every `ReservedWords` entry as a parameter in rule text and JSON. No keyword other than the constants (fixed in ticket 02) silently changes the tree. Rule text gave a `TRE0001` parse error for `NOT`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, the four inspections, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, the five thresholds, `FORALL` and `EXISTS`. `AND`, `OR`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR` and `LET` compiled. JSON read every one as the parameter.
+
+Decision (owner): reject every reserved word as a parameter name with `DefinitionNameCollision`, in all four formats.
+
+Fixed: `DefinitionExpander` uses `DslParser.IsReservedWord`. Tests in `DefinitionsTests` and `RuleBuilderDefinitionsTests`. Pages updated: `docs/rule-text.md`, `docs/strong-k3/specification/diagnostics.md`.
