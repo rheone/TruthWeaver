@@ -427,7 +427,18 @@ internal static class DefinitionExpander
             }
 
             List<string> nextChain = [.. chain, use.Name];
-            return this.ExpandNode(definition.Body, bound, nextChain, unused);
+            RuleNode expanded = this.ExpandNode(definition.Body, bound, nextChain, unused);
+
+            // The use's own note belongs on the node it expands to, ahead of any note that node already has. The copy
+            // matters: the expansion can be a node shared with the definition body or with a bound argument (a body of
+            // a bare term or a bare parameter), and setting the note on it would leak it into every other use.
+            if (use.Note is not { } useNote)
+            {
+                return expanded;
+            }
+
+            string combinedNote = expanded.Note is { } bodyNote ? $"{useNote}\n{bodyNote}" : useNote;
+            return expanded with { Note = combinedNote };
         }
     }
 }

@@ -381,6 +381,144 @@ public sealed class DefinitionsTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A note written on a use survives expansion: it lands on the node the use expands to, so it reaches
+    /// <see cref="CompiledRule{TContext}.Notes"/> and the printers. Without the carry, <c>/* age gate */ adult</c>
+    /// compiled but silently lost the note.
+    /// </summary>
+    [Fact]
+    public void Compile_NoteOnUseOfNotelessDefinition_KeepsTheNoteOnTheExpandedNode_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let adult = a;\n/* age gate */ adult");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+        Assert.Contains("age gate", rule.PrintRuleText(), StringComparison.Ordinal);
+    }
+
+    /// <summary>A note on a use and a note on the definition body's root are both kept, the use's note first, joined by a line feed.</summary>
+    [Fact]
+    public void Compile_NoteOnUseOfDefinitionWithItsOwnNote_JoinsUseNoteThenBodyNote_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let adult = /* from body */ a;\n/* age gate */ adult");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate\nfrom body" }, rule.Notes);
+    }
+
+    /// <summary>Two notes on two uses of one definition each stay on their own use; one use's note does not leak into the shared body.</summary>
+    [Fact]
+    public void Compile_NotesOnTwoUsesOfOneDefinition_KeepEachNoteOnItsOwnUse_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let g = a;\n/* one */ g AND /* two */ g");
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[0]"] = "one", ["$.operands[1]"] = "two" }, rule.Notes);
+    }
+
+    /// <summary>The joined note of a use and its body prints and reads back to the same note.</summary>
+    [Fact]
+    public void PrintRuleText_JoinedUseAndBodyNote_RoundTripsTheNote_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        CompiledRule<RuleTestContext> rule = Compile(compiler, "let adult = /* from body */ a;\n/* age gate */ adult");
+
+        CompiledRule<RuleTestContext> reread = Compile(compiler, rule.PrintRuleText());
+
+        Assert.Equal(rule.Notes, reread.Notes);
+    }
+
+    /// <summary>A use of a parameter-only body keeps its own note and does not write it onto the shared argument node.</summary>
+    [Fact]
+    public void Compile_NoteOnUseWhoseBodyIsAParameter_KeepsTheNoteWithoutTouchingTheArgument_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(
+            CreateCompiler(),
+            "let pass(x) = x;\n/* one */ pass(a) AND /* two */ pass(a)"
+        );
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[0]"] = "one", ["$.operands[1]"] = "two" }, rule.Notes);
+    }
+
+    /// <summary>A note on an argument and a note on the use that wraps it both survive, the use's note first.</summary>
+    [Fact]
+    public void Compile_NoteOnUseAndOnItsArgument_JoinsUseNoteThenArgumentNote_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let pass(x) = x;\n/* use */ pass(/* arg */ a)");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "use\narg" }, rule.Notes);
+    }
+
+    /// <summary>Notes on nested uses all survive, the outer use's note first.</summary>
+    [Fact]
+    public void Compile_NotesOnNestedUses_JoinOuterThenInner_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(
+            CreateCompiler(),
+            "let inner = a;\nlet outer = /* in */ inner;\n/* out */ outer"
+        );
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "out\nin" }, rule.Notes);
+    }
+
+    /// <summary>A JSON note on a use below the root is keyed by the use's position in the compiled tree.</summary>
+    [Fact]
+    public void CompileJson_NoteOnNestedUseNode_KeysTheNoteByItsPosition_Test()
+    {
+        const string json = """
+            {
+              "definitions": { "adult": { "body": { "predicate": "a" } } },
+              "op": "and",
+              "operands": [
+                { "predicate": "b" },
+                { "op": "use", "name": "adult", "note": "age gate" }
+              ]
+            }
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileJson(json).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[1]"] = "age gate" }, rule.Notes);
+    }
+
+    /// <summary>A JSON <c>note</c> on a <c>use</c> node is kept, the failure scenario from the review.</summary>
+    [Fact]
+    public void CompileJson_NoteOnUseNode_KeepsTheNote_Test()
+    {
+        const string json = """
+            {
+              "definitions": { "adult": { "body": { "predicate": "a" } } },
+              "op": "use",
+              "name": "adult",
+              "note": "age gate"
+            }
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileJson(json).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+        Assert.Contains("age gate", rule.PrintJson(), StringComparison.Ordinal);
+    }
+
+    /// <summary>A YAML <c>note</c> on a <c>use</c> node is kept.</summary>
+    [Fact]
+    public void CompileYaml_NoteOnUseNode_KeepsTheNote_Test()
+    {
+        const string yaml = """
+            definitions:
+              adult:
+                body:
+                  predicate: a
+            op: use
+            name: adult
+            note: age gate
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileYaml(yaml).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+    }
+
     /// <summary>A JSON definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
     [Fact]
     public void CompileJson_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
@@ -742,7 +880,11 @@ public sealed class DefinitionsTests
 
     private static CompiledRule<RuleTestContext> Compile(RuleCompiler<RuleTestContext> compiler, string text)
     {
-        return compiler.Compile(text).CompiledRule ?? throw new InvalidOperationException($"'{text}' did not compile.");
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+        return result.CompiledRule
+            ?? throw new InvalidOperationException(
+                $"'{text}' did not compile: {string.Join("; ", result.Diagnostics.Select(d => d.Message))}"
+            );
     }
 
     /// <summary>

@@ -217,6 +217,8 @@ In rule text, a comment is the note of one node. The parser uses the first rule 
 3. Otherwise, the comment is the note of the smallest node that ends at the token before it.
 4. Otherwise, the comment is the note of the smallest node that contains it, such as a call with a comment next to its bound.
 
+A note on a `let` use stays on the node the use expands to. If that node has its own note, the two join with a line feed, the note on the use first. In rule text, a comment on the same line after the `;` of a `let` is the note of that definition, so put the comment on its own line to annotate a use.
+
 A group is part of the node in it. Thus `/* note */ (a AND b)` is the note of the `AND` node, and `/* note */ a AND b` is the note of `a`. Two or more comments on one node join, in source order, with a line feed. An unterminated `/*` is a `SyntaxError`.
 
 All the formats normalize a note in the same way. Each line ending becomes a line feed. Each line loses its trailing spaces. The note loses the blank space at its start and end. A note that is then empty is no note. A `//` comment also loses one space after the slashes.
