@@ -48,6 +48,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | --- | --- |
 | **Kind** | `Primitive` or `Derived`. Every Operation document states it. |
 | **Kleene logic** | Three-valued logic with `True`, `False` and `Unknown`. A predicate fault becomes `Unknown`, and it is never a thrown exception or a silent `false`. See [values](strong-k3/specification/values.md). |
+| **Library rule** | A named, complete rule in a **rule library**. It has no registry, data sources or parameters of its own. Its names resolve against the compile of the rule that refers to it. |
 | **Memoization** | Within one evaluation, a term identity runs at most once, however many places in the tree use it. It does not carry over to the next evaluation. |
 | **NNF** | Negation normal form: `NOT` appears only directly above a term or an atom. `ToNnf()` returns it. See [negation normal form](rewriting-normal-form-examples.md#negation-normal-form). |
 | **Note** | Free text on one node of a rule: a `//` or `/* */` comment in rule text, or a `note` key in JSON and YAML. It does not change what the rule means, and a rewrite drops it. See [Notes](rule-formats.md#notes). |
@@ -72,9 +73,12 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | --- | --- |
 | **Rewrite** | An opt-in transform of a compiled rule that returns a new rule with the same value: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize` or `Simplify`. |
 | **Rule** | A named unit of persistence: metadata and one expression. Compiling it gives a `CompiledRule`. |
+| **Rule library** | An immutable set of **library rules**, each found by name. A **rule reference** names one of them from another rule. |
+| **Rule reference** | `rule("x")` in a rule: it expands the **library rule** `x` inline at compile time. An optional hash pin, as in `rule("x", hash: "ab12...")`, names the content hash of the version to use. |
 | **Rule test file** | A YAML file with one rule and named cases. Each case gives stub values to the terms and states the expected result. `truthweaver test` and `RuleTestFile` run it. See [Rule tests](rule-tests.md). |
 | **RuleBuilder** | A fluent API that assembles a rule tree from application logic. It compiles through the same pipeline as JSON. |
 | **RuleDiff** | A structural diff between two compiled rules: the nodes that were added, removed or changed. |
+| **Runtime call** | `call("x")` in a rule: at evaluation it runs the **library rule** `x` and takes its value. The faults of the callee join the faults of the caller, and its trace nests under the call node. |
 | **Short-circuit** | `AND` stops at the first `False`, `OR` at the first `True` and `COALESCE` at the first operand that is not `Unknown`. Skipped operands are recorded as `NotEvaluated`. See [evaluation](strong-k3/specification/evaluation.md#evaluation-modes). |
 | **Stand-in predicate** | A predicate that the rule test runner and the command line register in place of the predicates of a host. It gives the stub value of its term. See [Rule tests](rule-tests.md). |
 | **Strong Kleene connective** | An Operation that is monotone in the information order. Every rule operator of the K3 reference is one, except `COALESCE` and the four inspections. See [semantics](strong-k3/specification/semantics.md#strong-kleene-connectives-and-external-operators). |
