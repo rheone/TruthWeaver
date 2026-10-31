@@ -52,6 +52,9 @@ internal static class ReservedWords
         "EXISTS",
     ];
 
+    /// <summary>Gets every reserved word, so a test can check a rule against the whole list instead of a sample.</summary>
+    public static IReadOnlyCollection<string> All => Words;
+
     /// <summary>Determines whether an identifier is a reserved keyword.</summary>
     /// <param name="identifier">The identifier text.</param>
     /// <returns><see langword="true"/> if the identifier equals a keyword, ignoring case.</returns>
