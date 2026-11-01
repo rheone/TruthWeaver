@@ -64,8 +64,14 @@ internal static class QuantifierText
     /// <summary>Gets the symbolic glyph for an outline label, which is the canonical word of a quantifier.</summary>
     /// <param name="label">The quantifier's <see cref="Label(QuantifierKind)"/> word.</param>
     /// <returns>The glyph.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="label"/> is not the word of a quantifier.</exception>
     public static string Glyph(string label)
     {
-        return Glyph(label == Label(QuantifierKind.ForAll) ? QuantifierKind.ForAll : QuantifierKind.Exists);
+        QuantifierKind? match = Enum.GetValues<QuantifierKind>()
+            .Select(kind => (QuantifierKind?)kind)
+            .FirstOrDefault(kind => label == Label(kind!.Value));
+        return match is { } found
+            ? Glyph(found)
+            : throw new ArgumentOutOfRangeException(nameof(label), label, "Not the word of a quantifier.");
     }
 }

@@ -79,7 +79,7 @@ internal static class TreeFormatEmitter
     {
         writer.BeginObject();
         writer.Property("op");
-        writer.String(node.Kind == QuantifierKind.ForAll ? "forall" : "exists", quoted: false);
+        writer.String(QuantifierText.TreeFormatWord(node.Kind), quoted: false);
         writer.Property("var");
         writer.String(node.Variable, quoted: false);
         writer.Property("in");

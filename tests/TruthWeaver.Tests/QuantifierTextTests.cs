@@ -38,4 +38,23 @@ public sealed class QuantifierTextTests
         Assert.Throws<ArgumentOutOfRangeException>(() => QuantifierText.Description((QuantifierKind)999));
         Assert.Throws<ArgumentOutOfRangeException>(() => QuantifierText.TreeFormatWord((QuantifierKind)999));
     }
+
+    /// <summary>A label that is not the word of a quantifier throws, and does not read as <c>EXISTS</c>.</summary>
+    [Theory]
+    [InlineData("NOT-A-QUANTIFIER")]
+    [InlineData("")]
+    [InlineData("forall")]
+    public void Glyph_UnknownLabel_Throws_Test(string label)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => QuantifierText.Glyph(label));
+    }
+
+    /// <summary>The two quantifier words give their own glyphs.</summary>
+    [Theory]
+    [InlineData("FORALL", "∀")]
+    [InlineData("EXISTS", "∃")]
+    public void Glyph_QuantifierLabel_ReturnsItsGlyph_Test(string label, string expectedGlyph)
+    {
+        Assert.Equal(expectedGlyph, QuantifierText.Glyph(label));
+    }
 }
