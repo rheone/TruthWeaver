@@ -1,5 +1,7 @@
 # Documentation modernization
 
+**Sequencing (owner decision, 2026-11-01):** this effort runs last, after every other open ticket is resolved. Do not triage, start or dispatch it before then.
+
 ## Goal
 
 Every user-facing surface and every code comment meets the repository documentation standard (`docs/agents/documentation-standard.md`). The result is complete public API documentation, current guides and reference pages, clear runtime text, and code comments that carry value. None of it cites behind-the-scenes records (ADRs, tickets, PRDs, `.scratch` paths) that may not outlive the repository. Where a reference pointed to a reason or behavior, the text states that reason or behavior.

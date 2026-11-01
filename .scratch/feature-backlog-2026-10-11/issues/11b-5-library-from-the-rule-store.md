@@ -6,7 +6,7 @@
 
 **Blocked by:** 11b-3
 
-**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (sub-tickets released 2026-11-01; dispatch in order after its blocker is done)
 
 - [ ] A reload that changes a library rule changes what a later compile expands
 - [ ] A bad reload keeps the last good library and reports why

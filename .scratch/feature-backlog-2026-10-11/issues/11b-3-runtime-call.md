@@ -6,7 +6,7 @@
 
 **Blocked by:** 11b-2
 
-**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (sub-tickets released 2026-11-01; dispatch in order after its blocker is done)
 
 - [ ] A call returns the callee's value; its faults and trace appear in the caller's Decision
 - [ ] A removed or changed callee returns Unknown plus a Fault and `Decision.IsSatisfied` is false
