@@ -1,6 +1,6 @@
 # 21 - A note written on a use node is dropped when the use expands
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: L3 Externals+If+constants

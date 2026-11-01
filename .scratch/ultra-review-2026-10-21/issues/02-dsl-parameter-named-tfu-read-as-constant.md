@@ -1,6 +1,6 @@
 # 02 - A DSL definition parameter named T, F, U, True, False or Unknown is read as a constant; JSON, YAML and the builder read it as the parameter
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: high
 Lens: F2 Parsing; L3 Externals+If+constants

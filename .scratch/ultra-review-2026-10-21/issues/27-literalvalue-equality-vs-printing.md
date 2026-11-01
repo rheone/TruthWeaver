@@ -1,6 +1,6 @@
 # 27 - LiteralValue equality ignores DateTimeOffset offset and decimal scale, but the printers keep both
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F1 Ast+Abstractions
