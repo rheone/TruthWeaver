@@ -14,6 +14,23 @@ would not be reused. The code now means `RewriteTooLarge` (an expanding rewrite 
 `NestedCollapse` was never released, because the project has no release, so no published meaning changes. The
 diagnostic table in [diagnostics](../strong-k3/specification/diagnostics.md) lists `TRE0016` as `RewriteTooLarge`.
 
+*Amended 2026-11-01: errata, signature and diagnostic codes.* Several citations in this ADR do not match the shipped
+code, which the reference pages describe correctly. The code and the reference pages govern; read these decisions with
+the following corrections.
+
+- **`Decision.Project` (decisions 12 and 19).** The signature is `Project(TruthValue unknownAs)`, not
+  `Project(bool unknownAs)`. Passing `Unknown` throws `ArgumentOutOfRangeException` at run time. The compile-time
+  guarantee that a `bool` parameter would give does not exist.
+- **Rejected spellings (decisions 4, 12 and 14).** A rule that spells `NXOR`, `Project` or `Collapse` gets
+  `UnknownPredicate` (`TRE0002`) on every surface (DSL, JSON, YAML and `RuleBuilder`), not `SyntaxError` (`TRE0001`) or
+  `MalformedTree` (`TRE0014`).
+- **Operand counts (decision 13, including the `PARITY`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `If` and inspection
+  entries, and the "Decided, `If`" log entry).** A node with too few or too many operands is `InfixArityViolation`
+  (`TRE0006`), not `MalformedTree`.
+- **`BETWEEN` bounds (decision 13).** A missing or non-integer `min` or `max` in JSON or YAML is
+  `InvalidThresholdValue` (`TRE0008`), not `MalformedTree`.
+- **Constant spellings.** The table of accepted constant spellings is decision 16, not decision 11 (decision 11 covers
+  structured validation messages). The code comment in `TruthValueText` cites decision 16.
 *Amended 2026-10-16: definitions and parameters.* The reserved-word list of decision 2's notation and the
 rule-text grammar gain `let`, and the JSON/YAML tree format gains a `definitions` section and a `use`
 node, all outside the operator set this ADR otherwise governs: a definition expands to an ordinary
@@ -355,7 +372,7 @@ the aliases are cheap once the canonical form stays single.
     `Project` stays a reserved word so a predicate cannot shadow it.
 13. **JSON/YAML node shapes** for `If`, inspection, boundaries and the
     `Unknown` literal follow the existing `{"op": ..., "operands": [...]}`
-    pattern (literal: `{"op": "unknown"}`) and are recorded here when
+    pattern (literal: `{"const": "unknown"}`; *amended 2026-11-01: the Unknown literal is a `const` node, and `unknown` is not an operator*) and are recorded here when
     implemented. Implemented so far (k3-conformance 09): `IMPLIES` is
     `{"op": "implies", "operands": [antecedent, consequent]}` (exactly two
     operands, compile-time checked like `XOR`; op name case-insensitive on
@@ -576,7 +593,7 @@ the aliases are cheap once the canonical form stays single.
     letters are reserved words: a predicate cannot be registered with one of
     these names, and a term with one of them is a compile error. A letter
     followed by `(` stays a term, so it reports the reserved name. JSON and
-    YAML do not read the letters. `LogicSymbols` stays outside the grammar.
+    YAML do not read the letters (*amended 2026-11-01: JSON and YAML do read `T`, `F` and `U`, in either case, as well as the words, as `rule-tree.schema.json` and the rule-formats page state, and the `TRE0014` const diagnostic names them*). `LogicSymbols` stays outside the grammar.
 17. **The analyzer is K3-aware.** A dual-rail BDD tracking "definitely true"
     and "possibly true" replaces classical two-valued analysis, so
     `A AND NOT A` is a K3 contradiction only when it is, and `A OR NOT A` is

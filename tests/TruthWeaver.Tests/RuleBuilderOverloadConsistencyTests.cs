@@ -75,8 +75,6 @@ public sealed class RuleBuilderOverloadConsistencyTests
     [InlineData("ExactlyOne", 0)]
     [InlineData("ExactlyOne", 1)]
     [InlineData("ExactlyOne", 3)]
-    [InlineData("Coalesce", 0)]
-    [InlineData("Coalesce", 1)]
     [InlineData("Coalesce", 3)]
     [InlineData("AtLeast", 0)]
     [InlineData("AtLeast", 1)]
@@ -106,12 +104,27 @@ public sealed class RuleBuilderOverloadConsistencyTests
         Assert.Equal(fromArray.Diagnostics.Select(d => d.Code), fromList.Diagnostics.Select(d => d.Code));
     }
 
+    /// <summary>
+    /// <c>Coalesce</c> folds a short list only through the sequence overload: <c>Unknown</c> is its identity, so an empty
+    /// list is the constant <c>Unknown</c> and one operand is itself. The <c>params</c> overload still builds the node, which the compiler rejects.
+    /// </summary>
+    [Theory]
+    [InlineData(0, "Unknown")]
+    [InlineData(1, "isManager")]
+    public void Compile_ShortListForCoalesce_FoldsFromAListButNotFromAnArray_Test(int count, string expected)
+    {
+        CompilationResult<RuleTestContext> fromList = Build("Coalesce", count, asList: true).Compile(CreateCompiler());
+        CompilationResult<RuleTestContext> fromArray = Build("Coalesce", count, asList: false).Compile(CreateCompiler());
+
+        Assert.Equal(expected, fromList.CompiledRule!.CanonicalText);
+        Assert.False(fromArray.Succeeded);
+        Assert.Contains(fromArray.Diagnostics, d => d.Code == DiagnosticCodes.InfixArityViolation);
+    }
+
     /// <summary>A short list for an operator with no identity is a compile diagnostic, not a folded rule.</summary>
     [Theory]
     [InlineData("Parity", 1)]
     [InlineData("ExactlyOne", 1)]
-    [InlineData("Coalesce", 0)]
-    [InlineData("Coalesce", 1)]
     public void Compile_ShortListForAnOperatorWithNoIdentity_ReportsInfixArityViolation_Test(string op, int count)
     {
         CompilationResult<RuleTestContext> result = Build(op, count, asList: true).Compile(CreateCompiler());

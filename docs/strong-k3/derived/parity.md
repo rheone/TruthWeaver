@@ -42,7 +42,7 @@ Each operand is a value in `{T, F, U}`.
 | DSL, canonical | `PARITY(a, b, c)` |
 | JSON | `{"op": "parity", "operands": [ <expression>, <expression>, ... ]}` |
 | YAML | `op: parity` with an `operands:` list of two or more items |
-| `RuleBuilder` | `RuleBuilder.Parity(params RuleBuilder[])` for two or more operands; `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
+| `RuleBuilder` | `RuleBuilder.Parity(params RuleBuilder[])` for two or more operands; `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time; it does not fold a short list |
 
 `PARITY` is the one operation of this category with a real call form: `PARITY(a, b, c)` is DSL input, and the word is case-insensitive (`parity(a, b)`). A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling.
 
@@ -282,7 +282,7 @@ For two operands all three are the same function. From three operands `XOR` is n
 
 - Unknown is never absorbed. Unlike `AND`, `OR` and the cardinality operations, no definite operand settles `PARITY`. One `Unknown` operand gives `Unknown`.
 - Two operands give the same value as `XOR` but a different node, which prints as `PARITY(a, b)` rather than `a XOR b`.
-- Empty and single-operand conventions. Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The rule languages accept neither: `PARITY(a)` and `PARITY()` in the DSL, and JSON, YAML and `RuleBuilder.Parity(params RuleBuilder[])` with fewer than two operands compile to `InfixArityViolation`. Only `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` applies the convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged.
+- Empty and single-operand conventions. Mathematically the empty parity is `False`, the identity of the exclusive or, and the parity of one operand is that operand. The engine applies neither convention. `PARITY(a)` and `PARITY()` in the DSL, a JSON or YAML node with fewer than two operands, and `RuleBuilder.Parity(params RuleBuilder[])` and `RuleBuilder.Parity(IEnumerable<RuleBuilder>)` with fewer than two operands all compile to `InfixArityViolation`. Neither `RuleBuilder` overload folds a short list.
 - Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |

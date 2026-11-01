@@ -41,7 +41,7 @@ A term takes each argument name once, and argument names match ignoring case. `R
 
 ### Operand lists of unknown length
 
-An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same rule for the same operands. The rule depends on whether the operator has an identity constant.
+An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same rule for the same operands, with one exception: `Coalesce`. The rule depends on whether the operator has an identity constant.
 
 `And`, `Or`, `Any`, `All` and `None` have an identity. In both forms, fewer than two operands fold when you build the rule. The compiler never sees a short node:
 
@@ -51,7 +51,9 @@ An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same ru
 | `Or` / `Any` | `Constant(False)` | `x` |
 | `None` | `Constant(True)` | `Not(x)` |
 
-`Parity`, `ExactlyOne` and `Coalesce` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `InfixArityViolation`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
+`Parity` and `ExactlyOne` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `InfixArityViolation`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
+
+`Coalesce` has an identity, `Unknown`, but only the sequence form folds: an empty sequence is `Constant(Unknown)` and one operand `x` is `x`. `RuleBuilder.Coalesce(params RuleBuilder[])` does not fold, and a short array gives `InfixArityViolation`. Use the sequence overload for a list whose length is known only at run time.
 
 An empty list that silently becomes a constant can hide a mistake. For example, an empty list of role checks under `And` is `True`. Check the count first when that matters.
 

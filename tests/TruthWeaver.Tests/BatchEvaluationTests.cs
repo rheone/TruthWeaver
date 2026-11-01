@@ -331,6 +331,33 @@ public sealed class BatchEvaluationTests
         );
     }
 
+    /// <summary>An unusable timeout or element bound is rejected when the method is called, before the enumeration starts.</summary>
+    [Theory]
+    [InlineData(-5000L, 10_000)]
+    [InlineData(-2L, 10_000)]
+    [InlineData(4_294_967_295L, 10_000)]
+    [InlineData(null, 0)]
+    [InlineData(null, -1)]
+    public void EvaluateManyAsync_UnusableTimeoutOrElementBound_ThrowsArgumentOutOfRange_Test(
+        long? timeoutMilliseconds,
+        int maxElementEvaluations
+    )
+    {
+        EvaluationOptions options = new(
+            Timeout: timeoutMilliseconds is { } ms ? TimeSpan.FromMilliseconds(ms) : null,
+            MaxElementEvaluations: maxElementEvaluations
+        );
+        CompiledRule<BatchItem> rule = CompileProbe((_, _) => ValueTask.FromResult(TruthValue.True));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            rule.EvaluateManyAsync(
+                [new BatchItem(0)],
+                options: options,
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
+    }
+
     /// <summary>A null sequence of contexts is rejected when the method is called.</summary>
     [Fact]
     public void EvaluateManyAsync_NullContexts_ThrowsArgumentNull_Test()

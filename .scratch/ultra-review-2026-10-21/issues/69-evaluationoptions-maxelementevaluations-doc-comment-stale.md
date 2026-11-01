@@ -1,6 +1,6 @@
 # 69 - EvaluationOptions.MaxElementEvaluations's doc comment says "one evaluation," now stale next to docs/policies.md
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation; F9 Policies
@@ -21,11 +21,15 @@ Surfaced as a handoff note from the sub-agent that implemented ticket 35, out of
 
 ## Acceptance criteria
 
-- `EvaluationOptions.MaxElementEvaluations`'s doc comment states or points to the whole-set behavior when a `PolicySet` shares one `EvaluationState` (see `docs/policies.md`).
-- `FaultBudget`'s doc comment on the same type is checked for the identical gap and fixed if present.
-- No code change - this is a documentation-only fix, consistent with tickets 09, 35 and 40 in this effort.
-- The validation list in `CLAUDE.md` passes.
+- [x] `EvaluationOptions.MaxElementEvaluations`'s doc comment states or points to the whole-set behavior when a `PolicySet` shares one `EvaluationState` (see `docs/policies.md`).
+- [x] `FaultBudget`'s doc comment on the same type is checked for the identical gap and fixed if present.
+- [x] No code change - this is a documentation-only fix, consistent with tickets 09, 35 and 40 in this effort.
+- [x] The validation list in `CLAUDE.md` passes.
 
 ## Comments
 
 > *Filed from a handoff note on ticket 35's implementation (2026-10-26): "the EvaluationOptions doc comment for MaxElementEvaluations still says the bound covers 'one evaluation'... Needs a small follow-up."*
+
+## Resolution (2026-11-01)
+
+The `MaxElementEvaluations` parameter doc on `EvaluationOptions` now says the bound belongs to one evaluation state: a single `EvaluateAsync` call, or the whole policy set for one context, and points to `docs/policies.md`. `FaultBudget` had the identical gap and its parameter doc now says the count and the abort are whole-set when a policy set shares the state. Doc-comment text only; no code or test change (the build with analyzers is the gate, and `docs/policies.md` already states the behavior). Page: `EvaluationOptions` XML docs.

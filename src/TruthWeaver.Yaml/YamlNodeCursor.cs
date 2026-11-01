@@ -43,8 +43,8 @@ internal readonly struct YamlNodeCursor : ITreeNodeCursor
             SequenceNoun: "sequence",
             StringNoun: "YAML string",
             KeyNoun: "key",
-            ConstMessage: "'const' must be a YAML boolean or one of true, false, unknown.",
-            ConstExpected: "a YAML boolean or one of true, false, unknown",
+            ConstMessage: "'const' must be a YAML boolean or one of true, false, unknown, T, F, U (any case).",
+            ConstExpected: "a YAML boolean or one of true, false, unknown, T, F, U (any case)",
             LiteralExpected: "a string, number, boolean or array"
         );
 
@@ -95,7 +95,7 @@ internal readonly struct YamlNodeCursor : ITreeNodeCursor
     /// <inheritdoc />
     public string DescribeValue()
     {
-        return this.node is YamlScalarNode { Value: { } text } ? $"'{text}'" : this.Describe();
+        return this.node is YamlScalarNode { Value: { } text } && !IsNull(this.node) ? $"'{text}'" : this.Describe();
     }
 
     /// <inheritdoc />

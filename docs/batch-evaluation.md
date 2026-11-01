@@ -38,7 +38,7 @@ Decision[] decisions = await rule.EvaluateManyAsync(customers, serviceProvider, 
 - **Faults.** A predicate fault in one context makes that decision `Unknown` with a `Fault`. The other contexts are evaluated as usual. The [evaluation rules](strong-k3/specification/evaluation.md) define faults.
 - **Cancellation.** A cancelled token stops the batch and throws `OperationCanceledException`, and the evaluations in flight stop. An expired `Timeout` for one context also throws `OperationCanceledException` and stops the batch. Neither is a fault.
 - **Early stop.** When the consumer stops reading, or one evaluation throws, the method cancels the evaluations still in flight and waits for them before the enumeration ends.
-- **Argument errors.** A `null` sequence, a `maxDegreeOfParallelism` below 1 or a `FaultBudget` below 1 throws when the method is called, before the method reads a context.
+- **Argument errors.** A `null` sequence, a `maxDegreeOfParallelism` below 1 or a `FaultBudget` or `MaxElementEvaluations` below 1, or an unusable `Timeout` (negative other than `Timeout.InfiniteTimeSpan`, or over 4,294,967,294 ms), throws `ArgumentOutOfRangeException` when the method is called, before the method reads a context.
 
 ## Cost
 

@@ -111,6 +111,55 @@ public sealed class LoggingTests
         Assert.IsType<ElementEvaluationLimitExceededException>(call.Exception);
     }
 
+    /// <summary>A faulting predicate's rendered log message still reads as a predicate fault.</summary>
+    [Fact]
+    public async Task Evaluate_FaultingPredicate_RenderedMessageSaysPredicate_Test()
+    {
+        ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddThrowing("flaky").Build(),
+            logger: logger
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("flaky").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        LoggerTestExtensions.LoggedCall call = Assert.Single(logger.GetLoggedCalls(), c => c.Level == LogLevel.Warning);
+        Assert.StartsWith("Predicate fault for term flaky:", call.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A throwing collection selector's rendered log message names a collection fault, not a predicate, and keeps its event id.</summary>
+    [Fact]
+    public async Task Evaluate_ThrowingCollectionSelector_RenderedMessageDoesNotSayPredicate_Test()
+    {
+        LoggerTestExtensions.LoggedCall call = await EvaluateQuantifierAndGetWarningAsync(
+            _ => throw new InvalidOperationException("selector fault"),
+            new EvaluationOptions()
+        );
+
+        Assert.DoesNotContain("Predicate", call.Message, StringComparison.Ordinal);
+        Assert.StartsWith("Collection fault for term items:", call.Message, StringComparison.Ordinal);
+        Assert.Equal(2, call.EventId.Id);
+    }
+
+    /// <summary>An exceeded element-evaluation limit's rendered log message does not say predicate, and keeps its event id.</summary>
+    [Fact]
+    public async Task Evaluate_MaxElementEvaluationsExceeded_RenderedMessageDoesNotSayPredicate_Test()
+    {
+        LoggerTestExtensions.LoggedCall call = await EvaluateQuantifierAndGetWarningAsync(
+            _ => Enumerable.Repeat(TruthValue.True, 10),
+            new EvaluationOptions(MaxElementEvaluations: 3)
+        );
+
+        Assert.DoesNotContain("Predicate", call.Message, StringComparison.Ordinal);
+        Assert.StartsWith("ElementLimit fault for term items:", call.Message, StringComparison.Ordinal);
+        Assert.Equal(2, call.EventId.Id);
+    }
+
     /// <summary>Compiling a rule with a diagnostic logs one structured event per diagnostic.</summary>
     [Fact]
     public void Compile_DiagnosticRule_LogsOneEventPerDiagnostic_Test()
@@ -208,5 +257,38 @@ public sealed class LoggingTests
         ILogger<RuleCompiler<RuleTestContext>> logger = Substitute.For<ILogger<RuleCompiler<RuleTestContext>>>();
         logger.IsEnabled(Arg.Any<LogLevel>()).Returns(true);
         return logger;
+    }
+
+    private static async Task<LoggerTestExtensions.LoggedCall> EvaluateQuantifierAndGetWarningAsync(
+        Func<RuleTestContext, IEnumerable<TruthValue>> selector,
+        EvaluationOptions options
+    )
+    {
+        ILogger<RuleCompiler<RuleTestContext>> logger = CreateEnabledLogger();
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddCollection<TruthValue>(
+                    "items",
+                    selector,
+                    elements =>
+                        elements.Add(
+                            PredicateSchema.NoArguments("elementTrue", "elementTrue", "True iff the element itself is True."),
+                            (e, _, _) => ValueTask.FromResult(e.Item)
+                        )
+                )
+                .Build(),
+            logger: logger
+        );
+        CompiledRule<RuleTestContext> rule = compiler.Compile("FORALL(x IN items, elementTrue)").CompiledRule!;
+
+        await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: options,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        return Assert.Single(logger.GetLoggedCalls(), c => c.Level == LogLevel.Warning);
     }
 }

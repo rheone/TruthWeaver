@@ -1,7 +1,7 @@
 namespace TruthWeaver.Ast;
 
 /// <summary>
-/// The single spelling table for K3 constants (ADR-0005 decision 11), shared by the DSL canonical printer, the
+/// The single spelling table for K3 constants (ADR-0005 decision 16), shared by the DSL canonical printer, the
 /// descriptors and the JSON/YAML printers and parsers so every layer agrees on how <c>True</c>, <c>False</c> and
 /// <c>Unknown</c> are written and read.
 /// </summary>

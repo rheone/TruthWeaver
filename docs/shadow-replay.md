@@ -62,4 +62,4 @@ The replay keeps only the changed contexts. Its memory grows with the number of 
 
 ## Errors
 
-A `null` rule or sequence, a `maxDegreeOfParallelism` below 1 or a `FaultBudget` below 1 throws `ArgumentNullException` or `ArgumentOutOfRangeException`. A cancelled token, or an expired `Timeout` for one evaluation, throws `OperationCanceledException`. A predicate fault is not an error: it makes that decision `Unknown` with a `Fault`, as in [batch evaluation](batch-evaluation.md).
+A `null` rule or sequence, a `maxDegreeOfParallelism` below 1 or a `FaultBudget` or `MaxElementEvaluations` below 1, or an unusable `Timeout`, throws `ArgumentNullException` or `ArgumentOutOfRangeException`. A cancelled token, or an expired `Timeout` for one evaluation, throws `OperationCanceledException`. A predicate fault is not an error: it makes that decision `Unknown` with a `Fault`, as in [batch evaluation](batch-evaluation.md).

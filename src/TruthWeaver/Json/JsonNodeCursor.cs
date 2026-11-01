@@ -21,8 +21,8 @@ internal readonly struct JsonNodeCursor(JsonElement element) : ITreeNodeCursor
             SequenceNoun: "array",
             StringNoun: "JSON string",
             KeyNoun: "property",
-            ConstMessage: "'const' must be a JSON boolean or one of \"true\", \"false\", \"unknown\".",
-            ConstExpected: "a JSON boolean or one of \"true\", \"false\", \"unknown\""
+            ConstMessage: "'const' must be a JSON boolean or one of \"true\", \"false\", \"unknown\", \"T\", \"F\", \"U\" (any case).",
+            ConstExpected: "a JSON boolean or one of \"true\", \"false\", \"unknown\", \"T\", \"F\", \"U\" (any case)"
         );
 
     /// <inheritdoc />

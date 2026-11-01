@@ -112,7 +112,15 @@ internal sealed class CollectionBinding<TContext, TItem>(
             // hit never re-raises the fault that produced it.
             if (firstMaterialization)
             {
-                FaultRecorder.Record(state, logger, options, outerScope, new TermIdentity(name, []), materialization.Fault!);
+                FaultRecorder.Record(
+                    state,
+                    logger,
+                    options,
+                    outerScope,
+                    FaultOrigin.Collection,
+                    new TermIdentity(name, []),
+                    materialization.Fault!
+                );
             }
 
             AddFlat(TruthValue.Unknown, false);
@@ -188,6 +196,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
                     logger,
                     options,
                     outerScope,
+                    FaultOrigin.ElementLimit,
                     new TermIdentity(name, []),
                     new ElementEvaluationLimitExceededException(options.MaxElementEvaluations)
                 );

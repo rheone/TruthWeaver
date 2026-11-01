@@ -1,6 +1,6 @@
 # 68 - EvaluationLog.PredicateFaulted's message text says "Predicate fault" for a collection-level fault
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation
@@ -25,9 +25,9 @@ The log message text (and, if it reads the same way, any rendered text elsewhere
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after (e.g. asserting the rendered or logged text for a collection fault does not say "Predicate").
-- `EventId`, `Term` and `Exception` stay exactly as they are; this ticket is wording-only, not a structured-field or `Fault`/`Decision` shape change.
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after (e.g. asserting the rendered or logged text for a collection fault does not say "Predicate").
+- [x] `EventId`, `Term` and `Exception` stay exactly as they are; this ticket is wording-only, not a structured-field or `Fault`/`Decision` shape change.
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -47,11 +47,15 @@ The log message text (and, if it reads the same way, any rendered text elsewhere
 - Consider whether `EvaluationLog` needs one log method with a `kind`/origin parameter, or one method per origin (matching the existing per-event-id style of this file) - either is acceptable; pick whichever keeps `EventId` stable per origin and avoids a string-typed "kind" field in the structured log.
 
 **Acceptance criteria:**
-- [ ] A throwing collection selector's log line does not say "Predicate".
-- [ ] An element-evaluation-limit-exceeded fault's log line does not say "Predicate".
-- [ ] A predicate fault's log line is unchanged.
-- [ ] `EventId`, `Term` and `Exception` are unaffected; `Decision.Faults` and the `truthweaver.faults` metric are unaffected (ticket 51's behavior is not touched).
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A throwing collection selector's log line does not say "Predicate".
+- [x] An element-evaluation-limit-exceeded fault's log line does not say "Predicate".
+- [x] A predicate fault's log line is unchanged.
+- [x] `EventId`, `Term` and `Exception` are unaffected; `Decision.Faults` and the `truthweaver.faults` metric are unaffected (ticket 51's behavior is not touched).
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any change to which faults go through `FaultRecorder.Record`, or to `Decision.Faults`/metric behavior - ticket 51 already settled that.
+
+## Resolution (2026-11-01)
+
+`EvaluationLog.PredicateFaulted` is now `Faulted` with a new `FaultOrigin` parameter (`Predicate`, `Collection`, `ElementLimit`; new internal enum). The template is `"{Origin} fault for term {Term}: {Message}"`, so a predicate line renders as before ("Predicate fault for term flaky: ..."), a selector fault reads "Collection fault ...", and an element-limit fault reads "ElementLimit fault ...". `FaultRecorder.Record` takes the origin; `Evaluator` passes `Predicate` (this also covers a variable's fault, as before), `CollectionBinding` passes `Collection` and `ElementLimit`. `EventId` (2), `Term`, `Exception`, `Decision.Faults` and the metric are unchanged; `Origin` is one new enum-typed structured field. Tests: `LoggingTests` three new rendered-message tests (selector and limit were red); `LoggerTestExtensions.LoggedCall` gained a rendered `Message`. Page: `docs/observability.md` (new "Logs" section; no page covered the log).

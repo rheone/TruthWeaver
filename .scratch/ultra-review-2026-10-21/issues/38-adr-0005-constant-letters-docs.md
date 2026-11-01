@@ -1,6 +1,6 @@
 # 38 - rule-text.md, ADR-0005 and the const diagnostic disagree with the parsers about which constant spellings JSON and YAML read
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: L3 Externals+If+constants; L5 Least surprise
@@ -64,9 +64,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -88,9 +88,13 @@ All three findings agree on direction: the code, `rule-tree.schema.json`, and `d
 - The `ConstMessage`/`ConstExpected` diagnostic text in `JsonNodeCursor.cs`/`YamlNodeCursor.cs`.
 
 **Acceptance criteria:**
-- [ ] `rule-text.md` states JSON/YAML accept the words and the letters.
-- [ ] ADR-0005 decision 16 carries an in-place amendment noting the letters are accepted.
-- [ ] ADR-0005 decision 13's Unknown-literal example reads `{"const": "unknown"}`.
-- [ ] The TRE0014 diagnostic message names every accepted spelling.
-- [ ] No parser behavior changes — this is a documentation/message-text fix only.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `rule-text.md` states JSON/YAML accept the words and the letters.
+- [x] ADR-0005 decision 16 carries an in-place amendment noting the letters are accepted.
+- [x] ADR-0005 decision 13's Unknown-literal example reads `{"const": "unknown"}`.
+- [x] The TRE0014 diagnostic message names every accepted spelling.
+- [x] No parser behavior changes — this is a documentation/message-text fix only.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Verified: `rule-text.md` still said "JSON and YAML read the words only" (line 214); ADR-0005 decisions 13 and 16 still had the stale `{"op": "unknown"}` example and "do not read the letters"; the TRE0014 const text named only the words. Fixed: `rule-text.md` now says JSON and YAML read the words and the letters. ADR-0005 decisions 13 and 16 carry in-place "amended 2026-11-01" notes (the Unknown literal is `{"const": "unknown"}`; the letters are read). `ConstMessage` and `ConstExpected` in `JsonNodeCursor` and `YamlNodeCursor` now list `true`, `false`, `unknown`, `T`, `F`, `U` (any case); the existing message prefixes are kept. No parser behavior change. Tests: new `CompileJson_BadConst_MessageNamesTheAcceptedLetters_Test` and `CompileYaml_BadConst_MessageNamesTheAcceptedLetters_Test` (red first); `TreeDiagnosticsTests.CompileJson_BadConst_ReportsTheConstPath_Test` expectation updated. Pages: `docs/rule-text.md`, `CHANGELOG.md`, ADR-0005 (history file, edited in place as the ticket directs).

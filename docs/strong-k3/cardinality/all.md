@@ -189,7 +189,7 @@ The last row is the case a reading of `ALL` as "`False` when fewer than `n` oper
 | JSON or YAML node with fewer than two operands | The same `InfixArityViolation` (`TRE0006`) diagnostic. |
 
 - `False` only when `T + U < n`. At least one `False` operand is required for a definite `False`; see the [last example row](#examples).
-- Empty and single-operand conventions. Only `RuleBuilder.All(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand is returned unchanged. `RuleBuilder.All(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
+- Empty and single-operand conventions. `RuleBuilder` applies a convention at build time, in both `RuleBuilder.All(params RuleBuilder[])` and `RuleBuilder.All(IEnumerable<RuleBuilder>)`: an empty list becomes the constant `True` and a single operand is returned unchanged. The compiler never sees a short `ALL` node from the builder. The DSL, JSON and YAML reject fewer than two operands.
 - Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |

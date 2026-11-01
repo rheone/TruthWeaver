@@ -567,6 +567,20 @@ copyright line reads 2026.
 
 ### Fixed
 
+- The evaluation fault log entry (event id 2) names what faulted: `Predicate fault for term ...`, `Collection fault for term ...` for a
+  throwing collection selector and `ElementLimit fault for term ...` for an exceeded `MaxElementEvaluations`. The entry gains an
+  `Origin` structured field. See [Observability](docs/observability.md#logs).
+- `EvaluationOptions` rejects an unusable value when you call `EvaluateAsync`, `EvaluateManyAsync` or `ShadowReplay.CompareAsync`:
+  `MaxElementEvaluations` below 1, and a `Timeout` that is negative (other than `Timeout.InfiniteTimeSpan`) or over
+  4,294,967,294 ms, throw `ArgumentOutOfRangeException`, as a `FaultBudget` below 1 already did. The docs now state that the
+  timeout is cooperative: a predicate that blocks without observing its token can run past it.
+- The `TRE0014` diagnostic for a bad `const` in JSON and YAML names every accepted spelling: `true`, `false`, `unknown`
+  and the letters `T`, `F` and `U`, in any case. A YAML `const:` with an empty or `~` value reports `Found` as `null`,
+  as the JSON `{"const": null}` does.
+- `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` folds a short sequence, because `Unknown` is the identity of `COALESCE`: an
+  empty sequence is the constant `Unknown` and one operand is itself. The `params` overload still builds the node, and the
+  compiler reports `InfixArityViolation` for fewer than two operands. The K3 reference pages for `And`, `Or`, `Parity`,
+  `Any`, `All`, `None`, `GreaterThan` and `LessThan` now describe the build-time fold and overloads of `RuleBuilder` correctly.
 - Terminal UI divider drag: a mouse drag on a divider between the regions resizes them, and the sizes are saved to `workbench.json` as for the Alt+arrow keys. Both border lines of a divider grab it, and the horizontal divider runs across the whole window. Before, only the border of the Rule region responded, and it set a size that was not saved. A terminal that reports no pointer moves while a button is held moves the divider to the release position. The key help names the Alt+arrow keys as resize keys. No migration step. [Terminal UI](docs/tui.md#keys) covers it.
 - Terminal UI themes: the light set draws dark text on a light background and the dark set draws light text on a dark background, in every pane and dialog. Before, both sets drew on the terminal background, so on a dark terminal the light set showed gray text on black. The workbench replaces every Terminal.Gui scheme with one that paints the background of its set; `NO_COLOR` still uses the terminal colors only. No migration step. [Terminal UI](docs/tui.md#themes-and-colors) covers it.
 - `FakePredicates.Scripted` fails the test when it is called after its last answer: the `InvalidOperationException` it throws is no longer absorbed by the evaluator or `PredicateHarness`, so `EvaluateAsync` throws instead of returning `Unknown` with a `Fault` (which `HaveResult(Unknown)` could pass by accident). The exception type is internal to `TruthWeaver`, visible only to `TruthWeaver.Testing`, so every exception a production predicate throws is still `Unknown` plus a `Fault` (ADR-0001). A new `Scripted(name, IReadOnlyList<Func<TruthValue>> steps)` overload scripts a call that throws on purpose; that exception is a `Fault`, as for any predicate. `docs/testing-assertions.md` and `docs/predicate-harness.md` cover it.

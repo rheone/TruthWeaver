@@ -28,7 +28,7 @@ public static class ShadowReplay
     /// <param name="cancellationToken">A token that stops the replay.</param>
     /// <returns>The number of contexts replayed and the contexts that changed.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="baseline"/>, <paramref name="candidate"/> or <paramref name="contexts"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="evaluationOptions"/> has a fault budget below 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="evaluationOptions"/> has a fault budget or element bound below 1, or an unusable timeout.</exception>
     /// <exception cref="OperationCanceledException">The token cancelled the replay, or a timeout expired for one evaluation.</exception>
     public static Task<ShadowReplayResult<TContext>> CompareAsync<TContext>(
         CompiledRule<TContext> baseline,
@@ -69,7 +69,7 @@ public static class ShadowReplay
     /// <param name="cancellationToken">A token that stops the replay.</param>
     /// <returns>The number of contexts replayed and the contexts that changed.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="baseline"/>, <paramref name="candidate"/> or <paramref name="contexts"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="evaluationOptions"/> has a fault budget below 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="evaluationOptions"/> has a fault budget or element bound below 1, or an unusable timeout.</exception>
     /// <exception cref="OperationCanceledException">The token cancelled the replay, or a timeout expired for one evaluation.</exception>
     public static async Task<ShadowReplayResult<TContext>> CompareAsync<TContext>(
         CompiledRule<TContext> baseline,
@@ -94,14 +94,7 @@ public static class ShadowReplay
 
         ShadowReplayOptions effective = options ?? new ShadowReplayOptions();
         EvaluationOptions evaluation = (evaluationOptions ?? EvaluationOptions.Default) with { IncludeTrace = true };
-        if (evaluation.FaultBudget is < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(evaluationOptions),
-                evaluation.FaultBudget,
-                "The fault budget must be 1 or more."
-            );
-        }
+        evaluation.ThrowIfInvalid(nameof(evaluationOptions));
 
         List<ShadowReplayChange<TContext>> changes = [];
         List<TContext> block = [];

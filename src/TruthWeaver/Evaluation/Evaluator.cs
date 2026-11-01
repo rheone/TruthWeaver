@@ -745,7 +745,7 @@ internal sealed class Evaluator<TContext>(
     /// <summary>Records a fault for <paramref name="identity"/> and aborts the evaluation once the fault count reaches the fault budget.</summary>
     private void RecordFault(TermIdentity identity, Exception ex)
     {
-        FaultRecorder.Record(this.state, this.logger, this.options, this.scope, identity, ex);
+        FaultRecorder.Record(this.state, this.logger, this.options, this.scope, FaultOrigin.Predicate, identity, ex);
     }
 
     /// <summary>
