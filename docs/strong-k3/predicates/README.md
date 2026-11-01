@@ -193,7 +193,7 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 - `IsNullOrEmpty` and `IsNotNullOrEmpty` are null tests. They never answer `Unknown` and have no `nullBehavior` option.
 - Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - To test a single string against several candidates, use `IsIn` and `IsNotIn` in the [string predicates](#string-predicates).
-- A repeated element and a `null` element count as elements in the `HasCount` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
+- A repeated element and a `null` element count as elements in the `HasCount` predicates, and a `null` element makes a collection not empty. A repeated element has no effect on the other predicates. A `null` element never equals a string, so it has no effect on `Contains`, `ContainsAny`, `ContainsAll` and their twins. For `IsSubsetOf`, `SetEquals` and their twins a `null` element is an extra member: `tags = ["admin", null]` is not a subset of `["admin"]` and is not set-equal to it.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |

@@ -162,6 +162,48 @@ public class CollectionPredicatesTests
         );
     }
 
+    /// <summary>
+    /// A <c>null</c> element is an extra member for <c>IsSubsetOf</c> and <c>SetEquals</c>, so both answer False for
+    /// <c>["admin", null]</c> against <c>["admin"]</c>. It never equals a string, so <c>Contains</c>, <c>ContainsAny</c> and
+    /// <c>ContainsAll</c> answer as they do for <c>["admin"]</c>, and it makes the collection not empty.
+    /// </summary>
+    [Fact]
+    public async Task CollectionPredicates_NullElement_IsAnExtraMemberOnlyForSubsetAndSetEquality_Test()
+    {
+        TestContext context = new(null, ["admin", null!]);
+        PredicateArguments admin = Args("values", "admin");
+
+        TruthValue subset = await CollectionPredicates
+            .IsSubsetOf<TestContext>("p", c => c.Values)
+            .Evaluate(context, admin, CancellationToken.None);
+        TruthValue setEquals = await CollectionPredicates
+            .SetEquals<TestContext>("p", c => c.Values)
+            .Evaluate(context, admin, CancellationToken.None);
+        TruthValue containsAny = await CollectionPredicates
+            .ContainsAny<TestContext>("p", c => c.Values)
+            .Evaluate(context, admin, CancellationToken.None);
+        TruthValue containsAll = await CollectionPredicates
+            .ContainsAll<TestContext>("p", c => c.Values)
+            .Evaluate(context, admin, CancellationToken.None);
+        TruthValue contains = await CollectionPredicates
+            .Contains<TestContext>("p", c => c.Values)
+            .Evaluate(
+                context,
+                new PredicateArguments(new Dictionary<string, LiteralValue> { ["value"] = LiteralValue.OfString("admin") }),
+                CancellationToken.None
+            );
+        TruthValue isEmpty = await CollectionPredicates
+            .IsEmpty<TestContext>("p", c => c.Values)
+            .Evaluate(context, PredicateArguments.Empty, CancellationToken.None);
+
+        Assert.Equal(TruthValue.False, subset);
+        Assert.Equal(TruthValue.False, setEquals);
+        Assert.Equal(TruthValue.True, containsAny);
+        Assert.Equal(TruthValue.True, containsAll);
+        Assert.Equal(TruthValue.True, contains);
+        Assert.Equal(TruthValue.False, isEmpty);
+    }
+
     private static PredicateArguments Args(string name, params string[] values)
     {
         LiteralValue array = LiteralValue.OfArray(LiteralKind.String, values.Select(LiteralValue.OfString));
