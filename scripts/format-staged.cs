@@ -12,6 +12,7 @@
 // developer formats it, then stages the hunks they want. Called by .husky/task-runner.json.
 //
 // Usage: dotnet run scripts/format-staged.cs
+using System.Security.Cryptography;
 using TruthWeaver.Scripts;
 
 try
@@ -24,16 +25,26 @@ try
     if (whole.Count > 0)
     {
         // Both formatters run, then CSharpier runs again, because dotnet format can move a token that CSharpier
-        // then moves back. The two checks after that are the CI gates. If they still fail, the formatters disagree
+        // then moves back. The checks after that are the CI gates. If they still fail, the formatters disagree
         // about this code and no amount of formatting settles it: the code needs a different shape, not another run.
         await RunCheckedAsync("csharpier format", ["csharpier", "format", .. whole]);
         await RunCheckedAsync("dotnet format", ["format", "--no-restore", "--severity", "info", "--include", .. whole]);
+        string before = await FingerprintAsync(whole);
         await RunCheckedAsync("csharpier format (second pass)", ["csharpier", "format", .. whole]);
         await RunCheckedAsync("csharpier check", ["csharpier", "check", .. whole]);
-        await RunCheckedAsync(
-            "dotnet format check (CSharpier and dotnet format disagree on these files; reshape the code, see CLAUDE.md \"Formatting\")",
-            ["format", "--no-restore", "--severity", "info", "--verify-no-changes", "--include", .. whole]
-        );
+
+        // The dotnet format check loads the whole solution, which is most of the time of this step. When the second
+        // CSharpier pass changed nothing, the files are exactly what dotnet format wrote, so the check would repeat
+        // it. It runs only when CSharpier moved something back. CI runs the check on every file, so a rare miss here
+        // still fails there.
+        if (before != await FingerprintAsync(whole))
+        {
+            await RunCheckedAsync(
+                "dotnet format check (CSharpier and dotnet format disagree on these files; reshape the code, see CLAUDE.md \"Formatting\")",
+                ["format", "--no-restore", "--severity", "info", "--verify-no-changes", "--include", .. whole]
+            );
+        }
+
         await RunCheckedAsync("git add", ["add", "--", .. whole], "git");
     }
 
@@ -55,6 +66,18 @@ catch (ScriptFailedException exception)
 {
     await Console.Error.WriteLineAsync(exception.Message);
     return exception.ExitCode;
+}
+
+// Returns one hash of the content of the given files, to tell whether a formatter changed any of them.
+static async Task<string> FingerprintAsync(IReadOnlyList<string> files)
+{
+    using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+    foreach (string file in files)
+    {
+        hash.AppendData(await File.ReadAllBytesAsync(file));
+    }
+
+    return Convert.ToHexString(hash.GetHashAndReset());
 }
 
 // Runs "dotnet <arguments>" (or another tool) with console output and fails the script on a non-zero exit code.
