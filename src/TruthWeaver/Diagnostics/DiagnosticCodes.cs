@@ -5,6 +5,11 @@ namespace TruthWeaver.Diagnostics;
 /// <c>TRE</c> prefix ("Trinary Rule Expression") followed by a four-digit number; the prefix was <c>BRE</c> before
 /// ADR-0007 and the numbers are unchanged.
 /// </summary>
+/// <remarks>
+/// A new code needs three entries, and the hook fails the commit without all three: the constant here, a row in the
+/// code table of <c>docs/strong-k3/specification/diagnostics.md</c>, and a row in <c>DiagnosticCodeTable</c> in the
+/// <c>TruthWeaver.Tool.Core</c> package. Never reuse a number.
+/// </remarks>
 public static class DiagnosticCodes
 {
     /// <summary>A syntax error while parsing rule text.</summary>

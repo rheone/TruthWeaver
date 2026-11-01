@@ -14,6 +14,7 @@ Tasks:
 2. ...
 
 Verify each task with the narrowest check that covers your change (the project documents its targeted test and build commands). The full validation runs once after integration.
+A bundle that adds a public type or a diagnostic code also runs the full `dotnet test` once before it reports (about a minute), because a catalog or registry in another package can fail on it.
 If a task fails, continue with the later tasks that do not depend on it and mark the dependent ones skipped.
 Before you report, when another bundle is running beside you against the same target branch: check your diff against that branch's current state (a dry-run merge, if your tools support one) and name any likely conflict area in your Handoff, even without seeing the sibling's actual diff - a clean exit from your own worktree is not evidence the integration will be clean too.
 
