@@ -1,6 +1,6 @@
 # 65 - Disposing NullBehaviorScope instances out of order can restore a disposed scope
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F7 Predicates B
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -49,6 +49,16 @@ not verified (medium or low)
 - `NullBehaviorScope.Dispose`.
 
 **Acceptance criteria:**
-- [ ] Opening scope A, then scope B, disposing A, then disposing B, leaves the ambient current scope at the documented no-scope default — not scope A.
-- [ ] The normal (properly nested, inner-disposed-first) case is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] Opening scope A, then scope B, disposing A, then disposing B, leaves the ambient current scope at the documented no-scope default — not scope A.
+- [x] The normal (properly nested, inner-disposed-first) case is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced as written (after `a.Dispose(); b.Dispose();` the ambient scope was `a` and a string factory answered False). A second effect of the same line came up while writing the test: disposing `a` while `b` was open set the ambient scope to `a`'s parent, so the still-open `b` stopped applying too.
+
+`NullBehaviorScope.Dispose` now marks the scope disposed and moves the ambient pointer only when the scope is the current one, unwinding past every disposed ancestor to the nearest open scope (or none). `Resolve` skips a disposed scope that is still in the chain. So an outer scope disposed first stops applying at once, an inner scope stays in effect until it ends, and a disposed scope is never current again. The properly nested case is unchanged.
+
+Tests (`NullBehaviorScopeTests`): `Dispose_OuterBeforeInner_LeavesNoScopeInEffect_Test` (the ticket's scenario) and `Dispose_OuterWhileInnerIsOpen_StopsOnlyTheOuterScope_Test`, both red before and green after; the existing nesting tests still pass.
+
+Docs: `docs/predicates.md` (null selected values: what disposing a scope does, in and out of order).

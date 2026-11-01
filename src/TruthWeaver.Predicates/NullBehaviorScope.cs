@@ -69,7 +69,11 @@ public sealed class NullBehaviorScope : IDisposable
         return Open(family, behavior);
     }
 
-    /// <summary>Restores the default that was in effect before this scope opened. Disposing twice does nothing.</summary>
+    /// <summary>
+    /// Ends this scope. The scope stops applying at once, even when a scope opened after it is still open, and the
+    /// default returns to the nearest enclosing scope that is still open, or to <see cref="NullBehavior.Unknown"/> when
+    /// none is. Disposing twice does nothing.
+    /// </summary>
     public void Dispose()
     {
         if (this.disposed)
@@ -78,7 +82,20 @@ public sealed class NullBehaviorScope : IDisposable
         }
 
         this.disposed = true;
-        Current.Value = this.parent;
+
+        // Only the innermost scope moves the ambient pointer. An out-of-order dispose (outer first) leaves an inner
+        // scope current; Resolve skips the disposed outer one, and when the inner scope ends it unwinds past every
+        // disposed ancestor, so a disposed scope is never current again.
+        if (ReferenceEquals(Current.Value, this))
+        {
+            NullBehaviorScope? open = this.parent;
+            while (open is { disposed: true })
+            {
+                open = open.parent;
+            }
+
+            Current.Value = open;
+        }
     }
 
     /// <summary>
@@ -110,6 +127,12 @@ public sealed class NullBehaviorScope : IDisposable
         NullBehavior? allFamilies = null;
         for (NullBehaviorScope? scope = Current.Value; scope is not null; scope = scope.parent)
         {
+            // An outer scope disposed before an inner one stays in the chain until the inner one ends; it no longer applies.
+            if (scope.disposed)
+            {
+                continue;
+            }
+
             if (scope.family == family)
             {
                 // The innermost scope of this family wins outright.
