@@ -61,10 +61,13 @@ public static class YamlRuleDefinitions
 
     /// <summary>
     /// Prints a document with its definitions in the YAML tree format: the tree of <see cref="RuleDefinitions.PrintJson"/>,
-    /// written as YAML in the layout of <c>PrintYaml</c>.
+    /// written as YAML in the layout of <c>PrintYaml</c>. The YAML tree format has no shape for a library rule reference
+    /// (<c>rule("name")</c>) yet, so a document that holds one at any depth is not printed.
     /// </summary>
     /// <param name="definitions">The document, read with one of the read methods.</param>
-    /// <returns>The YAML text, or <see langword="null"/> when the document was not read.</returns>
+    /// <returns>
+    /// The YAML text, or <see langword="null"/> when the document was not read or holds a library rule reference.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="definitions"/> is <see langword="null"/>.</exception>
     public static string? PrintYaml(this RuleDefinitions definitions)
     {

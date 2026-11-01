@@ -568,6 +568,10 @@ copyright line reads 2026.
 
 ### Fixed
 
+- `RuleDefinitions.PrintJson()` and `YamlRuleDefinitions.PrintYaml()` return `null` for a document that holds a
+  `rule("name")` reference at any depth (the rule, a `let` body or a quantifier body), because the JSON and YAML tree
+  formats have no shape for the reference yet. Before, both threw `InvalidOperationException`. A document with no
+  reference prints as before. No migration step.
 - A `rule("name")` reference in the body of a `FORALL` or `EXISTS` resolves the library rule against the element
   registry of the collection, like a `let` definition used there, so a library rule can use element predicates. A
   reference in a nested body uses the inner collection. Before, every library rule was checked against the top-level

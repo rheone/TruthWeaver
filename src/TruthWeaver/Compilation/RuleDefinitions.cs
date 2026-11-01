@@ -122,9 +122,12 @@ public sealed class RuleDefinitions
     /// Prints the document in the JSON tree format without expanding it: a <c>definitions</c> object beside the members of
     /// the root node, and a <c>{"op": "use", "name": ..., "operands": [...]}</c> node for each use. The text compiles to
     /// the same rule as the source. Notes on nodes are kept; comments that rule text attaches to a <c>let</c> declaration
-    /// as a whole are not.
+    /// as a whole are not. The JSON tree format has no shape for a library rule reference (<c>rule("name")</c>) yet, so a
+    /// document that holds one at any depth is not printed.
     /// </summary>
-    /// <returns>The JSON text on one line, or <see langword="null"/> when the text was not read.</returns>
+    /// <returns>
+    /// The JSON text on one line, or <see langword="null"/> when the text was not read or holds a library rule reference.
+    /// </returns>
     public string? PrintJson()
     {
         JsonNodeWriter writer = new();
@@ -180,10 +183,15 @@ public sealed class RuleDefinitions
     /// visible to <c>TruthWeaver.Yaml</c>, which prints the same tree as YAML.
     /// </summary>
     /// <param name="writer">The format adapter.</param>
-    /// <returns><see langword="true"/> when the tree was written; <see langword="false"/> when the text was not read.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the tree was written; <see langword="false"/> when the text was not read or holds a
+    /// library rule reference.
+    /// </returns>
     internal bool WriteTree(Printing.ITreeWriter writer)
     {
-        if (this.root is null)
+        // The tree format has no shape for a rule("name") reference yet, so a document that holds one at any depth (the
+        // rule, a let body, a quantifier body) is not printed, rather than failing part way through the writer.
+        if (this.root is null || DefinitionExpander.HasLibraryReference(this.root))
         {
             return false;
         }
