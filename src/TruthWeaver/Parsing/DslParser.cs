@@ -1259,6 +1259,20 @@ internal sealed class DslParser
                 found: DescribeFound(this.Current)
             )
         );
+
+        // Recovery. When the keyword is only omitted (FORALL(x items, ...)), the current token is the collection name,
+        // so it is left for the caller to read. When the keyword is misspelled or replaced (FORALL(x INN items, ...)),
+        // the current token stands where IN belongs and the collection name follows it, directly before the ','. Skip
+        // the token in that shape, so 'items' is still read as the collection and the one mistake gives one diagnostic.
+        if (
+            this.Current.Kind != TokenKind.Eof
+            && this.position + 2 < this.tokens.Count
+            && this.tokens[this.position + 1].Kind == TokenKind.Identifier
+            && this.tokens[this.position + 2].Kind == TokenKind.Comma
+        )
+        {
+            this.position++;
+        }
     }
 
     private RuleNode ParseExactlyOne()

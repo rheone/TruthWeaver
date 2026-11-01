@@ -34,21 +34,23 @@ public sealed class DslParserTests
     }
 
     /// <summary>
-    /// A quantifier head with the <c>IN</c> keyword misspelled raises a syntax error naming the misspelling as its
-    /// first diagnostic. Unlike the omitted-keyword case, the misspelled identifier is then consumed as the
-    /// collection name (the same recovery), but what follows it is no longer the comma the grammar expects there, so
-    /// this shape does cascade into follow-on diagnostics.
+    /// A quantifier head with the <c>IN</c> keyword misspelled, or replaced by another token, raises one syntax error
+    /// naming that token and no follow-on diagnostics: the token is skipped, so the real collection name after it is
+    /// still read as the collection, the same recovery as the omitted-keyword case.
     /// </summary>
-    [Fact]
-    public void Parse_QuantifierMisspelledIn_RaisesSyntaxErrorExpectedInFirst_Test()
+    [Theory]
+    [InlineData("FORALL(x INN items, elementTrue)", "INN")]
+    [InlineData("EXISTS(x : items, elementTrue)", ":")]
+    public void Parse_QuantifierMisspelledIn_RaisesOneSyntaxErrorWithNoCascade_Test(string text, string found)
     {
-        (RuleNode _, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse("FORALL(x INN items, elementTrue)");
+        (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(text);
 
-        Diagnostic diagnostic = diagnostics[0];
+        Diagnostic diagnostic = Assert.Single(diagnostics);
         Assert.Equal(DiagnosticCodes.SyntaxError, diagnostic.Code);
-        Assert.Equal("Expected 'IN' but found 'INN'.", diagnostic.Message);
+        Assert.Equal($"Expected 'IN' but found '{found}'.", diagnostic.Message);
         Assert.Equal("'IN'", diagnostic.Expected);
-        Assert.Equal("'INN'", diagnostic.Found);
+        QuantifierNode quantifier = Assert.IsType<QuantifierNode>(root);
+        Assert.Equal("items", quantifier.CollectionName);
     }
 
     /// <summary>Mixing XOR with AND or OR without parentheses raises ambiguous operator mixing.</summary>

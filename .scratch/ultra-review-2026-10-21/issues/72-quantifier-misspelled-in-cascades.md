@@ -1,6 +1,6 @@
 # 72 - A misspelled quantifier `IN` keyword cascades into follow-on diagnostics, unlike an omitted one
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F2 Parsing
@@ -57,3 +57,9 @@ continuing, rather than always falling through to let `ExpectIdentifierName` rei
 > *Filed from a discrepancy found while adding coverage for `DslParser.ExpectIn` (coverage-gaps-2026-10-25
 > ticket 07, 2026-10-28): that ticket's own description assumed both the omitted- and misspelled-keyword
 > cases were cascade-free, which is true only for the omitted case.*
+
+## Resolution (2026-11-01)
+
+Reproduced: `FORALL(x INN items, elementTrue)` gave four diagnostics. `DslParser.ExpectIn` now recovers after it reports the error: when the token after the offending one is an identifier and the token after that is `,` (the shape `<wrong token> collection ,`), it skips the offending token, so the real collection name is read as the collection. The omitted-keyword case (`FORALL(x items, ...)`, where the next token is `,`) is not skipped and is unchanged. The skip is on token shape, not on the spelling, so a non-identifier in place of `IN` (`EXISTS(x : items, ...)`) also gives one diagnostic. Tests: `DslParserTests.Parse_QuantifierMisspelledIn_RaisesOneSyntaxErrorWithNoCascade_Test` (replaces `Parse_QuantifierMisspelledIn_RaisesSyntaxErrorExpectedInFirst_Test`; two rows, and it checks that `items` is the collection); `Parse_QuantifierMissingIn_RaisesSyntaxErrorExpectedInWithNoCascade_Test` already asserted the single diagnostic and still passes. Page updated: `docs/rule-text.md` (Quantifiers).
+
+All acceptance criteria met: one diagnostic for the misspelled case; both tests assert the single-diagnostic outcome; page updated; validation list run (format-all gates and the commit hook's build and full test suite).

@@ -166,7 +166,9 @@ precedence, like `PARITY`, `ANY` and `If`: no parentheses are needed beside an i
 expression. `FORALL` and `EXISTS` are reserved words; `IN` is reserved only here, at a quantifier's head, so a
 predicate named `In` elsewhere is unaffected. `variable` is a plain identifier that labels the trace (`line[2]`) and
 is part of tree equality and canonical text; `collection` names a collection the compiler resolves against its
-registry, a namespace of its own, separate from predicate names.
+registry, a namespace of its own, separate from predicate names. A head with `IN` left out (`FORALL(line lines, ...)`) or with another
+token in its place (`FORALL(line INN lines, ...)`) is one `SyntaxError` (`TRE0001`) that names the token found; the
+parser still reads `lines` as the collection, so the rest of the rule gives no further error.
 
 <!-- doctest:rule forall -->
 ```text
