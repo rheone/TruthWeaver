@@ -40,3 +40,10 @@ term arguments and resolved data are never tags, because they can be sensitive a
 EvaluationOptions options = new(TracePredicates: true);
 Decision decision = await rule.EvaluateAsync(context, services, options: options);
 ```
+
+## Logs
+
+The `ILogger` you give to `RuleCompiler` receives one `Warning` entry, event id 2, for each fault the evaluator records.
+The message starts with what faulted: `Predicate fault for term ...` for a predicate or a variable, `Collection fault for term ...` for a
+throwing collection selector, and `ElementLimit fault for term ...` when a quantifier reaches
+`EvaluationOptions.MaxElementEvaluations`. The structured fields are `Origin`, `Term` and `Message`, and the entry carries the exception.

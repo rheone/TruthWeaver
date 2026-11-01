@@ -25,6 +25,7 @@ internal static class FaultRecorder
     /// <param name="logger">The logger the fault is written to.</param>
     /// <param name="options">The evaluation options, for <see cref="EvaluationOptions.FaultBudget"/>.</param>
     /// <param name="scope">The enclosing element scope path, or <see langword="null"/> outside any quantifier.</param>
+    /// <param name="origin">What faulted, so the log message names it (a predicate, a collection selector or the element limit).</param>
     /// <param name="identity">The faulting term's or collection's identity.</param>
     /// <param name="ex">The exception that caused the fault.</param>
     public static void Record(
@@ -32,12 +33,13 @@ internal static class FaultRecorder
         ILogger logger,
         EvaluationOptions options,
         string? scope,
+        FaultOrigin origin,
         TermIdentity identity,
         Exception ex
     )
     {
         state.Faults.Add(new Fault(identity, ex, scope));
-        EvaluationLog.PredicateFaulted(logger, identity.ToString(), ex.Message, ex);
+        EvaluationLog.Faulted(logger, origin, identity.ToString(), ex.Message, ex);
         TruthWeaverMetrics.FaultRecorded();
 
         // The budget is the number of faults at which evaluation stops (ADR-0002): a budget of 1 aborts on the first fault.

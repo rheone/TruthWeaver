@@ -567,6 +567,9 @@ copyright line reads 2026.
 
 ### Fixed
 
+- The evaluation fault log entry (event id 2) names what faulted: `Predicate fault for term ...`, `Collection fault for term ...` for a
+  throwing collection selector and `ElementLimit fault for term ...` for an exceeded `MaxElementEvaluations`. The entry gains an
+  `Origin` structured field. See [Observability](docs/observability.md#logs).
 - `EvaluationOptions` rejects an unusable value when you call `EvaluateAsync`, `EvaluateManyAsync` or `ShadowReplay.CompareAsync`:
   `MaxElementEvaluations` below 1, and a `Timeout` that is negative (other than `Timeout.InfiniteTimeSpan`) or over
   4,294,967,294 ms, throw `ArgumentOutOfRangeException`, as a `FaultBudget` below 1 already did. The docs now state that the

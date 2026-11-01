@@ -30,7 +30,10 @@ public static class LoggerTestExtensions
         Exception? exception = (Exception?)arguments[3];
 
         IReadOnlyList<KeyValuePair<string, object?>> fields = state as IReadOnlyList<KeyValuePair<string, object?>> ?? [];
-        return new LoggedCall(level, eventId, fields, exception);
+
+        // The formatter (the last Log argument) renders the message the way a console or file sink would.
+        string message = ((Delegate)arguments[4]!).DynamicInvoke(state, exception) as string ?? string.Empty;
+        return new LoggedCall(level, eventId, fields, exception, message);
     }
 
     /// <summary>One recorded structured log call.</summary>
@@ -38,11 +41,13 @@ public static class LoggerTestExtensions
     /// <param name="EventId">The event id.</param>
     /// <param name="Fields">The named structured fields (from the <c>[LoggerMessage]</c> template's placeholders).</param>
     /// <param name="Exception">The logged exception, if any.</param>
+    /// <param name="Message">The message as the logger's formatter renders it.</param>
     public sealed record LoggedCall(
         LogLevel Level,
         EventId EventId,
         IReadOnlyList<KeyValuePair<string, object?>> Fields,
-        Exception? Exception
+        Exception? Exception,
+        string Message
     )
     {
         /// <summary>Gets a named field's value.</summary>
