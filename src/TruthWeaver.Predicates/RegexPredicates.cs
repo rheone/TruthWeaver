@@ -212,7 +212,9 @@ public static class RegexPredicates
     private static List<PredicateArgumentProblem> ValidateArguments(PredicateArguments args, string argumentName)
     {
         List<PredicateArgumentProblem> problems = [];
-        RegexOptions options = RegexOptions.None;
+
+        // Absent flags mean the empty string, which still compiles with the always-on options.
+        RegexOptions options = RegexFlags.Always;
         bool flagsValid = true;
         if (
             args.TryGetString(FlagsArgumentName, out string? flags)

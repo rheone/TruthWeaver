@@ -54,7 +54,7 @@ The `StringPredicates` and `RegexPredicates` twins are:
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
 | `IsIn` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
 | `IsNotIn` | `StringPredicates` | Twin of `IsIn` |
-| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`), `m`, `s`, `n` and `x`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
+| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase`), `m`, `s`, `n` and `x`. Every pattern compiles with `RegexOptions.CultureInvariant`, so the host culture has no effect, also on an inline `(?i)`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
 | `IsNotMatch` | `RegexPredicates` | Twin of `IsMatch`. It takes the same optional `flags` argument. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
