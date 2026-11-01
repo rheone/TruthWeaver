@@ -4,7 +4,7 @@
 
 **What to build:** `TruthWeaver.Extensions.Configuration` builds a `RuleLibrary` from its configuration section and rebuilds it on each reload, swapping it atomically like the compiled rules. Rules compiled against an old library keep it until recompiled. A bad reload keeps the last good library. No new package and no new dependency.
 
-**Blocked by:** 11b-3
+**Blocked by:** 11b-3, 84 (ticket 84 fixes the hash definition the store adopts)
 
 **Status:** needs-triage (sub-tickets released 2026-11-01; dispatch in order after its blocker is done)
 
