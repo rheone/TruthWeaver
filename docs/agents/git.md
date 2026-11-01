@@ -21,3 +21,5 @@ Put these facts in the brief of every dispatched ticket agent. Each one cost ear
 - A ticket that changes user-visible behavior adds a `CHANGELOG.md` entry under `[Unreleased]` in the same change. Tickets 59, 60, 67 and 75 shipped without one.
 - A ticket that adds a diagnostic code needs the constant in `DiagnosticCodes`, a row in `docs/strong-k3/specification/diagnostics.md` and a row in `DiagnosticCodeTable` (`TruthWeaver.Tool.Core`). Run `dotnet test tests/TruthWeaver.Tool.Core.Tests --filter-class "*DiagnosticCodeTableTests"` after adding it. Ticket 11b-2 failed its first commit on the missing table row.
 - The hook's time is mostly formatting: `format-staged` takes about three minutes for a commit with C# files, and `build`, `test` and `doc-tests` take about 30 to 70 s each. A commit that stages only `*.md` files takes under a minute.
+- A fresh worktree has no restore. Run `dotnet restore --locked-mode` in it before the first commit, or the hook fails with `NETSDK1004`.
+- Two bundles that both add tests to one test file conflict at the same spot. Put bundles that touch one class in a chain, not in parallel, or expect to merge the file by hand.

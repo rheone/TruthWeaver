@@ -17,3 +17,5 @@
 ## Note from 11b-2 (2026-11-01)
 
 The core now computes the content hash itself (`LibraryRule.Hash`, SHA-256 of the UTF-8 text as upper-case hex), identical to `ConfigurationRuleStore.HashOf`. This ticket may point the store at the core's value so one algorithm remains.
+
+Ticket 84 (done) changed the core hash to read CRLF and lone CR as LF. The CHANGELOG now says the library hash no longer claims to match the rule store's; this ticket restores that statement when the store adopts the core's value.
