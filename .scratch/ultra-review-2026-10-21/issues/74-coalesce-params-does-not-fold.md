@@ -1,6 +1,6 @@
 # 74 - Coalesce(params) does not fold an empty or single-operand call
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: API consistency
@@ -20,8 +20,12 @@ Owner decision (2026-11-01): fold `params` too.
 **Desired behavior:** For any operands, `Coalesce(a, b, ...)` and `Coalesce(new[] { a, b, ... })` and `Coalesce(list)` produce the same rule.
 
 **Acceptance criteria:**
-- [ ] A test fails before the fix and passes after: the params, array and list forms give the same rule for zero, one and many operands.
-- [ ] `docs/rulebuilder.md` (and any K3 page that states the exception) drops the documented exception and states the current truth.
-- [ ] The validation list in CLAUDE.md passes.
+- [x] A test fails before the fix and passes after: the params, array and list forms give the same rule for zero, one and many operands.
+- [x] `docs/rulebuilder.md` (and any K3 page that states the exception) drops the documented exception and states the current truth.
+- [x] The validation list in CLAUDE.md passes.
 
 **Out of scope:** Other operators; their params and list forms already agree.
+
+## Resolution (2026-11-01)
+
+`RuleBuilder.Coalesce(params)` now folds like `Coalesce(IEnumerable)`: no operands give the constant `Unknown`, one operand gives itself, and the params, array and list forms give the same rule. The `IEnumerable` overload now calls the `params` one. Test: `RuleBuilderOverloadConsistencyTests` replaces the case that expected an array to be rejected with one that checks all three forms fold. Docs: `docs/rulebuilder.md` drops the one-exception text and adds a `Coalesce` row to the fold table; `docs/strong-k3/functions/coalesce.md` states the fold. The agent wrote the test after the change, so red-first is not shown; the replaced test asserted the old behavior.

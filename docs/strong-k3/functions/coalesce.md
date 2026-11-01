@@ -26,7 +26,7 @@ Primitive. `COALESCE` is the one primitive that can observe `Unknown`, and the f
 
 ## Arity
 
-Two or more operands. `COALESCE(a)` and `COALESCE()` in the DSL, and a JSON or YAML node with fewer than two operands, are the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.Coalesce(params RuleBuilder[])` rejects the same counts when it builds. The overload `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` is for lists whose length is known only at run time: an empty list builds the constant `Unknown` and a single operand builds that operand unchanged.
+Two or more operands. `COALESCE(a)` and `COALESCE()` in the DSL, and a JSON or YAML node with fewer than two operands, are the compile error `InfixArityViolation` (`TRE0006`, see [diagnostics](../specification/diagnostics.md)). `RuleBuilder.Coalesce(params RuleBuilder[])` and `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` fold the same way when they build, because `Unknown` is the identity of `COALESCE`: an empty call builds the constant `Unknown` and a single operand builds that operand unchanged.
 
 ## Input domain
 
@@ -48,7 +48,7 @@ Each operand is a value in `{T, F, U}`.
 | DSL, infix | `a ?? b ?? c` |
 | JSON | `{"op": "coalesce", "operands": [ <expression>, <expression>, ... ]}` |
 | YAML | `op: coalesce` with an `operands:` list of two or more items |
-| `RuleBuilder` | `RuleBuilder.Coalesce(params RuleBuilder[])` for two or more operands; `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
+| `RuleBuilder` | `RuleBuilder.Coalesce(params RuleBuilder[])`; `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
 The call form has no precedence. The infix `??` follows the mixing rule: `NOT a ?? b` is `COALESCE(NOT a, b)`, `(a ?? b) AND c` is valid, and `a ?? b AND c` is not. A chain of `??` is one n-ary node, because coalescing is associative ([Equivalent forms](#equivalent-forms)). The canonical printer writes the call form `COALESCE(a, b)`. The tree printers label the node `COALESCE`, or `??` in the symbolic and C-style styles. See [syntax](../specification/syntax.md#the-mixing-rule).
 

@@ -578,8 +578,8 @@ copyright line reads 2026.
   and the letters `T`, `F` and `U`, in any case. A YAML `const:` with an empty or `~` value reports `Found` as `null`,
   as the JSON `{"const": null}` does.
 - `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` folds a short sequence, because `Unknown` is the identity of `COALESCE`: an
-  empty sequence is the constant `Unknown` and one operand is itself. The `params` overload still builds the node, and the
-  compiler reports `InfixArityViolation` for fewer than two operands. The K3 reference pages for `And`, `Or`, `Parity`,
+  empty sequence is the constant `Unknown` and one operand is itself. The `params` overload folds the same way, so an array and a list give the same rule; the
+  K3 reference pages for `And`, `Or`, `Parity`,
   `Any`, `All`, `None`, `GreaterThan` and `LessThan` now describe the build-time fold and overloads of `RuleBuilder` correctly.
 - Terminal UI divider drag: a mouse drag on a divider between the regions resizes them, and the sizes are saved to `workbench.json` as for the Alt+arrow keys. Both border lines of a divider grab it, and the horizontal divider runs across the whole window. Before, only the border of the Rule region responded, and it set a size that was not saved. A terminal that reports no pointer moves while a button is held moves the divider to the release position. The key help names the Alt+arrow keys as resize keys. No migration step. [Terminal UI](docs/tui.md#keys) covers it.
 - Terminal UI themes: the light set draws dark text on a light background and the dark set draws light text on a dark background, in every pane and dialog. Before, both sets drew on the terminal background, so on a dark terminal the light set showed gray text on black. The workbench replaces every Terminal.Gui scheme with one that paints the background of its set; `NO_COLOR` still uses the terminal colors only. No migration step. [Terminal UI](docs/tui.md#themes-and-colors) covers it.
