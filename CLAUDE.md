@@ -106,14 +106,14 @@ Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standar
 - **Scope.** The standard covers the root `*.md` files, every `README.md` outside `.claude/`, and every file they link to, recursively. Recursion stops at `docs/adr/`, `docs/agents/`, `.scratch/`, `.agents/` and `CHANGELOG.md`, which are history or tool files. `<!-- docs-lint: on -->` or `<!-- docs-lint: off -->` opts a file in or out; the standard file itself is opted in. `DocumentationLint` enforces the rules on `dotnet test`; `DocumentationLintBaseline` lists files not yet cleaned and may only shrink. Never link a reference document to an ADR, `.scratch` or `CHANGELOG.md` to explain behavior.
 - **Terms.** `CONTEXT.md` and `docs/glossary.md` define the project terms. Keep them when you apply ASD-STE100.
 - **Tools by role.** Plain-language pass: `/humanizer` and `/voice-of-robert`. Markdown dialect: `/github-markdown`. Diagrams: `/mermaid-diagram-generator`, only where a diagram adds something a table or prose does not. Run them while you write, not only at the end.
-- **Docs with code.** Write code and documentation in the same change. A change to observable behavior or a public API (a public member, option, diagnostic code, format, default or operator) edits the page that describes it to the current truth, with no "changed from" text. If no page covers the behavior, write a minimal page in the same change and open a work item under `.scratch/` for the rest. Every ticket that changes behavior or a public API lists the page it updates as an acceptance criterion.
+- **Docs with code.** Write code and documentation in the same change. A change to observable behavior or a public API (a public member, option, diagnostic code, format, default or operator) edits the page that describes it to the current truth, with no "changed from" text. If no page covers the behavior, write a minimal page in the same change and open a work item under `.scratch/` for the rest. Every ticket that changes behavior or a public API lists the page it updates as an acceptance criterion. A user-visible change also adds an entry to `CHANGELOG.md` under `[Unreleased]`.
 - **Examples.** Runnable examples are tested: see Testing above and `docs/doc-examples.md`.
 - **K3 reference.** Pages under `docs/strong-k3/` link only to other pages under `docs/strong-k3/`. The root `README.md` and `docs/glossary.md` may link into them.
 - **Reference sync.** Any change that adds, renames or removes a predicate or an operation adds, renames or removes its document under `docs/strong-k3/` in the same change, updates the category index and the root navigation, and re-runs `dotnet test tests/TruthWeaver.Tests --filter-class "*K3Reference*"`. `K3ReferenceSyncChecker` fails otherwise. A predicate may lack a document only while listed in `K3PredicateDocumentationHold` (the list is empty: every predicate has a document).
 
 ## Git
 
-A commit runs the full test suite (2+ minutes): background it or use a long timeout. Before committing, branching or dispatching a worktree agent, read [docs/agents/git.md](docs/agents/git.md).
+A commit runs the full test suite (2+ minutes): background it or use a long timeout. Before committing, branching, merging a PR or dispatching a worktree agent, read [docs/agents/git.md](docs/agents/git.md).
 
 ## Claude Code
 
