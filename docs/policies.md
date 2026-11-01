@@ -100,4 +100,4 @@ Without `IncludeTrace`, `Decision.Trace` is `null` and the set collects no trace
 
 ## Errors
 
-A constructor throws `ArgumentException` for a blank id, a duplicate policy id or an undefined enum value. A rule that faults does not throw: it is `Unknown` and the fault is in `Decision.Faults`. Cancellation of the caller token, or the `EvaluationOptions.Timeout` of a rule, throws `OperationCanceledException`.
+A constructor throws `ArgumentException` for a blank id, a duplicate policy id or an undefined enum value. A rule that faults does not throw: it is `Unknown` and the fault is in `Decision.Faults`. `EvaluateAsync` throws `ArgumentOutOfRangeException` before it evaluates any rule, also for a set with no policy, when the options have a `FaultBudget` or `MaxElementEvaluations` below 1, or an unusable `Timeout` (negative other than `Timeout.InfiniteTimeSpan`, or over 4,294,967,294 ms). A `Timeout` of zero is valid. Cancellation of the caller token, or the `EvaluationOptions.Timeout` of a rule, throws `OperationCanceledException`.
