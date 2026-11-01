@@ -305,8 +305,8 @@ Faults never include values, even then.
 | --- | --- | --- | --- |
 | Missing: a scalar query matches no node | Scalar argument | `Unknown`; the predicate is not called | Yes (`Missing`) |
 | Missing: a scalar query matches several nodes | Scalar argument | `Unknown` | Yes (`Ambiguous`) |
-| Null: the match is a JSON `null`, an object or an array node | Scalar or array argument | `Unknown`; a `null` is reported as an unsupported type | Yes (`TypeMismatch`, or `UnsupportedType` for `null`) |
-| Null: one element of an array query is a JSON `null` | Array argument | `Unknown` | Yes |
+| Null: the match is a JSON `null`, an object or an array node | Scalar or array argument | `Unknown`. The source reports `UnsupportedType`, and the fault message is the message of the source | Yes (`TypeMismatch`) |
+| Null: one element of an array query is a JSON `null` | Array argument | `Unknown` | Yes (`TypeMismatch`) |
 | Empty: an array query matches no node, or a path to a missing property | Array argument | An empty array, which is a valid value. The trace adds `[no match for ...]` | No |
 | Null: a selector (`select` or `test`) returns `null` | Predicate that reads a selected value | `Unknown`, or `False` under `NullBehavior.False` | No |
 | Null: the collection of a `FORALL` or `EXISTS` is `null` | Quantifier | `Unknown`; the trace adds `[no collection]` | No |
