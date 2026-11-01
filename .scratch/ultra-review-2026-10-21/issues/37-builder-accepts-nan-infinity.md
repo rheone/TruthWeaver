@@ -1,6 +1,6 @@
 # 37 - RuleBuilder accepts double NaN and Infinity arguments, then Compile throws
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: T2 Surfaces
@@ -49,10 +49,14 @@ not verified (medium or low)
 - `RuleBuilder`'s problem-collection step (the one that already reports other unsupported value shapes) needs to check for non-finite `double` values before `Compile` reaches the JSON-writing step.
 
 **Acceptance criteria:**
-- [ ] `RuleBuilder.Predicate(..., ("arg", double.NaN)).Compile(...)` returns a `CompilationResult` with the documented argument-type-mismatch diagnostic, not a thrown exception.
-- [ ] The same holds for `double.PositiveInfinity` and `double.NegativeInfinity`.
-- [ ] A finite `double` argument is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `RuleBuilder.Predicate(..., ("arg", double.NaN)).Compile(...)` returns a `CompilationResult` with the documented argument-type-mismatch diagnostic, not a thrown exception.
+- [x] The same holds for `double.PositiveInfinity` and `double.NegativeInfinity`.
+- [x] A finite `double` argument is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any other value type's validation (already correct).
+
+## Resolution (2026-11-01)
+
+Reproduced: `Compile` threw `ArgumentException` from the JSON writer. `RuleBuilder`'s predicate `CollectProblems` now reports `ArgumentTypeMismatch` (TRE0004) at `$.args.<name>` for a `double` that is `NaN`, `PositiveInfinity` or `NegativeInfinity`, alone or at any depth of a sequence, before `Compile` renders JSON. `ToJson()` still throws `ArgumentException` for it, as it does for an unsupported type. Tests: `RuleBuilderOverloadConsistencyTests.Compile_NonFiniteDoubleArgument_ReportsArgumentTypeMismatch_Test` (three values, each alone and in a sequence) and `ToJson_FiniteDoubleArgument_RendersTheNumber_Test`. Page updated: `docs/rulebuilder.md`.

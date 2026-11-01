@@ -746,7 +746,7 @@ public abstract class RuleBuilder
 
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
-    /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
+    /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry, or is a <see langword="double"/> that is <c>NaN</c> or an infinity. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
     /// <exception cref="InvalidOperationException">
     /// A predicate in the tree is given the same argument name twice. JSON cannot hold both, and keeping one would hide the
     /// mistake; <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.DuplicateArgument"/> instead.
@@ -1002,6 +1002,20 @@ public abstract class RuleBuilder
                         )
                     );
                 }
+                else if (HasNonFiniteDouble(argValue))
+                {
+                    // JSON has no NaN or infinity, so the JSON writer would throw from ToJson; report it as a value of the wrong kind.
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.ArgumentTypeMismatch,
+                            $"Argument '{argName}' of predicate '{this.name}' holds a double that is not a finite number (NaN or an infinity).",
+                            SourceSpan.None,
+                            expected: "a finite number",
+                            found: "NaN or an infinity",
+                            path: argumentPath
+                        )
+                    );
+                }
                 else if (HasLoneSurrogate(argValue))
                 {
                     // The JSON writer replaces a lone surrogate with U+FFFD, so the rule would silently hold a different
@@ -1070,6 +1084,18 @@ public abstract class RuleBuilder
                 string text => !IsValidUtf16(text),
                 VariableReference reference => !IsValidUtf16(reference.Source) || !IsValidUtf16(reference.Query),
                 System.Collections.IEnumerable items => items.Cast<object?>().Any(HasLoneSurrogate),
+                _ => false,
+            };
+        }
+
+        /// <summary>Finds a <see langword="double"/>, at any depth of a sequence, that is <c>NaN</c> or an infinity.</summary>
+        private static bool HasNonFiniteDouble(object? value)
+        {
+            return value switch
+            {
+                double number => !double.IsFinite(number),
+                string => false,
+                System.Collections.IEnumerable items => items.Cast<object?>().Any(HasNonFiniteDouble),
                 _ => false,
             };
         }

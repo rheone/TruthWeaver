@@ -66,7 +66,7 @@ RuleBuilder.Parity(new List<RuleBuilder> { x }); // the same InfixArityViolation
 
 Every counted operator, including `GreaterThan` and `LessThan`, has an `IEnumerable<RuleBuilder>` overload. A `null` sequence throws `ArgumentNullException`, and the builder enumerates the sequence once.
 
-A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it. A string in an argument value, at any depth, that is not valid UTF-16 (it holds a lone surrogate) is the compile diagnostic `MalformedTree` (`TRE0014`) at `$.args.<name>`, because JSON cannot carry it. `ToJson()` writes such a surrogate as U+FFFD.
+A predicate argument value must be a `string`, `bool`, `int`, `long`, `double`, `decimal`, `DateTimeOffset`, `Guid`, an `Arg.From` reference, or a sequence of those. Any other type, including `null`, is the compile diagnostic `ArgumentTypeMismatch` at `$.args.<name>`. `ToJson()` throws `ArgumentException` for it. A `double` that is `NaN` or an infinity, at any depth, is also `ArgumentTypeMismatch` at `$.args.<name>`, because JSON has no such number, and `ToJson()` throws `ArgumentException` for it too. A string in an argument value, at any depth, that is not valid UTF-16 (it holds a lone surrogate) is the compile diagnostic `MalformedTree` (`TRE0014`) at `$.args.<name>`, because JSON cannot carry it. `ToJson()` writes such a surrogate as U+FFFD.
 
 ### Definitions and parameters
 
