@@ -8,8 +8,9 @@ using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Yaml;
 
 /// <summary>
-/// Compiles and converts loaded rules. The tool has no host registry, so it compiles permissively: every predicate name and
-/// every argument is accepted as written (<see cref="CompilationMode.Lenient"/> over an empty registry), and a
+/// Compiles and converts loaded rules. The tool has no host registry, so it compiles permissively: every predicate name
+/// is accepted and every argument is kept by value, or reported with ArgumentTypeMismatch when it has no exact
+/// kind (<see cref="CompilationMode.Lenient"/> over an empty registry), and a
 /// <c>from("source", "query")</c> reference needs no declared source. Syntax errors, operator errors and limits are still
 /// diagnostics.
 /// </summary>
