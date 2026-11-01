@@ -88,6 +88,20 @@ internal sealed class TreeFormatReader
         // nested node, so it is recognized here, once, rather than as a case of the generic node reader.
         if (root.Shape == TreeNodeShape.Mapping && root.TryGetChild("definitions", out ITreeNodeCursor? definitionsNode))
         {
+            // The root node's own CheckKeys never sees 'definitions' (KeyExcludingCursor hides it), so a repeated
+            // 'definitions' key is caught here instead of letting the last section silently win.
+            HashSet<string> seen = [with(StringComparer.Ordinal)];
+            foreach (TreeMember member in root.Members)
+            {
+                if (
+                    member.Name == "definitions"
+                    && !reader.CheckRepeatedKey("definitions", member.Value, seen, TreePath.Root, "the document root")
+                )
+                {
+                    return (null, reader.diagnostics);
+                }
+            }
+
             IReadOnlyList<DefinitionNode>? definitions = reader.ReadDefinitions(
                 definitionsNode,
                 TreePath.Property(TreePath.Root, "definitions")
@@ -137,15 +151,45 @@ internal sealed class TreeFormatReader
         this.diagnostics.Add(Diagnostic.Error(code, message, span, expected, found, path: path));
     }
 
-    // Rejects every key of a node that its kind does not define (the published schema sets additionalProperties to false).
-    // A key that belongs to another kind of node, such as "op" next to "predicate", is called a conflict, because the
-    // author wrote two nodes into one.
+    // Reports a key written twice in one mapping. JSON allows a repeated property and JsonElement.TryGetProperty
+    // resolves it to the last one, so without this check `{"op":"and","op":"or",...}` would silently compile as OR.
+    // YamlDotNet already rejects a repeated mapping key while loading, so this is reached only by JSON; it keeps the two
+    // formats in step with one MalformedTree error. A repeated 'args' name is not checked here: it is DuplicateArgument.
+    private bool CheckRepeatedKey(string name, ITreeNodeCursor value, HashSet<string> seen, string path, string kind)
+    {
+        if (seen.Add(name))
+        {
+            return true;
+        }
+
+        this.diagnostics.Add(
+            Diagnostic.Error(
+                DiagnosticCodes.MalformedTree,
+                $"The key '{name}' appears more than once in {kind} node.",
+                value.Span,
+                expected: "each key once",
+                found: $"'{name}' repeated",
+                suggestion: new DiagnosticSuggestion(DiagnosticSuggestionKind.Hint, $"Remove one '{name}'."),
+                path: TreePath.Property(path, name)
+            )
+        );
+        return false;
+    }
+
+    // Rejects every key of a node that its kind does not define (the published schema sets additionalProperties to false),
+    // and every key written twice. A key that belongs to another kind of node, such as "op" next to "predicate", is
+    // called a conflict, because the author wrote two nodes into one.
     private bool CheckKeys(ITreeNodeCursor node, string path, string kind, string[] allowed)
     {
         bool valid = true;
+        HashSet<string> seen = [with(StringComparer.Ordinal)];
         foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in node.Members)
         {
-            if (name is null)
+            if (name is not null && !this.CheckRepeatedKey(name, value, seen, path, kind))
+            {
+                valid = false;
+            }
+            else if (name is null)
             {
                 this.Report(
                     $"A key of {kind} node must be a {this.words.StringNoun}.",
@@ -906,8 +950,14 @@ internal sealed class TreeFormatReader
         string? query = null;
         ITreeNodeCursor? sourceNode = null;
         ITreeNodeCursor? queryNode = null;
+        HashSet<string> seen = [with(StringComparer.Ordinal)];
         foreach ((string? name, ITreeNodeCursor value, ITreeNodeCursor? key) in node.Members)
         {
+            if (name is not null && !this.CheckRepeatedKey(name, value, seen, path, "a variable reference"))
+            {
+                return null;
+            }
+
             switch (name)
             {
                 case "from":

@@ -164,6 +164,43 @@ public sealed class StrictTreeKeysTests
         Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
     }
 
+    /// <summary>
+    /// A structural key written twice in one JSON node is a malformed tree at the repeated key, the same as YAML, and
+    /// the last occurrence never silently wins.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"op":"and","op":"or","operands":[{"predicate":"isManager"},{"predicate":"isDepartmentHead"}]}""", "$.op")]
+    [InlineData(
+        """{"op":"atLeast","k":1,"k":2,"operands":[{"predicate":"isManager"},{"predicate":"isDepartmentHead"}]}""",
+        "$.k"
+    )]
+    [InlineData("""{"const":true,"const":false}""", "$.const")]
+    [InlineData("""{"predicate":"isManager","predicate":"isDepartmentHead"}""", "$.predicate")]
+    [InlineData("""{"predicate":"isManager","note":"a","note":"b"}""", "$.note")]
+    [InlineData(
+        """{"op":"not","operands":[{"predicate":"isManager"}],"operands":[{"predicate":"isDepartmentHead"}]}""",
+        "$.operands"
+    )]
+    [InlineData(
+        """{"predicate":"hasRole","args":{"role":{"from":"user","from":"other","query":"$.role"}}}""",
+        "$.args.role.from"
+    )]
+    [InlineData(
+        """{"definitions":{"d":{"body":{"const":true},"body":{"const":false}}},"op":"use","name":"d"}""",
+        "$.definitions.d.body"
+    )]
+    [InlineData("""{"definitions":{},"definitions":{},"const":true}""", "$.definitions")]
+    public void CompileJson_RepeatedStructuralKey_ReportsMalformedTreeAtTheRepeat_Test(string json, string path)
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileJson(json);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal(path, diagnostic.Path);
+        Assert.Contains("more than once", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Null(result.CompiledRule);
+    }
+
     /// <summary>A predicate argument named twice in a builder is an error, not last-wins.</summary>
     [Fact]
     public void Compile_BuilderDuplicateArgument_ReportsDuplicateArgument_Test()
