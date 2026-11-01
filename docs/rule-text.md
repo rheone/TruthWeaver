@@ -188,8 +188,8 @@ by hand:
 ```
 
 A library is immutable. Each `LibraryRule` has a `Name`, its rule `Text` and a `Hash`: the SHA-256 hash of the UTF-8
-bytes of the text, as 64 upper-case hexadecimal digits. The rule store of
-`TruthWeaver.Extensions.Configuration` computes the same hash. A reference without a hash uses the current version of
+bytes of the text, as 64 upper-case hexadecimal digits. Before it hashes, the library reads every CRLF and every lone
+CR as LF, so the same rule has the same hash on every platform. It changes nothing else in the text. A reference without a hash uses the current version of
 the library rule. A reference with a hash pins a version: it compiles only while the library rule has that hash. The
 hash comparison ignores case.
 
@@ -212,6 +212,8 @@ A library rule follows these rules:
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.
 - **No cycles.** A library rule cannot reference itself, directly or through other library rules.
+- **Equality.** Two libraries are equal when they hold the same names, compared without case, with the same rule text
+  for each name. The order of the rules does not matter. `CompilerOptions` that hold equal libraries are equal.
 - **Case.** The words `rule` and `hash` and the library rule names are compared without case.
 - **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
   arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.

@@ -74,8 +74,8 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
-    /// The content hash of a library rule is the hash the rule store computes: SHA-256 of the UTF-8 bytes of the rule
-    /// text, as upper-case hexadecimal digits.
+    /// The content hash of a library rule with LF-only text is the SHA-256 of the UTF-8 bytes of the rule text, as
+    /// upper-case hexadecimal digits.
     /// </summary>
     [Fact]
     public void Hash_LibraryRule_IsTheSha256OfTheRuleTextInUpperCaseHex_Test()
@@ -88,6 +88,25 @@ public sealed class RuleLibraryTests
             System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))
         );
         Assert.Equal(expected, adult.Hash);
+    }
+
+    /// <summary>
+    /// Rule text with CRLF line endings, rule text with lone CR and the same text with LF have one content hash, and a pin
+    /// written from one compiles against a library that holds another.
+    /// </summary>
+    [Fact]
+    public void Compile_PinWrittenFromTextWithOtherLineEndings_MatchesTheLibraryRule_Test()
+    {
+        Assert.True(Library(("x", "a AND\nb")).TryGet("x", out LibraryRule? lfRule));
+        Assert.True(Library(("x", "a AND\r\nb")).TryGet("x", out LibraryRule? crlfRule));
+        Assert.True(Library(("x", "a AND\rb")).TryGet("x", out LibraryRule? crRule));
+        Assert.Equal(lfRule.Hash, crlfRule.Hash);
+        Assert.Equal(lfRule.Hash, crRule.Hash);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("x", "a AND\r\nb")));
+
+        CompiledRule<RuleTestContext> rule = Compile(compiler, $"rule(\"x\", hash: \"{lfRule.Hash}\")");
+
+        Assert.Equal(Compile(compiler, "a AND b").CanonicalText, rule.CanonicalText);
     }
 
     /// <summary>
@@ -441,6 +460,34 @@ public sealed class RuleLibraryTests
             cancellationToken: TestContext.Current.CancellationToken
         );
         Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// Two libraries built from the same rules in a different order, with names that differ only in case, are equal with
+    /// equal hash codes, and two <see cref="CompilerOptions"/> that hold them are equal.
+    /// </summary>
+    [Fact]
+    public void Equals_SameRulesInAnotherOrder_AreEqualAndMakeEqualCompilerOptions_Test()
+    {
+        RuleLibrary first = Library(("adult", "a AND b"), ("minor", "NOT a"));
+        RuleLibrary second = Library(("MINOR", "NOT a"), ("Adult", "a AND b"));
+
+        Assert.Equal(first, second);
+        Assert.True(first.Equals(second));
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal(new CompilerOptions(Library: first), new CompilerOptions(Library: second));
+    }
+
+    /// <summary>Libraries that differ in one rule text, in a name or in the number of rules are not equal.</summary>
+    [Fact]
+    public void Equals_LibrariesThatDiffer_AreNotEqual_Test()
+    {
+        RuleLibrary library = Library(("adult", "a AND b"));
+
+        Assert.NotEqual(library, Library(("adult", "a OR b")));
+        Assert.NotEqual(library, Library(("grown", "a AND b")));
+        Assert.NotEqual(library, Library(("adult", "a AND b"), ("minor", "NOT a")));
+        Assert.False(library.Equals(null));
     }
 
     private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library)

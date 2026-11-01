@@ -22,8 +22,8 @@ public sealed class LibraryRule
 
     /// <summary>
     /// Gets the content hash of <see cref="Text"/>: the SHA-256 hash of its UTF-8 bytes, as 64 upper-case hexadecimal
-    /// digits. It is the hash that the rule store of <c>TruthWeaver.Extensions.Configuration</c> computes, and the value
-    /// that a pinned reference <c>rule("name", hash: "...")</c> names.
+    /// digits, after every CRLF and lone CR is read as LF. It is the value that a pinned reference
+    /// <c>rule("name", hash: "...")</c> names.
     /// </summary>
     public string Hash { get; }
 }
