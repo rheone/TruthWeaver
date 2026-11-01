@@ -211,7 +211,7 @@ FORALL(line IN lines, inStockLine)
 
 ## Case
 
-Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. Rule text also reads the letters `T`, `F` and `U` (any case) as the constants, so `T AND f` and `True AND False` compile to the same tree. JSON and YAML read the words only. `and`, `And` and `AND` compile to the same node.
+Operator words and the constants `True`, `False` and `Unknown` are case-insensitive on input, in every format. Rule text also reads the letters `T`, `F` and `U` (any case) as the constants, so `T AND f` and `True AND False` compile to the same tree. JSON and YAML read the words and the letters too, so `{"const": "U"}` and `const: u` are `Unknown`. `and`, `And` and `AND` compile to the same node.
 
 The printer writes each operator word in one fixed spelling. The rule is:
 

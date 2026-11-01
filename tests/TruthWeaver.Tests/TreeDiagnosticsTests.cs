@@ -102,7 +102,10 @@ public sealed class TreeDiagnosticsTests
         Diagnostic diagnostic = SingleJson("""{"op":"not","operands":[{"const":5}]}""");
 
         Assert.Equal("$.operands[0].const", diagnostic.Path);
-        Assert.Equal("a JSON boolean or one of \"true\", \"false\", \"unknown\"", diagnostic.Expected);
+        Assert.Equal(
+            "a JSON boolean or one of \"true\", \"false\", \"unknown\", \"T\", \"F\", \"U\" (any case)",
+            diagnostic.Expected
+        );
         Assert.Equal("a number", diagnostic.Found);
     }
 

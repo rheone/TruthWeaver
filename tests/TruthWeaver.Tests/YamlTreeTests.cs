@@ -242,6 +242,17 @@ public sealed class YamlTreeTests
         Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    /// <summary>The diagnostic for a bad <c>const</c> names the words and the letters <c>T</c>, <c>F</c> and <c>U</c> the reader accepts.</summary>
+    [Fact]
+    public void CompileYaml_BadConst_MessageNamesTheAcceptedLetters_Test()
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml("const: unk");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("T, F, U", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains("T, F, U", diagnostic.Expected, StringComparison.Ordinal);
+    }
+
     /// <summary>Every distinct malformed tree branch raises its specific message.</summary>
     [Theory]
     [InlineData("not: [valid, yaml: [", "Malformed YAML:")]
