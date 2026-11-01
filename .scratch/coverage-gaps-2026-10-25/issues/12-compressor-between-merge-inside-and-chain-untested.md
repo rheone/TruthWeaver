@@ -1,6 +1,6 @@
 # 12 - Compressor's BETWEEN-merge-within-a-larger-AND path has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Rewriting (src/TruthWeaver/Rewriting/Compressor.cs)

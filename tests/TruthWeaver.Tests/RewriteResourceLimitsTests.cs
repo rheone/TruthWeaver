@@ -97,6 +97,52 @@ public sealed class RewriteResourceLimitsTests
     }
 
     /// <summary>
+    /// A threshold tree is small as written (one node per operand), but <c>NandNorExpander</c> checks a lower-bound
+    /// cost estimate - the subset slots the threshold expansions alone would add - before attempting the (expensive)
+    /// actual conversion, so a wide-enough threshold is refused up front even though the raw tree itself is nowhere
+    /// near the cap.
+    /// </summary>
+    [Fact]
+    public void ExpandToNand_WideThresholdUnderTheSizeCapButOverTheCostEstimate_IsRefusedWithoutBuildingTheExpansion_Test()
+    {
+        // Arrange: 15 nodes as written (one threshold plus 14 operands) is far under the cap of 50; the estimated
+        // subset-slot cost, C(14, 7) * 7 = 24,024, is not.
+        CompiledRule<RuleTestContext> rule = Compile("AtLeast(7, a, b, c, d, e, g, h, i, j, k, l, m, n, o)", 14);
+
+        // Act
+        CompilationResult<RuleTestContext> result = rule.ExpandToNand(50);
+
+        // Assert
+        Assert.False(result.Succeeded);
+        Assert.Null(result.CompiledRule);
+        Assert.Equal(DiagnosticCodes.RewriteTooLarge, Assert.Single(result.Diagnostics).Code);
+    }
+
+    /// <summary>
+    /// <c>Exactly</c>'s cost estimate sums two independent sides, each guarded so a vacuous side (no operand-count
+    /// threshold of that shape exists) contributes nothing: <c>K == 0</c> makes the "at least K" side vacuous, and
+    /// <c>K == n</c> (the operand count) makes the "at least K + 1" side vacuous. Both boundaries still expand to a
+    /// rule equivalent to the original, proving neither guard misestimates the cost or breaks the expansion.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    public async Task ExpandToNand_ExactlyAtTheLowOrHighOperandCountBoundary_ExpandsToAnEquivalentRule_Test(int k)
+    {
+        // Arrange
+        K3Rule original = K3Rule.TryCreate($"Exactly({k}, a, b, c, d)", 4)!;
+
+        // Act
+        K3Rule expanded = original.Rewrite(rule => rule.ExpandToNand().CompiledRule!);
+
+        // Assert
+        TruthValue[] assignment = [TruthValue.True, TruthValue.True, TruthValue.False, TruthValue.False];
+        Decision before = await original.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+        Decision after = await expanded.EvaluateAsync(assignment, TestContext.Current.CancellationToken);
+        Assert.Equal(before.Result, after.Result);
+    }
+
+    /// <summary>
     /// A rule compiled with a raised <c>MaxRewriteNodeCount</c> expands past the default cap of 100,000 with no argument.
     /// </summary>
     [Fact]

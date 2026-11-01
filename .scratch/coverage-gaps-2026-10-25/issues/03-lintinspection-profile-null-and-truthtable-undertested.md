@@ -1,6 +1,6 @@
 # 03 - Linter.LintInspection's Analyzer.Profile-null path and per-kind truth table are undertested
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Analysis (src/TruthWeaver/Analysis/Linter.cs)

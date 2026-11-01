@@ -1,5 +1,6 @@
 namespace TruthWeaver.Compilation;
 
+using System.Diagnostics.CodeAnalysis;
 using TruthWeaver.Ast;
 using TruthWeaver.Parsing;
 
@@ -62,33 +63,31 @@ internal static class LiteralConversion
     }
 
     /// <summary>
-    /// Best-effort infers a <see cref="LiteralValue"/> from a raw literal with no declared schema to
-    /// validate against: used only for a term bound to an unregistered predicate under
-    /// <c>CompilationMode.Lenient</c>, where the term will never actually be evaluated (it is
-    /// permanently <c>TruthValue.Unknown</c>) but still needs a stable identity for memoization.
+    /// Infers a <see cref="LiteralValue"/> from a raw literal with no declared schema to validate against: used only for
+    /// a term bound to an unregistered predicate under <c>CompilationMode.Lenient</c>, where the term will never
+    /// actually be evaluated (it is permanently <c>TruthValue.Unknown</c>) but still needs a stable identity for
+    /// memoization. A literal that cannot be kept exactly is reported, never replaced by a default, because a default
+    /// would make two different literals one term.
     /// </summary>
     /// <param name="raw">The raw literal.</param>
-    /// <returns>An inferred literal value.</returns>
-    public static LiteralValue Guess(RawLiteral raw)
+    /// <param name="value">The inferred value, if the literal could be kept exactly.</param>
+    /// <param name="problem">Why the literal could not be kept, when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if <paramref name="value"/> holds the literal exactly as written.</returns>
+    public static bool TryGuess(RawLiteral raw, out LiteralValue value, [NotNullWhen(false)] out string? problem)
     {
+        problem = null;
         switch (raw.Form)
         {
             case RawLiteralForm.QuotedString:
-                return LiteralValue.OfString(raw.Text ?? string.Empty);
+                value = LiteralValue.OfString(raw.Text ?? string.Empty);
+                return true;
             case RawLiteralForm.Boolean:
-                return LiteralValue.OfBoolean(raw.BooleanValue);
+                value = LiteralValue.OfBoolean(raw.BooleanValue);
+                return true;
             case RawLiteralForm.Number:
-                string text = raw.Text ?? "0";
-                if (text.Contains('.'))
-                {
-                    decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal decimalValue);
-                    return LiteralValue.OfDecimal(decimalValue);
-                }
-
-                long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long int64Value);
-                return LiteralValue.OfInt64(int64Value);
+                return TryGuessNumber(raw.Text ?? "0", out value, out problem);
             default:
-                return GuessArray(raw.Elements ?? []);
+                return TryGuessArray(raw.Elements ?? [], out value, out problem);
         }
     }
 
@@ -108,6 +107,28 @@ internal static class LiteralConversion
             LiteralKind.DateTimeOffsetArray => raw.Elements?.Any(e => IsMissingOffset(e, LiteralKind.DateTimeOffset)) == true,
             _ => false,
         };
+    }
+
+    // A whole number that fits long stays Int64. Any other number is kept by value as a decimal, which holds a large
+    // identifier or an exponent form such as 1e5 exactly. A number that neither type holds exactly is reported.
+    private static bool TryGuessNumber(string text, out LiteralValue value, [NotNullWhen(false)] out string? problem)
+    {
+        problem = null;
+        if (!text.Contains('.') && long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long int64Value))
+        {
+            value = LiteralValue.OfInt64(int64Value);
+            return true;
+        }
+
+        if (decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal decimalValue))
+        {
+            value = LiteralValue.OfDecimal(decimalValue);
+            return true;
+        }
+
+        value = default;
+        problem = $"the number {text} is outside the range that an integer or a decimal holds exactly";
+        return false;
     }
 
     private static bool IsArrayKind(LiteralKind kind)
@@ -146,28 +167,52 @@ internal static class LiteralConversion
         return true;
     }
 
-    private static LiteralValue GuessArray(IReadOnlyList<RawLiteral> elements)
+    private static bool TryGuessArray(
+        IReadOnlyList<RawLiteral> elements,
+        out LiteralValue value,
+        [NotNullWhen(false)] out string? problem
+    )
     {
+        problem = null;
         if (elements.Count == 0)
         {
-            return LiteralValue.OfArray(LiteralKind.String, []);
+            value = LiteralValue.OfArray(LiteralKind.String, []);
+            return true;
         }
 
-        LiteralValue first = Guess(elements[0]);
+        if (!TryGuess(elements[0], out LiteralValue first, out problem))
+        {
+            value = default;
+            return false;
+        }
+
+        if (IsArrayKind(first.Kind))
+        {
+            value = default;
+            problem = "a list inside a list has no exact kind to keep";
+            return false;
+        }
+
         List<LiteralValue> guessed = [first];
         for (int i = 1; i < elements.Count; i++)
         {
-            LiteralValue candidate = Guess(elements[i]);
-            guessed.Add(candidate.Kind == first.Kind ? candidate : LiteralValue.OfString(elements[i].Text ?? string.Empty));
+            if (!TryGuess(elements[i], out LiteralValue candidate, out problem))
+            {
+                value = default;
+                return false;
+            }
+
+            if (candidate.Kind != first.Kind)
+            {
+                value = default;
+                problem = $"the list mixes {first.Kind} and {candidate.Kind} elements";
+                return false;
+            }
+
+            guessed.Add(candidate);
         }
 
-        try
-        {
-            return LiteralValue.OfArray(first.Kind, guessed);
-        }
-        catch (ArgumentException)
-        {
-            return LiteralValue.OfArray(LiteralKind.String, []);
-        }
+        value = LiteralValue.OfArray(first.Kind, guessed);
+        return true;
     }
 }

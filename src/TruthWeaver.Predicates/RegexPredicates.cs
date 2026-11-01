@@ -206,7 +206,8 @@ public static class RegexPredicates
     /// <summary>
     /// Checks a literal flags string and a literal pattern at compile time. A value that comes from a data source is
     /// absent from <paramref name="args"/> and is checked at evaluation instead. The pattern is checked under the
-    /// options the flags name, because a flag such as <c>x</c> changes which patterns are valid.
+    /// options the flags name, because a flag such as <c>x</c> changes which patterns are valid. When the flags come
+    /// from a data source, the options are unknown, so the pattern is checked at evaluation too.
     /// </summary>
     private static List<PredicateArgumentProblem> ValidateArguments(PredicateArguments args, string argumentName)
     {
@@ -229,8 +230,9 @@ public static class RegexPredicates
             );
         }
 
-        // With invalid flags the options are unknown, so the pattern is not checked: one problem at a time.
-        if (flagsValid && args.TryGetString(argumentName, out string? pattern))
+        // With invalid flags, or flags a data source supplies, the options are unknown, so the pattern is not checked.
+        bool optionsKnown = flagsValid && !args.IsDeferred(FlagsArgumentName);
+        if (optionsKnown && args.TryGetString(argumentName, out string? pattern))
         {
             try
             {

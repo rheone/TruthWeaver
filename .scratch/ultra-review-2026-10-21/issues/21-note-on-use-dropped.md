@@ -55,3 +55,7 @@ not verified (medium or low)
 
 **Out of scope:**
 - Notes on any node other than `use` (already handled correctly).
+
+### Resolution
+
+`DefinitionExpander.ExpandUse` copies the use note onto the expanded node (use note first, joined by a line feed with any body note). It copies the node with `with`, because the expansion can be a node shared with a definition body or a bound argument. The rule-text repro in the finding (`let adult = isAdult; /* age gate */ adult`) puts the comment on the same line as the `;`, which rule 1 in `rule-formats.md` attaches to the definition. That is correct, so the tests put the comment on its own line. Docs: `docs/rule-formats.md`.

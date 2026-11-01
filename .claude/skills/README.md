@@ -34,6 +34,7 @@ The Booststraping-LLM-DEV-Container repository is Apache-2.0. A copy here matche
 | `github-markdown` | `rheone/Booststraping-LLM-DEV-Container` `skills/github-markdown` | Authored elsewhere, copy here | Apache-2.0 | 1.0.0 |
 | `mermaid-diagram-generator` | `rheone/Booststraping-LLM-DEV-Container` `skills/mermaid-diagram-generator` | Authored elsewhere, copy here | Apache-2.0 | 2.0.0 |
 | `humanizer` | [`blader/humanizer`](https://github.com/blader/humanizer) (repository root; plugin and CI files are not copied) | Vendored | MIT | 3.1.0 |
+| `writing-for-agents` | [`mattpocock/skills`](https://github.com/mattpocock/skills) (`skills/productivity/writing-for-agents`, plugin version 1.3.1) | Vendored | MIT (repository license; not in the skill metadata) | none in the skill metadata |
 
 Notes:
 
@@ -42,7 +43,7 @@ Notes:
 
 ## Lock file
 
-`skills-lock.json` lists only the vendored skill (`humanizer`). The authored skills are not locked, because the repository owner controls their source.
+`skills-lock.json` lists only the vendored skills (`humanizer` and `writing-for-agents`). The authored skills are not locked, because the repository owner controls their source.
 
 The `computedHash` of an entry is the SHA-256 of the skill folder, as `npx skills` computes it. The tool sorts all files by relative path with a locale-aware comparison, so `agents/openai.yaml` sorts before `AGENTS.md` (forward slashes, `.git` and `node_modules` excluded). It feeds each relative path, then the raw bytes of the file, into the hash. A line-ending change therefore changes the hash. `.gitattributes` pins `.claude/skills/**` to LF, so a clone gives the same bytes with any `core.autocrlf` setting.
 

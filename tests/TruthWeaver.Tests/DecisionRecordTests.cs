@@ -168,7 +168,7 @@ public sealed class DecisionRecordTests
         string json = written.PrintJson(new DecisionJsonOptions(includeArgumentValues));
 
         // Each literal of the rule as a trace text spells it inside the JSON string (so "x" is escaped).
-        string[] literals = ["admin", "n: 5", "1.50", "b: true", "2025-01-02", "3fa85f64", "[1, 2]", "\\\"x\\\""];
+        string[] literals = ["admin", "n: 5", "1.5", "b: true", "2025-01-02", "3fa85f64", "[1, 2]", "\\\"x\\\""];
         Assert.All(literals, literal => Assert.Equal(includeArgumentValues, json.Contains(literal, StringComparison.Ordinal)));
     }
 
@@ -214,12 +214,12 @@ public sealed class DecisionRecordTests
             a => Compact(a.GetProperty("value").GetRawText())
         );
         Assert.Equal("true", values["b"]);
-        Assert.Equal("1.50", values["d"]);
+        Assert.Equal("1.5", values["d"]);
         Assert.Equal("5", values["n"]);
         Assert.Equal("[1,2]", values["list"]);
         Assert.Equal("[\"x\",\"y\"]", values["names"]);
         Assert.Equal("\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"", values["id"]);
-        Assert.Equal("\"2025-01-02T03:04:05.0000000+02:00\"", values["at"]);
+        Assert.Equal("\"2025-01-02T01:04:05.0000000+00:00\"", values["at"]);
     }
 
     /// <summary>

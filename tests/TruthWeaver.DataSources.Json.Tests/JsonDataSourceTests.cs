@@ -66,7 +66,7 @@ public sealed class JsonDataSourceTests
     [Theory]
     [InlineData("$.limits.age", LiteralKind.Int64, "18")]
     [InlineData("$.limits.ratio", LiteralKind.Decimal, "1.5")]
-    [InlineData("$.limits.whole", LiteralKind.Decimal, "18.0")]
+    [InlineData("$.limits.whole", LiteralKind.Decimal, "18")]
     [InlineData("$.limits.name", LiteralKind.String, "\"adult\"")]
     [InlineData("$.limits.on", LiteralKind.Boolean, "true")]
     [InlineData("$.limits.off", LiteralKind.Boolean, "false")]

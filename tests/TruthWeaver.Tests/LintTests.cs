@@ -38,6 +38,74 @@ public sealed class LintTests
     }
 
     /// <summary>
+    /// The lint returns with no finding, and no exception, when the inspected operand has more distinct terms than
+    /// <c>MaxAnalysisTerms</c>, so <see cref="Analyzer.Profile"/> itself returns <see langword="null"/>.
+    /// </summary>
+    [Fact]
+    public void Compile_IsTrueOverOperandPastTheAnalysisTermCap_ReportsNoRedundantInspection_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile(
+            "IsTrue(a AND b)",
+            new CompilerOptions(MaxAnalysisTerms: 1, Lints: LintRules.RedundantInspection)
+        );
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+        Assert.NotNull(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// <c>IsKnown</c>'s "tested" truth table is <c>CanBeTrue || CanBeFalse</c>; a constant <c>False</c> operand exercises
+    /// the <c>CanBeFalse</c> side alone (never <c>True</c>), which no other test does.
+    /// </summary>
+    [Fact]
+    public void Compile_IsKnownOverConstantFalseOperand_ReportsRedundantInspectionWithConstantSuggestion_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("IsKnown(False)", LintRules.RedundantInspection);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+        Assert.Equal("True", diagnostic.Suggestion?.Text);
+    }
+
+    /// <summary>
+    /// <c>IsUnknown</c>'s "other" truth table is <c>CanBeTrue || CanBeFalse</c>; a constant <c>False</c> operand exercises
+    /// the <c>CanBeFalse</c> side alone (never <c>True</c>), which no other test does.
+    /// </summary>
+    [Fact]
+    public void Compile_IsUnknownOverConstantFalseOperand_ReportsRedundantInspectionWithConstantSuggestion_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("IsUnknown(False)", LintRules.RedundantInspection);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+        Assert.Equal("False", diagnostic.Suggestion?.Text);
+    }
+
+    /// <summary>
+    /// <c>IsTrue</c>'s "other" truth table is <c>CanBeFalse || CanBeUnknown</c>; <c>a OR NOT a</c> is never <c>False</c>
+    /// but can be <c>Unknown</c> (when <c>a</c> is), exercising the <c>CanBeUnknown</c> side alone, which no other test
+    /// does. The operand can still reach <c>Unknown</c>, so the inspection is correctly not flagged.
+    /// </summary>
+    [Fact]
+    public void Compile_IsTrueOverOperandNeverFalseButPossiblyUnknown_ReportsNoRedundantInspection_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("IsTrue(a OR NOT a)", LintRules.RedundantInspection);
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+    }
+
+    /// <summary>
+    /// <c>IsFalse</c>'s "other" truth table is <c>CanBeTrue || CanBeUnknown</c>; <c>a AND NOT a</c> is never <c>True</c>
+    /// but can be <c>Unknown</c> (when <c>a</c> is), exercising the <c>CanBeUnknown</c> side alone, which no other test
+    /// does. The operand can still reach <c>Unknown</c>, so the inspection is correctly not flagged.
+    /// </summary>
+    [Fact]
+    public void Compile_IsFalseOverOperandNeverTrueButPossiblyUnknown_ReportsNoRedundantInspection_Test()
+    {
+        CompilationResult<RuleTestContext> result = Compile("IsFalse(a AND NOT a)", LintRules.RedundantInspection);
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.RedundantInspection);
+    }
+
+    /// <summary>
     /// A <c>COALESCE</c> whose first operand can never be <c>Unknown</c> never reaches its later operands, so with the
     /// lint enabled it is reported with a suggestion to keep only the first operand.
     /// </summary>

@@ -49,6 +49,21 @@ public sealed class NormalFormTests
         Assert.Equal(expected, Nnf(text).CanonicalText);
     }
 
+    /// <summary>
+    /// If stays whole in CNF and DNF as it does in NNF: it is a single atom, so it is not expanded into AND, OR and NOT
+    /// and distribution does not split it, while the operands inside it are normalized.
+    /// </summary>
+    [Theory]
+    [InlineData("cnf", "If(a, b, NOT (a AND c)) AND c", "If(a, b, NOT a OR NOT c) AND c")]
+    [InlineData("dnf", "If(a, b, NOT (a AND c)) OR c", "If(a, b, NOT a OR NOT c) OR c")]
+    public void ToCnfAndToDnf_IfExpression_StaysAnAtomWithNormalizedOperands_Test(string form, string text, string expected)
+    {
+        CompiledRule<RuleTestContext>? converted = Convert(Rule(text, 3).Compiled, form, expand: false);
+
+        Assert.NotNull(converted);
+        Assert.Equal(expected, converted.CanonicalText);
+    }
+
     /// <summary>No classical complement law is used: a contradiction and an excluded middle stay as written.</summary>
     [Theory]
     [InlineData("a AND NOT a")]

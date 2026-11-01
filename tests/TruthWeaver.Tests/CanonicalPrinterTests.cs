@@ -154,7 +154,7 @@ public sealed class CanonicalPrinterTests
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);
     }
 
-    /// <summary>A DateTimeOffset argument prints as a quoted string and round trips.</summary>
+    /// <summary>A DateTimeOffset argument prints as a quoted string, as the same instant at a UTC offset, and round trips.</summary>
     [Fact]
     public void Print_DateTimeOffsetArgument_IsQuotedAndRoundTrips_Test()
     {
@@ -168,7 +168,7 @@ public sealed class CanonicalPrinterTests
 
         CompiledRule<RuleTestContext> original = compiler.Compile($"startedAt(when: \"{matchValue:O}\")").CompiledRule!;
 
-        Assert.Equal($"startedAt(when: \"{matchValue:O}\")", original.CanonicalText);
+        Assert.Equal($"startedAt(when: \"{matchValue.ToUniversalTime():O}\")", original.CanonicalText);
 
         CompiledRule<RuleTestContext> reparsed = compiler.Compile(original.CanonicalText).CompiledRule!;
         Assert.Equal(original.CanonicalText, reparsed.CanonicalText);

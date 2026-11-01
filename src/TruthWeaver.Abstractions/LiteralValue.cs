@@ -87,11 +87,14 @@ public readonly struct LiteralValue : IEquatable<LiteralValue>
     }
 
     /// <summary>Creates a <see cref="LiteralKind.Decimal"/> value.</summary>
-    /// <param name="value">The decimal value.</param>
+    /// <param name="value">
+    /// The decimal value. Its trailing zeros are dropped, so <c>1.00m</c> and <c>1m</c> both become <c>1m</c>. Equal
+    /// numbers then print the same and share one term identity.
+    /// </param>
     /// <returns>The wrapped literal.</returns>
     public static LiteralValue OfDecimal(decimal value)
     {
-        return new(LiteralKind.Decimal, default, default, value, default, default, Guid.Empty, default);
+        return new(LiteralKind.Decimal, default, default, StripTrailingZeros(value), default, default, Guid.Empty, default);
     }
 
     /// <summary>Creates a <see cref="LiteralKind.Boolean"/> value.</summary>
@@ -103,11 +106,23 @@ public readonly struct LiteralValue : IEquatable<LiteralValue>
     }
 
     /// <summary>Creates a <see cref="LiteralKind.DateTimeOffset"/> value.</summary>
-    /// <param name="value">The date/time value.</param>
+    /// <param name="value">
+    /// The date/time value. It is stored as the same instant at a UTC offset, so the same instant written at two
+    /// offsets is one value that prints the same; the written offset is not kept.
+    /// </param>
     /// <returns>The wrapped literal.</returns>
     public static LiteralValue OfDateTimeOffset(DateTimeOffset value)
     {
-        return new(LiteralKind.DateTimeOffset, default, default, default, default, value, Guid.Empty, default);
+        return new(
+            LiteralKind.DateTimeOffset,
+            default,
+            default,
+            default,
+            default,
+            value.ToUniversalTime(),
+            Guid.Empty,
+            default
+        );
     }
 
     /// <summary>Creates a <see cref="LiteralKind.Guid"/> value.</summary>
@@ -352,6 +367,13 @@ public readonly struct LiteralValue : IEquatable<LiteralValue>
             LiteralKind.Guid => $"\"{this.guidValue}\"",
             _ => "[" + string.Join(", ", this.arrayValue.Select(v => v.ToString())) + "]",
         };
+    }
+
+    // Dividing by a decimal one with the largest scale drops the trailing zeros, so 1.50m becomes 1.5m and 1.00m
+    // becomes 1m.
+    private static decimal StripTrailingZeros(decimal value)
+    {
+        return value / 1.0000000000000000000000000000m;
     }
 
     /// <summary>Escapes <c>\</c> and <c>"</c> so the result is valid inside a DSL quoted-string literal.</summary>

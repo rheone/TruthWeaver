@@ -23,7 +23,6 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 7. This file is for the LLM, mutate it as necessary while following all of the prescribed rules.
 8. Grilling (`/grill-me`, `/grilling`, `/grill-with-docs` and any equivalent interview or decision-gathering step) asks one question at a time, as a selectable multiple-choice question with a recommended option first. Incorporate each answer before the next question. Do not batch questions or ask them as free text.
 9. Batch work with `/dispatch-tasks`: it is the standard way to run groups of tickets or tasks on sub-agents. Settle open decisions with grilling (rule 8) before the work starts, so a dispatched ticket has no open question.
-10. Use skill /i-have-adhd when for conversations unless otherwise specified
 
 ## Architecture
 
@@ -37,13 +36,12 @@ Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.12
 
 ## In-flight work
 
-The k3-conformance effort (Strong K3 language surface, `.scratch/k3-conformance/`, tickets 01-31) is complete: [ADR-0005](docs/adr/0005-strong-k3-language-surface.md) is the authority for the operator set, notation, boundaries, rewrites and diagnostics, and supersedes the operator-set, alias and `XOR`/`XNOR` decisions in ADR-0003 (marked in place). Open owner questions are summarised at the top of `.scratch/k3-conformance/issues-log.md`. The predicate catalog gap list (`.scratch/predicate-catalog/k3-gap-list.md`) is closed: every inventory predicate is implemented. Do not implement from `.scratch/k3-conformance/_superseded/` or `.scratch/engine-v1`. Material in `.tmp/` is reference only and may be subtly wrong; verify it.
-
-A restructured multi-branch or multi-bundle plan (a new split of a ticket backlog across branches or bundles) is written to a durable `.scratch/<effort>/handoff-<date>.md` before any agent is dispatched against it. A plan that exists only in chat, an unsaved buffer or session scratch does not survive a context clear or a new session.
+Before planning or resuming effort work, read [.scratch/in-flight.md](.scratch/in-flight.md): k3-conformance status, folders to leave alone, and the handoff-file rule for multi-branch plans.
 
 ## Development rules
 
 - Prefer .NET file-based apps (`dotnet run scripts/<name>.cs`, [docs](https://learn.microsoft.com/en-us/dotnet/core/sdk/file-based-apps)) over PowerShell for repository scripts. The repository scripts are file-based apps; their shared helpers live in `scripts/shared/` and are pulled in with a literal-path `#:include`.
+- Edit files with the Edit tool, `sed`, or a file-based `.cs` script; the container has no `python3` or `perl`.
 - Prefer modern idiomatic C#.
 - Nullable reference types are enabled.
 - Implicit usings are enabled.
@@ -75,7 +73,7 @@ dotnet format --verify-no-changes --severity info
 dotnet roslynator analyze TruthWeaver.slnx --ignore-compiler-diagnostics
 ```
 
-The last three (the formatter/analyzer gates) run as one command: `dotnet run scripts/format-all.cs -- --check-only` (see Formatting below). The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
+The last three (the formatter/analyzer gates) run as one command: `dotnet run scripts/format-all.cs -- --check-only` (see [docs/agents/formatting.md](docs/agents/formatting.md)). The two formatter checks are the CI and manual gate; the pre-commit hook applies the formatters instead.
 
 ### Running a subset of tests
 
@@ -90,13 +88,7 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 
 ## Formatting
 
-- CSharpier is the authoritative C# formatter.
-- Use: `dotnet csharpier format .`
-- Do not manually fight CSharpier's formatting.
-- Before you push, run `dotnet run scripts/format-all.cs`. It formats, then runs the three CI gates (`csharpier check`, `dotnet format --verify-no-changes --severity info`, Roslynator). `-- --check-only` skips the apply step. Read the whole output: the info-level findings fail the CI step as well as the errors.
-- The pre-commit hook (`.husky/pre-commit`, installed by the first `dotnet restore`) builds with `-p:CI=true` (so analyzer warnings fail the commit as they fail CI), and runs the same two formatters on the staged C# files, formats once more with CSharpier, and then checks both. It fails the commit when CSharpier and `dotnet format` disagree about some code. Do not suppress the finding or edit `.editorconfig` for it. Change the shape of the code. Known case: a multi-line tuple return type on a property with a `{ get; } =` initializer. Use `=>` or a method instead.
-- Two more scripts run with the formatters, in `scripts/format-all.cs` and in the pre-commit hook (staged files only, same whole-file/partial-file rule as `format-staged`). `scripts/normalize-text.cs` makes text files valid UTF-8 with no BOM, LF endings, no trailing whitespace and one final newline, and replaces em dashes (` - `), ellipsis characters (`...`) and curly quotes (straight quotes; the AsciiMath printer files in its allowlist keep U+201D). `scripts/format-data.cs` runs Prettier (pinned, needs Node) on JSON, YAML and YML; the test fixture folders (`Fixtures`, `Samples`, `RuleTests`) are only parse-checked. When code or a test needs one of these characters as data, write it as a `\u` escape. A commit that stages `*.md` also runs the documentation tests (`DocumentationLint`, `K3Reference`, `DocExample`).
-- `.editorconfig` encodes the code style that `dotnet format --severity info` enforces: explicit types instead of `var` (IDE0008), block bodies for methods (IDE0022), `this.` qualification (SA1101), file-scoped namespaces and `using` directives inside the namespace. Write new code that way.
+Run `dotnet run scripts/format-all.cs` before you push. For the formatter, hook and text-normalizer details, or when a formatter or hook fails, read [docs/agents/formatting.md](docs/agents/formatting.md).
 
 ## Testing
 
@@ -121,10 +113,7 @@ Follow [docs/agents/documentation-standard.md](docs/agents/documentation-standar
 
 ## Git
 
-- Use work trees when appropriate - including for a dispatched ticket-implementation agent whenever the coordinator might keep working in this checkout while it runs (the normal case: a dispatched agent runs in the background here regardless of how it was launched).
-- Husky.Net provides local pre-commit validation, installed automatically by the first `dotnet restore` of a clone (skipped when `CI=true` or `HUSKY=0`). The hook formats fully staged C# files (`scripts/format-staged.cs`: `csharpier format`, then `dotnet format`) and re-stages them, so a commit never fails on formatting. A partly staged C# file is only checked and fails the commit if it needs formatting, because re-staging it would stage the unstaged edits: format it, then stage the hunks you want. Build and test still fail the commit on a real error. Roslynator runs in CI and in the validation above, not in the hook. The hook rebuilds with `-p:CI=true` and runs the full test suite (7,000+ tests), commonly past two minutes, longer still when staged `*.md` triggers the doc-tests pass - run `git commit` backgrounded or with a long timeout, not the default.
-- Line endings: `.gitattributes` sets `* text=auto eol=lf`, so working-tree text files are LF on every platform; only `*.bat`, `*.cmd` and `*.sln` are CRLF. `.editorconfig` (`end_of_line`) and CSharpier agree, and `dotnet format --verify-no-changes` reports a deviation. There is no separate line-ending check. A global `core.autocrlf=true` does not change this: `eol=lf` takes precedence, and a fresh clone is LF either way. If Git warns that LF will be replaced by CRLF, run `git add --renormalize .`.
-- CI is authoritative; hooks provide fast local feedback.
+A commit runs the full test suite (2+ minutes): background it or use a long timeout. Before committing, branching or dispatching a worktree agent, read [docs/agents/git.md](docs/agents/git.md).
 
 ## Claude Code
 

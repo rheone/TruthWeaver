@@ -1,6 +1,6 @@
 # 04 - RuleNodeCompiler.Build's own MaxDepthExceeded diagnostic path has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: critical
 Slice: Compilation (src/TruthWeaver/Compilation/RuleNodeCompiler.cs)

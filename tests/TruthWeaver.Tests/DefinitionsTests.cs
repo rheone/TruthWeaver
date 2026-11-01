@@ -296,6 +296,310 @@ public sealed class DefinitionsTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DuplicateDefinitionParameter);
     }
 
+    /// <summary>
+    /// A definition parameter spelled as a constant is a name collision. Without the check, <c>t</c> in the body was
+    /// read as <c>True</c>, so <c>gate(isBanned)</c> compiled silently to <c>True AND isAdult</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("t")]
+    [InlineData("F")]
+    [InlineData("u")]
+    [InlineData("true")]
+    [InlineData("False")]
+    [InlineData("UNKNOWN")]
+    public void Compile_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test(string parameter)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let gate({parameter}) = a AND b; gate(c)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Contains($"'{parameter}'", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A definition parameter spelled as any other reserved word is a name collision. Rule text read <c>not</c>, <c>any</c>
+    /// and the other prefix and call words as the keyword, so the body failed with a parse error, while JSON, YAML and
+    /// <c>RuleBuilder</c> accepted the same name. The infix words (<c>and</c>, <c>or</c>) compiled in rule text and are
+    /// rejected too, so the reserved-word set is one rule in every format.
+    /// </summary>
+    [Theory]
+    [InlineData("and")]
+    [InlineData("OR")]
+    [InlineData("xor")]
+    [InlineData("implies")]
+    [InlineData("let")]
+    [InlineData("not")]
+    [InlineData("Any")]
+    [InlineData("coalesce")]
+    [InlineData("if")]
+    [InlineData("isTrue")]
+    [InlineData("atLeast")]
+    [InlineData("forall")]
+    public void Compile_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test(string parameter)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let gate({parameter}) = a AND b; gate(a)");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Contains($"'{parameter}'", diagnostic.Message);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A JSON definition whose parameter is a reserved word is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "gate": {
+                  "parameters": ["and"],
+                  "body": { "op": "and", "operands": [{ "predicate": "and" }, { "predicate": "a" }] }
+                }
+              },
+              "op": "use",
+              "name": "gate",
+              "operands": [{ "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition whose parameter is a reserved word is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionParameterSpelledAsReservedWord_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              gate:
+                parameters: [and]
+                body:
+                  op: and
+                  operands:
+                    - predicate: and
+                    - predicate: a
+            op: use
+            name: gate
+            operands:
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A parameter whose name only starts with or contains a constant spelling, such as <c>truthy</c> or <c>total</c>, is still a valid parameter.</summary>
+    [Fact]
+    public void Compile_DefinitionParameterContainingConstantSpelling_Compiles_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("let gate(truthy, total) = truthy AND total; gate(a, b)");
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.NotNull(result.CompiledRule);
+    }
+
+    /// <summary>A JSON definition whose parameter is spelled as a constant is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileJson_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string json = """
+            {
+              "definitions": {
+                "gate": {
+                  "parameters": ["t"],
+                  "body": { "op": "and", "operands": [{ "predicate": "t" }, { "predicate": "a" }] }
+                }
+              },
+              "op": "use",
+              "name": "gate",
+              "operands": [{ "predicate": "b" }]
+            }
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileJson(json);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>A YAML definition whose parameter is spelled as a constant is the same compile error as the rule-text form.</summary>
+    [Fact]
+    public void CompileYaml_DefinitionParameterSpelledAsConstant_ReportsDefinitionNameCollision_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        const string yaml = """
+            definitions:
+              gate:
+                parameters: [t]
+                body:
+                  op: and
+                  operands:
+                    - predicate: t
+                    - predicate: a
+            op: use
+            name: gate
+            operands:
+              - predicate: b
+            """;
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.DefinitionNameCollision);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A note written on a use survives expansion: it lands on the node the use expands to, so it reaches
+    /// <see cref="CompiledRule{TContext}.Notes"/> and the printers. Without the carry, <c>/* age gate */ adult</c>
+    /// compiled but silently lost the note.
+    /// </summary>
+    [Fact]
+    public void Compile_NoteOnUseOfNotelessDefinition_KeepsTheNoteOnTheExpandedNode_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let adult = a;\n/* age gate */ adult");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+        Assert.Contains("age gate", rule.PrintRuleText(), StringComparison.Ordinal);
+    }
+
+    /// <summary>A note on a use and a note on the definition body's root are both kept, the use's note first, joined by a line feed.</summary>
+    [Fact]
+    public void Compile_NoteOnUseOfDefinitionWithItsOwnNote_JoinsUseNoteThenBodyNote_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let adult = /* from body */ a;\n/* age gate */ adult");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate\nfrom body" }, rule.Notes);
+    }
+
+    /// <summary>Two notes on two uses of one definition each stay on their own use; one use's note does not leak into the shared body.</summary>
+    [Fact]
+    public void Compile_NotesOnTwoUsesOfOneDefinition_KeepEachNoteOnItsOwnUse_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let g = a;\n/* one */ g AND /* two */ g");
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[0]"] = "one", ["$.operands[1]"] = "two" }, rule.Notes);
+    }
+
+    /// <summary>The joined note of a use and its body prints and reads back to the same note.</summary>
+    [Fact]
+    public void PrintRuleText_JoinedUseAndBodyNote_RoundTripsTheNote_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+        CompiledRule<RuleTestContext> rule = Compile(compiler, "let adult = /* from body */ a;\n/* age gate */ adult");
+
+        CompiledRule<RuleTestContext> reread = Compile(compiler, rule.PrintRuleText());
+
+        Assert.Equal(rule.Notes, reread.Notes);
+    }
+
+    /// <summary>A use of a parameter-only body keeps its own note and does not write it onto the shared argument node.</summary>
+    [Fact]
+    public void Compile_NoteOnUseWhoseBodyIsAParameter_KeepsTheNoteWithoutTouchingTheArgument_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(
+            CreateCompiler(),
+            "let pass(x) = x;\n/* one */ pass(a) AND /* two */ pass(a)"
+        );
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[0]"] = "one", ["$.operands[1]"] = "two" }, rule.Notes);
+    }
+
+    /// <summary>A note on an argument and a note on the use that wraps it both survive, the use's note first.</summary>
+    [Fact]
+    public void Compile_NoteOnUseAndOnItsArgument_JoinsUseNoteThenArgumentNote_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(CreateCompiler(), "let pass(x) = x;\n/* use */ pass(/* arg */ a)");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "use\narg" }, rule.Notes);
+    }
+
+    /// <summary>Notes on nested uses all survive, the outer use's note first.</summary>
+    [Fact]
+    public void Compile_NotesOnNestedUses_JoinOuterThenInner_Test()
+    {
+        CompiledRule<RuleTestContext> rule = Compile(
+            CreateCompiler(),
+            "let inner = a;\nlet outer = /* in */ inner;\n/* out */ outer"
+        );
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "out\nin" }, rule.Notes);
+    }
+
+    /// <summary>A JSON note on a use below the root is keyed by the use's position in the compiled tree.</summary>
+    [Fact]
+    public void CompileJson_NoteOnNestedUseNode_KeysTheNoteByItsPosition_Test()
+    {
+        const string json = """
+            {
+              "definitions": { "adult": { "body": { "predicate": "a" } } },
+              "op": "and",
+              "operands": [
+                { "predicate": "b" },
+                { "op": "use", "name": "adult", "note": "age gate" }
+              ]
+            }
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileJson(json).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$.operands[1]"] = "age gate" }, rule.Notes);
+    }
+
+    /// <summary>A JSON <c>note</c> on a <c>use</c> node is kept, the failure scenario from the review.</summary>
+    [Fact]
+    public void CompileJson_NoteOnUseNode_KeepsTheNote_Test()
+    {
+        const string json = """
+            {
+              "definitions": { "adult": { "body": { "predicate": "a" } } },
+              "op": "use",
+              "name": "adult",
+              "note": "age gate"
+            }
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileJson(json).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+        Assert.Contains("age gate", rule.PrintJson(), StringComparison.Ordinal);
+    }
+
+    /// <summary>A YAML <c>note</c> on a <c>use</c> node is kept.</summary>
+    [Fact]
+    public void CompileYaml_NoteOnUseNode_KeepsTheNote_Test()
+    {
+        const string yaml = """
+            definitions:
+              adult:
+                body:
+                  predicate: a
+            op: use
+            name: adult
+            note: age gate
+            """;
+
+        CompiledRule<RuleTestContext> rule =
+            CreateCompiler().CompileYaml(yaml).CompiledRule ?? throw new InvalidOperationException("did not compile");
+
+        Assert.Equal(new Dictionary<string, string> { ["$"] = "age gate" }, rule.Notes);
+    }
+
     /// <summary>A JSON definition entry whose <c>parameters</c> repeats a name (case-insensitively) is the same compile error as the rule-text form.</summary>
     [Fact]
     public void CompileJson_DefinitionWithDuplicateParameterName_ReportsDuplicateDefinitionParameter_Test()
@@ -378,6 +682,39 @@ public sealed class DefinitionsTests
 
         Assert.NotNull(result.CompiledRule);
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDefinitionDepthExceeded);
+    }
+
+    /// <summary>
+    /// A chain of definitions, each adding one <c>NOT</c> over the use below it, is shallow as written (every
+    /// definition's own body is a single <c>NOT</c>, and the main body is a bare identifier), so the parser's own
+    /// depth guard - which only ever sees one definition's text at a time - never trips. Once
+    /// <see cref="DefinitionExpander"/> inlines the whole chain, the expanded tree nests one <c>NOT</c> per
+    /// definition, past <c>MaxDepth</c>, and <c>RuleNodeCompiler.Build</c>'s own depth check reports it (the same
+    /// code the parser's guard would have reported, had the written text itself been this deep).
+    /// </summary>
+    [Fact]
+    public void Compile_DefinitionChainShallowAsWrittenButDeepAfterExpansion_ReportsMaxDepthExceeded_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build(),
+            new CompilerOptions(MaxDepth: 5, MaxDefinitionDepth: 20)
+        );
+        string chain = string.Join(
+            " ",
+            Enumerable.Range(0, 9).Select(i => i == 0 ? "let d0 = NOT a;" : $"let d{i} = NOT d{i - 1};")
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"{chain} d8");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Code == DiagnosticCodes.MaxDepthExceeded);
+        Assert.Equal("Rule exceeds the maximum tree depth of 5.", diagnostic.Message);
+        Assert.Equal("nesting at most 5 deep", diagnostic.Expected);
+        Assert.Equal("deeper nesting", diagnostic.Found);
+
+        // A DSL-origin node locates by Span, not Path (Path is JSON/YAML-only), so this is the correct value here,
+        // not an unasserted gap.
+        Assert.Null(diagnostic.Path);
+        Assert.Null(result.CompiledRule);
     }
 
     /// <summary>Expanding a use that would overrun <see cref="CompilerOptions.MaxNodeCount"/> reports the normal node-count error, with no special-casing for where the nodes came from.</summary>
@@ -624,7 +961,11 @@ public sealed class DefinitionsTests
 
     private static CompiledRule<RuleTestContext> Compile(RuleCompiler<RuleTestContext> compiler, string text)
     {
-        return compiler.Compile(text).CompiledRule ?? throw new InvalidOperationException($"'{text}' did not compile.");
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+        return result.CompiledRule
+            ?? throw new InvalidOperationException(
+                $"'{text}' did not compile: {string.Join("; ", result.Diagnostics.Select(d => d.Message))}"
+            );
     }
 
     /// <summary>

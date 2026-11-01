@@ -1,6 +1,6 @@
 # 07 - DslParser.ExpectIn's "expected IN" diagnostic has no test
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Parsing (src/TruthWeaver/Parsing/DslParser.cs)

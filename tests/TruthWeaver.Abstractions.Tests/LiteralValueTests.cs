@@ -17,6 +17,64 @@ public sealed class LiteralValueTests
         );
     }
 
+    /// <summary>Zero, a negative value and the largest decimal keep their numeric value and print without trailing zeros.</summary>
+    [Theory]
+    [InlineData("0.000", "0")]
+    [InlineData("-2.500", "-2.5")]
+    [InlineData("79228162514264337593543950335", "79228162514264337593543950335")]
+    public void OfDecimal_EdgeValues_KeepTheirValueAndPrintInCanonicalScale_Test(string written, string expectedText)
+    {
+        decimal number = decimal.Parse(written, CultureInfo.InvariantCulture);
+
+        LiteralValue literal = LiteralValue.OfDecimal(number);
+
+        Assert.Equal(number, literal.AsDecimal());
+        Assert.Equal(expectedText, literal.ToString());
+    }
+
+    /// <summary>Two decimals that differ only in scale are equal and print the same, without trailing zeros.</summary>
+    [Theory]
+    [InlineData("1.0", "1.00", "1")]
+    [InlineData("1.5", "1.50", "1.5")]
+    [InlineData("1.0", "1", "1")]
+    public void OfDecimal_ValuesDifferingOnlyInScale_AreEqualAndPrintTheSame_Test(
+        string left,
+        string right,
+        string expectedText
+    )
+    {
+        LiteralValue first = LiteralValue.OfDecimal(decimal.Parse(left, CultureInfo.InvariantCulture));
+        LiteralValue second = LiteralValue.OfDecimal(decimal.Parse(right, CultureInfo.InvariantCulture));
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal(first.ToString(), second.ToString());
+        Assert.Equal(expectedText, first.ToString());
+    }
+
+    /// <summary>The same instant written at two offsets is equal and prints the same, as UTC.</summary>
+    [Fact]
+    public void OfDateTimeOffset_SameInstantAtTwoOffsets_AreEqualAndPrintTheSameAsUtc_Test()
+    {
+        LiteralValue utc = LiteralValue.OfDateTimeOffset(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        LiteralValue plusTwo = LiteralValue.OfDateTimeOffset(new DateTimeOffset(2024, 1, 1, 2, 0, 0, TimeSpan.FromHours(2)));
+
+        Assert.Equal(utc, plusTwo);
+        Assert.Equal(utc.ToString(), plusTwo.ToString());
+        Assert.Equal(TimeSpan.Zero, plusTwo.AsDateTimeOffset().Offset);
+    }
+
+    /// <summary>Array elements are normalized the same way, so two arrays that differ only in scale are equal and print the same.</summary>
+    [Fact]
+    public void OfArray_DecimalElementsDifferingOnlyInScale_AreEqualAndPrintTheSame_Test()
+    {
+        LiteralValue first = LiteralValue.OfArray(LiteralKind.Decimal, [LiteralValue.OfDecimal(1.0m)]);
+        LiteralValue second = LiteralValue.OfArray(LiteralKind.Decimal, [LiteralValue.OfDecimal(1.00m)]);
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.ToString(), second.ToString());
+    }
+
     /// <summary>Scalar factories round trip through their matching accessor.</summary>
     [Fact]
     public void ScalarFactory_MatchingAccessor_RoundTripsValue_Test()
