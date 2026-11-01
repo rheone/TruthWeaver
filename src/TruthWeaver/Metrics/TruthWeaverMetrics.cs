@@ -28,7 +28,7 @@ internal static class TruthWeaverMetrics
     private static readonly Counter<long> Faults = Meter.CreateCounter<long>(
         "truthweaver.faults",
         unit: "{fault}",
-        description: "The number of predicate faults absorbed during evaluation (ADR-0002)."
+        description: "The number of predicate faults absorbed during evaluation."
     );
 
     private static readonly Counter<long> CompileDiagnostics = Meter.CreateCounter<long>(

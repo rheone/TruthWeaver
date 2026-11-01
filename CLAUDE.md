@@ -117,9 +117,6 @@ A commit runs the full test suite (2+ minutes): background it or use a long time
 
 ## Claude Code
 
-- Treat this file as repository-level development guidance.
-- Inspect existing conventions before making broad changes.
-- Do not modify generated or configuration files unnecessarily.
 - Before resuming or restarting a multi-ticket effort after a context clear, a new session, or a stated pause, check `ListAgents` for an already-running dispatch on the same branch before editing. A background bundle survives a context clear in the same session; nothing else will surface it.
 
 ## Agent skills

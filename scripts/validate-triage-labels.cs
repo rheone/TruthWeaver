@@ -12,6 +12,8 @@
 // scripts/list-open-done-tickets.cs already recognizes, matched case-insensitively. Trailing prose after the
 // label (a date, a parenthetical, a follow-on note) is not checked. A file with no Status line is not required
 // to have one. The folders engine-v1 and _superseded are skipped, as in scripts/list-open-done-tickets.cs.
+// A ticket under issues/ that is staged and leads with ready-for-agent must also hold a "## Agent Brief" heading, so
+// an agent never gets a ticket with no brief. Tickets that are not staged are not checked, so older tickets stay as they are.
 // Called by .husky/task-runner.json; also runnable standalone.
 //
 // Usage: dotnet run scripts/validate-triage-labels.cs
@@ -57,10 +59,16 @@ try
         .Where(path => IsTrackedTicket(Path.GetRelativePath(scratch, path).Replace('\\', '/')))
         .Order(StringComparer.OrdinalIgnoreCase);
 
+    HashSet<string> staged = new(
+        (await Repo.StagedFilesAsync(".scratch/**/issues/*.md")).Select(path => Path.GetFullPath(Path.Combine(root, path))),
+        StringComparer.OrdinalIgnoreCase
+    );
+
     int invalid = 0;
     foreach (string file in files)
     {
         string[] lines = await File.ReadAllLinesAsync(file);
+        bool readyForAgent = false;
         bool inFence = false;
         for (int i = 0; i < lines.Length; i++)
         {
@@ -85,6 +93,7 @@ try
             string label = labelMatch.Success ? labelMatch.Value : string.Empty;
             if (validLabels.Contains(label))
             {
+                readyForAgent |= label.Equals("ready-for-agent", StringComparison.OrdinalIgnoreCase);
                 continue;
             }
 
@@ -96,13 +105,26 @@ try
                 $"{relative}:{lineNumber}: invalid triage label '{shown}' in \"{lines[i].Trim()}\""
             );
         }
+
+        if (
+            readyForAgent
+            && staged.Contains(Path.GetFullPath(file))
+            && !lines.Any(line => line.StartsWith("## Agent Brief", StringComparison.Ordinal))
+        )
+        {
+            invalid++;
+            await Console.Error.WriteLineAsync(
+                $"{Path.GetRelativePath(root, file)}: a ready-for-agent ticket needs a '## Agent Brief' section."
+            );
+        }
     }
 
     if (invalid > 0)
     {
         await Console.Error.WriteLineAsync(
-            $"validate-triage-labels: {invalid} Status line(s) do not lead with needs-triage, needs-info, "
-                + "ready-for-agent, ready-for-human, wontfix or done (see docs/agents/triage-labels.md)."
+            $"validate-triage-labels: {invalid} problem(s): a Status line that does not lead with needs-triage, needs-info, "
+                + "ready-for-agent, ready-for-human, wontfix or done, or a staged ready-for-agent ticket with no Agent Brief "
+                + "(see docs/agents/triage-labels.md)."
         );
         return 1;
     }

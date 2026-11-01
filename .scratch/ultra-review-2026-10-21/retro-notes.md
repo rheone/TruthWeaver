@@ -284,3 +284,9 @@ Block format per ticket:
 - Ticket 53: `PolicySet` validates evaluation options up front. Follow-up ticket needed.
 - Ticket 53: a `Timeout` of exactly zero stays valid. No change.
 - Scratch notes committed on fix/reference-docs-drift.
+
+## Correction to the "doc-only commits pay the full suite" notes (2026-11-01)
+- The hook already limits the `build` and `test` tasks to `*.cs`, `*.csproj`, `*.props`, `*.targets`, `*.slnx` and `global.json`. A commit that stages only `*.md` files runs the documentation tests only.
+- The slow commits (tickets 60, 66, 69) staged a `.cs` file for an XML-doc comment, a string change or a test. A path filter cannot tell a comment-only `.cs` change from a logic change, and a comment can break the analyzers, so the hook stays as is.
+- Retro follow-ups done: `format-all.cs --files`, the dispatch-brief section in `docs/agents/git.md`, a staged-only Agent Brief check in `validate-triage-labels`, and `AdrReferenceInStringTests`.
+- The check for a ticket with open decisions is not automated. Ticket 67 had an Agent Brief, and wording ambiguity cannot be found mechanically. Grilling (rule 8) stays the control.
