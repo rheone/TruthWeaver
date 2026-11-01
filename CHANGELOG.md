@@ -567,6 +567,13 @@ copyright line reads 2026.
 
 ### Fixed
 
+- `OperatorInfo.Describe` and `Outline()` give a `FORALL` or `EXISTS` node its label and a description, and a misspelled tree-format
+  op such as `foral` gets a "did you mean `forall`" suggestion.
+- A decision explanation and a tool trace reason say that a faulted term `faulted` (the sentence read "could not be evaluated"). A term that
+  short-circuit evaluation skipped still reads "not evaluated".
+- `PolicySet.EvaluateAsync` rejects an unusable `Timeout` or `MaxElementEvaluations` before any rule runs, an empty set included. Before,
+  the first rule's evaluation threw.
+- The `EQUIVALENT` operator description names `IFF` and `XNOR` as aliases, where it read "formerly XNOR".
 - The evaluation fault log entry (event id 2) names what faulted: `Predicate fault for term ...`, `Collection fault for term ...` for a
   throwing collection selector and `ElementLimit fault for term ...` for an exceeded `MaxElementEvaluations`. The entry gains an
   `Origin` structured field. See [Observability](docs/observability.md#logs).
