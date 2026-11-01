@@ -1,6 +1,6 @@
 # 61 - Numeric IsBetween and IsNotBetween default labels do not match the reference pages
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F6 Predicates A
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -49,7 +49,15 @@ not verified (medium or low)
 - `NumericPredicates.IsBetween`/`IsNotBetween` (both overloads of each).
 
 **Acceptance criteria:**
-- [ ] A predicate registered via `IsBetween` with no explicit label gets `"Is Between"`.
-- [ ] A predicate registered via `IsNotBetween` with no explicit label gets `"Is Not Between"`.
-- [ ] A caller passing an explicit label is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A predicate registered via `IsBetween` with no explicit label gets `"Is Between"`.
+- [x] A predicate registered via `IsNotBetween` with no explicit label gets `"Is Not Between"`.
+- [x] A caller passing an explicit label is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Both `NumericPredicates.IsBetween` overloads now default `label` to `"Is Between"`, and both `IsNotBetween` overloads to `"Is Not Between"`. Reproduced first: the defaults were `"IsBetween"` and `"Not IsBetween"`. An explicit label is unchanged.
+
+Tests (`NumericPredicatesTests`): `IsBetweenAndIsNotBetween_NoLabel_UseTheSpacedDefaultLabels_Test` (red before, green after; `long?` and `decimal?` overloads) and `IsBetweenAndIsNotBetween_ExplicitLabel_KeepsTheGivenLabel_Test`.
+
+Docs: none changed. `docs/strong-k3/predicates/numeric-isbetween.md` and `numeric-isnotbetween.md` already gave the spaced labels; the code now matches them.

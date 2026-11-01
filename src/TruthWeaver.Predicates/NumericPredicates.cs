@@ -845,7 +845,7 @@ public static class NumericPredicates
     ) IsBetween<TContext>(
         string name,
         Func<TContext, long?> selector,
-        string label = "IsBetween",
+        string label = "Is Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Default
@@ -885,7 +885,7 @@ public static class NumericPredicates
     ) IsBetween<TContext>(
         string name,
         Func<TContext, decimal?> selector,
-        string label = "IsBetween",
+        string label = "Is Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Default
@@ -927,7 +927,7 @@ public static class NumericPredicates
     ) IsNotBetween<TContext>(
         string name,
         Func<TContext, long?> selector,
-        string label = "Not IsBetween",
+        string label = "Is Not Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Default
@@ -969,7 +969,7 @@ public static class NumericPredicates
     ) IsNotBetween<TContext>(
         string name,
         Func<TContext, decimal?> selector,
-        string label = "Not IsBetween",
+        string label = "Is Not Between",
         string lowerName = "lower",
         string upperName = "upper",
         NullBehavior nullBehavior = NullBehavior.Default

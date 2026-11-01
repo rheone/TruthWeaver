@@ -429,6 +429,41 @@ public class NumericPredicatesTests
         Assert.Equal(TruthValue.True, twinResult);
     }
 
+    /// <summary>
+    /// Registered without a label, both overloads of <c>IsBetween</c> get the label <c>Is Between</c> and both overloads of
+    /// <c>IsNotBetween</c> get <c>Is Not Between</c>, the spaced form the reference pages give.
+    /// </summary>
+    [Fact]
+    public void IsBetweenAndIsNotBetween_NoLabel_UseTheSpacedDefaultLabels_Test()
+    {
+        string[] between =
+        [
+            NumericPredicates.IsBetween<Numbers>("b", c => c.Count).Schema.Label,
+            NumericPredicates.IsBetween<Numbers>("b", c => c.Price).Schema.Label,
+        ];
+        string[] notBetween =
+        [
+            NumericPredicates.IsNotBetween<Numbers>("o", c => c.Count).Schema.Label,
+            NumericPredicates.IsNotBetween<Numbers>("o", c => c.Price).Schema.Label,
+        ];
+
+        Assert.All(between, label => Assert.Equal("Is Between", label));
+        Assert.All(notBetween, label => Assert.Equal("Is Not Between", label));
+    }
+
+    /// <summary>A label passed to <c>IsBetween</c> or <c>IsNotBetween</c> replaces the default.</summary>
+    [Fact]
+    public void IsBetweenAndIsNotBetween_ExplicitLabel_KeepsTheGivenLabel_Test()
+    {
+        string between = NumericPredicates.IsBetween<Numbers>("b", c => c.Count, label: "Quantity In Range").Schema.Label;
+        string notBetween = NumericPredicates
+            .IsNotBetween<Numbers>("o", c => c.Price, label: "Price Out Of Range")
+            .Schema.Label;
+
+        Assert.Equal("Quantity In Range", between);
+        Assert.Equal("Price Out Of Range", notBetween);
+    }
+
     private static TruthValue Complement(TruthValue value)
     {
         return value switch
