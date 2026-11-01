@@ -271,9 +271,9 @@ public sealed class CompilerLimitsAndLenientModeTests
         Assert.Contains("noSuchPredicate", fault.Exception.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Lenient mode compiles a heterogeneous array literal against an unregistered predicate without error.</summary>
+    /// <summary>Lenient mode reports a heterogeneous array literal against an unregistered predicate, because its elements have no one exact kind to keep.</summary>
     [Fact]
-    public void Lenient_HeterogeneousArray_CompilesWithoutError_Test()
+    public void Lenient_HeterogeneousArray_ReportsArgumentTypeMismatch_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
@@ -282,19 +282,19 @@ public sealed class CompilerLimitsAndLenientModeTests
 
         CompilationResult<RuleTestContext> result = compiler.Compile("noSuchPredicate(values: [1, \"two\", 3])");
 
-        Assert.True(result.Succeeded);
-        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.ArgumentTypeMismatch);
     }
 
-    /// <summary>A heterogeneous array literal term in lenient mode evaluates to unknown at runtime.</summary>
+    /// <summary>An array literal term in lenient mode evaluates to unknown at runtime.</summary>
     [Fact]
-    public async Task Lenient_HeterogeneousArray_EvaluatesToUnknown_Test()
+    public async Task Lenient_ArrayTerm_EvaluatesToUnknown_Test()
     {
         RuleCompiler<RuleTestContext> compiler = new(
             PredicateRegistry<RuleTestContext>.CreateBuilder().Build(),
             new CompilerOptions(Mode: CompilationMode.Lenient)
         );
-        CompiledRule<RuleTestContext> rule = compiler.Compile("noSuchPredicate(values: [1, \"two\", 3])").CompiledRule!;
+        CompiledRule<RuleTestContext> rule = compiler.Compile("noSuchPredicate(values: [1, 2, 3])").CompiledRule!;
 
         Decision decision = await rule.EvaluateAsync(
             new RuleTestContext(),

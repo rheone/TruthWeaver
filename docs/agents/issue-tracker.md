@@ -29,6 +29,14 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 - **Claim**: set `Status: claimed` and save before any work.
 - **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`, then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
 
+## Triage listing
+
+`dotnet run scripts/list-triage.cs [-- <label>]` prints the path, label, `Blocked by:` value and trailing hold prose of every ticket, spec, plan and map. `scripts/validate-triage-labels.cs` checks that each label is valid.
+
 ## Reference documents
 
 A ticket that adds, renames or removes a predicate or an Operation adds, renames or removes its document under `docs/strong-k3/` in the same change, updates the category index and the root navigation, and re-runs `dotnet test tests/TruthWeaver.Tests --filter-class "*K3Reference*"`. `K3ReferenceSyncChecker` fails when the engine and the reference disagree. Copy this as an acceptance criterion into such a ticket.
+
+## Probing a rule across formats
+
+`dotnet run scripts/probe-rule.cs -- <file> [<file> ...]` compiles each file in Lenient mode (format from the extension: `.json`, `.yaml`/`.yml`, otherwise rule text) and prints its diagnostics and canonical text. Use it to check that rule text, JSON and YAML agree about one rule.

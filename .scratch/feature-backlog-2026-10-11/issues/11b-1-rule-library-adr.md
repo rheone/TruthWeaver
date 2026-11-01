@@ -6,8 +6,8 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage (do not start or dispatch until the owner releases the sub-tickets)
+**Status:** done (ADR-0019, 2026-10-31)
 
-- [ ] The ADR names each decision and the rejected alternatives
-- [ ] `CONTEXT.md` and `docs/glossary.md` define rule library, library rule, rule reference and runtime call
-- [ ] The documentation tests pass
+- [x] The ADR names each decision and the rejected alternatives
+- [x] `CONTEXT.md` and `docs/glossary.md` define rule library, library rule, rule reference and runtime call
+- [x] The documentation tests pass
