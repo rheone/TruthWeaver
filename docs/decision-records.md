@@ -34,7 +34,7 @@ else
 }
 ```
 
-The reader is strict. A member that is not in the schema, a duplicate member, a `formatVersion` other than 1 or a value of the wrong type is an error.
+The reader is strict. A member that is not in the schema, a duplicate member, a `formatVersion` other than 1 or a value of the wrong type is an error. Text that is not valid UTF-16 (it holds a lone surrogate) is not valid JSON: `TryParseJson` returns `false`, and the error starts with `$: the text is not valid JSON`.
 
 What you read back depends on whether the record holds the literal argument values. See [Read back equality](#read-back-equality).
 

@@ -1,6 +1,6 @@
 # 50 - YAML duplicate-key rescan labels any repeat under a key named 'args' as DuplicateArgument
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: T2 Surfaces
@@ -51,6 +51,10 @@ Note: this doesn't newly reject anything — the document already fails to compi
 - `YamlTreeParser`'s duplicate-key rescan (`FindDuplicateArgument`).
 
 **Acceptance criteria:**
-- [ ] A repeated key under a definition named `args` reports `MalformedTree`, not `DuplicateArgument`.
-- [ ] A repeated key inside an actual predicate's `args` mapping still reports `DuplicateArgument` (no regression).
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A repeated key under a definition named `args` reports `MalformedTree`, not `DuplicateArgument`.
+- [x] A repeated key inside an actual predicate's `args` mapping still reports `DuplicateArgument` (no regression).
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced: a repeated key under a definition named `args` was `DuplicateArgument` (TRE0032). `YamlTreeParser.FindDuplicateArgument` no longer tests whether the path text ends in `.args`. Each scan frame now carries a role (tree node, `args`, `operands`, `definitions`, definition entry, other), worked out from its parent's role and key the same way `TreeFormatReader` walks the tree. Only a repeat in the `args` mapping of a tree node is `DuplicateArgument`. A repeat under a definition named `args`, or in the variable reference of an argument named `args`, is now `MalformedTree` (TRE0014), the same as any other repeated YAML key and as JSON after ticket 13. Tests: `StrictTreeKeysTests.CompileYaml_DuplicateKeyUnderAMappingNamedArgs_ReportsMalformedTree_Test` (both cases) and `CompileYaml_DuplicateArgumentInANestedNode_ReportsDuplicateArgument_Test` (in `operands` and in a definition body, as a regression guard); the existing YAML duplicate-argument tests still pass. No page changed: `docs/strong-k3/specification/syntax.md` and `diagnostics.md` already state the rule this now follows (a repeated key is TRE0014, a predicate argument named twice is TRE0032).

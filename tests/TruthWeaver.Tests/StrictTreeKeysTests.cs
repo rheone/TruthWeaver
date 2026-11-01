@@ -164,6 +164,82 @@ public sealed class StrictTreeKeysTests
         Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
     }
 
+    /// <summary>
+    /// A structural key written twice in one JSON node is a malformed tree at the repeated key, the same as YAML, and
+    /// the last occurrence never silently wins.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"op":"and","op":"or","operands":[{"predicate":"isManager"},{"predicate":"isDepartmentHead"}]}""", "$.op")]
+    [InlineData(
+        """{"op":"atLeast","k":1,"k":2,"operands":[{"predicate":"isManager"},{"predicate":"isDepartmentHead"}]}""",
+        "$.k"
+    )]
+    [InlineData("""{"const":true,"const":false}""", "$.const")]
+    [InlineData("""{"predicate":"isManager","predicate":"isDepartmentHead"}""", "$.predicate")]
+    [InlineData("""{"predicate":"isManager","note":"a","note":"b"}""", "$.note")]
+    [InlineData(
+        """{"op":"not","operands":[{"predicate":"isManager"}],"operands":[{"predicate":"isDepartmentHead"}]}""",
+        "$.operands"
+    )]
+    [InlineData(
+        """{"predicate":"hasRole","args":{"role":{"from":"user","from":"other","query":"$.role"}}}""",
+        "$.args.role.from"
+    )]
+    [InlineData(
+        """{"definitions":{"d":{"body":{"const":true},"body":{"const":false}}},"op":"use","name":"d"}""",
+        "$.definitions.d.body"
+    )]
+    [InlineData("""{"definitions":{},"definitions":{},"const":true}""", "$.definitions")]
+    public void CompileJson_RepeatedStructuralKey_ReportsMalformedTreeAtTheRepeat_Test(string json, string path)
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileJson(json);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal(path, diagnostic.Path);
+        Assert.Contains("more than once", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A key repeated in a YAML mapping that is named <c>args</c> but is not the <c>args</c> of a predicate node (a
+    /// definition named <c>args</c>, or the variable reference of an argument named <c>args</c>) is a malformed tree,
+    /// not a duplicate argument.
+    /// </summary>
+    [Theory]
+    [InlineData("definitions:\n  args:\n    body: {const: true}\n    body: {const: false}\nconst: true\n")]
+    [InlineData("predicate: hasRole\nargs:\n  args:\n    from: user\n    from: other\n    query: $.role\n")]
+    public void CompileYaml_DuplicateKeyUnderAMappingNamedArgs_ReportsMalformedTree_Test(string yaml)
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml(yaml);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A key repeated in the <c>args</c> of a predicate node nested in operands or in a definition body is still a
+    /// duplicate argument at the repeated key.
+    /// </summary>
+    [Theory]
+    [InlineData(
+        "op: and\noperands:\n  - predicate: hasRole\n    args:\n      role: Y\n      role: Z\n",
+        "$.operands[0].args.role"
+    )]
+    [InlineData(
+        "definitions:\n  d:\n    body:\n      predicate: hasRole\n      args:\n        role: Y\n        role: Z\nop: use\nname: d\n",
+        "$.definitions.d.body.args.role"
+    )]
+    public void CompileYaml_DuplicateArgumentInANestedNode_ReportsDuplicateArgument_Test(string yaml, string path)
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml(yaml);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.DuplicateArgument, diagnostic.Code);
+        Assert.Equal(path, diagnostic.Path);
+    }
+
     /// <summary>A predicate argument named twice in a builder is an error, not last-wins.</summary>
     [Fact]
     public void Compile_BuilderDuplicateArgument_ReportsDuplicateArgument_Test()

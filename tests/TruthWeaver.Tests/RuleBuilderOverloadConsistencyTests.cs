@@ -162,6 +162,64 @@ public sealed class RuleBuilderOverloadConsistencyTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A builder argument value that holds a lone UTF-16 surrogate, at any depth, is a malformed tree at the argument
+    /// from <c>Compile</c>: JSON cannot carry it, and replacing it would silently change the value.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Compile_ArgumentValueWithALoneSurrogate_ReportsMalformedTree_Test(int which)
+    {
+        object[] values = ["Y\uD800", new[] { "ok", "\uDC00" }, Arg.From("user\uD800", "$.role")];
+        RuleBuilder builder = RuleBuilder.Predicate("hasRole", ("role", values[which]));
+
+        CompilationResult<RuleTestContext> result = builder.Compile(CreateCompiler());
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal("$.args.role", diagnostic.Path);
+        Assert.Contains("UTF-16", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>
+    /// A <see langword="double"/> argument value that is <c>NaN</c> or an infinity, alone or in a sequence, is the
+    /// diagnostic <c>ArgumentTypeMismatch</c> from <c>Compile</c>: JSON has no such number, so it is never an exception.
+    /// </summary>
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void Compile_NonFiniteDoubleArgument_ReportsArgumentTypeMismatch_Test(double value)
+    {
+        RuleBuilder single = RuleBuilder.Predicate("hasRole", ("role", value));
+        RuleBuilder inSequence = RuleBuilder.Predicate("hasRole", ("role", new[] { 1.5, value }));
+
+        CompilationResult<RuleTestContext>[] results = [single.Compile(CreateCompiler()), inSequence.Compile(CreateCompiler())];
+
+        Assert.All(
+            results,
+            result =>
+            {
+                Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+                Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, diagnostic.Code);
+                Assert.Equal("$.args.role", diagnostic.Path);
+                Assert.Contains("finite", diagnostic.Message, StringComparison.Ordinal);
+            }
+        );
+    }
+
+    /// <summary>A finite <see langword="double"/> argument value still renders as a JSON number.</summary>
+    [Fact]
+    public void ToJson_FiniteDoubleArgument_RendersTheNumber_Test()
+    {
+        string json = RuleBuilder.Predicate("score", ("min", 1.5)).ToJson();
+
+        Assert.Equal("""{"predicate":"score","args":{"min":1.5}}""", json);
+    }
+
     private static RuleBuilder Build(string op, int count, bool asList)
     {
         RuleBuilder[] all =

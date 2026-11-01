@@ -1,6 +1,8 @@
 namespace TruthWeaver.Building;
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TruthWeaver.Ast;
@@ -744,7 +746,7 @@ public abstract class RuleBuilder
 
     /// <summary>Renders this builder's tree to the flat JSON tree shape text (ADR-0003).</summary>
     /// <returns>The JSON text.</returns>
-    /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
+    /// <exception cref="ArgumentException">An argument value has a type that JSON cannot carry, or is a <see langword="double"/> that is <c>NaN</c> or an infinity. <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.ArgumentTypeMismatch"/> instead.</exception>
     /// <exception cref="InvalidOperationException">
     /// A predicate in the tree is given the same argument name twice. JSON cannot hold both, and keeping one would hide the
     /// mistake; <see cref="Compile{TContext}(RuleCompiler{TContext})"/> reports it as <see cref="DiagnosticCodes.DuplicateArgument"/> instead.
@@ -1000,6 +1002,35 @@ public abstract class RuleBuilder
                         )
                     );
                 }
+                else if (HasNonFiniteDouble(argValue))
+                {
+                    // JSON has no NaN or infinity, so the JSON writer would throw from ToJson; report it as a value of the wrong kind.
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.ArgumentTypeMismatch,
+                            $"Argument '{argName}' of predicate '{this.name}' holds a double that is not a finite number (NaN or an infinity).",
+                            SourceSpan.None,
+                            expected: "a finite number",
+                            found: "NaN or an infinity",
+                            path: argumentPath
+                        )
+                    );
+                }
+                else if (HasLoneSurrogate(argValue))
+                {
+                    // The JSON writer replaces a lone surrogate with U+FFFD, so the rule would silently hold a different
+                    // value. JSON text with a raw lone surrogate is MalformedTree, and the builder reports it the same way.
+                    problems.Add(
+                        Diagnostic.Error(
+                            DiagnosticCodes.MalformedTree,
+                            $"Argument '{argName}' of predicate '{this.name}' holds a string that is not valid UTF-16 (a lone surrogate).",
+                            SourceSpan.None,
+                            expected: "valid UTF-16 text",
+                            found: "a lone surrogate",
+                            path: argumentPath
+                        )
+                    );
+                }
 
                 if (!seen.Add(argName))
                 {
@@ -1042,6 +1073,50 @@ public abstract class RuleBuilder
         /// Finds the first value, at any depth of a sequence, that <see cref="ValueToNode"/> cannot render.
         /// </summary>
         /// <returns>The offending type's name (<c>null</c> for a null value), or <see langword="null"/> when every value is supported.</returns>
+        /// <summary>
+        /// Finds a string, at any depth of a sequence or in either part of an <c>Arg.From</c> reference, that holds a
+        /// high surrogate with no low surrogate after it, or a low surrogate with no high surrogate before it.
+        /// </summary>
+        private static bool HasLoneSurrogate(object? value)
+        {
+            return value switch
+            {
+                string text => !IsValidUtf16(text),
+                VariableReference reference => !IsValidUtf16(reference.Source) || !IsValidUtf16(reference.Query),
+                System.Collections.IEnumerable items => items.Cast<object?>().Any(HasLoneSurrogate),
+                _ => false,
+            };
+        }
+
+        /// <summary>Finds a <see langword="double"/>, at any depth of a sequence, that is <c>NaN</c> or an infinity.</summary>
+        private static bool HasNonFiniteDouble(object? value)
+        {
+            return value switch
+            {
+                double number => !double.IsFinite(number),
+                string => false,
+                System.Collections.IEnumerable items => items.Cast<object?>().Any(HasNonFiniteDouble),
+                _ => false,
+            };
+        }
+
+        private static bool IsValidUtf16(string text)
+        {
+            // Rune.DecodeFromUtf16 reports InvalidData for exactly the lone surrogates; a valid pair decodes as one rune.
+            ReadOnlySpan<char> rest = text;
+            while (!rest.IsEmpty)
+            {
+                if (Rune.DecodeFromUtf16(rest, out _, out int consumed) != OperationStatus.Done)
+                {
+                    return false;
+                }
+
+                rest = rest[consumed..];
+            }
+
+            return true;
+        }
+
         private static string? UnsupportedValueType(object? value)
         {
             switch (value)

@@ -1,6 +1,6 @@
 # 36 - Invalid UTF-16 in JSON input throws ArgumentException instead of returning a diagnostic
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: T2 Surfaces
@@ -49,11 +49,15 @@ not verified (medium or low)
 - The JSON tree parser's and decision-record reader's parse/transcode error handling needs to also catch `ArgumentException` (or validate UTF-16 before transcoding) alongside the existing `JsonException` handling.
 
 **Acceptance criteria:**
-- [ ] Compiling JSON rule text containing a lone UTF-16 surrogate returns the malformed-tree diagnostic instead of throwing.
-- [ ] Reading a decision record with the same kind of input returns the documented failure result instead of throwing.
-- [ ] A `RuleBuilder` string value containing a lone surrogate is handled the same way at `Compile`, not left throwing.
-- [ ] Ordinary valid JSON input is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] Compiling JSON rule text containing a lone UTF-16 surrogate returns the malformed-tree diagnostic instead of throwing.
+- [x] Reading a decision record with the same kind of input returns the documented failure result instead of throwing.
+- [x] A `RuleBuilder` string value containing a lone surrogate is handled the same way at `Compile`, not left throwing.
+- [x] Ordinary valid JSON input is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - YAML parsing (not reported as affected by this finding).
+
+## Resolution (2026-11-01)
+
+Reproduced for `CompileJson(string)` and `DecisionRecord.TryParseJson`. `JsonTreeParser.Parse` now catches the `ArgumentException` (inner `EncoderFallbackException`) that the UTF-8 transcode throws and reports `MalformedTree` (TRE0014) at `$`, with the span on the lone surrogate. `DecisionJsonReader.TryRead` catches the same exception and returns `false` with `$: the text is not valid JSON: it is not valid UTF-16 ...`. `RuleBuilder` did not throw: the JSON writer silently replaced the lone surrogate with U+FFFD, so the compiled rule held a different value. `Compile` now reports `MalformedTree` at `$.args.<name>` for an argument value string (at any depth, or in either part of an `Arg.From` reference) that is not valid UTF-16. Predicate, argument and definition names with a lone surrogate are not checked: they turn into U+FFFD and give an unknown-predicate error, not a silent wrong value. Tests: `TreeFormatReaderMalformedInputTests.CompileJson_LoneSurrogate_ReportsMalformedTreeAtTheRoot_Test`, `DecisionRecordMalformedInputTests.TryParseJson_LoneSurrogate_ReportsTheRootAsInvalidJson_Test`, `RuleBuilderOverloadConsistencyTests.Compile_ArgumentValueWithALoneSurrogate_ReportsMalformedTree_Test`. The payloads are built in the test body because xUnit's theory-data serialization replaces a lone surrogate with U+FFFD. Pages updated: `docs/strong-k3/specification/diagnostics.md`, `docs/decision-records.md`, `docs/rulebuilder.md`. Not checked or changed (other `JsonDocument.Parse(string)` call sites, outside this ticket): `ToolConfigurationFile`, `StubAssignment`, `EmbeddedRuleReader` and `FormatDetector` in `TruthWeaver.Tool.Core`.

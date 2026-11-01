@@ -1,6 +1,6 @@
 # 13 - JSON rules with duplicate keys are accepted (last wins); YAML rejects the same document
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F2 Parsing; T2 Surfaces
@@ -91,11 +91,15 @@ Decision: reject duplicate keys in JSON rule trees, matching YAML, rather than l
 - The JSON tree reader's key-checking needs to detect a repeated key name (not just validate membership in the allowed set) and report `MalformedTree`, consistent with how `DecisionJsonReader` already disables duplicate properties for its own JSON surface.
 
 **Acceptance criteria:**
-- [ ] `{"op":"and","op":"or",...}` and similar repeated-structural-key JSON documents report `MalformedTree` instead of compiling.
-- [ ] A duplicate key inside `args` continues to report its existing, more specific diagnostic (no regression there).
-- [ ] A JSON document with no duplicate keys is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `{"op":"and","op":"or",...}` and similar repeated-structural-key JSON documents report `MalformedTree` instead of compiling.
+- [x] A duplicate key inside `args` continues to report its existing, more specific diagnostic (no regression there).
+- [x] A JSON document with no duplicate keys is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Changing YAML's existing (correct) rejection behavior.
 - `DecisionJsonReader`'s JSON surface (already strict).
+
+## Resolution (2026-11-01)
+
+`TreeFormatReader.CheckKeys` now also reports a key written twice in one node as `MalformedTree` (TRE0014) at the repeated key's path, with a hint to remove one. The check is in the shared reader, not in `JsonDocumentOptions.AllowDuplicateProperties`, because that option would turn a repeated `args` name into a JSON syntax error and lose its `DuplicateArgument` (TRE0032) code. The same check covers the members of a variable reference (`from`, `query`), the keys of a `definitions` entry (`parameters`, `body`) and a repeated root `definitions` key. YAML is unchanged: YamlDotNet still rejects the repeat while loading. A repeated definition name inside `definitions` is not a structural key and keeps its existing path. Tests: `StrictTreeKeysTests.CompileJson_RepeatedStructuralKey_ReportsMalformedTreeAtTheRepeat_Test` (nine cases); the existing duplicate-argument and only-defined-keys tests still pass. Pages updated: `docs/strong-k3/specification/syntax.md`, `docs/strong-k3/specification/diagnostics.md`, `docs/diagnostics.md`.
