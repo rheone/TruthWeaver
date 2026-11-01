@@ -224,6 +224,11 @@ ends with a library locator: the name of the library rule and the line and colum
 `In library rule 'contractor-cleared' at line 1, column 18.` When library rules reference each other, the locator names
 the library rule that holds the place. A diagnostic about the text that you compile has no locator.
 
+A warning or information diagnostic of a library rule, such as `TRE0027` for a deprecated predicate or a lint finding,
+keeps its own code and severity. Its span is the reference, and its message ends with the library locator. The compiler
+reports it once for each reference: the uses of a definition that holds the reference share it. Only an error becomes
+`TRE0050`, so a library rule with warnings still compiles.
+
 A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator, as in
 `hasSignedNda (in library rule 'contractor-cleared' at line 1, column 18)`. The trace tree (`Decision.TraceTree`) shows
 the node without it. The mistakes give these codes:

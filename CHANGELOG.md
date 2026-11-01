@@ -575,6 +575,12 @@ copyright line reads 2026.
 
 ### Fixed
 
+- A warning or information diagnostic of a library rule reaches the compile that references it, with its own code and
+  severity, at the `rule("name")` reference, and with the library locator (the library rule name and the line and
+  column in its text) in the message. Examples: the unused definition lint (`TRE0041`) in the text of a library rule,
+  and the deprecated predicate warning (`TRE0027`). Before, the expansion kept only the errors and dropped the others. A
+  warning is reported once for each reference: the uses of a definition that holds the reference share it. Errors still
+  give `TRE0050`. No migration step. [Rule text](docs/rule-text.md#library-rules) covers it.
 - `RuleDefinitions.PrintJson()` and `YamlRuleDefinitions.PrintYaml()` return `null` for a document that holds a
   `rule("name")` reference at any depth (the rule, a `let` body or a quantifier body), because the JSON and YAML tree
   formats have no shape for the reference yet. Before, both threw `InvalidOperationException`. A document with no

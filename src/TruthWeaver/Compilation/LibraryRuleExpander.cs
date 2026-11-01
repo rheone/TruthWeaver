@@ -82,8 +82,7 @@ internal sealed class LibraryRuleExpander<TContext>(
     // A library rule code already names the library rule it is about, so it passes through as it is: that keeps one
     // diagnostic for one cycle or one missing rule, however deep the reference is. Any other error is about the text of this
     // library rule, so it is reported under InvalidLibraryRule, with the name of the rule and, when the error is located in
-    // the text of the rule, the locator of that place. Warnings and information are the library rule's own concern and are
-    // dropped.
+    // the text of the rule, the locator of that place.
     private static Diagnostic AsCallerDiagnostic(LibraryRule rule, Diagnostic error, SourceSpan span, bool locateInRule)
     {
         if (
@@ -110,10 +109,12 @@ internal sealed class LibraryRuleExpander<TContext>(
         );
     }
 
-    // Adds the errors of one step of a library rule to the caller's diagnostics, and says whether there were any. The parse
-    // and the expansion report spans in the text of the library rule, which locateInRule turns into a locator; the build
-    // adds the locator of the node itself.
-    private static bool ReportErrors(
+    // Adds what one step of a library rule raised to the caller's diagnostics, and says whether it raised an error. The
+    // parse and the expansion report spans in the text of the library rule, which locateInRule turns into a locator; the
+    // build adds the locator of the node itself. A warning or information of the parse or the expansion keeps its code and
+    // severity, and moves to the reference with the locator in its message. The build passes none on: the build of the
+    // caller builds the same nodes and reports them there, once for each reference site.
+    private bool ReportErrors(
         LibraryRule rule,
         IReadOnlyList<Diagnostic> found,
         SourceSpan span,
@@ -121,13 +122,35 @@ internal sealed class LibraryRuleExpander<TContext>(
         bool locateInRule
     )
     {
-        int before = diagnostics.Count;
-        diagnostics.AddRange(
-            found
-                .Where(d => d.Severity == DiagnosticSeverity.Error)
-                .Select(d => AsCallerDiagnostic(rule, d, span, locateInRule))
-        );
-        return diagnostics.Count > before;
+        bool failed = false;
+        foreach (Diagnostic raised in found)
+        {
+            if (raised.Severity == DiagnosticSeverity.Error)
+            {
+                diagnostics.Add(AsCallerDiagnostic(rule, raised, span, locateInRule));
+                failed = true;
+            }
+            else if (parses.Surfaced.Contains(raised))
+            {
+                // Already passed on, located, by a nested library rule at this same site.
+                diagnostics.Add(raised);
+            }
+            else if (locateInRule)
+            {
+                Diagnostic surfaced = raised with
+                {
+                    Span = span,
+                    Message = LibraryLocator.Of(rule.Name, rule.Text, raised.Span).AppendTo(raised.Message),
+                    Path = null,
+                    Suggestion = raised.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null,
+                    EnclosedBy = null,
+                };
+                parses.Surfaced.Add(surfaced);
+                diagnostics.Add(surfaced);
+            }
+        }
+
+        return failed;
     }
 
     // Checks one reference that is not in the cache and expands the library rule it names, or reports why it cannot and
@@ -203,7 +226,7 @@ internal sealed class LibraryRuleExpander<TContext>(
     )
     {
         (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse = parses.Get(rule, options.MaxDepth);
-        if (ReportErrors(rule, parse.Diagnostics, span, diagnostics, locateInRule: true))
+        if (this.ReportErrors(rule, parse.Diagnostics, span, diagnostics, locateInRule: true))
         {
             return (null, 0);
         }
@@ -217,7 +240,7 @@ internal sealed class LibraryRuleExpander<TContext>(
             rule,
             span
         );
-        if (ReportErrors(rule, expansionDiagnostics, span, diagnostics, locateInRule: true))
+        if (this.ReportErrors(rule, expansionDiagnostics, span, diagnostics, locateInRule: true))
         {
             return (null, 0);
         }
@@ -239,7 +262,7 @@ internal sealed class LibraryRuleExpander<TContext>(
             registry,
             options
         );
-        if (ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
+        if (this.ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
         {
             return (null, 0);
         }

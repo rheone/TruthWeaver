@@ -125,7 +125,16 @@ internal sealed class RuleNodeCompiler<TContext>
             nodeLimitReported = expansionDiagnostics.Any(d => d.Code == DiagnosticCodes.MaxNodeCountExceeded),
         };
         Expression tree = compiler.Build(root, depth: startDepth);
-        List<Diagnostic> diagnostics = [.. expansionDiagnostics, .. compiler.diagnostics];
+
+        // The uses of a definition that holds a library rule reference share the expansion of the reference, so its nodes
+        // are built once for each use, with one span and one locator: a diagnostic of a library rule node is kept once,
+        // which is once for each reference site.
+        HashSet<Diagnostic> locatedOnce = [];
+        List<Diagnostic> diagnostics =
+        [
+            .. expansionDiagnostics,
+            .. compiler.diagnostics.Where((d, i) => !compiler.locatedDiagnostics.Contains(i) || locatedOnce.Add(d)),
+        ];
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         return (hasErrors ? null : tree, root, diagnostics, compiler.nodeCount);
     }

@@ -1,6 +1,6 @@
 # 82 - Warnings and information from a library rule's text never reach the caller
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: Code review of ticket 11b-2
@@ -32,9 +32,20 @@ Surface a library rule's warnings and information to the caller under their orig
 **Desired behavior:** Each non-error diagnostic from a library rule appears in the caller's result with its original code and severity, at the reference's span, and its message carries the library rule's name and position (ticket 83). Compilation still succeeds when only warnings exist.
 
 **Acceptance criteria:**
-- [ ] A test fails before and passes after: a library rule that uses a deprecated predicate produces the deprecation warning when referenced, with the library rule named.
-- [ ] A rule referenced from many sites reports a given warning once per site, not more (see ticket 80).
-- [ ] Errors still give `TRE0050`.
-- [ ] Docs state that library rule warnings surface; CHANGELOG entry; the validation list in CLAUDE.md passes.
+- [x] A test fails before and passes after: a library rule that uses a deprecated predicate produces the deprecation warning when referenced, with the library rule named.
+- [x] A rule referenced from many sites reports a given warning once per site, not more (see ticket 80).
+- [x] Errors still give `TRE0050`.
+- [x] Docs state that library rule warnings surface; CHANGELOG entry; the validation list in CLAUDE.md passes.
 
 **Blocked by:** 83 (the locator in the message).
+
+## Resolution (2026-11-01)
+
+Warnings and information came from two places, and each now reaches the caller under its original code and severity, at the reference span, with the ticket 83 locator (`In library rule 'x' at line L, column C.`) in the message:
+
+- **Build of the caller.** The caller's build of the expanded library nodes already raised node warnings such as `TRE0027` at the site; ticket 83's `RuleNodeCompiler.Build` wrapper adds the locator. `RuleNodeCompiler.Compile` now keeps a located diagnostic once (value equality), so the uses of a definition that holds the reference, which share one expansion and one site, report it once. The check build in `LibraryRuleExpander.ExpandRule` still passes no warnings on, so nothing is reported twice.
+- **Parse and expansion of the library rule.** `LibraryRuleExpander.ReportErrors` (still wraps errors as `TRE0050`) now passes a non-error on with the reference span, the locator from its library-text span, no path, a hint-only suggestion and no `EnclosedBy`. Example: the `TRE0041` unused definition lint in a library rule. A warning that a nested library rule passed on is recorded in the compile-wide `LibraryRuleParses.Surfaced` set (by reference) and passed through unchanged, so it is located once, at the inner rule.
+
+Tests (`RuleLibraryTests`): `Compile_LibraryRuleUsesADeprecatedPredicate_WarnsAtTheReferenceNamingTheLibraryRule_Test`, `Compile_LibraryRuleWithAnUnusedDefinition_ReportsTheLintNamingTheLibraryRule_Test`, `Compile_LibraryRuleWarningReferencedFromManySites_ReportsItOncePerSite_Test`, `Compile_WarningInANestedLibraryRule_ReportsItOnceNamingTheInnerRule_Test`. Red first: the lint test failed (`Assert.Single() Failure: The collection was empty`) and the once-per-site test failed (`Expected: 2, Actual: 4`). The deprecated-predicate test passed on the ticket 83 base: the caller build already reported `TRE0027` at the site, and ticket 83 added the library rule name to it (before ticket 83 it had no name, so the first criterion is met by 83 plus this ticket). Errors still give `TRE0050` (the existing `TRE0050` tests pass). Docs: `docs/rule-text.md` (Library rules), `docs/strong-k3/specification/diagnostics.md` (`TRE0050`). CHANGELOG entry under Fixed.
+
+Not changed: analyzer and lint findings computed on the whole compiled tree (`Analyzer`, `Linter`) have no span and no locator, also for nodes from a library rule.

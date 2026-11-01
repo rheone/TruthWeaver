@@ -252,6 +252,86 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// A library rule that uses a deprecated predicate gives the deprecation warning, with its own code and severity, when
+    /// it is referenced: at the reference, naming the library rule and the place in it. The rule still compiles.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleUsesADeprecatedPredicate_WarnsAtTheReferenceNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(Library(("adult", "a AND old")));
+        const string text = "c AND rule(\"adult\")";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.DeprecatedPredicate, diagnostic.Code);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("library rule 'adult' at line 1, column 7", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(text.IndexOf("rule", StringComparison.Ordinal), diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// An information diagnostic that the expansion of a library rule raises (here the unused definition lint) reaches the
+    /// caller with its own code and severity, at the reference, naming the library rule and the place in it.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAnUnusedDefinition_ReportsTheLintNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(
+            Library(("adult", "let spare = b; a")),
+            LintRules.UnusedDefinition
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"adult\")");
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnusedDefinition, diagnostic.Code);
+        Assert.Equal(DiagnosticSeverity.Info, diagnostic.Severity);
+        Assert.Contains("library rule 'adult' at line 1, column 5", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(0, diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// A warning of a library rule that another library rule references reaches the caller once, naming the library rule
+    /// that holds it.
+    /// </summary>
+    [Fact]
+    public void Compile_WarningInANestedLibraryRule_ReportsItOnceNamingTheInnerRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(
+            Library(("inner", "let spare = b; a"), ("outer", "rule(\"inner\") AND c")),
+            LintRules.UnusedDefinition
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"outer\")");
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnusedDefinition, diagnostic.Code);
+        Assert.EndsWith("In library rule 'inner' at line 1, column 5.", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A warning in a library rule is reported once for each reference site: a definition that holds the reference and is
+    /// used many times shares one site, and a second reference in the text is a second site.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWarningReferencedFromManySites_ReportsItOncePerSite_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(Library(("adult", "old")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            "let grown = rule(\"adult\"); (grown AND grown AND (grown OR c)) OR rule(\"adult\")"
+        );
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Diagnostics.Count(d => d.Code == DiagnosticCodes.DeprecatedPredicate));
+        Assert.Equal(2, result.Diagnostics.Select(d => d.Span).Distinct().Count());
+    }
+
+    /// <summary>
     /// A library rule's data source names resolve against the caller's compile: the same library rule compiles when the
     /// caller declares the data source.
     /// </summary>
@@ -588,6 +668,28 @@ public sealed class RuleLibraryTests
             )
             .Build();
         return new RuleCompiler<OrderContext>(registry, new CompilerOptions(Library: library));
+    }
+
+    // The predicates a, b and c, and old, which is deprecated in favor of a.
+    private static RuleCompiler<RuleTestContext> CreateDeprecationCompiler(
+        RuleLibrary library,
+        LintRules lints = LintRules.None
+    )
+    {
+        PredicateSchema old = PredicateSchema.NoArguments("old", "old", "A deprecated test predicate.") with
+        {
+            Deprecation = new PredicateDeprecation("a", null),
+        };
+        return new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("a", true)
+                .AddConstant("b", false)
+                .AddConstant("c", true)
+                .Add(old, (_, _, _) => ValueTask.FromResult(TruthValue.True))
+                .Build(),
+            new CompilerOptions(Lints: lints, Library: library)
+        );
     }
 
     private static DataSourceDeclarations ValidatedUserSource(IQueryValidator validator)

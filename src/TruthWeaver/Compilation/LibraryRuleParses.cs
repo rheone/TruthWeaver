@@ -12,6 +12,13 @@ internal sealed class LibraryRuleParses
 {
     private readonly Dictionary<string, (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics)> parses = [];
 
+    /// <summary>
+    /// Gets the warnings and information of library rules that a scope of this compile has already passed to the caller,
+    /// by reference. A warning of a nested library rule reaches the expansion of the library rule that references it
+    /// already located, so the outer library rule passes it on as it is and does not locate it a second time.
+    /// </summary>
+    public HashSet<Diagnostic> Surfaced { get; } = [with(ReferenceEqualityComparer.Instance)];
+
     /// <summary>Gets the parse of a library rule, and parses it the first time.</summary>
     /// <param name="rule">The library rule.</param>
     /// <param name="maxDepth">The maximum tree depth of the compile.</param>
