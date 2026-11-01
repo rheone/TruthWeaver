@@ -62,7 +62,7 @@ internal static class TraceReasons
     {
         if (fault is not null)
         {
-            return $"Unknown: the term could not be evaluated ({fault})";
+            return $"Unknown: the term faulted ({fault})";
         }
 
         return value == TruthValue.Unknown

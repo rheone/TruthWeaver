@@ -161,9 +161,9 @@ string sentence = rule.Explain(decision);
 // Satisfied because Order Type (kind: "takeout") is true and Over Limit is true.
 ```
 
-The sentence starts with `Satisfied`, `Not satisfied` or `Unknown`, for the result `True`, `False` or `Unknown`. A term is `is true`, `is false`, `is unknown` or `could not be evaluated`. The last form is for a term whose predicate faulted. The sentence never includes the text of the exception.
+The sentence starts with `Satisfied`, `Not satisfied` or `Unknown`, for the result `True`, `False` or `Unknown`. A term is `is true`, `is false`, `is unknown` or `faulted`. The last form is for a term whose predicate faulted. A term that short-circuiting skipped is a different state, which a trace calls not evaluated. The sentence never includes the text of the exception.
 
-When the result is `Unknown`, no term decided it. The sentence then names the terms that were `Unknown` or that could not be evaluated. A rule with no deciding term, such as a constant, gives the head and a period only.
+When the result is `Unknown`, no term decided it. The sentence then names the terms that were `Unknown` or that `faulted`. A rule with no deciding term, such as a constant, gives the head and a period only.
 
 The decided terms are the terms that [rule coverage](rule-coverage.md#when-a-node-decides) counts as deciding, read from the one decision. A decision made in `EvaluationMode.ShortCircuit` mode can name fewer terms than one made in `EvaluationMode.Exhaustive` mode, because a skipped operand cannot decide.
 

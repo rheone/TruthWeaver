@@ -469,7 +469,7 @@ public sealed partial class CompiledRule<TContext>
     /// <c>Satisfied because Order Type (kind: "takeout") is true and Over Limit is true.</c>. Only the terms that
     /// decided the result are named, using the label of each predicate and its argument values. When the result is
     /// <see cref="TruthValue.Unknown"/> no term decided it, so the sentence names the terms that were unknown or that
-    /// could not be evaluated. The wording has no template engine and no localization surface; use
+    /// faulted. The wording has no template engine and no localization surface; use
     /// <see cref="ExplainOptions.Labels"/> to change the label of a predicate.
     /// </summary>
     /// <param name="decision">A <see cref="Decision"/> returned from <see cref="EvaluateAsync(TContext, IServiceProvider?, DataSources?, EvaluationOptions?, CancellationToken)"/> for this same rule.</param>
