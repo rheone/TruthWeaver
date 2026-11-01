@@ -16,3 +16,4 @@ Put these facts in the brief of every dispatched ticket agent. Each one cost ear
 - The line numbers in a ticket are stale. Find the code by symbol name.
 - Non-interactive `git add -p` does not exist. Dispatch two tickets that edit the same file as separate bundles, or the agent must split the hunks by hand.
 - Settle every open decision in grilling before dispatch. The agent records a decision it was not given as an owner question in `retro-notes.md`.
+- A worktree agent starts from the default base (`main`), not from the branch of this checkout. When the work stacks on an unmerged branch, tell the agent to run `git merge --ff-only <tip>` from inside its own worktree as its first step, and to stop when it is not in a worktree under `.claude/worktrees/`. The first ticket 74 to 76 dispatch lost an agent run to the wrong base.
