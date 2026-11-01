@@ -73,6 +73,26 @@ internal static class YamlTreeParser
             return (null, diagnostics);
         }
 
+        // A rule is one document. Reading only the first of several would silently drop the rest (JSON rejects
+        // trailing content the same way), so a second document is an error located at its root node.
+        if (stream.Documents.Count > 1)
+        {
+            YamlNode second = stream.Documents[1].RootNode;
+            int start = Math.Clamp((int)second.Start.Index, 0, yaml.Length);
+            List<Diagnostic> diagnostics =
+            [
+                Diagnostic.Error(
+                    DiagnosticCodes.MalformedTree,
+                    $"The YAML text holds {stream.Documents.Count} documents, but a rule is one document.",
+                    new SourceSpan(start, Math.Max(1, (int)second.End.Index - start)),
+                    expected: "one YAML document",
+                    found: $"{stream.Documents.Count} documents",
+                    path: TreePath.Root
+                ),
+            ];
+            return (null, diagnostics);
+        }
+
         return Parse(stream.Documents[0].RootNode, maxDepth, maxNodeCount);
     }
 

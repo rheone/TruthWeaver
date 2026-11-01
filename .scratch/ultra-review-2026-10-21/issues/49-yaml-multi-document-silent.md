@@ -1,6 +1,6 @@
 # 49 - A multi-document YAML stream silently compiles only the first document
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: T2 Surfaces
@@ -51,6 +51,10 @@ Decision (standing policy for this pass): reject a multi-document YAML stream wi
 - `YamlTreeParser.Parse`.
 
 **Acceptance criteria:**
-- [ ] A YAML stream with two or more documents reports the malformed-tree diagnostic instead of compiling.
-- [ ] A single-document YAML stream is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A YAML stream with two or more documents reports the malformed-tree diagnostic instead of compiling.
+- [x] A single-document YAML stream is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced: `CompileYaml("const: true\n---\nconst: false\n")` compiled to `True` with no diagnostic. `YamlTreeParser.Parse(string)` now reports `MalformedTree` (TRE0014) at `$` when the stream holds more than one document, with the span on the root node of the second document and the document count in the message. This also covers `YamlRuleDefinitions`, which reads through the same method. One document with explicit `---` and `...` markers still compiles. `YamlDataSource` is unchanged: its XML docs state that it reads only the first document of a data file. Tests: `YamlTreeTests.CompileYaml_MoreThanOneDocument_ReportsMalformedTree_Test` (two and three documents) and `CompileYaml_OneDocumentWithMarkers_Compiles_Test`. Pages updated: `docs/rule-formats.md`, `docs/strong-k3/specification/diagnostics.md`.

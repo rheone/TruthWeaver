@@ -270,6 +270,35 @@ public sealed class YamlTreeTests
         );
     }
 
+    /// <summary>
+    /// YAML text that holds more than one document is a malformed tree located at the root node of the second document,
+    /// so no document after the first is silently dropped.
+    /// </summary>
+    [Theory]
+    [InlineData("const: true\n---\nconst: false\n")]
+    [InlineData("---\npredicate: isManager\n---\npredicate: isDepartmentHead\n---\nconst: true\n")]
+    public void CompileYaml_MoreThanOneDocument_ReportsMalformedTree_Test(string yaml)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler();
+
+        CompilationResult<RuleTestContext> result = compiler.CompileYaml(yaml);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal("$", diagnostic.Path);
+        Assert.Equal(yaml.IndexOf("---\n", 1, StringComparison.Ordinal) + 4, diagnostic.Span.Start);
+        Assert.Null(result.CompiledRule);
+    }
+
+    /// <summary>One document with an explicit <c>---</c> start and <c>...</c> end marker still compiles.</summary>
+    [Fact]
+    public void CompileYaml_OneDocumentWithMarkers_Compiles_Test()
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml("---\nconst: true\n...\n");
+
+        Assert.True(result.Succeeded);
+    }
+
     /// <summary>Compiling a YAML node subtree is structurally equal to compiling the same tree as standalone text.</summary>
     [Fact]
     public void Compile_YamlSubtree_EqualsStandaloneText_Test()

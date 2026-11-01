@@ -21,6 +21,8 @@ The grammar of the DSL is in [Rule text](rule-text.md). The JSON shape is define
 
 A predicate argument cannot be null. In JSON, `null` is an error. In YAML, an unquoted `null`, `~` or empty value is the same error, with the same diagnostic code and expectation. To pass the text "null", quote it: `role: "null"`.
 
+A YAML rule is one document. YAML text with a second document, after a `---` line, is the compile error `MalformedTree` (`TRE0014`) at the root node of the second document. The compiler does not read the first document alone.
+
 You can also build a rule without writing text in any of these formats. See [RuleBuilder](rulebuilder.md).
 
 `CanonicalText` is more than minimal. It puts parentheses around an operand when that operand is a different operator from the one it sits under, for example `a AND b OR c` prints as `(a AND b) OR c`. It does this even where precedence alone already makes the parse clear. The goal is a rule that a reader understands at a glance, without working out the precedence, and that also parses back to the same tree.
