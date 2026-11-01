@@ -1,6 +1,6 @@
 # 29 - Calendar predicates fault on a valid instant near DateTimeOffset.MinValue/MaxValue, including default(DateTimeOffset)
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F7 Predicates B
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -51,10 +51,18 @@ Decision: compute the local calendar fields precisely (from the UTC ticks plus t
 - The shared local-time computation used by the time-window, month, and day-of-week predicate families (wherever `ToOffset` is currently called) needs to produce calendar fields without that intermediate conversion.
 
 **Acceptance criteria:**
-- [ ] `default(DateTimeOffset)` with an offset like `-05:00` gives a definite, correct answer instead of a fault.
-- [ ] `DateTimeOffset.MaxValue` with a positive offset gives a definite, correct answer instead of a fault.
-- [ ] The computed calendar day/weekday/time matches what the equivalent in-range conversion would give, for instants where both are computable.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `default(DateTimeOffset)` with an offset like `-05:00` gives a definite, correct answer instead of a fault.
+- [x] `DateTimeOffset.MaxValue` with a positive offset gives a definite, correct answer instead of a fault.
+- [x] The computed calendar day/weekday/time matches what the equivalent in-range conversion would give, for instants where both are computable.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any predicate outside the time-window/month/day-of-week families.
+
+## Resolution (2026-11-01)
+
+Per the Decision, the local fields are computed precisely, not clamped. A new internal `LocalCalendar` class (`src/TruthWeaver.Predicates/LocalCalendar.cs`) reads the time of day, day of the week and month from `UtcTicks + offset.Ticks`, without building a `DateTimeOffset`. A local time up to 14 hours outside the `DateTime` range is 31 December of year 0 or 1 January of year 10000, and the class answers for that day. `BindTimeWindow`, `BindMonths` and `BindDays` call it in place of `ToOffset`. Reproduced before the fix: all 14 out-of-range rows threw `ArgumentOutOfRangeException`.
+
+Tests (`FixedOffsetPredicatesTests`): `IsOnDayOfWeek_LocalTimeOutsideTheDateTimeRange_AnswersTheLocalDay_Test`, `IsInMonth_LocalTimeOutsideTheDateTimeRange_AnswersTheLocalMonth_Test`, `IsInTimeWindow_LocalTimeOutsideTheDateTimeRange_ReadsTheLocalTimeOfDay_Test` (red before, green after; each checks the twin too), and `IsOnDayOfWeekAndIsInMonth_InstantNearTheRangeEnds_MatchTheInRangeConversion_Test`, which pins agreement with `ToOffset` where both are computable.
+
+Docs: the Edge cases of `docs/strong-k3/predicates/datetime-isondayofweek.md`, `datetime-isinmonth.md` and `datetime-isintimewindow.md`.

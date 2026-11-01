@@ -341,7 +341,7 @@ public static partial class DateTimePredicates
 
         return instant =>
         {
-            TimeSpan time = instant.ToOffset(offset).TimeOfDay;
+            TimeSpan time = LocalCalendar.TimeOfDayOf(instant, offset);
             bool afterStart = time > start || (includeStart && time == start);
             bool beforeEnd = time < windowEnd || (includeEnd && time == windowEnd);
 
@@ -507,7 +507,7 @@ public static partial class DateTimePredicates
             problems.Add(EmptyList(MonthsArgument, "month"));
         }
 
-        return offsetRead && problems.Count == 0 ? instant => months.Contains(instant.ToOffset(offset).Month) : null;
+        return offsetRead && problems.Count == 0 ? instant => months.Contains(LocalCalendar.MonthOf(instant, offset)) : null;
     }
 
     private static (
@@ -568,7 +568,7 @@ public static partial class DateTimePredicates
             problems.Add(EmptyList(DaysArgument, "day"));
         }
 
-        return offsetRead && problems.Count == 0 ? instant => days.Contains(instant.ToOffset(offset).DayOfWeek) : null;
+        return offsetRead && problems.Count == 0 ? instant => days.Contains(LocalCalendar.DayOfWeekOf(instant, offset)) : null;
     }
 
     /// <summary>

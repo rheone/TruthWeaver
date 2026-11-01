@@ -148,6 +148,127 @@ public class FixedOffsetPredicatesTests
         return AssertWindowAsync(new DateTimeOffset(2026, 10, 9, 6, 30, 0, TimeSpan.Zero), args, expected);
     }
 
+    /// <summary>
+    /// An instant whose local time in the offset falls outside the <see cref="DateTime"/> range still answers definitely.
+    /// <c>default(DateTimeOffset)</c> (Monday 0001-01-01 00:00 UTC) is Sunday 31 December of the year before at a negative
+    /// offset, and <see cref="DateTimeOffset.MaxValue"/> (Friday 9999-12-31) is Saturday 1 January of the year after at a
+    /// positive offset. The twin complements each answer.
+    /// </summary>
+    [Theory]
+    [InlineData("min", "-05:00", "Sunday", TruthValue.True)]
+    [InlineData("min", "-05:00", "Monday", TruthValue.False)]
+    [InlineData("min", "-14:00", "Sunday", TruthValue.True)]
+    [InlineData("max", "+05:00", "Saturday", TruthValue.True)]
+    [InlineData("max", "+05:00", "Friday", TruthValue.False)]
+    [InlineData("max", "+14:00", "Saturday", TruthValue.True)]
+    public async Task IsOnDayOfWeek_LocalTimeOutsideTheDateTimeRange_AnswersTheLocalDay_Test(
+        string edge,
+        string offset,
+        string day,
+        TruthValue expected
+    )
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> on) =
+            DateTimePredicates.IsOnDayOfWeek<DateContext>("on", c => c.When);
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notOn) =
+            DateTimePredicates.IsNotOnDayOfWeek<DateContext>("notOn", c => c.When);
+        PredicateArguments args = Args(("days", Strings(day)), ("offset", LiteralValue.OfString(offset)));
+        DateContext context = new(RangeEnd(edge));
+
+        Assert.Equal(expected, await RunAsync(on, context, args));
+        Assert.Equal(Complement(expected), await RunAsync(notOn, context, args));
+    }
+
+    /// <summary>
+    /// The month of an instant whose local time falls outside the <see cref="DateTime"/> range is December before the
+    /// range starts and January after it ends. The twin complements each answer.
+    /// </summary>
+    [Theory]
+    [InlineData("min", "-05:00", 12, TruthValue.True)]
+    [InlineData("min", "-05:00", 1, TruthValue.False)]
+    [InlineData("max", "+05:00", 1, TruthValue.True)]
+    [InlineData("max", "+05:00", 12, TruthValue.False)]
+    public async Task IsInMonth_LocalTimeOutsideTheDateTimeRange_AnswersTheLocalMonth_Test(
+        string edge,
+        string offset,
+        long month,
+        TruthValue expected
+    )
+    {
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inMonth) =
+            DateTimePredicates.IsInMonth<DateContext>("inMonth", c => c.When);
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> notInMonth) =
+            DateTimePredicates.IsNotInMonth<DateContext>("notInMonth", c => c.When);
+        PredicateArguments args = Args(("months", Longs(month)), ("offset", LiteralValue.OfString(offset)));
+        DateContext context = new(RangeEnd(edge));
+
+        Assert.Equal(expected, await RunAsync(inMonth, context, args));
+        Assert.Equal(Complement(expected), await RunAsync(notInMonth, context, args));
+    }
+
+    /// <summary>
+    /// The time of day of an instant whose local time falls outside the <see cref="DateTime"/> range is read exactly:
+    /// <c>default(DateTimeOffset)</c> at -05:00 is 19:00, and <see cref="DateTimeOffset.MaxValue"/> at +05:00 is the last
+    /// tick before 05:00.
+    /// </summary>
+    [Theory]
+    [InlineData("min", "-05:00", "18:00", "20:00", TruthValue.True)]
+    [InlineData("min", "-05:00", "19:00:01", "20:00", TruthValue.False)]
+    [InlineData("max", "+05:00", "04:00", "05:00", TruthValue.True)]
+    [InlineData("max", "+05:00", "04:00", "04:59:59", TruthValue.False)]
+    public Task IsInTimeWindow_LocalTimeOutsideTheDateTimeRange_ReadsTheLocalTimeOfDay_Test(
+        string edge,
+        string offset,
+        string start,
+        string end,
+        TruthValue expected
+    )
+    {
+        PredicateArguments args = Window(("start", start), ("end", end), ("offset", offset));
+
+        return AssertWindowAsync(RangeEnd(edge), args, expected);
+    }
+
+    /// <summary>
+    /// Close to the ends of the range, where converting to the offset still succeeds, the day of the week and the month
+    /// the predicates read are the ones <see cref="DateTimeOffset.ToOffset"/> gives.
+    /// </summary>
+    [Theory]
+    [InlineData("min", 14 * 60, "-14:00")]
+    [InlineData("min", 24 * 60, "-14:00")]
+    [InlineData("min", 5 * 60, "-05:00")]
+    [InlineData("max", -14 * 60, "+14:00")]
+    [InlineData("max", -24 * 60, "+14:00")]
+    [InlineData("max", -6 * 60, "+05:30")]
+    public async Task IsOnDayOfWeekAndIsInMonth_InstantNearTheRangeEnds_MatchTheInRangeConversion_Test(
+        string edge,
+        int minutesFromEdge,
+        string offset
+    )
+    {
+        DateTimeOffset instant = RangeEnd(edge).AddMinutes(minutesFromEdge);
+        DateTimeOffset local = instant.ToOffset(TimeSpan.Parse(offset.TrimStart('+'), CultureInfo.InvariantCulture));
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> on) =
+            DateTimePredicates.IsOnDayOfWeek<DateContext>("on", c => c.When);
+        (_, Func<DateContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> inMonth) =
+            DateTimePredicates.IsInMonth<DateContext>("inMonth", c => c.When);
+        DateContext context = new(instant);
+
+        TruthValue onDay = await RunAsync(
+            on,
+            context,
+            Args(("days", Strings(local.DayOfWeek.ToString())), ("offset", LiteralValue.OfString(offset)))
+        );
+        TruthValue inLocalMonth = await RunAsync(
+            inMonth,
+            context,
+            Args(("months", Longs(local.Month)), ("offset", LiteralValue.OfString(offset)))
+        );
+
+        Assert.Equal(TruthValue.True, onDay);
+        Assert.Equal(TruthValue.True, inLocalMonth);
+    }
+
     /// <summary>An offset that is not 'Z' or '±hh:mm' in range is a problem the compiler reports, and a valid one is not.</summary>
     [Theory]
     [InlineData("Z", false)]
@@ -381,6 +502,12 @@ public class FixedOffsetPredicatesTests
         }
 
         return new PredicateArguments(args, new HashSet<string>(deferred, StringComparer.Ordinal));
+    }
+
+    // "min" is default(DateTimeOffset), which equals DateTimeOffset.MinValue; "max" is DateTimeOffset.MaxValue.
+    private static DateTimeOffset RangeEnd(string edge)
+    {
+        return edge == "min" ? default : DateTimeOffset.MaxValue;
     }
 
     private static DateTimeOffset At(string date, string localTime, string offset)
