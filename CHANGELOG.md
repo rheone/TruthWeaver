@@ -568,6 +568,8 @@ copyright line reads 2026.
 
 ### Fixed
 
+- A bad `rule("name")` reference in a `let` definition body gives one diagnostic, however many times the rule uses the
+  definition. Before, an unknown rule (`TRE0047`) or a stale pin (`TRE0048`) gave the same diagnostic once for each use.
 - `OperatorInfo.Describe` and `Outline()` give a `FORALL` or `EXISTS` node its label and a description, and a misspelled tree-format
   op such as `foral` gets a "did you mean `forall`" suggestion.
 - A decision explanation and a tool trace reason say that a faulted term `faulted` (the sentence read "could not be evaluated"). A term that

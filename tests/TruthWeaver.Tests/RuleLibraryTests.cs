@@ -273,6 +273,51 @@ public sealed class RuleLibraryTests
         Assert.Contains(DiagnosticCodes.MaxNodeCountExceeded, diagnostic.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A <c>let</c> definition whose body holds a bad library reference, used many times, reports the error once: the
+    /// uses share the one reference site, so the same code, span and message are not repeated for each use.
+    /// </summary>
+    /// <param name="reference">The bad library reference in the definition body.</param>
+    /// <param name="code">The diagnostic code the reference gives.</param>
+    [Theory]
+    [InlineData("rule(\"missing\")", DiagnosticCodes.UnknownLibraryRule)]
+    [InlineData(
+        "rule(\"adult\", hash: \"0000000000000000000000000000000000000000000000000000000000000000\")",
+        DiagnosticCodes.LibraryRuleHashMismatch
+    )]
+    [InlineData("rule(\"first\")", DiagnosticCodes.LibraryRuleCycleDetected)]
+    public void Compile_DefinitionHoldingABadReferenceUsedManyTimes_ReportsTheErrorOnce_Test(string reference, string code)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("adult", "a AND b"), ("first", "rule(\"second\") AND a"), ("second", "b OR rule(\"first\")"))
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let bad = {reference}; bad AND bad AND (bad OR c)");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(code, diagnostic.Code);
+    }
+
+    /// <summary>
+    /// Inside a library rule every reference takes the site of the outermost reference, so an unpinned and a stale pinned
+    /// reference to the same rule share a site: the stale pin is still reported after the unpinned reference expands.
+    /// </summary>
+    [Fact]
+    public void Compile_UnpinnedAndStalePinnedReferenceInOneLibraryRule_ReportsTheStalePin_Test()
+    {
+        string stale = new('0', 64);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("adult", "a AND b"), ("outer", $"rule(\"adult\") OR rule(\"adult\", hash: \"{stale}\")"))
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"outer\")");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.LibraryRuleHashMismatch, diagnostic.Code);
+    }
+
     private static RuleLibrary Library(params (string Name, string Text)[] rules)
     {
         return new RuleLibrary(rules.Select(rule => new KeyValuePair<string, string>(rule.Name, rule.Text)));

@@ -14,9 +14,10 @@ using TruthWeaver.Registry;
 /// <param name="options">The compiler options of the compile, which hold the library and its data source names.</param>
 internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> registry, CompilerOptions options)
 {
-    // The expansion of each library rule for each site, or null when it failed; keyed by the rule name as the library
-    // holds it, so the case of the reference does not matter.
-    private readonly Dictionary<(string Name, SourceSpan Site), RuleNode?> expanded = [];
+    // The expansion of each reference for each site, or null when it failed. The pin is part of the key, so a pinned and
+    // an unpinned reference at one site are each checked. The name and the pin are upper-cased in the key, because the
+    // library and the pin check compare them without case.
+    private readonly Dictionary<(string Name, string? Pin, SourceSpan Site), RuleNode?> expanded = [];
 
     /// <summary>Expands one reference.</summary>
     /// <param name="reference">The reference.</param>
@@ -32,66 +33,21 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
     )
     {
         SourceSpan span = site ?? reference.Span;
-        if (options.Library is null || !options.Library.TryGet(reference.Name, out LibraryRule? rule))
-        {
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.UnknownLibraryRule,
-                    $"'{reference.Name}' is not a rule in the compiler's rule library.",
-                    span,
-                    expected: "the name of a rule in the compiler's rule library",
-                    found: $"'{reference.Name}'",
-                    suggestion: this.NearestNameHint(reference.Name)
-                )
-            );
-            return new ErrorNode(span);
-        }
-
-        // A hash is hexadecimal digits, so the pin matches without case.
-        if (reference.PinnedHash is { } pin && !string.Equals(pin, rule.Hash, StringComparison.OrdinalIgnoreCase))
-        {
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.LibraryRuleHashMismatch,
-                    $"Library rule '{rule.Name}' has content hash {rule.Hash}, not the pinned hash {pin}.",
-                    span,
-                    expected: $"the current content hash {rule.Hash}",
-                    found: $"the pinned hash {pin}",
-                    suggestion: new DiagnosticSuggestion(
-                        DiagnosticSuggestionKind.Hint,
-                        "Check the change to the library rule, then update the pin or remove it."
-                    )
-                )
-            );
-            return new ErrorNode(span);
-        }
-
-        int cycleStart = libraryChain.FindIndex(name => string.Equals(name, rule.Name, StringComparison.OrdinalIgnoreCase));
-        if (cycleStart >= 0)
-        {
-            string path = string.Join(" -> ", [.. libraryChain.Skip(cycleStart), rule.Name]);
-            diagnostics.Add(
-                Diagnostic.Error(
-                    DiagnosticCodes.LibraryRuleCycleDetected,
-                    $"Library rule cycle: {path}.",
-                    span,
-                    expected: "no library rule that references itself through a chain of library rules",
-                    found: $"the cycle {path}"
-                )
-            );
-            return new ErrorNode(span);
-        }
 
         // A library rule takes no arguments, so its expansion for one site is the same wherever the site references it.
         // Without this, a chain of library rules that each reference the one below many times is expanded once for each
-        // path through the chain, which grows exponentially with the depth of the chain. A failed expansion has already
-        // reported its errors, so a later reference to it reports nothing more.
-        if (!this.expanded.TryGetValue((rule.Name, span), out RuleNode? body))
+        // path through the chain, which grows exponentially with the depth of the chain. A failed reference has already
+        // reported its errors, so a later reference to it at the same site reports nothing more: that holds for an
+        // unknown rule, a stale pin and a cycle as for an error in the library rule's text. The uses of a definition share
+        // the site of a reference in its body, so the cache is consulted before any check.
+        (string, string?, SourceSpan) key = (reference.Name.ToUpperInvariant(), reference.PinnedHash?.ToUpperInvariant(), span);
+        if (this.expanded.TryGetValue(key, out RuleNode? cached))
         {
-            body = this.ExpandRule(rule, [.. libraryChain, rule.Name], span, diagnostics);
-            this.expanded[(rule.Name, span)] = body;
+            return cached ?? new ErrorNode(span);
         }
 
+        RuleNode? body = this.Resolve(reference, libraryChain, span, diagnostics);
+        this.expanded[key] = body;
         return body ?? new ErrorNode(span);
     }
 
@@ -135,6 +91,68 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
             found.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => AsCallerDiagnostic(rule, d, span))
         );
         return diagnostics.Count > before;
+    }
+
+    // Checks one reference that is not in the cache and expands the library rule it names, or reports why it cannot and
+    // returns null.
+    private RuleNode? Resolve(
+        LibraryReferenceNode reference,
+        List<string> libraryChain,
+        SourceSpan span,
+        List<Diagnostic> diagnostics
+    )
+    {
+        if (options.Library is null || !options.Library.TryGet(reference.Name, out LibraryRule? rule))
+        {
+            diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.UnknownLibraryRule,
+                    $"'{reference.Name}' is not a rule in the compiler's rule library.",
+                    span,
+                    expected: "the name of a rule in the compiler's rule library",
+                    found: $"'{reference.Name}'",
+                    suggestion: this.NearestNameHint(reference.Name)
+                )
+            );
+            return null;
+        }
+
+        // A hash is hexadecimal digits, so the pin matches without case.
+        if (reference.PinnedHash is { } pin && !string.Equals(pin, rule.Hash, StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.LibraryRuleHashMismatch,
+                    $"Library rule '{rule.Name}' has content hash {rule.Hash}, not the pinned hash {pin}.",
+                    span,
+                    expected: $"the current content hash {rule.Hash}",
+                    found: $"the pinned hash {pin}",
+                    suggestion: new DiagnosticSuggestion(
+                        DiagnosticSuggestionKind.Hint,
+                        "Check the change to the library rule, then update the pin or remove it."
+                    )
+                )
+            );
+            return null;
+        }
+
+        int cycleStart = libraryChain.FindIndex(name => string.Equals(name, rule.Name, StringComparison.OrdinalIgnoreCase));
+        if (cycleStart >= 0)
+        {
+            string path = string.Join(" -> ", [.. libraryChain.Skip(cycleStart), rule.Name]);
+            diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.LibraryRuleCycleDetected,
+                    $"Library rule cycle: {path}.",
+                    span,
+                    expected: "no library rule that references itself through a chain of library rules",
+                    found: $"the cycle {path}"
+                )
+            );
+            return null;
+        }
+
+        return this.ExpandRule(rule, [.. libraryChain, rule.Name], span, diagnostics);
     }
 
     // Parses, expands and checks one library rule, or reports its errors and returns null.
