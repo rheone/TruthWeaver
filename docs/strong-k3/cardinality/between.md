@@ -206,7 +206,7 @@ Rejected at compile time, in the DSL, JSON, YAML and `RuleBuilder` alike:
 
 - Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
 - The trace labels the node `BETWEEN(min, max)`, for example `BETWEEN(1, 2)`. Operand order is kept.
-- `ExpandToPrimitives` rewrites `BETWEEN(1, 2, a, b, c)` to `AtLeast(1, a, b, c) AND AtMost(2, a, b, c)`. `Canonicalize` keeps `BETWEEN`. `Simplify` keeps it unless an operand is a constant: then it may expand the node to `AtLeast` and `AtMost` thresholds or fold it, for example `BETWEEN(1, 2, True, a, b)` becomes `AtMost(1, a, b)`. The canonical printer writes `BETWEEN(1, 2, a, b, c)`, and every tree-printer style keeps the word.
+- `ExpandToPrimitives` rewrites `BETWEEN(1, 2, a, b, c)` to `AtLeast(1, a, b, c) AND AtMost(2, a, b, c)`. `Canonicalize` keeps `BETWEEN`. `Simplify` keeps it unless an operand is a constant: then it rewrites the node to `AtLeast` and `AtMost` thresholds, or to a constant when the constants settle the result, for example `BETWEEN(1, 2, True, a, b)` becomes `AtMost(1, a, b)`. The canonical printer writes `BETWEEN(1, 2, a, b, c)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "between", "operands": [...], "min": 1, "max": 2}`.
 
 ## Related operations

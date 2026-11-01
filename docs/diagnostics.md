@@ -92,6 +92,7 @@ Suggestions cover these cases:
 - unknown predicate and operator names
 - undeclared predicate argument names
 - a lone `&` or `|`
+- a misspelled tree-format op string, which includes the quantifier words `forall` and `exists`, for example `foral`
 
 ## Lint rules (opt-in)
 

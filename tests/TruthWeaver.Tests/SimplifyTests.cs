@@ -283,16 +283,28 @@ public sealed class SimplifyTests
     }
 
     /// <summary>
-    /// <c>BETWEEN</c> and <c>NONE</c> stay as the same node through <c>Simplify</c> and <c>Canonicalize</c> while no operand is a constant.
+    /// <c>Simplify</c> keeps <c>BETWEEN</c> and <c>NONE</c> as the same node while no operand is a constant.
     /// </summary>
     [Theory]
     [InlineData("BETWEEN(1, 2, a, b, c)", "BETWEEN")]
     [InlineData("NONE(a, b)", "NONE")]
-    public void SimplifyAndCanonicalize_NoConstantOperand_KeepTheCardinalityNode_Test(string ruleText, string word)
+    public void Simplify_NoConstantOperand_KeepsTheCardinalityNode_Test(string ruleText, string word)
     {
         K3Rule original = K3Rule.TryCreate(ruleText, 3)!;
 
         Assert.Contains(word, original.Compiled.Simplify().GetRuleOrThrow().CanonicalText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>Canonicalize</c> keeps <c>BETWEEN</c> and <c>NONE</c> as the same node while no operand is a constant.
+    /// </summary>
+    [Theory]
+    [InlineData("BETWEEN(1, 2, a, b, c)", "BETWEEN")]
+    [InlineData("NONE(a, b)", "NONE")]
+    public void Canonicalize_NoConstantOperand_KeepsTheCardinalityNode_Test(string ruleText, string word)
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 3)!;
+
         Assert.Contains(word, original.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText, StringComparison.Ordinal);
     }
 

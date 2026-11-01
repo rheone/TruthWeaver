@@ -155,7 +155,7 @@ By De Morgan's laws it is `AND` of the negated operands:
 AND(NOT(a), NOT(b), NOT(c))
 ```
 
-They stay distinct Operations. `NONE` is a cardinality operation and keeps its own node, name, JSON `op` and trace label when a rule round-trips. Unlike [ANY](any.md) and [ALL](all.md), the rewrites that normalise a rule (`Simplify`, `Canonicalize`) leave `NONE` as `NONE` rather than expanding it to `NOT OR`. The one exception is `Simplify` on a `NONE` that has a constant operand, which may expand or fold it (see [Evaluation behavior](#evaluation-behavior)).
+They stay distinct Operations. `NONE` is a cardinality operation and keeps its own node, name, JSON `op` and trace label when a rule round-trips. Unlike [ANY](any.md) and [ALL](all.md), the rewrites that normalise a rule (`Simplify`, `Canonicalize`) leave `NONE` as `NONE` rather than expanding it to `NOT OR`. The one exception is `Simplify` on a `NONE` that has a constant operand, which rewrites it (see [Evaluation behavior](#evaluation-behavior)).
 
 ### Other forms
 
@@ -209,7 +209,7 @@ LESSTHAN(1, ...)
 
 - Every operand runs in both evaluation modes, and none is recorded as `NotEvaluated`. A faulting operand always records its fault, even when the result is already settled (see [evaluation](../specification/evaluation.md#evaluation-modes)).
 - The trace labels the node `NONE`. Operand order is kept.
-- `ExpandToPrimitives` rewrites `NONE(...)` to `AtMost(0, ...)`. `Canonicalize` keeps `NONE`. `Simplify` keeps it unless an operand is a constant: then it may expand or fold the node, for example `NONE(True, a)` becomes `False`. The canonical printer writes `NONE(a, b)`, and every tree-printer style keeps the word.
+- `ExpandToPrimitives` rewrites `NONE(...)` to `AtMost(0, ...)`. `Canonicalize` keeps `NONE`. `Simplify` keeps it unless an operand is a constant: then it rewrites the node to `AtMost` or to a constant, for example `NONE(True, a)` becomes `False`. The canonical printer writes `NONE(a, b)`, and every tree-printer style keeps the word.
 - JSON and YAML print `{"op": "none", "operands": [...]}`.
 
 ## Related operations

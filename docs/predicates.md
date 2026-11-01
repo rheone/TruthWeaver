@@ -200,7 +200,7 @@ builder.AddCollection<OrderLine>(
 );
 ```
 
-An optional fourth parameter, `elementSource`, projects one element to an `IDataSource`. A quantifier body over that collection can then read the element untyped with `from(variable, "...")`, as well as with the typed element predicates. Without it, only the typed path works. The rule text is in [Quantifiers](rule-text.md#quantifiers), and the meaning is in the [Quantifiers reference](strong-k3/quantifiers/README.md).
+An optional fourth parameter, `elementSource`, projects one element to an `IDataSource`. A quantifier body over that collection can then read the element untyped with `from("line", "...")`, as well as with the typed element predicates. Without it, only the typed path works. The rule text is in [Quantifiers](rule-text.md#quantifiers), and the meaning is in the [Quantifiers reference](strong-k3/quantifiers/README.md).
 
 ## 0 arguments, stateless lambda
 

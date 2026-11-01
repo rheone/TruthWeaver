@@ -29,8 +29,8 @@ public static class OperatorInfo
         {
             string quantifierDescription =
                 quantifier.Kind == QuantifierKind.ForAll
-                    ? "Universal quantifier: the generalized AND over a registered collection binding's elements (ADR-0010)."
-                    : "Existential quantifier: the generalized OR over a registered collection binding's elements (ADR-0010).";
+                    ? "Universal quantifier: the generalized AND over a registered collection binding's elements."
+                    : "Existential quantifier: the generalized OR over a registered collection binding's elements.";
             return new OperatorDescriptor(QuantifierText.Label(quantifier.Kind), quantifierDescription);
         }
 
