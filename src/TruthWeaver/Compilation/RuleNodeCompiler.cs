@@ -75,6 +75,11 @@ internal sealed class RuleNodeCompiler<TContext>
     /// quantifier counts as one node plus its body, once"), and <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>
     /// fires against the combined total, at whichever node (outer or body) first crosses it.
     /// </param>
+    /// <param name="expandLibraryReferences">
+    /// <see langword="true"/> for the compile of a whole rule, which expands the <c>rule("name")</c> references anywhere
+    /// in <paramref name="root"/>; <see langword="false"/> (the default) for a tree that is already expanded, such as a
+    /// quantifier body, so it is not walked again to look for a reference.
+    /// </param>
     /// <returns>
     /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/> diagnostic was
     /// produced), the already-expanded raw tree <see cref="Build"/> actually built from (the same as
@@ -91,29 +96,29 @@ internal sealed class RuleNodeCompiler<TContext>
         int startDepth = 1,
         int startQuantifierDepth = 0,
         IReadOnlyList<string>? inheritedVariables = null,
-        int startNodeCount = 0
+        int startNodeCount = 0,
+        bool expandLibraryReferences = false
     )
     {
-        List<Diagnostic> expansionDiagnostics = [];
-        if (root is RuleDocumentNode document)
+        IReadOnlyList<Diagnostic> expansionDiagnostics = [];
+
+        // The definitions and library references of a rule are expanded once, over the whole tree, before the build. A
+        // quantifier body and a library rule being checked arrive here already expanded, so only the compile of a whole
+        // rule looks for a library reference, and a rule with references but no definitions expands as a document that
+        // declares none.
+        if (root is RuleDocumentNode || (expandLibraryReferences && DefinitionExpander.HasLibraryReference(root)))
         {
-            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(document, registry, options);
-            expansionDiagnostics.AddRange(diagnosed);
-        }
-        else if (DefinitionExpander.HasLibraryReference(root))
-        {
-            // A rule with library references but no definitions expands as a document that declares none.
-            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(
-                new RuleDocumentNode([], root, root.Span),
-                registry,
-                options
-            );
-            expansionDiagnostics.AddRange(diagnosed);
+            RuleDocumentNode document = root as RuleDocumentNode ?? new RuleDocumentNode([], root, root.Span);
+            (root, expansionDiagnostics) = DefinitionExpander.Expand(document, registry, options);
         }
 
         RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? [])
         {
             nodeCount = startNodeCount,
+
+            // The expansion stops at the node count limit and reports it, and the build of the cut-short tree must not
+            // report it a second time.
+            nodeLimitReported = expansionDiagnostics.Any(d => d.Code == DiagnosticCodes.MaxNodeCountExceeded),
         };
         Expression tree = compiler.Build(root, depth: startDepth);
         List<Diagnostic> diagnostics = [.. expansionDiagnostics, .. compiler.diagnostics];

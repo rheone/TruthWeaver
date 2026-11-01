@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using NSubstitute;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -318,6 +319,63 @@ public sealed class RuleLibraryTests
         Assert.Equal(DiagnosticCodes.LibraryRuleHashMismatch, diagnostic.Code);
     }
 
+    /// <summary>
+    /// The nodes that each reference adds count against <see cref="CompilerOptions.MaxNodeCount"/> while the references
+    /// expand: the compile stops at the node count limit with one diagnostic, and the references past the limit are not
+    /// expanded or compiled. The query validator of the library rule's data source counts the compiles.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleReferencedPastTheNodeLimit_StopsExpandingAtTheLimit_Test()
+    {
+        const int references = 20;
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate(Arg.Any<string>()).Returns([]);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("admin", "hasRole(role: from(\"user\", \"$.role\")) AND a AND c AND NOT b")),
+            ValidatedUserSource(validator),
+            maxNodeCount: 30
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            string.Join(" OR ", Enumerable.Repeat("rule(\"admin\")", references))
+        );
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MaxNodeCountExceeded, diagnostic.Code);
+        Assert.True(validator.ReceivedCalls().Count() < references);
+    }
+
+    /// <summary>
+    /// A library rule referenced from many sites is checked once per compile: each reference is compiled once in the
+    /// compiled rule, and the library rule once more to check its names.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleReferencedFromManySites_IsCheckedOncePerCompile_Test()
+    {
+        const int references = 3;
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate(Arg.Any<string>()).Returns([]);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("admin", "hasRole(role: from(\"user\", \"$.role\"))")),
+            ValidatedUserSource(validator)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            string.Join(" AND ", Enumerable.Repeat("rule(\"admin\")", references))
+        );
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(references + 1, validator.ReceivedCalls().Count());
+    }
+
+    private static DataSourceDeclarations ValidatedUserSource(IQueryValidator validator)
+    {
+        DataSourceDeclarations dataSources = [];
+        dataSources.Add("user", validator);
+        return dataSources;
+    }
+
     private static RuleLibrary Library(params (string Name, string Text)[] rules)
     {
         return new RuleLibrary(rules.Select(rule => new KeyValuePair<string, string>(rule.Name, rule.Text)));
@@ -332,7 +390,8 @@ public sealed class RuleLibraryTests
 
     private static RuleCompiler<RuleTestContext> CreateCompiler(
         RuleLibrary? library,
-        DataSourceDeclarations? dataSources = null
+        DataSourceDeclarations? dataSources = null,
+        int maxNodeCount = 512
     )
     {
         return new(
@@ -343,7 +402,7 @@ public sealed class RuleLibraryTests
                 .AddConstant("c", true)
                 .AddStringArgPredicate("hasRole", "role", "admin")
                 .Build(),
-            new CompilerOptions(DataSources: dataSources, Library: library)
+            new CompilerOptions(MaxNodeCount: maxNodeCount, DataSources: dataSources, Library: library)
         );
     }
 }

@@ -25,7 +25,18 @@ internal sealed class NodeCountGuard(int maxNodeCount)
     /// </returns>
     public bool TryCount(List<Diagnostic> diagnostics, SourceSpan span, string? path)
     {
-        this.count++;
+        return this.TryCount(1, diagnostics, span, path);
+    }
+
+    /// <summary>Counts more nodes at once, such as the nodes of an expanded library rule.</summary>
+    /// <param name="nodes">How many nodes to count; zero only checks the budget.</param>
+    /// <param name="diagnostics">The sink to add the over-limit diagnostic to, the first time the budget is exceeded.</param>
+    /// <param name="span">The span of the nodes being counted, used as the diagnostic's location.</param>
+    /// <param name="path">The node's path in the document, or <see langword="null"/> for DSL text.</param>
+    /// <returns><see langword="true"/> while the count is still within the budget; otherwise <see langword="false"/>.</returns>
+    public bool TryCount(int nodes, List<Diagnostic> diagnostics, SourceSpan span, string? path)
+    {
+        this.count += nodes;
         if (this.count <= maxNodeCount)
         {
             return true;

@@ -106,7 +106,8 @@ internal static class DefinitionExpander
             unused.Add(definition.Name);
         }
 
-        RuleNode ExpandReference(LibraryReferenceNode reference) => library.Expand(reference, libraryChain, site, diagnostics);
+        (RuleNode Body, int NodeCount) ExpandReference(LibraryReferenceNode reference) =>
+            library.Expand(reference, libraryChain, site, diagnostics);
 
         Expander expander = new(definitionsByName, options, diagnostics, ExpandReference, site);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
@@ -246,7 +247,7 @@ internal static class DefinitionExpander
         Dictionary<string, DefinitionNode> definitions,
         CompilerOptions options,
         List<Diagnostic> diagnostics,
-        Func<LibraryReferenceNode, RuleNode> expandReference,
+        Func<LibraryReferenceNode, (RuleNode Body, int NodeCount)> expandReference,
         SourceSpan? site
     )
     {
@@ -290,8 +291,7 @@ internal static class DefinitionExpander
                     : node,
                 UseNode use => this.ExpandUse(use, parameters, chain, unused),
 
-                // A library rule is a complete rule: it takes no arguments, so the parameters in scope here do not reach it.
-                LibraryReferenceNode reference => WithLeadingNote(expandReference(reference), reference.Note),
+                LibraryReferenceNode reference => this.ExpandReference(reference),
 
                 // A term's own argument values are RawLiteral, not RuleNode: parameters substitute only at the
                 // operand level (ADR-0008 decision 5), so a term's arguments never contain a use or parameter.
@@ -376,6 +376,20 @@ internal static class DefinitionExpander
             RuleNode carried = result with { Path = source.Path };
             carried.Note = source.Note;
             return carried;
+        }
+
+        // A library rule is a complete rule: it takes no arguments, so the parameters in scope here do not reach it. The
+        // reference itself was counted on entry to ExpandNode; the other nodes of the library rule count here, so many
+        // references to a large library rule stop at MaxNodeCount instead of expanding every one before the build counts.
+        private RuleNode ExpandReference(LibraryReferenceNode reference)
+        {
+            (RuleNode body, int nodeCount) = expandReference(reference);
+            if (!this.nodeBudget.TryCount(nodeCount - 1, diagnostics, site ?? reference.Span, reference.Path))
+            {
+                return new ErrorNode(reference.Span) with { Path = reference.Path };
+            }
+
+            return WithLeadingNote(body, reference.Note);
         }
 
         private IReadOnlyList<RuleNode> ExpandAll(

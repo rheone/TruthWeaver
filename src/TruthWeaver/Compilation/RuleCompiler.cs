@@ -231,7 +231,7 @@ public sealed class RuleCompiler<TContext>(
         }
 
         (Expression? tree, RuleNode expandedRoot, IReadOnlyList<Diagnostic> validationDiagnostics, _) =
-            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.Options);
+            RuleNodeCompiler<TContext>.Compile(root, this.registry, this.Options, expandLibraryReferences: true);
         diagnostics.AddRange(validationDiagnostics);
 
         if (tree is not null)
