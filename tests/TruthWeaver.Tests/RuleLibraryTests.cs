@@ -179,6 +179,79 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// A diagnostic from one node of a library rule with two predicates names the library rule and the line and column of
+    /// that node in the library rule text, so the two predicates can be told apart. The span stays at the reference.
+    /// </summary>
+    [Fact]
+    public void Compile_OneOfTwoPredicatesInALibraryRuleFails_MessageNamesTheRuleAndThePosition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND\n  notRegistered")));
+        const string text = "c AND rule(\"adult\")";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("library rule 'adult' at line 2, column 3", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(text.IndexOf("rule", StringComparison.Ordinal), diagnostic.Span.Start);
+        Assert.Equal(text.Length, diagnostic.Span.End);
+    }
+
+    /// <summary>
+    /// A syntax error in a library rule names the library rule and the line and column of the error in the library rule
+    /// text.
+    /// </summary>
+    [Fact]
+    public void Compile_SyntaxErrorInALibraryRule_MessageNamesTheRuleAndThePosition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"adult\")");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("library rule 'adult' at line 1, column", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A diagnostic about the caller's own text names no library rule, also when the rule references a library rule.
+    /// </summary>
+    [Fact]
+    public void Compile_ErrorInTheCallerText_MessageNamesNoLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND b")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("notRegistered AND rule(\"adult\")");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, diagnostic.Code);
+        Assert.DoesNotContain("library rule", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(0, diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// A trace entry for a node from a library rule names the library rule and the position of the node in the library
+    /// rule text; an entry for a node of the caller's own text is unchanged.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_NodeFromALibraryRule_TraceEntryNamesTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND NOT b")));
+        CompiledRule<RuleTestContext> rule = Compile(compiler, "c AND rule(\"adult\")");
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("c", texts);
+        Assert.Contains("a (in library rule 'adult' at line 1, column 1)", texts);
+        Assert.Contains("b (in library rule 'adult' at line 1, column 11)", texts);
+    }
+
+    /// <summary>
     /// A library rule's data source names resolve against the caller's compile: the same library rule compiles when the
     /// caller declares the data source.
     /// </summary>

@@ -255,7 +255,8 @@ public sealed class RuleCompiler<TContext>(
                 this.registry,
                 this.logger,
                 this.Options,
-                NoteCollector.Collect(expandedRoot, tree)
+                NoteCollector.Collect(expandedRoot, tree),
+                LibraryLocatorCollector.Collect(expandedRoot, tree)
             );
         }
 

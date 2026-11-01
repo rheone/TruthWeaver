@@ -126,12 +126,14 @@ internal sealed class Evaluator<TContext>(
         };
     }
 
-    /// <summary>Appends a flat trace entry, prefixed with this evaluator's element scope path, if any (ADR-0010 decision 7).</summary>
-    private void AddTraceEntry(string description, TruthValue? value, bool notEvaluated)
+    /// <summary>
+    /// Appends a flat trace entry for <paramref name="node"/>, prefixed with this evaluator's element scope path, if any
+    /// (ADR-0010 decision 7), and followed by the library locator of the node when it comes from a library rule.
+    /// </summary>
+    private void AddTraceEntry(Expression node, string description, TruthValue? value, bool notEvaluated)
     {
-        this.state.AddTrace(
-            new TraceEntry(this.scope is null ? description : $"{this.scope}: {description}", value, notEvaluated)
-        );
+        string located = TraceText.WithLibraryLocator(description, this.state.LibraryLocatorOf(node));
+        this.state.AddTrace(new TraceEntry(this.scope is null ? located : $"{this.scope}: {located}", value, notEvaluated));
     }
 
     private async ValueTask<EvalResult> EvalAsync(Expression node)
@@ -139,7 +141,7 @@ internal sealed class Evaluator<TContext>(
         if (this.state.Aborted)
         {
             string skippedDescription = TraceText.Of(node);
-            this.AddTraceEntry(skippedDescription, null, true);
+            this.AddTraceEntry(node, skippedDescription, null, true);
             return new EvalResult(
                 TruthValue.Unknown,
                 new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
@@ -153,7 +155,7 @@ internal sealed class Evaluator<TContext>(
             case ConstantExpression c:
                 TruthValue constantValue = c.Value;
                 string constantDescription = TraceText.Of(node);
-                this.AddTraceEntry(constantDescription, constantValue, false);
+                this.AddTraceEntry(node, constantDescription, constantValue, false);
                 return new EvalResult(
                     constantValue,
                     new TraceNode(constantDescription, constantValue, false, EquatableArray<TraceNode>.Empty)
@@ -167,7 +169,7 @@ internal sealed class Evaluator<TContext>(
                 // is only known once they are evaluated (a quantifier's binding records its entry the same way).
                 // The entry reuses the trace tree node's label, so both views show the same text for the node.
                 EvalResult result = await this.EvalOperatorAsync(node).ConfigureAwait(false);
-                this.AddTraceEntry(result.Node.Text, result.Value, false);
+                this.AddTraceEntry(node, result.Node.Text, result.Value, false);
                 return result;
         }
     }
@@ -498,7 +500,7 @@ internal sealed class Evaluator<TContext>(
     private EvalResult Skip(Expression node)
     {
         string skippedDescription = TraceText.Of(node);
-        this.AddTraceEntry(skippedDescription, null, true);
+        this.AddTraceEntry(node, skippedDescription, null, true);
         return new EvalResult(
             TruthValue.Unknown,
             new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
@@ -518,7 +520,7 @@ internal sealed class Evaluator<TContext>(
                 new TermIdentity(node.CollectionName, []),
                 new KeyNotFoundException($"No collection named '{node.CollectionName}' is registered.")
             );
-            this.AddTraceEntry(description, TruthValue.Unknown, false);
+            this.AddTraceEntry(node, description, TruthValue.Unknown, false);
             return new EvalResult(
                 TruthValue.Unknown,
                 new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
@@ -571,7 +573,7 @@ internal sealed class Evaluator<TContext>(
             if (stop || this.state.Aborted)
             {
                 string skippedDescription = TraceText.Of(operand);
-                this.AddTraceEntry(skippedDescription, null, true);
+                this.AddTraceEntry(operand, skippedDescription, null, true);
                 children.Add(new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty));
 
                 // An operand skipped by a fault-budget abort could still decide the chain, so it counts as Unknown,
@@ -634,7 +636,7 @@ internal sealed class Evaluator<TContext>(
                 );
             }
 
-            this.AddTraceEntry(description, TruthValue.Unknown, false);
+            this.AddTraceEntry(term, description, TruthValue.Unknown, false);
             return new EvalResult(
                 TruthValue.Unknown,
                 new TraceNode(description, TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
@@ -645,14 +647,14 @@ internal sealed class Evaluator<TContext>(
         {
             // A repeat of a term that resolved earlier shows the same values as its first occurrence.
             description = this.Annotated(key, description);
-            this.AddTraceEntry(description, cached, false);
+            this.AddTraceEntry(term, description, cached, false);
             return new EvalResult(cached, new TraceNode(description, cached, false, EquatableArray<TraceNode>.Empty));
         }
 
         TruthValue result = await this.InvokeAsync(term.Identity).ConfigureAwait(false);
         this.state.Memo[key] = result;
         description = this.Annotated(key, description);
-        this.AddTraceEntry(description, result, false);
+        this.AddTraceEntry(term, description, result, false);
         return new EvalResult(result, new TraceNode(description, result, false, EquatableArray<TraceNode>.Empty));
     }
 

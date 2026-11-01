@@ -59,7 +59,8 @@ public sealed partial class CompiledRule<TContext>
                 effectiveOptions,
                 timeoutSource.Token,
                 this.logger,
-                dataSources
+                dataSources,
+                this.NewEvaluationState(effectiveOptions)
             );
             return await timedEvaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
         }
@@ -71,7 +72,8 @@ public sealed partial class CompiledRule<TContext>
             effectiveOptions,
             cancellationToken,
             this.logger,
-            dataSources
+            dataSources,
+            this.NewEvaluationState(effectiveOptions)
         );
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
@@ -192,6 +194,7 @@ public sealed partial class CompiledRule<TContext>
     )
     {
         ArgumentNullException.ThrowIfNull(sharedState);
+        sharedState.AddLibraryLocators(this.libraryLocators);
         services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
 
@@ -224,5 +227,13 @@ public sealed partial class CompiledRule<TContext>
             sharedState
         );
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
+    }
+
+    // The state of one evaluation of this rule alone, with the library locators of its nodes for the trace entries.
+    private EvaluationState NewEvaluationState(EvaluationOptions options)
+    {
+        EvaluationState state = new(options.IncludeTrace);
+        state.AddLibraryLocators(this.libraryLocators);
+        return state;
     }
 }

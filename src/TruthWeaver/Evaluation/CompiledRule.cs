@@ -22,6 +22,7 @@ using TruthWeaver.Rewriting;
 /// <typeparam name="TContext">The application context type this rule evaluates against.</typeparam>
 public sealed partial class CompiledRule<TContext>
 {
+    private readonly IReadOnlyDictionary<Expression, string>? libraryLocators;
     private readonly PredicateRegistry<TContext> registry;
     private readonly ILogger logger;
     private readonly Lazy<string> canonicalText;
@@ -40,14 +41,21 @@ public sealed partial class CompiledRule<TContext>
     /// The notes by tree path, or <see langword="null"/> for none. Only the compiler passes notes: a rewrite builds a new
     /// tree whose paths no longer name the nodes the notes were written on, so its result has none.
     /// </param>
+    /// <param name="libraryLocators">
+    /// The library locator text of each node that a library rule reference expanded to, keyed by the node itself (by
+    /// reference), or <see langword="null"/> for none. The evaluator adds it to the trace entry of the node. Like the
+    /// notes, only the compiler passes them.
+    /// </param>
     internal CompiledRule(
         Expression root,
         PredicateRegistry<TContext> registry,
         ILogger? logger = null,
         CompilerOptions? options = null,
-        IReadOnlyDictionary<string, string>? notes = null
+        IReadOnlyDictionary<string, string>? notes = null,
+        IReadOnlyDictionary<Expression, string>? libraryLocators = null
     )
     {
+        this.libraryLocators = libraryLocators;
         this.options = options ?? CompilerOptions.Default;
         this.Root = root;
         this.registry = registry;

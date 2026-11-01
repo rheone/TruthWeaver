@@ -20,6 +20,10 @@ internal sealed class RuleNodeCompiler<TContext>
     private readonly CompilerOptions options;
     private readonly List<Diagnostic> diagnostics = [];
 
+    // The indexes in diagnostics that already carry the library locator of the node that raised them, so an enclosing
+    // node of the same library rule does not add its own locator a second time.
+    private readonly HashSet<int> locatedDiagnostics = [];
+
     // The bound variable names currently in scope, innermost last (ADR-0010 decision 2): a quantifier head whose
     // variable is already here is a shadowed-variable diagnostic rather than a silently inner-shadowing rebind.
     private readonly List<string> activeVariables = [];
@@ -254,6 +258,38 @@ internal sealed class RuleNodeCompiler<TContext>
 
     private Expression Build(RuleNode node, int depth)
     {
+        if (node.Library is not { } locator)
+        {
+            return this.BuildNode(node, depth);
+        }
+
+        // A node from a library rule: each diagnostic raised while building it, and not already located by a node inside
+        // it, is about this node. Its span becomes the reference (an argument span is in the library rule text, which is
+        // not the compiled text), its message gets the locator, and a replacement suggestion, which would apply to the
+        // span, is dropped; a hint is kept.
+        int before = this.diagnostics.Count;
+        Expression built = this.BuildNode(node, depth);
+        for (int i = before; i < this.diagnostics.Count; i++)
+        {
+            if (!this.locatedDiagnostics.Add(i))
+            {
+                continue;
+            }
+
+            Diagnostic raised = this.diagnostics[i];
+            this.diagnostics[i] = raised with
+            {
+                Span = node.Span,
+                Message = locator.AppendTo(raised.Message),
+                Suggestion = raised.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null,
+            };
+        }
+
+        return built;
+    }
+
+    private Expression BuildNode(RuleNode node, int depth)
+    {
         this.nodeCount++;
         if (this.nodeCount > this.options.MaxNodeCount)
         {
@@ -486,7 +522,14 @@ internal sealed class RuleNodeCompiler<TContext>
         this.activeVariables.RemoveAt(this.activeVariables.Count - 1);
         this.quantifierDepth--;
 
+        // A body inside a library rule was compiled from nodes that carry their library locator, so the compile of the
+        // body has already added it to each of its diagnostics.
+        int bodyStart = this.diagnostics.Count;
         this.diagnostics.AddRange(bodyDiagnostics);
+        if (node.Library is not null)
+        {
+            this.locatedDiagnostics.UnionWith(Enumerable.Range(bodyStart, bodyDiagnostics.Count));
+        }
 
         // The body compiled against this same running total (ADR-0010 line 175: a quantifier counts as one node
         // plus its body, once), so resume counting from it: a later sibling, or another quantifier after this one,

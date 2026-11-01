@@ -81,9 +81,10 @@ internal sealed class LibraryRuleExpander<TContext>(
 
     // A library rule code already names the library rule it is about, so it passes through as it is: that keeps one
     // diagnostic for one cycle or one missing rule, however deep the reference is. Any other error is about the text of this
-    // library rule, so it is reported under InvalidLibraryRule, with the name of the rule. Warnings and information are the
-    // library rule's own concern and are dropped.
-    private static Diagnostic AsCallerDiagnostic(LibraryRule rule, Diagnostic error, SourceSpan span)
+    // library rule, so it is reported under InvalidLibraryRule, with the name of the rule and, when the error is located in
+    // the text of the rule, the locator of that place. Warnings and information are the library rule's own concern and are
+    // dropped.
+    private static Diagnostic AsCallerDiagnostic(LibraryRule rule, Diagnostic error, SourceSpan span, bool locateInRule)
     {
         if (
             error.Code
@@ -96,9 +97,12 @@ internal sealed class LibraryRuleExpander<TContext>(
             return error with { Span = span };
         }
 
+        string message = locateInRule
+            ? LibraryLocator.Of(rule.Name, rule.Text, error.Span).AppendTo(error.Message)
+            : error.Message;
         return Diagnostic.Error(
             DiagnosticCodes.InvalidLibraryRule,
-            $"Library rule '{rule.Name}' does not compile here: {error.Code} {error.Message}",
+            $"Library rule '{rule.Name}' does not compile here: {error.Code} {message}",
             span,
             expected: error.Expected,
             found: error.Found,
@@ -106,17 +110,22 @@ internal sealed class LibraryRuleExpander<TContext>(
         );
     }
 
-    // Adds the errors of one step of a library rule to the caller's diagnostics, and says whether there were any.
+    // Adds the errors of one step of a library rule to the caller's diagnostics, and says whether there were any. The parse
+    // and the expansion report spans in the text of the library rule, which locateInRule turns into a locator; the build
+    // adds the locator of the node itself.
     private static bool ReportErrors(
         LibraryRule rule,
         IReadOnlyList<Diagnostic> found,
         SourceSpan span,
-        List<Diagnostic> diagnostics
+        List<Diagnostic> diagnostics,
+        bool locateInRule
     )
     {
         int before = diagnostics.Count;
         diagnostics.AddRange(
-            found.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => AsCallerDiagnostic(rule, d, span))
+            found
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .Select(d => AsCallerDiagnostic(rule, d, span, locateInRule))
         );
         return diagnostics.Count > before;
     }
@@ -194,7 +203,7 @@ internal sealed class LibraryRuleExpander<TContext>(
     )
     {
         (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse = parses.Get(rule, options.MaxDepth);
-        if (ReportErrors(rule, parse.Diagnostics, span, diagnostics))
+        if (ReportErrors(rule, parse.Diagnostics, span, diagnostics, locateInRule: true))
         {
             return (null, 0);
         }
@@ -205,9 +214,10 @@ internal sealed class LibraryRuleExpander<TContext>(
             options,
             this,
             libraryChain,
+            rule,
             span
         );
-        if (ReportErrors(rule, expansionDiagnostics, span, diagnostics))
+        if (ReportErrors(rule, expansionDiagnostics, span, diagnostics, locateInRule: true))
         {
             return (null, 0);
         }
@@ -229,7 +239,7 @@ internal sealed class LibraryRuleExpander<TContext>(
             registry,
             options
         );
-        if (ReportErrors(rule, buildDiagnostics, span, diagnostics))
+        if (ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
         {
             return (null, 0);
         }

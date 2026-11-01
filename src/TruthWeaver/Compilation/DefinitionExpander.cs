@@ -34,6 +34,7 @@ internal static class DefinitionExpander
             options,
             new LibraryRuleExpander<TContext>(registry, options, new LibraryRuleParses()),
             [],
+            rule: null,
             site: null
         );
     }
@@ -59,10 +60,15 @@ internal static class DefinitionExpander
     /// gets the scope of its collection from it.
     /// </param>
     /// <param name="libraryChain">The library rules being expanded through, outermost first, for cycle detection.</param>
+    /// <param name="rule">
+    /// The library rule that <paramref name="document"/> is the text of, or <see langword="null"/> for the compiled
+    /// document itself. Each node of the library rule gets a <see cref="RuleNode.Library"/> locator into its text.
+    /// </param>
     /// <param name="site">
     /// The span of the reference in the compiled text that this document is expanded for, or <see langword="null"/> for the
-    /// compiled document itself. Every node and diagnostic of a library rule takes this span, because the spans of the
-    /// library rule text do not locate anything in the compiled text.
+    /// compiled document itself. Every node of a library rule takes this span, because the spans of the library rule text
+    /// do not locate anything in the compiled text. The diagnostics of the expansion keep the spans of the library rule
+    /// text, so the caller can locate them in it.
     /// </param>
     /// <returns>The expanded body and the diagnostics.</returns>
     internal static (RuleNode Body, IReadOnlyList<Diagnostic> Diagnostics) Expand<TContext>(
@@ -71,6 +77,7 @@ internal static class DefinitionExpander
         CompilerOptions options,
         ILibraryRuleScope library,
         List<string> libraryChain,
+        LibraryRule? rule,
         SourceSpan? site
     )
     {
@@ -116,7 +123,7 @@ internal static class DefinitionExpander
             unused.Add(definition.Name);
         }
 
-        Expander expander = new(definitionsByName, options, diagnostics, library, libraryChain, site);
+        Expander expander = new(definitionsByName, options, diagnostics, library, libraryChain, rule, site);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
 
         // Every definition that document.Body's own expansion never reaches is still declared, and ADR-0008's
@@ -133,7 +140,7 @@ internal static class DefinitionExpander
         // validation pass now also looks at its unreachable definitions - while still bounding this pass's own
         // work against the same MaxNodeCount, the same protection ticket 04 gave the reachable walk. A scratch copy
         // of 'unused' keeps this walk from marking a definition used for the real UnusedDefinition lint below.
-        Expander unreachableValidator = new(definitionsByName, options, diagnostics, library, libraryChain, site);
+        Expander unreachableValidator = new(definitionsByName, options, diagnostics, library, libraryChain, rule, site);
         HashSet<string> validated = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (DefinitionNode definition in document.Definitions)
         {
@@ -247,8 +254,9 @@ internal static class DefinitionExpander
     }
 
     /// <summary>
-    /// Carries one expansion pass's immutable inputs (the declared definitions, options, the library chain and the span of
-    /// the reference being expanded, if any), its mutable diagnostics sink and the library rule scope it is in.
+    /// Carries one expansion pass's immutable inputs (the declared definitions, options, the library chain, and the library
+    /// rule and the span of the reference being expanded, if any), its mutable diagnostics sink and the library rule scope
+    /// it is in.
     /// </summary>
     private sealed class Expander(
         Dictionary<string, DefinitionNode> definitions,
@@ -256,6 +264,7 @@ internal static class DefinitionExpander
         List<Diagnostic> diagnostics,
         ILibraryRuleScope library,
         List<string> libraryChain,
+        LibraryRule? rule,
         SourceSpan? site
     )
     {
@@ -364,8 +373,22 @@ internal static class DefinitionExpander
                 ),
             };
 
-            // Inside a library rule every node takes the span of the reference in the compiled text (see Expand).
-            return site is { } span && expanded.Span != span ? expanded with { Span = span } : expanded;
+            // Inside a library rule every node takes the span of the reference in the compiled text (see Expand), and the
+            // locator of where it is written in the library rule text. A node that already has a locator keeps it: it is
+            // the expansion of a nested library rule, a definition body or an argument, located where it is written.
+            if (rule is null || site is not { } span)
+            {
+                return expanded;
+            }
+
+            LibraryLocator locator = expanded.Library ?? LibraryLocator.Of(rule.Name, rule.Text, node.Span);
+            return expanded.Span == span && expanded.Library == locator
+                ? expanded
+                : expanded with
+                {
+                    Span = span,
+                    Library = locator,
+                };
         }
 
         // Puts the use's (or reference's) own note on the node it expands to, ahead of any note that node already has.
@@ -397,7 +420,10 @@ internal static class DefinitionExpander
         private RuleNode ExpandReference(LibraryReferenceNode reference)
         {
             (RuleNode body, int nodeCount) = this.scope.Expand(reference, libraryChain, site, diagnostics);
-            if (!this.nodeBudget.TryCount(nodeCount - 1, diagnostics, site ?? reference.Span, reference.Path))
+
+            // The reference's own span: in a library rule it is in the library rule text, like every other diagnostic of
+            // the expansion, and the library rule expander locates it there.
+            if (!this.nodeBudget.TryCount(nodeCount - 1, diagnostics, reference.Span, reference.Path))
             {
                 return new ErrorNode(reference.Span) with { Path = reference.Path };
             }

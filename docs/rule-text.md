@@ -219,7 +219,14 @@ A library rule follows these rules:
   arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.
 
 Each mistake is a compile error. The span of the diagnostic is the reference in the text that you compile, also when
-the mistake is in a library rule that the reference expands:
+the mistake is in a library rule that the reference expands. A diagnostic about a place in the text of a library rule
+ends with a library locator: the name of the library rule and the line and column in its text, as in
+`In library rule 'contractor-cleared' at line 1, column 18.` When library rules reference each other, the locator names
+the library rule that holds the place. A diagnostic about the text that you compile has no locator.
+
+A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator, as in
+`hasSignedNda (in library rule 'contractor-cleared' at line 1, column 18)`. The trace tree (`Decision.TraceTree`) shows
+the node without it. The mistakes give these codes:
 
 | Code | Name | Cause |
 | --- | --- | --- |
