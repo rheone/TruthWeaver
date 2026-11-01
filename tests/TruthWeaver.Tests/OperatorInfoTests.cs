@@ -113,6 +113,18 @@ public sealed class OperatorInfoTests
         Assert.Null(notFound);
     }
 
+    /// <summary>The EQUIVALENT description names IFF and XNOR as current aliases, with no history wording.</summary>
+    [Fact]
+    public void Describe_EquivalentNode_NamesIffAndXnorAsAliases_Test()
+    {
+        OperatorDescriptor descriptor = OperatorInfo.Describe(
+            new EquivalentExpression(new ConstantExpression(TruthValue.True), new ConstantExpression(TruthValue.False))
+        );
+
+        Assert.Contains("aliases IFF and XNOR", descriptor.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain("formerly", descriptor.Description, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>A quantifier node is described with the canonical FORALL or EXISTS label and a real description.</summary>
     [Theory]
     [InlineData(QuantifierKind.ForAll, "FORALL")]

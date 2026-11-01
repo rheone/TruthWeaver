@@ -1,6 +1,6 @@
 # 60 - The EQUIVALENT description calls XNOR formerly, but XNOR is a current alias
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F1 Ast+Abstractions
@@ -29,9 +29,9 @@ Verified 2026-10-24: reproduced - src/TruthWeaver/Ast/OperatorDefinitions.cs:55 
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -50,6 +50,10 @@ Verified 2026-10-24: reproduced - src/TruthWeaver/Ast/OperatorDefinitions.cs:55 
 - `OperatorDefinitions`'s `EQUIVALENT` description text.
 
 **Acceptance criteria:**
-- [ ] The description reads as naming `IFF` and `XNOR` as current aliases, not "formerly".
-- [ ] No change to actual alias acceptance (already correct).
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] The description reads as naming `IFF` and `XNOR` as current aliases, not "formerly".
+- [x] No change to actual alias acceptance (already correct).
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced. The `EQUIVALENT` description in `OperatorDefinitions` now reads "Logical biconditional (aliases IFF and XNOR) - ...". Alias acceptance is unchanged. Test (red first): `OperatorInfoTests.Describe_EquivalentNode_NamesIffAndXnorAsAliases_Test`. No page quoted the old text; `docs/strong-k3/specification/operations.md` already lists both aliases.
