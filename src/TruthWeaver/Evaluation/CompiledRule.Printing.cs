@@ -654,20 +654,15 @@ public sealed partial class CompiledRule<TContext>
             return new OutlineNode(label, description, [], ArgumentText(term.Identity), OutlineNodeKind.Term);
         }
 
-        // A quantifier is not in the closed OperatorDefinitions table (ADR-0010: a third kind, not a connective
-        // with a fixed arity), so it is outlined directly instead of through OperatorInfo.Describe, and it carries
-        // its bound variable and collection name for the printers to render as part of its head, not as a term's
-        // parenthesized argument text.
+        // A quantifier carries its bound variable and collection name for the printers to render as part of its head,
+        // not as a term's parenthesized argument text, so it is outlined here. Its label and description come from
+        // OperatorInfo.Describe, like every other operator's.
         if (node is QuantifierExpression quantifier)
         {
-            string label = QuantifierText.Label(quantifier.Kind);
-            string description =
-                quantifier.Kind == QuantifierKind.ForAll
-                    ? "Universal quantifier: the generalized AND over a registered collection binding's elements (ADR-0010)."
-                    : "Existential quantifier: the generalized OR over a registered collection binding's elements (ADR-0010).";
+            OperatorDescriptor quantifierDescriptor = OperatorInfo.Describe(quantifier);
             return new OutlineNode(
-                label,
-                description,
+                quantifierDescriptor.Label,
+                quantifierDescriptor.Description,
                 [OutlineOf(quantifier.Body, registry)],
                 Kind: OutlineNodeKind.Operator,
                 QuantifierVariable: quantifier.Variable,

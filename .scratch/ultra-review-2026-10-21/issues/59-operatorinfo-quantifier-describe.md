@@ -1,6 +1,6 @@
 # 59 - OperatorInfo.Describe returns Forall/Exists with an empty description; tree-format suggestions omit forall/exists
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F1 Ast+Abstractions
@@ -49,9 +49,9 @@ Verified 2026-10-24: reproduced - a throwaway xUnit test confirmed `TreeFormatOp
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -73,10 +73,14 @@ Decision for F1.2: fix `Describe` to handle quantifiers properly, rather than do
 - `TreeFormatOpNames.ReadableNames` (the suggestion candidate list).
 
 **Acceptance criteria:**
-- [ ] `OperatorInfo.Describe` for a `QuantifierExpression` returns the correct `FORALL`/`EXISTS` label and a non-empty, accurate description.
-- [ ] `TreeFormatOpNames.ReadableNames` includes `forall` and `exists`.
-- [ ] A misspelled quantifier op string (e.g. `"foral"`) now gets a "did you mean 'forall'" suggestion.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `OperatorInfo.Describe` for a `QuantifierExpression` returns the correct `FORALL`/`EXISTS` label and a non-empty, accurate description.
+- [x] `TreeFormatOpNames.ReadableNames` includes `forall` and `exists`.
+- [x] A misspelled quantifier op string (e.g. `"foral"`) now gets a "did you mean 'forall'" suggestion.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any other operator's `Describe`/suggestion behavior (already correct).
+
+## Resolution (2026-11-01)
+
+Both findings reproduced. `OperatorInfo.Describe` now handles a `QuantifierExpression` before the definition lookup: the label is `QuantifierText.Label` (`FORALL` or `EXISTS`) and the description is the one the outline already used (moved from `CompiledRule.Printing.cs`, which now calls `Describe`, so the text has one home). `TreeFormatOpNames.ReadableNames` appends `forall` and `exists` from a separate list. The read table does not hold them, because `TryFromTreeFormat` must keep returning false for a quantifier (it has no `OperatorDefinition`). Tests (red first): `OperatorInfoTests.Describe_QuantifierNode_ReturnsCanonicalLabelAndDescription_Test`, `TreeFormatOpNamesTests` (`ReadableNames_QuantifierOpStrings_ArePresent_Test`, `TryFromTreeFormat_QuantifierOpString_ReturnsFalse_Test`), `TreeDiagnosticsTests.CompileJson_MisspelledQuantifierOp_SuggestsTheQuantifier_Test`. Page updated: `docs/rulebuilder.md` (outline section names the quantifier labels).

@@ -187,10 +187,10 @@ EXISTS(line IN lines, FORALL(detail IN details, inStock))
 
 A body term may read the element itself in two ways, and may mix both in the same body: a typed element
 predicate such as `inStock` above, registered on the collection's own element registry, and an untyped
-`from(variable, "...")` read, as if the element were a data source of its own. The second way needs the host to
+`from("line", "...")` read, as if the element were a data source of its own. The second way needs the host to
 opt the collection in: `AddCollection`'s optional `elementSource` parameter projects one element to an
 `IDataSource`. A collection registered without it supports only the typed path, and a body that still writes
-`from(variable, ...)` against it gets the same undeclared-data-source diagnostic [data sources](data-sources.md)
+`from("line", ...)` against it gets the same undeclared-data-source diagnostic [data sources](data-sources.md)
 already gives any other name nothing declared.
 
 <!-- doctest:rule forall-element-source -->
