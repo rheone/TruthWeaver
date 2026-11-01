@@ -32,6 +32,8 @@ Add `Do not commit.` for any bundle that writes to the repo, and `Do not modify 
 
 When the bundle runs in a worktree and the work stacks on a branch other than `main`, put this first in the prompt, because a worktree starts on `main`: "Before anything else, confirm `git rev-parse --show-toplevel` is a path under `.claude/worktrees/`, then run `git merge --ff-only <tip>`. Stop and report when either fails."
 
+A bundle that commits in a worktree also starts with `dotnet restore --locked-mode`, because a fresh worktree has no restore and the commit hook fails with `NETSDK1004` without it.
+
 A retry bundle adds a "Prior attempt" block under the shared context: the task, the blocker, and the files the first attempt changed. A review bundle gets the work's done-when and the diff to check.
 
 The fixed reply shape keeps results cheap to relay and lets step 6 of SKILL.md check each `Done when` against a stated outcome.
