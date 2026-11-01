@@ -326,6 +326,20 @@ public sealed class TreeDiagnosticsTests
         Assert.Equal("or", diagnostic.Suggestion?.Text);
     }
 
+    /// <summary>A misspelled quantifier op string gets a "did you mean" suggestion like any other operator typo.</summary>
+    [Theory]
+    [InlineData("foral", "forall")]
+    [InlineData("exist", "exists")]
+    public void CompileJson_MisspelledQuantifierOp_SuggestsTheQuantifier_Test(string typo, string expected)
+    {
+        string json = $$"""{"op":"{{typo}}","var":"line","in":"lines","operands":[{"const":true}]}""";
+
+        CompilationResult<RuleTestContext> result = Compiler.CompileJson(json);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(expected, diagnostic.Suggestion?.Text);
+    }
+
     /// <summary>A YAML diagnostic also carries the span of the offending node, so a line and column can be shown.</summary>
     [Fact]
     public void FormatDiagnostics_YamlUnknownOp_RendersPathLineAndColumnAndSourceLine_Test()

@@ -41,19 +41,18 @@ A term takes each argument name once, and argument names match ignoring case. `R
 
 ### Operand lists of unknown length
 
-An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same rule for the same operands, with one exception: `Coalesce`. The rule depends on whether the operator has an identity constant.
+An array (`params`) and a sequence (`IEnumerable<RuleBuilder>`) give the same rule for the same operands. The rule depends on whether the operator has an identity constant.
 
-`And`, `Or`, `Any`, `All` and `None` have an identity. In both forms, fewer than two operands fold when you build the rule. The compiler never sees a short node:
+`And`, `Or`, `Any`, `All`, `None` and `Coalesce` have an identity. In both forms, fewer than two operands fold when you build the rule. The compiler never sees a short node:
 
 | Operator | 0 operands | 1 operand `x` |
 | -------- | ---------- | ------------- |
 | `And` / `All` | `Constant(True)` | `x` |
 | `Or` / `Any` | `Constant(False)` | `x` |
 | `None` | `Constant(True)` | `Not(x)` |
+| `Coalesce` | `Constant(Unknown)` | `x` |
 
 `Parity` and `ExactlyOne` have no identity, and neither do the counted operators `Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan` and `Exactly`. Neither form folds a short list. A list with fewer operands than the operator needs gives the compile diagnostic `InfixArityViolation`, or the threshold diagnostic for a counted operator, the same from an array and from a list.
-
-`Coalesce` has an identity, `Unknown`, but only the sequence form folds: an empty sequence is `Constant(Unknown)` and one operand `x` is `x`. `RuleBuilder.Coalesce(params RuleBuilder[])` does not fold, and a short array gives `InfixArityViolation`. Use the sequence overload for a list whose length is known only at run time.
 
 An empty list that silently becomes a constant can hide a mistake. For example, an empty list of role checks under `And` is `True`. Check the count first when that matters.
 
@@ -126,7 +125,7 @@ The joined builder keeps the notes of each source rule, under their new paths. T
 
 ## Outlining a compiled rule
 
-Every predicate has a required `Label` and `Description` on its `PredicateSchema`. Every operator has the same, which `OperatorInfo.Describe` in `TruthWeaver.Ast` exposes. `CompiledRule<TContext>.Outline()` combines both into one recursive outline of a whole compiled rule. A rule-authoring UI or a generated "what does this rule mean" report can walk the outline without access to the closed-set AST types:
+Every predicate has a required `Label` and `Description` on its `PredicateSchema`. Every operator has the same, which `OperatorInfo.Describe` in `TruthWeaver.Ast` exposes, a quantifier included: `FORALL` is the universal quantifier and `EXISTS` is the existential quantifier. `CompiledRule<TContext>.Outline()` combines both into one recursive outline of a whole compiled rule. A rule-authoring UI or a generated "what does this rule mean" report can walk the outline without access to the closed-set AST types:
 
 ```csharp
 CompiledRule<Customer> rule = compiler.Compile("lovesPineapple AND hasTopping(topping: \"greenOlives\")").GetRuleOrThrow();
@@ -161,9 +160,9 @@ string sentence = rule.Explain(decision);
 // Satisfied because Order Type (kind: "takeout") is true and Over Limit is true.
 ```
 
-The sentence starts with `Satisfied`, `Not satisfied` or `Unknown`, for the result `True`, `False` or `Unknown`. A term is `is true`, `is false`, `is unknown` or `could not be evaluated`. The last form is for a term whose predicate faulted. The sentence never includes the text of the exception.
+The sentence starts with `Satisfied`, `Not satisfied` or `Unknown`, for the result `True`, `False` or `Unknown`. A term is `is true`, `is false`, `is unknown` or `faulted`. The last form is for a term whose predicate faulted. A term that short-circuiting skipped is a different state, which a trace calls not evaluated. The sentence never includes the text of the exception.
 
-When the result is `Unknown`, no term decided it. The sentence then names the terms that were `Unknown` or that could not be evaluated. A rule with no deciding term, such as a constant, gives the head and a period only.
+When the result is `Unknown`, no term decided it. The sentence then names the terms that were `Unknown` or that `faulted`. A rule with no deciding term, such as a constant, gives the head and a period only.
 
 The decided terms are the terms that [rule coverage](rule-coverage.md#when-a-node-decides) counts as deciding, read from the one decision. A decision made in `EvaluationMode.ShortCircuit` mode can name fewer terms than one made in `EvaluationMode.Exhaustive` mode, because a skipped operand cannot decide.
 

@@ -52,7 +52,7 @@ internal static class OperatorDefinitions
             2,
             2,
             "EQUIVALENT",
-            "Logical biconditional (IFF, formerly XNOR) - true iff both operands agree (both true or both false). The negation of XOR; Unknown if either operand is Unknown.",
+            "Logical biconditional (aliases IFF and XNOR) - true iff both operands agree (both true or both false). The negation of XOR; Unknown if either operand is Unknown.",
             "↔",
             "==",
             ["↔", "⇔"]

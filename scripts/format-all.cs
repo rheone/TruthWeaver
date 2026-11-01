@@ -13,18 +13,30 @@
 // Roslynator. A failure in the CSharpier and dotnet format gates after the formatters ran means they disagree about
 // some code. Reshape that code. See CLAUDE.md, section Formatting. It stops at the first failing step.
 //
-// Usage: dotnet run scripts/format-all.cs -- [--check-only]
+// Usage: dotnet run scripts/format-all.cs -- [--check-only] [--files <path>...]
 //   --check-only  Skip the apply steps and only run the checks.
+//   --files       Run only the CSharpier and dotnet format checks on the listed C# files, in seconds, to catch an
+//                 analyzer finding before the full run. Does not apply any formatting and does not run Roslynator.
 using TruthWeaver.Scripts;
 
 try
 {
     bool checkOnly = false;
+    bool filesMode = false;
+    List<string> files = [];
     foreach (string argument in args)
     {
         if (argument == "--check-only")
         {
             checkOnly = true;
+        }
+        else if (argument == "--files")
+        {
+            filesMode = true;
+        }
+        else if (filesMode)
+        {
+            files.Add(argument);
         }
         else
         {
@@ -35,6 +47,24 @@ try
 
     string root = await Repo.FindRootAsync();
     Directory.SetCurrentDirectory(root);
+
+    if (filesMode)
+    {
+        if (files.Count == 0)
+        {
+            await Console.Error.WriteLineAsync("format-all: --files needs at least one path.");
+            return 1;
+        }
+
+        await StepAsync("csharpier check (files)", "dotnet", ["csharpier", "check", .. files]);
+        await StepAsync(
+            "dotnet format check (files)",
+            "dotnet",
+            ["format", "TruthWeaver.slnx", "--no-restore", "--verify-no-changes", "--severity", "info", "--include", .. files]
+        );
+        await Console.Out.WriteLineAsync("format-all: the listed files pass.");
+        return 0;
+    }
 
     if (!checkOnly)
     {

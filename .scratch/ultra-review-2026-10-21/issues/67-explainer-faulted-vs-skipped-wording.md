@@ -1,6 +1,6 @@
 # 67 - The explainer words for faulted (could not be evaluated) and skipped (not evaluated) are near-identical
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: L5 Least surprise
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -50,7 +50,11 @@ not verified (medium or low)
 - `TraceReasons`'s equivalent phrasing.
 
 **Acceptance criteria:**
-- [ ] A faulted term's explanation says "faulted" (or clearly distinct wording), not "could not be evaluated".
-- [ ] A skipped term's wording ("not evaluated") is unchanged.
-- [ ] The two states are no longer distinguishable only by reading the record's `notEvaluated` flag — the words themselves now differ.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A faulted term's explanation says "faulted" (or clearly distinct wording), not "could not be evaluated".
+- [x] A skipped term's wording ("not evaluated") is unchanged.
+- [x] The two states are no longer distinguishable only by reading the record's `notEvaluated` flag — the words themselves now differ.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced. The ticket text has no explicit Decision section; the Agent Brief names "faulted" (or clearly distinct wording) and that was followed. `DecisionExplainer` now says `faulted` for a faulted term (`Unknown because Over Limit faulted.`), and `TraceReasons.ForLeaf` (tool trace pane) says `Unknown: the term faulted (<fault message>)`. The skipped wording (`TraceReasons.Skipped`, the `notEvaluated` field) is unchanged. Not touched: `AssignmentSession` "The rule could not be evaluated." (a whole rule that failed to compile, a different state), `CaseCoverage` "case(s) could not be evaluated", and the historical `CHANGELOG.md` line. Note for the owner: the old `ExplainTests` test asserted the sentence did NOT contain "faulted" (no recorded reason); it now asserts the opposite and that "evaluated" is absent, so the two states cannot share words. Tests (red first): `ExplainTests.Explain_FaultedTerm_SaysItFaulted_Test` (renamed), `AssignmentSessionTests.EvaluateAsync_MissingVariable_IsUnknownWithItsFault_Test`. Pages updated: `docs/rulebuilder.md` (Explaining a decision), plus the `Explain` XML summary.

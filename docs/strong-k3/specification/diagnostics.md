@@ -37,7 +37,7 @@ The Phase column names the stage of the compile pipeline that reports the code: 
 | `TRE0023` | `DoubleNegation` | Info | Lint | Opt-in (`LintRules.DoubleNegation`) | `NOT (NOT x)`, which is `x`. |
 | `TRE0024` | `UndeclaredDataSource` | Error | Validate | On | A variable reference names a data source that is not declared in the compiler options. |
 | `TRE0025` | `MalformedDataQuery` | Error | Validate | On | The query of a variable reference is not valid for the dialect of its data source. |
-| `TRE0026` | `InvalidArgumentValue` | Error | Validate | On | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `IsBetween` or `IsNotBetween`. |
+| `TRE0026` | `InvalidArgumentValue` | Error | Validate | On | The literal argument values of a predicate call break a rule that the predicate checks at compile time, for example reversed bounds on `IsBetween` or `IsNotBetween`, or a negative count on a `HasCount` predicate. |
 | `TRE0027` | `DeprecatedPredicate` | Warning | Validate | On | A rule uses a predicate whose schema is marked deprecated. This is a warning, one per use, and the rule still compiles. |
 | `TRE0028` | `DeepNesting` | Info | Lint | Opt-in (`LintRules.DeepNesting`) | The rule is at least `DeepNestingFraction` of `MaxDepth` levels deep. This finding has no suggestion. |
 | `TRE0029` | `WideChain` | Info | Lint | Opt-in (`LintRules.WideChain`) | An `AND` or `OR` has more operands than `WideChainOperandLimit`. This finding has no suggestion. |

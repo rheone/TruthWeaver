@@ -23,6 +23,13 @@ public static class OperatorInfo
             return new OperatorDescriptor(label, $"A fixed {label} value.");
         }
 
+        // A quantifier is not in the closed OperatorDefinitions table (ADR-0010: a third kind, not a connective with a
+        // fixed arity), so its descriptor is built here from QuantifierText, the one spelling of FORALL and EXISTS.
+        if (node is QuantifierExpression quantifier)
+        {
+            return new OperatorDescriptor(QuantifierText.Label(quantifier.Kind), QuantifierText.Description(quantifier.Kind));
+        }
+
         if (node is TermExpression)
         {
             throw new ArgumentException(

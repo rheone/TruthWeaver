@@ -74,7 +74,7 @@ internal static class DecisionExplainer
         string state;
         if (faulted)
         {
-            state = "could not be evaluated";
+            state = "faulted";
         }
         else if (term.TrueCount > 0)
         {

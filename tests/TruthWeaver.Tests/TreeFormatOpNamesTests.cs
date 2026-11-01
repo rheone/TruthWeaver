@@ -112,4 +112,22 @@ public sealed class TreeFormatOpNamesTests
         Assert.False(resolved);
         Assert.Null(opName);
     }
+
+    /// <summary>ReadableNames lists the quantifier op strings, so a quantifier typo gets a suggestion.</summary>
+    [Theory]
+    [InlineData("forall")]
+    [InlineData("exists")]
+    public void ReadableNames_QuantifierOpStrings_ArePresent_Test(string name)
+    {
+        Assert.Contains(name, TreeFormatOpNames.ReadableNames);
+    }
+
+    /// <summary>The quantifier op strings stay out of the operator lookup, because a quantifier has no canonical op-name entry.</summary>
+    [Theory]
+    [InlineData("forall")]
+    [InlineData("exists")]
+    public void TryFromTreeFormat_QuantifierOpString_ReturnsFalse_Test(string name)
+    {
+        Assert.False(TreeFormatOpNames.TryFromTreeFormat(name, out _));
+    }
 }

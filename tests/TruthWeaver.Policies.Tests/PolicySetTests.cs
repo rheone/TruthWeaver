@@ -667,6 +667,87 @@ public class PolicySetTests
         );
     }
 
+    /// <summary>
+    /// A fault budget or element bound below 1, or an unusable timeout, throws at the <c>PolicySet</c> call, including
+    /// for a set that has no policy to evaluate.
+    /// </summary>
+    [Theory]
+    [InlineData(0, 10_000, -1)]
+    [InlineData(-1, 10_000, -1)]
+    [InlineData(null, 0, -1)]
+    [InlineData(null, 10_000, -5)]
+    public Task EvaluateAsync_UnusableOptionsOnAnEmptySet_ThrowsArgumentOutOfRange_Test(
+        int? faultBudget,
+        int maxElementEvaluations,
+        int timeoutMilliseconds
+    )
+    {
+        EvaluationOptions options = UnusableOptions(faultBudget, maxElementEvaluations, timeoutMilliseconds);
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, []);
+
+        return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            set.EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken)
+        );
+    }
+
+    /// <summary>
+    /// Unusable options throw at the <c>PolicySet</c> call before any rule runs: neither the set target nor a policy
+    /// condition invokes its predicate.
+    /// </summary>
+    [Theory]
+    [InlineData(0, 10_000, -1)]
+    [InlineData(null, 0, -1)]
+    [InlineData(null, 10_000, -5)]
+    public async Task EvaluateAsync_UnusableOptions_ThrowsBeforeAnyRuleRuns_Test(
+        int? faultBudget,
+        int maxElementEvaluations,
+        int timeoutMilliseconds
+    )
+    {
+        EvaluationOptions options = UnusableOptions(faultBudget, maxElementEvaluations, timeoutMilliseconds);
+        int calls = 0;
+        PredicateRegistry<object> registry = SharedRegistry(
+            "counted",
+            (_, _, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(TruthValue.True);
+            }
+        );
+        CompiledRule<object> rule = CompileSharing(registry, "counted");
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, [Permit("p", rule)], rule);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            set.EvaluateAsync(new object(), options: options, cancellationToken: TestContext.Current.CancellationToken)
+        );
+        Assert.Equal(0, calls);
+    }
+
+    /// <summary>A timeout of exactly zero stays valid: the call does not throw <see cref="ArgumentOutOfRangeException"/>.</summary>
+    [Fact]
+    public async Task EvaluateAsync_ZeroTimeoutOnAnEmptySet_DoesNotThrowArgumentOutOfRange_Test()
+    {
+        PolicySet<object> set = new("set", CombiningAlgorithm.DenyOverrides, []);
+
+        PolicyDecision decision = await set.EvaluateAsync(
+            new object(),
+            options: new EvaluationOptions(Timeout: TimeSpan.Zero),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(PolicyOutcome.NotApplicable, decision.Outcome);
+    }
+
+    // A timeout of -1 ms is Timeout.InfiniteTimeSpan, which is valid, so it stands for "no timeout" here.
+    private static EvaluationOptions UnusableOptions(int? faultBudget, int maxElementEvaluations, int timeoutMilliseconds)
+    {
+        return new EvaluationOptions(
+            FaultBudget: faultBudget,
+            Timeout: TimeSpan.FromMilliseconds(timeoutMilliseconds),
+            MaxElementEvaluations: maxElementEvaluations
+        );
+    }
+
     private static CompiledRule<object> Compile(string text)
     {
         PredicateRegistryBuilder<object> builder = PredicateRegistry<object>.CreateBuilder();

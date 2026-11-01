@@ -1,6 +1,6 @@
 # 28 - A literal regex pattern is checked with no options when the flags come from a data source
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F7 Predicates B

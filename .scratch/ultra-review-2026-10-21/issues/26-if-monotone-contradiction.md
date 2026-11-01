@@ -1,6 +1,6 @@
 # 26 - NormalForms and rewriting-rules.md treat If as not information-monotone; the K3 reference says it is monotone
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F5 Analysis+Rewriting; L3 Externals+If+constants

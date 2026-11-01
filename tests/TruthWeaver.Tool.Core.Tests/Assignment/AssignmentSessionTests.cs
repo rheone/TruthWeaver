@@ -145,7 +145,7 @@ public sealed class AssignmentSessionTests
         Assert.Equal(TruthValue.Unknown, outcome.Decision!.Result);
         string fault = Assert.Single(outcome.Faults);
         Assert.Contains("user", fault, StringComparison.Ordinal);
-        Assert.Contains("could not be evaluated", outcome.Trace!.Reason, StringComparison.Ordinal);
+        Assert.Contains("faulted", outcome.Trace!.Reason, StringComparison.Ordinal);
         TermAssignment term = Assert.Single(outcome.Terms);
         Assert.True(term.HasDataReference);
         Assert.Null(term.Key);

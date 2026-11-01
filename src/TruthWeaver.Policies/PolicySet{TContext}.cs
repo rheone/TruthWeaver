@@ -82,6 +82,7 @@ public sealed class PolicySet<TContext>
     /// <param name="options">Per-call evaluation options applied to each rule, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The combined outcome, the fail-closed decision and the answer of each policy that was evaluated.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>. Thrown before any rule is evaluated, also when the set has no policy.</exception>
     /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/> of one rule, cancelled the evaluation.</exception>
     public async Task<PolicyDecision> EvaluateAsync(
         TContext context,
@@ -91,9 +92,14 @@ public sealed class PolicySet<TContext>
         CancellationToken cancellationToken = default
     )
     {
+        // Validated once here, with the check each rule applies, so a bad option fails at this call before any rule
+        // runs, also for a set with no policy to evaluate.
+        EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
+        effectiveOptions.ThrowIfInvalid(nameof(options));
+
         List<Fault> faults = [];
         List<PolicyResult> results = [];
-        bool includeTrace = (options ?? EvaluationOptions.Default).IncludeTrace;
+        bool includeTrace = effectiveOptions.IncludeTrace;
 
         // Null unless the caller asked for a trace, so a set evaluated without one does no trace work of its own.
         List<TraceEntry>? trace = includeTrace ? [] : null;

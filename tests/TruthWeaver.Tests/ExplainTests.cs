@@ -48,17 +48,17 @@ public sealed class ExplainTests
         Assert.Equal("Unknown because Over Limit is unknown.", sentence);
     }
 
-    /// <summary>A term whose predicate faulted is reported as not evaluated, without the exception text.</summary>
+    /// <summary>A term whose predicate faulted is reported as faulted, not as "not evaluated" (that wording is for a short-circuit skip), without the exception text.</summary>
     [Fact]
-    public async Task Explain_FaultedTerm_SaysItCouldNotBeEvaluated_Test()
+    public async Task Explain_FaultedTerm_SaysItFaulted_Test()
     {
         CompiledRule<string> rule = Compile("vip() AND overLimit()");
         Decision decision = await EvaluateAsync(rule, "vip=T,overLimit=X");
 
         string sentence = rule.Explain(decision);
 
-        Assert.Equal("Unknown because Over Limit could not be evaluated.", sentence);
-        Assert.DoesNotContain("faulted", sentence, StringComparison.Ordinal);
+        Assert.Equal("Unknown because Over Limit faulted.", sentence);
+        Assert.DoesNotContain("evaluated", sentence, StringComparison.Ordinal);
     }
 
     /// <summary>
