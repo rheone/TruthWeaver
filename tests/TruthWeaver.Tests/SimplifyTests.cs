@@ -281,4 +281,46 @@ public sealed class SimplifyTests
         Assert.Equal(textBefore, original.Compiled.CanonicalText);
         Assert.Equal("a", simplified.CanonicalText);
     }
+
+    /// <summary>
+    /// <c>BETWEEN</c> and <c>NONE</c> stay as the same node through <c>Simplify</c> and <c>Canonicalize</c> while no operand is a constant.
+    /// </summary>
+    [Theory]
+    [InlineData("BETWEEN(1, 2, a, b, c)", "BETWEEN")]
+    [InlineData("NONE(a, b)", "NONE")]
+    public void SimplifyAndCanonicalize_NoConstantOperand_KeepTheCardinalityNode_Test(string ruleText, string word)
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 3)!;
+
+        Assert.Contains(word, original.Compiled.Simplify().GetRuleOrThrow().CanonicalText, StringComparison.Ordinal);
+        Assert.Contains(word, original.Compiled.Canonicalize().GetRuleOrThrow().CanonicalText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>Simplify</c> expands or folds <c>BETWEEN</c> and <c>NONE</c> when an operand is a constant, so the node does not survive.
+    /// </summary>
+    [Theory]
+    [InlineData("BETWEEN(1, 2, True, a, b)", "AtMost(1, a, b)")]
+    [InlineData("NONE(True, a)", "False")]
+    public void Simplify_ConstantOperand_RewritesTheCardinalityNode_Test(string ruleText, string expectedText)
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 3)!;
+
+        CompiledRule<RuleTestContext> simplified = original.Compiled.Simplify().GetRuleOrThrow();
+
+        Assert.Equal(expectedText, simplified.CanonicalText);
+    }
+
+    /// <summary><c>Canonicalize</c> keeps <c>BETWEEN</c> and <c>NONE</c> even when an operand is a constant.</summary>
+    [Theory]
+    [InlineData("BETWEEN(1, 2, True, a, b)", "BETWEEN(1, 2, True, a, b)")]
+    [InlineData("NONE(True, a)", "NONE(True, a)")]
+    public void Canonicalize_ConstantOperand_KeepsTheCardinalityNode_Test(string ruleText, string expectedText)
+    {
+        K3Rule original = K3Rule.TryCreate(ruleText, 3)!;
+
+        CompiledRule<RuleTestContext> canonical = original.Compiled.Canonicalize().GetRuleOrThrow();
+
+        Assert.Equal(expectedText, canonical.CanonicalText);
+    }
 }

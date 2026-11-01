@@ -1,6 +1,6 @@
 # 66 - BETWEEN and NONE pages say Simplify keeps the node; Simplify rewrites it when an operand is a constant
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: L2 Cardinality+quantifiers
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -51,6 +51,10 @@ Pure documentation fix — the code's behavior already matches ADR-0005 decision
 - `docs/strong-k3/cardinality/between.md` and `docs/strong-k3/cardinality/none.md`.
 
 **Acceptance criteria:**
-- [ ] Both pages' "Simplify keeps the node" statement is qualified for the constant-operand case.
-- [ ] No code change — this is a documentation-only fix.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] Both pages' "Simplify keeps the node" statement is qualified for the constant-operand case.
+- [x] No code change — this is a documentation-only fix.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Reproduced; the ticket's line numbers (1171, 2190, 2244) were stale (the statements are at `between.md:209`, `none.md:158` and `none.md:212`). `Simplify` rewrites `BETWEEN(1, 2, True, a, b)` to `AtMost(1, a, b)` and `NONE(True, a)` to `False`. The ticket's "Simplify and Canonicalize" wording was also too broad the other way: `Canonicalize` keeps both nodes even with a constant operand (checked), so only `Simplify` is qualified. Pages updated: `docs/strong-k3/cardinality/between.md`, `docs/strong-k3/cardinality/none.md` (the unconditional claim in the "Related operations" paragraph too). No code change. Pin tests in `SimplifyTests`: `SimplifyAndCanonicalize_NoConstantOperand_KeepTheCardinalityNode_Test`, `Simplify_ConstantOperand_RewritesTheCardinalityNode_Test`, `Canonicalize_ConstantOperand_KeepsTheCardinalityNode_Test` (they pass before and after, because the code was right and only the pages were wrong).
