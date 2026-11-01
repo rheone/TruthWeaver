@@ -1,6 +1,6 @@
 # 57 - The rule-text grammar omits the from(...) variable-reference argument value
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F2 Parsing
@@ -52,6 +52,10 @@ Pure documentation fix — the parser already accepts `from(...)` as an argument
 - `docs/rule-text.md`'s EBNF grammar block.
 
 **Acceptance criteria:**
-- [ ] The grammar's `argument` production includes a `literal | variable` alternative, with `variable` defined as `"from" "(" string "," string ")"`.
-- [ ] No parser behavior changes — this is a documentation-only fix.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] The grammar's `argument` production includes a `literal | variable` alternative, with `variable` defined as `"from" "(" string "," string ")"`.
+- [x] No parser behavior changes — this is a documentation-only fix.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Still true: the grammar in `docs/rule-text.md` listed only `identifier ":" literal`. Checked against `DslParser.ParseArgument` and `ParseVariableReference`: an argument value is a literal or `from("source", "query")` (two quoted strings, `from` in any case, followed directly by `(`), and an array literal never holds a variable reference. The grammar now reads `argument = identifier ":" ( literal | variable ) ;` with `variable = "from" "(" string "," string ")" ;` and a comment that it is a whole argument value only. No parser change, no test change: the block is grammar notation (`doctest:skip`); the documentation, doc-example and grammar test classes pass. Page updated: `docs/rule-text.md`.

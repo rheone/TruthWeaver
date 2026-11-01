@@ -48,7 +48,8 @@ inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
 quantifier  = ( "FORALL" | "EXISTS" ) "(" identifier "IN" identifier "," expression ")" ;
 
 term        = identifier [ "(" [ argument { "," argument } ] ")" ] ;
-argument    = identifier ":" literal ;
+argument    = identifier ":" ( literal | variable ) ;
+variable    = "from" "(" string "," string ")" ;              (* a whole argument value only, never inside an array *)
 literal     = string | number | "true" | "false" | "[" [ literal { "," literal } ] "]" ;
 ```
 
