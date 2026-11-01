@@ -6,7 +6,7 @@
 
 **Blocked by:** 11
 
-**Status:** needs-triage (design grilled and confirmed 2026-10-17; do not start or dispatch until the owner releases the sub-tickets)
+**Status:** needs-triage (design grilled and confirmed 2026-10-17; sub-tickets released 2026-11-01; this ticket is the design record and is not dispatched itself)
 
 ## Decisions (owner, 2026-10-17)
 
