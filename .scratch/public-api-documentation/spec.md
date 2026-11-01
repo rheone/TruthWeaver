@@ -1,5 +1,7 @@
 # Public API documentation for package consumers
 
+**Sequencing (owner decision, 2026-11-01):** this effort runs last, after every other open ticket is resolved. Do not triage, start or dispatch it before then.
+
 **Status:** needs-triage. The plan is written; no ticket may start until the owner approves explicitly.
 
 ## Goal
