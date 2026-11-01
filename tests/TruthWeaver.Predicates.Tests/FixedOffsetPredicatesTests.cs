@@ -290,6 +290,50 @@ public class FixedOffsetPredicatesTests
         Assert.Equal(invalid, problems.Count > 0);
     }
 
+    /// <summary>
+    /// Only the exact documented spelling of an offset, a time of day or a duration is accepted: the same value followed
+    /// by a line break is a problem the compiler reports, for each of the four text arguments.
+    /// </summary>
+    /// <param name="argument">The argument that gets the trailing line break.</param>
+    [Theory]
+    [InlineData("offset")]
+    [InlineData("start")]
+    [InlineData("end")]
+    [InlineData("duration")]
+    public void ArgumentValidator_ValueWithTrailingLineBreak_ReportsAProblem_Test(string argument)
+    {
+        PredicateSchema schema = DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+        Dictionary<string, string> values = new(StringComparer.Ordinal)
+        {
+            ["offset"] = "+05:30",
+            ["start"] = "09:00",
+            [argument == "duration" ? "duration" : "end"] = argument == "duration" ? "PT8H" : "17:00",
+        };
+        values[argument] += "\n";
+
+        IReadOnlyList<PredicateArgumentProblem> problems = schema.ArgumentValidator!(
+            Window([.. values.Select(v => (v.Key, (string?)v.Value))])
+        );
+
+        Assert.NotEmpty(problems);
+    }
+
+    /// <summary>The same four values without the line break are accepted, so the check above rejects only the line break.</summary>
+    /// <param name="useDuration">Whether the window gives a duration in place of an end.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ArgumentValidator_ExactValues_ReportsNoProblem_Test(bool useDuration)
+    {
+        PredicateSchema schema = DateTimePredicates.IsInTimeWindow<DateContext>("inWindow", c => c.When).Schema;
+
+        IReadOnlyList<PredicateArgumentProblem> problems = schema.ArgumentValidator!(
+            Window(("offset", "+05:30"), ("start", "09:00"), useDuration ? ("duration", "PT8H") : ("end", "17:00"))
+        );
+
+        Assert.Empty(problems);
+    }
+
     /// <summary>A time zone name is rejected with a message that says time zone names are not supported.</summary>
     [Theory]
     [InlineData("Europe/Paris")]

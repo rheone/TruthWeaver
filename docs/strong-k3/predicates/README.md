@@ -260,6 +260,7 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 | `"-hh:mm"` | Earlier than UTC, for example `"-03:00"` |
 
 - The offset is from `-14:00` to `+14:00`. Two digits are necessary for the hours and for the minutes.
+- An `offset`, `start`, `end` or `duration` value must be exactly one of the documented forms, with nothing before or after it. A value with a trailing line break, such as `"+05:30\n"` or `"09:00\n"`, is not valid.
 - Time zone names, such as the IANA name `Europe/Paris`, are not accepted. The diagnostic says that time zone names are not supported.
 - There are no daylight-saving rules. A host that needs local time in a zone with daylight saving selects the instant in the correct offset, or registers one predicate for each offset.
 - The argument names of these predicates are fixed. The host cannot change them.

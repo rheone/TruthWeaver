@@ -1,6 +1,6 @@
 # 64 - FixedOffsetText regexes use '$', so a trailing newline is accepted
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F7 Predicates B
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -51,6 +51,14 @@ Decision: anchor with `\z` (standing policy for silently-lenient input) so only 
 - `FixedOffsetText`'s `OffsetPattern`, `TimeOfDayPattern`, `DurationPattern`.
 
 **Acceptance criteria:**
-- [ ] A value with a trailing newline (e.g. `"+05:30\n"`, `"09:00\n"`) fails to parse for all three patterns.
-- [ ] The exact documented forms (no trailing content) still parse correctly.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A value with a trailing newline (e.g. `"+05:30\n"`, `"09:00\n"`) fails to parse for all three patterns.
+- [x] The exact documented forms (no trailing content) still parse correctly.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Per the Decision, `OffsetPattern`, `TimeOfDayPattern` and `DurationPattern` in `src/TruthWeaver.Predicates/FixedOffsetText.cs` now end in `\z` in place of `$`, so a trailing line break no longer matches. Reproduced first: the validator accepted `"+05:30\n"`, `"09:00\n"`, `"17:00\n"` and `"PT8H\n"`. A data-source value goes through the same parse, so it is rejected the same way at evaluation. `TimeZoneNamePattern` is unchanged: it only picks the wording of the error message for a value that is already rejected.
+
+Tests (`FixedOffsetPredicatesTests`): `ArgumentValidator_ValueWithTrailingLineBreak_ReportsAProblem_Test` (red before for all four arguments, green after) and `ArgumentValidator_ExactValues_ReportsNoProblem_Test`.
+
+Docs: `docs/strong-k3/predicates/README.md` (Fixed offsets) now states that a value must be exactly one documented form, with nothing after it.
