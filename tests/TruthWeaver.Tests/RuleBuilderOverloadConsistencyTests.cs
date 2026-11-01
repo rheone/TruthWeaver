@@ -162,6 +162,28 @@ public sealed class RuleBuilderOverloadConsistencyTests
         Assert.Null(result.CompiledRule);
     }
 
+    /// <summary>
+    /// A builder argument value that holds a lone UTF-16 surrogate, at any depth, is a malformed tree at the argument
+    /// from <c>Compile</c>: JSON cannot carry it, and replacing it would silently change the value.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Compile_ArgumentValueWithALoneSurrogate_ReportsMalformedTree_Test(int which)
+    {
+        object[] values = ["Y\uD800", new[] { "ok", "\uDC00" }, Arg.From("user\uD800", "$.role")];
+        RuleBuilder builder = RuleBuilder.Predicate("hasRole", ("role", values[which]));
+
+        CompilationResult<RuleTestContext> result = builder.Compile(CreateCompiler());
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(DiagnosticCodes.MalformedTree, diagnostic.Code);
+        Assert.Equal("$.args.role", diagnostic.Path);
+        Assert.Contains("UTF-16", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Null(result.CompiledRule);
+    }
+
     private static RuleBuilder Build(string op, int count, bool asList)
     {
         RuleBuilder[] all =

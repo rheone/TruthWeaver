@@ -61,6 +61,13 @@ internal static class JsonTreeParser
             List<Diagnostic> diagnostics = [SyntaxError(json, ex)];
             return (null, diagnostics);
         }
+        catch (ArgumentException ex) when (ex.InnerException is EncoderFallbackException fallback)
+        {
+            // JsonDocument.Parse(string) transcodes to UTF-8 first, and that throws for a lone surrogate (for example
+            // from truncated input). The text cannot be read at all, so it is malformed like any other unreadable text.
+            List<Diagnostic> diagnostics = [InvalidUtf16Error(json, fallback)];
+            return (null, diagnostics);
+        }
 
         using (document)
         {
@@ -119,6 +126,20 @@ internal static class JsonTreeParser
             expected: "well-formed JSON",
             found: reason,
             path: ContainerPathAt(json)
+        );
+    }
+
+    /// <summary>Builds the diagnostic for text that holds a lone UTF-16 surrogate, located at that character.</summary>
+    private static Diagnostic InvalidUtf16Error(string json, EncoderFallbackException ex)
+    {
+        SourceSpan span = ex.Index >= 0 && ex.Index < json.Length ? new SourceSpan(ex.Index, 1) : SourceSpan.None;
+        return Diagnostic.Error(
+            DiagnosticCodes.MalformedTree,
+            "Malformed JSON: the text is not valid UTF-16 (it holds a lone surrogate).",
+            span,
+            expected: "valid UTF-16 text",
+            found: "a lone surrogate",
+            path: TreePath.Root
         );
     }
 

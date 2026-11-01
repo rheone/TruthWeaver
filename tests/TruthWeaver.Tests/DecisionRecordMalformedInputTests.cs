@@ -267,6 +267,25 @@ public sealed class DecisionRecordMalformedInputTests
         Assert.StartsWith("$: the text is not valid JSON:", error, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Text that holds a lone UTF-16 surrogate is refused as invalid JSON at the root, with <see langword="false"/>
+    /// and an error, never an exception.
+    /// </summary>
+    [Fact]
+    public void TryParseJson_LoneSurrogate_ReportsTheRootAsInvalidJson_Test()
+    {
+        bool read = DecisionRecord.TryParseJson(
+            "{\"formatVersion\":1,\"argumentValues\":\"omitted\",\"result\":\"True\",\"faults\":[],\"x\":\"\uD800\"}",
+            out DecisionRecord? record,
+            out string? error
+        );
+
+        Assert.False(read);
+        Assert.Null(record);
+        Assert.StartsWith("$: the text is not valid JSON:", error, StringComparison.Ordinal);
+        Assert.Contains("UTF-16", error, StringComparison.Ordinal);
+    }
+
     private static string Faults(string fault, string argumentValues = "omitted")
     {
         return "{\"formatVersion\":1,\"argumentValues\":\""

@@ -188,6 +188,26 @@ public sealed class TreeFormatReaderMalformedInputTests
         AssertFirstError(result, code, path, messageFragment);
     }
 
+    /// <summary>
+    /// JSON text that holds a lone UTF-16 surrogate (for example from truncated input) cannot be read, so it is a
+    /// malformed tree at the root, never an exception from <c>CompileJson</c>.
+    /// </summary>
+    /// <remarks>
+    /// The payloads are built here rather than passed as <c>InlineData</c>: xUnit serializes theory data, and that
+    /// replaces a lone surrogate with U+FFFD before the test sees it.
+    /// </remarks>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void CompileJson_LoneSurrogate_ReportsMalformedTreeAtTheRoot_Test(int which)
+    {
+        string[] payloads = ["{\"predicate\":\"a\uD800\"}", "{\"predicate\":\"a\uDC00\"}"];
+
+        CompilationResult<RuleTestContext> result = Compiler.CompileJson(payloads[which]);
+
+        AssertFirstError(result, MalformedTree, "$", "not valid UTF-16");
+    }
+
     /// <summary>A malformed YAML tree is refused with the specific code, path and message in the YAML wording.</summary>
     [Theory]
     [MemberData(nameof(BadYaml))]

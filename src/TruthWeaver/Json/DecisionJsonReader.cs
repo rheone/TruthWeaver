@@ -1,6 +1,7 @@
 namespace TruthWeaver.Json;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using TruthWeaver.Evaluation;
 
@@ -41,6 +42,13 @@ internal sealed class DecisionJsonReader
         {
             record = null;
             error = $"$: the text is not valid JSON: {ex.Message}";
+            return false;
+        }
+        catch (ArgumentException ex) when (ex.InnerException is EncoderFallbackException)
+        {
+            // JsonDocument.Parse(string) transcodes to UTF-8 first, and that throws for a lone surrogate.
+            record = null;
+            error = "$: the text is not valid JSON: it is not valid UTF-16 (it holds a lone surrogate).";
             return false;
         }
 
