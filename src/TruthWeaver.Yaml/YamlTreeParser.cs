@@ -16,6 +16,32 @@ using YamlDotNet.RepresentationModel;
 /// </summary>
 internal static class YamlTreeParser
 {
+    /// <summary>
+    /// What an open mapping or sequence is in the rule tree shape, so the scan in <see cref="FindDuplicateArgument"/>
+    /// knows a predicate's own <c>args</c> mapping from any other mapping whose key happens to be <c>args</c> (a
+    /// definition named <c>args</c>, or the variable reference of an argument named <c>args</c>).
+    /// </summary>
+    private enum ScanRole
+    {
+        /// <summary>A tree node: the root, an item of <c>operands</c> or a definition's <c>body</c>.</summary>
+        Node,
+
+        /// <summary>The <c>args</c> mapping of a tree node.</summary>
+        Arguments,
+
+        /// <summary>The <c>operands</c> sequence of a tree node.</summary>
+        Operands,
+
+        /// <summary>The root node's <c>definitions</c> mapping.</summary>
+        Definitions,
+
+        /// <summary>One entry of <c>definitions</c>: <c>parameters</c> and <c>body</c>.</summary>
+        DefinitionEntry,
+
+        /// <summary>Anything else, such as an argument value or a parameter list.</summary>
+        Other,
+    }
+
     /// <summary>Parses YAML tree text into a raw <see cref="RuleNode"/> tree plus any diagnostics.</summary>
     /// <param name="yaml">The YAML tree text.</param>
     /// <param name="maxDepth">
@@ -165,7 +191,7 @@ internal static class YamlTreeParser
     }
 
     /// <summary>
-    /// Reads the text event by event and reports the first key that repeats inside an <c>args</c> mapping as a
+    /// Reads the text event by event and reports the first key that repeats inside the <c>args</c> mapping of a tree node as a
     /// <see cref="DiagnosticCodes.DuplicateArgument"/> error at that key.
     /// </summary>
     /// <returns>The diagnostic, or <see langword="null"/> when no <c>args</c> mapping repeats a key before the text stops being YAML.</returns>
@@ -181,12 +207,10 @@ internal static class YamlTreeParser
                 switch (parser.Current)
                 {
                     case MappingStart:
-                        frames.Add(
-                            new ScanFrame(frames.Count == 0 ? TreePath.Root : frames[^1].ChildPath(), isSequence: false)
-                        );
+                        frames.Add(OpenFrame(frames, isSequence: false));
                         break;
                     case SequenceStart:
-                        frames.Add(new ScanFrame(frames.Count == 0 ? TreePath.Root : frames[^1].ChildPath(), isSequence: true));
+                        frames.Add(OpenFrame(frames, isSequence: true));
                         break;
                     case MappingEnd or SequenceEnd:
                         frames.RemoveAt(frames.Count - 1);
@@ -196,7 +220,7 @@ internal static class YamlTreeParser
                         ScanFrame top = frames[^1];
                         if (top.ExpectsKey && !top.IsSequence)
                         {
-                            if (!top.Keys.Add(scalar.Value) && top.Path.EndsWith(".args", StringComparison.Ordinal))
+                            if (!top.Keys.Add(scalar.Value) && top.Role == ScanRole.Arguments)
                             {
                                 return DuplicateArgument(scalar, TreePath.Property(top.Path, scalar.Value));
                             }
@@ -218,6 +242,18 @@ internal static class YamlTreeParser
         }
 
         return null;
+    }
+
+    /// <summary>The frame for a mapping or sequence that opens now: the root is a tree node, a child takes its role from its parent.</summary>
+    private static ScanFrame OpenFrame(List<ScanFrame> frames, bool isSequence)
+    {
+        if (frames.Count == 0)
+        {
+            return new ScanFrame(TreePath.Root, isSequence, isSequence ? ScanRole.Other : ScanRole.Node);
+        }
+
+        ScanFrame parent = frames[^1];
+        return new ScanFrame(parent.ChildPath(), isSequence, parent.ChildRole(isSequence));
     }
 
     private static Diagnostic DuplicateArgument(YamlDotNet.Core.Events.Scalar key, string path)
@@ -273,13 +309,15 @@ internal static class YamlTreeParser
     }
 
     /// <summary>One open mapping or sequence while <see cref="FindDuplicateArgument"/> scans the events.</summary>
-    private sealed class ScanFrame(string path, bool isSequence)
+    private sealed class ScanFrame(string path, bool isSequence, ScanRole role)
     {
         private int index = -1;
 
         public string Path { get; } = path;
 
         public bool IsSequence { get; } = isSequence;
+
+        public ScanRole Role { get; } = role;
 
         public HashSet<string> Keys { get; } = [with(StringComparer.Ordinal)];
 
@@ -297,6 +335,22 @@ internal static class YamlTreeParser
             }
 
             return this.CurrentKey is null ? this.Path : TreePath.Property(this.Path, this.CurrentKey);
+        }
+
+        // The role of the child container that the next event opens, from this frame's role and the current key: the
+        // same walk TreeFormatReader makes, reduced to the containers that can hold a tree node or an 'args' mapping.
+        public ScanRole ChildRole(bool isSequence)
+        {
+            return (this.Role, this.CurrentKey, isSequence) switch
+            {
+                (ScanRole.Node, "args", false) => ScanRole.Arguments,
+                (ScanRole.Node, "operands", true) => ScanRole.Operands,
+                (ScanRole.Node, "definitions", false) when this.Path == TreePath.Root => ScanRole.Definitions,
+                (ScanRole.Operands, _, false) => ScanRole.Node,
+                (ScanRole.Definitions, _, false) => ScanRole.DefinitionEntry,
+                (ScanRole.DefinitionEntry, "body", false) => ScanRole.Node,
+                _ => ScanRole.Other,
+            };
         }
 
         // Records that a key, a value or a whole child container has been read.
