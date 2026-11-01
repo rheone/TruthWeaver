@@ -158,6 +158,24 @@ public sealed class ShadowReplayTests
                 cancellationToken: TestContext.Current.CancellationToken
             )
         );
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            ShadowReplay.CompareAsync(
+                rule,
+                rule,
+                ["a=T"],
+                evaluationOptions: new EvaluationOptions(MaxElementEvaluations: 0),
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            ShadowReplay.CompareAsync(
+                rule,
+                rule,
+                ["a=T"],
+                evaluationOptions: new EvaluationOptions(Timeout: TimeSpan.FromSeconds(-5)),
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
     }
 
     private static CompiledRule<string> Compile(string text)

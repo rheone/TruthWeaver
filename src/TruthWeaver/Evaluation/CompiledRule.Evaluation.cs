@@ -34,7 +34,7 @@ public sealed partial class CompiledRule<TContext>
     /// <param name="options">Per-call evaluation options, or <see langword="null"/> for the defaults.</param>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>.</exception>
     /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/>, cancelled the evaluation. Neither is recorded as a fault.</exception>
     public async Task<Decision> EvaluateAsync(
         TContext context,
@@ -47,8 +47,7 @@ public sealed partial class CompiledRule<TContext>
         services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
 
-        // A budget below 1 could never be met, so it is a caller error, not a value to interpret.
-        ArgumentOutOfRangeException.ThrowIfLessThan(effectiveOptions.FaultBudget ?? 1, 1);
+        effectiveOptions.ThrowIfInvalid(nameof(options));
         if (effectiveOptions.Timeout is { } timeout)
         {
             using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -101,7 +100,7 @@ public sealed partial class CompiledRule<TContext>
     /// <param name="cancellationToken">A token that stops the batch. It reaches every evaluation in flight.</param>
     /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>. Thrown when the method is called.</exception>
     /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
     public IAsyncEnumerable<Decision> EvaluateManyAsync(
         IEnumerable<TContext> contexts,
@@ -137,7 +136,7 @@ public sealed partial class CompiledRule<TContext>
     /// <param name="cancellationToken">A token that stops the batch. It reaches the stream and every evaluation in flight.</param>
     /// <returns>The decisions, one per context, in the order of <paramref name="contexts"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="contexts"/> is <see langword="null"/>. Thrown when the method is called.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1. Thrown when the method is called.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism"/> is below 1, or <paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>. Thrown when the method is called.</exception>
     /// <exception cref="OperationCanceledException">The token cancelled the batch, or <see cref="EvaluationOptions.Timeout"/> expired for one context. Thrown during the enumeration; neither is recorded as a fault.</exception>
     public IAsyncEnumerable<Decision> EvaluateManyAsync(
         IAsyncEnumerable<TContext> contexts,
@@ -152,10 +151,7 @@ public sealed partial class CompiledRule<TContext>
         ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, 1);
 
         // Checked here, not in the iterator, so a bad option fails at the call rather than at the first read.
-        if (options is { FaultBudget: < 1 })
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), options.FaultBudget, "The fault budget must be 1 or more.");
-        }
+        options?.ThrowIfInvalid(nameof(options));
 
         return BatchEvaluator.EvaluateAsync(
             this,
@@ -184,7 +180,7 @@ public sealed partial class CompiledRule<TContext>
     /// <param name="cancellationToken">A token observed for cooperative cancellation.</param>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="sharedState"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> below 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>.</exception>
     /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/>, cancelled the evaluation. Neither is recorded as a fault.</exception>
     internal async Task<Decision> EvaluateAsync(
         TContext context,
@@ -199,8 +195,7 @@ public sealed partial class CompiledRule<TContext>
         services ??= NoServiceProvider.Instance;
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
 
-        // A budget below 1 could never be met, so it is a caller error, not a value to interpret.
-        ArgumentOutOfRangeException.ThrowIfLessThan(effectiveOptions.FaultBudget ?? 1, 1);
+        effectiveOptions.ThrowIfInvalid(nameof(options));
         if (effectiveOptions.Timeout is { } timeout)
         {
             using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

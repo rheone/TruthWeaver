@@ -1,6 +1,6 @@
 # 53 - Timeout and MaxElementEvaluations are not validated; Timeout is cooperative only
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F4 Evaluation
@@ -24,9 +24,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -47,10 +47,14 @@ Decision: validate `Timeout` and `MaxElementEvaluations` upfront, matching the e
 - Wherever `FaultBudget`'s upfront validation already happens — `Timeout` and `MaxElementEvaluations` need the same validation, at the same point.
 
 **Acceptance criteria:**
-- [ ] A negative `Timeout` (other than the infinite sentinel) is rejected immediately with a documented exception, not deferred into `EvaluateManyAsync`'s enumeration.
-- [ ] A non-positive `MaxElementEvaluations` is rejected immediately, instead of silently causing every quantifier to fault.
-- [ ] Documentation states that `Timeout` is cooperative, bounded by the next cancellation check, and gives no hard preemption guarantee against a blocking, non-observing predicate.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A negative `Timeout` (other than the infinite sentinel) is rejected immediately with a documented exception, not deferred into `EvaluateManyAsync`'s enumeration.
+- [x] A non-positive `MaxElementEvaluations` is rejected immediately, instead of silently causing every quantifier to fault.
+- [x] Documentation states that `Timeout` is cooperative, bounded by the next cancellation check, and gives no hard preemption guarantee against a blocking, non-observing predicate.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any attempt to forcibly preempt a blocking predicate that ignores its cancellation token — not fixable safely in .NET and explicitly not attempted here.
+
+## Resolution (2026-11-01)
+
+Reproduced first (red): `MaxElementEvaluations` of 0 or -1 and a bad `Timeout` passed to `EvaluateManyAsync` were accepted at the call. The `Timeout` failure in single `EvaluateAsync` came from `CancelAfter`, undocumented. New internal `EvaluationOptions.ThrowIfInvalid(paramName)` holds all three checks and replaces the separate `FaultBudget` checks in `CompiledRule.EvaluateAsync` (public and internal overloads), `EvaluateManyAsync` (so it still fails at the call) and `ShadowReplay.CompareAsync`. Rejected with `ArgumentOutOfRangeException`: `FaultBudget` below 1, `MaxElementEvaluations` below 1, and a `Timeout` that is negative other than `Timeout.InfiniteTimeSpan` or longer than 4,294,967,294 ms (the largest delay `CancelAfter` accepts, checked empirically). `TimeSpan.Zero` stays valid: it cancels at once, a legal if odd request. The cooperative-only limitation is documented, not fixed (per the Decision). Tests: `EvaluationOptionsTests.EvaluateAsync_UnusableTimeoutOrElementBound_ThrowsArgumentOutOfRange_Test` and `..._InfiniteTimeoutAndPositiveElementBound_Evaluates_Test`, `BatchEvaluationTests.EvaluateManyAsync_UnusableTimeoutOrElementBound_ThrowsArgumentOutOfRange_Test`, extended `ShadowReplayTests` argument test. Pages: `EvaluationOptions` XML docs, `docs/diagnostics.md`, `docs/batch-evaluation.md`, `docs/shadow-replay.md`.

@@ -567,6 +567,10 @@ copyright line reads 2026.
 
 ### Fixed
 
+- `EvaluationOptions` rejects an unusable value when you call `EvaluateAsync`, `EvaluateManyAsync` or `ShadowReplay.CompareAsync`:
+  `MaxElementEvaluations` below 1, and a `Timeout` that is negative (other than `Timeout.InfiniteTimeSpan`) or over
+  4,294,967,294 ms, throw `ArgumentOutOfRangeException`, as a `FaultBudget` below 1 already did. The docs now state that the
+  timeout is cooperative: a predicate that blocks without observing its token can run past it.
 - The `TRE0014` diagnostic for a bad `const` in JSON and YAML names every accepted spelling: `true`, `false`, `unknown`
   and the letters `T`, `F` and `U`, in any case. A YAML `const:` with an empty or `~` value reports `Found` as `null`,
   as the JSON `{"const": null}` does.

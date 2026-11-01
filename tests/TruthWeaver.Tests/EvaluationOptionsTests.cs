@@ -148,6 +148,54 @@ public sealed class EvaluationOptionsTests
         );
     }
 
+    /// <summary>
+    /// A <see cref="EvaluationOptions.Timeout"/> that no timer can use (negative other than the infinite sentinel, or above the
+    /// timer's range) and a <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1 are rejected when the evaluation is
+    /// requested, as a fault budget below 1 is.
+    /// </summary>
+    [Theory]
+    [InlineData(-5000L, 10_000)]
+    [InlineData(-2L, 10_000)]
+    [InlineData(4_294_967_295L, 10_000)]
+    [InlineData(null, 0)]
+    [InlineData(null, -1)]
+    public Task EvaluateAsync_UnusableTimeoutOrElementBound_ThrowsArgumentOutOfRange_Test(
+        long? timeoutMilliseconds,
+        int maxElementEvaluations
+    )
+    {
+        EvaluationOptions options = new(
+            Timeout: timeoutMilliseconds is { } ms ? TimeSpan.FromMilliseconds(ms) : null,
+            MaxElementEvaluations: maxElementEvaluations
+        );
+        CompiledRule<RuleTestContext> rule = CompileConstant();
+
+        return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            rule.EvaluateAsync(
+                new RuleTestContext(),
+                EmptyServiceProvider.Instance,
+                options: options,
+                cancellationToken: TestContext.Current.CancellationToken
+            )
+        );
+    }
+
+    /// <summary>The infinite-timeout sentinel and a positive element bound are valid options.</summary>
+    [Fact]
+    public async Task EvaluateAsync_InfiniteTimeoutAndPositiveElementBound_Evaluates_Test()
+    {
+        CompiledRule<RuleTestContext> rule = CompileConstant();
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            EmptyServiceProvider.Instance,
+            options: new EvaluationOptions(Timeout: System.Threading.Timeout.InfiniteTimeSpan, MaxElementEvaluations: 1),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.True, decision.Result);
+    }
+
     /// <summary>The unlimited default fault budget completes evaluation with multiple faults.</summary>
     [Fact]
     public async Task FaultBudget_UnlimitedDefault_CompletesWithMultipleFaults_Test()
@@ -518,5 +566,13 @@ public sealed class EvaluationOptionsTests
             options: options,
             cancellationToken: TestContext.Current.CancellationToken
         );
+    }
+
+    private static CompiledRule<RuleTestContext> CompileConstant()
+    {
+        RuleCompiler<RuleTestContext> compiler = new(
+            PredicateRegistry<RuleTestContext>.CreateBuilder().AddConstant("a", true).Build()
+        );
+        return compiler.Compile("a").CompiledRule!;
     }
 }
