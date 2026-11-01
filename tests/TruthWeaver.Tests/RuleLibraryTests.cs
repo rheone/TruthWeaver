@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tests;
 
+using NSubstitute;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
@@ -73,8 +74,8 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
-    /// The content hash of a library rule is the hash the rule store computes: SHA-256 of the UTF-8 bytes of the rule
-    /// text, as upper-case hexadecimal digits.
+    /// The content hash of a library rule with LF-only text is the SHA-256 of the UTF-8 bytes of the rule text, as
+    /// upper-case hexadecimal digits.
     /// </summary>
     [Fact]
     public void Hash_LibraryRule_IsTheSha256OfTheRuleTextInUpperCaseHex_Test()
@@ -87,6 +88,25 @@ public sealed class RuleLibraryTests
             System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))
         );
         Assert.Equal(expected, adult.Hash);
+    }
+
+    /// <summary>
+    /// Rule text with CRLF line endings, rule text with lone CR and the same text with LF have one content hash, and a pin
+    /// written from one compiles against a library that holds another.
+    /// </summary>
+    [Fact]
+    public void Compile_PinWrittenFromTextWithOtherLineEndings_MatchesTheLibraryRule_Test()
+    {
+        Assert.True(Library(("x", "a AND\nb")).TryGet("x", out LibraryRule? lfRule));
+        Assert.True(Library(("x", "a AND\r\nb")).TryGet("x", out LibraryRule? crlfRule));
+        Assert.True(Library(("x", "a AND\rb")).TryGet("x", out LibraryRule? crRule));
+        Assert.Equal(lfRule.Hash, crlfRule.Hash);
+        Assert.Equal(lfRule.Hash, crRule.Hash);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("x", "a AND\r\nb")));
+
+        CompiledRule<RuleTestContext> rule = Compile(compiler, $"rule(\"x\", hash: \"{lfRule.Hash}\")");
+
+        Assert.Equal(Compile(compiler, "a AND b").CanonicalText, rule.CanonicalText);
     }
 
     /// <summary>
@@ -156,6 +176,159 @@ public sealed class RuleLibraryTests
         Assert.Contains("'adult'", diagnostic.Message, StringComparison.Ordinal);
         Assert.Contains(missingName, diagnostic.Message, StringComparison.Ordinal);
         Assert.Equal(text.IndexOf("rule", StringComparison.Ordinal), diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// A diagnostic from one node of a library rule with two predicates names the library rule and the line and column of
+    /// that node in the library rule text, so the two predicates can be told apart. The span stays at the reference.
+    /// </summary>
+    [Fact]
+    public void Compile_OneOfTwoPredicatesInALibraryRuleFails_MessageNamesTheRuleAndThePosition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND\n  notRegistered")));
+        const string text = "c AND rule(\"adult\")";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("library rule 'adult' at line 2, column 3", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(text.IndexOf("rule", StringComparison.Ordinal), diagnostic.Span.Start);
+        Assert.Equal(text.Length, diagnostic.Span.End);
+    }
+
+    /// <summary>
+    /// A syntax error in a library rule names the library rule and the line and column of the error in the library rule
+    /// text.
+    /// </summary>
+    [Fact]
+    public void Compile_SyntaxErrorInALibraryRule_MessageNamesTheRuleAndThePosition_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"adult\")");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("library rule 'adult' at line 1, column", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A diagnostic about the caller's own text names no library rule, also when the rule references a library rule.
+    /// </summary>
+    [Fact]
+    public void Compile_ErrorInTheCallerText_MessageNamesNoLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND b")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("notRegistered AND rule(\"adult\")");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnknownPredicate, diagnostic.Code);
+        Assert.DoesNotContain("library rule", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(0, diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// A trace entry for a node from a library rule names the library rule and the position of the node in the library
+    /// rule text; an entry for a node of the caller's own text is unchanged.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_NodeFromALibraryRule_TraceEntryNamesTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND NOT b")));
+        CompiledRule<RuleTestContext> rule = Compile(compiler, "c AND rule(\"adult\")");
+
+        Decision decision = await rule.EvaluateAsync(
+            new RuleTestContext(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("c", texts);
+        Assert.Contains("a (in library rule 'adult' at line 1, column 1)", texts);
+        Assert.Contains("b (in library rule 'adult' at line 1, column 11)", texts);
+    }
+
+    /// <summary>
+    /// A library rule that uses a deprecated predicate gives the deprecation warning, with its own code and severity, when
+    /// it is referenced: at the reference, naming the library rule and the place in it. The rule still compiles.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleUsesADeprecatedPredicate_WarnsAtTheReferenceNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(Library(("adult", "a AND old")));
+        const string text = "c AND rule(\"adult\")";
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(text);
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.DeprecatedPredicate, diagnostic.Code);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("library rule 'adult' at line 1, column 7", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(text.IndexOf("rule", StringComparison.Ordinal), diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// An information diagnostic that the expansion of a library rule raises (here the unused definition lint) reaches the
+    /// caller with its own code and severity, at the reference, naming the library rule and the place in it.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAnUnusedDefinition_ReportsTheLintNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(
+            Library(("adult", "let spare = b; a")),
+            LintRules.UnusedDefinition
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"adult\")");
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnusedDefinition, diagnostic.Code);
+        Assert.Equal(DiagnosticSeverity.Info, diagnostic.Severity);
+        Assert.Contains("library rule 'adult' at line 1, column 5", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(0, diagnostic.Span.Start);
+    }
+
+    /// <summary>
+    /// A warning of a library rule that another library rule references reaches the caller once, naming the library rule
+    /// that holds it.
+    /// </summary>
+    [Fact]
+    public void Compile_WarningInANestedLibraryRule_ReportsItOnceNamingTheInnerRule_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(
+            Library(("inner", "let spare = b; a"), ("outer", "rule(\"inner\") AND c")),
+            LintRules.UnusedDefinition
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"outer\")");
+
+        Assert.True(result.Succeeded);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.UnusedDefinition, diagnostic.Code);
+        Assert.EndsWith("In library rule 'inner' at line 1, column 5.", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A warning in a library rule is reported once for each reference site: a definition that holds the reference and is
+    /// used many times shares one site, and a second reference in the text is a second site.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWarningReferencedFromManySites_ReportsItOncePerSite_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateDeprecationCompiler(Library(("adult", "old")));
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            "let grown = rule(\"adult\"); (grown AND grown AND (grown OR c)) OR rule(\"adult\")"
+        );
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Diagnostics.Count(d => d.Code == DiagnosticCodes.DeprecatedPredicate));
+        Assert.Equal(2, result.Diagnostics.Select(d => d.Span).Distinct().Count());
     }
 
     /// <summary>
@@ -273,6 +446,259 @@ public sealed class RuleLibraryTests
         Assert.Contains(DiagnosticCodes.MaxNodeCountExceeded, diagnostic.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A <c>let</c> definition whose body holds a bad library reference, used many times, reports the error once: the
+    /// uses share the one reference site, so the same code, span and message are not repeated for each use.
+    /// </summary>
+    /// <param name="reference">The bad library reference in the definition body.</param>
+    /// <param name="code">The diagnostic code the reference gives.</param>
+    [Theory]
+    [InlineData("rule(\"missing\")", DiagnosticCodes.UnknownLibraryRule)]
+    [InlineData(
+        "rule(\"adult\", hash: \"0000000000000000000000000000000000000000000000000000000000000000\")",
+        DiagnosticCodes.LibraryRuleHashMismatch
+    )]
+    [InlineData("rule(\"first\")", DiagnosticCodes.LibraryRuleCycleDetected)]
+    public void Compile_DefinitionHoldingABadReferenceUsedManyTimes_ReportsTheErrorOnce_Test(string reference, string code)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("adult", "a AND b"), ("first", "rule(\"second\") AND a"), ("second", "b OR rule(\"first\")"))
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile($"let bad = {reference}; bad AND bad AND (bad OR c)");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(code, diagnostic.Code);
+    }
+
+    /// <summary>
+    /// Inside a library rule every reference takes the site of the outermost reference, so an unpinned and a stale pinned
+    /// reference to the same rule share a site: the stale pin is still reported after the unpinned reference expands.
+    /// </summary>
+    [Fact]
+    public void Compile_UnpinnedAndStalePinnedReferenceInOneLibraryRule_ReportsTheStalePin_Test()
+    {
+        string stale = new('0', 64);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("adult", "a AND b"), ("outer", $"rule(\"adult\") OR rule(\"adult\", hash: \"{stale}\")"))
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile("rule(\"outer\")");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.LibraryRuleHashMismatch, diagnostic.Code);
+    }
+
+    /// <summary>
+    /// The nodes that each reference adds count against <see cref="CompilerOptions.MaxNodeCount"/> while the references
+    /// expand: the compile stops at the node count limit with one diagnostic, and the references past the limit are not
+    /// expanded or compiled. The query validator of the library rule's data source counts the compiles.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleReferencedPastTheNodeLimit_StopsExpandingAtTheLimit_Test()
+    {
+        const int references = 20;
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate(Arg.Any<string>()).Returns([]);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("admin", "hasRole(role: from(\"user\", \"$.role\")) AND a AND c AND NOT b")),
+            ValidatedUserSource(validator),
+            maxNodeCount: 30
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            string.Join(" OR ", Enumerable.Repeat("rule(\"admin\")", references))
+        );
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.MaxNodeCountExceeded, diagnostic.Code);
+        Assert.True(validator.ReceivedCalls().Count() < references);
+    }
+
+    /// <summary>
+    /// A library rule referenced from many sites is checked once per compile: each reference is compiled once in the
+    /// compiled rule, and the library rule once more to check its names.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleReferencedFromManySites_IsCheckedOncePerCompile_Test()
+    {
+        const int references = 3;
+        IQueryValidator validator = Substitute.For<IQueryValidator>();
+        validator.Validate(Arg.Any<string>()).Returns([]);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(
+            Library(("admin", "hasRole(role: from(\"user\", \"$.role\"))")),
+            ValidatedUserSource(validator)
+        );
+
+        CompilationResult<RuleTestContext> result = compiler.Compile(
+            string.Join(" AND ", Enumerable.Repeat("rule(\"admin\")", references))
+        );
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(references + 1, validator.ReceivedCalls().Count());
+    }
+
+    /// <summary>
+    /// A library rule referenced inside a <c>FORALL</c> body resolves its predicates against the element registry of that
+    /// collection, like a <c>let</c> definition: it compiles and evaluates over each element. The same holds when the
+    /// quantifier is itself in a library rule.
+    /// </summary>
+    /// <param name="text">The rule text, with the reference in the body or in a library rule that holds the quantifier.</param>
+    [Theory]
+    [InlineData("FORALL(line IN lines, rule(\"line-ok\"))")]
+    [InlineData("rule(\"all-lines-ok\")")]
+    public async Task Compile_LibraryRuleInAQuantifierBody_ResolvesAgainstTheElementRegistry_Test(string text)
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(
+            Library(("line-ok", "shipped"), ("all-lines-ok", "FORALL(line IN lines, rule(\"line-ok\"))"))
+        );
+
+        CompilationResult<OrderContext> result = compiler.Compile(text);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+        Assert.Equal(
+            compiler.Compile("FORALL(line IN lines, shipped)").CompiledRule?.CanonicalText,
+            result.CompiledRule.CanonicalText
+        );
+        Decision allShipped = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, []), new OrderLine(true, [])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Decision oneNotShipped = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, []), new OrderLine(false, [])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.True, allShipped.Result);
+        Assert.Equal(TruthValue.False, oneNotShipped.Result);
+    }
+
+    /// <summary>
+    /// Outside a quantifier body the top-level registry applies: a library rule that uses an element predicate fails with
+    /// <see cref="DiagnosticCodes.InvalidLibraryRule"/>.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAnElementPredicateAtTheTopLevel_ReportsInvalidLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("line-ok", "shipped")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("rule(\"line-ok\")");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("shipped", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A library rule referenced in a nested quantifier body resolves against the element registry of the inner
+    /// collection.
+    /// </summary>
+    [Fact]
+    public async Task Compile_LibraryRuleInANestedQuantifierBody_ResolvesAgainstTheInnerCollection_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "partOk")));
+
+        CompilationResult<OrderContext> result = compiler.Compile(
+            "FORALL(line IN lines, EXISTS(part IN parts, rule(\"part-ok\")))"
+        );
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+        Decision decision = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, [false, true]), new OrderLine(true, [false])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    /// <summary>
+    /// Two libraries built from the same rules in a different order, with names that differ only in case, are equal with
+    /// equal hash codes, and two <see cref="CompilerOptions"/> that hold them are equal.
+    /// </summary>
+    [Fact]
+    public void Equals_SameRulesInAnotherOrder_AreEqualAndMakeEqualCompilerOptions_Test()
+    {
+        RuleLibrary first = Library(("adult", "a AND b"), ("minor", "NOT a"));
+        RuleLibrary second = Library(("MINOR", "NOT a"), ("Adult", "a AND b"));
+
+        Assert.Equal(first, second);
+        Assert.True(first.Equals(second));
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal(new CompilerOptions(Library: first), new CompilerOptions(Library: second));
+    }
+
+    /// <summary>Libraries that differ in one rule text, in a name or in the number of rules are not equal.</summary>
+    [Fact]
+    public void Equals_LibrariesThatDiffer_AreNotEqual_Test()
+    {
+        RuleLibrary library = Library(("adult", "a AND b"));
+
+        Assert.NotEqual(library, Library(("adult", "a OR b")));
+        Assert.NotEqual(library, Library(("grown", "a AND b")));
+        Assert.NotEqual(library, Library(("adult", "a AND b"), ("minor", "NOT a")));
+        Assert.False(library.Equals(null));
+    }
+
+    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library)
+    {
+        PredicateRegistry<OrderContext> registry = PredicateRegistry<OrderContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                order => order.Lines,
+                lines =>
+                    lines
+                        .Add(
+                            PredicateSchema.NoArguments("shipped", "shipped", "True when the line has shipped."),
+                            (line, _, _) => ValueTask.FromResult(line.Item.Shipped ? TruthValue.True : TruthValue.False)
+                        )
+                        .AddCollection(
+                            "parts",
+                            line => line.Item.Parts,
+                            parts =>
+                                parts.Add(
+                                    PredicateSchema.NoArguments("partOk", "partOk", "True when the part is ok."),
+                                    (part, _, _) => ValueTask.FromResult(part.Item ? TruthValue.True : TruthValue.False)
+                                )
+                        )
+            )
+            .Build();
+        return new RuleCompiler<OrderContext>(registry, new CompilerOptions(Library: library));
+    }
+
+    // The predicates a, b and c, and old, which is deprecated in favor of a.
+    private static RuleCompiler<RuleTestContext> CreateDeprecationCompiler(
+        RuleLibrary library,
+        LintRules lints = LintRules.None
+    )
+    {
+        PredicateSchema old = PredicateSchema.NoArguments("old", "old", "A deprecated test predicate.") with
+        {
+            Deprecation = new PredicateDeprecation("a", null),
+        };
+        return new(
+            PredicateRegistry<RuleTestContext>
+                .CreateBuilder()
+                .AddConstant("a", true)
+                .AddConstant("b", false)
+                .AddConstant("c", true)
+                .Add(old, (_, _, _) => ValueTask.FromResult(TruthValue.True))
+                .Build(),
+            new CompilerOptions(Lints: lints, Library: library)
+        );
+    }
+
+    private static DataSourceDeclarations ValidatedUserSource(IQueryValidator validator)
+    {
+        DataSourceDeclarations dataSources = [];
+        dataSources.Add("user", validator);
+        return dataSources;
+    }
+
     private static RuleLibrary Library(params (string Name, string Text)[] rules)
     {
         return new RuleLibrary(rules.Select(rule => new KeyValuePair<string, string>(rule.Name, rule.Text)));
@@ -287,7 +713,8 @@ public sealed class RuleLibraryTests
 
     private static RuleCompiler<RuleTestContext> CreateCompiler(
         RuleLibrary? library,
-        DataSourceDeclarations? dataSources = null
+        DataSourceDeclarations? dataSources = null,
+        int maxNodeCount = 512
     )
     {
         return new(
@@ -298,7 +725,16 @@ public sealed class RuleLibraryTests
                 .AddConstant("c", true)
                 .AddStringArgPredicate("hasRole", "role", "admin")
                 .Build(),
-            new CompilerOptions(DataSources: dataSources, Library: library)
+            new CompilerOptions(MaxNodeCount: maxNodeCount, DataSources: dataSources, Library: library)
         );
     }
+
+    /// <summary>An order with lines, for the library rules that are referenced in a quantifier body.</summary>
+    /// <param name="Lines">The order lines.</param>
+    private sealed record OrderContext(IReadOnlyList<OrderLine> Lines);
+
+    /// <summary>One order line.</summary>
+    /// <param name="Shipped">Whether the line has shipped.</param>
+    /// <param name="Parts">Whether each part of the line is ok.</param>
+    private sealed record OrderLine(bool Shipped, IReadOnlyList<bool> Parts);
 }

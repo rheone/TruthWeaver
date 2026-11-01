@@ -221,6 +221,26 @@ public sealed class RuleDefinitionsTests
     }
 
     /// <summary>
+    /// A document that holds a library reference anywhere (the rule, a <c>let</c> body, a quantifier body) reads, but the
+    /// tree format has no shape for the reference yet, so neither JSON nor YAML prints it: both return <see langword="null"/>
+    /// and neither throws.
+    /// </summary>
+    /// <param name="text">The rule text with a library reference.</param>
+    [Theory]
+    [InlineData("rule(\"x\")")]
+    [InlineData("a AND rule(\"x\", hash: \"abc\")")]
+    [InlineData("let one = a OR rule(\"x\"); one")]
+    [InlineData("FORALL(line IN lines, rule(\"x\"))")]
+    public void PrintJson_DocumentWithLibraryReference_ReturnsNullInsteadOfThrowing_Test(string text)
+    {
+        RuleDefinitions read = RuleDefinitions.ReadText(text);
+
+        Assert.True(read.Succeeded);
+        Assert.Null(read.PrintJson());
+        Assert.Null(read.PrintYaml());
+    }
+
+    /// <summary>
     /// A use that the compiler refuses (here an unknown name) is still listed, at the place of its error, with no
     /// definition body under it.
     /// </summary>

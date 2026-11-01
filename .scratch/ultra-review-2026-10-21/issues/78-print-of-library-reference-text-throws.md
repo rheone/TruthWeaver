@@ -1,6 +1,6 @@
 # 78 - Printing rule text that holds rule("x") as a JSON or YAML tree throws
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: Follow-up to ticket 11b-2
@@ -20,9 +20,15 @@ Ticket 11b-2 made `rule("x")` parse as a library reference. `RuleDefinitions.Rea
 **Desired behavior:** `WriteTree` returns `false` when the parsed document contains a library reference at any depth (the rule, a `let` body, a quantifier body), so `PrintJson` and `PrintYaml` return `null`, which their documentation already describes. A document without a reference prints as before.
 
 **Acceptance criteria:**
-- [ ] A test fails before the fix and passes after: `ReadText` of text with a library reference, then `PrintJson()`, returns `null` and does not throw. The same for a reference nested inside a `let` body and a `FORALL` body.
-- [ ] Printing a document with no reference is unchanged.
-- [ ] The XML docs of `PrintJson` and `PrintYaml` say that a document with a library reference is not printed until the JSON and YAML shape exists.
-- [ ] The validation list in CLAUDE.md passes.
+- [x] A test fails before the fix and passes after: `ReadText` of text with a library reference, then `PrintJson()`, returns `null` and does not throw. The same for a reference nested inside a `let` body and a `FORALL` body.
+- [x] Printing a document with no reference is unchanged.
+- [x] The XML docs of `PrintJson` and `PrintYaml` say that a document with a library reference is not printed until the JSON and YAML shape exists.
+- [x] The validation list in CLAUDE.md passes.
 
 **Out of scope:** The JSON and YAML shape of `rule` and `call` (ticket 11b-4).
+
+## Resolution (2026-11-01)
+
+`RuleDefinitions.WriteTree` returns `false` when the parsed document holds a library reference at any depth. It reuses `DefinitionExpander.HasLibraryReference`, which walks the rule, the `let` bodies and the quantifier bodies. `PrintJson()` and `YamlRuleDefinitions.PrintYaml()` therefore return `null` and do not throw. Their XML docs say that a document with a library reference is not printed until the JSON and YAML shape exists (ticket 11b-4). CHANGELOG entry under Fixed.
+
+Test: `RuleDefinitionsTests.PrintJson_DocumentWithLibraryReference_ReturnsNullInsteadOfThrowing_Test` (a theory: the bare reference, a pinned reference under `AND`, a reference in a `let` body, a reference in a `FORALL` body; each asserts that `PrintJson()` and `PrintYaml()` are `null`). Red first: all four cases failed with `InvalidOperationException: Unhandled rule node type 'TruthWeaver.Parsing.LibraryReferenceNode'`. The existing print tests (no reference) pass unchanged.

@@ -20,6 +20,10 @@ internal sealed class RuleNodeCompiler<TContext>
     private readonly CompilerOptions options;
     private readonly List<Diagnostic> diagnostics = [];
 
+    // The indexes in diagnostics that already carry the library locator of the node that raised them, so an enclosing
+    // node of the same library rule does not add its own locator a second time.
+    private readonly HashSet<int> locatedDiagnostics = [];
+
     // The bound variable names currently in scope, innermost last (ADR-0010 decision 2): a quantifier head whose
     // variable is already here is a shadowed-variable diagnostic rather than a silently inner-shadowing rebind.
     private readonly List<string> activeVariables = [];
@@ -75,6 +79,11 @@ internal sealed class RuleNodeCompiler<TContext>
     /// quantifier counts as one node plus its body, once"), and <see cref="DiagnosticCodes.MaxNodeCountExceeded"/>
     /// fires against the combined total, at whichever node (outer or body) first crosses it.
     /// </param>
+    /// <param name="expandLibraryReferences">
+    /// <see langword="true"/> for the compile of a whole rule, which expands the <c>rule("name")</c> references anywhere
+    /// in <paramref name="root"/>; <see langword="false"/> (the default) for a tree that is already expanded, such as a
+    /// quantifier body, so it is not walked again to look for a reference.
+    /// </param>
     /// <returns>
     /// The built tree (or <see langword="null"/> if any <see cref="DiagnosticSeverity.Error"/> diagnostic was
     /// produced), the already-expanded raw tree <see cref="Build"/> actually built from (the same as
@@ -91,32 +100,41 @@ internal sealed class RuleNodeCompiler<TContext>
         int startDepth = 1,
         int startQuantifierDepth = 0,
         IReadOnlyList<string>? inheritedVariables = null,
-        int startNodeCount = 0
+        int startNodeCount = 0,
+        bool expandLibraryReferences = false
     )
     {
-        List<Diagnostic> expansionDiagnostics = [];
-        if (root is RuleDocumentNode document)
+        IReadOnlyList<Diagnostic> expansionDiagnostics = [];
+
+        // The definitions and library references of a rule are expanded once, over the whole tree, before the build. A
+        // quantifier body and a library rule being checked arrive here already expanded, so only the compile of a whole
+        // rule looks for a library reference, and a rule with references but no definitions expands as a document that
+        // declares none.
+        if (root is RuleDocumentNode || (expandLibraryReferences && DefinitionExpander.HasLibraryReference(root)))
         {
-            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(document, registry, options);
-            expansionDiagnostics.AddRange(diagnosed);
-        }
-        else if (DefinitionExpander.HasLibraryReference(root))
-        {
-            // A rule with library references but no definitions expands as a document that declares none.
-            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(
-                new RuleDocumentNode([], root, root.Span),
-                registry,
-                options
-            );
-            expansionDiagnostics.AddRange(diagnosed);
+            RuleDocumentNode document = root as RuleDocumentNode ?? new RuleDocumentNode([], root, root.Span);
+            (root, expansionDiagnostics) = DefinitionExpander.Expand(document, registry, options);
         }
 
         RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? [])
         {
             nodeCount = startNodeCount,
+
+            // The expansion stops at the node count limit and reports it, and the build of the cut-short tree must not
+            // report it a second time.
+            nodeLimitReported = expansionDiagnostics.Any(d => d.Code == DiagnosticCodes.MaxNodeCountExceeded),
         };
         Expression tree = compiler.Build(root, depth: startDepth);
-        List<Diagnostic> diagnostics = [.. expansionDiagnostics, .. compiler.diagnostics];
+
+        // The uses of a definition that holds a library rule reference share the expansion of the reference, so its nodes
+        // are built once for each use, with one span and one locator: a diagnostic of a library rule node is kept once,
+        // which is once for each reference site.
+        HashSet<Diagnostic> locatedOnce = [];
+        List<Diagnostic> diagnostics =
+        [
+            .. expansionDiagnostics,
+            .. compiler.diagnostics.Where((d, i) => !compiler.locatedDiagnostics.Contains(i) || locatedOnce.Add(d)),
+        ];
         bool hasErrors = diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         return (hasErrors ? null : tree, root, diagnostics, compiler.nodeCount);
     }
@@ -248,6 +266,38 @@ internal sealed class RuleNodeCompiler<TContext>
     }
 
     private Expression Build(RuleNode node, int depth)
+    {
+        if (node.Library is not { } locator)
+        {
+            return this.BuildNode(node, depth);
+        }
+
+        // A node from a library rule: each diagnostic raised while building it, and not already located by a node inside
+        // it, is about this node. Its span becomes the reference (an argument span is in the library rule text, which is
+        // not the compiled text), its message gets the locator, and a replacement suggestion, which would apply to the
+        // span, is dropped; a hint is kept.
+        int before = this.diagnostics.Count;
+        Expression built = this.BuildNode(node, depth);
+        for (int i = before; i < this.diagnostics.Count; i++)
+        {
+            if (!this.locatedDiagnostics.Add(i))
+            {
+                continue;
+            }
+
+            Diagnostic raised = this.diagnostics[i];
+            this.diagnostics[i] = raised with
+            {
+                Span = node.Span,
+                Message = locator.AppendTo(raised.Message),
+                Suggestion = raised.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null,
+            };
+        }
+
+        return built;
+    }
+
+    private Expression BuildNode(RuleNode node, int depth)
     {
         this.nodeCount++;
         if (this.nodeCount > this.options.MaxNodeCount)
@@ -481,7 +531,14 @@ internal sealed class RuleNodeCompiler<TContext>
         this.activeVariables.RemoveAt(this.activeVariables.Count - 1);
         this.quantifierDepth--;
 
+        // A body inside a library rule was compiled from nodes that carry their library locator, so the compile of the
+        // body has already added it to each of its diagnostics.
+        int bodyStart = this.diagnostics.Count;
         this.diagnostics.AddRange(bodyDiagnostics);
+        if (node.Library is not null)
+        {
+            this.locatedDiagnostics.UnionWith(Enumerable.Range(bodyStart, bodyDiagnostics.Count));
+        }
 
         // The body compiled against this same running total (ADR-0010 line 175: a quantifier counts as one node
         // plus its body, once), so resume counting from it: a later sibling, or another quantifier after this one,

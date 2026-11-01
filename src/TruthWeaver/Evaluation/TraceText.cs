@@ -33,6 +33,19 @@ internal static class TraceText
     }
 
     /// <summary>
+    /// Adds the library locator of a node to the text of its flat trace entry, as in
+    /// <c>a (in library rule 'adult' at line 1, column 1)</c>. The trace tree keeps the plain text, which coverage and the
+    /// printers compare with the rule's own nodes.
+    /// </summary>
+    /// <param name="description">The text of the node.</param>
+    /// <param name="libraryLocator">The locator of the node, or <see langword="null"/> when it is not from a library rule.</param>
+    /// <returns>The text, with the locator when there is one.</returns>
+    public static string WithLibraryLocator(string description, string? libraryLocator)
+    {
+        return libraryLocator is null ? description : $"{description} (in {libraryLocator})";
+    }
+
+    /// <summary>
     /// Gets the display label an operator node of <paramref name="shape"/> shows. The evaluator calls this for an
     /// evaluated node and this type's own <see cref="Of"/> calls it for a skipped node, so the two paths read the
     /// same table and a label change in it reaches both identically.

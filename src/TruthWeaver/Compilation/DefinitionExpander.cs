@@ -28,7 +28,15 @@ internal static class DefinitionExpander
         CompilerOptions options
     )
     {
-        return Expand(document, registry, options, new LibraryRuleExpander<TContext>(registry, options), [], site: null);
+        return Expand(
+            document,
+            registry,
+            options,
+            new LibraryRuleExpander<TContext>(registry, options, new LibraryRuleParses()),
+            [],
+            rule: null,
+            site: null
+        );
     }
 
     /// <summary>Determines whether a raw tree holds a <c>rule("name")</c> reference anywhere, so that it must be expanded.</summary>
@@ -47,20 +55,29 @@ internal static class DefinitionExpander
     /// <param name="document">The parsed document.</param>
     /// <param name="registry">The predicate registry, for the definition name collision check.</param>
     /// <param name="options">The compiler options.</param>
-    /// <param name="library">Expands the library rule references, for the whole compile.</param>
+    /// <param name="library">
+    /// Expands the library rule references in the scope of <paramref name="document"/>; a quantifier body in the document
+    /// gets the scope of its collection from it.
+    /// </param>
     /// <param name="libraryChain">The library rules being expanded through, outermost first, for cycle detection.</param>
+    /// <param name="rule">
+    /// The library rule that <paramref name="document"/> is the text of, or <see langword="null"/> for the compiled
+    /// document itself. Each node of the library rule gets a <see cref="RuleNode.Library"/> locator into its text.
+    /// </param>
     /// <param name="site">
     /// The span of the reference in the compiled text that this document is expanded for, or <see langword="null"/> for the
-    /// compiled document itself. Every node and diagnostic of a library rule takes this span, because the spans of the
-    /// library rule text do not locate anything in the compiled text.
+    /// compiled document itself. Every node of a library rule takes this span, because the spans of the library rule text
+    /// do not locate anything in the compiled text. The diagnostics of the expansion keep the spans of the library rule
+    /// text, so the caller can locate them in it.
     /// </param>
     /// <returns>The expanded body and the diagnostics.</returns>
     internal static (RuleNode Body, IReadOnlyList<Diagnostic> Diagnostics) Expand<TContext>(
         RuleDocumentNode document,
         PredicateRegistry<TContext> registry,
         CompilerOptions options,
-        LibraryRuleExpander<TContext> library,
+        ILibraryRuleScope library,
         List<string> libraryChain,
+        LibraryRule? rule,
         SourceSpan? site
     )
     {
@@ -106,9 +123,7 @@ internal static class DefinitionExpander
             unused.Add(definition.Name);
         }
 
-        RuleNode ExpandReference(LibraryReferenceNode reference) => library.Expand(reference, libraryChain, site, diagnostics);
-
-        Expander expander = new(definitionsByName, options, diagnostics, ExpandReference, site);
+        Expander expander = new(definitionsByName, options, diagnostics, library, libraryChain, rule, site);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
 
         // Every definition that document.Body's own expansion never reaches is still declared, and ADR-0008's
@@ -125,7 +140,7 @@ internal static class DefinitionExpander
         // validation pass now also looks at its unreachable definitions - while still bounding this pass's own
         // work against the same MaxNodeCount, the same protection ticket 04 gave the reachable walk. A scratch copy
         // of 'unused' keeps this walk from marking a definition used for the real UnusedDefinition lint below.
-        Expander unreachableValidator = new(definitionsByName, options, diagnostics, ExpandReference, site);
+        Expander unreachableValidator = new(definitionsByName, options, diagnostics, library, libraryChain, rule, site);
         HashSet<string> validated = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (DefinitionNode definition in document.Definitions)
         {
@@ -239,14 +254,17 @@ internal static class DefinitionExpander
     }
 
     /// <summary>
-    /// Carries one expansion pass's immutable inputs (the declared definitions, options, the library reference expansion
-    /// and the span of the reference being expanded, if any) and mutable diagnostics sink.
+    /// Carries one expansion pass's immutable inputs (the declared definitions, options, the library chain, and the library
+    /// rule and the span of the reference being expanded, if any), its mutable diagnostics sink and the library rule scope
+    /// it is in.
     /// </summary>
     private sealed class Expander(
         Dictionary<string, DefinitionNode> definitions,
         CompilerOptions options,
         List<Diagnostic> diagnostics,
-        Func<LibraryReferenceNode, RuleNode> expandReference,
+        ILibraryRuleScope library,
+        List<string> libraryChain,
+        LibraryRule? rule,
         SourceSpan? site
     )
     {
@@ -259,6 +277,10 @@ internal static class DefinitionExpander
         // makes to expand an operand or a use's body also trips the same check immediately and returns without
         // expanding further.
         private readonly NodeCountGuard nodeBudget = new(options.MaxNodeCount);
+
+        // The library rule scope of the node being expanded: the scope of the document, or of the quantifier body the node
+        // is in. A definition body takes the scope of its use, the same way its terms resolve where the use is.
+        private ILibraryRuleScope scope = library;
 
         /// <summary>Recursively expands one raw node, substituting parameter references and expanding uses as they are found.</summary>
         /// <param name="node">The node to expand.</param>
@@ -290,8 +312,7 @@ internal static class DefinitionExpander
                     : node,
                 UseNode use => this.ExpandUse(use, parameters, chain, unused),
 
-                // A library rule is a complete rule: it takes no arguments, so the parameters in scope here do not reach it.
-                LibraryReferenceNode reference => WithLeadingNote(expandReference(reference), reference.Note),
+                LibraryReferenceNode reference => this.ExpandReference(reference),
 
                 // A term's own argument values are RawLiteral, not RuleNode: parameters substitute only at the
                 // operand level (ADR-0008 decision 5), so a term's arguments never contain a use or parameter.
@@ -335,14 +356,15 @@ internal static class DefinitionExpander
 
                 // The head's variable and collection name are plain strings; only the body holds uses (ADR-0010
                 // decision 10). Expanding the body here puts a definition's terms in the quantifier's element scope, where
-                // RuleNodeCompiler resolves them against that collection's element registry.
+                // RuleNodeCompiler resolves them against that collection's element registry. A library rule reference in
+                // the body expands in the same element scope.
                 QuantifierNode q => Carry(
                     q,
                     new QuantifierNode(
                         q.Kind,
                         q.Variable,
                         q.CollectionName,
-                        this.ExpandNode(q.Body, parameters, chain, unused),
+                        this.ExpandBody(q, parameters, chain, unused),
                         q.Span
                     )
                 ),
@@ -351,8 +373,22 @@ internal static class DefinitionExpander
                 ),
             };
 
-            // Inside a library rule every node takes the span of the reference in the compiled text (see Expand).
-            return site is { } span && expanded.Span != span ? expanded with { Span = span } : expanded;
+            // Inside a library rule every node takes the span of the reference in the compiled text (see Expand), and the
+            // locator of where it is written in the library rule text. A node that already has a locator keeps it: it is
+            // the expansion of a nested library rule, a definition body or an argument, located where it is written.
+            if (rule is null || site is not { } span)
+            {
+                return expanded;
+            }
+
+            LibraryLocator locator = expanded.Library ?? LibraryLocator.Of(rule.Name, rule.Text, node.Span);
+            return expanded.Span == span && expanded.Library == locator
+                ? expanded
+                : expanded with
+                {
+                    Span = span,
+                    Library = locator,
+                };
         }
 
         // Puts the use's (or reference's) own note on the node it expands to, ahead of any note that node already has.
@@ -376,6 +412,43 @@ internal static class DefinitionExpander
             RuleNode carried = result with { Path = source.Path };
             carried.Note = source.Note;
             return carried;
+        }
+
+        // A library rule is a complete rule: it takes no arguments, so the parameters in scope here do not reach it. The
+        // reference itself was counted on entry to ExpandNode; the other nodes of the library rule count here, so many
+        // references to a large library rule stop at MaxNodeCount instead of expanding every one before the build counts.
+        private RuleNode ExpandReference(LibraryReferenceNode reference)
+        {
+            (RuleNode body, int nodeCount) = this.scope.Expand(reference, libraryChain, site, diagnostics);
+
+            // The reference's own span: in a library rule it is in the library rule text, like every other diagnostic of
+            // the expansion, and the library rule expander locates it there.
+            if (!this.nodeBudget.TryCount(nodeCount - 1, diagnostics, reference.Span, reference.Path))
+            {
+                return new ErrorNode(reference.Span) with { Path = reference.Path };
+            }
+
+            return WithLeadingNote(body, reference.Note);
+        }
+
+        // Expands the body of a quantifier in the library rule scope of its collection, then returns to the enclosing scope.
+        private RuleNode ExpandBody(
+            QuantifierNode quantifier,
+            IReadOnlyDictionary<string, RuleNode>? parameters,
+            List<string> chain,
+            HashSet<string> unused
+        )
+        {
+            ILibraryRuleScope enclosing = this.scope;
+            this.scope = enclosing.EnterQuantifier(quantifier.CollectionName, quantifier.Variable);
+            try
+            {
+                return this.ExpandNode(quantifier.Body, parameters, chain, unused);
+            }
+            finally
+            {
+                this.scope = enclosing;
+            }
         }
 
         private IReadOnlyList<RuleNode> ExpandAll(

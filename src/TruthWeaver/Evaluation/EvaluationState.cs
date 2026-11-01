@@ -8,6 +8,7 @@ namespace TruthWeaver.Evaluation;
 // CollectionBinding{TContext, TItem} build the same-shaped key as a plain tuple (a using alias is file-scoped, and
 // their own declarations never needed one to stay under the print width); tuple element names are not part of the
 // type, so both convert to/from this alias without a cast. Ticket 71 added the data-source answer key the same way.
+using TruthWeaver.Ast;
 using CollectionMemoKey = (string? Scope, object Registry, string Binding);
 using MemoKey = (string? Scope, object Registry, TermIdentity Identity);
 using SourceMemoKey = (string? Scope, object? Registry, VariableReference Reference);
@@ -23,6 +24,10 @@ using SourceMemoKey = (string? Scope, object? Registry, VariableReference Refere
 /// </summary>
 internal sealed class EvaluationState(bool collectTrace = true)
 {
+    // The library locator of each node from a library rule, by reference; null until a rule with such nodes is evaluated
+    // with a trace, so a rule without library references pays nothing.
+    private Dictionary<Expression, string>? libraryLocators;
+
     /// <summary>Gets every fault recorded anywhere in this evaluation, in the order they were raised.</summary>
     public List<Fault> Faults { get; } = [];
 
@@ -95,5 +100,32 @@ internal sealed class EvaluationState(bool collectTrace = true)
         {
             this.Trace.Add(entry);
         }
+    }
+
+    /// <summary>
+    /// Adds the library locators of a rule's nodes, so a trace entry for a node from a library rule can name it. The nodes
+    /// are keyed by reference, so the locators of the rules of one <c>PolicySet</c> evaluation never mix up.
+    /// </summary>
+    /// <param name="locators">The locator text of each node from a library rule, or <see langword="null"/> for none.</param>
+    public void AddLibraryLocators(IReadOnlyDictionary<Expression, string>? locators)
+    {
+        if (!collectTrace || locators is null || locators.Count == 0)
+        {
+            return;
+        }
+
+        this.libraryLocators ??= [with(ReferenceEqualityComparer.Instance)];
+        foreach (KeyValuePair<Expression, string> locator in locators)
+        {
+            this.libraryLocators.TryAdd(locator.Key, locator.Value);
+        }
+    }
+
+    /// <summary>Gets the library locator of a node, or <see langword="null"/> when the node is not from a library rule.</summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The locator text, such as <c>library rule 'adult' at line 1, column 7</c>.</returns>
+    public string? LibraryLocatorOf(Expression node)
+    {
+        return this.libraryLocators?.GetValueOrDefault(node);
     }
 }

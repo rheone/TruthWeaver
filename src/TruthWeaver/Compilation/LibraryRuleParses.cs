@@ -1,0 +1,37 @@
+namespace TruthWeaver.Compilation;
+
+using TruthWeaver.Diagnostics;
+using TruthWeaver.Parsing;
+
+/// <summary>
+/// The parse of each library rule in one compile, shared by every scope of the compile: the parse of the rule text does
+/// not depend on the registry a reference resolves against, so a library rule is parsed once however many references and
+/// quantifier bodies use it.
+/// </summary>
+internal sealed class LibraryRuleParses
+{
+    private readonly Dictionary<string, (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics)> parses = [];
+
+    /// <summary>
+    /// Gets the warnings and information of library rules that a scope of this compile has already passed to the caller,
+    /// by reference. A warning of a nested library rule reaches the expansion of the library rule that references it
+    /// already located, so the outer library rule passes it on as it is and does not locate it a second time.
+    /// </summary>
+    public HashSet<Diagnostic> Surfaced { get; } = [with(ReferenceEqualityComparer.Instance)];
+
+    /// <summary>Gets the parse of a library rule, and parses it the first time.</summary>
+    /// <param name="rule">The library rule.</param>
+    /// <param name="maxDepth">The maximum tree depth of the compile.</param>
+    /// <returns>The rule as a document (one that declares no definitions when the text has none), and the parse diagnostics.</returns>
+    public (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) Get(LibraryRule rule, int maxDepth)
+    {
+        if (!this.parses.TryGetValue(rule.Name, out (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse))
+        {
+            (RuleNode root, IReadOnlyList<Diagnostic> diagnostics) = DslParser.Parse(rule.Text, maxDepth);
+            parse = (root as RuleDocumentNode ?? new RuleDocumentNode([], root, root.Span), diagnostics);
+            this.parses[rule.Name] = parse;
+        }
+
+        return parse;
+    }
+}

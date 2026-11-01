@@ -1,6 +1,6 @@
 # 84 - The library content hash depends on line endings
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: Code review of ticket 11b-2
@@ -32,9 +32,15 @@ Normalize line endings before hashing: CRLF and CR are read as LF. The core's ha
 **Desired behavior:** The hash is SHA-256, as upper-case hex, of the UTF-8 bytes of the text with every CRLF and lone CR replaced by LF. A pin compares without case, as now. Nothing else in the text is changed (no trimming).
 
 **Acceptance criteria:**
-- [ ] A test fails before and passes after: a rule with CRLF and the same rule with LF have the same hash, and a pin written from one matches a library holding the other.
-- [ ] The hash of an LF-only text is unchanged.
-- [ ] The Library rules section of `docs/rule-text.md` and the glossary state the normalization.
-- [ ] The validation list in CLAUDE.md passes, with a CHANGELOG entry.
+- [x] A test fails before and passes after: a rule with CRLF and the same rule with LF have the same hash, and a pin written from one matches a library holding the other.
+- [x] The hash of an LF-only text is unchanged.
+- [x] The Library rules section of `docs/rule-text.md` and the glossary state the normalization.
+- [x] The validation list in CLAUDE.md passes, with a CHANGELOG entry.
 
 **Out of scope:** Changing the rule store's own hash (ticket 11b-5, which this ticket blocks).
+
+## Resolution (2026-11-01)
+
+`RuleLibrary` now reads every CRLF and lone CR as LF before it hashes (SHA-256 of UTF-8, upper-case hex). Nothing else in the text changes, and an LF-only text keeps its hash. The rule store is untouched (ticket 11b-5). Updated `docs/rule-text.md` (Library rules), `docs/glossary.md` (Rule reference), the XML docs of `LibraryRule.Hash` and the CHANGELOG.
+
+Test: `RuleLibraryTests.Compile_PinWrittenFromTextWithOtherLineEndings_MatchesTheLibraryRule_Test`. Red first: it failed on the CRLF hash (`Assert.Equal` mismatch) before the change and passes after. `Hash_LibraryRule_IsTheSha256OfTheRuleTextInUpperCaseHex_Test` shows the LF-only hash is unchanged.

@@ -188,8 +188,8 @@ by hand:
 ```
 
 A library is immutable. Each `LibraryRule` has a `Name`, its rule `Text` and a `Hash`: the SHA-256 hash of the UTF-8
-bytes of the text, as 64 upper-case hexadecimal digits. The rule store of
-`TruthWeaver.Extensions.Configuration` computes the same hash. A reference without a hash uses the current version of
+bytes of the text, as 64 upper-case hexadecimal digits. Before it hashes, the library reads every CRLF and every lone
+CR as LF, so the same rule has the same hash on every platform. It changes nothing else in the text. A reference without a hash uses the current version of
 the library rule. A reference with a hash pins a version: it compiles only while the library rule has that hash. The
 hash comparison ignores case.
 
@@ -204,15 +204,34 @@ A library rule follows these rules:
   can declare its own `let` definitions. They are in scope in that library rule only.
 - **The names of the caller.** A library rule has no predicate registry and no data sources of its own. Its predicate
   names and its `from("source", ...)` names resolve against the compile that references it.
+- **The scope of a quantifier body.** A reference in the body of a `FORALL` or `EXISTS` resolves like a definition
+  used there: its predicate names resolve against the element registry of the collection, and its data source names
+  against the body, where the variable is a source when the collection projects its elements to one. A reference in a
+  nested body uses the inner collection. Outside a body, the top-level registry applies, so a library rule that uses an
+  element predicate gives `TRE0050` there. See [Quantifiers](#quantifiers).
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.
 - **No cycles.** A library rule cannot reference itself, directly or through other library rules.
+- **Equality.** Two libraries are equal when they hold the same names, compared without case, with the same rule text
+  for each name. The order of the rules does not matter. `CompilerOptions` that hold equal libraries are equal.
 - **Case.** The words `rule` and `hash` and the library rule names are compared without case.
 - **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
   arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.
 
 Each mistake is a compile error. The span of the diagnostic is the reference in the text that you compile, also when
-the mistake is in a library rule that the reference expands:
+the mistake is in a library rule that the reference expands. A diagnostic about a place in the text of a library rule
+ends with a library locator: the name of the library rule and the line and column in its text, as in
+`In library rule 'contractor-cleared' at line 1, column 18.` When library rules reference each other, the locator names
+the library rule that holds the place. A diagnostic about the text that you compile has no locator.
+
+A warning or information diagnostic of a library rule, such as `TRE0027` for a deprecated predicate or a lint finding,
+keeps its own code and severity. Its span is the reference, and its message ends with the library locator. The compiler
+reports it once for each reference: the uses of a definition that holds the reference share it. Only an error becomes
+`TRE0050`, so a library rule with warnings still compiles.
+
+A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator, as in
+`hasSignedNda (in library rule 'contractor-cleared' at line 1, column 18)`. The trace tree (`Decision.TraceTree`) shows
+the node without it. The mistakes give these codes:
 
 | Code | Name | Cause |
 | --- | --- | --- |

@@ -32,7 +32,7 @@ copyright line reads 2026.
 
 ### Added
 
-- Rule library and rule references: the new immutable `RuleLibrary` (namespace `TruthWeaver.Compilation`) holds named rules in rule text, and each `LibraryRule` gives its `Name`, `Text` and content `Hash` (SHA-256 of the UTF-8 text, upper-case hexadecimal, the hash the rule store computes). Give the library to the compiler in the new `CompilerOptions.Library`. Rule text names a library rule with `rule("name")`, or pins a version with `rule("name", hash: "...")`; the compiler expands the reference in place at compile time, with the predicates and data sources of the caller. New diagnostics: `TRE0047` `UnknownLibraryRule`, `TRE0048` `LibraryRuleHashMismatch`, `TRE0049` `LibraryRuleCycleDetected` and `TRE0050` `InvalidLibraryRule`. `rule` is not a reserved word, so a predicate named `rule` still compiles. The VS Code grammar colors the reference. No migration step: additive. [Rule text](docs/rule-text.md#library-rules) covers it.
+- Rule library and rule references: the new immutable `RuleLibrary` (namespace `TruthWeaver.Compilation`) holds named rules in rule text, and each `LibraryRule` gives its `Name`, `Text` and content `Hash` (SHA-256 of the UTF-8 text, upper-case hexadecimal, with CRLF and lone CR read as LF first so the hash does not depend on the platform; an LF-only text keeps its hash). Give the library to the compiler in the new `CompilerOptions.Library`. Rule text names a library rule with `rule("name")`, or pins a version with `rule("name", hash: "...")`; the compiler expands the reference in place at compile time, with the predicates and data sources of the caller. New diagnostics: `TRE0047` `UnknownLibraryRule`, `TRE0048` `LibraryRuleHashMismatch`, `TRE0049` `LibraryRuleCycleDetected` and `TRE0050` `InvalidLibraryRule`. `rule` is not a reserved word, so a predicate named `rule` still compiles. The VS Code grammar colors the reference. No migration step: additive. [Rule text](docs/rule-text.md#library-rules) covers it.
 - `RuleOperatorFamilies.Coalescing` in `TruthWeaver.Testing`: `COALESCE` is its own family, so the Generate rule dialog matches the Insert menu group Other (`If` and `COALESCE`). `Inspection` covers only `IsTrue`, `IsFalse`, `IsUnknown` and `IsKnown`. `All` includes `Coalescing`, so the rules generated for `All` do not change. Code that used `Inspection` to get `COALESCE` adds `Coalescing`. [Rule fuzzer](docs/rule-fuzzer.md#generator-and-oracle) covers it.
 - Terminal UI list dialogs: a list dialog (Choose, the palette and the catalog) ends only when you choose a real entry. A double click on a family line, on blank space or on an empty search result does nothing. Enter on a family line moves the highlight to the first entry. Each change to the search box moves the highlight to the first match. No migration step: additive. [Terminal UI](docs/tui.md#palette) covers it.
 - Terminal UI export dialog: Enter in the Output type list moves the focus to the formats and does not copy. In the folder export, Enter moves the focus to the path field and writes nothing. When the larger-table box and the term limit field are both set, the term limit wins. The dialog lists image formats only when the renderer is found, and one line under the lists names the program to install. No migration step: additive. [Terminal UI](docs/tui.md#export) covers it.
@@ -271,6 +271,13 @@ copyright line reads 2026.
 
 ### Changed
 
+- A diagnostic about a place in the text of a library rule ends with a library locator: the name of the library rule
+  and the line and column in its text, as in `In library rule 'adult' at line 1, column 7.` A `TRE0050` message has it
+  for an error at a node, a syntax error or a definition error in the library rule. The span stays at the
+  `rule("name")` reference. A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator,
+  as in `a (in library rule 'adult' at line 1, column 1)`; the trace tree is unchanged. A diagnostic or trace entry for
+  the text that you compile is unchanged. Migration: code that matches the full text of a `TRE0050` message or of a
+  trace entry from a library rule matches the start of it. [Rule text](docs/rule-text.md#library-rules) covers it.
 - Breaking: `Decision.Trace` (filled by `EvaluationOptions.IncludeTrace`) has one entry for each operator node that the evaluation visited, not only for the constants, terms, quantifiers and skipped nodes. The entry text is the operator label that the trace tree shows (for example `AND`), and the entry comes after the entries of its operands. `a AND b` gives `a`, `b`, `AND`. Decision records written with a trace get the same extra entries. Migration: code that reads `Trace.Entries` by count or by position, or that expects only leaf entries, filters on the node kind or uses `Decision.TraceTree`. [Evaluation](docs/strong-k3/specification/evaluation.md) covers it.
 - Breaking: the `TruthWeaver.Testing` types moved into sub-namespaces that match their folders. `TruthWeaver.Testing.Assertions`: `DecisionAssertions`, `DecisionAssertionsExtensions`, `DecisionAssertionException`, `RuleAssertions`, `RewriteAssertions`, `RewriteExpectations` and `TruthWeaverAssertionException`. `TruthWeaver.Testing.Fakes`: `FakePredicates`, `FakeDataSource`, `StubRuleCompiler` and `StubValues`. `TruthWeaver.Testing.Harness`: `PredicateHarness`, `PredicateHarnessCheck`, `PredicateHarnessException`, `PredicateHarnessExpectedFault`, `PredicateHarnessOptions`, `PredicateHarnessOutcome`, `PredicateHarnessReport`, `PredicateHarnessStatus` and `SimulatedPredicateFaultException`. `TruthWeaver.Testing.Fuzzing`: `RuleFuzzer`, `RuleFuzzerOptions`, `RuleFuzzCheck`, `RuleFuzzException`, `RuleFuzzFailure`, `RuleFuzzReport`, `GeneratedRule`, `K3Oracle` and `K3RuleGenerator`. `TruthWeaver.Testing.RuleTests`: `RuleTestFile`, `RuleTestCase`, `RuleTestExpectation`, `RuleTestFileError`, `RuleTestReport`, `RuleTestResult` and `RuleTestException`. Migration: replace `using TruthWeaver.Testing;` with the `using` of the sub-namespace that holds each type you use. A test project that references the package gets `Assertions` and `Fakes` as global usings from the repository `Directory.Build.targets`.
 - Breaking: `TruthValue.Unknown` is the zero value. The members are `Unknown = 0`, `False = 1` and `True = 2`, so `default(TruthValue)`, an element of a new array, an unset field and the `out` value of a failed constant read are `Unknown`, not a definite `False`. `Enum.GetValues<TruthValue>()` and an ordinal sort now give `Unknown`, `False`, `True`. Migration: nothing changes when you name the members. Persisted or cast numeric values change meaning (`0` is `Unknown`, `1` is `False`, `2` is `True`), so replace a stored or cast number with the member name and re-read persisted data by name. The rule text, JSON and YAML trees, decision records and rule-test files always write names and are not affected. [Values](docs/strong-k3/specification/values.md) covers it.
@@ -568,6 +575,22 @@ copyright line reads 2026.
 
 ### Fixed
 
+- A warning or information diagnostic of a library rule reaches the compile that references it, with its own code and
+  severity, at the `rule("name")` reference, and with the library locator (the library rule name and the line and
+  column in its text) in the message. Examples: the unused definition lint (`TRE0041`) in the text of a library rule,
+  and the deprecated predicate warning (`TRE0027`). Before, the expansion kept only the errors and dropped the others. A
+  warning is reported once for each reference: the uses of a definition that holds the reference share it. Errors still
+  give `TRE0050`. No migration step. [Rule text](docs/rule-text.md#library-rules) covers it.
+- `RuleDefinitions.PrintJson()` and `YamlRuleDefinitions.PrintYaml()` return `null` for a document that holds a
+  `rule("name")` reference at any depth (the rule, a `let` body or a quantifier body), because the JSON and YAML tree
+  formats have no shape for the reference yet. Before, both threw `InvalidOperationException`. A document with no
+  reference prints as before. No migration step.
+- A `rule("name")` reference in the body of a `FORALL` or `EXISTS` resolves the library rule against the element
+  registry of the collection, like a `let` definition used there, so a library rule can use element predicates. A
+  reference in a nested body uses the inner collection. Before, every library rule was checked against the top-level
+  registry, and such a rule gave `TRE0050`. Outside a body, it still does.
+- A bad `rule("name")` reference in a `let` definition body gives one diagnostic, however many times the rule uses the
+  definition. Before, an unknown rule (`TRE0047`) or a stale pin (`TRE0048`) gave the same diagnostic once for each use.
 - `OperatorInfo.Describe` and `Outline()` give a `FORALL` or `EXISTS` node its label and a description, and a misspelled tree-format
   op such as `foral` gets a "did you mean `forall`" suggestion.
 - A decision explanation and a tool trace reason say that a faulted term `faulted` (the sentence read "could not be evaluated"). A term that

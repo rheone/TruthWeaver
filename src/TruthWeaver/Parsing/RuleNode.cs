@@ -36,6 +36,14 @@ internal abstract record RuleNode(SourceSpan Span)
     public string? Note { get; set; }
 
     /// <summary>
+    /// Gets where this node is written in a library rule, or <see langword="null"/> for a node of the compiled text.
+    /// <c>DefinitionExpander</c> sets it on each node a <c>rule("name")</c> reference expands to, whose
+    /// <see cref="Span"/> is the reference; the compiler adds it to the diagnostics it raises for the node, and the
+    /// evaluator to the trace entry of the node.
+    /// </summary>
+    public LibraryLocator? Library { get; init; }
+
+    /// <summary>
     /// Gets the operand nodes of <paramref name="node"/> in order, the same order the compiled expression keeps them in;
     /// empty for a constant, a term and an error placeholder.
     /// </summary>

@@ -1,6 +1,6 @@
 # 85 - CompilerOptions.Library changes the record's signature and compares by reference
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: low
 Lens: Code review of ticket 11b-2
@@ -32,7 +32,13 @@ Give `RuleLibrary` value equality: two libraries with the same names and texts a
 **Desired behavior:** `RuleLibrary` overrides `Equals` and `GetHashCode` (and `IEquatable<RuleLibrary>`) over its names (compared without case, as the library does) and rule texts. Order of insertion does not matter. `CompilerOptions` equality follows.
 
 **Acceptance criteria:**
-- [ ] A test fails before and passes after: two libraries built from the same rules in a different order are equal with equal hash codes, and two `CompilerOptions` holding them are equal.
-- [ ] Libraries that differ in one text are not equal.
-- [ ] XML docs say how equality works.
-- [ ] The validation list in CLAUDE.md passes.
+- [x] A test fails before and passes after: two libraries built from the same rules in a different order are equal with equal hash codes, and two `CompilerOptions` holding them are equal.
+- [x] Libraries that differ in one text are not equal.
+- [x] XML docs say how equality works.
+- [x] The validation list in CLAUDE.md passes.
+
+## Resolution (2026-11-01)
+
+`RuleLibrary` now implements `IEquatable<RuleLibrary>` with `Equals` and `GetHashCode` over the names (compared without case) and the exact rule texts. Insertion order does not matter, because the equality looks each name up and the hash code is a sum. `CompilerOptions` equality follows through the record. Updated `docs/rule-text.md` (Library rules) and `docs/glossary.md`.
+
+Tests: `RuleLibraryTests.Equals_SameRulesInAnotherOrder_AreEqualAndMakeEqualCompilerOptions_Test` and `Equals_LibrariesThatDiffer_AreNotEqual_Test`. Red first: the first failed with `Assert.Equal() Failure: Values differ` before the change.

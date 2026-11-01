@@ -5,26 +5,37 @@ using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Expands the <c>rule("name")</c> references of one compile against <see cref="CompilerOptions.Library"/>, with the same
-/// machinery as <c>let</c> definitions: a reference is replaced by the library rule's own expanded tree before
-/// <see cref="RuleNodeCompiler{TContext}"/> builds the compiled tree.
+/// Expands the <c>rule("name")</c> references of one scope of a compile against <see cref="CompilerOptions.Library"/>,
+/// with the same machinery as <c>let</c> definitions: a reference is replaced by the library rule's own expanded tree
+/// before <see cref="RuleNodeCompiler{TContext}"/> builds the compiled tree. The scope is the rule itself, or the body of
+/// a quantifier, where <typeparamref name="TContext"/> is the element of the collection.
 /// </summary>
-/// <typeparam name="TContext">The application context type of the compile.</typeparam>
-/// <param name="registry">The predicate registry of the compile, which a library rule's predicate names resolve against.</param>
-/// <param name="options">The compiler options of the compile, which hold the library and its data source names.</param>
-internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> registry, CompilerOptions options)
+/// <typeparam name="TContext">The context type of the scope.</typeparam>
+/// <param name="registry">The predicate registry of the scope, which a library rule's predicate names resolve against.</param>
+/// <param name="options">
+/// The compiler options of the scope, which hold the library and its data source names: in a quantifier body, the
+/// variable of the quantifier is one of them when the collection projects its elements to a data source.
+/// </param>
+/// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+internal sealed class LibraryRuleExpander<TContext>(
+    PredicateRegistry<TContext> registry,
+    CompilerOptions options,
+    LibraryRuleParses parses
+) : ILibraryRuleScope
 {
-    // The expansion of each library rule for each site, or null when it failed; keyed by the rule name as the library
-    // holds it, so the case of the reference does not matter.
-    private readonly Dictionary<(string Name, SourceSpan Site), RuleNode?> expanded = [];
+    // The expansion of each reference for each site, or null when it failed. The pin is part of the key, so a pinned and
+    // an unpinned reference at one site are each checked. The name and the pin are upper-cased in the key, because the
+    // library and the pin check compare them without case.
+    private readonly Dictionary<(string Name, string? Pin, SourceSpan Site), (RuleNode? Body, int NodeCount)> expanded = [];
 
-    /// <summary>Expands one reference.</summary>
-    /// <param name="reference">The reference.</param>
-    /// <param name="libraryChain">The library rules being expanded through, outermost first.</param>
-    /// <param name="site">The span of the outermost reference in the compiled text, or <see langword="null"/> when this reference is in the compiled text itself.</param>
-    /// <param name="diagnostics">The diagnostics sink of the document that holds the reference.</param>
-    /// <returns>The expanded library rule, or an <see cref="ErrorNode"/> when it cannot be expanded.</returns>
-    public RuleNode Expand(
+    // The node count of each library rule that expanded and compiled without an error in this scope.
+    private readonly Dictionary<string, int> checkedNodeCounts = [];
+
+    // The scope of each quantifier body in this scope, by the upper-cased collection name and the variable.
+    private readonly Dictionary<(string Collection, string Variable), ILibraryRuleScope> bodyScopes = [];
+
+    /// <inheritdoc/>
+    public (RuleNode Body, int NodeCount) Expand(
         LibraryReferenceNode reference,
         List<string> libraryChain,
         SourceSpan? site,
@@ -32,6 +43,125 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
     )
     {
         SourceSpan span = site ?? reference.Span;
+
+        // A library rule takes no arguments, so its expansion for one site is the same wherever the site references it.
+        // Without this, a chain of library rules that each reference the one below many times is expanded once for each
+        // path through the chain, which grows exponentially with the depth of the chain. A failed reference has already
+        // reported its errors, so a later reference to it at the same site reports nothing more: that holds for an
+        // unknown rule, a stale pin and a cycle as for an error in the library rule's text. The uses of a definition share
+        // the site of a reference in its body, so the cache is consulted before any check.
+        (string, string?, SourceSpan) key = (reference.Name.ToUpperInvariant(), reference.PinnedHash?.ToUpperInvariant(), span);
+        if (!this.expanded.TryGetValue(key, out (RuleNode? Body, int NodeCount) expansion))
+        {
+            expansion = this.Resolve(reference, libraryChain, span, diagnostics);
+            this.expanded[key] = expansion;
+        }
+
+        return expansion.Body is { } body ? (body, expansion.NodeCount) : (new ErrorNode(span), 1);
+    }
+
+    /// <inheritdoc/>
+    public ILibraryRuleScope EnterQuantifier(string collectionName, string variable)
+    {
+        if (!registry.TryGetCollection(collectionName, out ICollectionBinding<TContext>? binding))
+        {
+            return this;
+        }
+
+        // The collection lookup ignores case, so the key does too. A variable is case-sensitive, like a data source name.
+        (string, string) key = (collectionName.ToUpperInvariant(), variable);
+        if (!this.bodyScopes.TryGetValue(key, out ILibraryRuleScope? scope))
+        {
+            scope = binding.CreateLibraryScope(variable, options, parses);
+            this.bodyScopes[key] = scope;
+        }
+
+        return scope;
+    }
+
+    // A library rule code already names the library rule it is about, so it passes through as it is: that keeps one
+    // diagnostic for one cycle or one missing rule, however deep the reference is. Any other error is about the text of this
+    // library rule, so it is reported under InvalidLibraryRule, with the name of the rule and, when the error is located in
+    // the text of the rule, the locator of that place.
+    private static Diagnostic AsCallerDiagnostic(LibraryRule rule, Diagnostic error, SourceSpan span, bool locateInRule)
+    {
+        if (
+            error.Code
+            is DiagnosticCodes.UnknownLibraryRule
+                or DiagnosticCodes.LibraryRuleHashMismatch
+                or DiagnosticCodes.LibraryRuleCycleDetected
+                or DiagnosticCodes.InvalidLibraryRule
+        )
+        {
+            return error with { Span = span };
+        }
+
+        string message = locateInRule
+            ? LibraryLocator.Of(rule.Name, rule.Text, error.Span).AppendTo(error.Message)
+            : error.Message;
+        return Diagnostic.Error(
+            DiagnosticCodes.InvalidLibraryRule,
+            $"Library rule '{rule.Name}' does not compile here: {error.Code} {message}",
+            span,
+            expected: error.Expected,
+            found: error.Found,
+            suggestion: error.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null
+        );
+    }
+
+    // Adds what one step of a library rule raised to the caller's diagnostics, and says whether it raised an error. The
+    // parse and the expansion report spans in the text of the library rule, which locateInRule turns into a locator; the
+    // build adds the locator of the node itself. A warning or information of the parse or the expansion keeps its code and
+    // severity, and moves to the reference with the locator in its message. The build passes none on: the build of the
+    // caller builds the same nodes and reports them there, once for each reference site.
+    private bool ReportErrors(
+        LibraryRule rule,
+        IReadOnlyList<Diagnostic> found,
+        SourceSpan span,
+        List<Diagnostic> diagnostics,
+        bool locateInRule
+    )
+    {
+        bool failed = false;
+        foreach (Diagnostic raised in found)
+        {
+            if (raised.Severity == DiagnosticSeverity.Error)
+            {
+                diagnostics.Add(AsCallerDiagnostic(rule, raised, span, locateInRule));
+                failed = true;
+            }
+            else if (parses.Surfaced.Contains(raised))
+            {
+                // Already passed on, located, by a nested library rule at this same site.
+                diagnostics.Add(raised);
+            }
+            else if (locateInRule)
+            {
+                Diagnostic surfaced = raised with
+                {
+                    Span = span,
+                    Message = LibraryLocator.Of(rule.Name, rule.Text, raised.Span).AppendTo(raised.Message),
+                    Path = null,
+                    Suggestion = raised.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null,
+                    EnclosedBy = null,
+                };
+                parses.Surfaced.Add(surfaced);
+                diagnostics.Add(surfaced);
+            }
+        }
+
+        return failed;
+    }
+
+    // Checks one reference that is not in the cache and expands the library rule it names, or reports why it cannot and
+    // returns null.
+    private (RuleNode? Body, int NodeCount) Resolve(
+        LibraryReferenceNode reference,
+        List<string> libraryChain,
+        SourceSpan span,
+        List<Diagnostic> diagnostics
+    )
+    {
         if (options.Library is null || !options.Library.TryGet(reference.Name, out LibraryRule? rule))
         {
             diagnostics.Add(
@@ -44,7 +174,7 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
                     suggestion: this.NearestNameHint(reference.Name)
                 )
             );
-            return new ErrorNode(span);
+            return (null, 0);
         }
 
         // A hash is hexadecimal digits, so the pin matches without case.
@@ -63,7 +193,7 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
                     )
                 )
             );
-            return new ErrorNode(span);
+            return (null, 0);
         }
 
         int cycleStart = libraryChain.FindIndex(name => string.Equals(name, rule.Name, StringComparison.OrdinalIgnoreCase));
@@ -79,92 +209,66 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
                     found: $"the cycle {path}"
                 )
             );
-            return new ErrorNode(span);
+            return (null, 0);
         }
 
-        // A library rule takes no arguments, so its expansion for one site is the same wherever the site references it.
-        // Without this, a chain of library rules that each reference the one below many times is expanded once for each
-        // path through the chain, which grows exponentially with the depth of the chain. A failed expansion has already
-        // reported its errors, so a later reference to it reports nothing more.
-        if (!this.expanded.TryGetValue((rule.Name, span), out RuleNode? body))
-        {
-            body = this.ExpandRule(rule, [.. libraryChain, rule.Name], span, diagnostics);
-            this.expanded[(rule.Name, span)] = body;
-        }
-
-        return body ?? new ErrorNode(span);
+        return this.ExpandRule(rule, [.. libraryChain, rule.Name], span, diagnostics);
     }
 
-    // A library rule code already names the library rule it is about, so it passes through as it is: that keeps one
-    // diagnostic for one cycle or one missing rule, however deep the reference is. Any other error is about the text of this
-    // library rule, so it is reported under InvalidLibraryRule, with the name of the rule. Warnings and information are the
-    // library rule's own concern and are dropped.
-    private static Diagnostic AsCallerDiagnostic(LibraryRule rule, Diagnostic error, SourceSpan span)
-    {
-        if (
-            error.Code
-            is DiagnosticCodes.UnknownLibraryRule
-                or DiagnosticCodes.LibraryRuleHashMismatch
-                or DiagnosticCodes.LibraryRuleCycleDetected
-                or DiagnosticCodes.InvalidLibraryRule
-        )
-        {
-            return error with { Span = span };
-        }
-
-        return Diagnostic.Error(
-            DiagnosticCodes.InvalidLibraryRule,
-            $"Library rule '{rule.Name}' does not compile here: {error.Code} {error.Message}",
-            span,
-            expected: error.Expected,
-            found: error.Found,
-            suggestion: error.Suggestion is { Kind: DiagnosticSuggestionKind.Hint } hint ? hint : null
-        );
-    }
-
-    // Adds the errors of one step of a library rule to the caller's diagnostics, and says whether there were any.
-    private static bool ReportErrors(
+    // Expands one library rule for one site and checks it, or reports its errors and returns null. The parse is shared by
+    // every scope of the compile and the check by every site in this scope; only the expansion, which puts the site span
+    // on every node, is per site.
+    private (RuleNode? Body, int NodeCount) ExpandRule(
         LibraryRule rule,
-        IReadOnlyList<Diagnostic> found,
+        List<string> libraryChain,
         SourceSpan span,
         List<Diagnostic> diagnostics
     )
     {
-        int before = diagnostics.Count;
-        diagnostics.AddRange(
-            found.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => AsCallerDiagnostic(rule, d, span))
-        );
-        return diagnostics.Count > before;
-    }
-
-    // Parses, expands and checks one library rule, or reports its errors and returns null.
-    private RuleNode? ExpandRule(LibraryRule rule, List<string> libraryChain, SourceSpan span, List<Diagnostic> diagnostics)
-    {
-        (RuleNode parsed, IReadOnlyList<Diagnostic> parseDiagnostics) = DslParser.Parse(rule.Text, options.MaxDepth);
-        if (ReportErrors(rule, parseDiagnostics, span, diagnostics))
+        (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse = parses.Get(rule, options.MaxDepth);
+        if (this.ReportErrors(rule, parse.Diagnostics, span, diagnostics, locateInRule: true))
         {
-            return null;
+            return (null, 0);
         }
 
-        RuleDocumentNode document = parsed as RuleDocumentNode ?? new RuleDocumentNode([], parsed, parsed.Span);
         (RuleNode body, IReadOnlyList<Diagnostic> expansionDiagnostics) = DefinitionExpander.Expand(
-            document,
+            parse.Document,
             registry,
             options,
             this,
             libraryChain,
+            rule,
             span
         );
-        if (ReportErrors(rule, expansionDiagnostics, span, diagnostics))
+        if (this.ReportErrors(rule, expansionDiagnostics, span, diagnostics, locateInRule: true))
         {
-            return null;
+            return (null, 0);
         }
 
-        // The library rule's predicate and data source names resolve against this compile. Building the expanded library
+        // A library rule that expanded cleanly once expands cleanly at every site: a cycle through it would have failed it
+        // at the first site too. Its build differs only in spans, so it is checked once. A failed rule is not kept here,
+        // so each site reports its own errors, with the cycle path seen from that site.
+        if (this.checkedNodeCounts.TryGetValue(rule.Name, out int nodeCount))
+        {
+            return (body, nodeCount);
+        }
+
+        // The library rule's predicate and data source names resolve against this scope. Building the expanded library
         // rule on its own finds a name the caller does not hold, and the diagnostic can then name the library rule. The
-        // compile of the caller builds the same nodes again, and so reports no second error for them.
-        (_, _, IReadOnlyList<Diagnostic> buildDiagnostics, _) = RuleNodeCompiler<TContext>.Compile(body, registry, options);
-        return ReportErrors(rule, buildDiagnostics, span, diagnostics) ? null : body;
+        // compile of the caller builds the same nodes again, and so reports no second error for them. The node count of
+        // the build is what each reference adds to the node count of the caller.
+        (_, _, IReadOnlyList<Diagnostic> buildDiagnostics, nodeCount) = RuleNodeCompiler<TContext>.Compile(
+            body,
+            registry,
+            options
+        );
+        if (this.ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
+        {
+            return (null, 0);
+        }
+
+        this.checkedNodeCounts[rule.Name] = nodeCount;
+        return (body, nodeCount);
     }
 
     // A hint, not a replacement: the span covers the whole reference, so the bare name is not text to put there.

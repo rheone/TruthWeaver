@@ -1,6 +1,6 @@
 # 79 - A library rule used inside a FORALL or EXISTS body is checked at the top-level scope
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: Follow-up to ticket 11b-2
@@ -36,10 +36,37 @@ A library rule referenced inside a `FORALL` or `EXISTS` body resolves against th
 **Desired behavior:** The reference expands in the quantifier body's scope. Its predicates resolve against the collection's element registry, and its data-source names against the caller. A nested quantifier body does the same for its own collection. Outside a body, the top-level registry applies, and a missing name gives `TRE0050` as now.
 
 **Acceptance criteria:**
-- [ ] A test fails before the fix and passes after: a library rule with an element predicate, referenced in a `FORALL` body, compiles and evaluates; the same rule referenced at the top level still gives `TRE0050`.
-- [ ] A library rule referenced in a nested quantifier body resolves against the inner collection.
-- [ ] Existing `RuleLibraryTests` pass unchanged.
-- [ ] `docs/rule-text.md` (Library rules) states the scope rule.
-- [ ] The validation list in CLAUDE.md passes, with a CHANGELOG entry.
+- [x] A test fails before the fix and passes after: a library rule with an element predicate, referenced in a `FORALL` body, compiles and evaluates; the same rule referenced at the top level still gives `TRE0050`.
+- [x] A library rule referenced in a nested quantifier body resolves against the inner collection.
+- [x] Existing `RuleLibraryTests` pass unchanged.
+- [x] `docs/rule-text.md` (Library rules) states the scope rule.
+- [x] The validation list in CLAUDE.md passes, with a CHANGELOG entry.
 
 **Out of scope:** `call("x")` (ticket 11b-3); spans (ticket 83).
+
+## Resolution (2026-11-01)
+
+- New internal `ILibraryRuleScope` (`Expand`, `EnterQuantifier`), implemented by `LibraryRuleExpander<TContext>`. The
+  `DefinitionExpander.Expander` holds the current scope and, for a `QuantifierNode` body, asks the scope for the scope
+  of its collection (`ExpandBody`). A definition body expands in the scope of its use.
+- `ICollectionBinding.CreateLibraryScope` makes a `LibraryRuleExpander<Element<TContext, TItem>>` over the element
+  registry, with the body options (the variable declared as a data source when the collection projects elements, the
+  same `BodyOptions` the body compile uses). An unknown collection keeps the enclosing scope: the build reports
+  `UnknownCollection` and does not build the body.
+- The parse cache moved to `LibraryRuleParses`, shared by every scope of one compile. The per-site expansion cache and
+  the per-rule check are per scope, because they depend on the registry.
+- The check build of a library rule in a body runs at quantifier depth 0 with no inherited variables; a shadowed
+  variable or quantifier depth error inside such a library rule is reported by the caller's build, without the
+  library rule name.
+
+Tests (`tests/TruthWeaver.Tests/RuleLibraryTests.cs`):
+
+- `Compile_LibraryRuleInAQuantifierBody_ResolvesAgainstTheElementRegistry_Test` (theory: reference in the `FORALL`
+  body; a library rule that holds the `FORALL`). Red first: both cases gave `TRE0050 ... No predicate named 'shipped'
+  is registered`.
+- `Compile_LibraryRuleInANestedQuantifierBody_ResolvesAgainstTheInnerCollection_Test`. Red first: `TRE0050 ... No
+  predicate named 'partOk' is registered`.
+- `Compile_LibraryRuleWithAnElementPredicateAtTheTopLevel_ReportsInvalidLibraryRule_Test`: passes before and after
+  (the top-level rule stays).
+
+Docs: `docs/rule-text.md` Library rules states the scope rule. CHANGELOG: a Fixed entry.

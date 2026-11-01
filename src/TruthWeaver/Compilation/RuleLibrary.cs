@@ -11,9 +11,11 @@ using System.Security.Cryptography;
 /// <remarks>
 /// A library rule is a complete rule. It takes no parameters, and it has no predicate registry and no data sources of its
 /// own: the compiler resolves its predicate names and data source names against the compile that references it. A library
-/// does not change after it is made. To change a rule, make a new library and a new compiler.
+/// does not change after it is made. To change a rule, make a new library and a new compiler. Two libraries are equal
+/// when they hold the same names (compared without case) with the same rule text, in any order, so
+/// <see cref="CompilerOptions"/> that hold equal libraries are equal.
 /// </remarks>
-public sealed class RuleLibrary
+public sealed class RuleLibrary : IEquatable<RuleLibrary>
 {
     private readonly Dictionary<string, LibraryRule> rules;
 
@@ -66,12 +68,62 @@ public sealed class RuleLibrary
         return this.rules.TryGetValue(name, out rule);
     }
 
+    /// <summary>Determines whether another library holds the same rules.</summary>
+    /// <param name="other">The library to compare with.</param>
+    /// <returns>
+    /// <see langword="true"/> when both libraries hold the same names, compared without case, and the same rule text for
+    /// each name, compared exactly. The order in which the rules were given does not matter. The name case that the library
+    /// was given does not matter either.
+    /// </returns>
+    public bool Equals([NotNullWhen(true)] RuleLibrary? other)
+    {
+        if (other is null || this.rules.Count != other.rules.Count)
+        {
+            return false;
+        }
+
+        foreach ((string name, LibraryRule rule) in this.rules)
+        {
+            if (
+                !other.rules.TryGetValue(name, out LibraryRule? otherRule)
+                || !string.Equals(rule.Text, otherRule.Text, StringComparison.Ordinal)
+            )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc cref="Equals(RuleLibrary)"/>
+    public override bool Equals(object? obj)
+    {
+        return this.Equals(obj as RuleLibrary);
+    }
+
+    /// <summary>Gets a hash code that agrees with <see cref="Equals(RuleLibrary)"/>.</summary>
+    /// <returns>A hash code that does not depend on the order or the name case of the rules.</returns>
+    public override int GetHashCode()
+    {
+        // A sum is order independent, as the equality is. Each rule contributes its case-insensitive name and its text.
+        int sum = 0;
+        foreach ((string name, LibraryRule rule) in this.rules)
+        {
+            sum += HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(name), rule.Text);
+        }
+
+        return sum;
+    }
+
     /// <summary>
     /// Computes the content hash of rule text: the SHA-256 hash of its UTF-8 bytes, as 64 upper-case hexadecimal digits.
-    /// The rule store of <c>TruthWeaver.Extensions.Configuration</c> computes the same hash for the rules it holds.
+    /// Every CRLF and every lone CR is read as LF first, so the hash does not depend on the line endings of the file the
+    /// text came from. Nothing else in the text changes (no trimming).
     /// </summary>
     private static string ContentHash(string text)
     {
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+        string normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
     }
 }
