@@ -58,7 +58,7 @@
        runs a host in memory, so the authorization tests send real requests without a network port. TruthWeaver.AspNetCore itself
        takes only the Microsoft.AspNetCore.App framework reference. -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-rc.2.26504.105" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-rc.3.26522.148" />
   </ItemGroup>
   <!-- Meziantou.Framework.JsonPath - TruthWeaver.DataSources.Json's JSONPath (RFC 9535) engine (ADR-0006). MIT, no dependencies,
        a net11.0 build, evaluates System.Text.Json JsonNode directly and is actively maintained. Chosen over JsonPath.Net, whose
@@ -121,7 +121,7 @@
        JSON fixtures (ticket: JSON Schema for the rule tree). Not referenced by any shipping project;
        the schema itself is packaged as a plain content file, not consumed by production code. -->
   <ItemGroup>
-    <PackageVersion Include="JsonSchema.Net" Version="9.5.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.6.0" />
   </ItemGroup>
   <!-- CsCheck - test-project-only, property-based/generative testing for the DSL printer/parser
        round-trip (ticket: DSL round-trip property testing). Chosen over FsCheck: pure C# (no F#
