@@ -43,6 +43,7 @@ The table shows the rule `idIsGuid`.
 | String | `"d3b07384d9a34c1e8f3b0a1b2c3d4e5f"` | `True` |
 | String | `"{d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5f}"` | `True` |
 | String | `"(d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5f)"` | `True` |
+| String | `"  d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5f "` | `True` |
 | String | `"{0xd3b07384,0xd9a3,0x4c1e,{0x8f,0x3b,0x0a,0x1b,0x2c,0x3d,0x4e,0x5f}}"` | `True` |
 | String | `"not-a-guid"` | `False` |
 | String | `"d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5"` | `False` |
@@ -68,7 +69,7 @@ A null selected value answers `Unknown` by default, because the type of a missin
 
 ## Edge cases
 
-- The text must be a whole GUID. This predicate does not trim surrounding spaces.
+- The predicate trims white space at the start and end of the text before the GUID check. So `"  d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5f "` is a GUID. Any other text around the GUID makes the text not a GUID.
 - The empty string is not a GUID. It answers `False`, not `Unknown`.
 
 ## Related predicates
