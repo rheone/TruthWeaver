@@ -8,7 +8,9 @@ namespace TruthWeaver.Evaluation;
 /// Evaluation aborts when the number of recorded faults reaches this value, so a budget of 1 aborts on the first fault.
 /// Every term, operand or quantifier element not yet run when the evaluation aborts counts as
 /// <see cref="Abstractions.TruthValue.Unknown"/> in the result. <see langword="null"/> (the default) means unlimited. A value below 1 makes
-/// <c>CompiledRule.EvaluateAsync</c> throw <see cref="ArgumentOutOfRangeException"/>.
+/// <c>CompiledRule.EvaluateAsync</c> throw <see cref="ArgumentOutOfRangeException"/>. The count is per evaluation state: the rules of a
+/// policy set share one state for a context, so the budget counts faults across the whole set and the Nth fault anywhere in it
+/// aborts every rule still to run (see <c>docs/policies.md</c>).
 /// </param>
 /// <param name="Mode">Whether short-circuiting applies (<see cref="EvaluationMode.ShortCircuit"/>) or every reachable term runs (<see cref="EvaluationMode.Exhaustive"/>).</param>
 /// <param name="Timeout">
@@ -28,7 +30,9 @@ namespace TruthWeaver.Evaluation;
 /// </param>
 /// <param name="MaxElementEvaluations">
 /// The total number of quantifier element-body evaluations allowed across every <c>FORALL</c>/<c>EXISTS</c> in one
-/// evaluation (ADR-0010 decision 6); nested quantifiers multiply, so a 50-element quantifier over a 50-element
+/// evaluation (ADR-0010 decision 6) of one evaluation state: a single <c>CompiledRule.EvaluateAsync</c> call, or, for a
+/// policy set, the whole set for one context, because its rules share that state and count against one total (see
+/// <c>docs/policies.md</c>). Nested quantifiers multiply, so a 50-element quantifier over a 50-element
 /// quantifier counts as up to 2,500. Over the bound, the quantifier being evaluated becomes <c>Unknown</c> with one
 /// fault and the whole evaluation aborts, the same way <see cref="FaultBudget"/> aborts. Unlike every other option
 /// here, the default (10,000) is not unlimited: a rule's *author*, not the host calling <c>EvaluateAsync</c>,
