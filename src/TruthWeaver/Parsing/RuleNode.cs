@@ -185,6 +185,16 @@ internal sealed record CoalesceNode(IReadOnlyList<RuleNode> Operands, SourceSpan
 internal sealed record ErrorNode(SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
+/// A reference to a named rule of the compiler's <c>RuleLibrary</c>: <c>rule("name")</c>, or
+/// <c>rule("name", hash: "...")</c> with a pin. <c>DefinitionExpander</c> replaces it with the library rule's own
+/// expanded tree before <c>RuleNodeCompiler</c> builds the compiled tree, so nothing after expansion sees it.
+/// </summary>
+/// <param name="Name">The library rule name, as written.</param>
+/// <param name="PinnedHash">The content hash the reference pins, or <see langword="null"/> for the current version.</param>
+/// <param name="Span">The whole reference, from <c>rule</c> to its closing parenthesis.</param>
+internal sealed record LibraryReferenceNode(string Name, string? PinnedHash, SourceSpan Span) : RuleNode(Span);
+
+/// <summary>
 /// A document-scoped <c>let</c> declaration (ADR-0008): names a reusable sub-expression, with zero or more declared
 /// parameters, that a <see cref="UseNode"/> elsewhere in the same document can expand at compile time. Never reaches
 /// the evaluator, analyzer, rewrites or printers. <c>DefinitionExpander</c> replaces every use before

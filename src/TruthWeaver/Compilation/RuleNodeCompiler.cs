@@ -100,6 +100,16 @@ internal sealed class RuleNodeCompiler<TContext>
             (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(document, registry, options);
             expansionDiagnostics.AddRange(diagnosed);
         }
+        else if (DefinitionExpander.HasLibraryReference(root))
+        {
+            // A rule with library references but no definitions expands as a document that declares none.
+            (root, IReadOnlyList<Diagnostic> diagnosed) = DefinitionExpander.Expand(
+                new RuleDocumentNode([], root, root.Span),
+                registry,
+                options
+            );
+            expansionDiagnostics.AddRange(diagnosed);
+        }
 
         RuleNodeCompiler<TContext> compiler = new(registry, options, startQuantifierDepth, inheritedVariables ?? [])
         {

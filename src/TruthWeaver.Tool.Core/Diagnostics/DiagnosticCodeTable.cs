@@ -228,6 +228,26 @@ public static class DiagnosticCodeTable
             nameof(DiagnosticCodes.DuplicateDefinitionParameter),
             "A let definition's parameter list repeats a name."
         ),
+        Error(
+            DiagnosticCodes.UnknownLibraryRule,
+            nameof(DiagnosticCodes.UnknownLibraryRule),
+            "A rule(\"name\") reference names a rule that the rule library does not hold."
+        ),
+        Error(
+            DiagnosticCodes.LibraryRuleHashMismatch,
+            nameof(DiagnosticCodes.LibraryRuleHashMismatch),
+            "A pinned rule reference names a hash that is not the current content hash of the library rule."
+        ),
+        Error(
+            DiagnosticCodes.LibraryRuleCycleDetected,
+            nameof(DiagnosticCodes.LibraryRuleCycleDetected),
+            "A library rule references itself, directly or through other library rules."
+        ),
+        Error(
+            DiagnosticCodes.InvalidLibraryRule,
+            nameof(DiagnosticCodes.InvalidLibraryRule),
+            "A library rule does not compile against the compile that references it."
+        ),
         Error(ToolDiagnosticCodes.InputUnreadable, nameof(ToolDiagnosticCodes.InputUnreadable), "The input cannot be read."),
         Error(
             ToolDiagnosticCodes.InvalidEncoding,

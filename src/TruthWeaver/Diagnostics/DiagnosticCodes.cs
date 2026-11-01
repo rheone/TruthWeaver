@@ -279,4 +279,29 @@ public static class DiagnosticCodes
     /// own declaration, not any particular use.
     /// </summary>
     public const string DuplicateDefinitionParameter = "TRE0046";
+
+    /// <summary>
+    /// A <c>rule("name")</c> reference names a rule that the compiler's <c>CompilerOptions.Library</c> does not hold, or
+    /// the compiler has no library. The message names the rule. The span is the whole reference.
+    /// </summary>
+    public const string UnknownLibraryRule = "TRE0047";
+
+    /// <summary>
+    /// A pinned reference <c>rule("name", hash: "...")</c> names a content hash that is not the current content hash of
+    /// the library rule. The message names the rule, the pinned hash and the current hash. The span is the whole reference.
+    /// </summary>
+    public const string LibraryRuleHashMismatch = "TRE0048";
+
+    /// <summary>
+    /// A library rule references itself, directly or through a chain of other library rules. The message lists the cycle
+    /// path, such as <c>a -&gt; b -&gt; a</c>. The span is the reference in the compiled text that leads into the cycle.
+    /// </summary>
+    public const string LibraryRuleCycleDetected = "TRE0049";
+
+    /// <summary>
+    /// A library rule does not compile against the compile that references it: a predicate name or a data source name of
+    /// the library rule is not in the caller's registry or data sources, or the library rule has another error. The
+    /// message names the library rule and the error. The span is the reference in the compiled text.
+    /// </summary>
+    public const string InvalidLibraryRule = "TRE0050";
 }

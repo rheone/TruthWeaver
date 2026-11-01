@@ -28,6 +28,42 @@ internal static class DefinitionExpander
         CompilerOptions options
     )
     {
+        return Expand(document, registry, options, new LibraryRuleExpander<TContext>(registry, options), [], site: null);
+    }
+
+    /// <summary>Determines whether a raw tree holds a <c>rule("name")</c> reference anywhere, so that it must be expanded.</summary>
+    /// <param name="node">The raw tree.</param>
+    /// <returns><see langword="true"/> when the tree holds a library rule reference.</returns>
+    public static bool HasLibraryReference(RuleNode node)
+    {
+        return node is LibraryReferenceNode || RuleNode.OperandsOf(node).Any(HasLibraryReference);
+    }
+
+    /// <summary>
+    /// Expands the uses of one document: the document being compiled, or the text of a library rule that a
+    /// <c>rule("name")</c> reference expands. A library rule's own <c>let</c> definitions are in scope in that library rule
+    /// only, so each library rule is expanded as its own document.
+    /// </summary>
+    /// <param name="document">The parsed document.</param>
+    /// <param name="registry">The predicate registry, for the definition name collision check.</param>
+    /// <param name="options">The compiler options.</param>
+    /// <param name="library">Expands the library rule references, for the whole compile.</param>
+    /// <param name="libraryChain">The library rules being expanded through, outermost first, for cycle detection.</param>
+    /// <param name="site">
+    /// The span of the reference in the compiled text that this document is expanded for, or <see langword="null"/> for the
+    /// compiled document itself. Every node and diagnostic of a library rule takes this span, because the spans of the
+    /// library rule text do not locate anything in the compiled text.
+    /// </param>
+    /// <returns>The expanded body and the diagnostics.</returns>
+    internal static (RuleNode Body, IReadOnlyList<Diagnostic> Diagnostics) Expand<TContext>(
+        RuleDocumentNode document,
+        PredicateRegistry<TContext> registry,
+        CompilerOptions options,
+        LibraryRuleExpander<TContext> library,
+        List<string> libraryChain,
+        SourceSpan? site
+    )
+    {
         List<Diagnostic> diagnostics = [];
         Dictionary<string, DefinitionNode> definitionsByName = [with(StringComparer.OrdinalIgnoreCase)];
         HashSet<string> unused = [with(StringComparer.OrdinalIgnoreCase)];
@@ -70,7 +106,9 @@ internal static class DefinitionExpander
             unused.Add(definition.Name);
         }
 
-        Expander expander = new(definitionsByName, options, diagnostics);
+        RuleNode ExpandReference(LibraryReferenceNode reference) => library.Expand(reference, libraryChain, site, diagnostics);
+
+        Expander expander = new(definitionsByName, options, diagnostics, ExpandReference, site);
         RuleNode body = expander.ExpandNode(document.Body, parameters: null, chain: [], unused);
 
         // Every definition that document.Body's own expansion never reaches is still declared, and ADR-0008's
@@ -87,7 +125,7 @@ internal static class DefinitionExpander
         // validation pass now also looks at its unreachable definitions - while still bounding this pass's own
         // work against the same MaxNodeCount, the same protection ticket 04 gave the reachable walk. A scratch copy
         // of 'unused' keeps this walk from marking a definition used for the real UnusedDefinition lint below.
-        Expander unreachableValidator = new(definitionsByName, options, diagnostics);
+        Expander unreachableValidator = new(definitionsByName, options, diagnostics, ExpandReference, site);
         HashSet<string> validated = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (DefinitionNode definition in document.Definitions)
         {
@@ -200,11 +238,16 @@ internal static class DefinitionExpander
         );
     }
 
-    /// <summary>Carries one expansion pass's immutable inputs (the declared definitions and options) and mutable diagnostics sink.</summary>
+    /// <summary>
+    /// Carries one expansion pass's immutable inputs (the declared definitions, options, the library reference expansion
+    /// and the span of the reference being expanded, if any) and mutable diagnostics sink.
+    /// </summary>
     private sealed class Expander(
         Dictionary<string, DefinitionNode> definitions,
         CompilerOptions options,
-        List<Diagnostic> diagnostics
+        List<Diagnostic> diagnostics,
+        Func<LibraryReferenceNode, RuleNode> expandReference,
+        SourceSpan? site
     )
     {
         // Counts every node ExpandNode produces (or, past the limit, merely attempts), mirroring
@@ -237,7 +280,7 @@ internal static class DefinitionExpander
                 return new ErrorNode(node.Span) with { Path = node.Path };
             }
 
-            return node switch
+            RuleNode expanded = node switch
             {
                 // Only ever produced inside the owning definition's own body, so parameters is never null here in a
                 // well-formed tree; the fallback keeps this method total rather than throwing on a malformed one.
@@ -246,6 +289,9 @@ internal static class DefinitionExpander
                     ? bound
                     : node,
                 UseNode use => this.ExpandUse(use, parameters, chain, unused),
+
+                // A library rule is a complete rule: it takes no arguments, so the parameters in scope here do not reach it.
+                LibraryReferenceNode reference => WithLeadingNote(expandReference(reference), reference.Note),
 
                 // A term's own argument values are RawLiteral, not RuleNode: parameters substitute only at the
                 // operand level (ADR-0008 decision 5), so a term's arguments never contain a use or parameter.
@@ -304,6 +350,24 @@ internal static class DefinitionExpander
                     $"Unhandled rule node type '{node.GetType()}' during definition expansion."
                 ),
             };
+
+            // Inside a library rule every node takes the span of the reference in the compiled text (see Expand).
+            return site is { } span && expanded.Span != span ? expanded with { Span = span } : expanded;
+        }
+
+        // Puts the use's (or reference's) own note on the node it expands to, ahead of any note that node already has.
+        // The copy matters: the expansion can be a node shared with the definition body, with a bound argument (a body of
+        // a bare term or a bare parameter) or with another reference to the same library rule, and setting the note on it
+        // would leak it into every other use.
+        private static RuleNode WithLeadingNote(RuleNode expanded, string? note)
+        {
+            if (note is null)
+            {
+                return expanded;
+            }
+
+            string combinedNote = expanded.Note is { } bodyNote ? $"{note}\n{bodyNote}" : note;
+            return expanded with { Note = combinedNote };
         }
 
         /// <summary>Copies <paramref name="source"/>'s JSON/YAML path and note onto the freshly built <paramref name="result"/>.</summary>
@@ -418,16 +482,8 @@ internal static class DefinitionExpander
             List<string> nextChain = [.. chain, use.Name];
             RuleNode expanded = this.ExpandNode(definition.Body, bound, nextChain, unused);
 
-            // The use's own note belongs on the node it expands to, ahead of any note that node already has. The copy
-            // matters: the expansion can be a node shared with the definition body or with a bound argument (a body of
-            // a bare term or a bare parameter), and setting the note on it would leak it into every other use.
-            if (use.Note is not { } useNote)
-            {
-                return expanded;
-            }
-
-            string combinedNote = expanded.Note is { } bodyNote ? $"{useNote}\n{bodyNote}" : useNote;
-            return expanded with { Note = combinedNote };
+            // The use's own note belongs on the node it expands to, ahead of any note that node already has.
+            return WithLeadingNote(expanded, use.Note);
         }
     }
 }

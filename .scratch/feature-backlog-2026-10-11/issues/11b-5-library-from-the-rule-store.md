@@ -13,3 +13,7 @@
 - [ ] The rule store page (`docs/rule-store.md`) is updated in the same change, `CHANGELOG.md` has an entry, and the doc example tests pass
 - [ ] The README of `src/TruthWeaver.Extensions.Configuration` is still correct (see project-readmes ticket 06)
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+
+## Note from 11b-2 (2026-11-01)
+
+The core now computes the content hash itself (`LibraryRule.Hash`, SHA-256 of the UTF-8 text as upper-case hex), identical to `ConfigurationRuleStore.HashOf`. This ticket may point the store at the core's value so one algorithm remains.

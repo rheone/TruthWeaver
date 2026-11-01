@@ -117,6 +117,11 @@ public sealed partial class TextMateGrammarTests
     [InlineData("let adult = a; adult", "=", "keyword.operator.assignment")]
     [InlineData("let adult = a; adult", ";", "punctuation.terminator.statement")]
     [InlineData("let adult = a; adult", "adult", "variable.other.term")]
+    [InlineData("a AND rule(\"adult\")", "rule", "support.function.library-reference")]
+    [InlineData("a AND RULE(\"adult\")", "adult", "string.quoted.double")]
+    [InlineData("rule(\"adult\", hash: \"AB12\")", "hash", "variable.parameter.argument")]
+    [InlineData("rule(\"adult\", hash: \"AB12\")", "AB12", "string.quoted.double")]
+    [InlineData("rule(name: \"x\")", "rule", "entity.name.function.term")]
     public void Tokenize_Construct_GetsItsScope_Test(string text, string needle, string expectedScope)
     {
         string scope = ScopeAt(text, needle);

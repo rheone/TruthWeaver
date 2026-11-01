@@ -12,3 +12,7 @@
 - [ ] `rule-tree.schema.json` accepts a valid reference and rejects a malformed one
 - [ ] The pages are updated in the same change (JSON and YAML formats, builder), `CHANGELOG.md` has an entry, and the doc example tests pass
 - [ ] New and touched tests carry an XML `<summary>`, are named per `CLAUDE.md`, and the full validation set from `CLAUDE.md` passes
+
+## Note from 11b-2 (2026-11-01)
+
+Until this ticket adds a tree shape, printing a document whose text holds `rule("x")` fails (ticket 78 guards that). This ticket removes the guard by giving `rule` a JSON and YAML shape.
