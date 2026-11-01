@@ -253,6 +253,28 @@ public sealed class YamlTreeTests
         Assert.Contains("T, F, U", diagnostic.Expected, StringComparison.Ordinal);
     }
 
+    /// <summary>An empty or <c>~</c> YAML <c>const</c> value is reported as <c>null</c>, the same as the JSON <c>{"const": null}</c>.</summary>
+    [Theory]
+    [InlineData("const:")]
+    [InlineData("const: ~")]
+    public void CompileYaml_NullConst_FoundIsNull_Test(string yaml)
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml(yaml);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal("null", diagnostic.Found);
+    }
+
+    /// <summary>A non-null scalar in a bad YAML <c>const</c> is still quoted in <c>Found</c>.</summary>
+    [Fact]
+    public void CompileYaml_BadScalarConst_FoundIsTheQuotedText_Test()
+    {
+        CompilationResult<RuleTestContext> result = CreateCompiler().CompileYaml("const: unk");
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal("'unk'", diagnostic.Found);
+    }
+
     /// <summary>Every distinct malformed tree branch raises its specific message.</summary>
     [Theory]
     [InlineData("not: [valid, yaml: [", "Malformed YAML:")]

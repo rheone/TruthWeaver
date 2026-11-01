@@ -95,7 +95,7 @@ internal readonly struct YamlNodeCursor : ITreeNodeCursor
     /// <inheritdoc />
     public string DescribeValue()
     {
-        return this.node is YamlScalarNode { Value: { } text } ? $"'{text}'" : this.Describe();
+        return this.node is YamlScalarNode { Value: { } text } && !IsNull(this.node) ? $"'{text}'" : this.Describe();
     }
 
     /// <inheritdoc />

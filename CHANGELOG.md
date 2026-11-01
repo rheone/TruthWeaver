@@ -568,7 +568,8 @@ copyright line reads 2026.
 ### Fixed
 
 - The `TRE0014` diagnostic for a bad `const` in JSON and YAML names every accepted spelling: `true`, `false`, `unknown`
-  and the letters `T`, `F` and `U`, in any case.
+  and the letters `T`, `F` and `U`, in any case. A YAML `const:` with an empty or `~` value reports `Found` as `null`,
+  as the JSON `{"const": null}` does.
 - `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` folds a short sequence, because `Unknown` is the identity of `COALESCE`: an
   empty sequence is the constant `Unknown` and one operand is itself. The `params` overload still builds the node, and the
   compiler reports `InfixArityViolation` for fewer than two operands. The K3 reference pages for `And`, `Or`, `Parity`,

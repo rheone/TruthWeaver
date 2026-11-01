@@ -1,6 +1,6 @@
 # 48 - YAML const: with an empty or ~ value reports Found as a quoted empty string rather than null
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: L5 Least surprise
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -49,9 +49,13 @@ not verified (medium or low)
 - `YamlNodeCursor.DescribeValue`.
 
 **Acceptance criteria:**
-- [ ] A bad `const:` entry with an empty or `~` value reports `Found: null` in its diagnostic.
-- [ ] A non-null scalar's description is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A bad `const:` entry with an empty or `~` value reports `Found: null` in its diagnostic.
+- [x] A non-null scalar's description is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - `Describe`'s existing (already-correct) null handling.
+
+## Resolution (2026-11-01)
+
+Reproduced first (red): `const:` and `const: ~` gave `Found` as `''` and `'~'`. `YamlNodeCursor.DescribeValue` now falls through to `Describe()` for a YAML null scalar (empty, `~` or `null`, using the same `IsNull` check as `Describe`), so it reports `null`, as the JSON path does. A non-null scalar is still quoted. Tests: `YamlTreeTests.CompileYaml_NullConst_FoundIsNull_Test` (two rows) and `CompileYaml_BadScalarConst_FoundIsTheQuotedText_Test`. No page describes the `Found` text; `CHANGELOG.md` records it.
