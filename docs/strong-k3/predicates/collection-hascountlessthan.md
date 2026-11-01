@@ -28,7 +28,7 @@ The selector has one overload. The element type is `string`. See [Argument kinds
 
 | Name | Kind | Meaning |
 | --- | --- | --- |
-| `count` | `Int64` | The number to compare with the number of elements. |
+| `count` | `Int64` | The number to compare with the number of elements. Zero or more. |
 
 ## Definition
 
@@ -63,6 +63,7 @@ A null selected collection answers `Unknown` by default. It records no fault. A 
 
 - The predicate counts elements. A repeated element and a `null` element each add one. It does not compare the elements.
 - An empty collection has zero elements.
+- A negative `count` is an error, because a collection never has fewer than zero elements. A negative literal is a `TRE0026` compile error, and the rule does not compile. A negative value from a data source faults when the rule evaluates, before the selected value is read: the answer is `Unknown` and the decision records one fault.
 
 ## Related predicates
 

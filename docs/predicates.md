@@ -117,6 +117,8 @@ NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "
 | `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` | `count` (`Int64`) | The element count is at most `count`. |
 | `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` | `count` (`Int64`) | The element count is at least `count`. |
 
+A `count` must be zero or more, because a collection never has fewer than zero elements. A negative literal `count` is a `TRE0026` compile error. A negative value from a data source faults to `Unknown` with a `Fault`, also when the selected collection is null.
+
 To test one string against several candidates, use `StringPredicates.IsIn` and `StringPredicates.IsNotIn`.
 
 Every predicate in this table except `IsNullOrEmpty` and `IsNotNullOrEmpty`, `IsEmpty` and `IsNotEmpty` included, answers a null selected value as [Null selected values](#null-selected-values) describes. The two null tests have no option: a null collection is `True` for `IsNullOrEmpty` and `False` for `IsNotNullOrEmpty`. A null collection is a missing value, not an empty one.

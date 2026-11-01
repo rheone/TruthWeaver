@@ -1,6 +1,6 @@
 # 63 - Collection HasCount predicates accept a negative count with no diagnostic
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F6 Predicates A
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -51,7 +51,15 @@ Decision: reject a negative literal count at compile time (standing policy for s
 - The ten `HasCount*` factories' schema-building (`Build`) needs an `ArgumentValidator` for a non-negative `count`.
 
 **Acceptance criteria:**
-- [ ] A negative literal `count` argument to any `HasCount*` predicate is a compile-time diagnostic, not a silent constant.
-- [ ] A negative count supplied via a data source at evaluation is an argument fault.
-- [ ] A non-negative count is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A negative literal `count` argument to any `HasCount*` predicate is a compile-time diagnostic, not a silent constant.
+- [x] A negative count supplied via a data source at evaluation is an argument fault.
+- [x] A non-negative count is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Per the Decision, a negative count is rejected. The ten `HasCount*` factories now build through a new private `CollectionPredicates.CountPredicate` (in place of the generic `Build`). It sets an `ArgumentValidator` that reports a negative literal `count` as a problem, which the compiler turns into `TRE0026`. At evaluation a negative count (from a data source) throws `ArgumentException` before the selector runs, so the engine records a fault even for a null collection. A count of zero or more is unchanged. Reproduced first: the schema had no validator and `count: -1` evaluated to a constant.
+
+Tests (`CollectionPredicatesTests`, one row per factory): `ArgumentValidator_NegativeLiteralCount_ReturnsOneProblem_Test`, `ArgumentValidator_NonNegativeOrDeferredCount_ReturnsNoProblem_Test` and `Evaluate_NegativeCount_ThrowsArgumentException_Test` (all red before, green after).
+
+Docs: the Arguments table and Edge cases of the ten `docs/strong-k3/predicates/collection-*hascount*.md` pages; `docs/predicates.md` (collection predicates).
