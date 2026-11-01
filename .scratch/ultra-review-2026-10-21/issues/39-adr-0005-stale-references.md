@@ -1,6 +1,6 @@
 # 39 - ADR-0005 cites a Project(bool) signature, diagnostic codes and a decision number that the code and docs do not use
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F1 Ast+Abstractions; L3 Externals+If+constants; L5 Least surprise; L1 Connectives; L2 Cardinality+quantifiers
@@ -136,9 +136,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -160,7 +160,11 @@ Fix approach (already settled by the owner in `.scratch/ultra-review-2026-10-21/
 - `src/TruthWeaver/Ast/TruthValueText.cs`'s summary comment.
 
 **Acceptance criteria:**
-- [ ] ADR-0005 gains a dated errata note covering every stale citation listed above.
-- [ ] `TruthValueText.cs`'s comment cites decision 16, not 11.
-- [ ] No code or other-reference-page change — this ticket only touches the ADR and the one stale comment.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] ADR-0005 gains a dated errata note covering every stale citation listed above.
+- [x] `TruthValueText.cs`'s comment cites decision 16, not 11.
+- [x] No code or other-reference-page change — this ticket only touches the ADR and the one stale comment.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Verified each claim against the code first: `Decision.Project(TruthValue)` with an `ArgumentOutOfRangeException` for Unknown; `DslParser` rejects `NXOR`, `Project` and `Collapse` with `UnknownPredicate`; `RuleNodeCompiler` reports `InfixArityViolation` for `If`, inspections and short n-ary nodes; the tree reader reports `InvalidThresholdValue` for `BETWEEN` bounds. All true, so the ADR is the stale side. Fixed: a dated errata block ("Amended 2026-11-01") near the top of ADR-0005 records each correction (appended, the decision text is left as written); the `TruthValueText` summary now cites decision 16. This is a documentation and comment change only, so there is no red test; the existing suite and the doc-lint tests are the pin. Decisions 13 and 16 also carry the ticket 38 in-place notes. Pages: ADR-0005.
