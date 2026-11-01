@@ -11,7 +11,7 @@ public sealed class RuleBuilderEnumerableTests
 
     public static TheoryData<string> Operators => ["And", "Or", "Parity", "Any", "All", "None", "ExactlyOne", "Coalesce"];
 
-    public static TheoryData<string> OperatorsWithAnIdentity => ["And", "Or", "Any", "All", "None"];
+    public static TheoryData<string> OperatorsWithAnIdentity => ["And", "Or", "Any", "All", "None", "Coalesce"];
 
     /// <summary>An empty sequence folds to the operator's identity constant instead of a rejected zero-operand node.</summary>
     [Theory]
@@ -20,6 +20,7 @@ public sealed class RuleBuilderEnumerableTests
     [InlineData("Any", "{\"const\":false}")]
     [InlineData("All", "{\"const\":true}")]
     [InlineData("None", "{\"const\":true}")]
+    [InlineData("Coalesce", "{\"const\":\"unknown\"}")]
     public void Enumerable_overload_with_no_items_folds_to_the_identity_constant_Test(string op, string expectedJson)
     {
         RuleBuilder result = Build(op, []);
@@ -44,7 +45,6 @@ public sealed class RuleBuilderEnumerableTests
     [Theory]
     [InlineData("Parity")]
     [InlineData("ExactlyOne")]
-    [InlineData("Coalesce")]
     public void Enumerable_overload_of_an_operator_with_no_identity_does_not_fold_Test(string op)
     {
         Assert.Equal(BuildParams(op).ToJson(), Build(op, []).ToJson());

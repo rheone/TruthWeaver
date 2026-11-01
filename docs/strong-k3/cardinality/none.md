@@ -197,7 +197,7 @@ LESSTHAN(1, ...)
 
 - Two or more operands in the rule languages. A single operand is not "none of one" in the DSL, JSON or YAML; write `NOT` of the operand.
 - `Unknown` is not absorbed. Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.
-- Empty and single-operand conventions. Only `RuleBuilder.None(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `True` and a single operand becomes its negation. `RuleBuilder.None(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
+- Empty and single-operand conventions. `RuleBuilder` applies a convention at build time, in both `RuleBuilder.None(params RuleBuilder[])` and `RuleBuilder.None(IEnumerable<RuleBuilder>)`: an empty list becomes the constant `True` and a single operand becomes its negation. The compiler never sees a short `NONE` node from the builder. The DSL, JSON and YAML reject fewer than two operands.
 - Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |

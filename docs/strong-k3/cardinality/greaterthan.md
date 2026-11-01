@@ -42,9 +42,9 @@ Each operand is a value in `{T, F, U}`. The parameter `k` is an integer, with 0 
 | DSL, canonical | `GreaterThan(k, a, b, ...)` |
 | JSON | `{"op": "greaterThan", "k": 2, "operands": [ <expression>, <expression>, ... ]}` |
 | YAML | `op: greaterThan` with `k:` and an `operands:` list |
-| `RuleBuilder` | `RuleBuilder.GreaterThan(int k, params RuleBuilder[])`; there is no `IEnumerable` overload |
+| `RuleBuilder` | `RuleBuilder.GreaterThan(int k, params RuleBuilder[])`; `RuleBuilder.GreaterThan(int k, IEnumerable<RuleBuilder>)` for a list whose length is known only at run time |
 
-`GreaterThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling. `RuleBuilder` has only the `params` overload for `GreaterThan`; there is no `IEnumerable` overload.
+`GreaterThan` has a real call form. The first argument is the integer `k`, written as a literal; the rest are the operands, so A call has no precedence (see [syntax](../specification/syntax.md#forms)). There is no symbol spelling. `RuleBuilder` has a `params` overload and an `IEnumerable<RuleBuilder>` overload for `GreaterThan`. Neither folds a short list: the same compile diagnostics apply to both.
 
 ## Aliases
 

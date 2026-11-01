@@ -1,6 +1,6 @@
 # 19 - K3 reference pages disagree with RuleBuilder on folding versus rejecting too few operands (And, Or, ANY/ALL/NONE, Parity, Coalesce, GreaterThan/LessThan overloads)
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: L1 Connectives; L2 Cardinality+quantifiers; L3 Externals+If+constants
@@ -99,9 +99,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -132,13 +132,19 @@ Finding L3.4 (coalesce.md): reversed from the ticket's framing. `coalesce.md`'s 
 - `RuleBuilder.Coalesce(params RuleBuilder[])`: leave unfolded (unaffected — the `params` overload for `Coalesce` was never claimed to fold by any doc, and this ticket doesn't ask for that to change).
 
 **Acceptance criteria:**
-- [ ] `and.md`, `or.md`, `parity.md`, `any.md`, `all.md`, `none.md`, `greaterthan.md`, `lessthan.md` are corrected to match current, already-tested `RuleBuilder` behavior.
-- [ ] `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` with an empty sequence builds `Constant(Unknown)`; with one operand, builds that operand unchanged.
-- [ ] `docs/rulebuilder.md`'s "no identity" grouping and the code's own remark no longer list `Coalesce`.
-- [ ] The existing pinned enumerable-overload test for `Coalesce` is updated to assert the new fold behavior instead of no-fold.
-- [ ] The `Coalesce(params RuleBuilder[])` overload's behavior is unchanged.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `and.md`, `or.md`, `parity.md`, `any.md`, `all.md`, `none.md`, `greaterthan.md`, `lessthan.md` are corrected to match current, already-tested `RuleBuilder` behavior.
+- [x] `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` with an empty sequence builds `Constant(Unknown)`; with one operand, builds that operand unchanged.
+- [x] `docs/rulebuilder.md`'s "no identity" grouping and the code's own remark no longer list `Coalesce`.
+- [x] The existing pinned enumerable-overload test for `Coalesce` is updated to assert the new fold behavior instead of no-fold.
+- [x] The `Coalesce(params RuleBuilder[])` overload's behavior is unchanged.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - `Parity` and `ExactlyOne`, which genuinely have no identity and correctly remain unfolded.
 - The counted/threshold operators (`Between`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`), which also correctly remain unfolded.
+
+## Resolution (2026-11-01)
+
+Docs side: `and.md`, `or.md`, `any.md`, `all.md`, `none.md` now say both the `params` and the `IEnumerable` overload fold; `parity.md` says neither overload folds; `greaterthan.md` and `lessthan.md` list the `IEnumerable<RuleBuilder>` overload. Code side (per the ticket's Decision): `RuleBuilder.Coalesce(IEnumerable<RuleBuilder>)` folds an empty sequence to `Constant(Unknown)` and one operand to itself; `Coalesce(params RuleBuilder[])` is unchanged (`coalesce.md` already described this). Tests: `RuleBuilderEnumerableTests` (Coalesce moved from the no-identity case to the fold cases; red first), `RuleBuilderOverloadConsistencyTests` (new `Compile_ShortListForCoalesce_FoldsFromAListButNotFromAnArray_Test`; Coalesce 0/1 removed from the array-equals-list and short-list theories). Pages updated: the K3 pages above, `docs/rulebuilder.md`, `CHANGELOG.md`.
+
+Note: Coalesce is now the one operator where an array and a list of the same operands can give different rules; `docs/rulebuilder.md` states the exception.

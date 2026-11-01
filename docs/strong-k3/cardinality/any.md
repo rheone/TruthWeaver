@@ -185,7 +185,7 @@ GREATERTHAN(0, ...)
 
 - Two or more operands in the rule languages. A single operand is not "any of one" in the DSL, JSON or YAML; write the operand itself.
 - `Unknown` is not absorbed. Only a `True` operand settles the result early; otherwise any `Unknown` operand leaves it `Unknown`.
-- Empty and single-operand conventions. Only `RuleBuilder.Any(IEnumerable<RuleBuilder>)` applies a convention, at build time: an empty sequence becomes the constant `False` and a single operand is returned unchanged. `RuleBuilder.Any(params RuleBuilder[])` rejects fewer than two operands like the rule languages.
+- Empty and single-operand conventions. `RuleBuilder` applies a convention at build time, in both `RuleBuilder.Any(params RuleBuilder[])` and `RuleBuilder.Any(IEnumerable<RuleBuilder>)`: an empty list becomes the constant `False` and a single operand is returned unchanged. The compiler never sees a short `ANY` node from the builder. The DSL, JSON and YAML reject fewer than two operands.
 - Faults are `Unknown`. A faulting predicate contributes `Unknown` and records a fault (see [evaluation](../specification/evaluation.md#predicates-and-faults)). An `Unknown` operand counts as possibly true, never as definitely true. In the table below `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`:
 
 | Rule | Result | Faults recorded |

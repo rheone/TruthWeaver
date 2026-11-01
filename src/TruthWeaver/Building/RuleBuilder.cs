@@ -477,8 +477,8 @@ public abstract class RuleBuilder
     /// </summary>
     /// <param name="operands">The operands in priority order (at least two).</param>
     /// <remarks>
-    /// <c>COALESCE</c> has no identity constant, so a list with fewer than two operands is not folded. It builds a node that
-    /// the rule compiler rejects (<c>InfixArityViolation</c>), the same as the <see cref="Coalesce(IEnumerable{RuleBuilder})"/> overload.
+    /// An array with fewer than two operands is not folded. It builds a node that
+    /// the rule compiler rejects (<c>InfixArityViolation</c>). The <see cref="Coalesce(IEnumerable{RuleBuilder})"/> overload folds a short sequence instead.
     /// </remarks>
     /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
     public static RuleBuilder Coalesce(params RuleBuilder[] operands)
@@ -487,16 +487,24 @@ public abstract class RuleBuilder
     }
 
     /// <summary>
-    /// Creates a builder for <c>COALESCE</c> from a sequence of operands whose length is only known at run time. It builds the
-    /// same node and gets the same compile diagnostic as the array overload <see cref="Coalesce(RuleBuilder[])"/>. A short or empty
-    /// sequence is <b>not</b> folded, because <c>COALESCE</c> has no identity constant. The sequence is enumerated once.
+    /// Creates a builder for <c>COALESCE</c> from a sequence of operands whose length is only known at run time. Unlike the
+    /// array overload <see cref="Coalesce(RuleBuilder[])"/>, it folds a short sequence at build time, because <c>Unknown</c> is
+    /// the identity of <c>COALESCE</c> on both sides: an empty sequence yields <c>Constant(TruthValue.Unknown)</c> and a single
+    /// operand yields that operand unchanged. Two or more operands build the same node as the array overload. The sequence is enumerated once.
     /// </summary>
-    /// <param name="operands">The operands (at least two, otherwise a compile diagnostic).</param>
-    /// <returns>A builder for the <c>COALESCE</c> expression.</returns>
+    /// <param name="operands">The operands in priority order.</param>
+    /// <returns>A builder for the <c>COALESCE</c> expression, or the folded constant or operand.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="operands"/> is <see langword="null"/>.</exception>
     public static RuleBuilder Coalesce(IEnumerable<RuleBuilder> operands)
     {
-        return Coalesce(Materialize(operands));
+        RuleBuilder[] materialized = Materialize(operands);
+
+        return materialized.Length switch
+        {
+            0 => Constant(TruthValue.Unknown),
+            1 => materialized[0],
+            _ => Coalesce(materialized),
+        };
     }
 
     /// <summary>
