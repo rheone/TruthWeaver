@@ -188,8 +188,8 @@ by hand:
 ```
 
 A library is immutable. Each `LibraryRule` has a `Name`, its rule `Text` and a `Hash`: the SHA-256 hash of the UTF-8
-bytes of the text, as 64 upper-case hexadecimal digits. The rule store of
-`TruthWeaver.Extensions.Configuration` computes the same hash. A reference without a hash uses the current version of
+bytes of the text, as 64 upper-case hexadecimal digits. Before it hashes, the library reads every CRLF and every lone
+CR as LF, so the same rule has the same hash on every platform. It changes nothing else in the text. A reference without a hash uses the current version of
 the library rule. A reference with a hash pins a version: it compiles only while the library rule has that hash. The
 hash comparison ignores case.
 

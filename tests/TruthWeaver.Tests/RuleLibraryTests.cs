@@ -73,8 +73,8 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
-    /// The content hash of a library rule is the hash the rule store computes: SHA-256 of the UTF-8 bytes of the rule
-    /// text, as upper-case hexadecimal digits.
+    /// The content hash of a library rule with LF-only text is the SHA-256 of the UTF-8 bytes of the rule text, as
+    /// upper-case hexadecimal digits.
     /// </summary>
     [Fact]
     public void Hash_LibraryRule_IsTheSha256OfTheRuleTextInUpperCaseHex_Test()
@@ -87,6 +87,25 @@ public sealed class RuleLibraryTests
             System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))
         );
         Assert.Equal(expected, adult.Hash);
+    }
+
+    /// <summary>
+    /// Rule text with CRLF line endings, rule text with lone CR and the same text with LF have one content hash, and a pin
+    /// written from one compiles against a library that holds another.
+    /// </summary>
+    [Fact]
+    public void Compile_PinWrittenFromTextWithOtherLineEndings_MatchesTheLibraryRule_Test()
+    {
+        Assert.True(Library(("x", "a AND\nb")).TryGet("x", out LibraryRule? lfRule));
+        Assert.True(Library(("x", "a AND\r\nb")).TryGet("x", out LibraryRule? crlfRule));
+        Assert.True(Library(("x", "a AND\rb")).TryGet("x", out LibraryRule? crRule));
+        Assert.Equal(lfRule.Hash, crlfRule.Hash);
+        Assert.Equal(lfRule.Hash, crRule.Hash);
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("x", "a AND\r\nb")));
+
+        CompiledRule<RuleTestContext> rule = Compile(compiler, $"rule(\"x\", hash: \"{lfRule.Hash}\")");
+
+        Assert.Equal(Compile(compiler, "a AND b").CanonicalText, rule.CanonicalText);
     }
 
     /// <summary>

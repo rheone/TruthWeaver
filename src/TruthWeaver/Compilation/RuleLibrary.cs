@@ -68,10 +68,12 @@ public sealed class RuleLibrary
 
     /// <summary>
     /// Computes the content hash of rule text: the SHA-256 hash of its UTF-8 bytes, as 64 upper-case hexadecimal digits.
-    /// The rule store of <c>TruthWeaver.Extensions.Configuration</c> computes the same hash for the rules it holds.
+    /// Every CRLF and every lone CR is read as LF first, so the hash does not depend on the line endings of the file the
+    /// text came from. Nothing else in the text changes (no trimming).
     /// </summary>
     private static string ContentHash(string text)
     {
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+        string normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
     }
 }
