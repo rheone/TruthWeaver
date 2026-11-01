@@ -47,11 +47,23 @@ internal sealed class CollectionBinding<TContext, TItem>(
         int startNodeCount
     )
     {
-        CompilerOptions bodyOptions = elementSource is null ? options : DeclareElementSource(options, variable);
         (Expression? tree, RuleNode _, IReadOnlyList<Diagnostic> diagnostics, int nodeCount) = RuleNodeCompiler<
             Element<TContext, TItem>
-        >.Compile(body, elementRegistry, bodyOptions, depth, quantifierDepth, enclosingVariables, startNodeCount);
+        >.Compile(
+            body,
+            elementRegistry,
+            this.BodyOptions(options, variable),
+            depth,
+            quantifierDepth,
+            enclosingVariables,
+            startNodeCount
+        );
         return (tree, diagnostics, nodeCount);
+    }
+
+    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses)
+    {
+        return new LibraryRuleExpander<Element<TContext, TItem>>(elementRegistry, this.BodyOptions(options, variable), parses);
     }
 
     public async ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -311,5 +323,14 @@ internal sealed class CollectionBinding<TContext, TItem>(
         }
 
         return merged;
+    }
+
+    /// <summary>
+    /// Gets the compiler options of a body over this collection: the variable is a data source name when the collection
+    /// projects its elements to a data source. The body compile and the library rules referenced in the body use them.
+    /// </summary>
+    private CompilerOptions BodyOptions(CompilerOptions options, string variable)
+    {
+        return elementSource is null ? options : DeclareElementSource(options, variable);
     }
 }

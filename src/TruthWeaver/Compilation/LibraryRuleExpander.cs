@@ -5,35 +5,36 @@ using TruthWeaver.Parsing;
 using TruthWeaver.Registry;
 
 /// <summary>
-/// Expands the <c>rule("name")</c> references of one compile against <see cref="CompilerOptions.Library"/>, with the same
-/// machinery as <c>let</c> definitions: a reference is replaced by the library rule's own expanded tree before
-/// <see cref="RuleNodeCompiler{TContext}"/> builds the compiled tree.
+/// Expands the <c>rule("name")</c> references of one scope of a compile against <see cref="CompilerOptions.Library"/>,
+/// with the same machinery as <c>let</c> definitions: a reference is replaced by the library rule's own expanded tree
+/// before <see cref="RuleNodeCompiler{TContext}"/> builds the compiled tree. The scope is the rule itself, or the body of
+/// a quantifier, where <typeparamref name="TContext"/> is the element of the collection.
 /// </summary>
-/// <typeparam name="TContext">The application context type of the compile.</typeparam>
-/// <param name="registry">The predicate registry of the compile, which a library rule's predicate names resolve against.</param>
-/// <param name="options">The compiler options of the compile, which hold the library and its data source names.</param>
-internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> registry, CompilerOptions options)
+/// <typeparam name="TContext">The context type of the scope.</typeparam>
+/// <param name="registry">The predicate registry of the scope, which a library rule's predicate names resolve against.</param>
+/// <param name="options">
+/// The compiler options of the scope, which hold the library and its data source names: in a quantifier body, the
+/// variable of the quantifier is one of them when the collection projects its elements to a data source.
+/// </param>
+/// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+internal sealed class LibraryRuleExpander<TContext>(
+    PredicateRegistry<TContext> registry,
+    CompilerOptions options,
+    LibraryRuleParses parses
+) : ILibraryRuleScope
 {
     // The expansion of each reference for each site, or null when it failed. The pin is part of the key, so a pinned and
     // an unpinned reference at one site are each checked. The name and the pin are upper-cased in the key, because the
     // library and the pin check compare them without case.
     private readonly Dictionary<(string Name, string? Pin, SourceSpan Site), (RuleNode? Body, int NodeCount)> expanded = [];
 
-    // The parse of each library rule in this compile, by the rule name as the library holds it.
-    private readonly Dictionary<string, (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics)> parsed = [];
-
-    // The node count of each library rule that expanded and compiled without an error in this compile.
+    // The node count of each library rule that expanded and compiled without an error in this scope.
     private readonly Dictionary<string, int> checkedNodeCounts = [];
 
-    /// <summary>Expands one reference.</summary>
-    /// <param name="reference">The reference.</param>
-    /// <param name="libraryChain">The library rules being expanded through, outermost first.</param>
-    /// <param name="site">The span of the outermost reference in the compiled text, or <see langword="null"/> when this reference is in the compiled text itself.</param>
-    /// <param name="diagnostics">The diagnostics sink of the document that holds the reference.</param>
-    /// <returns>
-    /// The expanded library rule, or an <see cref="ErrorNode"/> when it cannot be expanded, and the number of nodes it
-    /// puts in the compiled tree, for the node count of the caller.
-    /// </returns>
+    // The scope of each quantifier body in this scope, by the upper-cased collection name and the variable.
+    private readonly Dictionary<(string Collection, string Variable), ILibraryRuleScope> bodyScopes = [];
+
+    /// <inheritdoc/>
     public (RuleNode Body, int NodeCount) Expand(
         LibraryReferenceNode reference,
         List<string> libraryChain,
@@ -57,6 +58,25 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
         }
 
         return expansion.Body is { } body ? (body, expansion.NodeCount) : (new ErrorNode(span), 1);
+    }
+
+    /// <inheritdoc/>
+    public ILibraryRuleScope EnterQuantifier(string collectionName, string variable)
+    {
+        if (!registry.TryGetCollection(collectionName, out ICollectionBinding<TContext>? binding))
+        {
+            return this;
+        }
+
+        // The collection lookup ignores case, so the key does too. A variable is case-sensitive, like a data source name.
+        (string, string) key = (collectionName.ToUpperInvariant(), variable);
+        if (!this.bodyScopes.TryGetValue(key, out ILibraryRuleScope? scope))
+        {
+            scope = binding.CreateLibraryScope(variable, options, parses);
+            this.bodyScopes[key] = scope;
+        }
+
+        return scope;
     }
 
     // A library rule code already names the library rule it is about, so it passes through as it is: that keeps one
@@ -163,8 +183,9 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
         return this.ExpandRule(rule, [.. libraryChain, rule.Name], span, diagnostics);
     }
 
-    // Expands one library rule for one site and checks it, or reports its errors and returns null. The parse and the check
-    // are shared by every site in this compile; only the expansion, which puts the site span on every node, is per site.
+    // Expands one library rule for one site and checks it, or reports its errors and returns null. The parse is shared by
+    // every scope of the compile and the check by every site in this scope; only the expansion, which puts the site span
+    // on every node, is per site.
     private (RuleNode? Body, int NodeCount) ExpandRule(
         LibraryRule rule,
         List<string> libraryChain,
@@ -172,13 +193,7 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
         List<Diagnostic> diagnostics
     )
     {
-        if (!this.parsed.TryGetValue(rule.Name, out (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse))
-        {
-            (RuleNode root, IReadOnlyList<Diagnostic> parseDiagnostics) = DslParser.Parse(rule.Text, options.MaxDepth);
-            parse = (root as RuleDocumentNode ?? new RuleDocumentNode([], root, root.Span), parseDiagnostics);
-            this.parsed[rule.Name] = parse;
-        }
-
+        (RuleDocumentNode Document, IReadOnlyList<Diagnostic> Diagnostics) parse = parses.Get(rule, options.MaxDepth);
         if (ReportErrors(rule, parse.Diagnostics, span, diagnostics))
         {
             return (null, 0);
@@ -205,7 +220,7 @@ internal sealed class LibraryRuleExpander<TContext>(PredicateRegistry<TContext> 
             return (body, nodeCount);
         }
 
-        // The library rule's predicate and data source names resolve against this compile. Building the expanded library
+        // The library rule's predicate and data source names resolve against this scope. Building the expanded library
         // rule on its own finds a name the caller does not hold, and the diagnostic can then name the library rule. The
         // compile of the caller builds the same nodes again, and so reports no second error for them. The node count of
         // the build is what each reference adds to the node count of the caller.

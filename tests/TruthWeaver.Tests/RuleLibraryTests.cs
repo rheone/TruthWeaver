@@ -369,6 +369,107 @@ public sealed class RuleLibraryTests
         Assert.Equal(references + 1, validator.ReceivedCalls().Count());
     }
 
+    /// <summary>
+    /// A library rule referenced inside a <c>FORALL</c> body resolves its predicates against the element registry of that
+    /// collection, like a <c>let</c> definition: it compiles and evaluates over each element. The same holds when the
+    /// quantifier is itself in a library rule.
+    /// </summary>
+    /// <param name="text">The rule text, with the reference in the body or in a library rule that holds the quantifier.</param>
+    [Theory]
+    [InlineData("FORALL(line IN lines, rule(\"line-ok\"))")]
+    [InlineData("rule(\"all-lines-ok\")")]
+    public async Task Compile_LibraryRuleInAQuantifierBody_ResolvesAgainstTheElementRegistry_Test(string text)
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(
+            Library(("line-ok", "shipped"), ("all-lines-ok", "FORALL(line IN lines, rule(\"line-ok\"))"))
+        );
+
+        CompilationResult<OrderContext> result = compiler.Compile(text);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+        Assert.Equal(
+            compiler.Compile("FORALL(line IN lines, shipped)").CompiledRule?.CanonicalText,
+            result.CompiledRule.CanonicalText
+        );
+        Decision allShipped = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, []), new OrderLine(true, [])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Decision oneNotShipped = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, []), new OrderLine(false, [])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.True, allShipped.Result);
+        Assert.Equal(TruthValue.False, oneNotShipped.Result);
+    }
+
+    /// <summary>
+    /// Outside a quantifier body the top-level registry applies: a library rule that uses an element predicate fails with
+    /// <see cref="DiagnosticCodes.InvalidLibraryRule"/>.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAnElementPredicateAtTheTopLevel_ReportsInvalidLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("line-ok", "shipped")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("rule(\"line-ok\")");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("shipped", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A library rule referenced in a nested quantifier body resolves against the element registry of the inner
+    /// collection.
+    /// </summary>
+    [Fact]
+    public async Task Compile_LibraryRuleInANestedQuantifierBody_ResolvesAgainstTheInnerCollection_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "partOk")));
+
+        CompilationResult<OrderContext> result = compiler.Compile(
+            "FORALL(line IN lines, EXISTS(part IN parts, rule(\"part-ok\")))"
+        );
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+        Decision decision = await result.CompiledRule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, [false, true]), new OrderLine(true, [false])]),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        Assert.Equal(TruthValue.False, decision.Result);
+    }
+
+    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library)
+    {
+        PredicateRegistry<OrderContext> registry = PredicateRegistry<OrderContext>
+            .CreateBuilder()
+            .AddCollection(
+                "lines",
+                order => order.Lines,
+                lines =>
+                    lines
+                        .Add(
+                            PredicateSchema.NoArguments("shipped", "shipped", "True when the line has shipped."),
+                            (line, _, _) => ValueTask.FromResult(line.Item.Shipped ? TruthValue.True : TruthValue.False)
+                        )
+                        .AddCollection(
+                            "parts",
+                            line => line.Item.Parts,
+                            parts =>
+                                parts.Add(
+                                    PredicateSchema.NoArguments("partOk", "partOk", "True when the part is ok."),
+                                    (part, _, _) => ValueTask.FromResult(part.Item ? TruthValue.True : TruthValue.False)
+                                )
+                        )
+            )
+            .Build();
+        return new RuleCompiler<OrderContext>(registry, new CompilerOptions(Library: library));
+    }
+
     private static DataSourceDeclarations ValidatedUserSource(IQueryValidator validator)
     {
         DataSourceDeclarations dataSources = [];
@@ -405,4 +506,13 @@ public sealed class RuleLibraryTests
             new CompilerOptions(MaxNodeCount: maxNodeCount, DataSources: dataSources, Library: library)
         );
     }
+
+    /// <summary>An order with lines, for the library rules that are referenced in a quantifier body.</summary>
+    /// <param name="Lines">The order lines.</param>
+    private sealed record OrderContext(IReadOnlyList<OrderLine> Lines);
+
+    /// <summary>One order line.</summary>
+    /// <param name="Shipped">Whether the line has shipped.</param>
+    /// <param name="Parts">Whether each part of the line is ok.</param>
+    private sealed record OrderLine(bool Shipped, IReadOnlyList<bool> Parts);
 }

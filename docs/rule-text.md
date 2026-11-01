@@ -204,6 +204,11 @@ A library rule follows these rules:
   can declare its own `let` definitions. They are in scope in that library rule only.
 - **The names of the caller.** A library rule has no predicate registry and no data sources of its own. Its predicate
   names and its `from("source", ...)` names resolve against the compile that references it.
+- **The scope of a quantifier body.** A reference in the body of a `FORALL` or `EXISTS` resolves like a definition
+  used there: its predicate names resolve against the element registry of the collection, and its data source names
+  against the body, where the variable is a source when the collection projects its elements to one. A reference in a
+  nested body uses the inner collection. Outside a body, the top-level registry applies, so a library rule that uses an
+  element predicate gives `TRE0050` there. See [Quantifiers](#quantifiers).
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.
 - **No cycles.** A library rule cannot reference itself, directly or through other library rules.

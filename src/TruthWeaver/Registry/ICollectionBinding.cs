@@ -58,6 +58,18 @@ internal interface ICollectionBinding<TContext>
     );
 
     /// <summary>
+    /// Creates the library rule scope of a quantifier body over this collection: a <c>rule("name")</c> reference in the
+    /// body resolves its predicate names against the element registry and its data source names against the options of
+    /// the body, which declare <paramref name="variable"/> as a data source when the collection projects its elements to
+    /// one.
+    /// </summary>
+    /// <param name="variable">The quantifier's bound variable name.</param>
+    /// <param name="options">The compiler options of the enclosing scope.</param>
+    /// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+    /// <returns>The scope of the body.</returns>
+    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses);
+
+    /// <summary>
     /// Evaluates a <c>FORALL</c>/<c>EXISTS</c> quantifier over this collection (ADR-0010 decisions 4, 5 and 6):
     /// selects and materializes the elements once, folds <paramref name="body"/> over them with the quantifier's
     /// Strong Kleene semantics and short-circuiting, and records one trace child per element.
