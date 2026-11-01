@@ -1,6 +1,6 @@
 # 15 - Lenient literal guessing silently changes or drops argument values (data loss on tool conversion)
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F3 Compilation
@@ -50,11 +50,15 @@ Decision: report a diagnostic rather than guess, and generalize this to every va
 - The Lenient-mode literal-guessing path (used when building an unregistered predicate's term identity) needs a diagnostic-reporting outcome alongside its existing successful-guess outcome, for every case it currently falls back to a default.
 
 **Acceptance criteria:**
-- [ ] A numeric literal that doesn't fit `long`/`decimal` (exponent form or out-of-range) reports a diagnostic instead of silently becoming `0`.
-- [ ] A mixed-kind array reports a diagnostic instead of silently coercing an element to a string or collapsing to an empty array.
-- [ ] Any other literal-guessing path that currently falls back to a default on failure is audited and converted to report a diagnostic the same way.
-- [ ] A literal that *can* be cleanly guessed is unaffected — this only changes the failure path.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A numeric literal that doesn't fit `long`/`decimal` (exponent form or out-of-range) reports a diagnostic instead of silently becoming `0`.
+- [x] A mixed-kind array reports a diagnostic instead of silently coercing an element to a string or collapsing to an empty array.
+- [x] Any other literal-guessing path that currently falls back to a default on failure is audited and converted to report a diagnostic the same way.
+- [x] A literal that *can* be cleanly guessed is unaffected — this only changes the failure path.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Registered-predicate argument conversion (`TryConvert`), which already reports diagnostics correctly.
+
+## Resolution (2026-11-01)
+
+Owner decisions: the diagnostic is `ArgumentTypeMismatch` (TRE0004), and the seam is the public compile API. `LiteralConversion.Guess` is now `TryGuess`, which reports why a literal cannot be kept. `RuleNodeCompiler.BuildUnknownIdentity` adds the diagnostic and fails the term. A number is kept by value: `long` first, then `decimal`, so a large identifier and an exponent form such as `1e5` (JSON and YAML only, because the rule text lexer rejects it) convert without loss. Reported cases: a number outside the range of `long` and `decimal`, a list that mixes element kinds, and a list inside a list. Two tests that pinned the old mixed-array behavior in `CompilerLimitsAndLenientModeTests` were changed. Pages updated: `docs/tool-core.md`, `docs/glossary.md`.

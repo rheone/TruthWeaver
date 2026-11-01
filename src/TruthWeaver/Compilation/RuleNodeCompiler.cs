@@ -173,26 +173,6 @@ internal sealed class RuleNodeCompiler<TContext>
         };
     }
 
-    private static TermIdentity BuildUnknownIdentity(TermNode node)
-    {
-        List<KeyValuePair<string, LiteralValue>> args =
-        [
-            .. node
-                .Arguments.Where(a => a.Value.Form != RawLiteralForm.Variable)
-                .Select(a => new KeyValuePair<string, LiteralValue>(a.Name, LiteralConversion.Guess(a.Value))),
-        ];
-        List<KeyValuePair<string, VariableReference>> variables =
-        [
-            .. node
-                .Arguments.Where(a => a.Value.Form == RawLiteralForm.Variable)
-                .Select(a => new KeyValuePair<string, VariableReference>(
-                    a.Name,
-                    new VariableReference(a.Value.Text ?? string.Empty, a.Value.Query ?? string.Empty)
-                )),
-        ];
-        return new TermIdentity(node.PredicateName, args, variables);
-    }
-
     /// <summary>
     /// The threshold values that would make a comparison structurally trivial (always true or always
     /// false regardless of what the operands evaluate to) for a given operand count: e.g.
@@ -211,6 +191,50 @@ internal sealed class RuleNodeCompiler<TContext>
             ThresholdComparison.Exactly => (0, operandCount),
             _ => throw new InvalidOperationException($"Unhandled threshold comparison '{comparison}'."),
         };
+    }
+
+    // Builds the identity of a term bound to an unregistered predicate (Lenient mode). An argument that cannot be kept
+    // exactly as written is reported and fails the term, so no two different literals share one identity.
+    private TermIdentity? BuildUnknownIdentity(TermNode node)
+    {
+        List<KeyValuePair<string, LiteralValue>> args = [];
+        bool kept = true;
+        foreach (ArgumentNode argument in node.Arguments.Where(a => a.Value.Form != RawLiteralForm.Variable))
+        {
+            if (LiteralConversion.TryGuess(argument.Value, out LiteralValue guessed, out string? problem))
+            {
+                args.Add(new KeyValuePair<string, LiteralValue>(argument.Name, guessed));
+                continue;
+            }
+
+            kept = false;
+            this.diagnostics.Add(
+                Diagnostic.Error(
+                    DiagnosticCodes.ArgumentTypeMismatch,
+                    $"Argument '{argument.Name}' of '{node.PredicateName}' has no exact kind to keep in lenient mode: {problem}.",
+                    argument.Value.Span,
+                    expected: "a literal with an exact kind",
+                    found: DescribeLiteral(argument.Value),
+                    path: argument.Path
+                )
+            );
+        }
+
+        if (!kept)
+        {
+            return null;
+        }
+
+        List<KeyValuePair<string, VariableReference>> variables =
+        [
+            .. node
+                .Arguments.Where(a => a.Value.Form == RawLiteralForm.Variable)
+                .Select(a => new KeyValuePair<string, VariableReference>(
+                    a.Name,
+                    new VariableReference(a.Value.Text ?? string.Empty, a.Value.Query ?? string.Empty)
+                )),
+        ];
+        return new TermIdentity(node.PredicateName, args, variables);
     }
 
     private Expression Build(RuleNode node, int depth)
@@ -745,7 +769,9 @@ internal sealed class RuleNodeCompiler<TContext>
             // later step that registers stand-ins for the terms would throw. Report it as a diagnostic here.
             if (this.options.Mode == CompilationMode.Lenient && !reserved)
             {
-                return new TermExpression(BuildUnknownIdentity(node), IsUnknownPredicate: true);
+                return this.BuildUnknownIdentity(node) is { } unknownIdentity
+                    ? new TermExpression(unknownIdentity, IsUnknownPredicate: true)
+                    : FailedNode.Placeholder;
             }
 
             // A reserved word can never be registered, so say that instead of suggesting a registration.
