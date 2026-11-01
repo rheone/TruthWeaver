@@ -20,6 +20,34 @@ internal static class QuantifierText
         };
     }
 
+    /// <summary>Gets the lowercase tree-format word (the JSON and YAML <c>op</c> value) for <paramref name="kind"/>.</summary>
+    /// <param name="kind">The quantifier kind.</param>
+    /// <returns>The word: <c>forall</c> or <c>exists</c>.</returns>
+    public static string TreeFormatWord(QuantifierKind kind)
+    {
+        return kind switch
+        {
+            QuantifierKind.ForAll => "forall",
+            QuantifierKind.Exists => "exists",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown quantifier kind."),
+        };
+    }
+
+    /// <summary>Gets the operator description shown for a quantifier node of <paramref name="kind"/>.</summary>
+    /// <param name="kind">The quantifier kind.</param>
+    /// <returns>The description.</returns>
+    public static string Description(QuantifierKind kind)
+    {
+        return kind switch
+        {
+            QuantifierKind.ForAll =>
+                "Universal quantifier: the generalized AND over a registered collection binding's elements.",
+            QuantifierKind.Exists =>
+                "Existential quantifier: the generalized OR over a registered collection binding's elements.",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown quantifier kind."),
+        };
+    }
+
     /// <summary>Gets the symbolic glyph for <paramref name="kind"/>: <c>∀</c> or <c>∃</c>.</summary>
     /// <param name="kind">The quantifier kind.</param>
     /// <returns>The glyph.</returns>

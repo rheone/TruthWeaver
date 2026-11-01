@@ -21,7 +21,10 @@ internal static class TreeFormatOpNames
 
     // The quantifier op strings. The tree reader handles them before the operator lookup (a quantifier has no
     // OperatorDefinition), so they are kept out of the read table but listed as suggestion candidates.
-    private static readonly string[] QuantifierNames = ["forall", "exists"];
+    private static readonly string[] QuantifierNames =
+    [
+        .. Enum.GetValues<QuantifierKind>().Select(QuantifierText.TreeFormatWord),
+    ];
 
     /// <summary>Gets every op string a tree may use when reading, aliases and the quantifiers <c>forall</c> and <c>exists</c> included: the candidates for a "did you mean" suggestion.</summary>
     public static IEnumerable<string> ReadableNames => TreeFormatToCanonical.Keys.Concat(QuantifierNames);

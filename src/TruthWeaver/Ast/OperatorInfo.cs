@@ -27,11 +27,7 @@ public static class OperatorInfo
         // fixed arity), so its descriptor is built here from QuantifierText, the one spelling of FORALL and EXISTS.
         if (node is QuantifierExpression quantifier)
         {
-            string quantifierDescription =
-                quantifier.Kind == QuantifierKind.ForAll
-                    ? "Universal quantifier: the generalized AND over a registered collection binding's elements."
-                    : "Existential quantifier: the generalized OR over a registered collection binding's elements.";
-            return new OperatorDescriptor(QuantifierText.Label(quantifier.Kind), quantifierDescription);
+            return new OperatorDescriptor(QuantifierText.Label(quantifier.Kind), QuantifierText.Description(quantifier.Kind));
         }
 
         if (node is TermExpression)

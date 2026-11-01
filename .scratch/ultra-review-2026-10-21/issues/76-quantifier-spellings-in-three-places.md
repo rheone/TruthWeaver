@@ -1,6 +1,6 @@
 # 76 - Quantifier spellings and descriptions live in three places
 
-Status: ready-for-agent
+Status: done
 Category: refactor
 Severity: low
 Lens: Standards review of branch 4 (a12d590...47fe02b)
@@ -24,8 +24,12 @@ A new quantifier kind needs edits in all three, and the ternary gives a wrong an
 **Desired behavior:** `QuantifierText` (or one small table beside it) owns the label, tree-format word and description of each `QuantifierKind`. `OperatorInfo.Describe` and `TreeFormatOpNames.ReadableNames` read from it. An unhandled `QuantifierKind` throws or fails a test instead of falling through to Exists. Observable output (labels, descriptions, suggestions) does not change.
 
 **Acceptance criteria:**
-- [ ] A test enumerates every `QuantifierKind` and fails if one lacks a label, tree-format word or description.
-- [ ] Existing `OperatorInfoTests`, `TreeFormatOpNamesTests` and `TreeDiagnosticsTests` pass unchanged.
-- [ ] The validation list in CLAUDE.md passes.
+- [x] A test enumerates every `QuantifierKind` and fails if one lacks a label, tree-format word or description.
+- [x] Existing `OperatorInfoTests`, `TreeFormatOpNamesTests` and `TreeDiagnosticsTests` pass unchanged.
+- [x] The validation list in CLAUDE.md passes.
 
 **Out of scope:** Adding a new quantifier kind. Do not move quantifiers into `OperatorDefinitions` (ADR-0010 keeps them out of that closed table).
+
+## Resolution (2026-11-01)
+
+`QuantifierText` now owns the label, the tree-format word (`TreeFormatWord`) and the description (`Description`) of each `QuantifierKind`. `OperatorInfo.Describe` and `TreeFormatOpNames.ReadableNames` read from it. `TreeFormatWord` and `Description` throw `ArgumentOutOfRangeException` for an undefined kind, so nothing falls through to Exists. Test: `QuantifierTextTests` enumerates every kind. Output is unchanged; the existing `OperatorInfoTests`, `TreeFormatOpNamesTests` and `TreeDiagnosticsTests` pass unchanged. No docs page changed. Left for ticket 77: the other spellings and `QuantifierText.Glyph`.
