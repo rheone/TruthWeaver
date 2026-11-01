@@ -30,6 +30,8 @@ public static class CollectionPredicates
     /// collection. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -78,6 +80,8 @@ public static class CollectionPredicates
     /// This twin answers the complement. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -115,6 +119,8 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -150,6 +156,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -180,6 +188,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -189,6 +198,7 @@ public static class CollectionPredicates
         string label = "Is Null Or Empty"
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = PredicateSchema.NoArguments(
             name,
             label,
@@ -208,6 +218,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -217,6 +228,7 @@ public static class CollectionPredicates
         string label = "Is Not Null Or Empty"
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = PredicateSchema.NoArguments(
             name,
             label,
@@ -234,6 +246,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the value.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -271,6 +285,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -304,6 +320,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -342,6 +360,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -376,6 +396,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -414,6 +436,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -448,6 +472,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -486,6 +512,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -520,6 +548,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -557,6 +587,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -590,6 +622,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -627,6 +661,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -660,6 +696,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -697,6 +735,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -730,6 +770,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -767,6 +809,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -800,6 +844,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -837,6 +883,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -885,6 +933,7 @@ public static class CollectionPredicates
         bool negate
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         return (
             PredicateSchema.NoArguments(name, label, description),
             (context, _, _) =>
@@ -922,6 +971,7 @@ public static class CollectionPredicates
     )
         where TSelected : class
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -963,6 +1013,7 @@ public static class CollectionPredicates
         bool negate
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,

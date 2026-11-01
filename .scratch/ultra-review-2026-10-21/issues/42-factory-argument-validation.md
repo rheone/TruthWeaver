@@ -1,6 +1,6 @@
 # 42 - Predicate factories and lambda registration accept null delegates, null selectors and undefined NullBehavior values, then fail on every evaluation
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts; F6 Predicates A; F7 Predicates B
@@ -64,9 +64,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -87,11 +87,25 @@ not verified (medium or low)
 - `NullBehaviorScope.Resolve`.
 
 **Acceptance criteria:**
-- [ ] `Add(schema, null!)` and `Add(null!, evaluate)` throw `ArgumentNullException` at the call, not later.
-- [ ] A factory called with a null `selector` throws `ArgumentNullException` at registration.
-- [ ] `NullBehaviorScope.Resolve` (or the factory) throws `ArgumentOutOfRangeException` for an undefined `NullBehavior` value.
-- [ ] A valid registration (non-null schema/evaluate/selector, defined `NullBehavior`) is unaffected.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] `Add(schema, null!)` and `Add(null!, evaluate)` throw `ArgumentNullException` at the call, not later.
+- [x] A factory called with a null `selector` throws `ArgumentNullException` at registration.
+- [x] `NullBehaviorScope.Resolve` (or the factory) throws `ArgumentOutOfRangeException` for an undefined `NullBehavior` value.
+- [x] A valid registration (non-null schema/evaluate/selector, defined `NullBehavior`) is unaffected.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any validation already in place (e.g. `AddCollection`'s existing null checks, `DateTimePredicates.timeProvider`, `NullBehaviorScope.Open`).
+
+## Resolution (2026-11-01)
+
+All three findings reproduced and are fixed.
+
+- F8.7: `PredicateRegistryBuilder<TContext>.Add(schema, evaluate)` calls `ArgumentNullException.ThrowIfNull` on both, so a null schema no longer throws `NullReferenceException` and a null delegate no longer registers.
+- F6.4: every method in `TruthWeaver.Predicates` that captures a selector (`ScalarPredicateCore`, the private builders of the Collection, String, DateTime, FixedOffset, Regex and Type families, and the public `IsNullOrEmpty`-style factories that capture inline) throws `ArgumentNullException` for a null `selector` before it builds the delegate. That covers all 138 public factories with a selector. Each factory's XML docs list the exception.
+- F7.6: `NullBehaviorScope.Resolve` throws `ArgumentOutOfRangeException` (parameter name `nullBehavior`) for an undefined value, so all 122 factories with a `nullBehavior` parameter reject it at the call.
+
+Not changed (out of scope, listed for the owner): `SelectedValuePredicates.Create` does not null-check `select`/`test`; factories do not null-check `name` (the ticket's acceptance criteria name only the selector).
+
+Tests: `FactoryArgumentValidationTests` (new; finds every public factory by reflection, so a new factory is checked too): `Factory_NullSelector_ThrowsArgumentNullException_Test` (138 rows, red before), `Factory_UndefinedNullBehavior_ThrowsArgumentOutOfRangeException_Test` (122 rows, red before), `Factory_ValidArguments_DoesNotThrow_Test`. `PredicateRegistryBuilderTests.Add_NullEvaluate_ThrowsArgumentNullException_Test` and `Add_NullSchema_ThrowsArgumentNullException_Test`.
+
+Docs: `docs/predicates.md` (factory argument checks; `Add(schema, evaluate)`), `docs/strong-k3/predicates/README.md` (Null selected values).

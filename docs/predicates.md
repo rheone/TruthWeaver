@@ -42,6 +42,8 @@ A null selected value never faults. A member cannot evaluate a missing value, so
 
 The host can choose `NullBehavior.False` for each predicate at registration, or set a default once with `NullBehaviorScope`. Every factory call made inside `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` that passes no `nullBehavior` follows the scope, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` does the same for one family. A `nullBehavior` argument on the call wins over a scope, and a family scope wins over an all-families scope. A positive member then answers `False` for a null selected value. The exception is `CollectionPredicates.SetEquals`. Under `NullBehavior.False` it reads a null collection as an empty collection, so it answers `True` when the argument array is empty.
 
+Every factory in `TruthWeaver.Predicates` checks its arguments when the host calls it. A null `selector` throws an `ArgumentNullException`, and a `nullBehavior` value that is not `Unknown`, `False` or `Default` throws an `ArgumentOutOfRangeException`. Neither error waits for an evaluation.
+
 A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. A twin has the same default as its positive member, so both members of a pair registered with the defaults answer `Unknown` for a null selected value. Under `NullBehavior.False` a twin answers `True` for a null selected value, and `NotSetEquals` answers the complement of `SetEquals`. Register both members of a pair with the same setting.
 
 The `StringPredicates` and `RegexPredicates` twins are:
@@ -288,7 +290,7 @@ PredicateSchema schema = new(
 };
 ```
 
-Lambda and class-based predicates register through the same `PredicateRegistryBuilder<TContext>.Add(...)` overloads. The difference is the dependency lifetime and the number of rule-authored arguments that the schema declares. The rule text, and the way the compiler validates a term, are the same for both.
+Lambda and class-based predicates register through the same `PredicateRegistryBuilder<TContext>.Add(...)` overloads. The difference is the dependency lifetime and the number of rule-authored arguments that the schema declares. The rule text, and the way the compiler validates a term, are the same for both. `Add(schema, evaluate)` throws an `ArgumentNullException` when `schema` or `evaluate` is null, so the wiring error shows at startup and not as a fault on every evaluation.
 
 ## n arguments, class-based, externally-selected value
 

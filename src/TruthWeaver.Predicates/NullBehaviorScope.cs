@@ -86,11 +86,25 @@ public sealed class NullBehaviorScope : IDisposable
     /// <see cref="NullBehavior.False"/> is kept, and <see cref="NullBehavior.Default"/> becomes the open scope's choice for
     /// <paramref name="family"/>, or <see cref="NullBehavior.Unknown"/> when no scope applies.
     /// </summary>
-    internal static NullBehavior Resolve(NullBehavior requested, PredicateFamily family)
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value. The parameter has the name of the
+    /// factory parameter, so the exception names what the host passed.
+    /// </exception>
+    internal static NullBehavior Resolve(NullBehavior nullBehavior, PredicateFamily family)
     {
-        if (requested != NullBehavior.Default)
+        // An undefined value (for example one cast from configuration) would otherwise act as Unknown with no error.
+        if (!Enum.IsDefined(nullBehavior))
         {
-            return requested;
+            throw new ArgumentOutOfRangeException(
+                nameof(nullBehavior),
+                nullBehavior,
+                "The null behavior is not defined. Use NullBehavior.Unknown, NullBehavior.False or NullBehavior.Default."
+            );
+        }
+
+        if (nullBehavior != NullBehavior.Default)
+        {
+            return nullBehavior;
         }
 
         NullBehavior? allFamilies = null;

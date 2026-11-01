@@ -21,7 +21,7 @@ A null selected value is a missing value. It is not a fault.
 | `IsNull` | `True` | `True`. A null test has no option. |
 | `IsNotNull` | `False` | `False`. A null test has no option. |
 
-- The host chooses the behavior when it registers the predicate. A rule cannot change it.
+- The host chooses the behavior when it registers the predicate. A rule cannot change it. A `nullBehavior` value that is not `Unknown`, `False` or `Default` makes the factory throw an `ArgumentOutOfRangeException` when the host calls it.
 - A host can choose it once for every registration, or for one family, with `NullBehaviorScope`: `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` sets the default for the factory calls made inside the block, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` sets it for one family. A `nullBehavior` argument on a factory call wins over a scope, and a family scope wins over an all-families scope. With no scope the default is `Unknown`.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.

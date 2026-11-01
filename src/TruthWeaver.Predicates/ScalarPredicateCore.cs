@@ -41,6 +41,7 @@ internal static class ScalarPredicateCore
     )
         where T : struct, IComparable<T>, IEquatable<T>
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -96,6 +97,7 @@ internal static class ScalarPredicateCore
     )
         where T : struct, IComparable<T>, IEquatable<T>
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -168,6 +170,7 @@ internal static class ScalarPredicateCore
     )
         where T : struct, IComparable<T>, IEquatable<T>
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -209,6 +212,7 @@ internal static class ScalarPredicateCore
     ) NullTest<TContext, T>(string name, string label, string description, Func<TContext, T?> selector, bool negate)
         where T : struct
     {
+        ArgumentNullException.ThrowIfNull(selector);
         return (
             PredicateSchema.NoArguments(name, label, description),
             (context, _, _) => PredicateResult.FromBoolAsync((selector(context) is null) != negate)
@@ -238,6 +242,7 @@ internal static class ScalarPredicateCore
     )
         where T : struct, IEquatable<T>
     {
+        ArgumentNullException.ThrowIfNull(selector);
         return (
             PredicateSchema.NoArguments(name, label, description),
             (context, _, _) =>

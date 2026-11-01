@@ -150,6 +150,34 @@ public sealed class PredicateRegistryBuilderTests
         Assert.NotNull(builder.Build());
     }
 
+    /// <summary>
+    /// Registering a lambda predicate with a null evaluation delegate throws <see cref="ArgumentNullException"/> at the
+    /// call, so the wiring error surfaces at startup and not as a fault on every evaluation.
+    /// </summary>
+    [Fact]
+    public void Add_NullEvaluate_ThrowsArgumentNullException_Test()
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+        PredicateSchema schema = new("isReady", "Is Ready", "A test predicate.", []);
+
+        ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => builder.Add(schema, null!));
+
+        Assert.Equal("evaluate", exception.ParamName);
+    }
+
+    /// <summary>Registering a lambda predicate with a null schema throws <see cref="ArgumentNullException"/> at the call.</summary>
+    [Fact]
+    public void Add_NullSchema_ThrowsArgumentNullException_Test()
+    {
+        PredicateRegistryBuilder<RuleTestContext> builder = PredicateRegistry<RuleTestContext>.CreateBuilder();
+
+        ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() =>
+            builder.Add(null!, (_, _, _) => ValueTask.FromResult(TruthValue.True))
+        );
+
+        Assert.Equal("schema", exception.ParamName);
+    }
+
     private sealed class CollectionContext
     {
         public List<TruthValue> Items { get; init; } = [];
