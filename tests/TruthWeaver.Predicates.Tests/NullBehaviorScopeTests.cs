@@ -89,6 +89,38 @@ public class NullBehaviorScopeTests
         Assert.Equal(TruthValue.False, await EvaluateNullStringAsync());
     }
 
+    /// <summary>
+    /// Disposing an outer scope before an inner one, then the inner one, leaves no scope in effect: the default is the
+    /// no-scope Unknown again, not the disposed outer scope's False.
+    /// </summary>
+    [Fact]
+    public async Task Dispose_OuterBeforeInner_LeavesNoScopeInEffect_Test()
+    {
+        NullBehaviorScope outer = NullBehaviorScope.Begin(NullBehavior.False);
+        NullBehaviorScope inner = NullBehaviorScope.Begin(PredicateFamily.Type, NullBehavior.Unknown);
+
+        outer.Dispose();
+        inner.Dispose();
+
+        Assert.Equal(TruthValue.Unknown, await EvaluateNullStringAsync());
+    }
+
+    /// <summary>
+    /// Disposing an outer scope while an inner scope is still open stops only the outer scope: a string factory, which the
+    /// inner Type scope does not cover, gets the no-scope Unknown, and a Type factory still gets the inner scope's False.
+    /// </summary>
+    [Fact]
+    public async Task Dispose_OuterWhileInnerIsOpen_StopsOnlyTheOuterScope_Test()
+    {
+        NullBehaviorScope outer = NullBehaviorScope.Begin(NullBehavior.False);
+        using NullBehaviorScope inner = NullBehaviorScope.Begin(PredicateFamily.Type, NullBehavior.False);
+
+        outer.Dispose();
+
+        Assert.Equal(TruthValue.Unknown, await EvaluateNullStringAsync());
+        Assert.Equal(TruthValue.False, await EvaluateNullTypeAsync());
+    }
+
     /// <summary>After the only scope closes, the default is Unknown again.</summary>
     [Fact]
     public async Task Dispose_OnlyScope_RestoresUnknown_Test()
@@ -155,6 +187,14 @@ public class NullBehaviorScopeTests
             : StringPredicates.IsEqualTo<TestContext>("isAlice", c => c.Value);
 
         return await evaluate(new TestContext(null), StringArguments(), CancellationToken.None);
+    }
+
+    private static async Task<TruthValue> EvaluateNullTypeAsync()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            TypePredicates.IsGuid<TestContext>("isGuid", c => c.Value);
+
+        return await evaluate(new TestContext(null), NoArguments, CancellationToken.None);
     }
 
     private static async Task<TruthValue> EvaluateNullNumberAsync()

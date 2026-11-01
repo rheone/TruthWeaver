@@ -1,6 +1,7 @@
 namespace TruthWeaver.Policies.Tests;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Building;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Registry;
@@ -471,6 +472,28 @@ public class PolicySetTests
     }
 
     /// <summary>
+    /// Two policies whose conditions read <c>from("line", "$.qty")</c> inside <c>FORALL(line IN lines, ...)</c>, compiled
+    /// against different registries whose <c>lines</c> collections project each element to a different data source, each
+    /// read their own element source. The element scope (<c>lines[0]</c>) and the reference are the same for both, so a
+    /// data-source answer memo without a registry component would hand the second policy the first policy's answer.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_SameElementSourceReferenceUnderDifferentRegistries_EachReadsItsOwnElementSource_Test()
+    {
+        CompiledRule<object> zeroQuantity = CompileLines(quantity: 0);
+        CompiledRule<object> fiveQuantity = CompileLines(quantity: 5);
+
+        PolicyDecision decision = await new PolicySet<object>(
+            "set",
+            CombiningAlgorithm.PermitOverrides,
+            [Deny("zero", zeroQuantity), Permit("five", fiveQuantity)]
+        ).EvaluateAsync(new object(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TruthValue.False, decision.Results.Single(result => result.PolicyId == "zero").Applies);
+        Assert.Equal(TruthValue.True, decision.Results.Single(result => result.PolicyId == "five").Applies);
+    }
+
+    /// <summary>
     /// A deny condition whose chain a fault-budget abort cuts short does not let a permit through: the faulting
     /// <c>broken</c> inside <c>IsTrue</c> gives a definite <c>False</c>, but the skipped <c>yes</c> counts as
     /// <c>Unknown</c>, so the deny is <c>Unknown</c> and deny-overrides answers Indeterminate.
@@ -674,6 +697,33 @@ public class PolicySetTests
         PredicateRegistryBuilder<object> builder = PredicateRegistry<object>.CreateBuilder();
         builder.Add(PredicateSchema.NoArguments(predicateName, predicateName, "Registered for a test."), evaluate);
         return builder.Build();
+    }
+
+    // Compiles FORALL(line IN lines, qtyAbove(n: from("line", "$.qty"))) against a NEW registry whose one-element
+    // "lines" collection projects its element to a data source answering $.qty with the given quantity.
+    private static CompiledRule<object> CompileLines(long quantity)
+    {
+        PredicateRegistryBuilder<object> builder = PredicateRegistry<object>
+            .CreateBuilder()
+            .AddCollection<string>(
+                "lines",
+                _ => ["only"],
+                elements =>
+                    elements.Add(
+                        new PredicateSchema(
+                            "qtyAbove",
+                            "Qty Above",
+                            "True when the quantity is above zero.",
+                            [new PredicateArgumentSchema("n", "The quantity.", LiteralKind.Int64)]
+                        ),
+                        (_, args, _) => ValueTask.FromResult(args.GetInt64("n") > 0 ? TruthValue.True : TruthValue.False)
+                    ),
+                _ => new FakeDataSource().With("$.qty", quantity)
+            );
+        CompilationResult<object> result = RuleBuilder
+            .ForAll("line", "lines", RuleBuilder.Predicate("qtyAbove", ("n", Arg.From("line", "$.qty"))))
+            .Compile(new RuleCompiler<object>(builder.Build()));
+        return result.GetRuleOrThrow();
     }
 
     // Compiles a single-term rule naming predicateName against the given registry.

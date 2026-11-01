@@ -1,5 +1,6 @@
 namespace TruthWeaver.Predicates.Tests;
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using TruthWeaver.Abstractions;
 
@@ -146,6 +147,33 @@ public class RegexPredicatesTests
         );
 
         Assert.Equal(TruthValue.False, result);
+    }
+
+    /// <summary>
+    /// A pattern that turns on case-insensitivity inline, with no <c>i</c> flag, matches the same way under a Turkish
+    /// culture as under the invariant culture: <c>(?i)i</c> matches <c>I</c>. Under Turkish casing <c>i</c> and <c>I</c> are
+    /// not case-equivalent, so a culture-sensitive compile would answer False.
+    /// </summary>
+    [Fact]
+    public async Task IsMatch_InlineIgnoreCaseUnderTurkishCulture_MatchesCultureInvariantly_Test()
+    {
+        (_, Func<TestContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate) =
+            RegexPredicates.IsMatch<TestContext>("m", c => c.Value);
+        CultureInfo original = CultureInfo.CurrentCulture;
+        TruthValue result;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+            // The pattern is unique to this test, so no other test has compiled and cached it first.
+            result = await evaluate(new TestContext("ID"), Args("pattern", "(?i)^id(-turkish)?$"), CancellationToken.None);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+
+        Assert.Equal(TruthValue.True, result);
     }
 
     /// <summary>The <c>m</c> flag lets <c>^</c> and <c>$</c> match at line breaks.</summary>

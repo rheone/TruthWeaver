@@ -1,6 +1,6 @@
 # 47 - docs/data-sources.md names a fault kind UnsupportedType that faults never carry
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts; L5 Least surprise
@@ -46,9 +46,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -69,6 +69,14 @@ Pure documentation fix, both findings agree: the code is correct (a JSON null/ob
 - `docs/data-sources.md`'s "Missing, null and empty values" table.
 
 **Acceptance criteria:**
-- [ ] The table's row for null/object/array matches states the fault kind is `TypeMismatch`.
-- [ ] No code change — this is a documentation-only fix.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] The table's row for null/object/array matches states the fault kind is `TypeMismatch`.
+- [x] No code change — this is a documentation-only fix.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Docs-only, as the brief says. Confirmed first: `VariableConversion.ClassifyQueryError` maps `DataQueryErrorKind.UnsupportedType` to `VariableFailureKind.TypeMismatch`, and `VariableFailureKind` has no `UnsupportedType` member. In the "Missing, null and empty values" table of `docs/data-sources.md`, the row for a JSON `null`, object or array match now says the fault kind is `TypeMismatch` and that the source's `UnsupportedType` shows only through the fault message. The row for a `null` element of an array query now names the kind too (`TypeMismatch`, the same path through `JsonDataSource.Convert`).
+
+Tests: `JsonDataSourceTests.EvaluateAsync_VariableMatchesNullObjectOrArray_IsUnknownWithATypeMismatchFault_Test` pins the documented kind end to end for a `null`, an object and an array. It passes before and after, because no code changed.
+
+Docs: `docs/data-sources.md`.

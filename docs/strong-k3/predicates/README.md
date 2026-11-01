@@ -21,7 +21,7 @@ A null selected value is a missing value. It is not a fault.
 | `IsNull` | `True` | `True`. A null test has no option. |
 | `IsNotNull` | `False` | `False`. A null test has no option. |
 
-- The host chooses the behavior when it registers the predicate. A rule cannot change it.
+- The host chooses the behavior when it registers the predicate. A rule cannot change it. A `nullBehavior` value that is not `Unknown`, `False` or `Default` makes the factory throw an `ArgumentOutOfRangeException` when the host calls it.
 - A host can choose it once for every registration, or for one family, with `NullBehaviorScope`: `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` sets the default for the factory calls made inside the block, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` sets it for one family. A `nullBehavior` argument on a factory call wins over a scope, and a family scope wins over an all-families scope. With no scope the default is `Unknown`.
 - `Unknown` keeps `Decision.IsSatisfied` fail-closed: a rule that depends on a missing value is not satisfied.
 - `NOT` of a predicate that answers `Unknown` stays `Unknown`.
@@ -193,7 +193,7 @@ The `CollectionPredicates` factories select a collection of strings (`IReadOnlyC
 - `IsNullOrEmpty` and `IsNotNullOrEmpty` are null tests. They never answer `Unknown` and have no `nullBehavior` option.
 - Every other collection predicate answers per [Null selected values](#null-selected-values), except that `SetEquals` and `NotSetEquals` read a null collection as the empty set under `NullBehavior.False`.
 - To test a single string against several candidates, use `IsIn` and `IsNotIn` in the [string predicates](#string-predicates).
-- A repeated element and a `null` element count as elements in the `HasCount` predicates. They have no effect on the other predicates, and a `null` element never equals a string.
+- A repeated element and a `null` element count as elements in the `HasCount` predicates, and a `null` element makes a collection not empty. A repeated element has no effect on the other predicates. A `null` element never equals a string, so it has no effect on `Contains`, `ContainsAny`, `ContainsAll` and their twins. For `IsSubsetOf`, `SetEquals` and their twins a `null` element is an extra member: `tags = ["admin", null]` is not a subset of `["admin"]` and is not set-equal to it.
 
 | Predicate | Twin | Summary |
 | --- | --- | --- |
@@ -260,6 +260,7 @@ The `DateTimePredicates` factories select a `DateTimeOffset` (`DateTimeOffset?`)
 | `"-hh:mm"` | Earlier than UTC, for example `"-03:00"` |
 
 - The offset is from `-14:00` to `+14:00`. Two digits are necessary for the hours and for the minutes.
+- An `offset`, `start`, `end` or `duration` value must be exactly one of the documented forms, with nothing before or after it. A value with a trailing line break, such as `"+05:30\n"` or `"09:00\n"`, is not valid.
 - Time zone names, such as the IANA name `Europe/Paris`, are not accepted. The diagnostic says that time zone names are not supported.
 - There are no daylight-saving rules. A host that needs local time in a zone with daylight saving selects the instant in the correct offset, or registers one predicate for each offset.
 - The argument names of these predicates are fixed. The host cannot change them.

@@ -7,9 +7,10 @@ namespace TruthWeaver.Evaluation;
 // "Formatting"); the alias avoids it rather than wrapping. Evaluator{TContext} and
 // CollectionBinding{TContext, TItem} build the same-shaped key as a plain tuple (a using alias is file-scoped, and
 // their own declarations never needed one to stay under the print width); tuple element names are not part of the
-// type, so both convert to/from this alias without a cast.
+// type, so both convert to/from this alias without a cast. Ticket 71 added the data-source answer key the same way.
 using CollectionMemoKey = (string? Scope, object Registry, string Binding);
 using MemoKey = (string? Scope, object Registry, TermIdentity Identity);
+using SourceMemoKey = (string? Scope, object? Registry, VariableReference Reference);
 
 /// <summary>
 /// The evaluation-scoped mutable state shared by every nested <c>Evaluator&lt;TContext&gt;</c> created while
@@ -65,10 +66,13 @@ internal sealed class EvaluationState(bool collectTrace = true)
 
     /// <summary>
     /// Gets the per-evaluation data-source query memo, keyed by the memoization scope path the named source was bound
-    /// at (a quantifier element's own source at that element's path, every other source at <see langword="null"/>)
-    /// plus the reference, so each <c>(source, query)</c> pair is queried at most once (ADR-0006 decision 11).
+    /// at (a quantifier element's own source at that element's path, every other source at <see langword="null"/>),
+    /// the registry that holds the element source's collection binding (<see langword="null"/> for every other source),
+    /// plus the reference, so each <c>(source, query)</c> pair is queried at most once (ADR-0006 decision 11). The
+    /// registry component (ticket 71) keeps two rules of one <c>PolicySet</c> evaluation apart when their registries bind
+    /// a like-named collection with different element projections; it is compared by reference, like <see cref="Memo"/>.
     /// </summary>
-    public Dictionary<(string? Scope, VariableReference Reference), SourceAnswer> SourceAnswers { get; } = [];
+    public Dictionary<SourceMemoKey, SourceAnswer> SourceAnswers { get; } = [];
 
     /// <summary>
     /// Gets the per-evaluation collection-materialization cache, keyed by the enclosing memoization scope path

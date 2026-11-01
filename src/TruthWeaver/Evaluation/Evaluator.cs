@@ -832,14 +832,18 @@ internal sealed class Evaluator<TContext>(
         // scope is where the named source was bound, not where this evaluator runs: a quantifier element's own
         // source is bound at that element's memo scope, and every other source at the evaluation's root (null).
         // Keying by this evaluator's memoScope instead would re-query an outer source once per element, and a live
-        // source could then give two elements of one evaluation different answers.
-        string? sourceScope =
+        // source could then give two elements of one evaluation different answers. An element source also carries the
+        // registry that holds its collection binding (ticket 71): a PolicySet shares one state across rules that may use
+        // different registries, and two registries can each bind a like-named collection with a different projection,
+        // so the same scope and reference would otherwise share one answer. A root source carries no registry: every
+        // rule of one evaluation gets the same DataSources, so its answer does not depend on the registry.
+        (string? sourceScope, object? sourceRegistry) =
             this.dataSources is not null
             && this.dataSources.TryGet(reference.Source, out IDataSource? source)
             && source is LazyElementDataSource element
-                ? element.MemoScope
-                : null;
-        (string? Scope, VariableReference Reference) key = (sourceScope, reference);
+                ? (element.MemoScope, element.Registry)
+                : (null, null);
+        (string? Scope, object? Registry, VariableReference Reference) key = (sourceScope, sourceRegistry, reference);
         if (this.state.SourceAnswers.TryGetValue(key, out SourceAnswer? known))
         {
             return known;

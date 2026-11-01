@@ -68,7 +68,7 @@ A null selected value answers `Unknown` by default. It records no fault. A host 
 ## Edge cases
 
 - The match is a search, not a full match. Add `^` and `$` to require the whole string to match.
-- Case is significant unless the rule sets the flag `i` or the pattern starts with the inline option `(?i)`.
+- Case is significant unless the rule sets the flag `i` or the pattern starts with the inline option `(?i)`. The culture of the host process has no effect on either, because the engine always adds `RegexOptions.CultureInvariant`.
 - The compiler checks `flags` and `pattern` when they are literals. An unknown flag letter, a repeated flag letter and an invalid pattern are each a `TRE0026` error, and the rule does not compile. See [IsMatch](regex-ismatch.md#edge-cases).
 - A `flags` or `pattern` value from a data source is checked when the rule evaluates, before the selected value is read, so a null selected value does not hide an invalid value. An invalid value faults: the answer is `Unknown` and the decision records one fault. `IsMatch` and `IsNotMatch` both answer `Unknown` in this case.
 - A match attempt that takes longer than one second faults in the same way.

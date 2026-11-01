@@ -18,7 +18,11 @@ using TruthWeaver.Abstractions;
 /// </remarks>
 /// <param name="projector">Projects the element to its source; called at most once.</param>
 /// <param name="memoScope">The memoization scope path of the element this source is bound to (for example <c>lines[2]</c>).</param>
-internal sealed class LazyElementDataSource(Func<IDataSource> projector, string memoScope) : IDataSource
+/// <param name="registry">
+/// The registry that holds the collection binding, compared by reference. Two registries can each register a collection
+/// with the same name and a different projection, so the element scope alone does not tell their answers apart.
+/// </param>
+internal sealed class LazyElementDataSource(Func<IDataSource> projector, string memoScope, object registry) : IDataSource
 {
     // Lazy<T> built from a factory caches a thrown exception as well as a value, so a throwing projector is not
     // re-run either: each later query rethrows the same exception, and each becomes its own source-error fault.
@@ -29,6 +33,12 @@ internal sealed class LazyElementDataSource(Func<IDataSource> projector, string 
     /// source's answers by (see <c>Evaluator&lt;TContext&gt;.QuerySourceAsync</c>).
     /// </summary>
     public string MemoScope => memoScope;
+
+    /// <summary>
+    /// Gets the registry that holds the collection binding this source projects for, which the evaluator adds to the key
+    /// of this source's answers, so a like-named collection on another registry never shares them.
+    /// </summary>
+    public object Registry => registry;
 
     /// <inheritdoc />
     public ValueTask<DataQueryResult> QueryAsync(string query, CancellationToken cancellationToken)

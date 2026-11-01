@@ -47,6 +47,21 @@ public class TypePredicatesTests
         Assert.Equal(TruthValue.False, await RunAsync(TypePredicates.IsGuid<TestContext>("g", c => c.Value), text));
     }
 
+    /// <summary>
+    /// Surrounding white space is trimmed before the GUID check, for both selector overloads: padded GUID text is a GUID,
+    /// so <c>IsGuid</c> answers True and its twin <c>IsNotGuid</c> answers False.
+    /// </summary>
+    [Fact]
+    public async Task IsGuid_TextWithSurroundingWhiteSpace_TrimsAndReturnsTrue_Test()
+    {
+        const string padded = "  d3b07384-d9a3-4c1e-8f3b-0a1b2c3d4e5f \t";
+
+        Assert.Equal(TruthValue.True, await RunAsync(TypePredicates.IsGuid<TestContext>("g", c => c.Value), padded));
+        Assert.Equal(TruthValue.False, await RunAsync(TypePredicates.IsNotGuid<TestContext>("g", c => c.Value), padded));
+        Assert.Equal(TruthValue.True, await RunAsync(TypePredicates.IsGuid<ObjectContext>("g", c => c.Value), padded));
+        Assert.Equal(TruthValue.False, await RunAsync(TypePredicates.IsNotGuid<ObjectContext>("g", c => c.Value), padded));
+    }
+
     /// <summary>A Guid instance counts for an object selector, and so does Guid text; an int does not.</summary>
     [Fact]
     public async Task IsGuid_ObjectSelector_AcceptsGuidInstanceAndGuidText_Test()

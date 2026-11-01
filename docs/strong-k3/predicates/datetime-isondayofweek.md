@@ -72,6 +72,7 @@ These arguments are authoring errors. A literal is a `TRE0026` compile error. A 
 
 - A day starts at 00:00:00 and ends before the next 00:00:00 in `offset`.
 - A day that occurs two times in `days` has no effect.
+- Every instant answers in every offset, also at the ends of the `DateTimeOffset` range. `default(DateTimeOffset)` (Monday 0001-01-01 00:00 UTC) at `-05:00` is a Sunday, and `DateTimeOffset.MaxValue` (a Friday) at `+05:00` is a Saturday. Neither records a fault.
 
 ## Related predicates
 

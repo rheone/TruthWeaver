@@ -1,6 +1,6 @@
 # 62 - The predicates index says a null element has no effect outside HasCount, but IsSubsetOf and SetEquals answer False
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F6 Predicates A
@@ -28,9 +28,9 @@ not verified (medium or low)
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -51,6 +51,14 @@ Pure documentation fix — the code and the individual predicate pages (`collect
 - `docs/strong-k3/predicates/README.md`'s index sentence.
 
 **Acceptance criteria:**
-- [ ] The index sentence no longer claims a null element has no effect on `IsSubsetOf`/`SetEquals` (or their negated twins).
-- [ ] No code change — this is a documentation-only fix.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] The index sentence no longer claims a null element has no effect on `IsSubsetOf`/`SetEquals` (or their negated twins).
+- [x] No code change — this is a documentation-only fix.
+- [x] The validation list in `CLAUDE.md` passes.
+
+## Resolution (2026-11-01)
+
+Docs-only, as the brief says. The collection bullet in `docs/strong-k3/predicates/README.md` now limits "no effect" for a `null` element to `Contains`, `ContainsAny`, `ContainsAll` and their twins, and says that for `IsSubsetOf`, `SetEquals` and their twins a `null` element is an extra member (with the ticket's `["admin", null]` example). It also says that a `null` element makes a collection not empty, which the old "no effect on the other predicates" wording got wrong for `IsEmpty` and its relatives too.
+
+Tests: `CollectionPredicatesTests.CollectionPredicates_NullElement_IsAnExtraMemberOnlyForSubsetAndSetEquality_Test` pins each claim of the new sentence. It passes before and after, because no code changed.
+
+Docs: `docs/strong-k3/predicates/README.md`. `K3Reference` and `DocumentationLint` pass.

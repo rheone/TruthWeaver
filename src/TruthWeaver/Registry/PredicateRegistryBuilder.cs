@@ -30,12 +30,16 @@ public sealed class PredicateRegistryBuilder<TContext>
     /// <param name="schema">The predicate's schema.</param>
     /// <param name="evaluate">The stateless evaluation function.</param>
     /// <returns>This builder, for chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="schema"/> or <paramref name="evaluate"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A predicate with the same name (case-insensitive) is already registered, the name is not a valid DSL identifier or is a reserved DSL keyword, or the schema declares two arguments whose names differ only in case.</exception>
     public PredicateRegistryBuilder<TContext> Add(
         PredicateSchema schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> evaluate
     )
     {
+        // A null delegate would otherwise register and then fault on every evaluation of the predicate.
+        ArgumentNullException.ThrowIfNull(schema);
+        ArgumentNullException.ThrowIfNull(evaluate);
         this.AddDescriptor(schema.Name, new PredicateDescriptor<TContext>(schema, evaluate));
         return this;
     }

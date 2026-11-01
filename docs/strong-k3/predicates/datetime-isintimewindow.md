@@ -93,6 +93,7 @@ When `end` or `duration` comes from a data source, the compiler cannot see its v
 
 - `"00:00"` as `end` closes a window at midnight. For example, `start: "22:00", end: "00:00"` holds from 22:00 to midnight.
 - The time of day has the full precision of `DateTimeOffset`, so `16:59:59.9999999` is before `17:00`.
+- Every instant answers in every offset, also at the ends of the `DateTimeOffset` range. For example, `default(DateTimeOffset)` (0001-01-01 00:00 UTC) at `-05:00` has the time of day 19:00, and records no fault.
 - The window repeats every day. To limit it to some days, combine it with [IsOnDayOfWeek](datetime-isondayofweek.md) by `AND`.
 
 ## Related predicates

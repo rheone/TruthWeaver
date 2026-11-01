@@ -40,7 +40,9 @@ Every method on `StringPredicates` except two is ordinal-only and has a fixed be
 
 A null selected value never faults. A member cannot evaluate a missing value, so every member with an optional `nullBehavior` parameter answers a null selected value with `Unknown` by default (`NullBehavior.Unknown`). `NOT hasCrust(crust: "thin")` stays `Unknown` for an order with no crust, and `Decision.IsSatisfied` stays fail-closed.
 
-The host can choose `NullBehavior.False` for each predicate at registration, or set a default once with `NullBehaviorScope`. Every factory call made inside `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` that passes no `nullBehavior` follows the scope, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` does the same for one family. A `nullBehavior` argument on the call wins over a scope, and a family scope wins over an all-families scope. A positive member then answers `False` for a null selected value. The exception is `CollectionPredicates.SetEquals`. Under `NullBehavior.False` it reads a null collection as an empty collection, so it answers `True` when the argument array is empty.
+The host can choose `NullBehavior.False` for each predicate at registration, or set a default once with `NullBehaviorScope`. Every factory call made inside `using (NullBehaviorScope.Begin(NullBehavior.False)) { ... }` that passes no `nullBehavior` follows the scope, and `NullBehaviorScope.Begin(PredicateFamily.Numeric, NullBehavior.False)` does the same for one family. A `nullBehavior` argument on the call wins over a scope, and a family scope wins over an all-families scope. A positive member then answers `False` for a null selected value. The exception is `CollectionPredicates.SetEquals`. Under `NullBehavior.False` it reads a null collection as an empty collection, so it answers `True` when the argument array is empty. Disposing a scope ends it at once. A `using` block disposes scopes inner first. If a host disposes an outer scope first, the outer scope stops applying while the inner one stays open, and when the inner scope ends the default returns to the nearest scope that is still open, or to `Unknown`.
+
+Every factory in `TruthWeaver.Predicates` checks its arguments when the host calls it. A null `selector` throws an `ArgumentNullException`, and a `nullBehavior` value that is not `Unknown`, `False` or `Default` throws an `ArgumentOutOfRangeException`. Neither error waits for an evaluation.
 
 A `NotX` twin is the Strong Kleene complement of its positive member for every selected value, a null one included: `True` becomes `False`, `False` becomes `True` and `Unknown` stays `Unknown`. A twin has the same default as its positive member, so both members of a pair registered with the defaults answer `Unknown` for a null selected value. Under `NullBehavior.False` a twin answers `True` for a null selected value, and `NotSetEquals` answers the complement of `SetEquals`. Register both members of a pair with the same setting.
 
@@ -54,7 +56,7 @@ The `StringPredicates` and `RegexPredicates` twins are:
 | `NotContains` | `StringPredicates` | Twin of `Contains` |
 | `IsIn` | `StringPredicates` | The selected string is one of the strings in a `StringArray` argument `values` (ordinal, case-sensitive). The selector returns one string, not a collection. |
 | `IsNotIn` | `StringPredicates` | Twin of `IsIn` |
-| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant`), `m`, `s`, `n` and `x`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
+| `IsMatch` | `RegexPredicates` | The selected string matches the `pattern` argument. The optional `flags` argument sets options: `i` (ignore case, `RegexOptions.IgnoreCase`), `m`, `s`, `n` and `x`. Every pattern compiles with `RegexOptions.CultureInvariant`, so the host culture has no effect, also on an inline `(?i)`. An invalid literal pattern or flags string is a compile error (`TRE0026`). An invalid value from a data source faults to `Unknown` with a `Fault`. |
 | `IsNotMatch` | `RegexPredicates` | Twin of `IsMatch`. It takes the same optional `flags` argument. |
 | `IsEmpty` | `StringPredicates` | A non-null empty string. A null selected value is missing, not empty. |
 | `IsNotEmpty` | `StringPredicates` | Twin of `IsEmpty` |
@@ -114,6 +116,8 @@ NumericPredicates.IsBetween<Order>("quantityInRange", order => order.Quantity, "
 | `HasCountGreaterThan` | `NotHasCountGreaterThan` | `count` (`Int64`) | The element count is greater than `count`. |
 | `HasCountLessThanOrEqualTo` | `NotHasCountLessThanOrEqualTo` | `count` (`Int64`) | The element count is at most `count`. |
 | `HasCountGreaterThanOrEqualTo` | `NotHasCountGreaterThanOrEqualTo` | `count` (`Int64`) | The element count is at least `count`. |
+
+A `count` must be zero or more, because a collection never has fewer than zero elements. A negative literal `count` is a `TRE0026` compile error. A negative value from a data source faults to `Unknown` with a `Fault`, also when the selected collection is null.
 
 To test one string against several candidates, use `StringPredicates.IsIn` and `StringPredicates.IsNotIn`.
 
@@ -288,7 +292,7 @@ PredicateSchema schema = new(
 };
 ```
 
-Lambda and class-based predicates register through the same `PredicateRegistryBuilder<TContext>.Add(...)` overloads. The difference is the dependency lifetime and the number of rule-authored arguments that the schema declares. The rule text, and the way the compiler validates a term, are the same for both.
+Lambda and class-based predicates register through the same `PredicateRegistryBuilder<TContext>.Add(...)` overloads. The difference is the dependency lifetime and the number of rule-authored arguments that the schema declares. The rule text, and the way the compiler validates a term, are the same for both. `Add(schema, evaluate)` throws an `ArgumentNullException` when `schema` or `evaluate` is null, so the wiring error shows at startup and not as a fault on every evaluation.
 
 ## n arguments, class-based, externally-selected value
 

@@ -73,6 +73,7 @@ These arguments are authoring errors. A literal is a `TRE0026` compile error. A 
 
 - The month of an instant near a month end or a year end depends on `offset`. The Answers table shows both.
 - The order of `months` has no effect. A list such as `[12, 1, 2]` crosses the year end.
+- Every instant answers in every offset, also at the ends of the `DateTimeOffset` range. `default(DateTimeOffset)` (0001-01-01 00:00 UTC) at `-05:00` is in December, and `DateTimeOffset.MaxValue` (9999-12-31) at `+05:00` is in January. Neither records a fault.
 
 ## Related predicates
 

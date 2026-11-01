@@ -48,6 +48,8 @@ public static class RegexPredicates
     /// <see cref="NullBehavior.False"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -100,6 +102,8 @@ public static class RegexPredicates
     /// complement: <see cref="TruthValue.Unknown"/> or <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -148,6 +152,7 @@ public static class RegexPredicates
         bool negate
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -212,7 +217,9 @@ public static class RegexPredicates
     private static List<PredicateArgumentProblem> ValidateArguments(PredicateArguments args, string argumentName)
     {
         List<PredicateArgumentProblem> problems = [];
-        RegexOptions options = RegexOptions.None;
+
+        // Absent flags mean the empty string, which still compiles with the always-on options.
+        RegexOptions options = RegexFlags.Always;
         bool flagsValid = true;
         if (
             args.TryGetString(FlagsArgumentName, out string? flags)

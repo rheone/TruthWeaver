@@ -34,11 +34,11 @@ The selector has one overload. See [Argument kinds](README.md#argument-kinds).
 
 ## Flags
 
-The `flags` argument is a string of the letters in the table. Each letter can occur at most once. The letters are case-sensitive.
+The `flags` argument is a string of the letters in the table. Each letter can occur at most once. The letters are case-sensitive. The engine always adds `RegexOptions.CultureInvariant`, whatever the flags are. The culture of the host process has no effect on a match, also when the pattern turns on the inline option `(?i)`.
 
 | Letter | Option | Effect |
 | --- | --- | --- |
-| `i` | `RegexOptions.IgnoreCase` with `RegexOptions.CultureInvariant` | The match ignores case. The culture of the host process has no effect. |
+| `i` | `RegexOptions.IgnoreCase` | The match ignores case. |
 | `m` | `RegexOptions.Multiline` | `^` and `$` also match at the start and end of each line. |
 | `s` | `RegexOptions.Singleline` | `.` also matches a line break. |
 | `n` | `RegexOptions.ExplicitCapture` | Only named groups capture. |

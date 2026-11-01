@@ -176,6 +176,36 @@ public sealed class JsonDataSourceTests
         Assert.Equal(VariableFailureKind.TypeMismatch, fault.Kind);
     }
 
+    /// <summary>
+    /// End to end: a variable whose match is a JSON <c>null</c>, an object or an array is <c>Unknown</c> with one fault of
+    /// kind <see cref="VariableFailureKind.TypeMismatch"/>. The source reports <see cref="DataQueryErrorKind.UnsupportedType"/>,
+    /// which is not a fault kind.
+    /// </summary>
+    /// <param name="json">The document; <c>$.v</c> matches a node with no literal equivalent.</param>
+    [Theory]
+    [InlineData("""{ "v": null }""")]
+    [InlineData("""{ "v": { "a": 1 } }""")]
+    [InlineData("""{ "v": [1, 2] }""")]
+    public async Task EvaluateAsync_VariableMatchesNullObjectOrArray_IsUnknownWithATypeMismatchFault_Test(string json)
+    {
+        CompiledRule<object?> rule = Compile("takesString(v: from(\"doc\", \"$.v\"))");
+        DataSources sources = new() { ["doc"] = JsonDataSource.Parse(json) };
+
+        Decision decision = await rule.EvaluateAsync(
+            null,
+            new NoServices(),
+            sources,
+            null,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(TruthValue.Unknown, decision.Result);
+        VariableResolutionException fault = Assert.IsType<VariableResolutionException>(
+            Assert.Single(decision.Faults).Exception
+        );
+        Assert.Equal(VariableFailureKind.TypeMismatch, fault.Kind);
+    }
+
     /// <summary>A query that is not valid JSONPath is reported as a malformed query, as data.</summary>
     [Theory]
     [InlineData("")]

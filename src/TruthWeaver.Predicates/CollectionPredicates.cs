@@ -1,5 +1,7 @@
 namespace TruthWeaver.Predicates;
 
+using System.Globalization;
+
 /// <summary>
 /// Ready-made, generic collection predicate factories, each parameterized by a selector supplied at
 /// registration.
@@ -30,6 +32,8 @@ public static class CollectionPredicates
     /// collection. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -78,6 +82,8 @@ public static class CollectionPredicates
     /// This twin answers the complement. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -115,6 +121,8 @@ public static class CollectionPredicates
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -150,6 +158,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -180,6 +190,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -189,6 +200,7 @@ public static class CollectionPredicates
         string label = "Is Null Or Empty"
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = PredicateSchema.NoArguments(
             name,
             label,
@@ -208,6 +220,7 @@ public static class CollectionPredicates
     /// <param name="selector">Reads the collection from the context. A <see langword="null"/> result is a definite answer.</param>
     /// <param name="label">A short, human-friendly display name for this predicate.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -217,6 +230,7 @@ public static class CollectionPredicates
         string label = "Is Not Null Or Empty"
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = PredicateSchema.NoArguments(
             name,
             label,
@@ -234,6 +248,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the value.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -271,6 +287,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -304,6 +322,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -342,6 +362,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -376,6 +398,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -414,6 +438,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -448,6 +474,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the values.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -486,6 +514,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -520,6 +550,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -531,7 +563,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "True when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -539,9 +571,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count == args.GetInt64(argument)
+            static (count, expected) => count == expected
         );
     }
 
@@ -557,6 +587,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -568,7 +600,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "The Strong Kleene complement of HasCountEqualTo: True when HasCountEqualTo is False, False when HasCountEqualTo is True, and Unknown when HasCountEqualTo is Unknown. HasCountEqualTo is true when the selected collection has exactly the argument number of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -576,9 +608,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count == args.GetInt64(argument)
+            static (count, expected) => count == expected
         );
     }
 
@@ -590,6 +620,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -601,7 +633,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "True when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -609,9 +641,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count < args.GetInt64(argument)
+            static (count, expected) => count < expected
         );
     }
 
@@ -627,6 +657,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -638,7 +670,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "The Strong Kleene complement of HasCountLessThan: True when HasCountLessThan is False, False when HasCountLessThan is True, and Unknown when HasCountLessThan is Unknown. HasCountLessThan is true when the selected collection has fewer elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -646,9 +678,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count < args.GetInt64(argument)
+            static (count, expected) => count < expected
         );
     }
 
@@ -660,6 +690,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -671,7 +703,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "True when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -679,9 +711,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count > args.GetInt64(argument)
+            static (count, expected) => count > expected
         );
     }
 
@@ -697,6 +727,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -708,7 +740,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "The Strong Kleene complement of HasCountGreaterThan: True when HasCountGreaterThan is False, False when HasCountGreaterThan is True, and Unknown when HasCountGreaterThan is Unknown. HasCountGreaterThan is true when the selected collection has more elements than the argument count. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -716,9 +748,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count > args.GetInt64(argument)
+            static (count, expected) => count > expected
         );
     }
 
@@ -730,6 +760,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -741,7 +773,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "True when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -749,9 +781,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count <= args.GetInt64(argument)
+            static (count, expected) => count <= expected
         );
     }
 
@@ -767,6 +797,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -778,7 +810,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "The Strong Kleene complement of HasCountLessThanOrEqualTo: True when HasCountLessThanOrEqualTo is False, False when HasCountLessThanOrEqualTo is True, and Unknown when HasCountLessThanOrEqualTo is Unknown. HasCountLessThanOrEqualTo is true when the selected collection has at most the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -786,9 +818,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count <= args.GetInt64(argument)
+            static (count, expected) => count <= expected
         );
     }
 
@@ -800,6 +830,8 @@ public static class CollectionPredicates
     /// <param name="argumentName">The rule-text argument name for the count.</param>
     /// <param name="nullBehavior">What a <see langword="null"/> selected collection answers: <see cref="NullBehavior.Unknown"/> (the default) or <see cref="NullBehavior.False"/>. Neither is a fault.</param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -811,7 +843,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "True when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -819,9 +851,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             false,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count >= args.GetInt64(argument)
+            static (count, expected) => count >= expected
         );
     }
 
@@ -837,6 +867,8 @@ public static class CollectionPredicates
     /// <see cref="TruthValue.True"/>. Neither is a fault.
     /// </param>
     /// <returns>The predicate's schema and stateless evaluation delegate, ready for <c>PredicateRegistryBuilder&lt;TContext&gt;.Add</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="nullBehavior"/> is not a defined <see cref="NullBehavior"/> value.</exception>
     public static (
         PredicateSchema Schema,
         Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
@@ -848,7 +880,7 @@ public static class CollectionPredicates
         NullBehavior nullBehavior = NullBehavior.Default
     )
     {
-        return Build(
+        return CountPredicate(
             name,
             label,
             "The Strong Kleene complement of HasCountGreaterThanOrEqualTo: True when HasCountGreaterThanOrEqualTo is False, False when HasCountGreaterThanOrEqualTo is True, and Unknown when HasCountGreaterThanOrEqualTo is Unknown. HasCountGreaterThanOrEqualTo is true when the selected collection has at least the argument count of elements. A null selected collection is Unknown, never a fault, unless the host registers it with NullBehavior.False, which makes the positive predicate False (and its twin True).",
@@ -856,9 +888,7 @@ public static class CollectionPredicates
             NullBehaviorScope.Resolve(nullBehavior, PredicateFamily.Collection),
             true,
             argumentName,
-            LiteralKind.Int64,
-            "The element count to compare against.",
-            static (selected, args, argument) => selected.Count >= args.GetInt64(argument)
+            static (count, expected) => count >= expected
         );
     }
 
@@ -885,6 +915,7 @@ public static class CollectionPredicates
         bool negate
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         return (
             PredicateSchema.NoArguments(name, label, description),
             (context, _, _) =>
@@ -922,6 +953,7 @@ public static class CollectionPredicates
     )
         where TSelected : class
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,
@@ -946,6 +978,88 @@ public static class CollectionPredicates
     }
 
     /// <summary>
+    /// Builds a <c>HasCount</c> predicate: <paramref name="compare"/> gets the element count of the selected collection and
+    /// the <c>count</c> argument. A collection count is never negative, so a negative count would make the term a
+    /// constant for every non-null collection. A negative literal is a compile-time problem (<c>TRE0026</c>), and a
+    /// negative value from a data source throws <see cref="ArgumentException"/> at evaluation, before the selector runs,
+    /// so a null selection does not hide it.
+    /// </summary>
+    private static (
+        PredicateSchema Schema,
+        Func<TContext, PredicateArguments, CancellationToken, ValueTask<TruthValue>> Evaluate
+    ) CountPredicate<TContext>(
+        string name,
+        string label,
+        string description,
+        Func<TContext, IReadOnlyCollection<string>?> selector,
+        NullBehavior nullBehavior,
+        bool negate,
+        string argumentName,
+        Func<int, long, bool> compare
+    )
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        PredicateSchema schema = new(
+            name,
+            label,
+            description,
+            [
+                new PredicateArgumentSchema(
+                    argumentName,
+                    "The element count to compare against. Zero or more.",
+                    LiteralKind.Int64
+                ),
+            ]
+        )
+        {
+            ArgumentValidator = args => NegativeCount(args, argumentName),
+        };
+
+        return (
+            schema,
+            (context, args, _) =>
+            {
+                long expected = args.GetInt64(argumentName);
+                if (expected < 0)
+                {
+                    throw new ArgumentException(
+                        $"Predicate '{name}' has a negative count: '{argumentName}' is {expected.ToString(CultureInfo.InvariantCulture)}, and a collection count is never negative.",
+                        nameof(args)
+                    );
+                }
+
+                IReadOnlyCollection<string>? selected = selector(context);
+                if (selected is null)
+                {
+                    return PredicateResult.ForNullAsync(nullBehavior, negate);
+                }
+
+                return PredicateResult.FromBoolAsync(compare(selected.Count, expected) != negate);
+            }
+        );
+    }
+
+    /// <summary>Reports a negative literal count. A count from a data source is absent here and is checked at evaluation.</summary>
+    private static List<PredicateArgumentProblem> NegativeCount(PredicateArguments args, string argumentName)
+    {
+        if (!args.TryGetInt64(argumentName, out long count) || count >= 0)
+        {
+            return [];
+        }
+
+        string text = count.ToString(CultureInfo.InvariantCulture);
+        return
+        [
+            new PredicateArgumentProblem(
+                $"'{argumentName}' is negative, and a collection count is never negative, so the predicate answers the same for every collection.",
+                $"'{argumentName}' zero or more",
+                $"'{argumentName}' is {text}",
+                "Use a count of zero or more."
+            ),
+        ];
+    }
+
+    /// <summary>
     /// Builds the set-equality predicate. Under <see cref="NullBehavior.False"/> a null collection is an empty one;
     /// under <see cref="NullBehavior.Unknown"/> it answers Unknown. <paramref name="negate"/> applies the Strong Kleene
     /// complement to every answer.
@@ -963,6 +1077,7 @@ public static class CollectionPredicates
         bool negate
     )
     {
+        ArgumentNullException.ThrowIfNull(selector);
         PredicateSchema schema = new(
             name,
             label,

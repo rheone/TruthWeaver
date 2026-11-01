@@ -1,6 +1,6 @@
 # 17 - IsGuid accepts surrounding whitespace, but the doc says it does not trim
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F7 Predicates B
@@ -27,9 +27,9 @@ src/TruthWeaver.Predicates/TypePredicates.cs:659-667 shows GuidTest(string) is j
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -50,9 +50,17 @@ Decision: fix the docs, not the code. `IsGuid`/`IsNotGuid` keep accepting surrou
 - `docs/strong-k3/predicates/type-isguid.md` and `type-isnotguid.md`: the "does not trim surrounding spaces" claim.
 
 **Acceptance criteria:**
-- [ ] Both pages are corrected to state that surrounding whitespace is trimmed before the GUID check.
-- [ ] No code change to `TypePredicates`'s `GuidTest`.
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] Both pages are corrected to state that surrounding whitespace is trimmed before the GUID check.
+- [x] No code change to `TypePredicates`'s `GuidTest`.
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Changing `IsGuid`/`IsNotGuid`'s accepted input (considered and explicitly not chosen).
+
+## Resolution (2026-11-01)
+
+Docs fixed per the Decision; `TypePredicates.GuidTest` is unchanged. Confirmed first that the code trims: padded GUID text answers `IsGuid` True and `IsNotGuid` False for both selector overloads. `type-isguid.md` and `type-isnotguid.md` now say the predicate trims white space at the start and end before the GUID check, and each Answers table has a padded-text row. The original failure scenario was a doc/code disagreement; the docs now match the code.
+
+Tests: `TypePredicatesTests.IsGuid_TextWithSurroundingWhiteSpace_TrimsAndReturnsTrue_Test` pins the trimming for both overloads and both twins. It passes before and after, because the code did not change; it guards the documented behavior.
+
+Docs: `docs/strong-k3/predicates/type-isguid.md`, `docs/strong-k3/predicates/type-isnotguid.md`.

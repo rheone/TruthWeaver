@@ -1,6 +1,6 @@
 # 16 - Regex is built without CultureInvariant: an inline (?i) depends on the culture of the first thread to compile it
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: medium
 Lens: F7 Predicates B
@@ -38,9 +38,9 @@ The severity is lower than "high" for two reasons. The trigger needs a host with
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
@@ -59,8 +59,16 @@ The severity is lower than "high" for two reasons. The trigger needs a host with
 - Wherever rule-supplied regex flags are turned into `RegexOptions` for predicate compilation — `CultureInvariant` should be unconditional, not gated on the `i` flag.
 
 **Acceptance criteria:**
-- [ ] A pattern with inline `(?i)` and no `i` flag gives the same match result regardless of the compiling thread's culture (verified under at least one non-invariant culture, e.g. `tr-TR`).
-- [ ] The validation list in `CLAUDE.md` passes.
+- [x] A pattern with inline `(?i)` and no `i` flag gives the same match result regardless of the compiling thread's culture (verified under at least one non-invariant culture, e.g. `tr-TR`).
+- [x] The validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Changing the pattern cache's key shape (no longer necessary once every compile is culture-invariant).
+
+## Resolution (2026-11-01)
+
+`RegexFlags.Always` (`RegexOptions.CultureInvariant`) is now part of every option set `RegexFlags.TryParse` returns, the empty flags string included, and `RegexPredicates.ValidateArguments` starts from it when the rule gives no flags. The `i` letter maps to `RegexOptions.IgnoreCase` alone. So a pattern with an inline `(?i)` and no `i` flag compiles culture-invariantly, and the pattern cache can no longer keep a culture-dependent answer. The cache key is unchanged (out of scope). Reproduced before the fix: under `tr-TR`, `(?i)^id...$` against `"ID"` answered `False`.
+
+Tests: `RegexPredicatesTests.IsMatch_InlineIgnoreCaseUnderTurkishCulture_MatchesCultureInvariantly_Test` (red before, green after); the other regex tests still pass.
+
+Docs: `docs/strong-k3/predicates/regex-ismatch.md` (Flags), `docs/strong-k3/predicates/regex-isnotmatch.md` (Edge cases), `docs/predicates.md` (`IsMatch` row).

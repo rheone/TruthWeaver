@@ -139,16 +139,17 @@ internal static partial class FixedOffsetText
         return match.Groups[group].Success ? int.Parse(match.Groups[group].Value, CultureInfo.InvariantCulture) : 0;
     }
 
-    [GeneratedRegex(@"^(?<sign>[+-])(?<h>[0-9]{2}):(?<m>[0-9]{2})$", RegexOptions.CultureInvariant)]
+    // Each value pattern ends in \z, not $: without Multiline, $ also matches before a final line break, so "+05:30\n" would pass.
+    [GeneratedRegex(@"^(?<sign>[+-])(?<h>[0-9]{2}):(?<m>[0-9]{2})\z", RegexOptions.CultureInvariant)]
     private static partial Regex OffsetPattern();
 
     [GeneratedRegex(@"^[A-Za-z_]+(?:/[A-Za-z_+\-0-9]+)*$", RegexOptions.CultureInvariant)]
     private static partial Regex TimeZoneNamePattern();
 
-    [GeneratedRegex(@"^(?<h>[0-9]{2}):(?<m>[0-9]{2})(?::(?<s>[0-9]{2}))?$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(?<h>[0-9]{2}):(?<m>[0-9]{2})(?::(?<s>[0-9]{2}))?\z", RegexOptions.CultureInvariant)]
     private static partial Regex TimeOfDayPattern();
 
     // Each component is capped at five digits so the sum cannot overflow; the 24-hour check rejects large values.
-    [GeneratedRegex(@"^PT(?:(?<h>[0-9]{1,5})H)?(?:(?<m>[0-9]{1,5})M)?(?:(?<s>[0-9]{1,5})S)?$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^PT(?:(?<h>[0-9]{1,5})H)?(?:(?<m>[0-9]{1,5})M)?(?:(?<s>[0-9]{1,5})S)?\z", RegexOptions.CultureInvariant)]
     private static partial Regex DurationPattern();
 }
