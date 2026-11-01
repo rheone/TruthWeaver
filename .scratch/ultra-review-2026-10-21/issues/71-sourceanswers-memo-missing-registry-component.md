@@ -1,6 +1,6 @@
 # 71 - SourceAnswers has no registry component, unlike the term memo ticket 34 widened
 
-Status: ready-for-agent
+Status: done
 Category: bug
 Severity: low
 Lens: F8 Predicate+DataSource concepts; F9 Policies
@@ -25,11 +25,21 @@ A `PolicySet` runs two rules sharing one `EvaluationState`. Both rules' registri
 
 ## Acceptance criteria
 
-- The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
-- A `PolicySet` whose rules share one registry (the common case) is unaffected in behavior or performance beyond the memo key's extra component.
-- The page that describes the behavior states the current truth (required when behavior or public API changes).
-- The validation list in CLAUDE.md passes.
+- [x] The failure scenario above no longer happens, shown by a test that fails before the fix and passes after.
+- [x] A `PolicySet` whose rules share one registry (the common case) is unaffected in behavior or performance beyond the memo key's extra component.
+- [x] The page that describes the behavior states the current truth (required when behavior or public API changes).
+- [x] The validation list in CLAUDE.md passes.
 
 ## Comments
 
 > *Filed from a handoff note on ticket 45's implementation (2026-10-26): "SourceAnswers has no registry component, unlike the term memo that ticket 34 widened... the problem existed before this change."*
+
+## Resolution (2026-11-01)
+
+Reproduced first with the ticket's scenario: two policies, each compiled against its own registry whose one-element `lines` collection projects to a different source, both reading `from("line", "$.qty")` inside `FORALL(line IN lines, ...)`. The second policy got the first policy's answer (`Applies` False where True was correct).
+
+`EvaluationState.SourceAnswers` is now keyed by (scope, registry, reference). `LazyElementDataSource` carries the registry that holds its collection binding (`CollectionBinding` passes `outerRegistry`, the same component ticket 34 put in the collection-materialization key), and `Evaluator.QuerySourceAsync` adds it to the key. A root source keeps a `null` registry component on purpose: every rule of one `PolicySet` evaluation gets the same `DataSources`, so its answer does not depend on the registry, and adding the evaluator's registry there would only re-query a shared source once per registry. Rules on one registry key exactly as before, so they still query each pair once.
+
+Tests: `PolicySetTests.EvaluateAsync_SameElementSourceReferenceUnderDifferentRegistries_EachReadsItsOwnElementSource_Test` (red before, green after). The existing policy, quantifier and data-source tests (including ticket 45's query-count tests) pass.
+
+Docs: `docs/policies.md` (Shared predicates: how data-source answers are shared in a set).

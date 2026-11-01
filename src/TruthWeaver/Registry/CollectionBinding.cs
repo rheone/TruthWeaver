@@ -204,7 +204,7 @@ internal sealed class CollectionBinding<TContext, TItem>(
             DataSources? elementDataSources = dataSources;
             if (elementSource is not null)
             {
-                LazyElementDataSource element = new(() => elementSource(item), elementMemoScope);
+                LazyElementDataSource element = new(() => elementSource(item), elementMemoScope, outerRegistry);
                 elementDataSources = WithElementSource(dataSources, variable, element);
             }
 
