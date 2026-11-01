@@ -835,6 +835,11 @@ internal sealed class DslParser
             return this.ParseThreshold(ThresholdComparison.Exactly);
         }
 
+        if (this.IsLibraryReferenceStart())
+        {
+            return this.ParseLibraryReference();
+        }
+
         // A bare identifier matching the current definition's own parameter (ADR-0008 decision 5) stands for whatever
         // sub-expression the use that is being expanded supplied; followed by '(' it is instead an ordinary term/use
         // name, matching the T/F/U short-constant precedent just above.
@@ -1088,6 +1093,65 @@ internal sealed class DslParser
         }
 
         return new UseNode(nameToken.Text, arguments, SpanCovering(nameToken.Span.Start, end), nameToken.Span);
+    }
+
+    /// <summary>
+    /// Whether the cursor starts a library rule reference: the word <c>rule</c> (any case), then <c>(</c>, then a quoted
+    /// name. The word is not reserved. A predicate call always names its arguments (<c>rule(name: "x")</c>), so a quoted
+    /// string directly after the <c>(</c> cannot start a predicate call, and a predicate named <c>rule</c> still parses as
+    /// a term.
+    /// </summary>
+    private bool IsLibraryReferenceStart()
+    {
+        return this.Current.Kind == TokenKind.Identifier
+            && string.Equals(this.Current.Text, "rule", StringComparison.OrdinalIgnoreCase)
+            && this.tokens[this.position + 1].Kind == TokenKind.LParen
+            && this.tokens[this.position + 2].Kind == TokenKind.StringLiteral;
+    }
+
+    /// <summary>
+    /// Parses <c>rule("name")</c> or the pinned <c>rule("name", hash: "...")</c>. The cursor is on <c>rule</c>, and
+    /// <see cref="IsLibraryReferenceStart"/> is true. The word <c>hash</c> is matched without case, like a keyword.
+    /// </summary>
+    private LibraryReferenceNode ParseLibraryReference()
+    {
+        Token ruleToken = this.Current;
+        this.position++;
+        Token opener = this.ExpectOpenParen();
+        string name = this.ExpectQuotedText("a quoted library rule name");
+        string? pinnedHash = null;
+        if (this.Current.Kind == TokenKind.Comma)
+        {
+            this.position++;
+            if (
+                this.Current.Kind != TokenKind.Identifier
+                || !string.Equals(this.Current.Text, "hash", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                this.diagnostics.Add(
+                    Diagnostic.Error(
+                        DiagnosticCodes.SyntaxError,
+                        $"Expected 'hash' but found '{this.Current.Text}'.",
+                        this.Current.Span,
+                        expected: "'hash', the only option of a library rule reference",
+                        found: DescribeFound(this.Current)
+                    )
+                );
+            }
+
+            // The option word is consumed even when it is wrong, so one mistake gives one diagnostic.
+            if (this.Current.Kind == TokenKind.Identifier)
+            {
+                this.position++;
+            }
+
+            this.Expect(TokenKind.Colon, "':'");
+            pinnedHash = this.ExpectQuotedText("a quoted content hash");
+        }
+
+        int end = this.Current.Span.End;
+        this.ExpectClose(opener);
+        return new LibraryReferenceNode(name, pinnedHash, SpanCovering(ruleToken.Span.Start, end));
     }
 
     private ArgumentNode ParseArgument()

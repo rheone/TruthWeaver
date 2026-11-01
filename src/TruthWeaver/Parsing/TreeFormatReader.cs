@@ -748,7 +748,7 @@ internal sealed class TreeFormatReader
     /// </summary>
     private RuleNode? ReadQuantifier(ITreeNodeCursor node, QuantifierKind kind, string path)
     {
-        string op = kind == QuantifierKind.ForAll ? "forall" : "exists";
+        string op = QuantifierText.TreeFormatWord(kind);
         if (!this.CheckKeys(node, path, $"a '{op}' quantifier", ["op", "var", "in", "operands", "note"]))
         {
             return null;

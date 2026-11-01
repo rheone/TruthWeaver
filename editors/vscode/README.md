@@ -16,6 +16,7 @@ This folder has syntax highlighting for [rule text](../../docs/rule-text.md), th
 - **Calls.** The function-call operators (`PARITY`, `ANY`, `ALL`, `NONE`, `COALESCE`, `BETWEEN`, `If`, `ExactlyOne`, `AtLeast`, `AtMost`, `GreaterThan`, `LessThan`, `Exactly`, `IsTrue`, `IsFalse`, `IsUnknown`, `IsKnown`).
 - **Constants.** `True`, `False`, `Unknown`, and the letters `T`, `F` and `U`.
 - **Terms.** A bare term, a term call such as `hasCrust(...)`, and the argument names inside a call.
+- **Library rule references.** `rule("name")` and `rule("name", hash: "...")`. A `rule(...)` call with a named argument is a term call.
 - **Values.** Strings with their escapes, numbers, `true` and `false`, arrays and `from(...)` variable references. An escape that the language does not read, such as `\p`, gets the scope `invalid.illegal.escape`.
 - **Structure.** Comments (`//` and `/* */`) and the grouping brackets `()`, `[]` and `{}`.
 

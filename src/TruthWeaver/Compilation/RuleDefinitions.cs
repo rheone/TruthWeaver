@@ -469,7 +469,7 @@ public sealed class RuleDefinitions
                     break;
                 case QuantifierNode quantifier:
                     writer.Property("op");
-                    writer.String(quantifier.Kind == QuantifierKind.ForAll ? "forall" : "exists", quoted: false);
+                    writer.String(QuantifierText.TreeFormatWord(quantifier.Kind), quoted: false);
                     writer.Property("var");
                     writer.String(quantifier.Variable, quoted: false);
                     writer.Property("in");

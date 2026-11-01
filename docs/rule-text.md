@@ -19,7 +19,7 @@ This page does not repeat the K3 reference. These topics are in the specificatio
 
 ## Grammar
 
-The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name must be a valid identifier - a letter or `_` first, then letters, digits or `_` only - and it cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN`, `EXACTLY`, `LET`, `FORALL` and `EXISTS`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate or collection with a name that breaks either rule, and the source generator reports `TWG008` for a name that is not a valid identifier and `TWG007` for one that is reserved. A `let` definition's own name follows the same rule: see [Definitions and parameters](#definitions-and-parameters). `IN` is a contextual keyword: it is reserved only at the head of a `FORALL`/`EXISTS` quantifier, so a predicate named `In` elsewhere is unaffected; see [Quantifiers](#quantifiers).
+The whole DSL in EBNF. `{ x }` is zero or more, `[ x ]` is optional and `|` is a choice. A term name must be a valid identifier - a letter or `_` first, then letters, digits or `_` only - and it cannot be a reserved word. The reserved words are the operator and constant keywords: `AND`, `OR`, `NOT`, `XOR`, `EQUIVALENT`, `IFF`, `XNOR`, `IMPLIES`, `NAND`, `NOR`, `TRUE`, `FALSE`, `UNKNOWN`, `T`, `F`, `U`, `PARITY`, `NXOR`, `ANY`, `ALL`, `NONE`, `BETWEEN`, `COALESCE`, `IF`, `ISTRUE`, `ISFALSE`, `ISUNKNOWN`, `ISKNOWN`, `PROJECT`, `COLLAPSE`, `EXACTLYONE`, `ATLEAST`, `ATMOST`, `GREATERTHAN`, `LESSTHAN`, `EXACTLY`, `LET`, `FORALL` and `EXISTS`, in any case. `PredicateRegistryBuilder<TContext>` throws an `ArgumentException` that names the word when you register a predicate or collection with a name that breaks either rule, and the source generator reports `TWG008` for a name that is not a valid identifier and `TWG007` for one that is reserved. A `let` definition's own name follows the same rule: see [Definitions and parameters](#definitions-and-parameters). `IN` is a contextual keyword: it is reserved only at the head of a `FORALL`/`EXISTS` quantifier, so a predicate named `In` elsewhere is unaffected; see [Quantifiers](#quantifiers). `rule` is also not reserved: it is a library rule reference only when a quoted name follows its `(`, so a predicate named `rule` is unaffected; see [Library rules](#library-rules).
 
 <!-- doctest:skip grammar notation, not a rule -->
 ```ebnf
@@ -35,7 +35,7 @@ infix_op    = "XOR" | "⊕" | "⊻" | "EQUIVALENT" | "IFF" | "XNOR" | "↔" | "�
 not_expr    = ( "NOT" | "!" | "¬" ) not_expr | primary ;
 
 primary     = "(" expression ")" | "[" expression "]" | "{" expression "}"
-            | constant | call | quantifier | term ;
+            | constant | call | quantifier | library_ref | term ;
 constant    = "True" | "False" | "Unknown" | "T" | "F" | "U" ;
 call        = list_op "(" expression { "," expression } ")"
             | threshold "(" integer "," expression { "," expression } ")"
@@ -46,6 +46,7 @@ list_op     = "PARITY" | "ANY" | "ALL" | "NONE" | "COALESCE" | "ExactlyOne" ;
 threshold   = "AtLeast" | "AtMost" | "GreaterThan" | "LessThan" | "Exactly" ;
 inspection  = "IsTrue" | "IsFalse" | "IsUnknown" | "IsKnown" ;
 quantifier  = ( "FORALL" | "EXISTS" ) "(" identifier "IN" identifier "," expression ")" ;
+library_ref = "rule" "(" string [ "," "hash" ":" string ] ")" ;  (* a rule of the compiler's RuleLibrary *)
 
 term        = identifier [ "(" [ argument { "," argument } ] ")" ] ;
 argument    = identifier ":" ( literal | variable ) ;
@@ -157,6 +158,80 @@ EquatableArray<string> sources = read.SourcesOf("$.operands[0].operands[1]"); //
 
 The [terminal UI](tui.md#definitions-in-the-tree-pane) uses this type to show the definitions in its Tree pane and
 to keep them when you edit the tree.
+
+## Library rules
+
+A definition is reusable in one document only. To reuse a rule in many rules, put it in a `RuleLibrary` (namespace
+`TruthWeaver.Compilation`) and give the library to the compiler in `CompilerOptions.Library`. Rule text then names a
+library rule with `rule("name")`:
+
+```csharp
+RuleLibrary library = new(new Dictionary<string, string>
+{
+    ["contractor-cleared"] = "isContractor AND hasSignedNda",
+});
+RuleCompiler<MyContext> compiler = new(registry, new CompilerOptions(Library: library));
+```
+
+<!-- doctest:rule library-reference -->
+```text
+rule("contractor-cleared") AND NOT isBanned
+```
+
+The compiler expands the reference in place at compile time, the same way it expands a use of a definition. The
+compiled rule holds the library rule's tree, so it prints and evaluates exactly as if the library rule were written out
+by hand:
+
+<!-- doctest:ruletext library-reference -->
+```text
+(isContractor AND hasSignedNda) AND NOT isBanned
+```
+
+A library is immutable. Each `LibraryRule` has a `Name`, its rule `Text` and a `Hash`: the SHA-256 hash of the UTF-8
+bytes of the text, as 64 upper-case hexadecimal digits. The rule store of
+`TruthWeaver.Extensions.Configuration` computes the same hash. A reference without a hash uses the current version of
+the library rule. A reference with a hash pins a version: it compiles only while the library rule has that hash. The
+hash comparison ignores case.
+
+<!-- doctest:rule library-pin -->
+```text
+rule("contractor-cleared", hash: "F24728277DAE68E066394FBE5AE5F2D2722A911921047E8AD4574CFAA36DF4F1")
+```
+
+A library rule follows these rules:
+
+- **A complete rule.** A library rule takes no arguments. For reuse with arguments, use a definition. A library rule
+  can declare its own `let` definitions. They are in scope in that library rule only.
+- **The names of the caller.** A library rule has no predicate registry and no data sources of its own. Its predicate
+  names and its `from("source", ...)` names resolve against the compile that references it.
+- **References in a library rule.** A library rule can reference other library rules. The compiler expands every
+  level.
+- **No cycles.** A library rule cannot reference itself, directly or through other library rules.
+- **Case.** The words `rule` and `hash` and the library rule names are compared without case.
+- **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
+  arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.
+
+Each mistake is a compile error. The span of the diagnostic is the reference in the text that you compile, also when
+the mistake is in a library rule that the reference expands:
+
+| Code | Name | Cause |
+| --- | --- | --- |
+| `TRE0047` | `UnknownLibraryRule` | The library has no rule with the name, or the compiler has no library. |
+| `TRE0048` | `LibraryRuleHashMismatch` | The pinned hash is not the current hash of the library rule. The message gives both hashes. |
+| `TRE0049` | `LibraryRuleCycleDetected` | The library rules reference each other in a cycle. The message gives the path, such as `a -> b -> a`. |
+| `TRE0050` | `InvalidLibraryRule` | The library rule does not compile here: for example, one of its predicates or data sources is not in the compile of the caller. The message names the library rule and the error. |
+
+<!-- doctest:diagnostics-dsl rule("contractor-clear") -->
+```text
+TRE0047 error at line 1, column 1: 'contractor-clear' is not a rule in the compiler's rule library.
+  rule("contractor-clear")
+  ^^^^^^^^^^^^^^^^^^^^^^^^
+  Expected: the name of a rule in the compiler's rule library
+  Found: 'contractor-clear'
+  Hint: Did you mean the library rule 'contractor-cleared'?
+```
+
+Library rule references are part of rule text only. The JSON and YAML tree formats and `RuleBuilder` cannot write them.
 
 ## Quantifiers
 
@@ -376,7 +451,7 @@ rule.PrintRuleText(RuleTextOptions.Default with { Width = 20 });       // approv
 
 ## Editor support
 
-[`editors/vscode`](../editors/vscode/README.md) has a TextMate grammar and a VS Code language configuration for rule text. The grammar colors operators in word, symbolic and C-style forms, call forms, constants, terms and their arguments, `from(...)` variable references, strings, numbers, comments and brackets. It colors text and does not check it: the compiler is still the judge of a rule. The files are not published, and the folder README explains how to load them in VS Code. A test in `dotnet test` runs the grammar over every rule text block of this page and of [Examples](examples.md), so a documented rule always gets colors.
+[`editors/vscode`](../editors/vscode/README.md) has a TextMate grammar and a VS Code language configuration for rule text. The grammar colors operators in word, symbolic and C-style forms, call forms, constants, terms and their arguments, `from(...)` variable references, `rule("name")` library rule references, strings, numbers, comments and brackets. It colors text and does not check it: the compiler is still the judge of a rule. The files are not published, and the folder README explains how to load them in VS Code. A test in `dotnet test` runs the grammar over every rule text block of this page and of [Examples](examples.md), so a documented rule always gets colors.
 
 ## Printer spelling of the ternary
 

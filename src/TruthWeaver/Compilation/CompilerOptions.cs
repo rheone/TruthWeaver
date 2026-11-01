@@ -64,6 +64,11 @@ namespace TruthWeaver.Compilation;
 /// collections' sizes stays predictable before any data is read. The default, 2, allows a quantifier over a
 /// quantifier (for example <c>FORALL(line IN lines, EXISTS(tag IN line.tags, ...))</c>) but not a third level.
 /// </param>
+/// <param name="Library">
+/// The named rules that rule text may reference with <c>rule("name")</c>. The compiler expands each reference in place
+/// at compile time, and resolves the predicate and data source names of the library rule against this compile.
+/// <see langword="null"/> (the default) holds no rules, so any reference is a <c>TRE0047</c> error.
+/// </param>
 public sealed record CompilerOptions(
     int MaxDepth = 32,
     int MaxNodeCount = 512,
@@ -75,7 +80,8 @@ public sealed record CompilerOptions(
     double DeepNestingFraction = 0.75,
     int WideChainOperandLimit = 16,
     int MaxDefinitionDepth = 8,
-    int MaxQuantifierDepth = 2
+    int MaxQuantifierDepth = 2,
+    RuleLibrary? Library = null
 )
 {
     /// <summary>Gets the default options: 32 / 512 / 20 / <see cref="CompilationMode.Strict"/> / 100000 / 8 / 2.</summary>

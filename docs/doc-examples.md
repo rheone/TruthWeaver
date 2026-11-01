@@ -28,7 +28,9 @@ rule, or changes documented output, fails the build. C# fragments are not checke
 3. Predicates the examples use come from `BuildRegistry` in `DocExampleChecker.cs`. Add a predicate there (same name,
    label and argument defaults the documentation shows) when a new example needs one. The checker
    declares the data source names `user`, `request` and `limits` (with `JsonQueryValidator`), so `from("user", ...)` examples compile; a new
-   source name needs adding to the `Compiler` declarations in the same file.
+   source name needs adding to the `Compiler` declarations in the same file. The checker's rule library holds one rule,
+   `contractor-cleared` (`isContractor AND hasSignedNda`), so `rule("contractor-cleared")` examples compile; a new library
+   rule needs adding to the same `Compiler`.
 4. An untagged `text`, `json`, `yaml`, `mermaid` or `ebnf` block fails the check, so a new example cannot be forgotten.
 5. Run `dotnet test tests/TruthWeaver.Tests --filter-class "*DocExampleTests"`. A failure names the file, line and marker
    and prints the documented and actual output side by side; fix the documentation (or the code, if the example is right).

@@ -17,6 +17,7 @@
         { "include": "#constant" },
         { "include": "#number" },
         { "include": "#group" },
+        { "include": "#library-reference" },
         { "include": "#term-call" },
         { "include": "#term" }
       ]
@@ -135,6 +136,24 @@
           "endCaptures": { "0": { "name": "punctuation.section.group.end.truthweaver" } },
           "patterns": [{ "include": "#expression" }]
         }
+      ]
+    },
+    "library-reference": {
+      "begin": "(?i)\\b(rule)\\s*(\\()(?=\\s*\")",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "support.function.library-reference.truthweaver" },
+        "2": { "name": "punctuation.section.arguments.begin.truthweaver" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.arguments.end.truthweaver" }
+      },
+      "name": "meta.library-reference.truthweaver",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#comma" },
+        { "include": "#argument-name" },
+        { "include": "#string" }
       ]
     },
     "term-call": {

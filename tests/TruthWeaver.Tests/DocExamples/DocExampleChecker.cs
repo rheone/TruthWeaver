@@ -55,7 +55,8 @@ internal static partial class DocExampleChecker
 
     private static readonly string[] CheckedLanguages = ["text", "json", "yaml", "mermaid", "ebnf", "html", "dot"];
 
-    // The data source names the documentation's variable examples use; "user" carries the JSONPath validator.
+    // The data source names the documentation's variable examples use; "user" carries the JSONPath validator. The library
+    // holds the rules that the documentation's rule("name") examples reference.
     private static readonly RuleCompiler<RuleTestContext> Compiler = new(
         BuildRegistry(),
         new CompilerOptions(
@@ -64,7 +65,13 @@ internal static partial class DocExampleChecker
                 ["user"] = JsonQueryValidator.Instance,
                 ["request"] = JsonQueryValidator.Instance,
                 ["limits"] = JsonQueryValidator.Instance,
-            }
+            },
+            Library: new RuleLibrary(
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["contractor-cleared"] = "isContractor AND hasSignedNda",
+                }
+            )
         )
     );
 

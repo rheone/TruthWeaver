@@ -1242,7 +1242,7 @@ public abstract class RuleBuilder
         {
             return new JsonObject
             {
-                ["op"] = kind == QuantifierKind.ForAll ? "forall" : "exists",
+                ["op"] = QuantifierText.TreeFormatWord(kind),
                 ["var"] = variable,
                 ["in"] = collection,
                 ["operands"] = new JsonArray(body.ToNode()),
