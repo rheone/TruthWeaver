@@ -73,7 +73,7 @@ The vocabulary of TruthWeaver, with the terms that are new or easy to confuse. E
 | --- | --- |
 | **Rewrite** | An opt-in transform of a compiled rule that returns a new rule with the same value: `ExpandToPrimitives`, `ExpandToNand`, `ExpandToNor`, `CompressToDerived`, `Canonicalize` or `Simplify`. |
 | **Rule** | A named unit of persistence: metadata and one expression. Compiling it gives a `CompiledRule`. |
-| **Rule library** | An immutable set of **library rules**, each found by name (`RuleLibrary`, given to the compiler in `CompilerOptions.Library`). A **rule reference** names one of them from another rule. See [library rules](rule-text.md#library-rules). |
+| **Rule library** | An immutable set of **library rules**, each found by name (`RuleLibrary`, given to the compiler in `CompilerOptions.Library`). Two libraries with the same names and rule texts are equal. A **rule reference** names one of them from another rule. See [library rules](rule-text.md#library-rules). |
 | **Rule reference** | `rule("x")` in a rule: it expands the **library rule** `x` inline at compile time. An optional hash pin, as in `rule("x", hash: "ab12...")`, names the content hash of the version to use: the SHA-256 hash of the rule text, with CRLF and lone CR read as LF first. See [library rules](rule-text.md#library-rules). |
 | **Rule test file** | A YAML file with one rule and named cases. Each case gives stub values to the terms and states the expected result. `truthweaver test` and `RuleTestFile` run it. See [Rule tests](rule-tests.md). |
 | **RuleBuilder** | A fluent API that assembles a rule tree from application logic. It compiles through the same pipeline as JSON. |

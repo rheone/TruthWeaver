@@ -207,6 +207,8 @@ A library rule follows these rules:
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.
 - **No cycles.** A library rule cannot reference itself, directly or through other library rules.
+- **Equality.** Two libraries are equal when they hold the same names, compared without case, with the same rule text
+  for each name. The order of the rules does not matter. `CompilerOptions` that hold equal libraries are equal.
 - **Case.** The words `rule` and `hash` and the library rule names are compared without case.
 - **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
   arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.

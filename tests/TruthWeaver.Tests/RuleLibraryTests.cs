@@ -292,6 +292,34 @@ public sealed class RuleLibraryTests
         Assert.Contains(DiagnosticCodes.MaxNodeCountExceeded, diagnostic.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Two libraries built from the same rules in a different order, with names that differ only in case, are equal with
+    /// equal hash codes, and two <see cref="CompilerOptions"/> that hold them are equal.
+    /// </summary>
+    [Fact]
+    public void Equals_SameRulesInAnotherOrder_AreEqualAndMakeEqualCompilerOptions_Test()
+    {
+        RuleLibrary first = Library(("adult", "a AND b"), ("minor", "NOT a"));
+        RuleLibrary second = Library(("MINOR", "NOT a"), ("Adult", "a AND b"));
+
+        Assert.Equal(first, second);
+        Assert.True(first.Equals(second));
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal(new CompilerOptions(Library: first), new CompilerOptions(Library: second));
+    }
+
+    /// <summary>Libraries that differ in one rule text, in a name or in the number of rules are not equal.</summary>
+    [Fact]
+    public void Equals_LibrariesThatDiffer_AreNotEqual_Test()
+    {
+        RuleLibrary library = Library(("adult", "a AND b"));
+
+        Assert.NotEqual(library, Library(("adult", "a OR b")));
+        Assert.NotEqual(library, Library(("grown", "a AND b")));
+        Assert.NotEqual(library, Library(("adult", "a AND b"), ("minor", "NOT a")));
+        Assert.False(library.Equals(null));
+    }
+
     private static RuleLibrary Library(params (string Name, string Text)[] rules)
     {
         return new RuleLibrary(rules.Select(rule => new KeyValuePair<string, string>(rule.Name, rule.Text)));
