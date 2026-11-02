@@ -7,9 +7,9 @@
 
 **What to build:** Inspect hover and tree-node facts take term outcomes from the Core lookup. `TermCalls` string matching (`SameCall`, `NameOf`, `Contains`) and the duplicated fault parsing are deleted.
 
-- [ ] `TermCalls` no longer matches terms by display text
-- [ ] Hover over a term in a rule with two same-name predicates shows the right value
-- [ ] Existing Inspect tests still pass
+- [x] `TermCalls` no longer matches terms by display text
+- [x] Hover over a term in a rule with two same-name predicates shows the right value
+- [x] Existing Inspect tests still pass
 - [ ] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
 
 ## Result

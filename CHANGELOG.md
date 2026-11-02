@@ -271,6 +271,7 @@ copyright line reads 2026.
 
 ### Changed
 
+- Terminal UI: the Structure pane, the status line and the Inspect hover find the value of a term through the one term lookup of `TruthWeaver.Tool.Core`, so two predicates with the same name and different arguments each show their own value. Two behaviors change. The status line names a term only when the cursor is in its call, and no longer when a bare predicate name matches the only term with that name. Hovering a predicate name shows the value of the call under the cursor and no longer lists every term with that name. The fault text in the step and Inspect views is the exception message. No migration step. [Terminal UI](docs/tui.md#structural-editing) covers it.
 - A diagnostic about a place in the text of a library rule ends with a library locator: the name of the library rule
   and the line and column in its text, as in `In library rule 'adult' at line 1, column 7.` A `TRE0050` message has it
   for an error at a node, a syntax error or a definition error in the library rule. The span stays at the
