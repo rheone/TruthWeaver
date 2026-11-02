@@ -46,6 +46,7 @@
     <ProjectReference Include="../../samples/Consumer.Tests/Consumer.Tests.csproj" />
     <ProjectReference Include="../../samples/DataSource.Tests/DataSource.Tests.csproj" />
     <ProjectReference Include="../../samples/PredicateLibrary.Tests/PredicateLibrary.Tests.csproj" />
+    <ProjectReference Include="../../samples/Yaml.Tests/Yaml.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,6 +25,7 @@ repository analyzers. In a CI build, a warning fails the build.
 | [PredicateLibrary](PredicateLibrary/) | A project for a predicate-only team. It references `TruthWeaver.Abstractions` alone. It defines a class-based predicate and a schema-and-delegate predicate with an argument. |
 | [AspNetCore](AspNetCore/) | A minimal API with TruthWeaver authorization policies: an endpoint policy, a resource-based check with `isOwner`, and a fail-closed policy whose predicate calls a service that can fail. It uses a demonstration authentication scheme that reads the user from request headers. |
 | [DataSource](DataSource/) | A JSON data source and a rule with a data-source argument. The rule reads its minimum age from a policy document. The compiler checks the source name and the JSONPath query. |
+| [Yaml](Yaml/) | A rule written as YAML and compiled with `CompileYaml` from `TruthWeaver.Yaml`. The test prints the rule back as YAML and compiles it again. |
 
 The [Consumer test project](Consumer.Tests/) runs the rule from a container and asserts the decision.
 
@@ -33,3 +34,5 @@ The [PredicateLibrary test project](PredicateLibrary.Tests/) evaluates the predi
 The [DataSource test project](DataSource.Tests/) evaluates the rule against a sample policy document.
 
 The [AspNetCore test project](AspNetCore.Tests/) runs the sample application on a test server and sends requests to it.
+
+The [Yaml test project](Yaml.Tests/) evaluates the YAML rule for an active member and for a suspended member.
