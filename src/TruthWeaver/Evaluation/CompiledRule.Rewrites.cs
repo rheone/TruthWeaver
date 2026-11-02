@@ -561,7 +561,7 @@ public sealed partial class CompiledRule<TContext>
     // The library locators that a rewritten tree keeps. Notes are not carried, because a note is keyed by tree path.
     private IReadOnlyDictionary<Expression, string>? CarriedLocators(Expression rewritten)
     {
-        return LibraryLocatorCollector.Carry(this.libraryLocators, this.Root, rewritten);
+        return LibraryLocatorCollector.CarryAcrossRewrite(this.libraryLocators, this.Root, rewritten);
     }
 
     /// <summary>

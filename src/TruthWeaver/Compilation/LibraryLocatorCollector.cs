@@ -32,7 +32,7 @@ internal static class LibraryLocatorCollector
     /// <param name="before">The original tree.</param>
     /// <param name="after">The rewritten tree.</param>
     /// <returns>The locator text by node of the rewritten tree, or <see langword="null"/> when no node has one.</returns>
-    public static Dictionary<Expression, string>? Carry(
+    public static Dictionary<Expression, string>? CarryAcrossRewrite(
         IReadOnlyDictionary<Expression, string>? locators,
         Expression before,
         Expression after
@@ -46,55 +46,46 @@ internal static class LibraryLocatorCollector
         // Records compare by structure, so this index finds the original nodes that a rewritten node equals. A null value
         // marks a shape with more than one source.
         Dictionary<Expression, string?> byShape = [];
-        Index(before, locators, byShape);
+        foreach (Expression node in NodesOf(before))
+        {
+            string? locator = locators.GetValueOrDefault(node);
+            if (!byShape.TryGetValue(node, out string? known))
+            {
+                byShape[node] = locator;
+            }
+            else if (!string.Equals(known, locator, StringComparison.Ordinal))
+            {
+                byShape[node] = null;
+            }
+        }
 
         Dictionary<Expression, string> carried = [with(ReferenceEqualityComparer.Instance)];
-        Apply(after, byShape, carried);
+        foreach (Expression node in NodesOf(after))
+        {
+            if (byShape.TryGetValue(node, out string? locator) && locator is not null)
+            {
+                carried[node] = locator;
+            }
+        }
+
         return carried.Count == 0 ? null : carried;
     }
 
-    private static void Index(
-        Expression node,
-        IReadOnlyDictionary<Expression, string> locators,
-        Dictionary<Expression, string?> byShape
-    )
+    // Every node of a tree, a node before its operands. A shared subtree is yielded once for each place it appears.
+    private static IEnumerable<Expression> NodesOf(Expression node)
     {
-        string? locator = locators.GetValueOrDefault(node);
-        if (!byShape.TryGetValue(node, out string? known))
-        {
-            byShape[node] = locator;
-        }
-        else if (!string.Equals(known, locator, StringComparison.Ordinal))
-        {
-            byShape[node] = null;
-        }
-
+        yield return node;
         if (node is ConstantExpression or TermExpression)
         {
-            return;
+            yield break;
         }
 
         foreach (Expression operand in ExpressionShape.Of(node).Operands)
         {
-            Index(operand, locators, byShape);
-        }
-    }
-
-    private static void Apply(Expression node, Dictionary<Expression, string?> byShape, Dictionary<Expression, string> carried)
-    {
-        if (byShape.TryGetValue(node, out string? locator) && locator is not null)
-        {
-            carried[node] = locator;
-        }
-
-        if (node is ConstantExpression or TermExpression)
-        {
-            return;
-        }
-
-        foreach (Expression operand in ExpressionShape.Of(node).Operands)
-        {
-            Apply(operand, byShape, carried);
+            foreach (Expression descendant in NodesOf(operand))
+            {
+                yield return descendant;
+            }
         }
     }
 
