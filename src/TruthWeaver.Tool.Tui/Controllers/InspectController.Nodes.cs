@@ -66,7 +66,7 @@ internal sealed partial class InspectController
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        if (StructureController.For(this.workbench).Tree is not { } tree || tree.Find(path) is not { } node)
+        if (this.Tree is not { } tree || tree.Find(path) is not { } node)
         {
             return null;
         }
@@ -431,25 +431,21 @@ internal sealed partial class InspectController
     // What the predicate catalog, the schema file or the rule says about a predicate name.
     private void PredicateFacts(Lines text, string name)
     {
-        PaletteEntry? entry = this.PaletteEntryFor(e =>
-            e.Source is PaletteSource.Catalog or PaletteSource.SchemaFile or PaletteSource.Document
-            && e.Name.Equals(name, StringComparison.Ordinal)
-        );
-        if (entry is null)
+        if (PaletteController.For(this.workbench).Palette().Find(name) is not { } facts)
         {
             text.Add($"Predicate {name} is not in the catalog, the schema file or the rule.");
             return;
         }
 
-        CatalogPredicate? catalog = PredicateCatalog.All.FirstOrDefault(p => p.Entry.Name == name);
-        text.Add($"Predicate {name} ({(catalog is null ? entry.Source.ToString().ToLowerInvariant() : catalog.Family)})");
+        PaletteEntry entry = facts.Entry;
+        text.Add($"Predicate {name} ({facts.Family ?? entry.Source.ToString().ToLowerInvariant()})");
         if (entry.Description.Length > 0)
         {
             text.Add(entry.Description);
         }
 
         text.Add($"Arguments: {PredicateKinds(entry)}");
-        if (catalog is { TakesNullBehavior: true })
+        if (facts.TakesNullBehavior)
         {
             text.Add("Null value: answers Unknown unless the host chose False.");
         }
@@ -458,6 +454,6 @@ internal sealed partial class InspectController
     // The entry of the palette that matches, searched once here so every caller shares the same chain.
     private PaletteEntry? PaletteEntryFor(Func<PaletteEntry, bool> match)
     {
-        return StructureController.For(this.workbench).Palette().Entries.FirstOrDefault(match);
+        return PaletteController.For(this.workbench).Palette().Entries.FirstOrDefault(match);
     }
 }

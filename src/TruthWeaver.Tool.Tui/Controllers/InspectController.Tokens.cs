@@ -228,7 +228,7 @@ internal sealed partial class InspectController
         }
 
         OperatorExtras(text, name);
-        if (StructureController.For(this.workbench).Tree is { } tree && OnlyOperator(tree, name) is { } node)
+        if (this.Tree is { } tree && OnlyOperator(tree, name) is { } node)
         {
             IReadOnlyDictionary<string, EvaluationStep> results = EvaluationStepController.ResultsOf(
                 tree,
@@ -241,7 +241,7 @@ internal sealed partial class InspectController
 
     private void PredicateWord(Lines text, string token, int offset)
     {
-        RuleTree? tree = StructureController.For(this.workbench).Tree;
+        RuleTree? tree = this.Tree;
         if (
             FindDefinition(tree?.Definitions, d => string.Equals(d.Name, token, StringComparison.OrdinalIgnoreCase)) is
             { } definition
@@ -299,7 +299,7 @@ internal sealed partial class InspectController
             }
         }
 
-        RuleTree? tree = StructureController.For(this.workbench).Tree;
+        RuleTree? tree = this.Tree;
         RuleDefinitions? definitions = tree?.Definitions ?? this.workbench.Document.Definitions;
         DefinitionDeclaration? owner = FindDefinition(
             definitions,

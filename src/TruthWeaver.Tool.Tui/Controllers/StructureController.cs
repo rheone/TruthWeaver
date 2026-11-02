@@ -671,8 +671,7 @@ internal sealed class StructureController
     // The definitions of the text, only when the text compiled: the tree and the edits start from that rule.
     private RuleDefinitions? Definitions()
     {
-        RuleDocument document = this.workbench.Document;
-        return document.IsRuleCurrent && document.Definitions.HasDefinitions ? document.Definitions : null;
+        return PaletteController.For(this.workbench).Definitions();
     }
 
     private RuleTreeNode SelectedNodeOrRoot()

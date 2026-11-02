@@ -52,9 +52,16 @@ internal sealed class PaletteController
     /// <returns>The palette.</returns>
     public RulePalette Palette()
     {
+        return RulePalette.Create(this.workbench.Document.Rule, this.Schema(), this.Definitions());
+    }
+
+    /// <summary>
+    /// Gets the definitions of the text, only when the text compiled: the palette, the tree and the edits start from that rule.
+    /// </summary>
+    /// <returns>The definitions, or <see langword="null"/> when the text has none or did not compile.</returns>
+    public RuleDefinitions? Definitions()
+    {
         RuleDocument document = this.workbench.Document;
-        RuleDefinitions? definitions =
-            document.IsRuleCurrent && document.Definitions.HasDefinitions ? document.Definitions : null;
-        return RulePalette.Create(document.Rule, this.Schema(), definitions);
+        return document.IsRuleCurrent && document.Definitions.HasDefinitions ? document.Definitions : null;
     }
 }

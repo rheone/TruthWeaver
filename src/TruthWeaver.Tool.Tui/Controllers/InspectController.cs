@@ -2,6 +2,8 @@ namespace TruthWeaver.Tool.Tui.Controllers;
 
 using System.Runtime.CompilerServices;
 using System.Text;
+using TruthWeaver.Evaluation;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Workbench;
 
@@ -26,6 +28,7 @@ internal sealed partial class InspectController
     private static readonly ConditionalWeakTable<RuleTree, Dictionary<RuleTreeNode, int>> NodeIndexes = [];
 
     private readonly Workbench workbench;
+    private RuleTree? cachedTree;
 
     /// <summary>Initializes a new instance of the <see cref="InspectController"/> class.</summary>
     /// <param name="workbench">The shared state.</param>
@@ -34,6 +37,24 @@ internal sealed partial class InspectController
         ArgumentNullException.ThrowIfNull(workbench);
 
         this.workbench = workbench;
+    }
+
+    // The tree of the last valid rule, rebuilt when the rule changes; null when no text compiled yet. Inspect reads the tree
+    // and never edits it, so it keeps its own and does not depend on the Tree pane.
+    private RuleTree? Tree
+    {
+        get
+        {
+            CompiledRule<StubAssignment>? rule = this.workbench.Document.Rule;
+            if (this.cachedTree is null || !ReferenceEquals(this.cachedTree.Rule, rule))
+            {
+                this.cachedTree = rule is null
+                    ? null
+                    : RuleTree.Of(rule, this.workbench.Settings, PaletteController.For(this.workbench).Definitions());
+            }
+
+            return this.cachedTree;
+        }
     }
 
     /// <summary>Gets the controller of a workbench. The window, the keys and the hover use the same controller.</summary>
