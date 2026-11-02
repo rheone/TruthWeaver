@@ -769,6 +769,35 @@ public sealed class RuleLibraryTests
         Assert.False(library.Equals(null));
     }
 
+    /// <summary>
+    /// Libraries whose rule texts differ only in line endings (CRLF, lone CR or LF) are equal, with equal hash codes, as
+    /// their rule hashes are, and so are the <see cref="CompilerOptions"/> that hold them.
+    /// </summary>
+    [Fact]
+    public void Equals_TextsThatDifferOnlyInLineEndings_AreEqualAndMakeEqualCompilerOptions_Test()
+    {
+        RuleLibrary lf = Library(("adult", "a AND\nb"));
+        RuleLibrary crlf = Library(("adult", "a AND\r\nb"));
+        RuleLibrary cr = Library(("adult", "a AND\rb"));
+
+        Assert.Equal(lf, crlf);
+        Assert.Equal(lf, cr);
+        Assert.Equal(lf.GetHashCode(), crlf.GetHashCode());
+        Assert.Equal(lf.GetHashCode(), cr.GetHashCode());
+        Assert.Equal(new CompilerOptions(Library: lf), new CompilerOptions(Library: crlf));
+        Assert.True(lf.TryGet("adult", out LibraryRule? lfRule));
+        Assert.True(crlf.TryGet("adult", out LibraryRule? crlfRule));
+        Assert.Equal(lfRule.Hash, crlfRule.Hash);
+    }
+
+    /// <summary>Libraries that differ in any other character, such as a space, are not equal.</summary>
+    [Fact]
+    public void Equals_TextsThatDifferInAnotherCharacter_AreNotEqual_Test()
+    {
+        Assert.NotEqual(Library(("adult", "a AND\nb")), Library(("adult", "a AND \nb")));
+        Assert.NotEqual(Library(("adult", "a AND\nb")), Library(("adult", "a AND\n\nb")));
+    }
+
     private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library, int maxQuantifierDepth = 2)
     {
         PredicateRegistry<OrderContext> registry = PredicateRegistry<OrderContext>

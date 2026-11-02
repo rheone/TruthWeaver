@@ -72,8 +72,9 @@ public sealed class RuleLibrary : IEquatable<RuleLibrary>
     /// <param name="other">The library to compare with.</param>
     /// <returns>
     /// <see langword="true"/> when both libraries hold the same names, compared without case, and the same rule text for
-    /// each name, compared exactly. The order in which the rules were given does not matter. The name case that the library
-    /// was given does not matter either.
+    /// each name. The texts are compared after every CRLF and every lone CR is read as LF, as the content hash reads them,
+    /// so equal libraries have equal rule hashes; any other difference in a text makes the libraries unequal. The order in
+    /// which the rules were given does not matter. The name case that the library was given does not matter either.
     /// </returns>
     public bool Equals([NotNullWhen(true)] RuleLibrary? other)
     {
@@ -86,7 +87,11 @@ public sealed class RuleLibrary : IEquatable<RuleLibrary>
         {
             if (
                 !other.rules.TryGetValue(name, out LibraryRule? otherRule)
-                || !string.Equals(rule.Text, otherRule.Text, StringComparison.Ordinal)
+                || !string.Equals(
+                    NormalizeLineEndings(rule.Text),
+                    NormalizeLineEndings(otherRule.Text),
+                    StringComparison.Ordinal
+                )
             )
             {
                 return false;
@@ -110,7 +115,7 @@ public sealed class RuleLibrary : IEquatable<RuleLibrary>
         int sum = 0;
         foreach ((string name, LibraryRule rule) in this.rules)
         {
-            sum += HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(name), rule.Text);
+            sum += HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(name), NormalizeLineEndings(rule.Text));
         }
 
         return sum;
@@ -123,7 +128,12 @@ public sealed class RuleLibrary : IEquatable<RuleLibrary>
     /// </summary>
     private static string ContentHash(string text)
     {
-        string normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(NormalizeLineEndings(text))));
+    }
+
+    // Reads every CRLF and every lone CR as LF: the one rule that the content hash and the equality share.
+    private static string NormalizeLineEndings(string text)
+    {
+        return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
     }
 }
