@@ -65,16 +65,14 @@ internal sealed class CollectionBinding<TContext, TItem>(
         string variable,
         CompilerOptions options,
         LibraryRuleParses parses,
-        int quantifierDepth,
-        IReadOnlyList<string> boundVariables
+        QuantifierScope nesting
     )
     {
         return new LibraryRuleExpander<Element<TContext, TItem>>(
             elementRegistry,
             this.BodyOptions(options, variable),
             parses,
-            quantifierDepth,
-            boundVariables
+            nesting
         );
     }
 

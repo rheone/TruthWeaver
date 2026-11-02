@@ -17,22 +17,20 @@ using TruthWeaver.Registry;
 /// variable of the quantifier is one of them when the collection projects its elements to a data source.
 /// </param>
 /// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
-/// <param name="quantifierDepth">
-/// How many quantifiers deep the scope is: 0 for the rule itself. A library rule is checked at this depth, so
-/// <see cref="CompilerOptions.MaxQuantifierDepth"/> applies to it as if its text were written in place.
-/// </param>
-/// <param name="boundVariables">
-/// The variables of the enclosing quantifiers, innermost last: empty for the rule itself. A library rule is checked with
-/// them in scope, so a quantifier in it that reuses one gives the shadowed-variable diagnostic.
+/// <param name="nesting">
+/// The quantifier nesting of the scope, or <see langword="null"/> for the rule itself. A library rule is checked in this
+/// nesting, so <see cref="CompilerOptions.MaxQuantifierDepth"/> and the shadowed-variable rule apply to it as if its text
+/// were written in place.
 /// </param>
 internal sealed class LibraryRuleExpander<TContext>(
     PredicateRegistry<TContext> registry,
     CompilerOptions options,
     LibraryRuleParses parses,
-    int quantifierDepth = 0,
-    IReadOnlyList<string>? boundVariables = null
+    QuantifierScope? nesting = null
 ) : ILibraryRuleScope
 {
+    private readonly QuantifierScope nesting = nesting ?? QuantifierScope.Root;
+
     // The expansion of each reference for each site, or null when it failed. The pin is part of the key, so a pinned and
     // an unpinned reference at one site are each checked. The name and the pin are upper-cased in the key, because the
     // library and the pin check compare them without case.
@@ -82,13 +80,8 @@ internal sealed class LibraryRuleExpander<TContext>(
         (string, string) key = (collectionName.ToUpperInvariant(), variable);
         if (!this.bodyScopes.TryGetValue(key, out ILibraryRuleScope? scope))
         {
-            scope = binding.CreateLibraryScope(
-                variable,
-                options,
-                parses,
-                quantifierDepth + 1,
-                [.. boundVariables ?? [], variable]
-            );
+            scope = binding.CreateLibraryScope(variable, options, parses, this.nesting.Enter(variable));
+
             this.bodyScopes[key] = scope;
         }
 
@@ -279,8 +272,8 @@ internal sealed class LibraryRuleExpander<TContext>(
             body,
             registry,
             options,
-            startQuantifierDepth: quantifierDepth,
-            inheritedVariables: boundVariables
+            startQuantifierDepth: this.nesting.Depth,
+            inheritedVariables: this.nesting.Variables
         );
         if (this.ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
         {
