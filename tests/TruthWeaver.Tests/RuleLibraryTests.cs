@@ -252,6 +252,123 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// The flat trace entry of a <c>FORALL</c> that comes from a library rule names the library rule, as the entries of its
+    /// body nodes do.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_QuantifierFromALibraryRule_TraceEntryNamesTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("all-shipped", "FORALL(line IN lines, shipped)")));
+        CompiledRule<OrderContext> rule = compiler.Compile("rule(\"all-shipped\")").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, [])]),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("FORALL(line IN lines) (in library rule 'all-shipped' at line 1, column 1)", texts);
+    }
+
+    /// <summary>
+    /// A rewrite keeps the library locators of the nodes it keeps, so a trace from the rewritten rule still names the
+    /// library rule.
+    /// </summary>
+    /// <param name="rewrite">The rewrite to apply.</param>
+    [Theory]
+    [InlineData("OptimizeOrder")]
+    [InlineData("Simplify")]
+    [InlineData("SimplifyWithSteps")]
+    [InlineData("Canonicalize")]
+    [InlineData("CompressToDerived")]
+    [InlineData("ExpandToPrimitives")]
+    [InlineData("ExpandToNand")]
+    [InlineData("ExpandToNor")]
+    [InlineData("ToNnf")]
+    [InlineData("ToCnf")]
+    [InlineData("ToDnf")]
+    public async Task EvaluateAsync_RewrittenRuleWithALibraryNode_TraceEntryStillNamesTheLibraryRule_Test(string rewrite)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND NOT b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "c AND rule(\"adult\")");
+
+        CompiledRule<RuleTestContext> rewritten = rewrite switch
+        {
+            "OptimizeOrder" => original.OptimizeOrder().CompiledRule!,
+            "Simplify" => original.Simplify().CompiledRule!,
+            "SimplifyWithSteps" => original.SimplifyWithSteps().Rule,
+            "Canonicalize" => original.Canonicalize().CompiledRule!,
+            "CompressToDerived" => original.CompressToDerived().CompiledRule!,
+            "ExpandToPrimitives" => original.ExpandToPrimitives().CompiledRule!,
+            "ExpandToNand" => original.ExpandToNand().CompiledRule!,
+            "ExpandToNor" => original.ExpandToNor().CompiledRule!,
+            "ToNnf" => original.ToNnf().CompiledRule!,
+            "ToCnf" => original.ToCnf().CompiledRule!,
+            _ => original.ToDnf().CompiledRule!,
+        };
+        Decision decision = await rewritten.EvaluateAsync(
+            new RuleTestContext(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("c", texts);
+        Assert.Contains("a (in library rule 'adult' at line 1, column 1)", texts);
+    }
+
+    /// <summary>
+    /// A rewrite carries a locator only to a node that equals an original node. A node that the rewrite builds from new
+    /// operands, such as the <c>OR</c> that <c>ToNnf</c> makes from <c>NOT (a AND b)</c>, has no locator, while the terms
+    /// under it keep theirs.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_NodeBuiltByARewrite_TraceEntryHasNoLocatorButItsTermsKeepTheirs_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("both", "a AND b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "NOT rule(\"both\")");
+
+        Decision decision = await original
+            .ToNnf()
+            .CompiledRule!.EvaluateAsync(
+                new RuleTestContext(),
+                options: new EvaluationOptions(IncludeTrace: true),
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("a (in library rule 'both' at line 1, column 1)", texts);
+        Assert.Contains("b (in library rule 'both' at line 1, column 7)", texts);
+        Assert.DoesNotContain(
+            texts,
+            text => text.Contains("in library rule", StringComparison.Ordinal) && text is not ['a' or 'b', ' ', ..]
+        );
+    }
+
+    /// <summary>
+    /// A term that the caller's text and a library rule both write has two sources, so a rewrite gives it no locator.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_RewrittenRuleWithATermFromTwoSources_TraceEntryHasNoLocator_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("again", "a OR b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "a AND rule(\"again\")");
+
+        Decision decision = await original
+            .OptimizeOrder()
+            .CompiledRule!.EvaluateAsync(
+                new RuleTestContext(),
+                options: new EvaluationOptions(IncludeTrace: true),
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.DoesNotContain(texts, text => text.StartsWith("a (in library rule", StringComparison.Ordinal));
+        Assert.Contains(texts, text => text.StartsWith("b (in library rule 'again'", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// A library rule that uses a deprecated predicate gives the deprecation warning, with its own code and severity, when
     /// it is referenced: at the reference, naming the library rule and the place in it. The rule still compiles.
     /// </summary>
@@ -616,6 +733,59 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// A library rule used inside a quantifier body is checked as if its text were written there: a quantifier in it that
+    /// reuses the variable of the enclosing quantifier gives <see cref="DiagnosticCodes.ShadowedVariable"/>, and the
+    /// message names the library rule.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleThatShadowsAnEnclosingVariable_ReportsTheShadowedVariableNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "EXISTS(line IN parts, partOk)")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("part-ok", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains(DiagnosticCodes.ShadowedVariable, diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains("In library rule 'part-ok'", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A library rule with a quantifier, referenced at the maximum quantifier depth, gives the depth diagnostic naming the
+    /// library rule instead of nesting past the limit unnoticed.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleThatNestsPastTheMaximumQuantifierDepth_ReportsTheDepthNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(
+            Library(("part-ok", "EXISTS(part IN parts, partOk)")),
+            maxQuantifierDepth: 1
+        );
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("part-ok", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains(DiagnosticCodes.MaxQuantifierDepthExceeded, diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A library rule with a quantifier that fits the depth and shadows nothing still compiles in a body.</summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAQuantifierThatFits_Compiles_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "EXISTS(part IN parts, partOk)")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+    }
+
+    /// <summary>
     /// Two libraries built from the same rules in a different order, with names that differ only in case, are equal with
     /// equal hash codes, and two <see cref="CompilerOptions"/> that hold them are equal.
     /// </summary>
@@ -643,7 +813,36 @@ public sealed class RuleLibraryTests
         Assert.False(library.Equals(null));
     }
 
-    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library)
+    /// <summary>
+    /// Libraries whose rule texts differ only in line endings (CRLF, lone CR or LF) are equal, with equal hash codes, as
+    /// their rule hashes are, and so are the <see cref="CompilerOptions"/> that hold them.
+    /// </summary>
+    [Fact]
+    public void Equals_TextsThatDifferOnlyInLineEndings_AreEqualAndMakeEqualCompilerOptions_Test()
+    {
+        RuleLibrary lf = Library(("adult", "a AND\nb"));
+        RuleLibrary crlf = Library(("adult", "a AND\r\nb"));
+        RuleLibrary cr = Library(("adult", "a AND\rb"));
+
+        Assert.Equal(lf, crlf);
+        Assert.Equal(lf, cr);
+        Assert.Equal(lf.GetHashCode(), crlf.GetHashCode());
+        Assert.Equal(lf.GetHashCode(), cr.GetHashCode());
+        Assert.Equal(new CompilerOptions(Library: lf), new CompilerOptions(Library: crlf));
+        Assert.True(lf.TryGet("adult", out LibraryRule? lfRule));
+        Assert.True(crlf.TryGet("adult", out LibraryRule? crlfRule));
+        Assert.Equal(lfRule.Hash, crlfRule.Hash);
+    }
+
+    /// <summary>Libraries that differ in any other character, such as a space, are not equal.</summary>
+    [Fact]
+    public void Equals_TextsThatDifferInAnotherCharacter_AreNotEqual_Test()
+    {
+        Assert.NotEqual(Library(("adult", "a AND\nb")), Library(("adult", "a AND \nb")));
+        Assert.NotEqual(Library(("adult", "a AND\nb")), Library(("adult", "a AND\n\nb")));
+    }
+
+    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library, int maxQuantifierDepth = 2)
     {
         PredicateRegistry<OrderContext> registry = PredicateRegistry<OrderContext>
             .CreateBuilder()
@@ -667,7 +866,10 @@ public sealed class RuleLibraryTests
                         )
             )
             .Build();
-        return new RuleCompiler<OrderContext>(registry, new CompilerOptions(Library: library));
+        return new RuleCompiler<OrderContext>(
+            registry,
+            new CompilerOptions(MaxQuantifierDepth: maxQuantifierDepth, Library: library)
+        );
     }
 
     // The predicates a, b and c, and old, which is deprecated in favor of a.

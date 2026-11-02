@@ -43,3 +43,7 @@ Add the library locator to two more places: the quantifier's own flat trace entr
 - [ ] Docs (`docs/rule-text.md` Library rules) state where the locator appears. CHANGELOG entry. The validation list in CLAUDE.md passes.
 
 **Out of scope (deliberate):** The trace tree, coverage, the printers, and analyzer and linter findings.
+
+## Decision (owner, 2026-11-02, after code review)
+
+A rewrite carries a locator by structure only. A node of the rewritten rule takes the locator of the one original node that equals it, when that node has one locator. A node that the rewrite builds from new operands, such as the `OR` that `ToNnf` makes from `NOT (a AND b)`, gets no locator, and so does a node with two sources. The "takes the locator of its source node when there is exactly one" wording in the Desired behavior above is read this way. Real provenance in every rewriter is not planned: it touches about twelve rewriters and risks a wrong locator. Every public rewrite has a test that it keeps the locator of a term it keeps.

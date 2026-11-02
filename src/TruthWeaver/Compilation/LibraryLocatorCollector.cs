@@ -21,6 +21,74 @@ internal static class LibraryLocatorCollector
         return locators;
     }
 
+    /// <summary>
+    /// Carries the library locators of a rule across a rewrite. A rewrite builds new nodes, so the locators cannot follow
+    /// the node by reference. A node of the rewritten tree takes the locator of the node of the original tree that equals
+    /// it in structure when exactly one locator belongs to every such node. A node that the original tree writes in two
+    /// places with different locators, or with and without one, has two sources and takes none, as does a node that the
+    /// rewrite creates with operands that no original node has.
+    /// </summary>
+    /// <param name="locators">The locators of the original tree, or <see langword="null"/> for none.</param>
+    /// <param name="before">The original tree.</param>
+    /// <param name="after">The rewritten tree.</param>
+    /// <returns>The locator text by node of the rewritten tree, or <see langword="null"/> when no node has one.</returns>
+    public static Dictionary<Expression, string>? CarryAcrossRewrite(
+        IReadOnlyDictionary<Expression, string>? locators,
+        Expression before,
+        Expression after
+    )
+    {
+        if (locators is null || locators.Count == 0)
+        {
+            return null;
+        }
+
+        // Records compare by structure, so this index finds the original nodes that a rewritten node equals. A null value
+        // marks a shape with more than one source.
+        Dictionary<Expression, string?> byShape = [];
+        foreach (Expression node in NodesOf(before))
+        {
+            string? locator = locators.GetValueOrDefault(node);
+            if (!byShape.TryGetValue(node, out string? known))
+            {
+                byShape[node] = locator;
+            }
+            else if (!string.Equals(known, locator, StringComparison.Ordinal))
+            {
+                byShape[node] = null;
+            }
+        }
+
+        Dictionary<Expression, string> carried = [with(ReferenceEqualityComparer.Instance)];
+        foreach (Expression node in NodesOf(after))
+        {
+            if (byShape.TryGetValue(node, out string? locator) && locator is not null)
+            {
+                carried[node] = locator;
+            }
+        }
+
+        return carried.Count == 0 ? null : carried;
+    }
+
+    // Every node of a tree, a node before its operands. A shared subtree is yielded once for each place it appears.
+    private static IEnumerable<Expression> NodesOf(Expression node)
+    {
+        yield return node;
+        if (node is ConstantExpression or TermExpression)
+        {
+            yield break;
+        }
+
+        foreach (Expression operand in ExpressionShape.Of(node).Operands)
+        {
+            foreach (Expression descendant in NodesOf(operand))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
     private static void Walk(RuleNode source, Expression compiled, Dictionary<Expression, string> locators)
     {
         if (source.Library is { } locator)

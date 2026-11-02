@@ -41,6 +41,14 @@ public static class K3Oracle
         }
     }
 
+    // External sources for the three attested K3 connectives (NOT, AND, OR below): Kleene, "Introduction to
+    // Metamathematics" (North-Holland/Van Nostrand, 1952), pp. 332-335, the original three-valued truth tables;
+    // confirmed by the Stanford Encyclopedia of Philosophy, "Many-Valued Logic"
+    // (https://plato.stanford.edu/entries/logic-manyvalued/), which also separates K3 (only True designated) from
+    // weak Kleene/Bochvar (Unknown is infectious) and from Priest's LP (same tables, True and Unknown designated).
+    // Priest, "An Introduction to Non-Classical Logic" (2nd ed., 2008) is a third source; its page numbers are not
+    // verified here. The date of Kleene's three-valued tables is 1952; the 1938 paper is about ordinal notation.
+
     /// <summary>Strong Kleene negation: swaps <c>True</c>/<c>False</c>, fixes <c>Unknown</c>.</summary>
     public static TruthValue Not(TruthValue value)
     {
@@ -91,6 +99,10 @@ public static class K3Oracle
 
         return result;
     }
+
+    // XOR, PARITY, IMPLIES, NAND, NOR and EQUIVALENT have no independent name or table in the K3 literature. Their
+    // correctness rests on derivation from NOT/AND/OR, as each definition below shows (for example
+    // NAND(a, b) = NOT(AND(a, b)) and EQUIVALENT(a, b) = NOT(XOR(a, b))), not on an external citation.
 
     /// <summary>Binary XOR: <c>Unknown</c> if either operand is <c>Unknown</c>, else exclusive-or of the two.</summary>
     public static TruthValue Xor(TruthValue left, TruthValue right)
@@ -196,6 +208,11 @@ public static class K3Oracle
     {
         return And([Cardinality(c => c >= min, operands), Cardinality(c => c <= max, operands)]);
     }
+
+    // COALESCE is not a K3 connective and no three-valued-logic source treats it as one, so the Kleene citation
+    // above does not apply. It is a programming idiom that traces to Codd's 1979 paper, the origin of SQL's NULL
+    // propagation. Its empty-input identity (Unknown) follows from the monoid argument: an associative operation
+    // with a two-sided identity folds an empty input to that identity (Haskell's Data.Monoid.First: mconcat [] == mempty).
 
     /// <summary>
     /// <c>COALESCE</c>: the first operand that is not <c>Unknown</c> (<c>True</c> and <c>False</c> pass through);

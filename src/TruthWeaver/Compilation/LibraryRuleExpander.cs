@@ -17,12 +17,20 @@ using TruthWeaver.Registry;
 /// variable of the quantifier is one of them when the collection projects its elements to a data source.
 /// </param>
 /// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+/// <param name="nesting">
+/// The quantifier nesting of the scope, or <see langword="null"/> for the rule itself. A library rule is checked in this
+/// nesting, so <see cref="CompilerOptions.MaxQuantifierDepth"/> and the shadowed-variable rule apply to it as if its text
+/// were written in place.
+/// </param>
 internal sealed class LibraryRuleExpander<TContext>(
     PredicateRegistry<TContext> registry,
     CompilerOptions options,
-    LibraryRuleParses parses
+    LibraryRuleParses parses,
+    QuantifierScope? nesting = null
 ) : ILibraryRuleScope
 {
+    private readonly QuantifierScope nesting = nesting ?? QuantifierScope.Root;
+
     // The expansion of each reference for each site, or null when it failed. The pin is part of the key, so a pinned and
     // an unpinned reference at one site are each checked. The name and the pin are upper-cased in the key, because the
     // library and the pin check compare them without case.
@@ -72,7 +80,8 @@ internal sealed class LibraryRuleExpander<TContext>(
         (string, string) key = (collectionName.ToUpperInvariant(), variable);
         if (!this.bodyScopes.TryGetValue(key, out ILibraryRuleScope? scope))
         {
-            scope = binding.CreateLibraryScope(variable, options, parses);
+            scope = binding.CreateLibraryScope(variable, options, parses, this.nesting.Enter(variable));
+
             this.bodyScopes[key] = scope;
         }
 
@@ -256,11 +265,15 @@ internal sealed class LibraryRuleExpander<TContext>(
         // The library rule's predicate and data source names resolve against this scope. Building the expanded library
         // rule on its own finds a name the caller does not hold, and the diagnostic can then name the library rule. The
         // compile of the caller builds the same nodes again, and so reports no second error for them. The node count of
-        // the build is what each reference adds to the node count of the caller.
+        // the build is what each reference adds to the node count of the caller. The build starts at the quantifier depth
+        // of the scope and with its variables bound, as a let definition's body does, so the library rule is checked as if
+        // its text were written in place.
         (_, _, IReadOnlyList<Diagnostic> buildDiagnostics, nodeCount) = RuleNodeCompiler<TContext>.Compile(
             body,
             registry,
-            options
+            options,
+            startQuantifierDepth: this.nesting.Depth,
+            inheritedVariables: this.nesting.Variables
         );
         if (this.ReportErrors(rule, buildDiagnostics, span, diagnostics, locateInRule: false))
         {

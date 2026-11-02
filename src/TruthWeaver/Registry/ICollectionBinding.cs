@@ -66,8 +66,14 @@ internal interface ICollectionBinding<TContext>
     /// <param name="variable">The quantifier's bound variable name.</param>
     /// <param name="options">The compiler options of the enclosing scope.</param>
     /// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+    /// <param name="nesting">The quantifier nesting of the body: its depth, this quantifier included, and the variables bound by this quantifier and the enclosing ones.</param>
     /// <returns>The scope of the body.</returns>
-    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses);
+    public ILibraryRuleScope CreateLibraryScope(
+        string variable,
+        CompilerOptions options,
+        LibraryRuleParses parses,
+        QuantifierScope nesting
+    );
 
     /// <summary>
     /// Evaluates a <c>FORALL</c>/<c>EXISTS</c> quantifier over this collection (ADR-0010 decisions 4, 5 and 6):
@@ -92,6 +98,7 @@ internal interface ICollectionBinding<TContext>
     /// registry component of <see cref="EvaluationState.CollectionMaterializations"/>'s key (ticket 34), so a
     /// like-named collection registered on a different registry never reuses this one's materialized elements.
     /// </param>
+    /// <param name="libraryLocator">The library locator text of the quantifier when it comes from a library rule, or <see langword="null"/>. It ends the flat trace entry of the quantifier; the trace node keeps the plain text.</param>
     /// <param name="cancellationToken">Cancels the evaluation.</param>
     /// <returns>The quantifier's value and its trace node (one child per element).</returns>
     public ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -107,6 +114,7 @@ internal interface ICollectionBinding<TContext>
         string? outerScope,
         string? outerMemoScope,
         object outerRegistry,
+        string? libraryLocator,
         CancellationToken cancellationToken
     );
 }

@@ -117,8 +117,8 @@ public sealed class K3ConformanceTests
     }
 
     /// <summary>
-    /// Every threshold operator, every operand count 2..4 and every legal <c>k</c> matches the oracle's
-    /// interval cardinality. Out-of-range <c>k</c> is a compile error and is skipped here (covered by
+    /// Every threshold operator, every operand count 1..4 and every legal <c>k</c> matches the oracle's
+    /// interval cardinality (operand counts start at 1, the smallest the threshold family accepts). Out-of-range <c>k</c> is a compile error and is skipped here (covered by
     /// <c>XorExactlyOneThresholdTests</c>).
     /// </summary>
     [Fact]
@@ -136,7 +136,7 @@ public sealed class K3ConformanceTests
         List<string> mismatches = [];
         foreach ((string name, Func<int, int, bool> satisfies) in family)
         {
-            for (int arity = 2; arity <= MaxArity; arity++)
+            for (int arity = 1; arity <= MaxArity; arity++)
             {
                 for (int k = 0; k <= arity; k++)
                 {

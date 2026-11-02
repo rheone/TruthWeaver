@@ -6,6 +6,11 @@ using System.Diagnostics.CodeAnalysis;
 /// The one table of <see cref="OperatorDefinition"/>s, one per operator in the closed set. <see cref="OperatorInfo"/>
 /// and <see cref="TreeFormatOpNames"/> read their names, labels and descriptions from here.
 /// </summary>
+/// <remarks>
+/// Only <c>NOT</c>, <c>AND</c> and <c>OR</c> are connectives that the Strong Kleene literature attests. Every other
+/// entry is derived from them or defined directly. The audit that checked this is in
+/// <c>.scratch/k3-external-verification/spec.md</c>.
+/// </remarks>
 internal static class OperatorDefinitions
 {
     private const string InspectionTail = "The result is never Unknown, so it never collapses the enclosing rule.";

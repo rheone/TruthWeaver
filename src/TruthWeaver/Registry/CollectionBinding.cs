@@ -61,9 +61,19 @@ internal sealed class CollectionBinding<TContext, TItem>(
         return (tree, diagnostics, nodeCount);
     }
 
-    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses)
+    public ILibraryRuleScope CreateLibraryScope(
+        string variable,
+        CompilerOptions options,
+        LibraryRuleParses parses,
+        QuantifierScope nesting
+    )
     {
-        return new LibraryRuleExpander<Element<TContext, TItem>>(elementRegistry, this.BodyOptions(options, variable), parses);
+        return new LibraryRuleExpander<Element<TContext, TItem>>(
+            elementRegistry,
+            this.BodyOptions(options, variable),
+            parses,
+            nesting
+        );
     }
 
     public async ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -79,17 +89,17 @@ internal sealed class CollectionBinding<TContext, TItem>(
         string? outerScope,
         string? outerMemoScope,
         object outerRegistry,
+        string? libraryLocator,
         CancellationToken cancellationToken
     )
     {
         string label = QuantifierText.Label(kind);
         string description = $"{label}({variable} IN {name})";
+        string located = TraceText.WithLibraryLocator(description, libraryLocator);
 
         void AddFlat(TruthValue? value, bool notEvaluated)
         {
-            state.AddTrace(
-                new TraceEntry(outerScope is null ? description : $"{outerScope}: {description}", value, notEvaluated)
-            );
+            state.AddTrace(new TraceEntry(outerScope is null ? located : $"{outerScope}: {located}", value, notEvaluated));
         }
 
         // ADR-0010 decision 5: the selector is called at most once per (binding, outer element) within one

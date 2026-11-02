@@ -244,7 +244,13 @@ public sealed partial class CompiledRule<TContext>
 
         Expression optimized = OrderOptimizer.Optimize(this.Root, CostOf);
         return new CompilationResult<TContext>(
-            new CompiledRule<TContext>(optimized, this.registry, this.logger, this.options),
+            new CompiledRule<TContext>(
+                optimized,
+                this.registry,
+                this.logger,
+                this.options,
+                libraryLocators: this.CarriedLocators(optimized)
+            ),
             EquatableArray<Diagnostic>.Empty
         );
     }
@@ -552,13 +558,25 @@ public sealed partial class CompiledRule<TContext>
         };
     }
 
+    // The library locators that a rewritten tree keeps. Notes are not carried, because a note is keyed by tree path.
+    private IReadOnlyDictionary<Expression, string>? CarriedLocators(Expression rewritten)
+    {
+        return LibraryLocatorCollector.CarryAcrossRewrite(this.libraryLocators, this.Root, rewritten);
+    }
+
     /// <summary>
     /// Wraps the output of a repeat-until-stable rewrite as a new rule. A rewrite that stopped at its pass limit adds the
     /// <see cref="Diagnostics.DiagnosticCodes.RewriteNotConverged"/> warning; the rule is still equivalent.
     /// </summary>
     private CompilationResult<TContext> ConvergedResult(RewriteOutcome outcome, string rewrite, int maxPasses)
     {
-        CompiledRule<TContext> rule = new(outcome.Tree, this.registry, this.logger, this.options);
+        CompiledRule<TContext> rule = new(
+            outcome.Tree,
+            this.registry,
+            this.logger,
+            this.options,
+            libraryLocators: this.CarriedLocators(outcome.Tree)
+        );
         if (outcome.Converged)
         {
             return new CompilationResult<TContext>(rule, EquatableArray<Diagnostic>.Empty);
@@ -588,7 +606,13 @@ public sealed partial class CompiledRule<TContext>
         if (tree is not null && ExpressionTools.Size(tree) <= cap)
         {
             return new CompilationResult<TContext>(
-                new CompiledRule<TContext>(tree, this.registry, this.logger, this.options),
+                new CompiledRule<TContext>(
+                    tree,
+                    this.registry,
+                    this.logger,
+                    this.options,
+                    libraryLocators: this.CarriedLocators(tree)
+                ),
                 EquatableArray<Diagnostic>.Empty
             );
         }
