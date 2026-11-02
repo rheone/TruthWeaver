@@ -28,6 +28,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `RuleReport` | Writes the Markdown report of a rule. |
 | `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
 | `RulePatcher` | Writes an edited rule back into its document, and keeps the comments and layout of the document. |
+| `EmbeddedRuleSession` | Edits one rule inside a JSON or YAML document and writes it back. See [Editing an embedded rule](#editing-an-embedded-rule). |
 | `StubEvaluator` | Evaluates a rule with stub values in place of the predicates, and with data files. |
 | `RuleDocument` | Holds one rule open for editing: compiles each change, keeps the last valid tree, undo and redo, format, open and save. See [Editing a rule](#editing-a-rule). |
 | `AssignmentSession`, `AssignmentVariables` | Try a rule with values: a value for each term, data for `from(...)` references, and a policy. They give the decision, the trace with a reason for each node, and the faults. See [Trying a rule with values](#trying-a-rule-with-values). |
@@ -97,6 +98,20 @@ rules:
 The path `rules.publish` selects a YAML rule. The path `rules.review` selects rule text.
 
 A path that selects nothing is a `TWT0005` error that names the first segment that is missing. A path that selects a number, a Boolean, `null` or a sequence is a `TWT0006` error. A path on rule text is a `TWT0006` error, because rule text has no paths.
+
+### Editing an embedded rule
+
+`EmbeddedRuleSession` holds one rule that lives inside a larger JSON or YAML document: the file, the path of the rule and the rule as it was when the session read it. It has no view.
+
+| Member | Does |
+| --- | --- |
+| `Open(file, path)` | Reads the rule at the path and returns the session. A path that selects nothing, a value that is not a rule, or a file that cannot be read gives diagnostics. |
+| `Outline(file)` | Lists the places of the document where a rule can be, read from the file now. |
+| `CreateDocument(settings)` | Makes the `RuleDocument` of the rule, with the text of the rule alone. |
+| `Prepare(document, mode, settings)` | Reads the file again and computes the patch for the edited document with the `WriteBackMode` (see [Writing a rule back](#writing-a-rule-back)). It writes nothing. The `PreparedWrite` has the patch, the kind of change and `ChangedOnDisk`. |
+| `Commit(write)` | Writes the prepared patch with `RulePatcher.WriteFile`, then takes the written rule as the new baseline. |
+
+`ChangedOnDisk` is `true` when the rule in the file now differs from the rule that the session read. `Prepare` patches the file as it is now, so a write replaces that version. The caller decides whether to ask first. After `Commit`, a second `Prepare` reports no change on disk.
 
 `DocumentOutline` helps a front end to find the places of a document where a rule can be. `DocumentOutline.Read(path)` and `DocumentOutline.Browse(text, format)` list the objects, arrays and strings of a JSON or YAML document in document order, as `DocumentNode` values with the normalized path, the depth, a kind and a short label. An object with a `const`, `predicate` or `op` key is a rule (`DocumentNodeKind.Rule`) and is one entry: the nodes inside it are not listed. A string is `DocumentNodeKind.Text`. Rule text has no paths, so `Read` reports a `TWT0006` error for it. `DocumentOutline.Match(nodes, pattern)` finds the entries that a path names. In a pattern, `.*` or `[*]` matches every key or index at that place, so a pattern can name none, one or many entries.
 

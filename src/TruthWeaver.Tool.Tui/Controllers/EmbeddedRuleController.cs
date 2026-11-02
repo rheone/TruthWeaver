@@ -6,7 +6,6 @@ using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Patching;
 using TruthWeaver.Tool.Tui.Hosting;
-using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
