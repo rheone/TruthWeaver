@@ -106,6 +106,7 @@ The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
 
+`RulePrinter.Print` writes a rule in rule text, JSON or YAML with the operator style of the settings, and keeps the notes unless `includeNotes` is `false`. The C-style operators have no rule text that reads back, so rule text with that style uses the word style. `RulePrinter.IndentJson` indents a JSON string or a JSON node in the one way the tool writes JSON. `DiagnosticSummary.FirstError(diagnostics, fallback)` describes the first error of a list as `code: message` for a status line, and gives `fallback` when the list has no error. `ToolResult<T>.FailureSummary` uses it.
 ## Editing a rule
 
 `RuleDocument` is the model of an editor, such as the [terminal UI](tui.md). It holds the text of one rule, its format, its file and the result of compiling the text.

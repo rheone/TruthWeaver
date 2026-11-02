@@ -49,7 +49,7 @@ These options apply to every command except `test`:
 | `--from <format>` | The format of the input: `text`, `json` or `yaml`. The default finds the format from the file extension, then from the content. See [Format detection](tool-core.md#format-detection). |
 | `--path <path>` | Selects one rule inside a JSON or YAML document, such as `rules.publish` or `$['rules'][0]`. See [Embedded rules](tool-core.md#embedded-rules). |
 | `--config <file>` | The configuration file. See [Configuration](#configuration). |
-| `--operator-style <style>` | The operator style of rule text: `word`, `symbolic` or `cstyle`. |
+| `--operator-style <style>` | The operator style of rule text: `word`, `symbolic` or `cstyle`. The C-style operators have no rule text that reads back, so with `cstyle` the rule text uses the word style. |
 | `--constant-style <style>` | The style of the constants in equations: `word`, `letters` or `logicsymbols`. |
 | `--dialect <dialect>` | The equation dialect: `unicode`, `latex`, `asciimath`, `cstyle`, `mathml`, `typst` or `ascii`. |
 | `--max-depth <n>`, `--max-node-count <n>`, `--max-analysis-terms <n>` | The limits of the compiler and the analysis, each a whole number from 1. |
@@ -132,7 +132,7 @@ The JSON result has `report`: the JSON validation report of [Diagnostics output]
 
 ## convert
 
-`truthweaver convert [input] --to <format>` converts a rule to `text`, `json` or `yaml`. The result compiles to the same tree with the same notes. Rule text uses the operator style of the settings.
+`truthweaver convert [input] --to <format>` converts a rule to `text`, `json` or `yaml`. The result compiles to the same tree with the same notes. Rule text uses the operator style of the settings (the word style when the setting is `cstyle`).
 
 | Option | Meaning |
 | --- | --- |
