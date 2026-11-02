@@ -25,6 +25,7 @@ repository analyzers. In a CI build, a warning fails the build.
 | [PredicateLibrary](PredicateLibrary/) | A project for a predicate-only team. It references `TruthWeaver.Abstractions` alone. It defines a class-based predicate and a schema-and-delegate predicate with an argument. |
 | [AspNetCore](AspNetCore/) | A minimal API with TruthWeaver authorization policies: an endpoint policy, a resource-based check with `isOwner`, and a fail-closed policy whose predicate calls a service that can fail. It uses a demonstration authentication scheme that reads the user from request headers. |
 | [DataSource](DataSource/) | A JSON data source and a rule with a data-source argument. The rule reads its minimum age from a policy document. The compiler checks the source name and the JSONPath query. |
+| [Configuration](Configuration/) | Rules kept in configuration with `TruthWeaver.Extensions.Configuration`. Each key of a `Rules` section is a rule name, and `ConfigurationRuleStore` compiles the rules and fails closed for a missing rule. |
 | [Policies](Policies/) | A policy set with the `FirstApplicable` combining algorithm from `TruthWeaver.Policies`, and the rule-set analysis that reports a shadowed policy. |
 | [Yaml](Yaml/) | A rule written as YAML and compiled with `CompileYaml` from `TruthWeaver.Yaml`. The test prints the rule back as YAML and compiles it again. |
 
@@ -35,6 +36,8 @@ The [PredicateLibrary test project](PredicateLibrary.Tests/) evaluates the predi
 The [DataSource test project](DataSource.Tests/) evaluates the rule against a sample policy document.
 
 The [AspNetCore test project](AspNetCore.Tests/) runs the sample application on a test server and sends requests to it.
+
+The [Configuration test project](Configuration.Tests/) evaluates rules from an in-memory configuration and checks that a missing rule is not satisfied.
 
 The [Policies test project](Policies.Tests/) evaluates the policy set for staff, blocked and unrelated requesters, and checks the shadowing report.
 

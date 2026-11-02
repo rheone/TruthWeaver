@@ -64,6 +64,8 @@
     <File Path="samples\Directory.Build.props" />
     <Project Path="samples\AspNetCore.Tests\AspNetCore.Tests.csproj" />
     <Project Path="samples\AspNetCore\AspNetCore.csproj" />
+    <Project Path="samples\Configuration.Tests\Configuration.Tests.csproj" />
+    <Project Path="samples\Configuration\Configuration.csproj" />
     <Project Path="samples\Consumer.Tests\Consumer.Tests.csproj" />
     <Project Path="samples\Consumer\Consumer.csproj" />
     <Project Path="samples\DataSource.Tests\DataSource.Tests.csproj" />
