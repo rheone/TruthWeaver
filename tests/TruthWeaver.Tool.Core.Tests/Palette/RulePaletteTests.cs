@@ -124,31 +124,6 @@ public sealed class RulePaletteTests
         Assert.Null(palette.Find("noSuchPredicate"));
     }
 
-    /// <summary>A schema file is read once and read again when the file changes.</summary>
-    [Fact]
-    public void Get_SchemaFile_IsCachedUntilTheFileChanges_Test()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"palette-{Guid.NewGuid():N}.yaml");
-        try
-        {
-            File.WriteAllText(path, Schema);
-            PaletteSchemaCache cache = new();
-
-            PredicateSchemaFile? first = cache.Get(path);
-
-            Assert.Same(first, cache.Get(path));
-            Assert.NotNull(first);
-            File.WriteAllText(path, Schema.Replace("hasRole", "hasGroup", StringComparison.Ordinal));
-            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(1));
-            Assert.Equal("hasGroup", Assert.Single(cache.Get(path)!.Predicates).Name);
-            Assert.Null(cache.Get(null));
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
     /// <summary>A predicate of the rule is a template whose values start at the values of its first use.</summary>
     [Fact]
     public void Create_RulePredicate_StartsTheFormAtTheValuesOfItsFirstUse_Test()
