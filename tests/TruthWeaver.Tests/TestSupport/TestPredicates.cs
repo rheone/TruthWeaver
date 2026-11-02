@@ -8,6 +8,11 @@ using TruthWeaver.Registry;
 /// per the spec's testing decisions - behavioral test doubles, not mocks, driven through
 /// <c>RuleCompiler.Compile</c> and <c>CompiledRule.EvaluateAsync</c>.
 /// </summary>
+/// <remarks>
+/// Every method extends <c>PredicateRegistryBuilder&lt;RuleTestContext&gt;</c> only. For another context, or the builder of
+/// a collection's elements, register with <c>Add(PredicateSchema.NoArguments(...), ...)</c>. The helpers are listed in
+/// <c>docs/agents/testing.md</c>.
+/// </remarks>
 public static class TestPredicates
 {
     /// <summary>Registers a zero-argument predicate that always returns a fixed value.</summary>

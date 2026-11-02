@@ -575,6 +575,8 @@ copyright line reads 2026.
 
 ### Fixed
 
+- Rule coverage and `Explain` accept a decision made over a quantifier whose collection was `null`. They rejected the decision with `ArgumentException` because the trace tree records `[no collection]` after the quantifier text. No migration step: bug fix.
+- The compiler reports `TRE0010` (`MaxNodeCountExceeded`) once when a quantifier body, or a nested body, crosses `MaxNodeCount` and more nodes follow it. It reported the limit again for a later node. No migration step: bug fix.
 - A warning or information diagnostic of a library rule reaches the compile that references it, with its own code and
   severity, at the `rule("name")` reference, and with the library locator (the library rule name and the line and
   column in its text) in the message. Examples: the unused definition lint (`TRE0041`) in the text of a library rule,

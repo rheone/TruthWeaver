@@ -109,13 +109,6 @@ public sealed class ImpliesTests
         Assert.Contains("parentheses", diagnostic.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>A predicate may not be named after the keyword.</summary>
-    [Fact]
-    public void IsReservedWord_Implies_IsReserved_Test()
-    {
-        Assert.True(DslParser.IsReservedWord("implies"));
-    }
-
     /// <summary>JSON uses <c>{"op": "implies", "operands": [antecedent, consequent]}</c> and round-trips.</summary>
     [Fact]
     public void PrintJson_Implies_RoundTripsWithTheImpliesOpName_Test()

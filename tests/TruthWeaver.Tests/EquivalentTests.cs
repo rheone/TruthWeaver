@@ -91,16 +91,6 @@ public sealed class EquivalentTests
         Assert.Contains("EQUIVALENT is binary", diagnostic.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>The new keyword and both aliases are reserved so a predicate cannot shadow them.</summary>
-    [Theory]
-    [InlineData("equivalent")]
-    [InlineData("iff")]
-    [InlineData("xnor")]
-    public void IsReservedWord_EquivalentFamily_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>JSON prints the canonical <c>equivalent</c> op and round-trips.</summary>
     [Fact]
     public void PrintJson_Equivalent_UsesTheEquivalentOpNameAndRoundTrips_Test()

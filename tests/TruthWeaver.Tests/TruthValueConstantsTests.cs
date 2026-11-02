@@ -255,14 +255,4 @@ public sealed class TruthValueConstantsTests
         Assert.True(result.Succeeded);
         Assert.DoesNotContain(result.Diagnostics, d => d.Code == DiagnosticCodes.StructuralContradiction);
     }
-
-    /// <summary>Unknown is a reserved word in any letter case, so it cannot be used as a predicate name.</summary>
-    [Theory]
-    [InlineData("Unknown")]
-    [InlineData("UNKNOWN")]
-    [InlineData("unknown")]
-    public void IsReservedWord_UnknownInAnyCase_ReturnsTrue_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
 }

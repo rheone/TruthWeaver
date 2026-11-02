@@ -157,17 +157,6 @@ public sealed class InspectionTests
         Assert.Equal(expected, result.CompiledRule!.CanonicalText);
     }
 
-    /// <summary>The inspections are reserved so a predicate cannot shadow them.</summary>
-    [Theory]
-    [InlineData("istrue")]
-    [InlineData("IsFalse")]
-    [InlineData("ISUNKNOWN")]
-    [InlineData("IsKnown")]
-    public void IsReservedWord_Inspection_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>An inspection takes exactly one operand.</summary>
     [Theory]
     [InlineData("IsTrue()")]

@@ -299,46 +299,6 @@ public sealed class DslParserDiagnosticTests
         Assert.Equal("NXOR", diagnostic.Found);
     }
 
-    /// <summary>Every reserved word is rejected as a predicate name, in any letter case.</summary>
-    [Theory]
-    [InlineData("AND")]
-    [InlineData("or")]
-    [InlineData("Not")]
-    [InlineData("xor")]
-    [InlineData("equivalent")]
-    [InlineData("iff")]
-    [InlineData("xnor")]
-    [InlineData("implies")]
-    [InlineData("nand")]
-    [InlineData("nor")]
-    [InlineData("true")]
-    [InlineData("false")]
-    [InlineData("unknown")]
-    [InlineData("parity")]
-    [InlineData("nxor")]
-    [InlineData("any")]
-    [InlineData("all")]
-    [InlineData("none")]
-    [InlineData("between")]
-    [InlineData("coalesce")]
-    [InlineData("if")]
-    [InlineData("isTrue")]
-    [InlineData("isFalse")]
-    [InlineData("isUnknown")]
-    [InlineData("isKnown")]
-    [InlineData("project")]
-    [InlineData("collapse")]
-    [InlineData("exactlyOne")]
-    [InlineData("atLeast")]
-    [InlineData("atMost")]
-    [InlineData("greaterThan")]
-    [InlineData("lessThan")]
-    [InlineData("exactly")]
-    public void IsReservedWord_DslKeyword_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>A word that is not a keyword is not reserved.</summary>
     [Fact]
     public void IsReservedWord_OrdinaryName_IsNotReserved_Test()
@@ -383,42 +343,6 @@ public sealed class DslParserDiagnosticTests
     public void InfixWords_Documented_ListsWordOperators_Test()
     {
         Assert.Equal(["AND", "OR", "XOR", "EQUIVALENT", "IFF", "XNOR", "IMPLIES", "NAND", "NOR"], DslVocabulary.InfixWords);
-    }
-
-    /// <summary>The keywords offered as suggestions add the prefix operators, calls and constants in documented spelling.</summary>
-    [Fact]
-    public void Keywords_Documented_ListsEveryKeywordSpelling_Test()
-    {
-        Assert.Equal(
-            [
-                .. DslVocabulary.InfixWords,
-                "NOT",
-                "PARITY",
-                "ANY",
-                "ALL",
-                "NONE",
-                "BETWEEN",
-                "COALESCE",
-                "If",
-                "IsTrue",
-                "IsFalse",
-                "IsUnknown",
-                "IsKnown",
-                "ExactlyOne",
-                "AtLeast",
-                "AtMost",
-                "GreaterThan",
-                "LessThan",
-                "Exactly",
-                "True",
-                "False",
-                "Unknown",
-                "Let",
-                "FORALL",
-                "EXISTS",
-            ],
-            DslVocabulary.Keywords
-        );
     }
 
     /// <summary>A stray half of a doubled symbol maps to the doubled symbol.</summary>

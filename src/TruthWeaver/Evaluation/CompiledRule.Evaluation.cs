@@ -36,7 +36,7 @@ public sealed partial class CompiledRule<TContext>
     /// <returns>The evaluation's <see cref="Decision"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>.</exception>
     /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/>, cancelled the evaluation. Neither is recorded as a fault.</exception>
-    public async Task<Decision> EvaluateAsync(
+    public Task<Decision> EvaluateAsync(
         TContext context,
         IServiceProvider? services = null,
         DataSources? dataSources = null,
@@ -44,38 +44,15 @@ public sealed partial class CompiledRule<TContext>
         CancellationToken cancellationToken = default
     )
     {
-        services ??= NoServiceProvider.Instance;
-        EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
-
-        effectiveOptions.ThrowIfInvalid(nameof(options));
-        if (effectiveOptions.Timeout is { } timeout)
-        {
-            using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutSource.CancelAfter(timeout);
-            Evaluator<TContext> timedEvaluator = new(
-                context,
-                services,
-                this.registry,
-                effectiveOptions,
-                timeoutSource.Token,
-                this.logger,
-                dataSources,
-                this.NewEvaluationState(effectiveOptions)
-            );
-            return await timedEvaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
-        }
-
-        Evaluator<TContext> evaluator = new(
+        return this.EvaluateCoreAsync(
             context,
             services,
-            this.registry,
-            effectiveOptions,
-            cancellationToken,
-            this.logger,
             dataSources,
-            this.NewEvaluationState(effectiveOptions)
+            options,
+            sharedState: null,
+            sharedStateRequired: false,
+            cancellationToken
         );
-        return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -184,7 +161,7 @@ public sealed partial class CompiledRule<TContext>
     /// <exception cref="ArgumentNullException"><paramref name="sharedState"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="EvaluationOptions.FaultBudget"/> or <see cref="EvaluationOptions.MaxElementEvaluations"/> below 1, or an unusable <see cref="EvaluationOptions.Timeout"/>.</exception>
     /// <exception cref="OperationCanceledException">The caller's token, or <see cref="EvaluationOptions.Timeout"/>, cancelled the evaluation. Neither is recorded as a fault.</exception>
-    internal async Task<Decision> EvaluateAsync(
+    internal Task<Decision> EvaluateAsync(
         TContext context,
         EvaluationState sharedState,
         IServiceProvider? services = null,
@@ -193,38 +170,63 @@ public sealed partial class CompiledRule<TContext>
         CancellationToken cancellationToken = default
     )
     {
-        ArgumentNullException.ThrowIfNull(sharedState);
-        sharedState.AddLibraryLocators(this.libraryLocators);
-        services ??= NoServiceProvider.Instance;
-        EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
+        return this.EvaluateCoreAsync(
+            context,
+            services,
+            dataSources,
+            options,
+            sharedState,
+            sharedStateRequired: true,
+            cancellationToken
+        );
+    }
 
-        effectiveOptions.ThrowIfInvalid(nameof(options));
-        if (effectiveOptions.Timeout is { } timeout)
+    // A token source linked to the caller's token that the timeout cancels, or null when there is no timeout.
+    private static CancellationTokenSource? LinkTimeout(TimeSpan? timeout, CancellationToken cancellationToken)
+    {
+        if (timeout is not { } limit)
         {
-            using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutSource.CancelAfter(timeout);
-            Evaluator<TContext> timedEvaluator = new(
-                context,
-                services,
-                this.registry,
-                effectiveOptions,
-                timeoutSource.Token,
-                this.logger,
-                dataSources,
-                sharedState
-            );
-            return await timedEvaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
+            return null;
         }
+
+        CancellationTokenSource source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        source.CancelAfter(limit);
+        return source;
+    }
+
+    // The one place that validates the options, picks the cancellation token (the caller's, or one linked to it that the
+    // timeout cancels) and builds the evaluator, for the public overload and the shared-state overload alike. It is async
+    // so that a bad argument faults the returned task, as it did when each overload was async itself.
+    private async Task<Decision> EvaluateCoreAsync(
+        TContext context,
+        IServiceProvider? services,
+        DataSources? dataSources,
+        EvaluationOptions? options,
+        EvaluationState? sharedState,
+        bool sharedStateRequired,
+        CancellationToken cancellationToken
+    )
+    {
+        if (sharedStateRequired)
+        {
+            ArgumentNullException.ThrowIfNull(sharedState);
+            sharedState.AddLibraryLocators(this.libraryLocators);
+        }
+
+        EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
+        effectiveOptions.ThrowIfInvalid(nameof(options));
+
+        using CancellationTokenSource? timeoutSource = LinkTimeout(effectiveOptions.Timeout, cancellationToken);
 
         Evaluator<TContext> evaluator = new(
             context,
-            services,
+            services ?? NoServiceProvider.Instance,
             this.registry,
             effectiveOptions,
-            cancellationToken,
+            timeoutSource?.Token ?? cancellationToken,
             this.logger,
             dataSources,
-            sharedState
+            sharedState ?? this.NewEvaluationState(effectiveOptions)
         );
         return await evaluator.EvaluateAsync(this.Root).ConfigureAwait(false);
     }

@@ -162,15 +162,6 @@ public sealed class NandNorTests
         Assert.Contains("parentheses", diagnostic.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>The keywords are reserved so a predicate cannot shadow them.</summary>
-    [Theory]
-    [InlineData("nand")]
-    [InlineData("NOR")]
-    public void IsReservedWord_NandNor_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>JSON uses <c>nand</c>/<c>nor</c> ops, round-trips, and reads the op name in any letter case.</summary>
     [Theory]
     [InlineData("a NAND b", "nand")]

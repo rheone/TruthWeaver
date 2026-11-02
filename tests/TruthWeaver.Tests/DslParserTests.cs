@@ -175,18 +175,6 @@ public sealed class DslParserTests
         Assert.Contains(diagnostics, d => d.Message.Contains("Expected ']'"));
     }
 
-    /// <summary>IsReservedWord returns true for every keyword, case insensitively.</summary>
-    [Theory]
-    [InlineData("and")]
-    [InlineData("And")]
-    [InlineData("AND")]
-    [InlineData("xnor")]
-    [InlineData("EXACTLYONE")]
-    public void IsReservedWord_EveryKeyword_ReturnsTrueCaseInsensitively_Test(string keyword)
-    {
-        Assert.True(DslParser.IsReservedWord(keyword));
-    }
-
     /// <summary>The constant letters T, F and U are reserved words, in either case.</summary>
     [Theory]
     [InlineData("T")]

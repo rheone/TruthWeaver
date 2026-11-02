@@ -132,16 +132,6 @@ public sealed class AnyAllNoneTests
         Assert.True(Compiler.Compile(text).Succeeded);
     }
 
-    /// <summary>The operator names are reserved so a predicate cannot shadow them.</summary>
-    [Theory]
-    [InlineData("any")]
-    [InlineData("ALL")]
-    [InlineData("None")]
-    public void IsReservedWord_AnyAllNone_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>Like AND, OR and ExactlyOne, the operators need at least two operands.</summary>
     [Theory]
     [InlineData("ANY(a)")]

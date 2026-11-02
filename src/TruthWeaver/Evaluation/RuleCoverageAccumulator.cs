@@ -310,7 +310,7 @@ internal sealed class RuleCoverageAccumulator
         // A term's trace text can carry resolved variable values, so only its predicate name is compared.
         bool textMatches = node is TermExpression term
             ? traceNode.Text.StartsWith(term.Identity.PredicateName, StringComparison.Ordinal)
-            : traceNode.Text == this.texts[index];
+            : TraceText.Matches(node, traceNode);
         if (!textMatches)
         {
             throw Mismatch(this.paths[index]);

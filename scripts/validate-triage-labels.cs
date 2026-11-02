@@ -13,7 +13,8 @@
 // label (a date, a parenthetical, a follow-on note) is not checked. A file with no Status line is not required
 // to have one. The folders engine-v1 and _superseded are skipped, as in scripts/list-open-done-tickets.cs.
 // A ticket under issues/ that is staged and leads with ready-for-agent must also hold a "## Agent Brief" heading, so
-// an agent never gets a ticket with no brief. Tickets that are not staged are not checked, so older tickets stay as they are.
+// an agent never gets a ticket with no brief. A staged ticket that leads with done must have every acceptance box of its
+// "## Agent Brief" section ticked ("- [x]"). Tickets that are not staged are not checked, so older tickets stay as they are.
 // Called by .husky/task-runner.json; also runnable standalone.
 //
 // Usage: dotnet run scripts/validate-triage-labels.cs
@@ -41,6 +42,7 @@ try
     Regex fence = new(@"^\s*```", RegexOptions.Compiled, timeout);
     Regex statusLine = new(@"^\s*(?:\*\*Status:\*\*|Status:)\s*(.+?)\s*$", RegexOptions.Compiled, timeout);
     Regex leadingLabel = new(@"^[A-Za-z-]+", RegexOptions.Compiled, timeout);
+    Regex uncheckedBox = new(@"^\s*[-*]\s\[ \]", RegexOptions.Compiled, timeout);
 
     bool IsTrackedTicket(string relativeToScratch)
     {
@@ -69,6 +71,7 @@ try
     {
         string[] lines = await File.ReadAllLinesAsync(file);
         bool readyForAgent = false;
+        bool done = false;
         bool inFence = false;
         for (int i = 0; i < lines.Length; i++)
         {
@@ -94,6 +97,7 @@ try
             if (validLabels.Contains(label))
             {
                 readyForAgent |= label.Equals("ready-for-agent", StringComparison.OrdinalIgnoreCase);
+                done |= label.Equals("done", StringComparison.OrdinalIgnoreCase);
                 continue;
             }
 
@@ -117,14 +121,35 @@ try
                 $"{Path.GetRelativePath(root, file)}: a ready-for-agent ticket needs a '## Agent Brief' section."
             );
         }
+
+        if (done && staged.Contains(Path.GetFullPath(file)))
+        {
+            // Only the Agent Brief holds acceptance boxes; a checklist elsewhere in the ticket is not checked.
+            bool inBrief = false;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].StartsWith("## ", StringComparison.Ordinal))
+                {
+                    inBrief = lines[i].StartsWith("## Agent Brief", StringComparison.Ordinal);
+                }
+                else if (inBrief && uncheckedBox.IsMatch(lines[i]))
+                {
+                    invalid++;
+                    string lineNumber = (i + 1).ToString(CultureInfo.InvariantCulture);
+                    await Console.Error.WriteLineAsync(
+                        $"{Path.GetRelativePath(root, file)}:{lineNumber}: a done ticket has an unchecked acceptance box: \"{lines[i].Trim()}\""
+                    );
+                }
+            }
+        }
     }
 
     if (invalid > 0)
     {
         await Console.Error.WriteLineAsync(
             $"validate-triage-labels: {invalid} problem(s): a Status line that does not lead with needs-triage, needs-info, "
-                + "ready-for-agent, ready-for-human, wontfix or done, or a staged ready-for-agent ticket with no Agent Brief "
-                + "(see docs/agents/triage-labels.md)."
+                + "ready-for-agent, ready-for-human, wontfix or done, a staged ready-for-agent ticket with no Agent Brief, "
+                + "or a staged done ticket with an unchecked Agent Brief box (see docs/agents/triage-labels.md)."
         );
         return 1;
     }
