@@ -26,6 +26,11 @@ public static class ArtifactCatalog
     /// <summary>The page width of the <c>rule-text-pretty</c> artifact, in characters.</summary>
     public const int PrettyWidth = RulePrinter.PrettyWidth;
 
+    private static readonly ToolSettings SymbolicSettings = ToolSettings.Default with
+    {
+        OperatorStyle = OperatorStyle.Symbolic,
+    };
+
     private static readonly (EquationDialect Dialect, string Name, string Extension, string Format)[] Dialects =
     [
         (EquationDialect.Unicode, "unicode", ".txt", "text"),
@@ -140,7 +145,7 @@ public static class ArtifactCatalog
             "rule-text",
             "The rule as rule text, in the word style with parentheses and the notes.",
             [],
-            source => source.Print(rule => rule.PrintRuleText())
+            source => source.Print(rule => RulePrinter.Print(rule, RuleFormat.Text, ToolSettings.Default, pretty: false))
         );
         yield return Artifact(
             "rule-text-symbolic",
@@ -149,7 +154,7 @@ public static class ArtifactCatalog
             "rule-text",
             "The rule as rule text with the symbolic operators.",
             [Option("operatorStyle", "symbolic")],
-            source => source.Print(rule => rule.PrintRuleText(GroupingStyle.Parentheses, OperatorStyle.Symbolic))
+            source => source.Print(rule => RulePrinter.Print(rule, RuleFormat.Text, SymbolicSettings, pretty: false))
         );
         yield return Artifact(
             "rule-text-pretty",
@@ -158,7 +163,7 @@ public static class ArtifactCatalog
             "rule-text",
             $"The rule as rule text, broken across lines to a width of {PrettyWidth} characters.",
             [Option("width", PrettyWidth.ToString(CultureInfo.InvariantCulture)), Option("indentSize", "2")],
-            source => source.Print(rule => rule.PrintRuleText(new RuleTextOptions { Width = PrettyWidth }))
+            source => source.Print(rule => RulePrinter.Print(rule, RuleFormat.Text, ToolSettings.Default, pretty: true))
         );
         yield return Artifact(
             "json",
@@ -167,7 +172,7 @@ public static class ArtifactCatalog
             "json",
             "The rule in the JSON tree format, with the notes.",
             [],
-            source => source.Print(rule => rule.PrintJson())
+            source => source.Print(rule => RulePrinter.Print(rule, RuleFormat.Json, ToolSettings.Default, pretty: false))
         );
         yield return Artifact(
             "yaml",
@@ -176,7 +181,7 @@ public static class ArtifactCatalog
             "yaml",
             "The rule in the YAML tree format, with the notes.",
             [],
-            source => source.Print(rule => rule.PrintYaml())
+            source => source.Print(rule => RulePrinter.Print(rule, RuleFormat.Yaml, ToolSettings.Default, pretty: false))
         );
 
         foreach ((EquationDialect dialect, string dialectName, string extension, string format) in Dialects)

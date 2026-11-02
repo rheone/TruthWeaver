@@ -1,11 +1,13 @@
 namespace TruthWeaver.Tool.Core.Reports;
 
+using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Export;
 using TruthWeaver.Tool.Core.Loading;
+using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Core.Validation;
 
 /// <summary>
@@ -46,7 +48,7 @@ public static class RuleReport
         report.Append(Source(source.Rule)).Append("\n\n");
 
         report.Append("## Rule\n\n");
-        report.Append(Fenced("text", compiled.PrintRuleText(new RuleTextOptions { Width = ArtifactCatalog.PrettyWidth })));
+        report.Append(Fenced("text", RulePrinter.Print(compiled, RuleFormat.Text, ToolSettings.Default, pretty: true)));
 
         report.Append("\n\n## Equation\n\n");
         report.Append(

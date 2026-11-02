@@ -258,11 +258,7 @@ public sealed class RuleTree
     /// <returns>The text.</returns>
     internal static string PrintText(CompiledRule<StubAssignment> rule, ToolSettings settings)
     {
-        // The C-style operators have no rule text that reads back; the word style always does.
-        RuleTextOptions options = new() { OperatorStyle = settings.OperatorStyle, IncludeNotes = true };
-        return rule.TryPrintRuleText(options, out string? text)
-            ? text
-            : rule.PrintRuleText(options with { OperatorStyle = OperatorStyle.Word });
+        return RulePrinter.Print(rule, RuleFormat.Text, settings, pretty: false);
     }
 
     /// <summary>Puts the members of one object in place of the members of another, so the target stays the same instance.</summary>
