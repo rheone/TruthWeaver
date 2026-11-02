@@ -49,6 +49,7 @@ and fails on a stray reference. The rules are:
 - The `Configuration.Tests` sample project, for the test names to check.
 - The `Consumer.Tests` sample project, for the test names to check.
 - The `DataSource.Tests` sample project, for the test names to check.
+- The `Generators.Tests` sample project, for the test names to check.
 - The `Policies.Tests` sample project, for the test names to check.
 - The `PredicateLibrary.Tests` sample project, for the test names to check.
 - The `Yaml.Tests` sample project, for the test names to check.

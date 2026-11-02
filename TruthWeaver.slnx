@@ -70,6 +70,8 @@
     <Project Path="samples\Consumer\Consumer.csproj" />
     <Project Path="samples\DataSource.Tests\DataSource.Tests.csproj" />
     <Project Path="samples\DataSource\DataSource.csproj" />
+    <Project Path="samples\Generators.Tests\Generators.Tests.csproj" />
+    <Project Path="samples\Generators\Generators.csproj" />
     <Project Path="samples\Policies.Tests\Policies.Tests.csproj" />
     <Project Path="samples\Policies\Policies.csproj" />
     <Project Path="samples\PredicateLibrary.Tests\PredicateLibrary.Tests.csproj" />
