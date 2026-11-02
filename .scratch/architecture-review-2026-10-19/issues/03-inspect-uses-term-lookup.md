@@ -10,7 +10,7 @@
 - [x] `TermCalls` no longer matches terms by display text
 - [x] Hover over a term in a rule with two same-name predicates shows the right value
 - [x] Existing Inspect tests still pass
-- [ ] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
+- [x] `dotnet build`, `dotnet test` and the formatter gates in CLAUDE.md pass
 
 ## Result
 
