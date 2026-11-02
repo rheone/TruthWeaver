@@ -1,0 +1,28 @@
+name: publish
+ruleFile: publish.rule
+cases:
+  - name: an active editor can publish
+    given:
+      isActive: True
+      'hasRole(role: "editor")': True
+    expect:
+      result: True
+      faults: 0
+  - name: an active admin can publish
+    given:
+      isActive: True
+      'hasRole(role: "editor")': False
+      'hasRole(role: "admin")': True
+    expect:
+      result: True
+  - name: an inactive editor cannot publish
+    given:
+      isActive: False
+      'hasRole(role: "editor")': True
+    expect:
+      result: False
+  - name: an active user with an unknown role is undecided
+    given:
+      isActive: True
+    expect:
+      result: Unknown

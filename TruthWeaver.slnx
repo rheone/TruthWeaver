@@ -76,6 +76,10 @@
     <Project Path="samples\Policies\Policies.csproj" />
     <Project Path="samples\PredicateLibrary.Tests\PredicateLibrary.Tests.csproj" />
     <Project Path="samples\PredicateLibrary\PredicateLibrary.csproj" />
+    <File Path="samples\RuleFiles\publish.rule" />
+    <File Path="samples\RuleFiles\publish.test.yaml" />
+    <File Path="samples\RuleFiles\README.md" />
+    <Project Path="samples\RuleFiles.Tests\RuleFiles.Tests.csproj" />
     <Project Path="samples\Yaml.Tests\Yaml.Tests.csproj" />
     <Project Path="samples\Yaml\Yaml.csproj" />
     <File Path="samples\README.md" />

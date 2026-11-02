@@ -28,6 +28,7 @@ repository analyzers. In a CI build, a warning fails the build.
 | [Configuration](Configuration/) | Rules kept in configuration with `TruthWeaver.Extensions.Configuration`. Each key of a `Rules` section is a rule name, and `ConfigurationRuleStore` compiles the rules and fails closed for a missing rule. |
 | [Generators](Generators/) | A predicate written as a static method with `[Predicate]`. The `TruthWeaver.Generators` source generator adds the `Register` method and the schema, with the argument and its default, at compile time. |
 | [Policies](Policies/) | A policy set with the `FirstApplicable` combining algorithm from `TruthWeaver.Policies`, and the rule-set analysis that reports a shadowed policy. |
+| [RuleFiles](RuleFiles/) | A rule kept as a file, with a rule test file. The README walks through the `truthweaver` commands that check, test and view it, and the `truthweaver-tui` workbench. |
 | [Yaml](Yaml/) | A rule written as YAML and compiled with `CompileYaml` from `TruthWeaver.Yaml`. The test prints the rule back as YAML and compiles it again. |
 
 The [Consumer test project](Consumer.Tests/) runs the rule from a container and asserts the decision.
@@ -43,5 +44,7 @@ The [Configuration test project](Configuration.Tests/) evaluates rules from an i
 The [Generators test project](Generators.Tests/) compiles rules against the generated registration and checks the default and the named argument.
 
 The [Policies test project](Policies.Tests/) evaluates the policy set for staff, blocked and unrelated requesters, and checks the shadowing report.
+
+The [RuleFiles test project](RuleFiles.Tests/) needs no terminal. It loads and validates the rule file with `TruthWeaver.Tool.Core`, and runs the cases of the test file.
 
 The [Yaml test project](Yaml.Tests/) evaluates the YAML rule for an active member and for a suspended member.
