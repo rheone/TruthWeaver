@@ -128,7 +128,7 @@ internal sealed class ImportController
         );
         if (!imported.TryGetValue(out ImportedRule? rule, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus("Not imported: " + First(diagnostics));
+            this.workbench.SetStatus("Not imported: " + DiagnosticSummary.FirstError(diagnostics));
             return false;
         }
 
@@ -155,7 +155,7 @@ internal sealed class ImportController
         ToolResult<RuleDocument> opened = RuleDocument.Open(path, this.workbench.Settings, format);
         if (!opened.TryGetValue(out RuleDocument? document, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus($"Cannot open '{path}': {First(diagnostics)}");
+            this.workbench.SetStatus($"Cannot open '{path}': {DiagnosticSummary.FirstError(diagnostics)}");
             return false;
         }
 
@@ -236,12 +236,6 @@ internal sealed class ImportController
         this.Banner = ConversionNotice.Describe(from, format, oldText);
         this.workbench.SetStatus(this.Banner);
         return true;
-    }
-
-    private static string First(IEnumerable<Diagnostic> diagnostics)
-    {
-        Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? "unknown problem." : $"{first.Code}: {first.Message}";
     }
 
     private static string Evidence(FormatDetection detection)

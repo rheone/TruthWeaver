@@ -6,6 +6,7 @@ using TruthWeaver.Analysis;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
 using TruthWeaver.Tool.Core.Assignment;
+using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Rewriting;
 using TruthWeaver.Tool.Tui.Workbench;
@@ -116,11 +117,10 @@ internal sealed class RewriteController
         RewritePreview preview = RewritePlayground.Preview(this.workbench.Document.Rule!, kind, this.workbench.Settings);
         this.Preview = preview;
         string name = RewritePlayground.NameOf(kind);
-        Diagnostic? error = preview.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
         string status = preview switch
         {
             { After: null } =>
-                $"{name} gave no rule: {(error is null ? "see the Rewrite pane." : $"{error.Code}: {error.Message}")}",
+                $"{name} gave no rule: {DiagnosticSummary.FirstError(preview.Diagnostics, "see the Rewrite pane.")}",
             { Changed: false } => $"{name} does not change the rule.",
             _ => $"{name}: see the Rewrite pane. Press a there to accept, or x to discard.",
         };

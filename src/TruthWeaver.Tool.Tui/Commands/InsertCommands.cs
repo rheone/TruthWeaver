@@ -166,10 +166,7 @@ internal static class InsertCommands
         ToolResult<string> text = InsertItems.PredicateText(entry, workbench.Settings);
         if (!text.Succeeded)
         {
-            Diagnostic? first = text.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-            workbench.SetStatus(
-                $"Not inserted: {(first is null ? "the call does not compile." : $"{first.Code}: {first.Message}")}"
-            );
+            workbench.SetStatus($"Not inserted: {text.FailureSummary("the call does not compile.")}");
             return false;
         }
 

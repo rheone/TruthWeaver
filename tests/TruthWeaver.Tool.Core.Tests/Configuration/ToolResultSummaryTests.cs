@@ -30,6 +30,17 @@ public sealed class ToolResultSummaryTests
         Assert.Equal("The document cannot be used.", result.FailureSummary("The document cannot be used."));
     }
 
+    /// <summary>A bare list of diagnostics is described the same way as a result.</summary>
+    [Fact]
+    public void FirstError_WithDiagnosticsOnly_DescribesTheFirstErrorOrGivesTheFallback_Test()
+    {
+        Diagnostic warning = Diagnostic.Warning("W1", "a warning", SourceSpan.None);
+        Diagnostic error = Diagnostic.Error("E1", "first error", SourceSpan.None);
+
+        Assert.Equal("E1: first error", DiagnosticSummary.FirstError([warning, error]));
+        Assert.Equal("none.", DiagnosticSummary.FirstError([warning], "none."));
+    }
+
     /// <summary>The warning summary lists every warning in order and skips errors.</summary>
     [Fact]
     public void WarningSummary_WithWarnings_ListsEachWarning_Test()

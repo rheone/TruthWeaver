@@ -596,10 +596,7 @@ internal sealed class StructureController
         this.schemaNotice = filled.Succeeded ? this.SchemaGap(entry) : null;
         if (!filled.Succeeded)
         {
-            Diagnostic? first = filled.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-            this.workbench.SetStatus(
-                $"Not applied: {(first is null ? "the call does not compile." : $"{first.Code}: {first.Message}")}"
-            );
+            this.workbench.SetStatus($"Not applied: {filled.FailureSummary("the call does not compile.")}");
             return null;
         }
 
