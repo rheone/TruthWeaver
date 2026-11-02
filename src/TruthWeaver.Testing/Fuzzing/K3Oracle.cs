@@ -41,6 +41,14 @@ public static class K3Oracle
         }
     }
 
+    // External sources for the three attested K3 connectives (NOT, AND, OR below): Kleene, "Introduction to
+    // Metamathematics" (North-Holland/Van Nostrand, 1952), pp. 332-335, the original three-valued truth tables;
+    // confirmed by the Stanford Encyclopedia of Philosophy, "Many-Valued Logic"
+    // (https://plato.stanford.edu/entries/logic-manyvalued/), which also separates K3 (only True designated) from
+    // weak Kleene/Bochvar (Unknown is infectious) and from Priest's LP (same tables, True and Unknown designated).
+    // Priest, "An Introduction to Non-Classical Logic" (2nd ed., 2008) is a third source; check page numbers before
+    // citing one. Do not cite 1938: that Kleene paper is about ordinal notation.
+
     /// <summary>Strong Kleene negation: swaps <c>True</c>/<c>False</c>, fixes <c>Unknown</c>.</summary>
     public static TruthValue Not(TruthValue value)
     {
@@ -91,6 +99,10 @@ public static class K3Oracle
 
         return result;
     }
+
+    // XOR, PARITY, IMPLIES, NAND, NOR and EQUIVALENT have no independent name or table in the K3 literature. Their
+    // correctness rests on derivation from NOT/AND/OR, as each definition below shows (for example
+    // NAND(a, b) = NOT(AND(a, b)) and EQUIVALENT(a, b) = NOT(XOR(a, b))), not on an external citation.
 
     /// <summary>Binary XOR: <c>Unknown</c> if either operand is <c>Unknown</c>, else exclusive-or of the two.</summary>
     public static TruthValue Xor(TruthValue left, TruthValue right)
