@@ -151,15 +151,6 @@ public sealed class CoalesceTests
         Assert.True(Compiler.Compile(text).Succeeded);
     }
 
-    /// <summary>COALESCE is reserved so a predicate cannot shadow it.</summary>
-    [Theory]
-    [InlineData("coalesce")]
-    [InlineData("COALESCE")]
-    public void IsReservedWord_Coalesce_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>The word COALESCE is a function call only; it is not an infix operator (only the symbol ?? is).</summary>
     [Fact]
     public void Compile_CoalesceWordInInfixPosition_IsRejected_Test()

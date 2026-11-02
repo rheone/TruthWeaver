@@ -146,7 +146,12 @@ internal sealed class CollectionBinding<TContext, TItem>(
             AddFlat(TruthValue.Unknown, false);
             return (
                 TruthValue.Unknown,
-                new TraceNode($"{description} [no collection]", TruthValue.Unknown, false, EquatableArray<TraceNode>.Empty)
+                new TraceNode(
+                    $"{description}{TraceText.NoCollectionSuffix}",
+                    TruthValue.Unknown,
+                    false,
+                    EquatableArray<TraceNode>.Empty
+                )
             );
         }
 

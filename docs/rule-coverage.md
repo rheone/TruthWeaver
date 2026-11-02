@@ -21,7 +21,7 @@ RuleCoverage coverage = await RuleCoverage.FromDecisionsAsync(
     ct);
 ```
 
-Every decision must come from the same rule. A decision without a trace tree, or with a trace tree that does not match the rule, throws `ArgumentException`.
+Every decision must come from the same rule. A decision without a trace tree, or with a trace tree that does not match the rule, throws `ArgumentException`. A decision of a `FORALL` or `EXISTS` whose collection was `null` matches the rule: the quantifier counts as one `Unknown` evaluation with no element evaluations, and `rule.Explain` accepts the decision too.
 
 ## When a node decides
 

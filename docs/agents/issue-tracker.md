@@ -31,7 +31,11 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 
 ## Triage listing
 
-`dotnet run scripts/list-triage.cs [-- <label>]` prints the path, label, `Blocked by:` value and trailing hold prose of every ticket, spec, plan and map. `scripts/validate-triage-labels.cs` checks that each label is valid.
+`dotnet run scripts/list-triage.cs [-- <label> | --open]` prints the path, label, `Blocked by:` value and trailing hold prose of every ticket, spec, plan and map. `--open` leaves out `done` and `wontfix`. `scripts/validate-triage-labels.cs` checks that each label is valid, and that a staged `done` ticket has every acceptance box of its `## Agent Brief` ticked.
+
+## Bug briefs
+
+A bug brief under `ready-for-agent` says whether its repro was run. "Confirmed by running" and "By reading, not run" are the two answers. A brief written from reading names the claim that no run has tested, so the agent that picks it up starts with a failing test.
 
 ## Reference documents
 

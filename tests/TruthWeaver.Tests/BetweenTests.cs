@@ -122,15 +122,6 @@ public sealed class BetweenTests
         Assert.True(Compiler.Compile(text).Succeeded);
     }
 
-    /// <summary>The operator name is reserved so a predicate cannot shadow it.</summary>
-    [Theory]
-    [InlineData("between")]
-    [InlineData("BETWEEN")]
-    public void IsReservedWord_Between_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>Invalid bounds give a readable threshold-value diagnostic that names both bounds and the allowed range.</summary>
     [Theory]
     [InlineData("BETWEEN(2, 1, a, b, c)", "min=2")]

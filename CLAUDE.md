@@ -41,7 +41,7 @@ Before planning or resuming effort work, read [.scratch/in-flight.md](.scratch/i
 ## Development rules
 
 - Prefer .NET file-based apps (`dotnet run scripts/<name>.cs`, [docs](https://learn.microsoft.com/en-us/dotnet/core/sdk/file-based-apps)) over PowerShell for repository scripts. The repository scripts are file-based apps; their shared helpers live in `scripts/shared/` and are pulled in with a literal-path `#:include`.
-- Edit files with the Edit tool, `sed`, or a file-based `.cs` script; the container has no `python3` or `perl`.
+- Edit files with the Edit tool, and use a file-based `.cs` script for a bulk or multi-line change. Use `sed` only for a one-line substitution: multi-line `sed` and `awk` splices fail on this BusyBox. The container has no `python3` or `perl`. The shell is zsh, so keep a file list in an array (`F=(a b); cmd "${F[@]}"`); a string variable is one word.
 - Prefer modern idiomatic C#.
 - Nullable reference types are enabled.
 - Implicit usings are enabled.
@@ -55,6 +55,7 @@ Before planning or resuming effort work, read [.scratch/in-flight.md](.scratch/i
 - All non-trivial code should have value added comments.
 - Do not add dependencies without a concrete reason.
 - Keep tests focused on observable behavior.
+- Shared test helpers (`RuleTestContext`, `TestPredicates`, `CollectionContext`, `K3Rule`) are listed in [docs/agents/testing.md](docs/agents/testing.md). Read it before you write a context class or registry in a test.
 - Test doubles: `FakePredicates` (the `TruthWeaver.Testing` package, a deliberate part of the library) is the default double for predicates; use NSubstitute for other seams.
 - Do not suppress analyzers merely to make a build pass.
 - Do not weaken analyzer severity without documenting why.

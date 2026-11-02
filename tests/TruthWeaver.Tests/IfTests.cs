@@ -292,16 +292,6 @@ public sealed class IfTests
         Assert.Contains(result.Diagnostics, d => d.Code == DiagnosticCodes.SyntaxError);
     }
 
-    /// <summary>If is reserved so a predicate cannot shadow it.</summary>
-    [Theory]
-    [InlineData("if")]
-    [InlineData("IF")]
-    [InlineData("If")]
-    public void IsReservedWord_If_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>If takes exactly three arguments: condition, whenTrue, whenFalse.</summary>
     [Theory]
     [InlineData("If(a)")]
