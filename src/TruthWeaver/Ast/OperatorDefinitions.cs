@@ -8,6 +8,13 @@ using System.Diagnostics.CodeAnalysis;
 /// </summary>
 internal static class OperatorDefinitions
 {
+    // Missing-operator audit (2026-10 K3 external-verification effort): the operator set below was checked against the
+    // Strong Kleene literature and nothing is missing. Only NOT, AND and OR are attested there as K3 connectives.
+    // Every other entry is the library's own derived or named convenience, correct by derivation from those three
+    // (the connectives and the cardinality family, If) or by its own definition (COALESCE, the inspections, the
+    // quantifiers). The per-family arguments are in K3Oracle (tickets 01 to 03) and the quantifier sweep is in
+    // QuantifierCombinatorialSweepTests (ticket 04). The check was Strong Kleene only, by design: it did not compare
+    // against Lukasiewicz, Bochvar or Priest's LP, which ADR-0005 does not adopt.
     private const string InspectionTail = "The result is never Unknown, so it never collapses the enclosing rule.";
 
     private static readonly OperatorDefinition[] Definitions =
