@@ -83,6 +83,12 @@ internal sealed partial class InspectController
         return char.IsLetterOrDigit(c) || c == '_';
     }
 
+    // The value of a term as the hover words it. A term whose from(...) reference has no data yet has no key.
+    private static string ValueText(TermOutcome term)
+    {
+        return term.Key is null ? "Unknown (no data yet)" : term.Value.ToString();
+    }
+
     private static bool Covers(SourceSpan span, int offset, int length)
     {
         // An empty span marks the character at its start, or the last character at the end of the text.
@@ -189,7 +195,7 @@ internal sealed partial class InspectController
                 this.OperatorWord(lines, token);
                 break;
             case SyntaxKind.Predicate:
-                this.PredicateWord(lines, token);
+                this.PredicateWord(lines, token, offset);
                 break;
             case SyntaxKind.Variable:
                 this.VariableWord(lines, text, start, end);
@@ -233,7 +239,7 @@ internal sealed partial class InspectController
         }
     }
 
-    private void PredicateWord(Lines text, string token)
+    private void PredicateWord(Lines text, string token, int offset)
     {
         RuleTree? tree = StructureController.For(this.workbench).Tree;
         if (
@@ -248,6 +254,14 @@ internal sealed partial class InspectController
 
         this.PredicateFacts(text, token);
         AssignmentOutcome outcome = this.workbench.Outcome;
+
+        // The call under the cursor is one term: show its value alone, not that of every term with the same name.
+        if (TermOutcomeLookup.FindBySpan(this.workbench.Document.Text, outcome, new SourceSpan(offset, 0)) is { } here)
+        {
+            text.Add($"Value now: {ValueText(here)}  for {here.Display}");
+            return;
+        }
+
         TermAssignment[] terms =
         [
             .. outcome.Terms.Where(t =>
@@ -275,7 +289,12 @@ internal sealed partial class InspectController
             Match call = FromCall().Match(source, start);
             if (call.Success && call.Index == start)
             {
-                this.FromFacts(text, call.Value, call.Value);
+                // The enclosing call is the term; a from(...) that is a term by itself has no enclosing call.
+                AssignmentOutcome outcome = this.workbench.Outcome;
+                TermOutcome? term =
+                    TermOutcomeLookup.FindBySpan(source, outcome, new SourceSpan(start, 0))
+                    ?? TermOutcomeLookup.FindByCall(outcome, call.Value);
+                FromFacts(text, call.Value, term);
                 return;
             }
         }
