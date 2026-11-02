@@ -46,8 +46,8 @@ public static class K3Oracle
     // confirmed by the Stanford Encyclopedia of Philosophy, "Many-Valued Logic"
     // (https://plato.stanford.edu/entries/logic-manyvalued/), which also separates K3 (only True designated) from
     // weak Kleene/Bochvar (Unknown is infectious) and from Priest's LP (same tables, True and Unknown designated).
-    // Priest, "An Introduction to Non-Classical Logic" (2nd ed., 2008) is a third source; check page numbers before
-    // citing one. Do not cite 1938: that Kleene paper is about ordinal notation.
+    // Priest, "An Introduction to Non-Classical Logic" (2nd ed., 2008) is a third source; its page numbers are not
+    // verified here. The date of Kleene's three-valued tables is 1952; the 1938 paper is about ordinal notation.
 
     /// <summary>Strong Kleene negation: swaps <c>True</c>/<c>False</c>, fixes <c>Unknown</c>.</summary>
     public static TruthValue Not(TruthValue value)

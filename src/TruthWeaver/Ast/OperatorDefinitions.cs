@@ -6,15 +6,13 @@ using System.Diagnostics.CodeAnalysis;
 /// The one table of <see cref="OperatorDefinition"/>s, one per operator in the closed set. <see cref="OperatorInfo"/>
 /// and <see cref="TreeFormatOpNames"/> read their names, labels and descriptions from here.
 /// </summary>
+/// <remarks>
+/// Only <c>NOT</c>, <c>AND</c> and <c>OR</c> are connectives that the Strong Kleene literature attests. Every other
+/// entry is derived from them or defined directly. The audit that checked this is in
+/// <c>.scratch/k3-external-verification/spec.md</c>.
+/// </remarks>
 internal static class OperatorDefinitions
 {
-    // Missing-operator audit (2026-10 K3 external-verification effort): the operator set below was checked against the
-    // Strong Kleene literature and nothing is missing. Only NOT, AND and OR are attested there as K3 connectives.
-    // Every other entry is the library's own derived or named convenience, correct by derivation from those three
-    // (the connectives and the cardinality family, If) or by its own definition (COALESCE, the inspections, the
-    // quantifiers). The per-family arguments are in K3Oracle (tickets 01 to 03) and the quantifier sweep is in
-    // QuantifierCombinatorialSweepTests (ticket 04). The check was Strong Kleene only, by design: it did not compare
-    // against Lukasiewicz, Bochvar or Priest's LP, which ADR-0005 does not adopt.
     private const string InspectionTail = "The result is never Unknown, so it never collapses the enclosing rule.";
 
     private static readonly OperatorDefinition[] Definitions =

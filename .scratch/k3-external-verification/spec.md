@@ -34,3 +34,7 @@ Every ticket in this effort carries a **critical/high floor**, regardless of how
 ## Tickets
 
 01-05, all unblocked (no ticket in this set depends on another). See `issues/`.
+
+## Audit conclusion (ticket 05, 2026-10)
+
+The operator set was checked against the Strong Kleene literature and nothing is missing. Only `NOT`, `AND` and `OR` are attested there as K3 connectives. Every other operator is the library's own derived or named convenience: the connectives and the cardinality family and `If` are correct by derivation from those three, and `COALESCE`, the inspections and the quantifiers are correct by their own definition. The per-family arguments are comments in `K3Oracle` (tickets 01 to 03), and the quantifier sweep is `QuantifierCombinatorialSweepTests` (ticket 04). The check was Strong Kleene only, by design: it did not compare against Łukasiewicz, Bochvar or Priest's LP, which ADR-0005 does not adopt.
