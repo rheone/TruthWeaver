@@ -616,6 +616,59 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// A library rule used inside a quantifier body is checked as if its text were written there: a quantifier in it that
+    /// reuses the variable of the enclosing quantifier gives <see cref="DiagnosticCodes.ShadowedVariable"/>, and the
+    /// message names the library rule.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleThatShadowsAnEnclosingVariable_ReportsTheShadowedVariableNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "EXISTS(line IN parts, partOk)")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("part-ok", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains(DiagnosticCodes.ShadowedVariable, diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains("In library rule 'part-ok'", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A library rule with a quantifier, referenced at the maximum quantifier depth, gives the depth diagnostic naming the
+    /// library rule instead of nesting past the limit unnoticed.
+    /// </summary>
+    [Fact]
+    public void Compile_LibraryRuleThatNestsPastTheMaximumQuantifierDepth_ReportsTheDepthNamingTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(
+            Library(("part-ok", "EXISTS(part IN parts, partOk)")),
+            maxQuantifierDepth: 1
+        );
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Null(result.CompiledRule);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticCodes.InvalidLibraryRule, diagnostic.Code);
+        Assert.Contains("part-ok", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Contains(DiagnosticCodes.MaxQuantifierDepthExceeded, diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A library rule with a quantifier that fits the depth and shadows nothing still compiles in a body.</summary>
+    [Fact]
+    public void Compile_LibraryRuleWithAQuantifierThatFits_Compiles_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("part-ok", "EXISTS(part IN parts, partOk)")));
+
+        CompilationResult<OrderContext> result = compiler.Compile("FORALL(line IN lines, rule(\"part-ok\"))");
+
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.CompiledRule);
+    }
+
+    /// <summary>
     /// Two libraries built from the same rules in a different order, with names that differ only in case, are equal with
     /// equal hash codes, and two <see cref="CompilerOptions"/> that hold them are equal.
     /// </summary>
@@ -643,7 +696,7 @@ public sealed class RuleLibraryTests
         Assert.False(library.Equals(null));
     }
 
-    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library)
+    private static RuleCompiler<OrderContext> CreateOrderCompiler(RuleLibrary library, int maxQuantifierDepth = 2)
     {
         PredicateRegistry<OrderContext> registry = PredicateRegistry<OrderContext>
             .CreateBuilder()
@@ -667,7 +720,10 @@ public sealed class RuleLibraryTests
                         )
             )
             .Build();
-        return new RuleCompiler<OrderContext>(registry, new CompilerOptions(Library: library));
+        return new RuleCompiler<OrderContext>(
+            registry,
+            new CompilerOptions(MaxQuantifierDepth: maxQuantifierDepth, Library: library)
+        );
     }
 
     // The predicates a, b and c, and old, which is deprecated in favor of a.

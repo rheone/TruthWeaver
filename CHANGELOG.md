@@ -575,6 +575,7 @@ copyright line reads 2026.
 
 ### Fixed
 
+- A library rule used in the body of a `FORALL` or `EXISTS` is checked as if its text were written there. The quantifier depth and the bound variables of the enclosing quantifiers apply to it, so a quantifier in it that reuses an enclosing variable gives `TRE0050` with the `ShadowedVariable` error, and one that nests past `MaxQuantifierDepth` gives `TRE0050` with the depth error. Each message names the library rule and its locator. No migration step: bug fix. [Rule text](docs/rule-text.md#library-rules) covers it.
 - Rule coverage and `Explain` accept a decision made over a quantifier whose collection was `null`. They rejected the decision with `ArgumentException` because the trace tree records `[no collection]` after the quantifier text. No migration step: bug fix.
 - The compiler reports `TRE0010` (`MaxNodeCountExceeded`) once when a quantifier body, or a nested body, crosses `MaxNodeCount` and more nodes follow it. It reported the limit again for a later node. No migration step: bug fix.
 - A warning or information diagnostic of a library rule reaches the compile that references it, with its own code and

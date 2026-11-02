@@ -207,7 +207,9 @@ A library rule follows these rules:
 - **The scope of a quantifier body.** A reference in the body of a `FORALL` or `EXISTS` resolves like a definition
   used there: its predicate names resolve against the element registry of the collection, and its data source names
   against the body, where the variable is a source when the collection projects its elements to one. A reference in a
-  nested body uses the inner collection. Outside a body, the top-level registry applies, so a library rule that uses an
+  nested body uses the inner collection. The compiler checks the library rule as if its text were written in place: the
+  quantifier depth and the bound variables of the enclosing quantifiers apply to it, so a quantifier in it that reuses an
+  enclosing variable, or nests past the maximum quantifier depth, gives `TRE0050` that names the library rule. Outside a body, the top-level registry applies, so a library rule that uses an
   element predicate gives `TRE0050` there. See [Quantifiers](#quantifiers).
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.

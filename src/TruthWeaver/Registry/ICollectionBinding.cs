@@ -66,8 +66,16 @@ internal interface ICollectionBinding<TContext>
     /// <param name="variable">The quantifier's bound variable name.</param>
     /// <param name="options">The compiler options of the enclosing scope.</param>
     /// <param name="parses">The parse of each library rule, shared by every scope of the compile.</param>
+    /// <param name="quantifierDepth">How many quantifiers deep the body is, this one included.</param>
+    /// <param name="boundVariables">The variables bound by this quantifier and the enclosing ones, innermost last.</param>
     /// <returns>The scope of the body.</returns>
-    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses);
+    public ILibraryRuleScope CreateLibraryScope(
+        string variable,
+        CompilerOptions options,
+        LibraryRuleParses parses,
+        int quantifierDepth,
+        IReadOnlyList<string> boundVariables
+    );
 
     /// <summary>
     /// Evaluates a <c>FORALL</c>/<c>EXISTS</c> quantifier over this collection (ADR-0010 decisions 4, 5 and 6):

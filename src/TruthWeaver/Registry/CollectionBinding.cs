@@ -61,9 +61,21 @@ internal sealed class CollectionBinding<TContext, TItem>(
         return (tree, diagnostics, nodeCount);
     }
 
-    public ILibraryRuleScope CreateLibraryScope(string variable, CompilerOptions options, LibraryRuleParses parses)
+    public ILibraryRuleScope CreateLibraryScope(
+        string variable,
+        CompilerOptions options,
+        LibraryRuleParses parses,
+        int quantifierDepth,
+        IReadOnlyList<string> boundVariables
+    )
     {
-        return new LibraryRuleExpander<Element<TContext, TItem>>(elementRegistry, this.BodyOptions(options, variable), parses);
+        return new LibraryRuleExpander<Element<TContext, TItem>>(
+            elementRegistry,
+            this.BodyOptions(options, variable),
+            parses,
+            quantifierDepth,
+            boundVariables
+        );
     }
 
     public async ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
