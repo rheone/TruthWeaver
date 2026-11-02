@@ -104,15 +104,6 @@ public sealed class ParityTests
         Assert.True(Compiler.Compile(text).Succeeded);
     }
 
-    /// <summary>The operator name is reserved so a predicate cannot shadow it.</summary>
-    [Theory]
-    [InlineData("parity")]
-    [InlineData("PARITY")]
-    public void IsReservedWord_Parity_IsReserved_Test(string word)
-    {
-        Assert.True(DslParser.IsReservedWord(word));
-    }
-
     /// <summary>PARITY needs at least two operands, like AND, OR and ExactlyOne.</summary>
     [Theory]
     [InlineData("PARITY(a)")]

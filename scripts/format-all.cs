@@ -15,8 +15,10 @@
 //
 // Usage: dotnet run scripts/format-all.cs -- [--check-only] [--files <path>...]
 //   --check-only  Skip the apply steps and only run the checks.
-//   --files       Run only the CSharpier and dotnet format checks on the listed C# files, in seconds, to catch an
-//                 analyzer finding before the full run. Does not apply any formatting and does not run Roslynator.
+//   --files       Format the listed C# files with CSharpier, then run the dotnet format check on them, in seconds, to
+//                 catch an analyzer finding before the full run. One run reports every analyzer finding, because
+//                 CSharpier formatting no longer fails the run first. Does not run dotnet format's own fixes, the
+//                 text normalizer or Roslynator.
 using TruthWeaver.Scripts;
 
 try
@@ -56,7 +58,7 @@ try
             return 1;
         }
 
-        await StepAsync("csharpier check (files)", "dotnet", ["csharpier", "check", .. files]);
+        await StepAsync("csharpier format (files)", "dotnet", ["csharpier", "format", .. files]);
         await StepAsync(
             "dotnet format check (files)",
             "dotnet",

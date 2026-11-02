@@ -544,6 +544,9 @@ internal sealed class RuleNodeCompiler<TContext>
         // plus its body, once), so resume counting from it: a later sibling, or another quantifier after this one,
         // is checked against the combined tree rather than getting its own fresh MaxNodeCount allowance.
         this.nodeCount = bodyNodeCount;
+
+        // The body's compile reports the node count limit itself; this compile must not report it again for a later node.
+        this.nodeLimitReported |= bodyDiagnostics.Any(d => d.Code == DiagnosticCodes.MaxNodeCountExceeded);
         if (bodyTree is null)
         {
             return FailedNode.Placeholder;

@@ -5,6 +5,29 @@ using TruthWeaver.Ast;
 /// <summary>The text that a trace entry, a trace tree node and a coverage node show for one node of a rule.</summary>
 internal static class TraceText
 {
+    /// <summary>The text a trace tree node adds to a quantifier's description when the collection selector returned <see langword="null"/>.</summary>
+    public const string NoCollectionSuffix = " [no collection]";
+
+    /// <summary>
+    /// Tests whether <paramref name="trace"/> is the trace tree node recorded for <paramref name="node"/>, by its text. A
+    /// quantifier over a null collection records its description plus <see cref="NoCollectionSuffix"/>, an
+    /// <see cref="TruthValue.Unknown"/> result and no children; the suffix on any other trace node does not match.
+    /// </summary>
+    /// <param name="node">The node of the rule.</param>
+    /// <param name="trace">The trace tree node paired with it.</param>
+    /// <returns><see langword="true"/> when the text of the trace node belongs to the node.</returns>
+    public static bool Matches(Expression node, TraceNode trace)
+    {
+        string expected = Of(node);
+        return trace.Text == expected
+            || (
+                node is QuantifierExpression
+                && trace.Text == expected + NoCollectionSuffix
+                && trace.Result == TruthValue.Unknown
+                && trace.Children.Count == 0
+            );
+    }
+
     /// <summary>Gets the text a trace entry and a trace tree node show for <paramref name="node"/>.</summary>
     /// <param name="node">The node.</param>
     /// <returns>The constant spelling, the term identity text or the operator label.</returns>
