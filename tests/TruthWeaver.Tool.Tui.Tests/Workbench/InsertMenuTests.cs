@@ -91,16 +91,18 @@ public sealed class InsertMenuTests
 
     /// <summary>The search of the predicate list shows every entry for an empty search and the matches of the catalog for words.</summary>
     [Fact]
-    public void FilterPredicates_WordsAndAnEmptySearch_ShowTheMatches_Test()
+    public void ChoosePredicate_SearchBox_ShowsTheMatchesOfThePalette_Test()
     {
-        PaletteEntry[] entries = [.. PredicateCatalog.All.Select(p => p.Entry)];
-        string[] lines = [.. entries.Select(e => e.Display)];
+        using WorkbenchHarness harness = new();
+        ScriptedServices services = new();
+        InsertCommands.ChoosePredicate(harness.Workbench, services.Services);
+        Func<string, IReadOnlyList<int>> filter = services.Dialogs.LastFilter!;
 
-        IReadOnlyList<int> all = InsertCommands.FilterPredicates(entries, lines, string.Empty);
-        IReadOnlyList<int> starts = InsertCommands.FilterPredicates(entries, lines, "starts");
+        IReadOnlyList<int> all = filter(string.Empty);
+        IReadOnlyList<int> starts = filter("starts");
 
-        Assert.Equal(entries.Length, all.Count);
-        Assert.Contains(starts, i => entries[i].Name == "StartsWith");
+        Assert.Equal(PredicateCatalog.All.Count, all.Count);
+        Assert.Contains(starts, i => PredicateCatalog.All[i].Entry.Name == "StartsWith");
         Assert.True(starts.Count < all.Count);
     }
 
