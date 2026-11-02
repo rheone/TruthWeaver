@@ -207,16 +207,18 @@ A library rule follows these rules:
 - **The scope of a quantifier body.** A reference in the body of a `FORALL` or `EXISTS` resolves like a definition
   used there: its predicate names resolve against the element registry of the collection, and its data source names
   against the body, where the variable is a source when the collection projects its elements to one. A reference in a
-  nested body uses the inner collection. The compiler checks the library rule as if its text were written in place: the
-  quantifier depth and the bound variables of the enclosing quantifiers apply to it, so a quantifier in it that reuses an
-  enclosing variable, or nests past the maximum quantifier depth, gives `TRE0050` that names the library rule. Outside a body, the top-level registry applies, so a library rule that uses an
+  nested body uses the inner collection. The compiler checks the library rule as if its text were written in place. The
+  quantifier depth and the bound variables of the enclosing quantifiers apply to it. A quantifier in the library rule
+  that reuses an enclosing variable, or nests past the maximum quantifier depth, gives `TRE0050` that names the library
+  rule. Outside a body, the top-level registry applies, so a library rule that uses an
   element predicate gives `TRE0050` there. See [Quantifiers](#quantifiers).
 - **References in a library rule.** A library rule can reference other library rules. The compiler expands every
   level.
 - **No cycles.** A library rule cannot reference itself, directly or through other library rules.
 - **Equality.** Two libraries are equal when they hold the same names, compared without case, with the same rule text
   for each name. The compiler reads every CRLF and every lone CR as LF before it compares the texts, as it does for the
-  hash, so two libraries that differ only in line endings are equal. The order of the rules does not matter. `CompilerOptions` that hold equal libraries are equal.
+  hash. Two libraries that differ only in line endings are equal. The order of the rules does not matter.
+  `CompilerOptions` that hold equal libraries are equal.
 - **Case.** The words `rule` and `hash` and the library rule names are compared without case.
 - **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
   arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.
@@ -234,11 +236,17 @@ reports it once for each reference: the uses of a definition that holds the refe
 
 A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator, as in
 `hasSignedNda (in library rule 'contractor-cleared' at line 1, column 18)`. The trace tree (`Decision.TraceTree`) shows
-the node without it. The entry for a `FORALL` or `EXISTS` from a library rule ends with the locator too. A rewrite
-(`OptimizeOrder`, `Simplify`, `Canonicalize` and the other rewrites) keeps the locator of each node that it keeps. A node
-that the original rule writes in two places, with different locators or with and without one, has two sources and has
-no locator after a rewrite, and neither has a node that the rewrite builds from new operands. Coverage, the printers and
-the findings of the analyzer and the linter show no locator. The mistakes give these codes:
+the node without it. The entry for a `FORALL` or `EXISTS` from a library rule ends with the locator too.
+
+A rewrite (`OptimizeOrder`, `Simplify`, `Canonicalize` and the other rewrites) keeps the locator of a node that it keeps.
+A node of the rewritten rule keeps a locator only when it equals one node of the original rule, and that node has one
+locator. These nodes have no locator after a rewrite:
+
+- A node that the original rule writes in two places, with different locators or with and without one.
+- A node that the rewrite builds from new operands, such as the `OR` that `ToNnf` makes from `NOT (a AND b)`. The terms
+  under it keep their locators.
+
+Coverage, the printers and the findings of the analyzer and the linter show no locator. The mistakes give these codes:
 
 | Code | Name | Cause |
 | --- | --- | --- |

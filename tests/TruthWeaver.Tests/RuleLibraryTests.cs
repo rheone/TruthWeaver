@@ -279,19 +279,35 @@ public sealed class RuleLibraryTests
     [Theory]
     [InlineData("OptimizeOrder")]
     [InlineData("Simplify")]
+    [InlineData("SimplifyWithSteps")]
     [InlineData("Canonicalize")]
+    [InlineData("CompressToDerived")]
+    [InlineData("ExpandToPrimitives")]
+    [InlineData("ExpandToNand")]
+    [InlineData("ExpandToNor")]
+    [InlineData("ToNnf")]
+    [InlineData("ToCnf")]
+    [InlineData("ToDnf")]
     public async Task EvaluateAsync_RewrittenRuleWithALibraryNode_TraceEntryStillNamesTheLibraryRule_Test(string rewrite)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND NOT b")));
         CompiledRule<RuleTestContext> original = Compile(compiler, "c AND rule(\"adult\")");
 
-        CompilationResult<RuleTestContext> rewritten = rewrite switch
+        CompiledRule<RuleTestContext> rewritten = rewrite switch
         {
-            "OptimizeOrder" => original.OptimizeOrder(),
-            "Simplify" => original.Simplify(),
-            _ => original.Canonicalize(),
+            "OptimizeOrder" => original.OptimizeOrder().CompiledRule!,
+            "Simplify" => original.Simplify().CompiledRule!,
+            "SimplifyWithSteps" => original.SimplifyWithSteps().Rule,
+            "Canonicalize" => original.Canonicalize().CompiledRule!,
+            "CompressToDerived" => original.CompressToDerived().CompiledRule!,
+            "ExpandToPrimitives" => original.ExpandToPrimitives().CompiledRule!,
+            "ExpandToNand" => original.ExpandToNand().CompiledRule!,
+            "ExpandToNor" => original.ExpandToNor().CompiledRule!,
+            "ToNnf" => original.ToNnf().CompiledRule!,
+            "ToCnf" => original.ToCnf().CompiledRule!,
+            _ => original.ToDnf().CompiledRule!,
         };
-        Decision decision = await rewritten.CompiledRule!.EvaluateAsync(
+        Decision decision = await rewritten.EvaluateAsync(
             new RuleTestContext(),
             options: new EvaluationOptions(IncludeTrace: true),
             cancellationToken: TestContext.Current.CancellationToken
@@ -300,6 +316,34 @@ public sealed class RuleLibraryTests
         IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
         Assert.Contains("c", texts);
         Assert.Contains("a (in library rule 'adult' at line 1, column 1)", texts);
+    }
+
+    /// <summary>
+    /// A rewrite carries a locator only to a node that equals an original node. A node that the rewrite builds from new
+    /// operands, such as the <c>OR</c> that <c>ToNnf</c> makes from <c>NOT (a AND b)</c>, has no locator, while the terms
+    /// under it keep theirs.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_NodeBuiltByARewrite_TraceEntryHasNoLocatorButItsTermsKeepTheirs_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("both", "a AND b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "NOT rule(\"both\")");
+
+        Decision decision = await original
+            .ToNnf()
+            .CompiledRule!.EvaluateAsync(
+                new RuleTestContext(),
+                options: new EvaluationOptions(IncludeTrace: true),
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("a (in library rule 'both' at line 1, column 1)", texts);
+        Assert.Contains("b (in library rule 'both' at line 1, column 7)", texts);
+        Assert.DoesNotContain(
+            texts,
+            text => text.Contains("in library rule", StringComparison.Ordinal) && text is not ['a' or 'b', ' ', ..]
+        );
     }
 
     /// <summary>
