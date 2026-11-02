@@ -33,12 +33,30 @@ public sealed class EmbeddedRuleSessionTests : IDisposable
 
         Assert.True(prepared.Succeeded);
         Assert.True(prepared.Value.ChangedOnDisk);
+    }
+
+    /// <summary>A rule that changed in the file is still patched as the file is now, so a write replaces that version.</summary>
+    [Fact]
+    public void Prepare_RuleChangedOnDiskSinceOpening_PatchesTheCurrentFile_Test()
+    {
+        string file = this.CopyFixture();
+        EmbeddedRuleSession session = EmbeddedRuleSession.Open(file, "rules.publish").Value!;
+        File.WriteAllText(file, File.ReadAllText(file).Replace("role: editor", "role: owner", StringComparison.Ordinal));
+        RuleDocument edited = Edit(session, "isActive", "isEnabled");
+
+        ToolResult<EmbeddedRuleSession.PreparedWrite> prepared = session.Prepare(
+            edited,
+            WriteBackMode.Patch,
+            ToolSettings.Default
+        );
+
+        Assert.True(prepared.Succeeded);
         Assert.Equal(RulePatchKind.Patched, prepared.Value.Kind);
     }
 
     /// <summary>A rule that did not change in the file is not reported as changed on disk.</summary>
     [Fact]
-    public void Prepare_FileUnchangedSinceOpening_ReportsNoConflict_Test()
+    public void Prepare_FileUnchangedSinceOpening_ReportsNotChangedOnDisk_Test()
     {
         string file = this.CopyFixture();
         EmbeddedRuleSession session = EmbeddedRuleSession.Open(file, "rules.publish").Value!;

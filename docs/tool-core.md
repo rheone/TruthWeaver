@@ -99,6 +99,8 @@ The path `rules.publish` selects a YAML rule. The path `rules.review` selects ru
 
 A path that selects nothing is a `TWT0005` error that names the first segment that is missing. A path that selects a number, a Boolean, `null` or a sequence is a `TWT0006` error. A path on rule text is a `TWT0006` error, because rule text has no paths.
 
+`DocumentOutline` helps a front end to find the places of a document where a rule can be. `DocumentOutline.Read(path)` and `DocumentOutline.Browse(text, format)` list the objects, arrays and strings of a JSON or YAML document in document order, as `DocumentNode` values with the normalized path, the depth, a kind and a short label. An object with a `const`, `predicate` or `op` key is a rule (`DocumentNodeKind.Rule`) and is one entry: the nodes inside it are not listed. A string is `DocumentNodeKind.Text`. Rule text has no paths, so `Read` reports a `TWT0006` error for it. `DocumentOutline.Match(nodes, pattern)` finds the entries that a path names. In a pattern, `.*` or `[*]` matches every key or index at that place, so a pattern can name none, one or many entries.
+
 ### Editing an embedded rule
 
 `EmbeddedRuleSession` holds one rule that lives inside a larger JSON or YAML document: the file, the path of the rule and the rule as it was when the session read it. It has no view.
@@ -112,8 +114,6 @@ A path that selects nothing is a `TWT0005` error that names the first segment th
 | `Commit(write)` | Writes the prepared patch with `RulePatcher.WriteFile`, then takes the written rule as the new baseline. |
 
 `ChangedOnDisk` is `true` when the rule in the file now differs from the rule that the session read. `Prepare` patches the file as it is now, so a write replaces that version. The caller decides whether to ask first. After `Commit`, a second `Prepare` reports no change on disk.
-
-`DocumentOutline` helps a front end to find the places of a document where a rule can be. `DocumentOutline.Read(path)` and `DocumentOutline.Browse(text, format)` list the objects, arrays and strings of a JSON or YAML document in document order, as `DocumentNode` values with the normalized path, the depth, a kind and a short label. An object with a `const`, `predicate` or `op` key is a rule (`DocumentNodeKind.Rule`) and is one entry: the nodes inside it are not listed. A string is `DocumentNodeKind.Text`. Rule text has no paths, so `Read` reports a `TWT0006` error for it. `DocumentOutline.Match(nodes, pattern)` finds the entries that a path names. In a pattern, `.*` or `[*]` matches every key or index at that place, so a pattern can name none, one or many entries.
 
 ## Compiling and converting
 
