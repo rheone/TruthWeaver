@@ -44,7 +44,7 @@ internal sealed class RuleTestSession
                 .TryGetValue(out IReadOnlyList<RuleTestCaseSpec>? cases, out EquatableArray<Diagnostic> diagnostics)
         )
         {
-            this.Message = Describe(diagnostics, "The file is not a usable rule test file.");
+            this.Message = DiagnosticSummary.FirstError(diagnostics, "The file is not a usable rule test file.");
             return false;
         }
 
@@ -114,7 +114,7 @@ internal sealed class RuleTestSession
                     .TryGetValue(out string? edited, out EquatableArray<Diagnostic> diagnostics)
             )
             {
-                return this.Fail(Describe(diagnostics, "The file cannot take the case."));
+                return this.Fail(DiagnosticSummary.FirstError(diagnostics, "The file cannot take the case."));
             }
 
             text = edited;
@@ -126,7 +126,7 @@ internal sealed class RuleTestSession
 
         if (!OutputWriter.WriteFile(path, text).TryGetValue(out _, out EquatableArray<Diagnostic> writeDiagnostics))
         {
-            return this.Fail(Describe(writeDiagnostics, $"Cannot write '{path}'."));
+            return this.Fail(DiagnosticSummary.FirstError(writeDiagnostics, $"Cannot write '{path}'."));
         }
 
         _ = this.Open();
@@ -165,7 +165,7 @@ internal sealed class RuleTestSession
                 .TryGetValue(out string? derived, out EquatableArray<Diagnostic> diagnostics)
         )
         {
-            return this.Fail(Describe(diagnostics, "The file is not a usable rule test file."));
+            return this.Fail(DiagnosticSummary.FirstError(diagnostics, "The file is not a usable rule test file."));
         }
 
         if (
@@ -232,14 +232,14 @@ internal sealed class RuleTestSession
             !RuleTestCaseText.RemoveCase(text, name).TryGetValue(out string? edited, out EquatableArray<Diagnostic> diagnostics)
         )
         {
-            return this.Fail(Describe(diagnostics, "The case cannot be removed."));
+            return this.Fail(DiagnosticSummary.FirstError(diagnostics, "The case cannot be removed."));
         }
 
         if (
             !OutputWriter.WriteFile(this.FullPath(), edited).TryGetValue(out _, out EquatableArray<Diagnostic> writeDiagnostics)
         )
         {
-            return this.Fail(Describe(writeDiagnostics, "Cannot write the file."));
+            return this.Fail(DiagnosticSummary.FirstError(writeDiagnostics, "Cannot write the file."));
         }
 
         _ = this.Open();
@@ -261,12 +261,6 @@ internal sealed class RuleTestSession
             );
         (TruthValue, int)? actual = result.Decision is { } decision ? (decision.Result, decision.Faults.Count) : null;
         return new RuleTestRow(result.Case.Name, spec, result.Passed, actual, result.Failures);
-    }
-
-    private static string Describe(EquatableArray<Diagnostic> diagnostics, string fallback)
-    {
-        Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? fallback : first.Message;
     }
 
     private string FullPath()
@@ -299,7 +293,7 @@ internal sealed class RuleTestSession
                 .TryGetValue(out SourceText? source, out EquatableArray<Diagnostic> diagnostics)
         )
         {
-            return this.Fail(Describe(diagnostics, $"Cannot read '{this.FilePath}'."));
+            return this.Fail(DiagnosticSummary.FirstError(diagnostics, $"Cannot read '{this.FilePath}'."));
         }
 
         text = source.Text;

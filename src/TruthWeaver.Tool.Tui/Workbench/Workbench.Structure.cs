@@ -88,7 +88,9 @@ internal sealed partial class Workbench
         ToolResult<string> replaced = this.document.ReplaceRule(rule);
         if (!replaced.Succeeded)
         {
-            this.SetStatus(Describe(replaced.Diagnostics, "Not applied: the printed rule does not compile."));
+            this.SetStatus(
+                DiagnosticSummary.FirstError(replaced.Diagnostics, "Not applied: the printed rule does not compile.")
+            );
             return false;
         }
 
@@ -110,7 +112,9 @@ internal sealed partial class Workbench
         ToolResult<string> applied = this.document.ApplyEdit(edit);
         if (!applied.Succeeded)
         {
-            this.SetStatus(Describe(applied.Diagnostics, "Not applied: the printed rule does not compile."));
+            this.SetStatus(
+                DiagnosticSummary.FirstError(applied.Diagnostics, "Not applied: the printed rule does not compile.")
+            );
             return false;
         }
 
@@ -131,9 +135,9 @@ internal sealed partial class Workbench
             return true;
         }
 
-        Diagnostic? first = this.document.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
+        string errors = DiagnosticSummary.FirstError(this.document.Diagnostics, string.Empty);
         this.SetStatus(
-            $"Cannot {action}: the rule text has errors{(first is null ? "." : $" ({first.Code}).")} Fix them first, or undo."
+            $"Cannot {action}: the rule text has errors{(errors.Length == 0 ? "." : $" ({errors}).")} Fix them first, or undo."
         );
         return false;
     }
