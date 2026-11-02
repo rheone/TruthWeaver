@@ -199,11 +199,7 @@ internal sealed class StructureController
     {
         // The committed document: reading Document would apply the pending text and end the pause.
         RuleDocument document = this.workbench.CommittedDocument;
-        if (
-            document.Format != RuleFormat.Text
-            || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
-            || TermCalls.CallTextAt(document.Text, offset) is not { } call
-        )
+        if (document.Format != RuleFormat.Text || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
         {
             return null;
         }
@@ -214,15 +210,10 @@ internal sealed class StructureController
             return null;
         }
 
-        // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
-        TermAssignment? term = outcome.Terms.FirstOrDefault(t => TermCalls.SameCall(t.Display, call));
-        if (term is null)
-        {
-            TermAssignment[] named = [.. outcome.Terms.Where(t => TermCalls.NameOf(t.Display) == TermCalls.NameOf(call))];
-            term = named.Length == 1 ? named[0] : null;
-        }
-
-        return term is not null && this.ValueTextOf(term) is { } value ? $"{term.Display} = {value}" : null;
+        // The Core lookup turns the cursor into the term: the call at the offset, matched to a term without regard to spacing.
+        return TermOutcomeLookup.FindBySpan(document.Text, outcome, new SourceSpan(offset, 0)) is { } term
+            ? $"{term.Display} = {ValueTextOf(term)}"
+            : null;
     }
 
     /// <summary>Selects the node at an index of <see cref="Lines"/>.</summary>
@@ -445,33 +436,33 @@ internal sealed class StructureController
         return shown;
     }
 
-    // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
-    private string? ValueTextOf(RuleTreeNode node)
-    {
-        AssignmentOutcome outcome = this.workbench.Outcome;
-        if (!outcome.HasRule || outcome.Terms.FirstOrDefault(t => t.Display == node.Label) is not { } term)
-        {
-            return null;
-        }
-
-        return this.ValueTextOf(term);
-    }
-
     // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
     // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
-    private string ValueTextOf(TermAssignment term)
+    private static string ValueTextOf(TermOutcome term)
     {
-        AssignmentOutcome outcome = this.workbench.Outcome;
         if (term.Key is not null)
         {
             return term.Value.ToString();
         }
 
-        string? fault = outcome
-            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
-            .Select(f => f[(term.Display.Length + 1)..].Trim())
-            .FirstOrDefault();
+        string? fault = term.Faults.Select(f => f.Exception.Message.Trim()).FirstOrDefault();
         return $"Unknown: {fault ?? "no data yet"}";
+    }
+
+    // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
+    private string? ValueTextOf(RuleTreeNode node)
+    {
+        AssignmentOutcome outcome = this.workbench.Outcome;
+        if (
+            !outcome.HasRule
+            || this.Tree is not { } current
+            || TermOutcomeLookup.FindByPath(current, outcome, node.Path) is not { } term
+        )
+        {
+            return null;
+        }
+
+        return ValueTextOf(term);
     }
 
     // The badge at the end of the line of a term in the tree. It is text, so it does not depend on the color. Other nodes

@@ -1,6 +1,7 @@
 namespace TruthWeaver.Tool.Tui.Tests.Controllers;
 
 using TruthWeaver.Abstractions;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Palette;
@@ -175,6 +176,30 @@ public sealed class StructureControllerTests
         Assert.False(changed);
         Assert.Equal("a AND (", workbench.Document.Text);
         Assert.StartsWith("Cannot edit the tree: the rule text has errors", workbench.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Two predicates with the same name and different arguments each show their own value in the badge, in the selected
+    /// value text and at the editor cursor, because the controller finds each term through the Core lookup.
+    /// </summary>
+    [Fact]
+    public void Lines_TwoPredicatesWithTheSameName_ShowTheirOwnValues_Test()
+    {
+        const string rule = "hasRole(role: \"admin\") AND hasRole(role: \"user\")";
+        (StructureController controller, _, Workbench workbench) = Create(rule);
+        TermAssignment[] terms = [.. workbench.Outcome.Terms];
+        workbench.Assignment.Set(terms[0].Key!, TruthValue.True);
+        workbench.Assignment.Set(terms[1].Key!, TruthValue.False);
+        workbench.NotifyAssignmentChanged();
+
+        Assert.Equal(["and", "  hasRole(role: \"admin\")  [True]", "  hasRole(role: \"user\")  [False]"], controller.Lines);
+        workbench.SelectNode("$.operands[1]");
+        Assert.Equal("hasRole(role: \"user\") = False", controller.SelectedValueText);
+        Assert.Equal(
+            "hasRole(role: \"admin\") = True",
+            controller.ValueTextAt(rule.IndexOf("admin", StringComparison.Ordinal))
+        );
+        Assert.Equal("hasRole(role: \"user\") = False", controller.ValueTextAt(rule.IndexOf("user", StringComparison.Ordinal)));
     }
 
     /// <summary>The lines show each node indented by depth, and a node that the new tree lacks is no longer selected.</summary>
