@@ -73,7 +73,7 @@ gap.
 
 First slice (about 40 tests, all passing; coverage was not measured, so criterion 2 is not ticked). The controllers were refactored on this branch, so the ticket line counts are stale. New files: `ImportControllerTests` (13), `ExportControllerTests` (13), `ViewControllerSettingsTests` (7), `RewriteControllerEdgeTests` (7), all in `tests/TruthWeaver.Tool.Tui.Tests/Controllers`.
 
-`CounterfactualController` already has full pane tests in `Panes/CounterfactualPaneTests.cs` (including the term-limit `Undecided` path and `Apply`), so no new test was added for it.
+`CounterfactualController` has pane tests in `Panes/CounterfactualPaneTests.cs` (the term-limit `Undecided` path and `Apply` for a normal change set), so no new test was added for it. It is not fully covered: see Remaining.
 
 ## Remaining
 

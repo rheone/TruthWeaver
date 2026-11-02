@@ -28,7 +28,7 @@ public sealed class AssignmentVariablesEdgeTests
         ToolResult<JsonObject> result = AssignmentVariables.Read("a: 'unterminated\n");
 
         Assert.False(result.Succeeded);
-        Assert.Contains("YAML data is not well-formed", result.Diagnostics[0].Message, StringComparison.Ordinal);
+        Assert.Equal("The YAML data is not well-formed (line 1, column 4).", result.Diagnostics[0].Message);
     }
 
     /// <summary>YAML nested deeper than 64 levels is an error and not a stack overflow.</summary>

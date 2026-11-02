@@ -79,9 +79,9 @@ public sealed class RewriteControllerEdgeTests
         Assert.Equal(RewriteController.Idle, Assert.Single(controller.Lines));
     }
 
-    /// <summary>The assignment text of a counterexample is sorted by name, and empty when there is none.</summary>
+    /// <summary>The assignment text of a counterexample is sorted by name.</summary>
     [Fact]
-    public void Assignment_Values_AreSortedByNameAndNullIsEmpty_Test()
+    public void Assignment_Values_AreSortedByName_Test()
     {
         Dictionary<string, TruthWeaver.Abstractions.TruthValue> values = new()
         {
@@ -90,6 +90,12 @@ public sealed class RewriteControllerEdgeTests
         };
 
         Assert.Equal("a = True, b = False", RewriteController.Assignment(values));
+    }
+
+    /// <summary>A comparison with no counterexample gives an empty assignment text.</summary>
+    [Fact]
+    public void Assignment_NoValues_IsEmpty_Test()
+    {
         Assert.Equal(string.Empty, RewriteController.Assignment(null));
     }
 

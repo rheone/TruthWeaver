@@ -88,14 +88,17 @@ public sealed class ExportControllerTests
         }
     }
 
-    /// <summary>With no path, the save prompt decides the file, and a cancelled prompt writes nothing.</summary>
+    /// <summary>With no path, a cancelled save prompt saves nothing and the status does not claim a save.</summary>
     [Fact]
-    public void SaveArtifact_NoPathAndCancelledPrompt_WritesNothing_Test()
+    public void SaveArtifact_NoPathAndCancelledPrompt_SavesNothing_Test()
     {
-        (ExportController controller, _, _, ScriptedPrompts prompts) = Create("a");
+        (ExportController controller, _, Workbench workbench, ScriptedPrompts prompts) = Create("a");
         prompts.SavePath = null;
 
-        Assert.False(controller.SaveArtifact(Artifact("rule-text")));
+        bool saved = controller.SaveArtifact(Artifact("rule-text"));
+
+        Assert.False(saved);
+        Assert.DoesNotContain("Saved", workbench.Status, StringComparison.Ordinal);
     }
 
     /// <summary>A path that cannot be written gives a "Not saved" status and no exception.</summary>
@@ -123,29 +126,56 @@ public sealed class ExportControllerTests
     public void SaveImage_ProgramMissing_SaysSoWithoutAskingForAPath_Test()
     {
         (ExportController controller, _, Workbench workbench, ScriptedPrompts prompts) = Create("a");
-        controller.ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-tools-" + Guid.NewGuid().ToString("N"));
-        prompts.SavePath = "never-used.svg";
+        string folder = Path.Combine(Path.GetTempPath(), "truthweaver-image-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        string never = Path.Combine(folder, "never-used.svg");
+        controller.ImageSearchPath = Path.Combine(folder, "no-tools");
+        prompts.SavePath = never;
+        try
+        {
+            bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg);
 
-        bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg);
-
-        Assert.False(saved);
-        Assert.Contains("dot", workbench.Status, StringComparison.Ordinal);
-        Assert.False(File.Exists("never-used.svg"));
+            Assert.False(saved);
+            Assert.Contains("dot", workbench.Status, StringComparison.Ordinal);
+            Assert.False(File.Exists(never));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
-    /// <summary>With no renderer on the search path the entries hold only artifacts, and the note names the missing programs.</summary>
+    /// <summary>With no renderer on the search path no entry is an image.</summary>
     [Fact]
-    public void Entries_NoRenderers_ListsOnlyArtifactsAndNotesTheMissingPrograms_Test()
+    public void Entries_NoRenderers_HasNoImageEntry_Test()
     {
         (ExportController controller, _, _, _) = Create("a");
         controller.ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-tools-" + Guid.NewGuid().ToString("N"));
 
-        IReadOnlyList<ExportEntry> entries = controller.Entries();
+        Assert.All(controller.Entries(), e => Assert.Equal(ExportEntryKind.Artifact, e.Kind));
+    }
 
-        Assert.All(entries, e => Assert.Equal(ExportEntryKind.Artifact, e.Kind));
-        Assert.Equal(ArtifactCatalog.All.Count, entries.Count);
-        Assert.Contains("mmdc", controller.ImageNote(), StringComparison.Ordinal);
-        Assert.Contains("dot", controller.ImageNote(), StringComparison.Ordinal);
+    /// <summary>With no renderer on the search path there is one entry for each artifact of the catalog.</summary>
+    [Fact]
+    public void Entries_NoRenderers_HasOneEntryForEachArtifact_Test()
+    {
+        (ExportController controller, _, _, _) = Create("a");
+        controller.ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-tools-" + Guid.NewGuid().ToString("N"));
+
+        Assert.Equal(ArtifactCatalog.All.Count, controller.Entries().Count);
+    }
+
+    /// <summary>With no renderer on the search path the image note names both missing programs.</summary>
+    [Fact]
+    public void ImageNote_NoRenderers_NamesBothMissingPrograms_Test()
+    {
+        (ExportController controller, _, _, _) = Create("a");
+        controller.ImageSearchPath = Path.Combine(Path.GetTempPath(), "truthweaver-no-tools-" + Guid.NewGuid().ToString("N"));
+
+        string note = controller.ImageNote();
+
+        Assert.Contains("mmdc", note, StringComparison.Ordinal);
+        Assert.Contains("dot", note, StringComparison.Ordinal);
     }
 
     /// <summary>An export of every artifact without a folder asks for one, and a cancelled folder exports nothing.</summary>
@@ -171,18 +201,29 @@ public sealed class ExportControllerTests
         Assert.StartsWith("Not exported: ", workbench.Status, StringComparison.Ordinal);
     }
 
-    /// <summary>The export menu passes the larger-table choices of the dialog on to later exports, and a cancelled dialog exports nothing.</summary>
+    /// <summary>A cancelled export dialog exports nothing.</summary>
     [Fact]
-    public void ShowMenu_Cancelled_ExportsNothingAndKeepsTheOptions_Test()
+    public void ShowMenu_DialogCancelled_ExportsNothing_Test()
     {
         (ExportController controller, ScriptedServices services, _, _) = Create("a");
         services.Dialogs.ExportRequests.Enqueue(null);
 
-        bool shown = controller.ShowMenu();
+        Assert.False(controller.ShowMenu());
+    }
 
-        Assert.False(shown);
-        Assert.NotNull(services.Dialogs.LastExportModel);
-        Assert.False(controller.AllowLargerTruthTable);
+    /// <summary>A cancelled export dialog keeps the larger-table options that were set before.</summary>
+    [Fact]
+    public void ShowMenu_DialogCancelled_KeepsTheTableOptionsSetBefore_Test()
+    {
+        (ExportController controller, ScriptedServices services, _, _) = Create("a");
+        controller.AllowLargerTruthTable = true;
+        controller.TruthTableTermLimit = 20;
+        services.Dialogs.ExportRequests.Enqueue(null);
+
+        controller.ShowMenu();
+
+        Assert.True(controller.AllowLargerTruthTable);
+        Assert.Equal(20, controller.TruthTableTermLimit);
     }
 
     /// <summary>A copy request from the menu copies the chosen artifact and stores the table options of the request.</summary>

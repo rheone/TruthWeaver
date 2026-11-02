@@ -55,7 +55,7 @@ not individually traced in this pass) and writing the matching edge-case test fo
 
 ## Result
 
-First slice (13 tests in `tests/TruthWeaver.Tool.Tests/CommandEdgeCaseTests.cs`, all passing; coverage was not measured): `diff` (both rules from standard input, missing before file, after rule that does not compile, analysis limit below the term count, the before-only example), `test` (missing file, expected-fault mismatch, unwritable JUnit path), `import` (missing file, malformed JSON, `--to yaml`), `convert --check` against a longer file (the `OutputTarget.CompareText` length arm) and `export` with an unknown artifact.
+First slice (13 tests in `tests/TruthWeaver.Tool.Tests/CommandEdgeCaseTests.cs`, all passing; coverage was not measured): `diff` (both rules from standard input, missing before file, after rule that does not compile, analysis limit below the term count, the before-only example), `test` (missing file, expected-fault mismatch, a JUnit path that is a directory), `import` (missing file, malformed JSON, `--to yaml`), `convert --check` against a longer file (the `OutputTarget.CompareText` length arm) and `export` with an unknown artifact.
 
 No defect found in these commands. Noticed, not changed: `truthweaver diff a b --max-analysis-terms 1` exits 0 and says equivalent when the two inputs are structurally equal, even though the term count is above the limit.
 
@@ -64,4 +64,4 @@ No defect found in these commands. Noticed, not changed: `truthweaver diff a b -
 - `ExportCommand`: only the unknown-artifact arm is covered here; the `--all` combined with `--output`, and a `--all` folder that is a file, were not tried.
 - `RuleTextPrinting`: no direct test; the rule that does not compile arm (`ToolResult<string>` with a null value) is reached only through the commands.
 - `OutputTarget.Deliver`: an `--output` path that cannot be written.
-- Criteria 1 (all four command classes), 2 and 4 stay open.
+- The ticket lists six classes and three criteria. Classes with no test aimed at their remaining branches: `ExportCommand` (beyond the unknown-artifact arm), `RuleTextPrinting` and `OutputTarget.Deliver` for an unwritable `--output`. `DiffCommand`, `ImportCommand` and `TestCommand` got edge-case tests but their coverage was not measured. Criteria 1 and 2 (coverage) and 3 (validation list) stay open.

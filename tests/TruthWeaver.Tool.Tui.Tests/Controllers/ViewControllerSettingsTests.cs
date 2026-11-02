@@ -43,27 +43,21 @@ public sealed class ViewControllerSettingsTests
         Assert.Null(controller.Settings.OperatorStyle);
     }
 
-    /// <summary>Each view kind saves with its own file extension.</summary>
-    [Fact]
-    public void Extension_ViewKind_GivesTheFileExtension_Test()
+    /// <summary>Each view kind saves with its own file extension. The kind is given by name because the enum is internal.</summary>
+    [Theory]
+    [InlineData("Json", ".json")]
+    [InlineData("Yaml", ".yaml")]
+    [InlineData("Mermaid", ".mmd")]
+    [InlineData("Dot", ".dot")]
+    [InlineData("Html", ".html")]
+    [InlineData("RuleText", ".rule")]
+    [InlineData("Tree", ".txt")]
+    public void Extension_ViewKind_GivesTheFileExtension_Test(string kind, string extension)
     {
         (ViewController controller, _, _) = Create("a");
-        (ViewKind Kind, string Extension)[] expected =
-        [
-            (ViewKind.Json, ".json"),
-            (ViewKind.Yaml, ".yaml"),
-            (ViewKind.Mermaid, ".mmd"),
-            (ViewKind.Dot, ".dot"),
-            (ViewKind.Html, ".html"),
-            (ViewKind.RuleText, ".rule"),
-            (ViewKind.Tree, ".txt"),
-        ];
+        controller.Settings.Kind = Enum.Parse<ViewKind>(kind);
 
-        foreach ((ViewKind kind, string extension) in expected)
-        {
-            controller.Settings.Kind = kind;
-            Assert.Equal(extension, controller.Extension);
-        }
+        Assert.Equal(extension, controller.Extension);
     }
 
     /// <summary>The equation dialects save as LaTeX, MathML, Typst or plain text.</summary>
@@ -115,14 +109,23 @@ public sealed class ViewControllerSettingsTests
         Assert.Equal(before, controller.Settings.Dialect);
     }
 
-    /// <summary>The header of a tree view says the decision is "none yet" before there is an evaluation, and "off" when it is hidden.</summary>
+    /// <summary>The header of a tree view says the decision is "none yet" before there is an evaluation.</summary>
     [Fact]
-    public void Header_TreeViewWithoutEvaluation_SaysTheDecisionIsNoneYetThenOff_Test()
+    public void Header_TreeViewWithoutEvaluation_SaysTheDecisionIsNoneYet_Test()
     {
         (ViewController controller, _, _) = Create("a");
 
         Assert.Contains("decision: none yet", controller.Header, StringComparison.Ordinal);
+    }
+
+    /// <summary>The header of a tree view says the decision is "off" when the decision is hidden.</summary>
+    [Fact]
+    public void Header_DecisionToggledOff_SaysTheDecisionIsOff_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+
         controller.ToggleDecision();
+
         Assert.Contains("decision: off", controller.Header, StringComparison.Ordinal);
     }
 

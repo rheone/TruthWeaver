@@ -77,7 +77,7 @@ required variable; `SourceNodeIndex`'s lookup for a node with no matching source
 
 First slice (50 tests, all passing; coverage was not measured, so criterion 2 is not ticked): `JsonLogicImporterFailureTests` (9), `AssignmentVariablesEdgeTests` (8), `RuleTestCaseTextReadTests` (5), `SourceNodeIndexTests` (6), `RuleTreePathTests` (7), `RuleDocumentHistoryTests` (6), `ImageRendererSearchTests` (8) and one test in `ImageRendererTests` (a renderer that writes no file).
 
-**Finding (defect, test left out).** `AssignmentVariables.Read("user: [1, 2\nother: x\n")` (an unclosed YAML flow sequence) throws `InvalidOperationException` from `YamlDotNet.Core.Scanner.ScanPlainScalar`. `TryReadAny` catches only `JsonException`, `YamlException` and `ArgumentException`, so the exception escapes instead of a `MalformedDocument` error. Expected: a `MalformedDocument` diagnostic. The same input through `RuleTestCaseText` and `StubAssignment` was not checked.
+**Finding (defect, test left out).** `AssignmentVariables.Read("user: [1, 2\nother: x\n")` (an unclosed YAML flow sequence) throws `InvalidOperationException` from `YamlDotNet.Core.Scanner.ScanPlainScalar`. `TryReadAny` catches only `JsonException`, `YamlException` and `ArgumentException`, so the exception escapes instead of a `MalformedDocument` error. Expected: a `MalformedDocument` diagnostic. `StubAssignment.ReadYaml` and `RuleTestCaseText.Parse` have the same catch list.
 
 **Noticed, not changed.** `RuleTree.TryLocate` leaves `parent` and `index` set to the last step that worked when it returns `false` for a later step (for example `$.operands[0].operands[0]`); callers only read them after `true`.
 

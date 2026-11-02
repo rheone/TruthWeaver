@@ -62,24 +62,29 @@ public sealed class RuleTreePathTests
         Assert.Equal(-1, index);
     }
 
-    /// <summary>A key path with a quoted key that holds a quote finds the value, and the put action replaces it in place.</summary>
+    /// <summary>A key path with a quoted key that holds a quote finds the object the path names.</summary>
     [Fact]
-    public void TryLocatePath_QuotedKeyWithEscapedQuote_FindsAndReplacesTheNode_Test()
+    public void TryLocatePath_QuotedKeyWithEscapedQuote_FindsTheNode_Test()
     {
         JsonObject root = Parse("""{"definitions":{"it's":{"body":{"const":true}}}}""");
 
-        bool found = RuleTree.TryLocatePath(
-            root,
-            "$.definitions['it\\'s'].body",
-            out JsonObject? node,
-            out Action<JsonObject>? put
-        );
+        bool found = RuleTree.TryLocatePath(root, "$.definitions['it\\'s'].body", out JsonObject? node, out _);
 
         Assert.True(found);
+        Assert.Same(root["definitions"]?["it's"]?["body"], node);
+    }
+
+    /// <summary>The put action of a quoted-key path puts another object in the place of the node.</summary>
+    [Fact]
+    public void TryLocatePath_QuotedKeyWithEscapedQuote_PutReplacesTheNodeInPlace_Test()
+    {
+        JsonObject root = Parse("""{"definitions":{"it's":{"body":{"const":true}}}}""");
+        RuleTree.TryLocatePath(root, "$.definitions['it\\'s'].body", out _, out Action<JsonObject>? put);
         Assert.NotNull(put);
+
         put(new JsonObject { ["const"] = false });
+
         Assert.False(Assert.IsType<JsonObject>(root["definitions"]?["it's"]?["body"])["const"]?.GetValue<bool>());
-        Assert.NotNull(node);
     }
 
     /// <summary>A path that ends at a value that is not an object finds nothing.</summary>
@@ -95,14 +100,24 @@ public sealed class RuleTreePathTests
         Assert.Null(put);
     }
 
-    /// <summary>The parent of the root is null, and the operand path round-trips through the parent path.</summary>
+    /// <summary>The path of an operand extends the path of its node with an operand step.</summary>
     [Fact]
-    public void ParentPath_OperandPath_AreInverse_Test()
+    public void OperandPath_NodeAndIndex_AppendsTheOperandStep_Test()
     {
-        string operand = RuleTree.OperandPath("$.operands[1]", 0);
+        Assert.Equal("$.operands[1].operands[0]", RuleTree.OperandPath("$.operands[1]", 0));
+    }
 
-        Assert.Equal("$.operands[1].operands[0]", operand);
-        Assert.Equal("$.operands[1]", RuleTree.ParentPath(operand));
+    /// <summary>The parent path of an operand path is the path of the node that holds it.</summary>
+    [Fact]
+    public void ParentPath_OperandPath_GivesTheHoldingNode_Test()
+    {
+        Assert.Equal("$.operands[1]", RuleTree.ParentPath("$.operands[1].operands[0]"));
+    }
+
+    /// <summary>The root has no parent path.</summary>
+    [Fact]
+    public void ParentPath_Root_ReturnsNull_Test()
+    {
         Assert.Null(RuleTree.ParentPath("$"));
     }
 

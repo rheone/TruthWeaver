@@ -67,7 +67,7 @@ public sealed class RuleDocumentHistoryTests
 
         Assert.Equal(RuleFormat.Text, document.Format);
         Assert.False(document.IsRuleCurrent);
-        Assert.NotEmpty(document.Diagnostics);
+        Assert.Equal(["TRE0001", "TRE0001", "TRE0001"], document.Diagnostics.Select(d => d.Code));
     }
 
     /// <summary>Saving a document that has no file and gets no path is a usage error.</summary>

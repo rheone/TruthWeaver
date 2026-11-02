@@ -171,19 +171,37 @@ public sealed class ImportControllerTests
         Assert.Equal(RuleFormat.Yaml, workbench.Document.Format);
     }
 
-    /// <summary>The Convert dialog lists the targets, and a cancelled dialog or an index outside the list converts nothing.</summary>
+    /// <summary>A cancelled Convert dialog converts nothing.</summary>
     [Fact]
-    public void Convert_Cancelled_ConvertsNothing_Test()
+    public void Convert_DialogCancelled_ConvertsNothing_Test()
     {
         (ImportController controller, ScriptedServices services, Workbench workbench, _) = Create("a");
         services.Dialogs.Choices.Enqueue(null);
+
+        Assert.False(controller.Convert());
+        Assert.Equal(RuleFormat.Text, workbench.Document.Format);
+    }
+
+    /// <summary>A choice outside the list of targets converts nothing.</summary>
+    [Fact]
+    public void Convert_ChoiceOutsideTheList_ConvertsNothing_Test()
+    {
+        (ImportController controller, ScriptedServices services, Workbench workbench, _) = Create("a");
         services.Dialogs.Choices.Enqueue(17);
 
         Assert.False(controller.Convert());
-        Assert.False(controller.Convert());
-
-        Assert.Equal(ImportController.ConvertTargets.Count, services.Dialogs.LastItems.Count);
         Assert.Equal(RuleFormat.Text, workbench.Document.Format);
+    }
+
+    /// <summary>The Convert dialog lists the title of every target.</summary>
+    [Fact]
+    public void Convert_Dialog_ListsTheTitleOfEveryTarget_Test()
+    {
+        (ImportController controller, ScriptedServices services, _, _) = Create("a");
+
+        controller.Convert();
+
+        Assert.Equal(ImportController.ConvertTargets.Select(t => t.Title), services.Dialogs.LastItems);
     }
 
     private static (

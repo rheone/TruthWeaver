@@ -23,7 +23,7 @@ public sealed class CommandEdgeCaseTests
         CliRun run = await Cli.RunAsync(["diff", "no-such-file.rule", "active.rule", "--json"]);
 
         Assert.Equal(2, run.ExitCode);
-        Assert.NotEmpty(run.DiagnosticCodes);
+        Assert.Equal(["TWT0001"], run.DiagnosticCodes);
         Assert.Null(run.Json["result"]?["relation"]);
     }
 
@@ -33,8 +33,8 @@ public sealed class CommandEdgeCaseTests
     {
         CliRun run = await Cli.RunAsync(["diff", "active.rule", "broken.rule", "--json"]);
 
-        Assert.NotEqual(0, run.ExitCode);
-        Assert.NotEmpty(run.DiagnosticCodes);
+        Assert.Equal(1, run.ExitCode);
+        Assert.Equal(["TRE0001"], run.DiagnosticCodes);
         Assert.Null(run.Json["result"]?["relation"]);
     }
 
@@ -82,10 +82,14 @@ public sealed class CommandEdgeCaseTests
         CliRun run = await Cli.RunAsync(["test", file]);
 
         Assert.Equal(1, run.ExitCode);
-        Assert.Contains("FAIL counts faults", run.Output, StringComparison.Ordinal);
+        Assert.Contains(
+            "FAIL counts faults\n  Expected 2 fault(s), but the evaluation recorded 0.\n",
+            run.Output,
+            StringComparison.Ordinal
+        );
     }
 
-    /// <summary>A JUnit path that cannot be written is reported as a diagnostic and not as an unhandled exception.</summary>
+    /// <summary>A JUnit path that is an existing directory is reported as a TWT0010 error with exit code 2, not as an unhandled exception.</summary>
     [Fact]
     public async Task Test_JUnitPathIsADirectory_ReportsADiagnostic_Test()
     {
@@ -93,8 +97,8 @@ public sealed class CommandEdgeCaseTests
 
         CliRun run = await Cli.RunAsync(["test", "access.test.yaml", "--junit", folder.FullPath, "--json"]);
 
-        Assert.NotEqual(0, run.ExitCode);
-        Assert.NotEmpty(run.DiagnosticCodes);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Equal(["TWT0010"], run.DiagnosticCodes);
     }
 
     /// <summary>An input file that does not exist is an error with exit code 2.</summary>
@@ -104,7 +108,7 @@ public sealed class CommandEdgeCaseTests
         CliRun run = await Cli.RunAsync(["import", "no-such.json", "--json"]);
 
         Assert.Equal(2, run.ExitCode);
-        Assert.NotEmpty(run.DiagnosticCodes);
+        Assert.Equal(["TWT0001"], run.DiagnosticCodes);
     }
 
     /// <summary>JsonLogic that is not JSON is a malformed-document error with exit code 2.</summary>
@@ -121,9 +125,10 @@ public sealed class CommandEdgeCaseTests
     [Fact]
     public async Task Import_ToYaml_WritesYaml_Test()
     {
-        CliRun run = await Cli.RunAsync(["import", "--to", "yaml", "--json"], standardInput: """{"and": [true, false]}""");
+        CliRun run = await Cli.RunAsync(["import", "--to", "yaml"], standardInput: """{"and": [true, false]}""");
 
-        Assert.Equal("yaml", run.Json["result"]!["format"]!.GetValue<string>());
+        Assert.Equal(0, run.ExitCode);
+        Assert.StartsWith("op: and\noperands:\n- const: true\n- const: false\n", run.Output, StringComparison.Ordinal);
     }
 
     /// <summary>A check against a file that holds a longer text reports the first line that the new output does not have.</summary>

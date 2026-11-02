@@ -23,11 +23,12 @@ public sealed class ImageRendererSearchTests
     }
 
     /// <summary>Each defined format has its extension with the dot.</summary>
-    [Fact]
-    public void Extension_DefinedFormats_GiveSvgAndPng_Test()
+    [Theory]
+    [InlineData(ImageFormat.Svg, ".svg")]
+    [InlineData(ImageFormat.Png, ".png")]
+    public void Extension_DefinedFormat_GivesTheExtensionWithTheDot_Test(ImageFormat format, string extension)
     {
-        Assert.Equal(".svg", ImageRenderer.Extension(ImageFormat.Svg));
-        Assert.Equal(".png", ImageRenderer.Extension(ImageFormat.Png));
+        Assert.Equal(extension, ImageRenderer.Extension(format));
     }
 
     /// <summary>The search skips directories that do not exist and quoted entries, and finds the program in a later directory.</summary>
@@ -43,23 +44,44 @@ public sealed class ImageRendererSearchTests
         Assert.Equal(Path.GetFullPath(file), found);
     }
 
-    /// <summary>An empty search path finds nothing, and every language is missing.</summary>
+    /// <summary>An empty search path finds no program.</summary>
+    [Fact]
+    public void FindProgram_EmptySearchPath_ReturnsNull_Test()
+    {
+        Assert.Null(ImageRenderer.FindProgram(DiagramLanguage.Mermaid, string.Empty));
+    }
+
+    /// <summary>With an empty search path, every language is missing, in the order Mermaid, DOT.</summary>
     [Fact]
     public void MissingLanguages_EmptySearchPath_ListsBothInOrder_Test()
     {
-        Assert.Null(ImageRenderer.FindProgram(DiagramLanguage.Mermaid, string.Empty));
         Assert.Equal([DiagramLanguage.Mermaid, DiagramLanguage.Dot], ImageRenderer.MissingLanguages(string.Empty));
+    }
+
+    /// <summary>With an empty search path, no language is available.</summary>
+    [Fact]
+    public void AvailableLanguages_EmptySearchPath_ListsNone_Test()
+    {
         Assert.Empty(ImageRenderer.AvailableLanguages(string.Empty));
     }
 
     /// <summary>Only the language whose program is on the search path is available.</summary>
     [Fact]
-    public void AvailableLanguages_OnlyDotPresent_ListsDotAndMissesMermaid_Test()
+    public void AvailableLanguages_OnlyDotPresent_ListsOnlyDot_Test()
     {
         using TemporaryDirectory tools = new();
         Touch(tools, "dot");
 
         Assert.Equal([DiagramLanguage.Dot], ImageRenderer.AvailableLanguages(tools.FullPath));
+    }
+
+    /// <summary>The language whose program is not on the search path is missing.</summary>
+    [Fact]
+    public void MissingLanguages_OnlyDotPresent_ListsOnlyMermaid_Test()
+    {
+        using TemporaryDirectory tools = new();
+        Touch(tools, "dot");
+
         Assert.Equal([DiagramLanguage.Mermaid], ImageRenderer.MissingLanguages(tools.FullPath));
     }
 
