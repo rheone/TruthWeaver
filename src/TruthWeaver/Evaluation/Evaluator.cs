@@ -541,6 +541,7 @@ internal sealed class Evaluator<TContext>(
                 this.scope,
                 this.memoScope,
                 this.registry,
+                this.state.LibraryLocatorOf(node),
                 this.cancellationToken
             )
             .ConfigureAwait(false);

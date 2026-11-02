@@ -91,17 +91,17 @@ internal sealed class CollectionBinding<TContext, TItem>(
         string? outerScope,
         string? outerMemoScope,
         object outerRegistry,
+        string? libraryLocator,
         CancellationToken cancellationToken
     )
     {
         string label = QuantifierText.Label(kind);
         string description = $"{label}({variable} IN {name})";
+        string located = TraceText.WithLibraryLocator(description, libraryLocator);
 
         void AddFlat(TruthValue? value, bool notEvaluated)
         {
-            state.AddTrace(
-                new TraceEntry(outerScope is null ? description : $"{outerScope}: {description}", value, notEvaluated)
-            );
+            state.AddTrace(new TraceEntry(outerScope is null ? located : $"{outerScope}: {located}", value, notEvaluated));
         }
 
         // ADR-0010 decision 5: the selector is called at most once per (binding, outer element) within one

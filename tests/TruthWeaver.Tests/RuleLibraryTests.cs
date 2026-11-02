@@ -252,6 +252,79 @@ public sealed class RuleLibraryTests
     }
 
     /// <summary>
+    /// The flat trace entry of a <c>FORALL</c> that comes from a library rule names the library rule, as the entries of its
+    /// body nodes do.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_QuantifierFromALibraryRule_TraceEntryNamesTheLibraryRule_Test()
+    {
+        RuleCompiler<OrderContext> compiler = CreateOrderCompiler(Library(("all-shipped", "FORALL(line IN lines, shipped)")));
+        CompiledRule<OrderContext> rule = compiler.Compile("rule(\"all-shipped\")").CompiledRule!;
+
+        Decision decision = await rule.EvaluateAsync(
+            new OrderContext([new OrderLine(true, [])]),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("FORALL(line IN lines) (in library rule 'all-shipped' at line 1, column 1)", texts);
+    }
+
+    /// <summary>
+    /// A rewrite keeps the library locators of the nodes it keeps, so a trace from the rewritten rule still names the
+    /// library rule.
+    /// </summary>
+    /// <param name="rewrite">The rewrite to apply.</param>
+    [Theory]
+    [InlineData("OptimizeOrder")]
+    [InlineData("Simplify")]
+    [InlineData("Canonicalize")]
+    public async Task EvaluateAsync_RewrittenRuleWithALibraryNode_TraceEntryStillNamesTheLibraryRule_Test(string rewrite)
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("adult", "a AND NOT b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "c AND rule(\"adult\")");
+
+        CompilationResult<RuleTestContext> rewritten = rewrite switch
+        {
+            "OptimizeOrder" => original.OptimizeOrder(),
+            "Simplify" => original.Simplify(),
+            _ => original.Canonicalize(),
+        };
+        Decision decision = await rewritten.CompiledRule!.EvaluateAsync(
+            new RuleTestContext(),
+            options: new EvaluationOptions(IncludeTrace: true),
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.Contains("c", texts);
+        Assert.Contains("a (in library rule 'adult' at line 1, column 1)", texts);
+    }
+
+    /// <summary>
+    /// A term that the caller's text and a library rule both write has two sources, so a rewrite gives it no locator.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_RewrittenRuleWithATermFromTwoSources_TraceEntryHasNoLocator_Test()
+    {
+        RuleCompiler<RuleTestContext> compiler = CreateCompiler(Library(("again", "a OR b")));
+        CompiledRule<RuleTestContext> original = Compile(compiler, "a AND rule(\"again\")");
+
+        Decision decision = await original
+            .OptimizeOrder()
+            .CompiledRule!.EvaluateAsync(
+                new RuleTestContext(),
+                options: new EvaluationOptions(IncludeTrace: true),
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        IReadOnlyList<string> texts = [.. decision.Trace!.Entries.Select(entry => entry.Text)];
+        Assert.DoesNotContain(texts, text => text.StartsWith("a (in library rule", StringComparison.Ordinal));
+        Assert.Contains(texts, text => text.StartsWith("b (in library rule 'again'", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// A library rule that uses a deprecated predicate gives the deprecation warning, with its own code and severity, when
     /// it is referenced: at the reference, naming the library rule and the place in it. The rule still compiles.
     /// </summary>

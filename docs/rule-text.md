@@ -233,7 +233,11 @@ reports it once for each reference: the uses of a definition that holds the refe
 
 A trace entry (`Decision.Trace`) for a node from a library rule ends with the same locator, as in
 `hasSignedNda (in library rule 'contractor-cleared' at line 1, column 18)`. The trace tree (`Decision.TraceTree`) shows
-the node without it. The mistakes give these codes:
+the node without it. The entry for a `FORALL` or `EXISTS` from a library rule ends with the locator too. A rewrite
+(`OptimizeOrder`, `Simplify`, `Canonicalize` and the other rewrites) keeps the locator of each node that it keeps. A node
+that the original rule writes in two places, with different locators or with and without one, has two sources and has
+no locator after a rewrite, and neither has a node that the rewrite builds from new operands. Coverage, the printers and
+the findings of the analyzer and the linter show no locator. The mistakes give these codes:
 
 | Code | Name | Cause |
 | --- | --- | --- |

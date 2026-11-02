@@ -100,6 +100,7 @@ internal interface ICollectionBinding<TContext>
     /// registry component of <see cref="EvaluationState.CollectionMaterializations"/>'s key (ticket 34), so a
     /// like-named collection registered on a different registry never reuses this one's materialized elements.
     /// </param>
+    /// <param name="libraryLocator">The library locator text of the quantifier when it comes from a library rule, or <see langword="null"/>. It ends the flat trace entry of the quantifier; the trace node keeps the plain text.</param>
     /// <param name="cancellationToken">Cancels the evaluation.</param>
     /// <returns>The quantifier's value and its trace node (one child per element).</returns>
     public ValueTask<(TruthValue Value, TraceNode Node)> EvaluateQuantifierAsync(
@@ -115,6 +116,7 @@ internal interface ICollectionBinding<TContext>
         string? outerScope,
         string? outerMemoScope,
         object outerRegistry,
+        string? libraryLocator,
         CancellationToken cancellationToken
     );
 }
