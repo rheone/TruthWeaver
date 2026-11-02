@@ -44,8 +44,6 @@ internal sealed class ViewPane(WorkbenchServices? services) : IWorkbenchPane
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
-        // Read the assignment before the subscription below, so the outcome is fresh in the DocumentChanged handler.
-        _ = workbench.Assignment;
         ViewController controller = new(
             workbench,
             this.services ?? WorkbenchServices.Current,
@@ -63,8 +61,7 @@ internal sealed class ViewPane(WorkbenchServices? services) : IWorkbenchPane
                 key.Handled = true;
             }
         };
-        workbench.DocumentChanged += (_, _) => container.Show();
-        workbench.AssignmentChanged += (_, _) => container.Show();
+        workbench.DocumentOrAssignmentChanged += (_, _) => container.Show();
         controller.SettingsChanged += (_, _) => container.Show();
         container.Show();
         return container;

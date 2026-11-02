@@ -11,49 +11,34 @@ internal sealed partial class Workbench
     private AssignmentOutcome? outcome;
 
     /// <summary>
-    /// Occurs after the assignment changed (a term value, the variables or the policy) and after a change of the document
-    /// made the outcome stale. A pane that shows the outcome subscribes here and to <see cref="DocumentChanged"/>.
+    /// Occurs after the assignment changed (a term value, the variables or the policy). A pane that only follows the
+    /// assignment subscribes here; a pane that also follows the document uses <see cref="DocumentOrAssignmentChanged"/>.
     /// </summary>
     public event EventHandler? AssignmentChanged;
+
+    /// <summary>
+    /// Occurs after the document changed or the assignment changed, which is when the outcome is stale. The workbench
+    /// first drops the stale outcome, then raises this event, so a handler that reads <see cref="Outcome"/> always sees a
+    /// fresh one. A pane that shows the outcome or the window refresh subscribes here, not to both
+    /// <see cref="DocumentChanged"/> and <see cref="AssignmentChanged"/>.
+    /// </summary>
+    public event EventHandler? DocumentOrAssignmentChanged;
 
     /// <summary>
     /// Gets the values the rule is tried with. After a change, call <see cref="NotifyAssignmentChanged"/> so the outcome
     /// and the panes follow.
     /// </summary>
-    public AssignmentSession Assignment
-    {
-        get
-        {
-            if (this.assignment is null)
-            {
-                this.assignment = new AssignmentSession(this.Settings);
-
-                // First in line of the document events, so every pane that reads Outcome after this sees a fresh one.
-                this.DocumentChanged += (_, _) => this.outcome = null;
-            }
-
-            return this.assignment;
-        }
-    }
+    public AssignmentSession Assignment => this.assignment ??= new AssignmentSession(this.Settings);
 
     /// <summary>
     /// Gets the decision, trace and terms of the rule of the document under <see cref="Assignment"/>. It is computed again
-    /// after each change of the document or the assignment. A pane must read <see cref="Assignment"/> before it subscribes
-    /// to <see cref="DocumentChanged"/> (this property does so), so the outcome is never stale in its handler.
+    /// after each change of the document or the assignment.
     /// </summary>
-    public AssignmentOutcome Outcome
-    {
-        get
-        {
-            _ = this.Assignment;
-
-            // VSTHRD002 (blocking on a task) cannot deadlock here: the stand-in predicates and the in-memory data answer at
-            // once, so the task is already complete, and the Terminal.Gui loop has no synchronization context to wait for.
+    // VSTHRD002 (blocking on a task) cannot deadlock here: the stand-in predicates and the in-memory data answer at
+    // once, so the task is already complete, and the Terminal.Gui loop has no synchronization context to wait for.
 #pragma warning disable VSTHRD002
-            return this.outcome ??= this.Assignment.EvaluateAsync(this.Document).GetAwaiter().GetResult();
+    public AssignmentOutcome Outcome => this.outcome ??= this.Assignment.EvaluateAsync(this.Document).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
-        }
-    }
 
     /// <summary>Gets the words for a policy in the decision line.</summary>
     /// <param name="policy">The policy.</param>
@@ -73,6 +58,7 @@ internal sealed partial class Workbench
     {
         this.outcome = null;
         this.AssignmentChanged?.Invoke(this, EventArgs.Empty);
+        this.DocumentOrAssignmentChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Gives every term the value <c>Unknown</c>.</summary>
@@ -130,5 +116,13 @@ internal sealed partial class Workbench
                 : $"Loaded {path}, but the data has errors (see the Variables pane)."
         );
         return true;
+    }
+
+    /// <summary>Drops the stale outcome, then tells the panes that the document changed.</summary>
+    private void RaiseDocumentChanged()
+    {
+        this.outcome = null;
+        this.DocumentChanged?.Invoke(this, EventArgs.Empty);
+        this.DocumentOrAssignmentChanged?.Invoke(this, EventArgs.Empty);
     }
 }

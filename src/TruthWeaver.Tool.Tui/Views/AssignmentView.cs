@@ -87,8 +87,7 @@ internal sealed class AssignmentView : View
 
         this.Terms.KeyDown += this.OnTermKeyDown;
         this.tree.SelectionChanged += (_, e) => this.reason.Text = e.NewValue?.Reason ?? this.rootLine?.Reason ?? string.Empty;
-        workbench.DocumentChanged += (_, _) => this.Show();
-        workbench.AssignmentChanged += (_, _) => this.Show();
+        workbench.DocumentOrAssignmentChanged += (_, _) => this.Show();
         workbench.ThemeChanged += (_, _) => this.tree.SetNeedsDraw();
         this.Show();
     }

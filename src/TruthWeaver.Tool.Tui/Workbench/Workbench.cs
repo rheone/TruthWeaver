@@ -231,7 +231,7 @@ internal sealed partial class Workbench
         this.SaveOverride = null;
         this.DocumentLabel = null;
         this.SetStatus(status);
-        this.DocumentChanged?.Invoke(this, EventArgs.Empty);
+        this.RaiseDocumentChanged();
     }
 
     /// <summary>Saves the document to its file, or asks for a path when it has none.</summary>
@@ -300,6 +300,6 @@ internal sealed partial class Workbench
     {
         // Another change of the document makes an older edit stale; the result of its compile must not replace this change.
         this.DiscardPending();
-        this.DocumentChanged?.Invoke(this, EventArgs.Empty);
+        this.RaiseDocumentChanged();
     }
 }

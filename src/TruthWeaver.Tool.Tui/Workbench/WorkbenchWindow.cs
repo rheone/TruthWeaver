@@ -126,17 +126,13 @@ internal sealed partial class WorkbenchWindow : Window
 
         this.KeyDown += this.OnWorkbenchKeyDown;
 
-        // The status line shows the value of the selected term. Reading Assignment first puts its reset of the outcome ahead
-        // of these handlers, so the value is never stale.
-        _ = workbench.Assignment;
-        workbench.DocumentChanged += (_, _) => this.ShowStatus();
+        // The status line shows the value of the selected term.
+        workbench.DocumentOrAssignmentChanged += (_, _) => this.ShowStatus();
         workbench.SelectedNodeChanged += (_, _) => this.ShowStatus();
         workbench.ValueSourceChanged += (_, _) => this.ShowStatus();
 
         // The box describes the rule as it was; a change of the text or the values makes it stale.
-        workbench.DocumentChanged += (_, _) => this.HideInspect();
-        workbench.AssignmentChanged += (_, _) => this.HideInspect();
-        workbench.AssignmentChanged += (_, _) => this.ShowStatus();
+        workbench.DocumentOrAssignmentChanged += (_, _) => this.HideInspect();
         workbench.StatusChanged += (_, _) => this.ShowStatus();
 
         // The theme is process-wide in Terminal.Gui, so one call restyles every pane and every dialog; the window then draws again.

@@ -26,8 +26,7 @@ internal sealed class EvaluationStepController
         ArgumentNullException.ThrowIfNull(workbench);
 
         this.workbench = workbench;
-        workbench.DocumentChanged += (_, _) => this.End();
-        workbench.AssignmentChanged += (_, _) => this.End();
+        workbench.DocumentOrAssignmentChanged += (_, _) => this.End();
     }
 
     /// <summary>Occurs after the mode starts or ends or the current step changes.</summary>
