@@ -45,6 +45,7 @@ internal sealed partial class Workbench
     /// <summary>
     /// Occurs after the document changes (its text, format, path or saved state) and after another document replaces it.
     /// A pane subscribes here, not to <see cref="RuleDocument.Changed"/>, so it follows a newly opened document too.
+    /// A pane that also reads <see cref="Outcome"/> or follows the values subscribes to <see cref="DocumentOrAssignmentChanged"/>.
     /// </summary>
     public event EventHandler? DocumentChanged;
 

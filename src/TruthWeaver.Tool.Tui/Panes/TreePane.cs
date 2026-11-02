@@ -71,8 +71,6 @@ internal sealed class TreePane(WorkbenchServices? services) : IWorkbenchPane
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
-        // Reading Assignment before the subscriptions below keeps the outcome fresh in their handlers (see Workbench.Outcome).
-        _ = workbench.Assignment;
         StructureController controller = StructureController.For(workbench, services);
         TreePaneView view = new(controller);
 

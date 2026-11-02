@@ -32,8 +32,6 @@ internal sealed class AssignmentView : View
     {
         ArgumentNullException.ThrowIfNull(workbench);
 
-        // Reading the assignment first makes the workbench drop a stale outcome before this view reads it.
-        _ = workbench.Assignment;
         this.workbench = workbench;
         this.Width = Dim.Fill();
         this.Height = Dim.Fill();
