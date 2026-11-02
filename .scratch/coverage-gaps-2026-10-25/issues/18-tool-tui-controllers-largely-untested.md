@@ -62,9 +62,22 @@ gap.
 **Acceptance criteria:**
 - [ ] Each listed controller gains at least one test for a genuinely non-trivial previously-uncovered error/edge path, prioritizing the representative scenarios named above.
 - [ ] Line/branch coverage improves measurably for the listed controllers (not necessarily to 100%).
-- [ ] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
+- [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
 - [ ] The full validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - The pure-presentation layer (separate ticket, coverage-gaps 19).
 - Chasing every uncovered line indiscriminately — prioritize real error/edge handling.
+
+## Result
+
+First slice (about 40 tests, all passing; coverage was not measured, so criterion 2 is not ticked). The controllers were refactored on this branch, so the ticket line counts are stale. New files: `ImportControllerTests` (13), `ExportControllerTests` (13), `ViewControllerSettingsTests` (7), `RewriteControllerEdgeTests` (7), all in `tests/TruthWeaver.Tool.Tui.Tests/Controllers`.
+
+`CounterfactualController` already has full pane tests in `Panes/CounterfactualPaneTests.cs` (including the term-limit `Undecided` path and `Apply`), so no new test was added for it.
+
+## Remaining
+
+- `StructureController`, `EmbeddedRuleController`, `InspectController` (all partial files) and `CompareController`: no new tests in this slice; each already has a test file, so find the real gaps with a coverage run.
+- `CounterfactualController`: `Apply` with a term that has no key (a `from(...)` reference) and the `ArgumentException` branch of `Search`.
+- `ExportController`: `SaveImage` and `ExportAll` success paths (they need a fake `dot` or `mmdc`), and the `Skipped` truth-table message.
+- Criteria 2 and 4 stay open.
