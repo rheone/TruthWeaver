@@ -1,4 +1,4 @@
-namespace TruthWeaver.Tool.Tui.Predicates;
+namespace TruthWeaver.Tool.Core.Palette;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using TruthWeaver.Predicates;
-using TruthWeaver.Tool.Core.Palette;
 
 /// <summary>
 /// The ready-made predicates of the <c>TruthWeaver.Predicates</c> package as palette templates. The catalog scans the public
@@ -14,7 +13,7 @@ using TruthWeaver.Tool.Core.Palette;
 /// generic method that takes a <c>name</c> and a <c>selector</c>; the scan calls it with <see cref="object"/> as the context
 /// and a selector that returns the default value, and takes the schema from the result. The method name is the predicate name.
 /// </summary>
-internal static class PredicateCatalog
+public static class PredicateCatalog
 {
     // The types that a factory with a value type parameter (the numeric factories) is tried with, in order. The first type
     // that satisfies the constraints of the method wins; the kind of its arguments follows.

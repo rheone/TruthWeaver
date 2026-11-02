@@ -44,6 +44,111 @@ public sealed class RulePaletteTests
         );
     }
 
+    /// <summary>An empty search finds every entry but the operators: the own entries first, then the catalog by family.</summary>
+    [Fact]
+    public void Search_EmptyText_FindsOwnEntriesThenTheCatalogByFamily_Test()
+    {
+        RulePalette palette = RulePalette.Create(Compile("inRegion(region: \"EU\")"), SchemaFile());
+
+        IReadOnlyList<PaletteGroup> groups = palette.Search(string.Empty);
+
+        Assert.Null(groups[0].Title);
+        Assert.DoesNotContain(groups.SelectMany(g => g.Entries), e => e.Source == PaletteSource.Operator);
+        Assert.Contains(groups[0].Entries, e => e.Source == PaletteSource.SchemaFile);
+        Assert.Equal(PredicateCatalog.All.Count, groups.Skip(1).Sum(g => g.Entries.Count));
+        Assert.All(groups.Skip(1), g => Assert.NotNull(g.Title));
+    }
+
+    /// <summary>Own entries match when each word is in the line or the description; the case does not matter.</summary>
+    [Fact]
+    public void Search_WordsOfAnOwnEntry_FindsTheEntry_Test()
+    {
+        RulePalette palette = RulePalette.Create(Compile("inRegion(region: \"EU\")"), SchemaFile());
+
+        PaletteGroup own = Assert.Single(palette.Search("HASROLE role", e => e.Source == PaletteSource.SchemaFile));
+
+        Assert.Equal("hasRole", Assert.Single(own.Entries).Name);
+        Assert.Empty(palette.Search("zzzqqq"));
+    }
+
+    /// <summary>A catalog predicate is found by an alias and is listed under its family.</summary>
+    [Fact]
+    public void Search_AliasOfACatalogPredicate_FindsItUnderItsFamily_Test()
+    {
+        RulePalette palette = RulePalette.Create(null, null);
+
+        IReadOnlyList<PaletteGroup> groups = palette.Search("begins with");
+
+        PaletteGroup group = Assert.Single(groups, g => g.Entries.Any(e => e.Name == "StartsWith"));
+        Assert.Equal("String", group.Title);
+    }
+
+    /// <summary>The filter limits what a search can find.</summary>
+    [Fact]
+    public void Search_WithAFilter_FindsOnlyThoseEntries_Test()
+    {
+        RulePalette palette = RulePalette.Create(Compile("inRegion(region: \"EU\")"), SchemaFile());
+
+        IReadOnlyList<PaletteGroup> groups = palette.Search(string.Empty, e => e.Source == PaletteSource.Catalog);
+
+        Assert.All(groups, g => Assert.NotNull(g.Title));
+        Assert.All(groups.SelectMany(g => g.Entries), e => Assert.Equal(PaletteSource.Catalog, e.Source));
+    }
+
+    /// <summary>The facts of a predicate of the rule come from the rule; the catalog adds the family.</summary>
+    [Fact]
+    public void Find_PredicateOfTheRule_GivesTheRuleTemplate_Test()
+    {
+        RulePalette palette = RulePalette.Create(Compile("inRegion(region: \"EU\")"), null);
+
+        PredicateFacts? facts = palette.Find("inRegion");
+
+        Assert.NotNull(facts);
+        Assert.Equal(PaletteSource.Document, facts.Entry.Source);
+        Assert.Null(facts.Family);
+        Assert.False(facts.TakesNullBehavior);
+    }
+
+    /// <summary>A catalog predicate has a family and, when its factory takes a null behavior, says so.</summary>
+    [Fact]
+    public void Find_CatalogPredicate_GivesFamilyAndNullBehavior_Test()
+    {
+        RulePalette palette = RulePalette.Create(null, null);
+        CatalogPredicate expected = PredicateCatalog.All.First(p => p.TakesNullBehavior);
+
+        PredicateFacts? facts = palette.Find(expected.Entry.Name);
+
+        Assert.NotNull(facts);
+        Assert.Equal(expected.Family, facts.Family);
+        Assert.True(facts.TakesNullBehavior);
+        Assert.Null(palette.Find("noSuchPredicate"));
+    }
+
+    /// <summary>A schema file is read once and read again when the file changes.</summary>
+    [Fact]
+    public void Get_SchemaFile_IsCachedUntilTheFileChanges_Test()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"palette-{Guid.NewGuid():N}.yaml");
+        try
+        {
+            File.WriteAllText(path, Schema);
+            PaletteSchemaCache cache = new();
+
+            PredicateSchemaFile? first = cache.Get(path);
+
+            Assert.Same(first, cache.Get(path));
+            Assert.NotNull(first);
+            File.WriteAllText(path, Schema.Replace("hasRole", "hasGroup", StringComparison.Ordinal));
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(1));
+            Assert.Equal("hasGroup", Assert.Single(cache.Get(path)!.Predicates).Name);
+            Assert.Null(cache.Get(null));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     /// <summary>A predicate of the rule is a template whose values start at the values of its first use.</summary>
     [Fact]
     public void Create_RulePredicate_StartsTheFormAtTheValuesOfItsFirstUse_Test()

@@ -83,7 +83,6 @@ match its folder. `Program` and `Results` stay at the root.
 | `Controllers` | The logic behind a pane: compare, counterfactual, embedded rule, export, import, rewrite, structure, validation and view. |
 | `Hosting` | The start of the application, and the dialogs, prompts and clipboard of the terminal. |
 | `Panes` | The panes of the regions, the pane interface and the layout of the regions. |
-| `Predicates` | The ready-made predicates that the palette offers as templates. |
 | `Sessions` | The state and the text lines that the panes share: values, rule tests, imports, exports and coverage. |
 | `Theme` | The colors, the theme choice and the editor marks. |
 | `Views` | The Terminal.Gui views of the panes and the rule renderer. |
@@ -96,7 +95,6 @@ match its folder. `Program` and `Results` stay at the root.
 - [TruthWeaver.Yaml](../TruthWeaver.Yaml/README.md) to read and write YAML rules.
 - [TruthWeaver.Tool.Core](../TruthWeaver.Tool.Core/README.md) for the logic that the workbench shares with the command line.
 - [TruthWeaver.Testing](../TruthWeaver.Testing/README.md) for the stand-in predicates that give the stub values.
-- [TruthWeaver.Predicates](../TruthWeaver.Predicates/README.md) for the ready-made predicates that the palette offers as templates.
 
 ## Key types
 

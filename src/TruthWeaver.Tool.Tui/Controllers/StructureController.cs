@@ -11,7 +11,6 @@ using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Panes;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;

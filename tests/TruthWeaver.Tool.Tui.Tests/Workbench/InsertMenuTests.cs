@@ -10,7 +10,6 @@ using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Tui.Commands;
 using TruthWeaver.Tool.Tui.Panes;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Views;

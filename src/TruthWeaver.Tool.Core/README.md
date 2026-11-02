@@ -32,7 +32,7 @@ match its folder.
 | `Export` | Artifacts, the exporter, the manifest and the image renderer. |
 | `Loading` | Reading, decoding, format detection and import of rules, data files and schemas. |
 | `Output` | Printed rules, format conversion and the output writer. |
-| `Palette` | The list of operators and predicates to insert into a rule. |
+| `Palette` | The list of operators and predicates to insert into a rule, the ready-made predicate catalog, and the search over both. |
 | `Patching` | Writing an edited rule back into its document. |
 | `Reports` | Rule statistics and reports. |
 | `Rewriting` | The rewrite playground and the comparison of two rules. |
@@ -46,6 +46,7 @@ match its folder.
 - [TruthWeaver](../TruthWeaver/README.md) to compile, print, rewrite and evaluate the rules.
 - [TruthWeaver.DataSources.Json](../TruthWeaver.DataSources.Json/README.md) to read JSON data files for `from(...)` references.
 - [TruthWeaver.Yaml](../TruthWeaver.Yaml/README.md) to read and write YAML rules and data files.
+- [TruthWeaver.Predicates](../TruthWeaver.Predicates/README.md) for the ready-made predicates that the palette offers as templates.
 
 ## Key types
 

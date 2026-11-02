@@ -1,4 +1,4 @@
-namespace TruthWeaver.Tool.Tui.Tests.Predicates;
+namespace TruthWeaver.Tool.Core.Tests.Palette;
 
 using System.Reflection;
 using TruthWeaver.Abstractions;
@@ -6,8 +6,6 @@ using TruthWeaver.Predicates;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Palette;
-using TruthWeaver.Tool.Tui.Predicates;
-using TruthWeaver.Tool.Tui.Tests.TestSupport;
 
 /// <summary>The catalog of ready-made predicates that the palette offers, and the search over it.</summary>
 public sealed class PredicateCatalogTests

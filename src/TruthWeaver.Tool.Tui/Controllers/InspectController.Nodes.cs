@@ -8,7 +8,6 @@ using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Core.Tree;
-using TruthWeaver.Tool.Tui.Predicates;
 
 /// <summary>
 /// The text of a node of the tree, and the operator and predicate facts that both the tree and the editor-text routes

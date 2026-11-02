@@ -7,7 +7,6 @@ using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Tool.Core.Palette;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Yaml;
 
 /// <summary>

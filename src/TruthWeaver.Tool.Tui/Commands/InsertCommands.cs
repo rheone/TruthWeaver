@@ -5,7 +5,6 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Tool.Core.Palette;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Workbench;
 

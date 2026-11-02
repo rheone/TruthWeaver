@@ -15,6 +15,9 @@
     <ProjectReference Include="../TruthWeaver/TruthWeaver.csproj" />
     <ProjectReference Include="../TruthWeaver.DataSources.Json/TruthWeaver.DataSources.Json.csproj" />
     <ProjectReference Include="../TruthWeaver.Yaml/TruthWeaver.Yaml.csproj" />
+    <!-- The ready-made predicates, which the palette offers as templates (owner approval 2026-10-19, ticket 05). The catalog scans
+         the public factories by reflection. -->
+    <ProjectReference Include="../TruthWeaver.Predicates/TruthWeaver.Predicates.csproj" />
   </ItemGroup>
 
   <!-- The JSON schema of truthweaver.json, copied next to the assembly so a front end can ship it with the tool. -->
