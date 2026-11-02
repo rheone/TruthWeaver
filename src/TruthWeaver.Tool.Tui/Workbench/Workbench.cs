@@ -45,6 +45,7 @@ internal sealed partial class Workbench
     /// <summary>
     /// Occurs after the document changes (its text, format, path or saved state) and after another document replaces it.
     /// A pane subscribes here, not to <see cref="RuleDocument.Changed"/>, so it follows a newly opened document too.
+    /// A pane that also reads <see cref="Outcome"/> or follows the values subscribes to <see cref="DocumentOrAssignmentChanged"/>.
     /// </summary>
     public event EventHandler? DocumentChanged;
 
@@ -158,7 +159,7 @@ internal sealed partial class Workbench
         ToolResult<RuleDocument> opened = RuleDocument.Open(path, this.Settings);
         if (!opened.TryGetValue(out RuleDocument? next, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.SetStatus(Describe(diagnostics, $"Cannot open '{path}'."));
+            this.SetStatus(DiagnosticSummary.FirstError(diagnostics, $"Cannot open '{path}'."));
             return false;
         }
 
@@ -231,7 +232,7 @@ internal sealed partial class Workbench
         this.SaveOverride = null;
         this.DocumentLabel = null;
         this.SetStatus(status);
-        this.DocumentChanged?.Invoke(this, EventArgs.Empty);
+        this.RaiseDocumentChanged();
     }
 
     /// <summary>Saves the document to its file, or asks for a path when it has none.</summary>
@@ -278,19 +279,16 @@ internal sealed partial class Workbench
         );
     }
 
-    private static string Describe(EquatableArray<Diagnostic> diagnostics, string fallback)
-    {
-        Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? fallback : $"{first.Code}: {first.Message}";
-    }
-
     private bool SaveTo(string? path)
     {
         ToolResult<string> saved = this.document.Save(path);
         if (!saved.TryGetValue(out string? written, out EquatableArray<Diagnostic> diagnostics))
         {
             this.SetStatus(
-                Describe(diagnostics, "Not saved: the text has errors, so it cannot be converted to another format.")
+                DiagnosticSummary.FirstError(
+                    diagnostics,
+                    "Not saved: the text has errors, so it cannot be converted to another format."
+                )
             );
             return false;
         }
@@ -303,6 +301,6 @@ internal sealed partial class Workbench
     {
         // Another change of the document makes an older edit stale; the result of its compile must not replace this change.
         this.DiscardPending();
-        this.DocumentChanged?.Invoke(this, EventArgs.Empty);
+        this.RaiseDocumentChanged();
     }
 }

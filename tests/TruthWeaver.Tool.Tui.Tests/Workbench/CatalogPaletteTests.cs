@@ -2,8 +2,8 @@ namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
+using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Tui.Controllers;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Workbench;
 

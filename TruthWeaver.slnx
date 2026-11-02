@@ -64,12 +64,24 @@
     <File Path="samples\Directory.Build.props" />
     <Project Path="samples\AspNetCore.Tests\AspNetCore.Tests.csproj" />
     <Project Path="samples\AspNetCore\AspNetCore.csproj" />
+    <Project Path="samples\Configuration.Tests\Configuration.Tests.csproj" />
+    <Project Path="samples\Configuration\Configuration.csproj" />
     <Project Path="samples\Consumer.Tests\Consumer.Tests.csproj" />
     <Project Path="samples\Consumer\Consumer.csproj" />
     <Project Path="samples\DataSource.Tests\DataSource.Tests.csproj" />
     <Project Path="samples\DataSource\DataSource.csproj" />
+    <Project Path="samples\Generators.Tests\Generators.Tests.csproj" />
+    <Project Path="samples\Generators\Generators.csproj" />
+    <Project Path="samples\Policies.Tests\Policies.Tests.csproj" />
+    <Project Path="samples\Policies\Policies.csproj" />
     <Project Path="samples\PredicateLibrary.Tests\PredicateLibrary.Tests.csproj" />
     <Project Path="samples\PredicateLibrary\PredicateLibrary.csproj" />
+    <File Path="samples\RuleFiles\publish.rule" />
+    <File Path="samples\RuleFiles\publish.test.yaml" />
+    <File Path="samples\RuleFiles\README.md" />
+    <Project Path="samples\RuleFiles.Tests\RuleFiles.Tests.csproj" />
+    <Project Path="samples\Yaml.Tests\Yaml.Tests.csproj" />
+    <Project Path="samples\Yaml\Yaml.csproj" />
     <File Path="samples\README.md" />
   </Folder>
   <Folder Name="/src/">

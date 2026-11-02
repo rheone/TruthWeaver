@@ -191,6 +191,69 @@ public sealed class RulePalette
             : ToolResults.Failure<string>(compiled.Diagnostics);
     }
 
+    /// <summary>
+    /// Finds the entries that match a search, in groups: first the entries of the palette itself (constants, schema file,
+    /// rule and definitions), then the ready-made predicates of <see cref="PredicateCatalog"/> under their family. One rule
+    /// serves both: an own entry matches when each word is in its line or description, and a catalog entry matches by
+    /// <see cref="PredicateCatalog.Search"/> (name, label, family, description words and aliases). Case does not matter.
+    /// </summary>
+    /// <param name="text">The words to search for. Empty text matches every entry.</param>
+    /// <param name="include">Which entries can be found, or <see langword="null"/> (the default) for every entry but the operators.</param>
+    /// <returns>The groups that have a match, in palette order.</returns>
+    public IReadOnlyList<PaletteGroup> Search(string text, Func<PaletteEntry, bool>? include = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        Func<PaletteEntry, bool> allowed = include ?? (e => e.Source != PaletteSource.Operator);
+        string[] words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        List<PaletteGroup> groups = [];
+        PaletteEntry[] own =
+        [
+            .. this.Entries.Where(e =>
+                allowed(e)
+                && words.All(w =>
+                    e.Display.Contains(w, StringComparison.OrdinalIgnoreCase)
+                    || e.Description.Contains(w, StringComparison.OrdinalIgnoreCase)
+                )
+            ),
+        ];
+        if (own.Length > 0)
+        {
+            groups.Add(new PaletteGroup(null, own));
+        }
+
+        foreach (
+            IGrouping<string, CatalogPredicate> family in PredicateCatalog
+                .Search(text)
+                .Where(p => allowed(p.Entry))
+                .GroupBy(p => p.Family)
+        )
+        {
+            groups.Add(new PaletteGroup(family.Key, [.. family.Select(p => p.Entry)]));
+        }
+
+        return groups;
+    }
+
+    /// <summary>Gets what the palette knows about a predicate name.</summary>
+    /// <param name="name">The predicate name, compared exactly.</param>
+    /// <returns>
+    /// The facts, or <see langword="null"/> when neither the schema file, the rule nor the catalog has the predicate. The
+    /// template is the one of the schema file or the rule when they have the predicate.
+    /// </returns>
+    public PredicateFacts? Find(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        CatalogPredicate? catalog = PredicateCatalog.All.FirstOrDefault(p => p.Entry.Name == name);
+        PaletteEntry? own = this.Entries.FirstOrDefault(e =>
+            e.Source is PaletteSource.SchemaFile or PaletteSource.Document && e.Name.Equals(name, StringComparison.Ordinal)
+        );
+        return (own ?? catalog?.Entry) is { } entry
+            ? new PredicateFacts(entry, catalog?.Family, catalog?.TakesNullBehavior ?? false)
+            : null;
+    }
+
     private static JsonNode? ValueOf(LiteralKind kind, string text)
     {
         string trimmed = text.Trim();

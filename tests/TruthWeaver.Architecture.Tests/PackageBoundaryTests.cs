@@ -218,16 +218,18 @@ public sealed class PackageBoundaryTests
 
     /// <summary>
     /// <c>TruthWeaver.Tool.Core</c> is the UI-free core of the command line and terminal UI. It references only TruthWeaver
-    /// assemblies and the libraries they bring, never a command-line or terminal UI library, and no test support.
+    /// assemblies and the libraries they bring, never a command-line or terminal UI library, and no test support. It
+    /// references <c>TruthWeaver.Predicates</c> for the palette catalog (owner approval 2026-10-19, ticket 05).
     /// </summary>
     [Fact]
     public void ToolCore_References_ExcludeUiCommandLineAndTestingAssemblies_Test()
     {
-        string[] forbidden = ["System.CommandLine", "Terminal.Gui", "TruthWeaver.Testing", "TruthWeaver.Predicates"];
+        string[] forbidden = ["System.CommandLine", "Terminal.Gui", "TruthWeaver.Testing"];
 
         string[] referenced = [.. ToolCore.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty)];
 
         Assert.Contains("TruthWeaver", referenced);
+        Assert.Contains("TruthWeaver.Predicates", referenced);
         Assert.DoesNotContain(referenced, name => forbidden.Contains(name, StringComparer.Ordinal));
     }
 
@@ -272,14 +274,12 @@ public sealed class PackageBoundaryTests
         // Approved by the owner (2026-10-17): the editor view of the Terminal.Gui.Editor package, for this project only.
         Assert.Contains("Terminal.Gui.Editor", referenced);
 
-        // Approved by the owner (2026-10-17): the palette offers the ready-made predicates, found by reflection. This is the
-        // only new reference; any other TruthWeaver package here is a deliberate change to this list.
-        Assert.Contains("TruthWeaver.Predicates", referenced);
+        // The palette catalog of ready-made predicates lives in the tool core (2026-10-19), so the workbench has no reference
+        // to TruthWeaver.Predicates of its own. Any TruthWeaver package here beyond this list is a deliberate change to it.
         string[] allowedPackages =
         [
             "TruthWeaver",
             "TruthWeaver.Abstractions",
-            "TruthWeaver.Predicates",
             "TruthWeaver.Testing",
             "TruthWeaver.Tool.Core",
             "TruthWeaver.Tool.Tui",

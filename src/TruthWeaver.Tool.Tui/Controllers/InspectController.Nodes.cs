@@ -8,7 +8,6 @@ using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Core.Tree;
-using TruthWeaver.Tool.Tui.Predicates;
 
 /// <summary>
 /// The text of a node of the tree, and the operator and predicate facts that both the tree and the editor-text routes
@@ -67,7 +66,7 @@ internal sealed partial class InspectController
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        if (StructureController.For(this.workbench).Tree is not { } tree || tree.Find(path) is not { } node)
+        if (this.Tree is not { } tree || tree.Find(path) is not { } node)
         {
             return null;
         }
@@ -362,6 +361,30 @@ internal sealed partial class InspectController
         }
     }
 
+    // The source, the path and the resolved value or the failure of a from(...) variable.
+    private static void FromFacts(Lines text, string call, TermOutcome? term)
+    {
+        Match parts = FromParts().Match(call);
+        text.Add(
+            parts.Success
+                ? $"Variable from source \"{parts.Groups[1].Value}\", path \"{parts.Groups[2].Value}\""
+                : $"Variable {call}"
+        );
+        if (term is null)
+        {
+            return;
+        }
+
+        if (term.Key is not null)
+        {
+            text.Add($"Resolved: {term.Key}");
+            return;
+        }
+
+        string? fault = term.Faults.Select(f => f.Exception.Message.Trim()).FirstOrDefault();
+        text.Add($"Not resolved: {fault ?? "no data yet"}");
+    }
+
     private void OperatorNode(Lines text, RuleTree tree, RuleTreeNode node)
     {
         string name = NameOf(node.Label);
@@ -398,34 +421,31 @@ internal sealed partial class InspectController
             text.Add($"Fault: {fault}");
         }
 
+        TermOutcome? term = TermOutcomeLookup.FindByPath(tree, outcome, node.Path);
         foreach (Match from in FromCall().Matches(node.Label))
         {
-            this.FromFacts(text, from.Value, node.Label);
+            FromFacts(text, from.Value, term);
         }
     }
 
     // What the predicate catalog, the schema file or the rule says about a predicate name.
     private void PredicateFacts(Lines text, string name)
     {
-        PaletteEntry? entry = this.PaletteEntryFor(e =>
-            e.Source is PaletteSource.Catalog or PaletteSource.SchemaFile or PaletteSource.Document
-            && e.Name.Equals(name, StringComparison.Ordinal)
-        );
-        if (entry is null)
+        if (PaletteController.For(this.workbench).Palette().Find(name) is not { } facts)
         {
             text.Add($"Predicate {name} is not in the catalog, the schema file or the rule.");
             return;
         }
 
-        CatalogPredicate? catalog = PredicateCatalog.All.FirstOrDefault(p => p.Entry.Name == name);
-        text.Add($"Predicate {name} ({(catalog is null ? entry.Source.ToString().ToLowerInvariant() : catalog.Family)})");
+        PaletteEntry entry = facts.Entry;
+        text.Add($"Predicate {name} ({facts.Family ?? entry.Source.ToString().ToLowerInvariant()})");
         if (entry.Description.Length > 0)
         {
             text.Add(entry.Description);
         }
 
         text.Add($"Arguments: {PredicateKinds(entry)}");
-        if (catalog is { TakesNullBehavior: true })
+        if (facts.TakesNullBehavior)
         {
             text.Add("Null value: answers Unknown unless the host chose False.");
         }
@@ -434,37 +454,6 @@ internal sealed partial class InspectController
     // The entry of the palette that matches, searched once here so every caller shares the same chain.
     private PaletteEntry? PaletteEntryFor(Func<PaletteEntry, bool> match)
     {
-        return StructureController.For(this.workbench).Palette().Entries.FirstOrDefault(match);
-    }
-
-    // The source, the path and the resolved value or the failure of a from(...) variable.
-    private void FromFacts(Lines text, string call, string termLabel)
-    {
-        Match parts = FromParts().Match(call);
-        text.Add(
-            parts.Success
-                ? $"Variable from source \"{parts.Groups[1].Value}\", path \"{parts.Groups[2].Value}\""
-                : $"Variable {call}"
-        );
-        AssignmentOutcome outcome = this.workbench.Outcome;
-        TermAssignment? term = outcome.Terms.FirstOrDefault(t =>
-            t.Display == termLabel || t.Display.Contains(call, StringComparison.Ordinal)
-        );
-        if (term is null)
-        {
-            return;
-        }
-
-        if (term.Key is not null)
-        {
-            text.Add($"Resolved: {term.Key}");
-            return;
-        }
-
-        string? fault = outcome
-            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
-            .Select(f => f[(term.Display.Length + 1)..].Trim())
-            .FirstOrDefault();
-        text.Add($"Not resolved: {fault ?? "no data yet"}");
+        return PaletteController.For(this.workbench).Palette().Entries.FirstOrDefault(match);
     }
 }

@@ -1,6 +1,5 @@
 namespace TruthWeaver.Tool.Core.Output;
 
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TruthWeaver.Compilation;
@@ -8,6 +7,7 @@ using TruthWeaver.Evaluation;
 using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Yaml;
 
 /// <summary>
@@ -29,28 +29,31 @@ public static class RulePrinter
     /// <see langword="true"/> for the pretty form: rule text broken at <see cref="PrettyWidth"/> characters and JSON
     /// indented by two spaces. YAML has one form and ignores it.
     /// </param>
-    /// <returns>The text of the rule. Rule text keeps the notes.</returns>
+    /// <param name="includeNotes"><see langword="true"/> (the default) to keep the notes of the rule.</param>
+    /// <returns>
+    /// The text of the rule. Rule text uses the operator style of the settings, or the word style when that style has no
+    /// rule text that reads back.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="rule"/> or <paramref name="settings"/> is <see langword="null"/>.</exception>
-    public static string Print(CompiledRule<StubAssignment> rule, RuleFormat format, ToolSettings settings, bool pretty)
+    public static string Print(
+        CompiledRule<StubAssignment> rule,
+        RuleFormat format,
+        ToolSettings settings,
+        bool pretty,
+        bool includeNotes = true
+    )
     {
         ArgumentNullException.ThrowIfNull(rule);
         ArgumentNullException.ThrowIfNull(settings);
 
         return format switch
         {
-            RuleFormat.Text => rule.PrintRuleText(
-                new RuleTextOptions
-                {
-                    OperatorStyle = settings.OperatorStyle,
-                    IncludeNotes = true,
-                    Width = pretty ? PrettyWidth : null,
-                }
-            ),
-            RuleFormat.Json when pretty => IndentJson(rule.PrintAs(RuleFormat.Json)),
+            RuleFormat.Text => PrintText(rule, settings, pretty, includeNotes),
+            RuleFormat.Json when pretty => IndentJson(rule.PrintAs(RuleFormat.Json, includeNotes)),
 
             // The YAML printer may write CRLF on Windows; printed text keeps line feeds, as the output writer does.
-            RuleFormat.Yaml => rule.PrintAs(RuleFormat.Yaml).ReplaceLineEndings("\n"),
-            _ => rule.PrintAs(format),
+            RuleFormat.Yaml => rule.PrintAs(RuleFormat.Yaml, includeNotes).ReplaceLineEndings("\n"),
+            _ => rule.PrintAs(format, includeNotes),
         };
     }
 
@@ -88,23 +91,32 @@ public static class RulePrinter
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        JsonNode node = JsonNode.Parse(json) ?? throw new InvalidOperationException("The printer wrote JSON null.");
-        using MemoryStream stream = new();
-        using (
-            Utf8JsonWriter writer = new(
-                stream,
-                new JsonWriterOptions
-                {
-                    Indented = true,
-                    NewLine = "\n",
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                }
-            )
-        )
-        {
-            node.WriteTo(writer);
-        }
+        return IndentJson(JsonNode.Parse(json) ?? throw new InvalidOperationException("The printer wrote JSON null."));
+    }
 
-        return Encoding.UTF8.GetString(stream.ToArray());
+    /// <summary>Indents a JSON node by two spaces with line feeds, without escaping characters that JSON allows as they are.</summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The indented text.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static string IndentJson(JsonNode node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return DiagnosticWriter.WriteJson(writer => node.WriteTo(writer));
+    }
+
+    private static string PrintText(CompiledRule<StubAssignment> rule, ToolSettings settings, bool pretty, bool includeNotes)
+    {
+        RuleTextOptions options = new()
+        {
+            OperatorStyle = settings.OperatorStyle,
+            IncludeNotes = includeNotes,
+            Width = pretty ? PrettyWidth : null,
+        };
+
+        // The C-style operators have no rule text that reads back; the word style always does.
+        return rule.TryPrintRuleText(options, out string? text)
+            ? text
+            : rule.PrintRuleText(options with { OperatorStyle = OperatorStyle.Word });
     }
 }

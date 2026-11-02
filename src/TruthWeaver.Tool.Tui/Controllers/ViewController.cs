@@ -267,8 +267,7 @@ internal sealed class ViewController
         ToolResult<string> written = OutputWriter.WriteFile(path, text);
         if (!written.TryGetValue(out string? file, out EquatableArray<Diagnostic> diagnostics))
         {
-            Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-            this.workbench.SetStatus(first is null ? $"Not saved to '{path}'." : $"{first.Code}: {first.Message}");
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, $"Not saved to '{path}'."));
             return false;
         }
 

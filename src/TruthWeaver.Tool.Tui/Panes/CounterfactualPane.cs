@@ -74,8 +74,7 @@ internal sealed class CounterfactualPane : IWorkbenchPane
             }
         };
         controller.Changed += (_, _) => Show();
-        workbench.DocumentChanged += (_, _) => Refresh();
-        workbench.AssignmentChanged += (_, _) => Refresh();
+        workbench.DocumentOrAssignmentChanged += (_, _) => Refresh();
         list.VisibleChanged += (_, _) => Refresh();
         Show();
         return list;

@@ -176,7 +176,7 @@ internal sealed class ExportController
         ToolResult<string> written = OutputWriter.WriteFile(target, text);
         if (!written.TryGetValue(out string? file, out diagnostics))
         {
-            this.workbench.SetStatus("Not saved: " + First(diagnostics));
+            this.workbench.SetStatus("Not saved: " + DiagnosticSummary.FirstError(diagnostics));
             return false;
         }
 
@@ -222,7 +222,7 @@ internal sealed class ExportController
         );
         if (!image.TryGetValue(out string? file, out diagnostics))
         {
-            this.workbench.SetStatus("No image: " + First(diagnostics));
+            this.workbench.SetStatus("No image: " + DiagnosticSummary.FirstError(diagnostics));
             return false;
         }
 
@@ -241,7 +241,7 @@ internal sealed class ExportController
         ToolResult<LoadedRule> rule = this.CurrentRule();
         if (!rule.TryGetValue(out LoadedRule? loaded, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus("Not exported: " + First(diagnostics));
+            this.workbench.SetStatus("Not exported: " + DiagnosticSummary.FirstError(diagnostics));
             return false;
         }
 
@@ -259,7 +259,7 @@ internal sealed class ExportController
         ToolResult<ExportManifest> exported = ArtifactExporter.ExportAll(loaded, folder, options);
         if (!exported.TryGetValue(out ExportManifest? manifest, out diagnostics))
         {
-            this.workbench.SetStatus("Not exported: " + First(diagnostics));
+            this.workbench.SetStatus("Not exported: " + DiagnosticSummary.FirstError(diagnostics));
             return false;
         }
 
@@ -317,12 +317,6 @@ internal sealed class ExportController
             : this.SaveArtifact(request.Entry.Artifact!, request.Path);
     }
 
-    private static string First(IEnumerable<Diagnostic> diagnostics)
-    {
-        Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? "unknown problem." : $"{first.Code}: {first.Message}";
-    }
-
     private static string Warnings(IEnumerable<Diagnostic> diagnostics)
     {
         string[] warnings =
@@ -342,7 +336,7 @@ internal sealed class ExportController
     // The message of a refused artifact. A refused truth table says how to raise the cap.
     private string Failure(ArtifactDefinition artifact, IEnumerable<Diagnostic> diagnostics)
     {
-        string message = $"Cannot make {artifact.Id}: {First(diagnostics)}";
+        string message = $"Cannot make {artifact.Id}: {DiagnosticSummary.FirstError(diagnostics)}";
         if (
             artifact.Id.StartsWith("truth-table", StringComparison.Ordinal)
             && !this.AllowLargerTruthTable
@@ -382,6 +376,6 @@ internal sealed class ExportController
             Path.Combine(Path.GetTempPath(), "truthweaver-probe"),
             new ImageRenderOptions { SearchPath = this.ImageSearchPath }
         );
-        return First(probe.Diagnostics);
+        return probe.FailureSummary();
     }
 }

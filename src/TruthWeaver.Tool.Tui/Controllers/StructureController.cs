@@ -11,7 +11,6 @@ using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Panes;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Views;
 using TruthWeaver.Tool.Tui.Workbench;
@@ -36,11 +35,14 @@ internal sealed class StructureController
 
     private static readonly ConditionalWeakTable<Workbench, StructureController> Controllers = [];
 
+    // The short label of each catalog entry, for the line of a catalog predicate in a list.
+    private static readonly Lazy<Dictionary<PaletteEntry, string>> CatalogLabels = new(() =>
+        PredicateCatalog.All.ToDictionary(p => p.Entry, p => p.Label)
+    );
+
     private readonly Workbench workbench;
     private readonly WorkbenchServices? services;
     private RuleTree? tree;
-    private PredicateSchemaFile? schema;
-    private bool schemaRead;
     private string? schemaNotice;
 
     /// <summary>Initializes a new instance of the <see cref="StructureController"/> class.</summary>
@@ -199,11 +201,7 @@ internal sealed class StructureController
     {
         // The committed document: reading Document would apply the pending text and end the pause.
         RuleDocument document = this.workbench.CommittedDocument;
-        if (
-            document.Format != RuleFormat.Text
-            || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error)
-            || TermCalls.CallTextAt(document.Text, offset) is not { } call
-        )
+        if (document.Format != RuleFormat.Text || document.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
         {
             return null;
         }
@@ -214,15 +212,10 @@ internal sealed class StructureController
             return null;
         }
 
-        // The display of a term is its call without regard to spacing; a bare name with one match is also enough.
-        TermAssignment? term = outcome.Terms.FirstOrDefault(t => TermCalls.SameCall(t.Display, call));
-        if (term is null)
-        {
-            TermAssignment[] named = [.. outcome.Terms.Where(t => TermCalls.NameOf(t.Display) == TermCalls.NameOf(call))];
-            term = named.Length == 1 ? named[0] : null;
-        }
-
-        return term is not null && this.ValueTextOf(term) is { } value ? $"{term.Display} = {value}" : null;
+        // The Core lookup turns the cursor into the term: the call at the offset, matched to a term without regard to spacing.
+        return TermOutcomeLookup.FindBySpan(document.Text, outcome, new SourceSpan(offset, 0)) is { } term
+            ? $"{term.Display} = {ValueTextOf(term)}"
+            : null;
     }
 
     /// <summary>Selects the node at an index of <see cref="Lines"/>.</summary>
@@ -239,7 +232,7 @@ internal sealed class StructureController
     /// <returns>The palette.</returns>
     public RulePalette Palette()
     {
-        return RulePalette.Create(this.workbench.Document.Rule, this.Schema(), this.Definitions());
+        return PaletteController.For(this.workbench).Palette();
     }
 
     /// <summary>Asks for an operator from the palette and puts it in place of the operator of the selected node.</summary>
@@ -391,87 +384,98 @@ internal sealed class StructureController
         return ChoiceDialog.HeaderLine(family);
     }
 
-    private static string CatalogLine(CatalogPredicate predicate)
+    // Adds the groups that a palette search found to a list: a header line for each titled group, then a line for each entry.
+    // The list of the dialog and the targets that go with it stay in step.
+    private static void AddGroups(IEnumerable<PaletteGroup> groups, List<string> items, List<PaletteEntry?> targets)
     {
-        return predicate.Entry.Display + " - " + predicate.Label;
+        foreach (PaletteGroup group in groups)
+        {
+            if (group.Title is { } title)
+            {
+                items.Add(GroupLine(title));
+                targets.Add(null);
+            }
+
+            foreach (PaletteEntry entry in group.Entries)
+            {
+                items.Add(
+                    CatalogLabels.Value.TryGetValue(entry, out string? label) ? entry.Display + " - " + label : entry.Display
+                );
+                targets.Add(entry);
+            }
+        }
     }
 
-    // The indexes of the palette list that a search shows. An empty search shows the whole list. Otherwise the entries are
-    // the matches of the catalog search (name, label, family, description words and aliases) and the own entries (schema
-    // file and rule) whose line holds every word, each catalog match under its family line.
-    private static List<int> FilterPalette(IReadOnlyList<PaletteEntry?> targets, string query)
+    // The indexes of a palette list that a search shows: the whole list for an empty search, otherwise the matches of the
+    // palette search, each catalog match under its family line. The first two lines (typed expression, catalog search) are
+    // not matches.
+    private static List<int> ShownBy(
+        RulePalette palette,
+        IReadOnlyList<PaletteEntry?> targets,
+        IReadOnlyList<string> items,
+        string query
+    )
     {
-        string[] words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 0)
+        if (query.Trim().Length == 0)
         {
-            return [.. Enumerable.Range(0, targets.Count)];
+            return [.. Enumerable.Range(0, items.Count)];
         }
 
-        HashSet<PaletteEntry> found = [.. PredicateCatalog.Search(query).Select(p => p.Entry)];
-        List<int> shown = [];
-        int group = -1;
-
-        // The first two entries are the typed expression and the catalog search; they are not matches.
+        Dictionary<PaletteEntry, int> entryIndex = [];
+        Dictionary<string, int> headerIndex = [];
         for (int i = 2; i < targets.Count; i++)
         {
-            if (targets[i] is not { } entry)
+            if (targets[i] is { } entry)
             {
-                group = i;
+                entryIndex[entry] = i;
             }
-            else if (entry.Source == PaletteSource.Catalog)
+            else
             {
-                if (found.Contains(entry))
-                {
-                    if (group >= 0)
-                    {
-                        shown.Add(group);
-                        group = -1;
-                    }
+                headerIndex[items[i]] = i;
+            }
+        }
 
-                    shown.Add(i);
-                }
-            }
-            else if (
-                words.All(w =>
-                    entry.Display.Contains(w, StringComparison.OrdinalIgnoreCase)
-                    || entry.Description.Contains(w, StringComparison.OrdinalIgnoreCase)
-                )
-            )
+        List<int> shown = [];
+        foreach (PaletteGroup group in palette.Search(query))
+        {
+            if (group.Title is { } title && headerIndex.TryGetValue(GroupLine(title), out int header))
             {
-                shown.Add(i);
+                shown.Add(header);
             }
+
+            shown.AddRange(group.Entries.Select(e => entryIndex[e]));
         }
 
         return shown;
+    }
+
+    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
+    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
+    private static string ValueTextOf(TermOutcome term)
+    {
+        if (term.Key is not null)
+        {
+            return term.Value.ToString();
+        }
+
+        string? fault = term.Faults.Select(f => f.Exception.Message.Trim()).FirstOrDefault();
+        return $"Unknown: {fault ?? "no data yet"}";
     }
 
     // The value text of the term that a tree node stands for, or null when no rule has compiled or the node has no term.
     private string? ValueTextOf(RuleTreeNode node)
     {
         AssignmentOutcome outcome = this.workbench.Outcome;
-        if (!outcome.HasRule || outcome.Terms.FirstOrDefault(t => t.Display == node.Label) is not { } term)
+        if (
+            !outcome.HasRule
+            || this.Tree is not { } current
+            || TermOutcomeLookup.FindByPath(current, outcome, node.Path) is not { } term
+        )
         {
             return null;
         }
 
-        return this.ValueTextOf(term);
-    }
-
-    // The value of a term, as the words of the value: True, False or Unknown. A term whose from(...) reference has no data
-    // is Unknown, and the text says why (the fault message of the evaluation, or that no data arrived yet).
-    private string ValueTextOf(TermAssignment term)
-    {
-        AssignmentOutcome outcome = this.workbench.Outcome;
-        if (term.Key is not null)
-        {
-            return term.Value.ToString();
-        }
-
-        string? fault = outcome
-            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
-            .Select(f => f[(term.Display.Length + 1)..].Trim())
-            .FirstOrDefault();
-        return $"Unknown: {fault ?? "no data yet"}";
+        return ValueTextOf(term);
     }
 
     // The badge at the end of the line of a term in the tree. It is text, so it does not depend on the color. Other nodes
@@ -539,27 +543,15 @@ internal sealed class StructureController
     private string? PickExpression(string title)
     {
         this.schemaNotice = null;
-        PaletteEntry[] own = [.. this.Palette().Entries.Where(e => e.Source != PaletteSource.Operator)];
-        List<string> items = [TypeExpression, SearchCatalog, .. own.Select(e => e.Display)];
-        List<PaletteEntry?> targets = [null, null, .. own];
-        string? family = null;
-        foreach (CatalogPredicate predicate in PredicateCatalog.All)
-        {
-            if (predicate.Family != family)
-            {
-                family = predicate.Family;
-                items.Add(GroupLine(family));
-                targets.Add(null);
-            }
-
-            items.Add(CatalogLine(predicate));
-            targets.Add(predicate.Entry);
-        }
+        RulePalette palette = this.Palette();
+        List<string> items = [TypeExpression, SearchCatalog];
+        List<PaletteEntry?> targets = [null, null];
+        AddGroups(palette.Search(string.Empty), items, targets);
 
         PaletteEntry? picked = null;
         while (picked is null)
         {
-            int? choice = this.Services.Dialogs.ChooseFiltered(title, items, query => FilterPalette(targets, query));
+            int? choice = this.Services.Dialogs.ChooseFiltered(title, items, query => ShownBy(palette, targets, items, query));
             switch (choice)
             {
                 case null:
@@ -604,10 +596,7 @@ internal sealed class StructureController
         this.schemaNotice = filled.Succeeded ? this.SchemaGap(entry) : null;
         if (!filled.Succeeded)
         {
-            Diagnostic? first = filled.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-            this.workbench.SetStatus(
-                $"Not applied: {(first is null ? "the call does not compile." : $"{first.Code}: {first.Message}")}"
-            );
+            this.workbench.SetStatus($"Not applied: {filled.FailureSummary("the call does not compile.")}");
             return null;
         }
 
@@ -623,7 +612,7 @@ internal sealed class StructureController
             return null;
         }
 
-        IReadOnlyList<CatalogPredicate> found = PredicateCatalog.Search(query);
+        IReadOnlyList<PaletteGroup> found = this.Palette().Search(query, e => e.Source == PaletteSource.Catalog);
         if (found.Count == 0)
         {
             this.workbench.SetStatus($"No predicate of the catalog matches '{query.Trim()}'.");
@@ -632,19 +621,7 @@ internal sealed class StructureController
 
         List<string> items = [];
         List<PaletteEntry?> targets = [];
-        string? family = null;
-        foreach (CatalogPredicate predicate in found)
-        {
-            if (predicate.Family != family)
-            {
-                family = predicate.Family;
-                items.Add(GroupLine(family));
-                targets.Add(null);
-            }
-
-            items.Add(CatalogLine(predicate));
-            targets.Add(predicate.Entry);
-        }
+        AddGroups(found, items, targets);
 
         while (this.Services.Dialogs.Choose($"Catalog: {query.Trim()}", items) is int choice)
         {
@@ -665,7 +642,7 @@ internal sealed class StructureController
         if (
             entry.Source != PaletteSource.Catalog
             || this.workbench.Settings.SchemaFile is null
-            || this.Schema() is not { } declared
+            || PaletteController.For(this.workbench).Schema() is not { } declared
         )
         {
             return null;
@@ -691,29 +668,12 @@ internal sealed class StructureController
     // The definitions of the text, only when the text compiled: the tree and the edits start from that rule.
     private RuleDefinitions? Definitions()
     {
-        RuleDocument document = this.workbench.Document;
-        return document.IsRuleCurrent && document.Definitions.HasDefinitions ? document.Definitions : null;
+        return PaletteController.For(this.workbench).Definitions();
     }
 
     private RuleTreeNode SelectedNodeOrRoot()
     {
         RuleTree current = this.Tree!;
         return current.Find(this.workbench.SelectedNode) ?? current.Nodes[0];
-    }
-
-    // The schema file of the settings, read once. A file that cannot be read gives no predicates; the validation panel
-    // reports its problems.
-    private PredicateSchemaFile? Schema()
-    {
-        if (!this.schemaRead)
-        {
-            this.schemaRead = true;
-            if (this.workbench.Settings.SchemaFile is { } path)
-            {
-                this.schema = PredicateSchemaFile.Load(path).Value;
-            }
-        }
-
-        return this.schema;
     }
 }

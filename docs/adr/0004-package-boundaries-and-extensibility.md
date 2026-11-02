@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place). The `TruthWeaver.Testing` dependency described below was reversed on 2026-10-09 (changed in place; see the amendment under "Four packages"). A seventh package, `TruthWeaver.Generators`, was added on 2026-10-09 (changed in place; see the amendments under "Four packages" and "Extensibility: explicit registration only"). `TruthWeaver.AspNetCore`, `TruthWeaver.Tool.Core` and `TruthWeaver.Tool` were recorded on 2026-10-17 (changed in place; see the last amendment under "Four packages"), and the metrics instrumentation on the same date (see the amendment under "Logging: abstractions, not a concrete provider").
+Accepted. Type and member names cited here (`TraceTree`, `TraceNode`, `Text`, `OutlineNode`, `Outline()`) read as renamed by [ADR-0007](0007-naming-cleanup-and-tre-diagnostic-prefix.md) (changed in place). The `TruthWeaver.Testing` dependency described below was reversed on 2026-10-09 (changed in place; see the amendment under "Four packages"). A seventh package, `TruthWeaver.Generators`, was added on 2026-10-09 (changed in place; see the amendments under "Four packages" and "Extensibility: explicit registration only"). `TruthWeaver.AspNetCore`, `TruthWeaver.Tool.Core` and `TruthWeaver.Tool` were recorded on 2026-10-17 (changed in place; see the last amendment under "Four packages"), and the metrics instrumentation on the same date (see the amendment under "Logging: abstractions, not a concrete provider"). `TruthWeaver.Tool.Core` took a reference to `TruthWeaver.Predicates` on 2026-10-19 for the palette catalog (changed in place; see the `Tool.Core` bullet of that amendment).
 
 ## Context
 
@@ -72,9 +72,9 @@ observability is deferred, not v1).
 > - **`TruthWeaver.Tool.Core`** is the UI-free library that the command line and a terminal UI share: loading, format
 >   detection, conversion, validation, export and deterministic output. It is **not a package**
 >   (`IsPackable` is `false`); the tools carry the assembly. It references `TruthWeaver`, `TruthWeaver.Abstractions`,
->   `TruthWeaver.Yaml` and `TruthWeaver.DataSources.Json`, never `System.CommandLine`, a terminal UI library,
->   `TruthWeaver.Testing` or `TruthWeaver.Predicates`, and no shipping package references it. The tools build on the
->   packages, never the reverse.
+>   `TruthWeaver.Yaml`, `TruthWeaver.DataSources.Json` and (since 2026-10-19, owner-approved, for the palette catalog)
+>   `TruthWeaver.Predicates`, never `System.CommandLine`, a terminal UI library or `TruthWeaver.Testing`, and no shipping
+>   package references it. The tools build on the packages, never the reverse.
 > - **`TruthWeaver.Tool`** is the .NET tool package of the `truthweaver` command line. It builds on `Tool.Core`, adds
 >   `System.CommandLine` (the only project that has it) and references `TruthWeaver.Testing` for the rule test runner
 >   of `truthweaver test`, so the command line and C# tests run the same cases. Its commands, options and exit codes are

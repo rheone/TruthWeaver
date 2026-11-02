@@ -1,6 +1,8 @@
 namespace TruthWeaver.Tool.Tui.Tests.Workbench;
 
+using TruthWeaver.Abstractions;
 using TruthWeaver.Compilation;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Core.Documents;
@@ -133,6 +135,37 @@ public sealed class WorkbenchTests : IDisposable
     public void Dispose()
     {
         Directory.Delete(this.directory, recursive: true);
+    }
+
+    /// <summary>A handler of the combined notification sees a fresh outcome after the assignment changed.</summary>
+    [Fact]
+    public void DocumentOrAssignmentChanged_AfterAssignmentChange_HandlerSeesFreshOutcome_Test()
+    {
+        Workbench workbench = this.Create("a AND b");
+        AssignmentOutcome stale = workbench.Outcome;
+        AssignmentOutcome? seen = null;
+        workbench.DocumentOrAssignmentChanged += (_, _) => seen = workbench.Outcome;
+
+        workbench.Assignment.Set("a", TruthValue.True);
+        workbench.NotifyAssignmentChanged();
+
+        Assert.NotNull(seen);
+        Assert.NotSame(stale, seen);
+    }
+
+    /// <summary>A handler of the combined notification sees a fresh outcome after the document changed.</summary>
+    [Fact]
+    public void DocumentOrAssignmentChanged_AfterDocumentChange_HandlerSeesFreshOutcome_Test()
+    {
+        Workbench workbench = this.Create("a AND b");
+        AssignmentOutcome stale = workbench.Outcome;
+        AssignmentOutcome? seen = null;
+        workbench.DocumentOrAssignmentChanged += (_, _) => seen = workbench.Outcome;
+
+        workbench.Document.SetText("a OR b");
+
+        Assert.NotNull(seen);
+        Assert.NotSame(stale, seen);
     }
 
     private Workbench Create(string text)

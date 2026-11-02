@@ -64,11 +64,28 @@ required variable; `SourceNodeIndex`'s lookup for a node with no matching source
 - `RuleCases.RuleTestCaseText`, `Loading.JsonLogicImporter`/`Conversion`, `Tree.RuleTree`, `Documents.RuleDocument`, `Documents.SourceNodeIndex`, `Assignment.AssignmentVariables`, `Export.ImageRenderer` (all in `TruthWeaver.Tool.Core`).
 
 **Acceptance criteria:**
-- [ ] Each of the seven classes gains at least one test for a genuinely non-trivial previously-uncovered path, prioritizing the representative scenarios named above.
+- [x] Each of the seven classes gains at least one test for a genuinely non-trivial previously-uncovered path, prioritizing the representative scenarios named above.
 - [ ] Line/branch coverage improves measurably for the listed files (not necessarily to 100%).
-- [ ] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
+- [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
 - [ ] The full validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - The pure-presentation TUI widgets (separate ticket).
 - Chasing every uncovered line indiscriminately — prioritize real failure modes.
+
+## Result
+
+First slice (50 tests, all passing; coverage was not measured, so criterion 2 is not ticked): `JsonLogicImporterFailureTests` (9), `AssignmentVariablesEdgeTests` (8), `RuleTestCaseTextReadTests` (5), `SourceNodeIndexTests` (6), `RuleTreePathTests` (7), `RuleDocumentHistoryTests` (6), `ImageRendererSearchTests` (8) and one test in `ImageRendererTests` (a renderer that writes no file).
+
+**Finding (defect, test left out).** `AssignmentVariables.Read("user: [1, 2\nother: x\n")` (an unclosed YAML flow sequence) throws `InvalidOperationException` from `YamlDotNet.Core.Scanner.ScanPlainScalar`. `TryReadAny` catches only `JsonException`, `YamlException` and `ArgumentException`, so the exception escapes instead of a `MalformedDocument` error. Expected: a `MalformedDocument` diagnostic. `StubAssignment.ReadYaml` and `RuleTestCaseText.Parse` have the same catch list.
+
+**Noticed, not changed.** `RuleTree.TryLocate` leaves `parent` and `index` set to the last step that worked when it returns `false` for a later step (for example `$.operands[0].operands[0]`); callers only read them after `true`.
+
+## Remaining
+
+- `RuleTestCaseText`: `AddOrReplaceCase` when the file has keys or comments after the last case, `WithRule` with several rule keys, `NewFile` with a multi-line rule.
+- `JsonLogicImporter`: `!!` with two arguments, the `?:` alias, `in` with a non-literal candidate.
+- `RuleTree`: `Collect` for definitions, uses and `CollectSource` (RuleDefinitions input), `OperatorLabel` for quantifiers and `min`/`max`, `CopyDocument`.
+- `RuleDocument`: `ConvertTo` with definitions, `ApplyEdit` with a definitions document, `Save` over a read-only target.
+- `ImageRenderer`: the renderer timeout (the `Run` kill path) and a renderer that cannot start.
+- `SourceNodeIndex`: complex YAML keys, anchored scalars with tags, several YAML documents.

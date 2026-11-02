@@ -5,7 +5,7 @@ using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Tool.Core.Palette;
-using TruthWeaver.Tool.Tui.Predicates;
+using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Workbench;
 
@@ -56,44 +56,6 @@ internal static class InsertCommands
         ),
     ];
 
-    /// <summary>
-    /// Gets the indexes of the predicate list that a search shows. An empty search shows every entry. Otherwise a catalog
-    /// entry shows when the catalog search finds it (name, label, family, description and aliases), and an own entry (schema
-    /// file or rule) shows when its line holds every word.
-    /// </summary>
-    /// <param name="entries">The entries.</param>
-    /// <param name="lines">The line of each entry in the list.</param>
-    /// <param name="query">The text of the search box.</param>
-    /// <returns>The indexes, in order.</returns>
-    public static IReadOnlyList<int> FilterPredicates(
-        IReadOnlyList<PaletteEntry> entries,
-        IReadOnlyList<string> lines,
-        string query
-    )
-    {
-        ArgumentNullException.ThrowIfNull(entries);
-        ArgumentNullException.ThrowIfNull(lines);
-        ArgumentNullException.ThrowIfNull(query);
-
-        string[] words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 0)
-        {
-            return [.. Enumerable.Range(0, entries.Count)];
-        }
-
-        HashSet<PaletteEntry> found = [.. PredicateCatalog.Search(query).Select(p => p.Entry)];
-        return
-        [
-            .. Enumerable
-                .Range(0, entries.Count)
-                .Where(i =>
-                    entries[i].Source == PaletteSource.Catalog
-                        ? found.Contains(entries[i])
-                        : words.All(w => lines[i].Contains(w, StringComparison.OrdinalIgnoreCase))
-                ),
-        ];
-    }
-
     /// <summary>Asks for a predicate and inserts a call of it with a placeholder for each argument.</summary>
     /// <param name="workbench">The workbench.</param>
     /// <param name="services">The dialogs.</param>
@@ -108,18 +70,17 @@ internal static class InsertCommands
             return false;
         }
 
-        PredicateSchemaFile? schema = workbench.Settings.SchemaFile is { } path ? PredicateSchemaFile.Load(path).Value : null;
-        PaletteEntry[] own =
-        [
-            .. RulePalette
-                .Create(workbench.Document.Rule, schema)
-                .Entries.Where(e => e.Source is PaletteSource.SchemaFile or PaletteSource.Document),
-        ];
-        PaletteEntry[] entries = [.. own, .. PredicateCatalog.All.Select(p => p.Entry)];
+        RulePalette palette = PaletteController.For(workbench).Palette();
+        PaletteEntry[] entries = [.. Found(palette, string.Empty)];
         string[] lines = [.. entries.Select(e => e.Display + " - " + e.Description)];
 
+        // The dialog shows the lines whose entries the palette search finds; the list is the whole search of an empty text.
         if (
-            services.Dialogs.ChooseFiltered("Insert a predicate", lines, query => FilterPredicates(entries, lines, query))
+            services.Dialogs.ChooseFiltered(
+                "Insert a predicate",
+                lines,
+                query => [.. Found(palette, query).Select(found => Array.IndexOf(entries, found))]
+            )
             is not { } index
         )
         {
@@ -191,16 +152,21 @@ internal static class InsertCommands
         return Insert(workbench, definitions[index], $"a use of {definitions[index].Name}");
     }
 
+    // The predicates that Insert offers: those of the schema file and the rule, then the catalog.
+    private static IEnumerable<PaletteEntry> Found(RulePalette palette, string query)
+    {
+        return palette
+            .Search(query, e => e.Source is PaletteSource.SchemaFile or PaletteSource.Document or PaletteSource.Catalog)
+            .SelectMany(g => g.Entries);
+    }
+
     // Makes the text of a predicate or a definition and inserts it. A call that does not compile is not inserted.
     private static bool Insert(Workbench workbench, PaletteEntry entry, string what)
     {
         ToolResult<string> text = InsertItems.PredicateText(entry, workbench.Settings);
         if (!text.Succeeded)
         {
-            Diagnostic? first = text.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-            workbench.SetStatus(
-                $"Not inserted: {(first is null ? "the call does not compile." : $"{first.Code}: {first.Message}")}"
-            );
+            workbench.SetStatus($"Not inserted: {text.FailureSummary("the call does not compile.")}");
             return false;
         }
 

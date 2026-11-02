@@ -4,12 +4,13 @@ using System.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using TruthWeaver.Abstractions;
+using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Palette;
 using TruthWeaver.Tool.Core.Tree;
 using TruthWeaver.Tool.Tui.Commands;
 using TruthWeaver.Tool.Tui.Controllers;
 using TruthWeaver.Tool.Tui.Panes;
-using TruthWeaver.Tool.Tui.Predicates;
 using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Tests.TestSupport;
 using TruthWeaver.Tool.Tui.Views;
@@ -203,6 +204,33 @@ public sealed class InspectControllerTests
 
         Assert.Contains($"Predicate {predicate.Entry.Name} ({predicate.Family})", text, StringComparison.Ordinal);
         Assert.Contains("Value now:", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The predicate name under the cursor in a rule with two same-name predicates gives the value of that call only, and the
+    /// tree node of each call gives its own value, because both find the term through the Core lookup.
+    /// </summary>
+    [Fact]
+    public void DescribeOffset_TwoPredicatesWithTheSameName_GiveTheirOwnValues_Test()
+    {
+        const string rule = "hasRole(role: \"admin\") AND hasRole(role: \"user\")";
+        ScriptedServices services = new();
+        using WorkbenchHarness harness = new(rule, [new RuleTextPane(), new TreePane(services.Services)]);
+        TermAssignment[] terms = [.. harness.Workbench.Outcome.Terms];
+        harness.Workbench.Assignment.Set(terms[0].Key!, TruthValue.True);
+        harness.Workbench.Assignment.Set(terms[1].Key!, TruthValue.False);
+        harness.Workbench.NotifyAssignmentChanged();
+        InspectController inspect = InspectController.For(harness.Workbench);
+
+        string first = inspect.DescribeOffset(rule.IndexOf("hasRole", StringComparison.Ordinal))!;
+        string second = inspect.DescribeOffset(rule.LastIndexOf("hasRole", StringComparison.Ordinal))!;
+        string node = inspect.DescribeNode("$.operands[1]")!;
+
+        Assert.Contains("Value now: True  for hasRole(role: \"admin\")", first, StringComparison.Ordinal);
+        Assert.DoesNotContain("role: \"user\"", first, StringComparison.Ordinal);
+        Assert.Contains("Value now: False  for hasRole(role: \"user\")", second, StringComparison.Ordinal);
+        Assert.DoesNotContain("role: \"admin\"", second, StringComparison.Ordinal);
+        Assert.Contains("Value now: False", node, StringComparison.Ordinal);
     }
 
     /// <summary>A name that a <c>let</c> defines is described as the definition, with its body.</summary>

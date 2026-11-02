@@ -28,6 +28,7 @@ The front ends parse options and draw output. The behavior is in this library, s
 | `RuleReport` | Writes the Markdown report of a rule. |
 | `ImageRenderer` | Renders a Mermaid or DOT diagram as an SVG or PNG image with an external program. |
 | `RulePatcher` | Writes an edited rule back into its document, and keeps the comments and layout of the document. |
+| `EmbeddedRuleSession` | Edits one rule inside a JSON or YAML document and writes it back. See [Editing an embedded rule](#editing-an-embedded-rule). |
 | `StubEvaluator` | Evaluates a rule with stub values in place of the predicates, and with data files. |
 | `RuleDocument` | Holds one rule open for editing: compiles each change, keeps the last valid tree, undo and redo, format, open and save. See [Editing a rule](#editing-a-rule). |
 | `AssignmentSession`, `AssignmentVariables` | Try a rule with values: a value for each term, data for `from(...)` references, and a policy. They give the decision, the trace with a reason for each node, and the faults. See [Trying a rule with values](#trying-a-rule-with-values). |
@@ -100,12 +101,27 @@ A path that selects nothing is a `TWT0005` error that names the first segment th
 
 `DocumentOutline` helps a front end to find the places of a document where a rule can be. `DocumentOutline.Read(path)` and `DocumentOutline.Browse(text, format)` list the objects, arrays and strings of a JSON or YAML document in document order, as `DocumentNode` values with the normalized path, the depth, a kind and a short label. An object with a `const`, `predicate` or `op` key is a rule (`DocumentNodeKind.Rule`) and is one entry: the nodes inside it are not listed. A string is `DocumentNodeKind.Text`. Rule text has no paths, so `Read` reports a `TWT0006` error for it. `DocumentOutline.Match(nodes, pattern)` finds the entries that a path names. In a pattern, `.*` or `[*]` matches every key or index at that place, so a pattern can name none, one or many entries.
 
+### Editing an embedded rule
+
+`EmbeddedRuleSession` holds one rule that lives inside a larger JSON or YAML document: the file, the path of the rule and the rule as it was when the session read it. It has no view.
+
+| Member | Does |
+| --- | --- |
+| `Open(file, path)` | Reads the rule at the path and returns the session. A path that selects nothing, a value that is not a rule, or a file that cannot be read gives diagnostics. |
+| `Outline(file)` | Lists the places of the document where a rule can be, read from the file now. |
+| `CreateDocument(settings)` | Makes the `RuleDocument` of the rule, with the text of the rule alone. |
+| `Prepare(document, mode, settings)` | Reads the file again and computes the patch for the edited document with the `WriteBackMode` (see [Writing a rule back](#writing-a-rule-back)). It writes nothing. The `PreparedWrite` has the patch, the kind of change and `ChangedOnDisk`. |
+| `Commit(write)` | Writes the prepared patch with `RulePatcher.WriteFile`, then takes the written rule as the new baseline. |
+
+`ChangedOnDisk` is `true` when the rule in the file now differs from the rule that the session read. `Prepare` patches the file as it is now, so a write replaces that version. The caller decides whether to ask first. After `Commit`, a second `Prepare` reports no change on disk.
+
 ## Compiling and converting
 
 The tool has no host registry. `RuleConverter.CreateCompiler` makes a permissive compiler: an empty registry in `CompilationMode.Lenient`. The compiler accepts every predicate name. It keeps each argument by value, or reports `ArgumentTypeMismatch` when it cannot: a number that neither `long` nor `decimal` holds exactly (such as `1e400`), a list that mixes element kinds, or a list inside a list. A whole number beyond `long`, such as a large identifier, and an exponent form such as `1e5` are kept as a `decimal`; the converted rule prints `100000` for `1e5`. A `from("source", "query")` reference needs no declared data source. Syntax errors, operator errors, limits and a reserved word used as a predicate name (such as `OR` or `T`) are still diagnostics. The limits come from the [settings](#configuration-file).
 
 `RuleConverter.Compile` compiles a loaded rule in its own format. `RuleConverter.Convert` converts it to rule text, JSON or YAML, and keeps the notes unless `includeNotes` is `false`. The converted text compiles to a tree equal to the source tree, with the same notes. A conversion does not keep the layout of the source, its spelling (operator case and aliases) or YAML `#` comments. [Rule formats](rule-formats.md) describes the conversion guarantee.
 
+`RulePrinter.Print` writes a rule in rule text, JSON or YAML with the operator style of the settings, and keeps the notes unless `includeNotes` is `false`. The C-style operators have no rule text that reads back, so rule text with that style uses the word style. `RulePrinter.IndentJson` indents a JSON string or a JSON node in the one way the tool writes JSON. `DiagnosticSummary.FirstError(diagnostics, fallback)` describes the first error of a list as `code: message` for a status line, and gives `fallback` when the list has no error. `ToolResult<T>.FailureSummary` uses it.
 ## Editing a rule
 
 `RuleDocument` is the model of an editor, such as the [terminal UI](tui.md). It holds the text of one rule, its format, its file and the result of compiling the text.
@@ -155,6 +171,9 @@ An expression is rule text, JSON or YAML; its content selects the format. An exp
 
 `RulePalette.Create(rule, schema, definitions)` lists the operators, the constants, the predicates of a [predicate schema file](#predicate-schema-file), the predicates of the rule (with the values of their first use as defaults) and, when `definitions` is given, each `let` definition (source `Definition`, its parameters as arguments). A `PaletteEntry` has a `Source`, a `Name`, a `Description` and its `Arguments` (`PaletteArgument`: name, `LiteralKind`, required, default, description). `RulePalette.Fill(entry, values, settings)` makes the rule text of a constant or of a call of a predicate with the values of a form, or gives the diagnostics when the call does not compile. For a definition it makes the use, `name(value, ...)`, without a compile: only the document that has the definition can compile it.
 
+`RulePalette.Search(text, include)` finds the entries that match the words of `text`, in `PaletteGroup`s: first one group of the entries of the palette itself (its `Title` is `null`), then one group for each family of the predicate catalog. An own entry matches when each word is in its line or its description. A catalog entry matches by name, label, family, description words or alias. Case does not matter. `include` limits which entries can be found; the default is every entry but the operators. `RulePalette.Find(name)` gives the `PredicateFacts` of a predicate name (the `Entry`, its `Family` and whether it takes a null behavior), or `null` when neither the schema file, the rule nor the catalog has the predicate.
+
+`PredicateCatalog` lists the ready-made predicates of the `TruthWeaver.Predicates` package as palette templates (`CatalogPredicate`). It scans the public factories of the package by reflection, so a new factory appears with no change in Core. `PaletteSchemaCache.Get(path)` reads a predicate schema file once and keeps it until the path or the file on disk changes.
 ## Rewrites
 
 `RewritePlayground` applies the rewrites of the library to a compiled rule and does not change it, so a front end can show the result before the author accepts it.

@@ -3,16 +3,14 @@ namespace TruthWeaver.Tool;
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Evaluation;
-using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
-using TruthWeaver.Tool.Core.Export;
 using TruthWeaver.Tool.Core.Loading;
 using TruthWeaver.Tool.Core.Output;
 
 /// <summary>
 /// Prints a loaded rule in a format with the settings of the tool: rule text in the operator style of the settings,
-/// JSON and YAML as <see cref="RuleConverter.Convert"/> prints them. The pretty form breaks rule text at 80 characters
+/// JSON and YAML as <see cref="RulePrinter.Print"/> prints them. The pretty form breaks rule text at 80 characters
 /// and indents JSON by two spaces; YAML is always one node per line.
 /// </summary>
 internal static class RuleTextPrinting
@@ -32,29 +30,9 @@ internal static class RuleTextPrinting
         bool pretty = false
     )
     {
-        if (format != RuleFormat.Text)
-        {
-            ToolResult<string> converted = RuleConverter.Convert(rule, format, settings, includeNotes);
-            return pretty && format == RuleFormat.Json && converted.Value is { } json
-                ? converted with
-                {
-                    Value = CommandOutcome.FormatJson(CommandOutcome.ParseJson(json)),
-                }
-                : converted;
-        }
-
         CompilationResult<StubAssignment> compiled = RuleConverter.Compile(rule, settings);
-        if (!compiled.TryGetRule(out CompiledRule<StubAssignment>? value, out EquatableArray<Diagnostic> diagnostics))
-        {
-            return new ToolResult<string>(null, diagnostics);
-        }
-
-        RuleTextOptions options = new()
-        {
-            OperatorStyle = settings.OperatorStyle,
-            IncludeNotes = includeNotes,
-            Width = pretty ? ArtifactCatalog.PrettyWidth : null,
-        };
-        return new ToolResult<string>(value.PrintRuleText(options), diagnostics);
+        return compiled.TryGetRule(out CompiledRule<StubAssignment>? value, out EquatableArray<Diagnostic> diagnostics)
+            ? new ToolResult<string>(RulePrinter.Print(value, format, settings, pretty, includeNotes), diagnostics)
+            : new ToolResult<string>(null, diagnostics);
     }
 }

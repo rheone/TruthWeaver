@@ -114,6 +114,39 @@ public sealed class RulePrinterTests
         Assert.DoesNotContain('\r', yaml);
     }
 
+    /// <summary>Without notes the printed JSON and rule text carry none.</summary>
+    [Fact]
+    public void Print_WithoutNotes_LeavesTheNotesOut_Test()
+    {
+        CompiledRule<StubAssignment> rule = Compile("/* both hold */ (a and b)");
+
+        string text = RulePrinter.Print(rule, RuleFormat.Text, ToolSettings.Default, pretty: false, includeNotes: false);
+        string json = RulePrinter.Print(rule, RuleFormat.Json, ToolSettings.Default, pretty: false, includeNotes: false);
+
+        Assert.DoesNotContain("both hold", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("both hold", json, StringComparison.Ordinal);
+    }
+
+    /// <summary>A C-style operator setting has no rule text that reads back, so rule text falls back to the word style.</summary>
+    [Fact]
+    public void Print_TextWithCStyleOperators_FallsBackToTheWordStyle_Test()
+    {
+        ToolSettings settings = ToolSettings.Default with { OperatorStyle = OperatorStyle.CStyle };
+
+        string printed = RulePrinter.Print(Compile("a and b"), RuleFormat.Text, settings, pretty: false);
+
+        Assert.Equal("a AND b", printed);
+    }
+
+    /// <summary>A JSON node and its text indent to the same text.</summary>
+    [Fact]
+    public void IndentJson_NodeAndText_GiveTheSameText_Test()
+    {
+        const string json = "{\"a\":[1,2]}";
+
+        Assert.Equal(RulePrinter.IndentJson(json), RulePrinter.IndentJson(JsonNode.Parse(json)!));
+    }
+
     /// <summary>The indented JSON uses two spaces and does not escape characters that JSON allows as they are.</summary>
     [Fact]
     public void IndentJson_NonAsciiText_IsNotEscaped_Test()

@@ -25,8 +25,9 @@ and the tool core must not take it.
 3. **An edit goes through the compiler.** A structural edit changes the JSON tree, compiles it and refuses an invalid
    result, so the editor never holds a rule that does not compile.
 4. **Known limits.** Terminal.Gui 2.5 marks `TextView` obsolete in favor of a separate `Terminal.Gui.Editor` package. The
-   project uses `TextView` with a scoped warning suppression until the owner approves that package. The palette does not
-   offer the `TruthWeaver.Predicates` catalog, because that needs a new project reference.
+   project uses `TextView` with a scoped warning suppression until the owner approves that package. (Corrected 2026-10-19:
+   the palette offers the `TruthWeaver.Predicates` catalog. The owner approved the project reference for the terminal UI on
+   2026-10-17 and for the tool core on 2026-10-19; the catalog lives in `TruthWeaver.Tool.Core`. See ADR-0004.)
 
 ## Considered options
 

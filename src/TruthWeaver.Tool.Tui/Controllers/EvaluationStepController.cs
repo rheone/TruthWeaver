@@ -26,8 +26,7 @@ internal sealed class EvaluationStepController
         ArgumentNullException.ThrowIfNull(workbench);
 
         this.workbench = workbench;
-        workbench.DocumentChanged += (_, _) => this.End();
-        workbench.AssignmentChanged += (_, _) => this.End();
+        workbench.DocumentOrAssignmentChanged += (_, _) => this.End();
     }
 
     /// <summary>Occurs after the mode starts or ends or the current step changes.</summary>
@@ -72,7 +71,7 @@ internal sealed class EvaluationStepController
             return new Dictionary<string, EvaluationStep>();
         }
 
-        return BuildSteps(tree.Nodes, trace, node => FaultOf(outcome, node))
+        return BuildSteps(tree.Nodes, trace, node => FaultOf(tree, outcome, node))
             .GroupBy(s => s.Path, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
     }
@@ -191,17 +190,14 @@ internal sealed class EvaluationStepController
     }
 
     // The message of the fault of a term, such as the exception of its predicate, or null.
-    private static string? FaultOf(AssignmentOutcome outcome, RuleTreeNode node)
+    private static string? FaultOf(RuleTree tree, AssignmentOutcome outcome, RuleTreeNode node)
     {
-        if (node.Kind != RuleTreeNodeKind.Term || outcome.Terms.FirstOrDefault(t => t.Display == node.Label) is not { } term)
+        if (node.Kind != RuleTreeNodeKind.Term || TermOutcomeLookup.FindByPath(tree, outcome, node.Path) is not { } term)
         {
             return null;
         }
 
-        return outcome
-            .Faults.Where(f => f.StartsWith(term.Display + ":", StringComparison.Ordinal))
-            .Select(f => f[(term.Display.Length + 1)..].Trim())
-            .FirstOrDefault();
+        return term.Faults.Select(f => f.Exception.Message.Trim()).FirstOrDefault();
     }
 
     private bool Begin()
@@ -217,7 +213,7 @@ internal sealed class EvaluationStepController
             return false;
         }
 
-        this.steps = BuildSteps(tree.Nodes, trace, node => FaultOf(outcome, node));
+        this.steps = BuildSteps(tree.Nodes, trace, node => FaultOf(tree, outcome, node));
         this.Go(0);
         return true;
     }

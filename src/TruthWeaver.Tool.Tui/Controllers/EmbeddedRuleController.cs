@@ -6,7 +6,6 @@ using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Patching;
 using TruthWeaver.Tool.Tui.Hosting;
-using TruthWeaver.Tool.Tui.Sessions;
 using TruthWeaver.Tool.Tui.Workbench;
 
 /// <summary>
@@ -79,7 +78,7 @@ internal sealed class EmbeddedRuleController
         ToolResult<IReadOnlyList<DocumentNode>> outline = EmbeddedRuleSession.Outline(file);
         if (!outline.TryGetValue(out IReadOnlyList<DocumentNode>? nodes, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus(Describe(diagnostics));
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
@@ -121,13 +120,13 @@ internal sealed class EmbeddedRuleController
         ToolResult<IReadOnlyList<DocumentNode>> outline = EmbeddedRuleSession.Outline(file);
         if (!outline.TryGetValue(out IReadOnlyList<DocumentNode>? nodes, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus(Describe(diagnostics));
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
         if (!DocumentOutline.Match(nodes, pattern).TryGetValue(out IReadOnlyList<DocumentNode>? matches, out diagnostics))
         {
-            this.workbench.SetStatus(Describe(diagnostics));
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
@@ -158,7 +157,7 @@ internal sealed class EmbeddedRuleController
         ToolResult<IReadOnlyList<DocumentNode>> outline = EmbeddedRuleSession.Outline(session.FilePath);
         if (!outline.TryGetValue(out IReadOnlyList<DocumentNode>? nodes, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus(Describe(diagnostics));
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
@@ -198,12 +197,6 @@ internal sealed class EmbeddedRuleController
     public bool SaveRoundTrip()
     {
         return this.Save(WriteBackMode.RoundTrip);
-    }
-
-    private static string Describe(IEnumerable<Diagnostic> diagnostics)
-    {
-        Diagnostic? first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? "The document cannot be used." : $"{first.Code}: {first.Message}";
     }
 
     private static string Summary(
@@ -254,7 +247,7 @@ internal sealed class EmbeddedRuleController
         ToolResult<EmbeddedRuleSession> opened = EmbeddedRuleSession.Open(file, rulePath);
         if (!opened.TryGetValue(out EmbeddedRuleSession? session, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus(Describe(diagnostics));
+            this.workbench.SetStatus(DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
@@ -299,7 +292,7 @@ internal sealed class EmbeddedRuleController
         ToolResult<EmbeddedRuleSession.PreparedWrite> prepared = session.Prepare(document, mode, this.workbench.Settings);
         if (!prepared.TryGetValue(out EmbeddedRuleSession.PreparedWrite? write, out EquatableArray<Diagnostic> diagnostics))
         {
-            this.workbench.SetStatus("Not saved: " + Describe(diagnostics));
+            this.workbench.SetStatus("Not saved: " + DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 
@@ -321,7 +314,7 @@ internal sealed class EmbeddedRuleController
         ToolResult<string> written = session.Commit(write);
         if (!written.TryGetValue(out string? file, out diagnostics))
         {
-            this.workbench.SetStatus("Not saved: " + Describe(diagnostics));
+            this.workbench.SetStatus("Not saved: " + DiagnosticSummary.FirstError(diagnostics, "The document cannot be used."));
             return false;
         }
 

@@ -1,18 +1,17 @@
-namespace TruthWeaver.Tool.Tui.Sessions;
+namespace TruthWeaver.Tool.Core.Patching;
 
 using TruthWeaver.Compilation;
 using TruthWeaver.Diagnostics;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Loading;
-using TruthWeaver.Tool.Core.Patching;
 
 /// <summary>
 /// One rule that lives inside a larger JSON or YAML document: the file, the path of the rule, and what the rule looked like
 /// when it was read. It has no view. It reads the rule, lists the other rules of the document, and writes an edited rule back
 /// with <see cref="RulePatcher"/>: by default only the rule's own span changes, so every byte outside it stays.
 /// </summary>
-internal sealed class EmbeddedRuleSession
+public sealed class EmbeddedRuleSession
 {
     private LoadedRule baseline;
 
@@ -46,8 +45,8 @@ internal sealed class EmbeddedRuleSession
         string full = Path.GetFullPath(filePath);
         ToolResult<LoadedRule> loaded = RuleLoader.LoadFile(full, new RuleLoadOptions { Path = rulePath });
         return loaded.TryGetValue(out LoadedRule? rule, out EquatableArray<Diagnostic> diagnostics)
-            ? Results.Success(new EmbeddedRuleSession(full, rule))
-            : Results.Failure<EmbeddedRuleSession>(diagnostics);
+            ? ToolResults.Success(new EmbeddedRuleSession(full, rule))
+            : ToolResults.Failure<EmbeddedRuleSession>(diagnostics);
     }
 
     /// <summary>Lists the places of the document where a rule can be, read from the file now.</summary>
@@ -83,23 +82,23 @@ internal sealed class EmbeddedRuleSession
 
         if (!edited.IsRuleCurrent || edited.Rule is not { } rule)
         {
-            return Results.Failure<PreparedWrite>(edited.Diagnostics);
+            return ToolResults.Failure<PreparedWrite>(edited.Diagnostics);
         }
 
         ToolResult<LoadedRule> current = RuleLoader.LoadFile(this.FilePath, new RuleLoadOptions { Path = this.RulePath });
         if (!current.TryGetValue(out LoadedRule? fresh, out EquatableArray<Diagnostic> diagnostics))
         {
-            return Results.Failure<PreparedWrite>(diagnostics);
+            return ToolResults.Failure<PreparedWrite>(diagnostics);
         }
 
         ToolResult<DocumentPatch> patch = RulePatcher.Patch(fresh, rule, mode, settings);
         if (!patch.TryGetValue(out DocumentPatch? value, out diagnostics))
         {
-            return Results.Failure<PreparedWrite>(diagnostics);
+            return ToolResults.Failure<PreparedWrite>(diagnostics);
         }
 
         bool changedOnDisk = fresh.Text != this.baseline.Text;
-        return Results.Success(new PreparedWrite(value, fresh, changedOnDisk), patch.Diagnostics);
+        return ToolResults.Success(new PreparedWrite(value, fresh, changedOnDisk), patch.Diagnostics);
     }
 
     /// <summary>Writes a prepared patch to the document file, in the encoding and with the line endings of the file.</summary>
@@ -125,7 +124,7 @@ internal sealed class EmbeddedRuleSession
     /// <param name="Patch">The patched document.</param>
     /// <param name="Current">The rule as the file has it now.</param>
     /// <param name="ChangedOnDisk">Whether the rule in the file differs from the rule when the session read it.</param>
-    internal sealed record PreparedWrite(DocumentPatch Patch, LoadedRule Current, bool ChangedOnDisk)
+    public sealed record PreparedWrite(DocumentPatch Patch, LoadedRule Current, bool ChangedOnDisk)
     {
         /// <summary>Gets the kind of change the patch makes to the single rule.</summary>
         public RulePatchKind Kind => this.Patch.Rules[0].Kind;

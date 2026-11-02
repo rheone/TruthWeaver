@@ -63,23 +63,7 @@ internal sealed class CommandOutcome(string command)
     /// <returns>The JSON text.</returns>
     public static string FormatJson(JsonNode node)
     {
-        using MemoryStream stream = new();
-        using (
-            Utf8JsonWriter writer = new(
-                stream,
-                new JsonWriterOptions
-                {
-                    Indented = true,
-                    NewLine = "\n",
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                }
-            )
-        )
-        {
-            node.WriteTo(writer);
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
+        return RulePrinter.IndentJson(node);
     }
 
     /// <summary>Reads JSON that a tool core writer made, so that it can be put inside the envelope.</summary>

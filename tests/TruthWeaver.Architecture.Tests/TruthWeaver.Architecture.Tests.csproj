@@ -43,9 +43,14 @@
     <ProjectReference Include="../TruthWeaver.Tool.Tui.Tests/TruthWeaver.Tool.Tui.Tests.csproj" />
     <ProjectReference Include="../TruthWeaver.Yaml.Tests/TruthWeaver.Yaml.Tests.csproj" />
     <ProjectReference Include="../../samples/AspNetCore.Tests/AspNetCore.Tests.csproj" />
+    <ProjectReference Include="../../samples/Configuration.Tests/Configuration.Tests.csproj" />
     <ProjectReference Include="../../samples/Consumer.Tests/Consumer.Tests.csproj" />
     <ProjectReference Include="../../samples/DataSource.Tests/DataSource.Tests.csproj" />
+    <ProjectReference Include="../../samples/Generators.Tests/Generators.Tests.csproj" />
+    <ProjectReference Include="../../samples/Policies.Tests/Policies.Tests.csproj" />
     <ProjectReference Include="../../samples/PredicateLibrary.Tests/PredicateLibrary.Tests.csproj" />
+    <ProjectReference Include="../../samples/RuleFiles.Tests/RuleFiles.Tests.csproj" />
+    <ProjectReference Include="../../samples/Yaml.Tests/Yaml.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

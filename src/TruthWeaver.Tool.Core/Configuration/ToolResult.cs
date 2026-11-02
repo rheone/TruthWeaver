@@ -27,12 +27,9 @@ public sealed record ToolResult<T>(T? Value, EquatableArray<Diagnostic> Diagnost
     /// </summary>
     /// <param name="fallback">The text for a result with no error diagnostic, such as a failure that raised none.</param>
     /// <returns>The description of the first error, or <paramref name="fallback"/> when there is none.</returns>
-    public string FailureSummary(string fallback = "unknown problem.")
+    public string FailureSummary(string fallback = DiagnosticSummary.UnknownProblem)
     {
-        ArgumentNullException.ThrowIfNull(fallback);
-
-        Diagnostic? first = this.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
-        return first is null ? fallback : $"{first.Code}: {first.Message}";
+        return DiagnosticSummary.FirstError(this.Diagnostics, fallback);
     }
 
     /// <summary>

@@ -122,6 +122,28 @@ public sealed class ImageRendererTests
         Assert.Contains("syntax error in line 1", error.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>A renderer that exits with 0 but writes no image fails the render, and a stale image from before is not kept.</summary>
+    [Fact]
+    public void Render_RendererWritesNoFile_FailsAndRemovesTheStaleImage_Test()
+    {
+        using TemporaryDirectory tools = new();
+        FakeTool.WriteSilent(tools, "dot");
+        string output = tools.File("rule.svg");
+        File.WriteAllText(output, "stale");
+
+        ToolResult<string> result = ImageRenderer.Render(
+            "digraph { }",
+            DiagramLanguage.Dot,
+            output,
+            new ImageRenderOptions { SearchPath = tools.FullPath }
+        );
+
+        Diagnostic error = Assert.Single(result.Diagnostics);
+        Assert.Equal(ToolDiagnosticCodes.RenderFailed, error.Code);
+        Assert.Contains("wrote no image file", error.Message, StringComparison.Ordinal);
+        Assert.False(File.Exists(output));
+    }
+
     /// <summary>An export of every artifact with images renders the Mermaid and DOT diagrams and lists the images in the manifest.</summary>
     [Fact]
     public void ExportAll_WithImagesAndFakeRenderers_WritesAndListsTheImages_Test()
@@ -183,6 +205,19 @@ public sealed class ImageRendererTests
             else
             {
                 WriteScript(directory.File(name), $"#!/bin/sh\necho \"fake {name} $*\" > \"${outputArgument}\"\n");
+            }
+        }
+
+        // Writes a renderer that succeeds and writes no image.
+        public static void WriteSilent(TemporaryDirectory directory, string name)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                File.WriteAllText(directory.File(name + ".cmd"), "@echo off\r\nexit /b 0\r\n");
+            }
+            else
+            {
+                WriteScript(directory.File(name), "#!/bin/sh\nexit 0\n");
             }
         }
 
