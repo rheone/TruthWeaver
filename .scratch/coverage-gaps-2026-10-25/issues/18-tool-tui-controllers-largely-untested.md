@@ -81,3 +81,15 @@ First slice (about 40 tests, all passing; coverage was not measured, so criterio
 - `CounterfactualController`: `Apply` with a term that has no key (a `from(...)` reference) and the `ArgumentException` branch of `Search`.
 - `ExportController`: `SaveImage` and `ExportAll` success paths (they need a fake `dot` or `mmdc`), and the `Skipped` truth-table message.
 - Criteria 2 and 4 stay open.
+
+## Review notes (code review of tickets 17, 18 and 20, 2026-11-02; recorded, not acted on)
+
+Judgement calls from the review. The owner decided that hard findings are fixed and the rest is recorded here.
+
+- Tui.Tests has no shared Workbench-plus-services builder: `Create` is repeated in `RewriteControllerEdgeTests`, `ViewControllerSettingsTests`, `ExportControllerTests`, `ImportControllerTests` and four older classes. A `WorkbenchHarness` factory or `partial` classes would remove the copies.
+- Tui.Tests has no `TemporaryDirectory` helper (Core.Tests and Tool.Tests have one); five new tests build temp paths by hand with try/finally.
+- `FakeTool.WriteSilent`, `Write` and `WriteFailing` in `ImageRendererTests` repeat a Windows/Unix branch each.
+- `ViewControllerSettingsTests.CycleKind_...` counts `SettingsChanged` events, which couples it to the event count.
+- `CommandEdgeCaseTests` and the `...EdgeTests` class names are vague; ticket 20's `Convert_CheckAgainstALongerFile` runs the CLI twice.
+- `diff a b --max-analysis-terms 1` exits 0 and reports "equivalent" for structurally equal inputs above the term limit; `RuleTree.TryLocate` leaves `parent` and `index` set to the last good step when it returns false. Neither is changed here.
+- None of the three tickets ran a coverage run, so no "coverage improves" box is ticked. Run one before the next slice to find the real gaps in `StructureController`, `EmbeddedRuleController`, `InspectController` and `CompareController`.
