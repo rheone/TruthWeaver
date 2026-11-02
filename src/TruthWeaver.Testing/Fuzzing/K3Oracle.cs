@@ -209,6 +209,11 @@ public static class K3Oracle
         return And([Cardinality(c => c >= min, operands), Cardinality(c => c <= max, operands)]);
     }
 
+    // COALESCE is not a K3 connective and no three-valued-logic source treats it as one, so the Kleene citation
+    // above does not apply. It is a programming idiom that traces to Codd's 1979 paper, the origin of SQL's NULL
+    // propagation. Its empty-input identity (Unknown) follows from the monoid argument: an associative operation
+    // with a two-sided identity folds an empty input to that identity (Haskell's Data.Monoid.First: mconcat [] == mempty).
+
     /// <summary>
     /// <c>COALESCE</c>: the first operand that is not <c>Unknown</c> (<c>True</c> and <c>False</c> pass through);
     /// <c>Unknown</c> when every operand is <c>Unknown</c>. Defined directly because no K3 connective can detect
