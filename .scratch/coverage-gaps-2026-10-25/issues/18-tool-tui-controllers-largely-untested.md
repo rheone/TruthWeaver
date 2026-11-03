@@ -101,9 +101,9 @@ Measured with `dotnet test tests/TruthWeaver.Tool.Tui.Tests -c Release --coverle
 | `CounterfactualController` | 69/90 | 85/90 |
 | `EmbeddedRuleController` | 111/135 | 121/135 |
 | `ExportController` | 136/164 | 152/164 |
-| `ImportController` | 94/98 | 94/98 |
-| `RewriteController` | 151/161 | 151/161 |
-| `ViewController` | 132/150 | 132/150 |
+| `ImportController` | 94/98 | 97/98 |
+| `RewriteController` | 151/161 | 156/161 |
+| `ViewController` | 132/150 | 144/150 |
 | `StructureController` | 220/244 | 230/244 |
 | `InspectController` (four files) | 354/406 | 376/406 |
 
@@ -111,6 +111,7 @@ New tests: `CounterfactualControllerEdgeTests` (no decision, the target cycle, a
 
 **Third slice (same day).** Ten tests close the two controllers that had none: seven for `StructureController` (a rule with errors refuses an edit, a palette replace, a literal change and a paste; `Swap`; an empty clipboard on paste; no compiled rule to copy; no clipboard to copy to) and three for `InspectController` (a use inside a definition body, a parameter of a definition, and the word `from` of a data reference). `StructureController` rises from 220/244 to 230/244, `InspectController.Nodes` from 200/223 to 214/223 and `InspectController.Tokens` from 116/143 to 124/143.
 
-**Criterion 2.** The tables show a measured gain for `CompareController`, `CounterfactualController`, `EmbeddedRuleController`, `ExportController`, `StructureController` and `InspectController`. `ImportController`, `RewriteController` and `ViewController` gained their tests in the first slice, which no coverage run measured, so their gain is not shown; their numbers did not change in this slice.
+**Fourth slice (same day).** Criterion 2 was unticked because the first-slice gain of `ImportController`, `RewriteController` and `ViewController` was never measured. This slice measured them and added tests: `ImportController` (cancelled source choice, the clipboard choice, a refused discard before a file import), `RewriteController` (the relation line of `Compare` for the same, looser, tighter and disjoint rule, an equivalent edit, `Discard` after a rewrite) and `ViewController` (`CycleConstantStyle`, `ToggleSimpleVariables`, the LaTeX envelope and constant override in the header, the Mermaid and YAML headers, `Save` with no text). The "After" column now holds the measured numbers for the whole branch, so every one of the nine controllers shows a measured gain: the "Before" numbers of the three controllers are the numbers at the start of the fourth slice, after their first-slice tests.
 
+**Criterion 2.** Ticked on that evidence. The gain of the first slice itself, before any run of this ticket, stays unmeasured.
 **Left uncovered.** The longer branches of `StructureController` that need a failing clipboard-set or a catalog-search dialog (lines 507, 525 to 527, 589 to 612), `InspectController.Tokens` lines 265 to 282 (the several-terms case for one predicate name, which no rule tried reached), and the note line of `InspectController.Nodes`.

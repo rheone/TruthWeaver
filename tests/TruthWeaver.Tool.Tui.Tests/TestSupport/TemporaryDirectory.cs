@@ -11,6 +11,13 @@ internal sealed class TemporaryDirectory : IDisposable
     /// <summary>Gets the folder.</summary>
     public string FullPath { get; }
 
+    /// <summary>Makes an empty folder.</summary>
+    /// <returns>The new folder, which the caller disposes.</returns>
+    public static TemporaryDirectory Create()
+    {
+        return new TemporaryDirectory(Directory.CreateTempSubdirectory("tw-tui-").FullName);
+    }
+
     /// <summary>Makes a folder with a <c>dot</c> script that runs a command line.</summary>
     /// <param name="body">The shell commands. <c>$3</c> is the output file of a <c>dot -Tsvg -o file input</c> call.</param>
     /// <returns>The new folder, which the caller disposes.</returns>
@@ -25,6 +32,17 @@ internal sealed class TemporaryDirectory : IDisposable
         }
 
         return new TemporaryDirectory(path);
+    }
+
+    /// <summary>Writes a text file in the folder.</summary>
+    /// <param name="name">The file name.</param>
+    /// <param name="text">The text.</param>
+    /// <returns>The full path of the file.</returns>
+    public string Write(string name, string text)
+    {
+        string path = Path.Combine(this.FullPath, name);
+        File.WriteAllText(path, text);
+        return path;
     }
 
     /// <inheritdoc />

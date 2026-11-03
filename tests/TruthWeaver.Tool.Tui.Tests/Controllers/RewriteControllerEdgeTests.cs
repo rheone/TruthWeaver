@@ -99,6 +99,51 @@ public sealed class RewriteControllerEdgeTests
         Assert.Equal(string.Empty, RewriteController.Assignment(null));
     }
 
+    /// <summary>The comparison with the saved version says how the two rules relate: the same, looser, tighter or disjoint.</summary>
+    /// <param name="saved">The rule as it was saved.</param>
+    /// <param name="edited">The rule after the edit.</param>
+    /// <param name="expected">The start of the line that names the relation.</param>
+    [Theory]
+    [InlineData("a AND b", "b AND a", "Satisfied by: the same assignments")]
+    [InlineData("a", "a OR b", "Satisfied by: more assignments (looser)")]
+    [InlineData("a OR b", "a", "Satisfied by: fewer assignments (tighter)")]
+    [InlineData("a", "NOT a", "Satisfied by: no assignment satisfies both")]
+    public void Compare_EditedRule_NamesTheRelationToTheSavedVersion_Test(string saved, string edited, string expected)
+    {
+        (RewriteController controller, Workbench workbench) = Create(saved);
+        workbench.Document.SetText(edited);
+
+        bool compared = controller.Compare();
+
+        Assert.True(compared);
+        Assert.Contains(controller.Lines, line => line.StartsWith(expected, StringComparison.Ordinal));
+    }
+
+    /// <summary>An edit that gives the same value for every assignment is called equivalent.</summary>
+    [Fact]
+    public void Compare_ReorderedOperands_SaysEquivalent_Test()
+    {
+        (RewriteController controller, Workbench workbench) = Create("a AND b");
+        workbench.Document.SetText("b AND a");
+
+        controller.Compare();
+
+        Assert.Contains(controller.Lines, line => line.StartsWith("Equivalent: yes", StringComparison.Ordinal));
+    }
+
+    /// <summary>Discarding a preview clears it and says so.</summary>
+    [Fact]
+    public void Discard_AfterARewrite_ClearsThePreviewAndSaysSo_Test()
+    {
+        (RewriteController controller, Workbench workbench) = Create("a AND (a OR b)");
+        controller.Run(RuleRewriteKind.Simplify);
+
+        controller.Discard();
+
+        Assert.Null(controller.Preview);
+        Assert.Equal("Discarded the rewrite.", workbench.Status);
+    }
+
     private static (RewriteController Controller, Workbench Workbench) Create(string text)
     {
         ScriptedServices services = new();
