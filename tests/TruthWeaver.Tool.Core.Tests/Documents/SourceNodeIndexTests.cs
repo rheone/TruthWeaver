@@ -106,4 +106,43 @@ public sealed class SourceNodeIndexTests
         Assert.NotNull(first);
         Assert.Equal(ScalarStyle.Plain, first.Style);
     }
+
+    /// <summary>A sequence used as a mapping key names no path, and the entries after it are still indexed.</summary>
+    [Fact]
+    public void Find_YamlSequenceUsedAsAKey_IndexesTheEntriesAfterIt_Test()
+    {
+        const string Document = "? [a, b]\n: 1\nafter: 2\n";
+        SourceNodeIndex index = SourceNodeIndex.Create(Document, RuleFormat.Yaml);
+
+        SourceNode? node = index.Find("$.after");
+
+        Assert.NotNull(node);
+        Assert.Equal("2", Document[node.Start..node.End]);
+    }
+
+    /// <summary>A mapping used as a mapping key names no path, and the entries after it are still indexed.</summary>
+    [Fact]
+    public void Find_YamlMappingUsedAsAKey_IndexesTheEntriesAfterIt_Test()
+    {
+        const string Document = "? {x: 1}\n: 1\nafter: 2\n";
+        SourceNodeIndex index = SourceNodeIndex.Create(Document, RuleFormat.Yaml);
+
+        SourceNode? node = index.Find("$.after");
+
+        Assert.NotNull(node);
+        Assert.Equal("2", Document[node.Start..node.End]);
+    }
+
+    /// <summary>An alias used as a mapping key names no path, and the entries after it are still indexed.</summary>
+    [Fact]
+    public void Find_YamlAliasUsedAsAKey_IndexesTheEntriesAfterIt_Test()
+    {
+        const string Document = "base: &k name\n*k : 1\nafter: 2\n";
+        SourceNodeIndex index = SourceNodeIndex.Create(Document, RuleFormat.Yaml);
+
+        SourceNode? node = index.Find("$.after");
+
+        Assert.NotNull(node);
+        Assert.Equal("2", Document[node.Start..node.End]);
+    }
 }

@@ -327,4 +327,70 @@ public sealed class RuleDocumentTests
 
         Assert.Contains(document.Diagnostics, d => d.Severity == DiagnosticSeverity.Error && d.Message.Contains("'OR'"));
     }
+
+    /// <summary>An edit of a rule with no definitions is put into the document as one undo step, and the text follows the new tree.</summary>
+    [Fact]
+    public void ApplyEdit_PlainEdit_ReplacesTheRuleAndCanBeUndone_Test()
+    {
+        RuleDocument document = RuleDocument.Create("isActive AND isVerified");
+        RuleTreeEdit edit = new RuleTreeEditor(document.Rule!).ReplaceOperator("$", "or");
+
+        ToolResult<string> result = document.ApplyEdit(edit);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("isActive OR isVerified", document.Text);
+        document.Undo();
+        Assert.Equal("isActive AND isVerified", document.Text);
+    }
+
+    /// <summary>An edit of a rule with definitions keeps the <c>let</c> definitions in the document text.</summary>
+    [Fact]
+    public void ApplyEdit_RuleWithDefinitions_KeepsTheDefinitionsInTheText_Test()
+    {
+        RuleDocument document = RuleDocument.Create("let both(x, y) = x AND y;\nboth(a, b) OR c");
+        RuleTreeEdit edit = new RuleTreeEditor(document.Rule!, definitions: document.Definitions).ReplaceOperator("$", "and");
+
+        ToolResult<string> result = document.ApplyEdit(edit);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("let both", document.Text, StringComparison.Ordinal);
+        Assert.Contains("both(a, b)", document.Text, StringComparison.Ordinal);
+    }
+
+    /// <summary>A rule with definitions keeps its definitions when it is converted to JSON.</summary>
+    [Fact]
+    public void ConvertTo_RuleWithDefinitions_KeepsTheDefinitions_Test()
+    {
+        RuleDocument document = RuleDocument.Create("let both(x, y) = x AND y;\nboth(a, b) OR c");
+
+        ToolResult<string> result = document.ConvertTo(RuleFormat.Json);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("definitions", document.Text, StringComparison.Ordinal);
+        Assert.Contains("both", document.Text, StringComparison.Ordinal);
+    }
+
+    /// <summary>A save over a read-only file is a failure result and not an exception, and the document stays unsaved.</summary>
+    [Fact]
+    public void Save_ReadOnlyTarget_FailsAndStaysDirty_Test()
+    {
+        using TemporaryDirectory directory = new();
+        string path = directory.File("rule.tw");
+        File.WriteAllText(path, "isActive");
+        File.SetAttributes(path, FileAttributes.ReadOnly);
+        try
+        {
+            RuleDocument document = RuleDocument.Create("isActive");
+            document.SetText("isActive AND isVerified");
+
+            ToolResult<string> saved = document.Save(path);
+
+            Assert.False(saved.Succeeded);
+            Assert.True(document.IsDirty);
+        }
+        finally
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+    }
 }

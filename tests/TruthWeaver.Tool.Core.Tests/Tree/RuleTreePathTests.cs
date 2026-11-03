@@ -1,6 +1,9 @@
 namespace TruthWeaver.Tool.Core.Tests.Tree;
 
 using System.Text.Json.Nodes;
+using TruthWeaver.Compilation;
+using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Tree;
 
 /// <summary>Finding a node of a JSON tree by its path, and the path arithmetic that edits use.</summary>
@@ -132,6 +135,46 @@ public sealed class RuleTreePathTests
 
         Assert.Equal("""{"op":"not","operands":[]}""", target.ToJsonString());
         Assert.Empty(replacement);
+    }
+
+    /// <summary>The text of the whole rule, at the path <c>$</c>, is the printed rule.</summary>
+    [Fact]
+    public void TextOf_RootPath_GivesTheWholeRuleText_Test()
+    {
+        RuleTree tree = RuleTree.Of(RuleDocument.Create("a AND b").Rule!);
+
+        ToolResult<string> text = tree.TextOf("$");
+
+        Assert.True(text.Succeeded);
+        Assert.Equal("a AND b", text.Value);
+    }
+
+    /// <summary>The label of a threshold operator names its count, so the tree shows <c>atLeast k=2</c>.</summary>
+    [Fact]
+    public void Of_AtLeastOperator_LabelsTheOperatorWithItsCount_Test()
+    {
+        const string Json = """{"op": "atLeast", "k": 2, "operands": [{"predicate": "a"}, {"predicate": "b"}]}""";
+        RuleTree tree = RuleTree.Of(RuleDocument.Create(Json, RuleFormat.Json).Rule!);
+
+        Assert.Equal("atLeast k=2", tree.Find("$")!.Label);
+    }
+
+    /// <summary>A path that does not start at the root, or that leaves the tree, names no editable node.</summary>
+    /// <param name="path">The path.</param>
+    [Theory]
+    [InlineData("operands[0]")]
+    [InlineData("$.operands[9]")]
+    [InlineData("$.operands[0].operands[0]")]
+    [InlineData("$.nothing")]
+    public void TryLocatePath_PathThatNamesNoNode_ReturnsFalse_Test(string path)
+    {
+        JsonObject root = (JsonObject)JsonNode.Parse(Tree)!;
+
+        bool found = RuleTree.TryLocatePath(root, path, out JsonObject? node, out Action<JsonObject>? put);
+
+        Assert.False(found);
+        Assert.Null(node);
+        Assert.Null(put);
     }
 
     private static JsonObject Parse(string json)

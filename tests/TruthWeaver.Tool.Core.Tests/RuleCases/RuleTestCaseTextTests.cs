@@ -5,6 +5,7 @@ using TruthWeaver.Abstractions;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Core.RuleCases;
+using TruthWeaver.Tool.Core.Tests.TestSupport;
 
 public sealed class RuleTestCaseTextTests
 {
@@ -203,6 +204,79 @@ public sealed class RuleTestCaseTextTests
 
         Assert.False(read.Succeeded);
         Assert.Equal(ToolDiagnosticCodes.InvalidRuleTestFile, read.Diagnostics[0].Code);
+    }
+
+    /// <summary>Removing a case from a file that is not well-formed gives the file errors and does not change anything.</summary>
+    [Fact]
+    public void RemoveCase_MalformedFile_ReturnsTheFileErrors_Test()
+    {
+        ToolResult<string> removed = RuleTestCaseText.RemoveCase("rule: [1, 2\nother: x\n", "a");
+
+        Assert.False(removed.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.InvalidRuleTestFile, removed.Diagnostics[0].Code);
+    }
+
+    /// <summary>Replacing the rule of a file that is not well-formed gives the file errors.</summary>
+    [Fact]
+    public void WithRule_MalformedFile_ReturnsTheFileErrors_Test()
+    {
+        ToolResult<string> result = RuleTestCaseText.WithRule("rule: [1, 2\nother: x\n", "a AND b");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.InvalidRuleTestFile, result.Diagnostics[0].Code);
+    }
+
+    /// <summary>A file whose root is a list and not a mapping is not a rule test file.</summary>
+    [Fact]
+    public void ReadCases_RootIsAList_IsAnError_Test()
+    {
+        ToolResult<IReadOnlyList<RuleTestCaseSpec>> read = RuleTestCaseText.ReadCases("- rule\n- cases\n");
+
+        Assert.False(read.Succeeded);
+        Assert.Contains("YAML mapping", read.Diagnostics[0].Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A case written as a flow mapping is refused, because the editor cannot place its lines.</summary>
+    [Fact]
+    public void ReadCases_CaseAsAFlowMapping_IsAnError_Test()
+    {
+        ToolResult<IReadOnlyList<RuleTestCaseSpec>> read = RuleTestCaseText.ReadCases(
+            "rule: a\ncases:\n  - {name: a, expect: {result: True}}\n"
+        );
+
+        Assert.False(read.Succeeded);
+        Assert.Contains("block mapping", read.Diagnostics[0].Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>The data of a case can come from a file named in <c>variableFiles</c>, relative to the folder of the rule test file.</summary>
+    [Fact]
+    public void ReadCases_VariableFile_LoadsTheDataOfTheSource_Test()
+    {
+        using TemporaryDirectory directory = new();
+        File.WriteAllText(directory.File("user.json"), """{"region": "EU"}""");
+
+        ToolResult<IReadOnlyList<RuleTestCaseSpec>> read = RuleTestCaseText.ReadCases(
+            "rule: a\ncases:\n  - name: a\n    variableFiles:\n      user: user.json\n    expect:\n      result: True\n",
+            directory.FullPath
+        );
+
+        Assert.True(read.Succeeded);
+        Assert.Equal("EU", read.Value[0].Variables["user"]?["region"]?.GetValue<string>());
+    }
+
+    /// <summary>A <c>variableFiles</c> entry that names a missing file is an error that names the case.</summary>
+    [Fact]
+    public void ReadCases_VariableFileThatDoesNotExist_IsAnError_Test()
+    {
+        using TemporaryDirectory directory = new();
+
+        ToolResult<IReadOnlyList<RuleTestCaseSpec>> read = RuleTestCaseText.ReadCases(
+            "rule: a\ncases:\n  - name: a\n    variableFiles:\n      user: none.json\n    expect:\n      result: True\n",
+            directory.FullPath
+        );
+
+        Assert.False(read.Succeeded);
+        Assert.Contains("cannot be read", read.Diagnostics[0].Message, StringComparison.Ordinal);
     }
 
     private static RuleTestCaseSpec Case(string name, Dictionary<string, TruthValue> given, TruthValue result, int? faults)
