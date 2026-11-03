@@ -195,6 +195,16 @@ public sealed class RuleDefinitionsTests
         Assert.Equal(["$"], read.Uses[0].ExpandedPaths);
     }
 
+    /// <summary>YAML with an unclosed flow sequence is a diagnostic, not a scanner exception.</summary>
+    [Fact]
+    public void ReadYaml_UnclosedFlowSequence_FailsWithDiagnostics_Test()
+    {
+        RuleDefinitions read = YamlRuleDefinitions.ReadYaml("op: [and, or\nother: x\n");
+
+        Assert.False(read.Succeeded);
+        Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     /// <summary>A syntax error is a diagnostic, not an exception: nothing is listed and nothing is printed.</summary>
     [Fact]
     public void ReadText_SyntaxError_FailsWithDiagnosticsAndPrintsNothing_Test()

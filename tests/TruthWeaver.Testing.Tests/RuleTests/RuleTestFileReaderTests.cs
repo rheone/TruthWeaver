@@ -39,6 +39,22 @@ public sealed class RuleTestFileReaderTests : IDisposable
         Assert.DoesNotContain("secret-token", error.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>A file with an unclosed flow sequence is one root error and not a scanner exception.</summary>
+    [Fact]
+    public void TryParse_YamlWithUnclosedFlowSequence_ReportsOneRootError_Test()
+    {
+        bool parsed = RuleTestFile.TryParse(
+            "rule: [1, 2\nother: x\n",
+            this.directory,
+            out _,
+            out IReadOnlyList<RuleTestFileError> errors
+        );
+
+        RuleTestFileError error = Assert.Single(errors);
+        Assert.False(parsed);
+        Assert.Equal("$", error.Path);
+    }
+
     /// <summary>A document that is empty or is not a mapping is not a rule test file.</summary>
     [Theory]
     [InlineData("")]

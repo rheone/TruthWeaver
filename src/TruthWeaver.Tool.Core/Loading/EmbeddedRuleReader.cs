@@ -91,6 +91,11 @@ internal static class EmbeddedRuleReader
                 $"The YAML document is not valid (line {ex.Start.Line}, column {ex.Start.Column})."
             );
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            return ToolResults.Failure<RuleSelection>(ToolDiagnosticCodes.MalformedDocument, "The YAML document is not valid.");
+        }
 
         if (stream.Documents.Count == 0)
         {

@@ -232,6 +232,7 @@ public sealed class YamlTreeTests
     [Theory]
     [InlineData("not: [valid, yaml: [")]
     [InlineData("op: bogus\noperands: []")]
+    [InlineData("op: [and, or\nother: x\n")]
     public void Parse_MalformedYaml_ProducesDiagnosticNotException_Test(string yaml)
     {
         RuleCompiler<RuleTestContext> compiler = CreateCompiler();

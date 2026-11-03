@@ -31,6 +31,16 @@ public sealed class AssignmentVariablesEdgeTests
         Assert.Equal("The YAML data is not well-formed (line 1, column 4).", result.Diagnostics[0].Message);
     }
 
+    /// <summary>YAML with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void Read_YamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<JsonObject> result = AssignmentVariables.Read("user: [1, 2\nother: x\n");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, result.Diagnostics[0].Code);
+    }
+
     /// <summary>YAML nested deeper than 64 levels is an error and not a stack overflow.</summary>
     [Fact]
     public void Read_YamlNestedTooDeep_IsAnError_Test()

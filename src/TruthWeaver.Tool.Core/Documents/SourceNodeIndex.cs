@@ -129,7 +129,7 @@ internal sealed class SourceNodeIndex
                 }
             }
         }
-        catch (YamlException)
+        catch (Exception ex) when (ex is YamlException or InvalidOperationException)
         {
             // A malformed document was already reported by the loader; whatever was indexed before the error stays.
         }

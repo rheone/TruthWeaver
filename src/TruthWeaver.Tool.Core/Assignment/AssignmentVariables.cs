@@ -121,6 +121,11 @@ public static class AssignmentVariables
         {
             error = "The data names a key two times, or nests too deep.";
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for a document such as an unclosed flow sequence.
+            error = "The YAML data is not well-formed.";
+        }
 
         root = null;
         return false;

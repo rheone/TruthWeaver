@@ -71,8 +71,9 @@ internal sealed record TreeValue(TreeValueKind Kind, SourceSpan Span)
             using StringReader reader = new(yaml);
             stream.Load(reader);
         }
-        catch (YamlException)
+        catch (Exception ex) when (ex is YamlException or InvalidOperationException)
         {
+            // The scanner throws InvalidOperationException, with no position, for text such as an unclosed flow sequence.
             return null;
         }
 

@@ -75,6 +75,12 @@ internal static class YamlTreeParser
             using StringReader reader = new(yaml);
             stream.Load(reader);
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            List<Diagnostic> diagnostics = [UnreadableError(yaml)];
+            return (null, diagnostics);
+        }
         catch (YamlException ex)
         {
             // YamlDotNet rejects a repeated mapping key while loading. A repeated argument is its own mistake, with one
@@ -167,6 +173,19 @@ internal static class YamlTreeParser
         );
     }
 
+    /// <summary>Builds the diagnostic for text that the YAML scanner cannot read and that gives no position.</summary>
+    private static Diagnostic UnreadableError(string yaml)
+    {
+        return Diagnostic.Error(
+            DiagnosticCodes.MalformedTree,
+            "Malformed YAML: the text is not well-formed.",
+            SourceSpan.None,
+            expected: "well-formed YAML",
+            found: "text that the YAML scanner cannot read",
+            path: ContainerPathAt(yaml)
+        );
+    }
+
     /// <summary>Builds the diagnostic for text that is not YAML: the parser's message, its position, and the nearest valid ancestor.</summary>
     private static Diagnostic SyntaxError(string yaml, YamlException ex)
     {
@@ -236,7 +255,7 @@ internal static class YamlTreeParser
                 }
             }
         }
-        catch (YamlException)
+        catch (Exception ex) when (ex is YamlException or InvalidOperationException)
         {
             // The text stopped being YAML before any key repeated, so this is a syntax error, not a repeated argument.
         }
@@ -300,7 +319,7 @@ internal static class YamlTreeParser
                 }
             }
         }
-        catch (YamlException)
+        catch (Exception ex) when (ex is YamlException or InvalidOperationException)
         {
             // The parser stopping is the point: the tracker now holds the last good position.
         }

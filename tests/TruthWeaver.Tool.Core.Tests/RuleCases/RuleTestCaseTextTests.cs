@@ -3,6 +3,7 @@ namespace TruthWeaver.Tool.Core.Tests.RuleCases;
 using System.Text.Json.Nodes;
 using TruthWeaver.Abstractions;
 using TruthWeaver.Tool.Core.Configuration;
+using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Core.RuleCases;
 
 public sealed class RuleTestCaseTextTests
@@ -192,6 +193,16 @@ public sealed class RuleTestCaseTextTests
         ToolResult<string> added = RuleTestCaseText.AddOrReplaceCase("rule: [\n", Case("a", [], TruthValue.True, null));
 
         Assert.False(added.Succeeded);
+    }
+
+    /// <summary>YAML with an unclosed flow sequence is an invalid-file error and not a scanner exception.</summary>
+    [Fact]
+    public void ReadCases_YamlWithUnclosedFlowSequence_IsAnError_Test()
+    {
+        ToolResult<IReadOnlyList<RuleTestCaseSpec>> read = RuleTestCaseText.ReadCases("rule: [1, 2\ncases: x\n");
+
+        Assert.False(read.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.InvalidRuleTestFile, read.Diagnostics[0].Code);
     }
 
     private static RuleTestCaseSpec Case(string name, Dictionary<string, TruthValue> given, TruthValue result, int? faults)

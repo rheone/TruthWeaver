@@ -72,6 +72,15 @@ public sealed class PredicateSchemaFileTests
         Assert.Equal(ToolDiagnosticCodes.MalformedDocument, Assert.Single(result.Diagnostics).Code);
     }
 
+    /// <summary>YAML with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void Parse_YamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<PredicateSchemaFile> result = PredicateSchemaFile.Parse("predicates: [1, 2\nother: x\n");
+
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, Assert.Single(result.Diagnostics).Code);
+    }
+
     /// <summary>A schema file that does not exist is an unreadable-input error.</summary>
     [Fact]
     public void Load_MissingFile_ReportsInputUnreadable_Test()

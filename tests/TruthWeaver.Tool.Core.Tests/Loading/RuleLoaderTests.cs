@@ -56,6 +56,18 @@ public sealed class RuleLoaderTests
         AssertCompilesLikeAccessFixture(result.Value);
     }
 
+    /// <summary>A path into a YAML document with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void LoadString_PathIntoYamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<LoadedRule> result = RuleLoader.LoadString(
+            "rules: [1, 2\nother: x\n",
+            options: new RuleLoadOptions { Format = RuleFormat.Yaml, Path = "rules" }
+        );
+
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, Assert.Single(result.Diagnostics).Code);
+    }
+
     /// <summary>A path selects a JSON object inside a document as a JSON rule with its note.</summary>
     [Fact]
     public void LoadFile_JsonPathToObject_SelectsEmbeddedJsonRule_Test()

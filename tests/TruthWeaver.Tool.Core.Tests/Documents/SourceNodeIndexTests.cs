@@ -41,6 +41,15 @@ public sealed class SourceNodeIndexTests
         Assert.Null(index.Find("$"));
     }
 
+    /// <summary>YAML with an unclosed flow sequence gives an empty index, not a scanner exception.</summary>
+    [Fact]
+    public void Create_YamlWithUnclosedFlowSequence_GivesAnEmptyIndex_Test()
+    {
+        SourceNodeIndex index = SourceNodeIndex.Create("op: [and, or\nother: x\n", RuleFormat.Yaml);
+
+        Assert.Null(index.Find("$"));
+    }
+
     /// <summary>A block mapping in YAML ends with its last value, without the comment and blank lines after it.</summary>
     [Fact]
     public void Find_YamlBlockMapping_EndsAtItsLastValue_Test()

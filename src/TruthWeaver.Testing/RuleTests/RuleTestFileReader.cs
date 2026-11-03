@@ -106,6 +106,12 @@ internal sealed class RuleTestFileReader
             );
             return null;
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            this.errors.Add(new RuleTestFileError("The file is not well-formed YAML.", "$", 0, 0));
+            return null;
+        }
 
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root)
         {
