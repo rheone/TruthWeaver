@@ -248,9 +248,9 @@ public sealed class ExportControllerTests
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
         (ExportController controller, _, Workbench workbench, ScriptedPrompts prompts) = Create("a");
-        using TemporaryFolder tools = TemporaryFolder.WithRenderer("echo fake > \"$3\"");
-        controller.ImageSearchPath = tools.Path;
-        string image = System.IO.Path.Combine(tools.Path, "rule.svg");
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo fake > \"$3\"");
+        controller.ImageSearchPath = tools.FullPath;
+        string image = Path.Combine(tools.FullPath, "rule.svg");
 
         bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg, image);
 
@@ -266,9 +266,9 @@ public sealed class ExportControllerTests
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
         (ExportController controller, _, Workbench workbench, _) = Create("a");
-        using TemporaryFolder tools = TemporaryFolder.WithRenderer("echo 'syntax error' >&2; exit 3");
-        controller.ImageSearchPath = tools.Path;
-        string image = System.IO.Path.Combine(tools.Path, "rule.svg");
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo 'syntax error' >&2; exit 3");
+        controller.ImageSearchPath = tools.FullPath;
+        string image = Path.Combine(tools.FullPath, "rule.svg");
 
         bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg, image);
 
@@ -283,14 +283,14 @@ public sealed class ExportControllerTests
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
         (ExportController controller, _, _, ScriptedPrompts prompts) = Create("a");
-        using TemporaryFolder tools = TemporaryFolder.WithRenderer("echo fake > \"$3\"");
-        controller.ImageSearchPath = tools.Path;
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo fake > \"$3\"");
+        controller.ImageSearchPath = tools.FullPath;
         prompts.SavePath = null;
 
         bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg);
 
         Assert.False(saved);
-        Assert.Empty(Directory.GetFiles(tools.Path, "*.svg"));
+        Assert.Empty(Directory.GetFiles(tools.FullPath, "*.svg"));
     }
 
     private static ArtifactDefinition Artifact(string id)

@@ -63,6 +63,14 @@ public static class DocumentOutline
                 $"The {(format == RuleFormat.Json ? "JSON" : "YAML")} document cannot be read: {ex.Message}"
             );
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            return ToolResults.Failure<IReadOnlyList<DocumentNode>>(
+                ToolDiagnosticCodes.MalformedDocument,
+                $"The {(format == RuleFormat.Json ? "JSON" : "YAML")} document cannot be read."
+            );
+        }
 
         return ToolResults.Success<IReadOnlyList<DocumentNode>>(nodes);
     }

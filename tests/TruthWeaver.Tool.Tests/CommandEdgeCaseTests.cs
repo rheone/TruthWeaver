@@ -222,25 +222,28 @@ public sealed class CommandEdgeCaseTests
         Assert.Equal([ToolDiagnosticCodes.RendererNotFound], run.DiagnosticCodes);
     }
 
-    /// <summary>An explicit configuration file is read by the import command.</summary>
+    /// <summary>The explicit configuration file of the import command changes the output: its symbolic operator style is used.</summary>
     [Fact]
-    public async Task Import_ExplicitConfig_ReadsThatFile_Test()
+    public async Task Import_ExplicitConfig_AppliesTheOperatorStyleOfThatFile_Test()
     {
-        CliRun run = await Cli.RunAsync(
-            ["import", "--config", "config/truthweaver.json"],
-            standardInput: """{"and": [true, false]}"""
-        );
+        const string Input = """{"and": [{"var": "a"}, {"var": "b"}]}""";
 
-        Assert.Equal(0, run.ExitCode);
+        CliRun withConfig = await Cli.RunAsync(["import", "--config", "config/truthweaver.json"], standardInput: Input);
+        CliRun withoutConfig = await Cli.RunAsync(["import"], standardInput: Input);
+
+        Assert.Equal(0, withConfig.ExitCode);
+        Assert.Equal(0, withoutConfig.ExitCode);
+        Assert.NotEqual(withoutConfig.Output, withConfig.Output);
     }
 
-    /// <summary>An explicit configuration file is read by the test command.</summary>
+    /// <summary>The test command reads an explicit configuration file, so a file that does not exist is an error.</summary>
     [Fact]
-    public async Task Test_ExplicitConfig_ReadsThatFile_Test()
+    public async Task Test_ExplicitConfigThatDoesNotExist_ExitsTwoWithInputUnreadable_Test()
     {
-        CliRun run = await Cli.RunAsync(["test", "access.test.yaml", "--config", "config/truthweaver.json"]);
+        CliRun run = await Cli.RunAsync(["test", "access.test.yaml", "--config", "config/none.json", "--json"]);
 
-        Assert.Equal(0, run.ExitCode);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains(ToolDiagnosticCodes.InputUnreadable, run.DiagnosticCodes);
     }
 
     /// <summary>A check of every artifact of a rule that does not compile reports the compile error and checks no file.</summary>
@@ -287,5 +290,15 @@ public sealed class CommandEdgeCaseTests
         JsonArray changes = run.Json["result"]!["changes"]!.AsArray();
         Assert.Contains(changes, change => change!["before"]!.GetValue<string>().Contains("editor", StringComparison.Ordinal));
         Assert.Contains(changes, change => change!["after"]!.GetValue<string>().Contains("admin", StringComparison.Ordinal));
+    }
+
+    /// <summary>A check of rule text from standard input compares it with the formatted text and reports the first line that differs.</summary>
+    [Fact]
+    public async Task Format_CheckOfStandardInputThatIsNotFormatted_ReportsLineOne_Test()
+    {
+        CliRun run = await Cli.RunAsync(["format", "-", "--check", "--json"], standardInput: "isActive   AND  isBanned\n");
+
+        Assert.Equal(1, run.ExitCode);
+        Assert.Equal(1, run.Json["result"]!["check"]!["firstDifferentLine"]!.GetValue<int>());
     }
 }

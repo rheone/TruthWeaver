@@ -122,8 +122,8 @@ public sealed class JsonLogicImporterFailureTests
         ToolResult<string> result = JsonLogicImporter.Import(jsonLogic);
 
         Assert.False(result.Succeeded);
-        Assert.All(result.Diagnostics, d => Assert.Equal(ToolDiagnosticCodes.UnsupportedJsonLogic, d.Code));
         Assert.NotEmpty(result.Diagnostics);
+        Assert.All(result.Diagnostics, d => Assert.Equal(ToolDiagnosticCodes.UnsupportedJsonLogic, d.Code));
     }
 
     /// <summary>A double negation with one argument is that argument.</summary>

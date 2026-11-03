@@ -65,19 +65,17 @@ Measured with `dotnet test tests/TruthWeaver.Tool.Tests -c Release --coverlet --
 
 | File | Before | After |
 | --- | --- | --- |
-| `DiffCommand` | 113/115 | 114/115 |
+| `DiffCommand` | 113/115 | 115/115 |
 | `ExportCommand` | 132/134 | 134/134 |
 | `ImportCommand` | 129/132 | 132/132 |
 | `TestCommand` | 114/117 | 117/117 |
-| `OutputTarget` | 56/57 | 56/57 |
+| `OutputTarget` | 56/57 | 57/57 |
 | `RuleTextPrinting` | 4/4 | 4/4 |
 
-Eight tests were added to `CommandEdgeCaseTests`: a diff with an added operand (no before text), a diff with a changed predicate argument, `convert --check` against a file that differs at line 1, `export --render` for Mermaid without a renderer, `export --all --check` of a rule that does not compile, `format --output` under a file, and an explicit `--config` for `import` and `test`.
+Nine tests were added to `CommandEdgeCaseTests`: a diff with an added operand (no before text), a diff with a changed predicate argument, `convert --check` against a file that differs at line 1, `format --check` of unformatted standard input (the `OutputTarget.CompareText` path), `export --render` for Mermaid without a renderer, `export --all --check` of a rule that does not compile, `format --output` under a file, an `import --config` that changes the output and a `test --config` that names a missing file.
 
-Left uncovered: `DiffCommand.NodeText` line 189 branch partials and `OutputTarget` line 65, which the line-1 check test did not reach (a different comparison path handles it); the branch partials listed in the report for the rest. `RuleTextPrinting` was already fully covered by line.
+Left uncovered: only branch points. `ExportCommand` line 159, `ImportCommand` line 148, `TestCommand` line 122 and `OutputTarget` lines 34, 69 and 129 each have one branch that no test takes. `RuleTextPrinting` is covered through the commands.
+
 ## Remaining
 
-- `ExportCommand`: only the unknown-artifact arm is covered here; the `--all` combined with `--output`, and a `--all` folder that is a file, were not tried.
-- `RuleTextPrinting`: no direct test; the rule that does not compile arm (`ToolResult<string>` with a null value) is reached only through the commands.
-- `OutputTarget.Deliver`: an `--output` path that cannot be written.
-- The ticket lists six classes and three criteria. Classes with no test aimed at their remaining branches: `ExportCommand` (beyond the unknown-artifact arm), `RuleTextPrinting` and `OutputTarget.Deliver` for an unwritable `--output`. `DiffCommand`, `ImportCommand` and `TestCommand` got edge-case tests but their coverage was not measured. Criteria 1 and 2 (coverage) and 3 (validation list) stay open.
+None of the first-slice items is open. The branch points in the last paragraph of the second slice are the only gaps.

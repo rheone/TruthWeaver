@@ -38,10 +38,12 @@ public sealed partial class YamlScannerCatchTests
 
     private static bool CatchesYamlException(string text)
     {
-        // Both forms: `catch (YamlException ...)` and `catch (Exception ex) when (ex is YamlException ...)`.
-        return text.Contains("catch (YamlException", StringComparison.Ordinal)
-            || text.Contains("ex is YamlException", StringComparison.Ordinal);
+        // Both forms: `catch (YamlException ...)` and a filter such as `when (ex is JsonException or YamlException ...)`.
+        return YamlCatch().IsMatch(text);
     }
+
+    [GeneratedRegex(@"catch\s*\(\s*YamlException|\bex is [^)]*\bYamlException\b", RegexOptions.CultureInvariant)]
+    private static partial Regex YamlCatch();
 
     // A catch site, not a comment that names the type: `catch (InvalidOperationException` or a `when (ex is ... InvalidOperationException` filter.
     private static bool HandlesScannerException(string text)
