@@ -429,6 +429,81 @@ public sealed class EmbeddedRuleControllerTests : IDisposable
         Assert.Equal(Json.Replace("isAdmin", "isOwner", StringComparison.Ordinal), File.ReadAllText(file));
     }
 
+    /// <summary>A refusal to drop the unsaved changes stops the open before any dialog is shown.</summary>
+    [Fact]
+    public void Open_UnsavedChangesNotDiscarded_OpensNothing_Test()
+    {
+        (EmbeddedRuleController controller, Workbench workbench, _, ScriptedPrompts prompts, _) = this.Create(Json, "p.json");
+        workbench.Document.SetText("isActive");
+        prompts.Discard = false;
+
+        bool opened = controller.Open();
+
+        Assert.False(opened);
+        Assert.Equal(1, prompts.DiscardQuestions);
+        Assert.Null(controller.Session);
+    }
+
+    /// <summary>A document that is not well-formed is not opened, and the status gives the first error.</summary>
+    [Fact]
+    public void OpenAt_DocumentThatIsNotWellFormed_OpensNothingAndSaysWhy_Test()
+    {
+        (EmbeddedRuleController controller, Workbench workbench, _, _, string file) = this.Create(
+            "rules: [1, 2\nother: x\n",
+            "broken.yaml"
+        );
+
+        bool opened = controller.OpenAt(file, "rules.publish");
+
+        Assert.False(opened);
+        Assert.Null(controller.Session);
+        Assert.NotEmpty(workbench.Status);
+    }
+
+    /// <summary>Saving with no rule of a larger document open says to open one.</summary>
+    [Fact]
+    public void SaveInPlace_NoRuleOpen_SaysToOpenOne_Test()
+    {
+        (EmbeddedRuleController controller, Workbench workbench, _, _, _) = this.Create(Json, "p.json");
+
+        bool saved = controller.SaveInPlace();
+
+        Assert.False(saved);
+        Assert.StartsWith("No rule of a larger document is open", workbench.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>Saving while the rule text has errors writes nothing and says to fix them or undo.</summary>
+    [Fact]
+    public void SaveInPlace_RuleTextHasErrors_WritesNothing_Test()
+    {
+        (EmbeddedRuleController controller, Workbench workbench, _, _, string file) = this.Create(Json, "p.json");
+        controller.OpenAt(file, "rules.review");
+        string before = File.ReadAllText(file);
+        workbench.Document.SetText("isActive AND (");
+
+        bool saved = controller.SaveInPlace();
+
+        Assert.False(saved);
+        Assert.StartsWith("Not saved: the rule text has errors", workbench.Status, StringComparison.Ordinal);
+        Assert.Equal(before, File.ReadAllText(file));
+    }
+
+    /// <summary>A document with no other tree-format rule has nothing to switch to.</summary>
+    [Fact]
+    public void Switch_DocumentWithOneRule_SaysThereIsNoOtherRule_Test()
+    {
+        (EmbeddedRuleController controller, Workbench workbench, _, _, string file) = this.Create(
+            """{"only": {"op": "and", "operands": [{"predicate": "a"}, {"predicate": "b"}]}}""",
+            "one.json"
+        );
+        controller.OpenAt(file, "only");
+
+        bool switched = controller.Switch();
+
+        Assert.False(switched);
+        Assert.Contains("no other rule", workbench.Status, StringComparison.Ordinal);
+    }
+
     private (
         EmbeddedRuleController Controller,
         Workbench Workbench,

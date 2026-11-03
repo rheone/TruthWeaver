@@ -159,6 +159,68 @@ public sealed class CompareControllerTests
         Assert.Equal(CompareController.Idle, Assert.Single(controller.Lines).Text);
     }
 
+    /// <summary>Cancelling the choice of where to load the second rule from loads nothing.</summary>
+    [Fact]
+    public void Open_ChoiceCancelled_LoadsNothing_Test()
+    {
+        (CompareController controller, _, _) = Create("a OR b");
+
+        bool opened = controller.Open();
+
+        Assert.False(opened);
+        Assert.Equal(CompareController.Idle, Assert.Single(controller.Lines).Text);
+    }
+
+    /// <summary>Choosing a file and giving no path loads nothing.</summary>
+    [Fact]
+    public void Open_FileChosenWithNoPath_LoadsNothing_Test()
+    {
+        (CompareController controller, ScriptedServices services, _) = Create("a OR b");
+        services.Dialogs.Choices.Enqueue(1);
+
+        bool opened = controller.Open();
+
+        Assert.False(opened);
+        Assert.Equal(CompareController.Idle, Assert.Single(controller.Lines).Text);
+    }
+
+    /// <summary>An empty clipboard loads nothing, and the status says so.</summary>
+    [Fact]
+    public void FromClipboard_NoText_LoadsNothingAndSaysSo_Test()
+    {
+        (CompareController controller, ScriptedServices services, Workbench workbench) = Create("a OR b");
+        services.Clipboard.Text = "   ";
+
+        bool loaded = controller.FromClipboard();
+
+        Assert.False(loaded);
+        Assert.Contains("clipboard has no text", workbench.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>A second rule that more assignments satisfy is called looser.</summary>
+    [Fact]
+    public void FromClipboard_WiderRule_IsLooser_Test()
+    {
+        (CompareController controller, ScriptedServices services, _) = Create("a");
+        services.Clipboard.Text = "a OR b";
+
+        controller.FromClipboard();
+
+        Assert.Contains(controller.Lines, l => l.Text.StartsWith("The second rule is looser", StringComparison.Ordinal));
+    }
+
+    /// <summary>When the open rule has errors, there is no comparison, and the pane says to fix them first.</summary>
+    [Fact]
+    public void FromClipboard_OpenRuleHasErrors_SaysThereIsNoComparison_Test()
+    {
+        (CompareController controller, ScriptedServices services, _) = Create("a AND");
+        services.Clipboard.Text = "a";
+
+        controller.FromClipboard();
+
+        Assert.Contains(controller.Lines, l => l.Text.Contains("open rule has errors", StringComparison.Ordinal));
+    }
+
     private static (CompareController Controller, ScriptedServices Services, Workbench Workbench) Create(string text)
     {
         ScriptedServices services = new();

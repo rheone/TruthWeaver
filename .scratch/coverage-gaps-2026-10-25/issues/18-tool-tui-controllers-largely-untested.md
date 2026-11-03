@@ -61,9 +61,9 @@ gap.
 
 **Acceptance criteria:**
 - [ ] Each listed controller gains at least one test for a genuinely non-trivial previously-uncovered error/edge path, prioritizing the representative scenarios named above.
-- [ ] Line/branch coverage improves measurably for the listed controllers (not necessarily to 100%).
+- [x] Line/branch coverage improves measurably for the listed controllers (not necessarily to 100%).
 - [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
-- [ ] The full validation list in `CLAUDE.md` passes.
+- [x] The full validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - The pure-presentation layer (separate ticket, coverage-gaps 19).
@@ -93,3 +93,18 @@ Judgement calls from the review. The owner decided that hard findings are fixed 
 - `CommandEdgeCaseTests` and the `...EdgeTests` class names are vague; ticket 20's `Convert_CheckAgainstALongerFile` runs the CLI twice.
 - `diff a b --max-analysis-terms 1` exits 0 and reports "equivalent" for structurally equal inputs above the term limit; `RuleTree.TryLocate` leaves `parent` and `index` set to the last good step when it returns false. Neither is changed here.
 - None of the three tickets ran a coverage run, so no "coverage improves" box is ticked. Run one before the next slice to find the real gaps in `StructureController`, `EmbeddedRuleController`, `InspectController` and `CompareController`.
+
+## Second slice (2026-11-03, branch `fix/coverage-gaps-2026-10-25`)
+
+Measured with `dotnet test tests/TruthWeaver.Tool.Tui.Tests -c Release --coverlet --coverlet-output-format cobertura`. Covered lines before and after this slice (the first slice is in both numbers):
+
+| Controller | Before | After |
+| --- | --- | --- |
+| `CompareController` | 120/136 | 127/136 |
+| `CounterfactualController` | 69/90 | 85/90 |
+| `EmbeddedRuleController` | 111/135 | 121/135 |
+| `ExportController` | 136/164 | 152/164 |
+
+New tests: `CounterfactualControllerEdgeTests` (no decision, the target cycle, a rule that cannot be True, a stale search result, a data-reference term), five Compare tests (cancelled open, no path, empty clipboard, looser rule, open rule with errors), five Embedded tests (refused discard, malformed document, save with no rule, save with a rule that has errors, no other rule to switch to) and three `SaveImage` tests with a fake `dot` script (skipped on Windows).
+
+**Remaining.** The ticket stays open: criterion 1 (each of the nine controllers gains a test) is not ticked because this slice and the first one add no new test for `StructureController` (24 lines uncovered, for example lines 507 to 533 and 589 to 612) or the `InspectController` partial files (`.Tokens` 27 lines, `.Nodes` 23 lines). Left on purpose: `CompareController.LoadExample` for a `from(...)` term, the undecided-overlap line, and the `ArgumentException` catch in `CounterfactualController.Search`, which no input reaches.
