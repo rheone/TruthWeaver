@@ -297,6 +297,92 @@ public sealed class StructureControllerTests
         Assert.StartsWith("let one = both(a, b);", workbench.Document.Text, StringComparison.Ordinal);
     }
 
+    /// <summary>A structural edit of a rule that has errors is refused, because there is no valid tree to edit.</summary>
+    [Fact]
+    public void WrapInNot_RuleWithErrors_IsRefused_Test()
+    {
+        (StructureController controller, _, Workbench workbench) = Create("a AND");
+
+        bool changed = controller.WrapInNot();
+
+        Assert.False(changed);
+        Assert.Equal("a AND", workbench.Document.Text);
+    }
+
+    /// <summary>Replacing from the palette and changing a literal are refused for a rule that has errors.</summary>
+    [Fact]
+    public void ReplaceFromPalette_AndChangeLiteral_RuleWithErrors_AreRefused_Test()
+    {
+        (StructureController controller, _, _) = Create("a AND");
+
+        Assert.False(controller.ReplaceFromPalette());
+        Assert.False(controller.ChangeLiteral());
+    }
+
+    /// <summary>Swapping the selected operand with the next one changes the order of the operands in the text.</summary>
+    [Fact]
+    public void Swap_FirstOperandDownwards_ExchangesTheTwoOperands_Test()
+    {
+        (StructureController controller, _, Workbench workbench) = Create("a AND b");
+        workbench.SelectNode("$.operands[0]");
+
+        bool changed = controller.Swap(1);
+
+        Assert.True(changed);
+        Assert.Equal("b AND a", workbench.Document.Text);
+    }
+
+    /// <summary>Pasting into a rule that has errors is refused.</summary>
+    [Fact]
+    public void Paste_RuleWithErrors_IsRefused_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create("a AND");
+        services.Clipboard.Text = "b";
+
+        bool pasted = controller.Paste();
+
+        Assert.False(pasted);
+        Assert.Equal("a AND", workbench.Document.Text);
+    }
+
+    /// <summary>Pasting with nothing on the clipboard changes nothing and says so.</summary>
+    [Fact]
+    public void Paste_EmptyClipboard_SaysThereIsNothingToPaste_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create("a AND b");
+        services.Clipboard.Text = "  ";
+
+        bool pasted = controller.Paste();
+
+        Assert.False(pasted);
+        Assert.StartsWith("Nothing to paste", workbench.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>Copying the rule when no text has compiled yet says there is nothing to copy.</summary>
+    [Fact]
+    public void CopyRule_NoRuleCompiledYet_SaysThereIsNothingToCopy_Test()
+    {
+        (StructureController controller, _, Workbench workbench) = Create("a AND");
+
+        bool copied = controller.CopyRule();
+
+        Assert.False(copied);
+        Assert.StartsWith("Nothing to copy", workbench.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>Copying when the terminal has no clipboard fails and says so.</summary>
+    [Fact]
+    public void CopyRule_ClipboardNotAvailable_SaysItWasNotCopied_Test()
+    {
+        (StructureController controller, ScriptedServices services, Workbench workbench) = Create("a AND b");
+        services.Clipboard.Available = false;
+
+        bool copied = controller.CopyRule();
+
+        Assert.False(copied);
+        Assert.StartsWith("Not copied", workbench.Status, StringComparison.Ordinal);
+    }
+
     private static (StructureController Controller, ScriptedServices Services, Workbench Workbench) Create(string text)
     {
         ScriptedServices services = new();

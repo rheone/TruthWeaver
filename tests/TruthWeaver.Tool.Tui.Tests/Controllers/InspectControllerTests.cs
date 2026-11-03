@@ -562,6 +562,36 @@ public sealed class InspectControllerTests
         Assert.NotEqual(narrowMargins.Frame.Y, wideMargins.Frame.Y);
     }
 
+    /// <summary>A use of a definition inside another definition names the definition it uses, its parameters and its body.</summary>
+    [Fact]
+    public void DescribeNode_UseInsideADefinitionBody_NamesTheUsedDefinitionAndItsParameters_Test()
+    {
+        string text = Describe("let both(x, y) = x AND y; let one = both(a, c); one OR b", "$.definitions.one.body");
+
+        Assert.Contains("Use of definition both(a, c)", text, StringComparison.Ordinal);
+        Assert.Contains("Parameters: x, y", text, StringComparison.Ordinal);
+        Assert.Contains("Body: ", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>A parameter of a definition says that each use puts its argument in that place.</summary>
+    [Fact]
+    public void DescribeNode_ParameterOfADefinition_SaysEachUsePutsItsArgumentThere_Test()
+    {
+        string text = Describe("let both(x, y) = x AND y; both(a, b)", "$.definitions.both.body.operands[0]");
+
+        Assert.Contains("Parameter x (parameter)", text, StringComparison.Ordinal);
+        Assert.Contains("Each use of the definition puts its argument in this place.", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>The word <c>from</c> in a data reference gives the source and the path of the variable.</summary>
+    [Fact]
+    public void DescribeOffset_FromWordOfADataReference_GivesTheSourceAndThePath_Test()
+    {
+        string text = DescribeAt("isSet(value: from(\"users\", \"$.name\"))", "from");
+
+        Assert.Contains("Variable from source \"users\", path \"$.name\"", text, StringComparison.Ordinal);
+    }
+
     private static string Describe(string rule, string path, Action<Workbench>? arrange = null)
     {
         ScriptedServices services = new();

@@ -1,6 +1,6 @@
 # 18 - Tool.Tui's controller layer is largely untested
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: medium
 Slice: Tool.Tui (src/TruthWeaver.Tool.Tui/Controllers/)
@@ -60,8 +60,8 @@ gap.
 - The nine controller classes listed above, in `TruthWeaver.Tool.Tui.Controllers`.
 
 **Acceptance criteria:**
-- [ ] Each listed controller gains at least one test for a genuinely non-trivial previously-uncovered error/edge path, prioritizing the representative scenarios named above.
-- [ ] Line/branch coverage improves measurably for the listed controllers (not necessarily to 100%).
+- [x] Each listed controller gains at least one test for a genuinely non-trivial previously-uncovered error/edge path, prioritizing the representative scenarios named above.
+- [x] Line/branch coverage improves measurably for the listed controllers (not necessarily to 100%).
 - [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
 - [x] The full validation list in `CLAUDE.md` passes.
 
@@ -104,10 +104,13 @@ Measured with `dotnet test tests/TruthWeaver.Tool.Tui.Tests -c Release --coverle
 | `ImportController` | 94/98 | 94/98 |
 | `RewriteController` | 151/161 | 151/161 |
 | `ViewController` | 132/150 | 132/150 |
-| `StructureController` | 220/244 | 220/244 |
-| `InspectController` (four files) | 354/406 | 354/406 |
+| `StructureController` | 220/244 | 230/244 |
+| `InspectController` (four files) | 354/406 | 376/406 |
 
-Criterion 2 is not ticked: four of the nine controllers gained coverage, and the first slice (in the "Before" numbers) was never measured on its own.
 New tests: `CounterfactualControllerEdgeTests` (no decision, the target cycle, a rule that cannot be True, a stale search result, a data-reference term), five Compare tests (cancelled open, no path, empty clipboard, looser rule, open rule with errors), five Embedded tests (refused discard, malformed document, save with no rule, save with a rule that has errors, no other rule to switch to) and three `SaveImage` tests with a fake `dot` script (skipped on Windows).
 
-**Remaining.** The ticket stays open: criterion 1 (each of the nine controllers gains a test) is not ticked because this slice and the first one add no new test for `StructureController` (24 lines uncovered, for example lines 507 to 533 and 589 to 612) or the `InspectController` partial files (`.Tokens` 27 lines, `.Nodes` 23 lines). Left on purpose: `CompareController.LoadExample` for a `from(...)` term, the undecided-overlap line, and the `ArgumentException` catch in `CounterfactualController.Search`, which no input reaches.
+**Third slice (same day).** Ten tests close the two controllers that had none: seven for `StructureController` (a rule with errors refuses an edit, a palette replace, a literal change and a paste; `Swap`; an empty clipboard on paste; no compiled rule to copy; no clipboard to copy to) and three for `InspectController` (a use inside a definition body, a parameter of a definition, and the word `from` of a data reference). `StructureController` rises from 220/244 to 230/244, `InspectController.Nodes` from 200/223 to 214/223 and `InspectController.Tokens` from 116/143 to 124/143.
+
+**Criterion 2.** The tables show a measured gain for `CompareController`, `CounterfactualController`, `EmbeddedRuleController`, `ExportController`, `StructureController` and `InspectController`. `ImportController`, `RewriteController` and `ViewController` gained their tests in the first slice, which no coverage run measured, so their gain is not shown; their numbers did not change in this slice.
+
+**Left uncovered.** The longer branches of `StructureController` that need a failing clipboard-set or a catalog-search dialog (lines 507, 525 to 527, 589 to 612), `InspectController.Tokens` lines 265 to 282 (the several-terms case for one predicate name, which no rule tried reached), and the note line of `InspectController.Nodes`.
