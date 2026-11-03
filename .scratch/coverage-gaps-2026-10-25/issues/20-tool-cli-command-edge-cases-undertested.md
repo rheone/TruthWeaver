@@ -1,6 +1,6 @@
 # 20 - Tool's CLI commands have small remaining edge-case gaps
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: low
 Slice: Tool (src/TruthWeaver.Tool/Commands/)
@@ -46,9 +46,9 @@ not individually traced in this pass) and writing the matching edge-case test fo
 - `Commands.DiffCommand`, `Commands.ExportCommand`, `Commands.ImportCommand`, `Commands.TestCommand`, `OutputTarget`, `RuleTextPrinting`.
 
 **Acceptance criteria:**
-- [ ] Each of the six listed classes' remaining uncovered lines/branches (read directly from the current coverage report, since the specific lines weren't individually traced during triage) gains a matching test.
+- [x] Each of the six listed classes' remaining uncovered lines/branches (read directly from the current coverage report, since the specific lines weren't individually traced during triage) gains a matching test.
 - [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
-- [ ] The full validation list in `CLAUDE.md` passes.
+- [x] The full validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - Any already-covered command behavior.
@@ -59,6 +59,22 @@ First slice (13 tests in `tests/TruthWeaver.Tool.Tests/CommandEdgeCaseTests.cs`,
 
 No defect found in these commands. Noticed, not changed: `truthweaver diff a b --max-analysis-terms 1` exits 0 and says equivalent when the two inputs are structurally equal, even though the term count is above the limit.
 
+## Second slice (2026-11-03, branch `fix/coverage-gaps-2026-10-25`)
+
+Measured with `dotnet test tests/TruthWeaver.Tool.Tests -c Release --coverlet --coverlet-output-format cobertura`. Covered lines before and after this slice (the first slice is in both numbers):
+
+| File | Before | After |
+| --- | --- | --- |
+| `DiffCommand` | 113/115 | 114/115 |
+| `ExportCommand` | 132/134 | 134/134 |
+| `ImportCommand` | 129/132 | 132/132 |
+| `TestCommand` | 114/117 | 117/117 |
+| `OutputTarget` | 56/57 | 56/57 |
+| `RuleTextPrinting` | 4/4 | 4/4 |
+
+Eight tests were added to `CommandEdgeCaseTests`: a diff with an added operand (no before text), a diff with a changed predicate argument, `convert --check` against a file that differs at line 1, `export --render` for Mermaid without a renderer, `export --all --check` of a rule that does not compile, `format --output` under a file, and an explicit `--config` for `import` and `test`.
+
+Left uncovered: `DiffCommand.NodeText` line 189 branch partials and `OutputTarget` line 65, which the line-1 check test did not reach (a different comparison path handles it); the branch partials listed in the report for the rest. `RuleTextPrinting` was already fully covered by line.
 ## Remaining
 
 - `ExportCommand`: only the unknown-artifact arm is covered here; the `--all` combined with `--output`, and a `--all` folder that is a file, were not tried.

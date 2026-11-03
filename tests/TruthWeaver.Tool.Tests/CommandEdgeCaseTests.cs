@@ -1,5 +1,6 @@
 namespace TruthWeaver.Tool.Tests;
 
+using System.Text.Json.Nodes;
 using TruthWeaver.Tool.Core.Diagnostics;
 using TruthWeaver.Tool.Tests.TestSupport;
 
@@ -168,5 +169,123 @@ public sealed class CommandEdgeCaseTests
         CliRun run = await Cli.RunAsync(["export", "access.rule", "--artifact", "nope", "--output", "x.txt"]);
 
         Assert.Equal(2, run.ExitCode);
+    }
+
+    /// <summary>A change that adds an operand has no text before it, so the change lists a null before.</summary>
+    [Fact]
+    public async Task Diff_RuleWithAnAddedOperand_ListsAChangeWithNoBeforeText_Test()
+    {
+        using TemporaryDirectory folder = new();
+        folder.Write("before.rule", "a AND b\n");
+        folder.Write("after.rule", "a AND b AND c\n");
+
+        CliRun run = await Cli.RunAsync(["diff", folder.File("before.rule"), folder.File("after.rule"), "--json"]);
+
+        JsonArray changes = run.Json["result"]!["changes"]!.AsArray();
+        Assert.Contains(changes, change => change!["before"] is null && change["after"] is not null);
+    }
+
+    /// <summary>A check against a file that differs from the first line reports line 1.</summary>
+    [Fact]
+    public async Task Convert_CheckAgainstAFileThatDiffersAtTheFirstLine_ReportsLineOne_Test()
+    {
+        using TemporaryDirectory folder = new();
+        folder.Write("out.yaml", "something: else\nmore: lines\n");
+
+        CliRun run = await Cli.RunAsync([
+            "convert",
+            "access.rule",
+            "--to",
+            "yaml",
+            "--output",
+            folder.File("out.yaml"),
+            "--check",
+            "--json",
+        ]);
+
+        Assert.Equal(1, run.ExitCode);
+        Assert.Equal(1, run.Json["result"]!["check"]!["firstDifferentLine"]!.GetValue<int>());
+    }
+
+    /// <summary>A rule in Mermaid that is rendered without a Mermaid program on the search path is a renderer-not-found error.</summary>
+    [Fact]
+    public async Task Export_RenderMermaidWithoutTheRenderer_ExitsTwo_Test()
+    {
+        using TemporaryDirectory folder = new();
+
+        CliRun run = await Cli.RunAsync(
+            ["export", "access.rule", "-a", "mermaid", "-o", folder.File("rule.svg"), "--render", "svg", "--json"],
+            rendererSearchPath: folder.FullPath
+        );
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Equal([ToolDiagnosticCodes.RendererNotFound], run.DiagnosticCodes);
+    }
+
+    /// <summary>An explicit configuration file is read by the import command.</summary>
+    [Fact]
+    public async Task Import_ExplicitConfig_ReadsThatFile_Test()
+    {
+        CliRun run = await Cli.RunAsync(
+            ["import", "--config", "config/truthweaver.json"],
+            standardInput: """{"and": [true, false]}"""
+        );
+
+        Assert.Equal(0, run.ExitCode);
+    }
+
+    /// <summary>An explicit configuration file is read by the test command.</summary>
+    [Fact]
+    public async Task Test_ExplicitConfig_ReadsThatFile_Test()
+    {
+        CliRun run = await Cli.RunAsync(["test", "access.test.yaml", "--config", "config/truthweaver.json"]);
+
+        Assert.Equal(0, run.ExitCode);
+    }
+
+    /// <summary>A check of every artifact of a rule that does not compile reports the compile error and checks no file.</summary>
+    [Fact]
+    public async Task Export_AllCheckOfARuleThatDoesNotCompile_ReportsTheErrorAndChecksNothing_Test()
+    {
+        using TemporaryDirectory folder = new();
+
+        CliRun run = await Cli.RunAsync(["export", "broken.rule", "--all", folder.FullPath, "--check", "--json"]);
+
+        Assert.Equal(1, run.ExitCode);
+        Assert.Equal(["TRE0001"], run.DiagnosticCodes);
+    }
+
+    /// <summary>An output path under a file cannot be written, and the command exits 2 with the output-failed code.</summary>
+    [Fact]
+    public async Task Format_OutputPathUnderAFile_ExitsTwoWithOutputFailed_Test()
+    {
+        using TemporaryDirectory folder = new();
+        folder.Write("blocker", "x");
+
+        CliRun run = await Cli.RunAsync([
+            "format",
+            "access.rule",
+            "--output",
+            Path.Combine(folder.File("blocker"), "out.rule"),
+            "--json",
+        ]);
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Equal([ToolDiagnosticCodes.OutputFailed], run.DiagnosticCodes);
+    }
+
+    /// <summary>A changed predicate argument is listed with the predicate name and its arguments on both sides.</summary>
+    [Fact]
+    public async Task Diff_ChangedPredicateArgument_ListsTheArgumentsOnBothSides_Test()
+    {
+        using TemporaryDirectory folder = new();
+        folder.Write("before.rule", "hasRole(role: \"editor\")\n");
+        folder.Write("after.rule", "hasRole(role: \"admin\")\n");
+
+        CliRun run = await Cli.RunAsync(["diff", folder.File("before.rule"), folder.File("after.rule"), "--json"]);
+
+        JsonArray changes = run.Json["result"]!["changes"]!.AsArray();
+        Assert.Contains(changes, change => change!["before"]!.GetValue<string>().Contains("editor", StringComparison.Ordinal));
+        Assert.Contains(changes, change => change!["after"]!.GetValue<string>().Contains("admin", StringComparison.Ordinal));
     }
 }
