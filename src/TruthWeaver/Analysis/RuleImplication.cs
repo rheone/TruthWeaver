@@ -42,25 +42,20 @@ public static class RuleImplication
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
 
-        string? reason = CapReason(first, second, maxAnalysisTerms);
-        if (reason is not null)
+        AnalysisAttempt<IReadOnlyDictionary<TermIdentity, TruthValue>> attempt = AnalysisVerdicts.Run(
+            [first.Root, second.Root],
+            maxAnalysisTerms,
+            () => Analyzer.CompareSatisfaction(first.Root, second.Root).OnlyLeft
+        );
+        if (!attempt.IsDecided)
         {
-            return new RuleImplicationResult(RuleImplicationOutcome.Undecided, null, reason);
+            return new RuleImplicationResult(RuleImplicationOutcome.Undecided, null, attempt.UndecidedReason);
         }
 
-        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyFirst;
-        try
-        {
-            onlyFirst = Analyzer.CompareSatisfaction(first.Root, second.Root).OnlyLeft;
-        }
-        catch (BddNodeBudgetExceededException exception)
-        {
-            return new RuleImplicationResult(RuleImplicationOutcome.Undecided, null, exception.Message);
-        }
-
-        return onlyFirst is null
+        // A decided null value means no assignment satisfies only the first rule: the implication holds.
+        return attempt.Value is null
             ? new RuleImplicationResult(RuleImplicationOutcome.Holds, null, null)
-            : new RuleImplicationResult(RuleImplicationOutcome.DoesNotHold, Printed(onlyFirst), null);
+            : new RuleImplicationResult(RuleImplicationOutcome.DoesNotHold, AnalysisVerdicts.Printed(attempt.Value), null);
     }
 
     /// <summary>Decides how the satisfying assignments of <paramref name="after"/> relate to those of <paramref name="before"/>.</summary>
@@ -87,23 +82,25 @@ public static class RuleImplication
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
 
-        string? reason = CapReason(before, after, maxAnalysisTerms);
-        if (reason is not null)
+        AnalysisAttempt<(
+            IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyLeft,
+            IReadOnlyDictionary<TermIdentity, TruthValue>? OnlyRight,
+            bool Shared
+        )> attempt = AnalysisVerdicts.Run(
+            [before.Root, after.Root],
+            maxAnalysisTerms,
+            () => Analyzer.CompareSatisfaction(before.Root, after.Root)
+        );
+        if (!attempt.IsDecided)
         {
-            return new RuleRelationResult(RuleRelation.Undecided, null, null, reason);
+            return new RuleRelationResult(RuleRelation.Undecided, null, null, attempt.UndecidedReason);
         }
 
-        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyBefore;
-        IReadOnlyDictionary<TermIdentity, TruthValue>? onlyAfter;
-        bool shared;
-        try
-        {
-            (onlyBefore, onlyAfter, shared) = Analyzer.CompareSatisfaction(before.Root, after.Root);
-        }
-        catch (BddNodeBudgetExceededException exception)
-        {
-            return new RuleRelationResult(RuleRelation.Undecided, null, null, exception.Message);
-        }
+        (
+            IReadOnlyDictionary<TermIdentity, TruthValue>? onlyBefore,
+            IReadOnlyDictionary<TermIdentity, TruthValue>? onlyAfter,
+            bool shared
+        ) = attempt.Value;
 
         // The subset checks come first, so a rule that is never True is tighter (or equivalent), not disjoint.
         RuleRelation relation = (onlyBefore, onlyAfter) switch
@@ -113,27 +110,11 @@ public static class RuleImplication
             (null, _) => RuleRelation.Looser,
             _ => shared ? RuleRelation.Overlapping : RuleRelation.Disjoint,
         };
-        return new RuleRelationResult(relation, Printed(onlyBefore), Printed(onlyAfter), null);
-    }
-
-    /// <summary>Gets why the rules are not analysed, or <see langword="null"/> when their distinct terms fit the cap.</summary>
-    private static string? CapReason<TContext>(
-        CompiledRule<TContext> first,
-        CompiledRule<TContext> second,
-        int? maxAnalysisTerms
-    )
-    {
-        int cap = maxAnalysisTerms ?? CompilerOptions.Default.MaxAnalysisTerms;
-        HashSet<TermIdentity> terms = Analyzer.DistinctTerms(first.Root);
-        terms.UnionWith(Analyzer.DistinctTerms(second.Root));
-        return terms.Count > cap
-            ? $"The rules have {terms.Count} distinct terms between them, which exceeds the configured cap of {cap}."
-            : null;
-    }
-
-    /// <summary>Keys an assignment by the printed term (such as <c>hasRole(role: "Y")</c>), so callers need no internal identity type.</summary>
-    private static Dictionary<string, TruthValue>? Printed(IReadOnlyDictionary<TermIdentity, TruthValue>? assignment)
-    {
-        return assignment?.ToDictionary(p => p.Key.ToString(), p => p.Value);
+        return new RuleRelationResult(
+            relation,
+            AnalysisVerdicts.Printed(onlyBefore),
+            AnalysisVerdicts.Printed(onlyAfter),
+            null
+        );
     }
 }

@@ -40,35 +40,19 @@ public static class RuleEquivalence
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
 
-        int cap = maxAnalysisTerms ?? CompilerOptions.Default.MaxAnalysisTerms;
-        HashSet<TermIdentity> terms = Analyzer.DistinctTerms(first.Root);
-        terms.UnionWith(Analyzer.DistinctTerms(second.Root));
-        if (terms.Count > cap)
+        AnalysisAttempt<IReadOnlyDictionary<TermIdentity, TruthValue>> attempt = AnalysisVerdicts.Run(
+            [first.Root, second.Root],
+            maxAnalysisTerms,
+            () => Analyzer.FindDifference(first.Root, second.Root)
+        );
+        if (!attempt.IsDecided)
         {
-            return new RuleEquivalenceResult(
-                RuleEquivalenceOutcome.Undecided,
-                null,
-                $"The rules have {terms.Count} distinct terms between them, which exceeds the configured cap of {cap}."
-            );
+            return new RuleEquivalenceResult(RuleEquivalenceOutcome.Undecided, null, attempt.UndecidedReason);
         }
 
-        IReadOnlyDictionary<TermIdentity, TruthValue>? difference;
-        try
-        {
-            difference = Analyzer.FindDifference(first.Root, second.Root);
-        }
-        catch (BddNodeBudgetExceededException exception)
-        {
-            return new RuleEquivalenceResult(RuleEquivalenceOutcome.Undecided, null, exception.Message);
-        }
-
-        if (difference is null)
-        {
-            return new RuleEquivalenceResult(RuleEquivalenceOutcome.Equivalent, null, null);
-        }
-
-        // Key by the printed term (e.g. hasRole(role: "Y")) so callers need no internal identity type.
-        Dictionary<string, TruthValue> counterExample = difference.ToDictionary(p => p.Key.ToString(), p => p.Value);
-        return new RuleEquivalenceResult(RuleEquivalenceOutcome.NotEquivalent, counterExample, null);
+        // A decided null value means no difference: the rules are equivalent.
+        return attempt.Value is null
+            ? new RuleEquivalenceResult(RuleEquivalenceOutcome.Equivalent, null, null)
+            : new RuleEquivalenceResult(RuleEquivalenceOutcome.NotEquivalent, AnalysisVerdicts.Printed(attempt.Value), null);
     }
 }

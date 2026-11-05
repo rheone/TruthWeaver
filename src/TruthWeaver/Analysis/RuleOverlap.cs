@@ -1,5 +1,6 @@
 namespace TruthWeaver.Analysis;
 
+using TruthWeaver.Ast;
 using TruthWeaver.Compilation;
 using TruthWeaver.Evaluation;
 
@@ -47,37 +48,24 @@ public static class RuleOverlap
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
 
-        int cap = maxAnalysisTerms ?? CompilerOptions.Default.MaxAnalysisTerms;
-        HashSet<TermIdentity> terms = Analyzer.DistinctTerms(first.Root);
-        terms.UnionWith(Analyzer.DistinctTerms(second.Root));
-        if (terms.Count > cap)
-        {
-            return new RuleOverlapResult(
-                RuleOverlapOutcome.Undecided,
-                [],
-                $"The rules have {terms.Count} distinct terms between them, which exceeds the configured cap of {cap}."
-            );
-        }
-
-        try
-        {
-            List<JointOutcome> reachable =
-            [
-                .. Analyzer
-                    .JointOutcomes(first.Root, second.Root)
-                    .Select(cell => new JointOutcome(cell.First, cell.Second, Printed(cell.Example))),
-            ];
-            return new RuleOverlapResult(RuleOverlapOutcome.Decided, reachable, null);
-        }
-        catch (BddNodeBudgetExceededException exception)
-        {
-            return new RuleOverlapResult(RuleOverlapOutcome.Undecided, [], exception.Message);
-        }
+        AnalysisAttempt<List<JointOutcome>> attempt = AnalysisVerdicts.Run(
+            [first.Root, second.Root],
+            maxAnalysisTerms,
+            () => ReachableOutcomes(first.Root, second.Root)
+        );
+        return attempt.IsDecided
+            ? new RuleOverlapResult(RuleOverlapOutcome.Decided, attempt.Value!, null)
+            : new RuleOverlapResult(RuleOverlapOutcome.Undecided, [], attempt.UndecidedReason);
     }
 
-    /// <summary>Keys an assignment by the printed term (such as <c>hasRole(role: "Y")</c>), so callers need no internal identity type.</summary>
-    private static Dictionary<string, TruthValue> Printed(IReadOnlyDictionary<TermIdentity, TruthValue> assignment)
+    /// <summary>Gets the reachable joint outcomes of two rule roots, each example keyed by the printed term.</summary>
+    private static List<JointOutcome> ReachableOutcomes(Expression first, Expression second)
     {
-        return assignment.ToDictionary(p => p.Key.ToString(), p => p.Value);
+        return
+        [
+            .. Analyzer
+                .JointOutcomes(first, second)
+                .Select(cell => new JointOutcome(cell.First, cell.Second, AnalysisVerdicts.Printed(cell.Example))),
+        ];
     }
 }

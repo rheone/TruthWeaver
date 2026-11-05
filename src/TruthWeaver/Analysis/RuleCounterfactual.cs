@@ -137,28 +137,15 @@ public static class RuleCounterfactual
             .. (options.FixedTerms ?? []).Select(text => Resolve(terms, text, nameof(options))),
         ];
 
-        int cap = options.MaxAnalysisTerms ?? CompilerOptions.Default.MaxAnalysisTerms;
-        if (terms.Count > cap)
-        {
-            return new CounterfactualResult(
-                CounterfactualOutcome.Undecided,
-                [],
-                false,
-                $"The rule has {terms.Count} distinct terms, which exceeds the configured cap of {cap}."
-            );
-        }
-
-        try
-        {
-            return ChangeSetSearch.Run(root, known, fixedTerms, options.Target, options.MaxChangeSets);
-        }
-        catch (BddNodeBudgetExceededException exception)
-        {
-            // Within the term cap, the shared BDD for this term ordering and rule shape still grew past the search's
-            // internal node budget (ticket 24): report the same way the term-count cap does, rather than hanging or
-            // allocating unboundedly.
-            return new CounterfactualResult(CounterfactualOutcome.Undecided, [], false, exception.Message);
-        }
+        // The fixed terms resolve above, so a bad fixed term throws before the shared cap check runs.
+        AnalysisAttempt<CounterfactualResult> attempt = AnalysisVerdicts.Run(
+            [root],
+            options.MaxAnalysisTerms,
+            () => ChangeSetSearch.Run(root, known, fixedTerms, options.Target, options.MaxChangeSets)
+        );
+        return attempt.IsDecided
+            ? attempt.Value!
+            : new CounterfactualResult(CounterfactualOutcome.Undecided, [], false, attempt.UndecidedReason);
     }
 
     /// <summary>Maps the printed form of each distinct term of the rule to its identity.</summary>
