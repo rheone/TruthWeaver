@@ -9,7 +9,7 @@ Author a rule once, compile it into an immutable tree, and evaluate it many time
 
 The project is written with .NET 11 and C# 15
 
-Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.1.26425.128`, rolls forward to later majors including RC). Local tools (CSharpier, Husky.Net, Roslynator) are in `dotnet-tools.json`; Husky pre-commit tasks are in `.husky/task-runner.json`. Central Package Management (`Directory.Packages.props`), xUnit v3, SLNX solution.
+Target framework `net11.0`; SDK pinned in `global.json` (`11.0.100-rc.3.26522.148`, rolls forward to later majors including RC). Local tools (CSharpier, Husky.Net, Roslynator) are in `dotnet-tools.json`; Husky pre-commit tasks are in `.husky/task-runner.json`. Central Package Management (`Directory.Packages.props`), xUnit v3, SLNX solution.
 
 ## **Cardinal Rules**
 
