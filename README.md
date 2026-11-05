@@ -55,7 +55,7 @@ are in `CHANGELOG.md`.
 ## Requirements
 
 Building from source needs at least the SDK version in [`global.json`](global.json),
-currently `11.0.100-rc.1.26425.128`. The setting `rollForward: latestMajor` with
+currently `11.0.100-rc.3.26522.148`. The setting `rollForward: latestMajor` with
 `allowPrerelease: true` accepts any later major .NET SDK on the machine, preview
 or RC included. The file does not pin that exact patch.
 

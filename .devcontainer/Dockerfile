@@ -1,6 +1,6 @@
 # Dev image for TruthWeaver: Alpine, .NET 11 SDK. Keep the tag in step with global.json (the CI "devcontainer" job checks it).
 # The tag is literal, not an ARG, so Dependabot can read it.
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.1-alpine3.24
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-alpine3.24
 
 ARG POWERSHELL_VERSION=7.6.8
 ARG USERNAME=vscode
