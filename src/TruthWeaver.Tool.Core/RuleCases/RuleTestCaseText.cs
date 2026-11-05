@@ -247,6 +247,11 @@ public static class RuleTestCaseText
         {
             return Invalid<Layout>($"The YAML is not well-formed (line {ex.Start.Line}, column {ex.Start.Column}).", "$");
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for a document such as an unclosed flow sequence.
+            return Invalid<Layout>("The YAML is not well-formed.", "$");
+        }
 
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root)
         {

@@ -62,6 +62,16 @@ public sealed class StubAssignmentTests
         Assert.Equal(["$['isActive AND isAdmin']", "$['isBanned']", "$[' isOwner']"], result.Diagnostics.Select(d => d.Path));
     }
 
+    /// <summary>A YAML stub file with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void Parse_YamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<StubAssignment> result = StubAssignment.Parse("user: [1, 2\nother: x\n", RuleFormat.Yaml);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, diagnostic.Code);
+    }
+
     /// <summary>A stub document that is not a mapping, or not well formed, is an error.</summary>
     /// <param name="text">The document.</param>
     /// <param name="format">Its format.</param>

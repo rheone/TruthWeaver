@@ -123,7 +123,7 @@ internal static class NandNorExpander
         bool nand = conversion.Nand;
         return node switch
         {
-            ConstantExpression or TermExpression => node,
+            ConstantExpression or TermExpression or CallExpression => node,
             NotExpression n => Not(Convert(n.Operand, conversion), nand),
             AndExpression a => Fold(ConvertAll(a.Operands, conversion), (l, r) => And(l, r, nand)),
             OrExpression o => Fold(ConvertAll(o.Operands, conversion), (l, r) => Or(l, r, nand)),

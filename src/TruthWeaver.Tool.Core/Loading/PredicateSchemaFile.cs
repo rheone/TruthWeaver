@@ -78,6 +78,14 @@ public sealed class PredicateSchemaFile
                 $"The predicate schema file is not well-formed YAML (line {ex.Start.Line}, column {ex.Start.Column})."
             );
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            return ToolResults.Failure<PredicateSchemaFile>(
+                ToolDiagnosticCodes.MalformedDocument,
+                "The predicate schema file is not well-formed YAML."
+            );
+        }
 
         List<Diagnostic> diagnostics = [];
         List<PredicateSchema> predicates = [];

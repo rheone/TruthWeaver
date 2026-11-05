@@ -72,7 +72,7 @@ public static class RuleDiff
             return;
         }
 
-        if (!SameShape(before, after) || before is TermExpression or ConstantExpression)
+        if (!SameShape(before, after) || before is TermExpression or ConstantExpression or CallExpression)
         {
             // Either the node kind itself differs (different operator, different threshold K, a term
             // where the other tree has a constant, etc.), or both sides are leaves whose values differ

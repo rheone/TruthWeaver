@@ -31,6 +31,16 @@ public sealed class AssignmentVariablesEdgeTests
         Assert.Equal("The YAML data is not well-formed (line 1, column 4).", result.Diagnostics[0].Message);
     }
 
+    /// <summary>YAML with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void Read_YamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<JsonObject> result = AssignmentVariables.Read("user: [1, 2\nother: x\n");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, result.Diagnostics[0].Code);
+    }
+
     /// <summary>YAML nested deeper than 64 levels is an error and not a stack overflow.</summary>
     [Fact]
     public void Read_YamlNestedTooDeep_IsAnError_Test()
@@ -95,5 +105,34 @@ public sealed class AssignmentVariablesEdgeTests
         string block = AssignmentVariables.ToYamlBlock(value, 2);
 
         Assert.Equal("  \"a\": {}\n  \"b\": []\n  \"c\": null\n  \"d\":\n    - 1\n    -\n      \"e\": \"x\"", block);
+    }
+
+    /// <summary>The plain word <c>false</c> in YAML data is the JSON boolean false and not a string.</summary>
+    [Fact]
+    public void Read_YamlPlainFalse_IsABoolean_Test()
+    {
+        ToolResult<JsonObject> result = AssignmentVariables.Read("user:\n  active: false\n");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(false, result.Value["user"]?["active"]?.GetValue<bool>());
+    }
+
+    /// <summary>A YAML key that is a sequence is an error, because a JSON object key is a string.</summary>
+    [Fact]
+    public void Read_YamlKeyThatIsASequence_IsMalformed_Test()
+    {
+        ToolResult<JsonObject> result = AssignmentVariables.Read("? [a, b]\n: 1\n");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, result.Diagnostics[0].Code);
+    }
+
+    /// <summary>A scalar written as a YAML block is one line, with the indent in front and a string in double quotes.</summary>
+    [Fact]
+    public void ToYamlBlock_Scalar_IsOneIndentedLine_Test()
+    {
+        string block = AssignmentVariables.ToYamlBlock(JsonValue.Create("EU"), 4);
+
+        Assert.Equal("    \"EU\"", block);
     }
 }

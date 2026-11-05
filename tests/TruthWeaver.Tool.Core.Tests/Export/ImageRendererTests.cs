@@ -144,6 +144,44 @@ public sealed class ImageRendererTests
         Assert.False(File.Exists(output));
     }
 
+    /// <summary>A renderer that runs past the time limit is stopped, and the render fails with <c>TWT0017</c> and the limit.</summary>
+    [Fact]
+    public void Render_RendererRunsPastTheTimeout_KillsItAndReportsTheLimit_Test()
+    {
+        using TemporaryDirectory tools = new();
+        FakeTool.WriteSleeping(tools, "dot");
+
+        ToolResult<string> result = ImageRenderer.Render(
+            "digraph { }",
+            DiagramLanguage.Dot,
+            tools.File("rule.svg"),
+            new ImageRenderOptions { SearchPath = tools.FullPath, Timeout = TimeSpan.FromMilliseconds(300) }
+        );
+
+        Diagnostic error = Assert.Single(result.Diagnostics);
+        Assert.Equal(ToolDiagnosticCodes.RenderFailed, error.Code);
+        Assert.Contains("did not finish within 0.3 seconds", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A renderer file that the system cannot start fails the render with <c>TWT0017</c> and does not throw.</summary>
+    [Fact]
+    public void Render_RendererCannotBeStarted_ReportsThatItCannotBeStarted_Test()
+    {
+        using TemporaryDirectory tools = new();
+        FakeTool.WriteNotExecutable(tools, "dot");
+
+        ToolResult<string> result = ImageRenderer.Render(
+            "digraph { }",
+            DiagramLanguage.Dot,
+            tools.File("rule.svg"),
+            new ImageRenderOptions { SearchPath = tools.FullPath }
+        );
+
+        Diagnostic error = Assert.Single(result.Diagnostics);
+        Assert.Equal(ToolDiagnosticCodes.RenderFailed, error.Code);
+        Assert.Contains("it cannot be started", error.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>An export of every artifact with images renders the Mermaid and DOT diagrams and lists the images in the manifest.</summary>
     [Fact]
     public void ExportAll_WithImagesAndFakeRenderers_WritesAndListsTheImages_Test()
@@ -235,6 +273,26 @@ public sealed class ImageRendererTests
             {
                 WriteScript(directory.File(name), "#!/bin/sh\necho 'syntax error in line 1' >&2\nexit 3\n");
             }
+        }
+
+        // Writes a renderer that runs for a long time.
+        public static void WriteSleeping(TemporaryDirectory directory, string name)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                File.WriteAllText(directory.File(name + ".cmd"), "@echo off\r\nping -n 30 127.0.0.1 > nul\r\n");
+            }
+            else
+            {
+                WriteScript(directory.File(name), "#!/bin/sh\nsleep 30\n");
+            }
+        }
+
+        // Writes a file with the name of a renderer that the system cannot run.
+        public static void WriteNotExecutable(TemporaryDirectory directory, string name)
+        {
+            // A script without the execute permission on POSIX; text that is not a program on Windows.
+            File.WriteAllText(directory.File(OperatingSystem.IsWindows() ? name + ".exe" : name), "not a program\n");
         }
 
         [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]

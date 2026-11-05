@@ -1,6 +1,6 @@
 # Architecture deepening 4: analysis budget, tree paths, rule shape
 
-**Status:** needs-triage (filed 2026-11-02 from `/improve-codebase-architecture`; candidates 1 and 2 grilled the same day, tickets 01 to 06 and 12 hold the decisions; candidates 3 to 5 are not grilled; no ticket is released)
+**Status:** needs-triage (filed 2026-11-02 from `/improve-codebase-architecture`; candidates 1 and 2 grilled the same day, tickets 01 to 06 and 12 hold the decisions and were released 2026-11-04; candidates 3 to 5 are not grilled and tickets 07 to 11 are not released)
 
 ## Goal
 

@@ -9,6 +9,10 @@ namespace TruthWeaver.Ast;
 /// </summary>
 public static class OperatorInfo
 {
+    private const string CallDescription =
+        "Evaluates another rule of the rule library when the rule runs. Its value is the value of that rule. "
+        + "It is Unknown, with a fault, when a library reload has removed that rule or changed it from the pinned version.";
+
     // Note: descriptors are static text today; enrich them with context only where a static value is not enough.
 
     /// <summary>Gets the label and description for an operator node.</summary>
@@ -28,6 +32,12 @@ public static class OperatorInfo
         if (node is QuantifierExpression quantifier)
         {
             return new OperatorDescriptor(QuantifierText.Label(quantifier.Kind), QuantifierText.Description(quantifier.Kind));
+        }
+
+        // A call is not a connective either (ADR-0019), so it has no row in OperatorDefinitions.
+        if (node is CallExpression call)
+        {
+            return new OperatorDescriptor(CallAtom.TextOf(call), CallDescription);
         }
 
         if (node is TermExpression)

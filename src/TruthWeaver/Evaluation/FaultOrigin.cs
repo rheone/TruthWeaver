@@ -1,8 +1,8 @@
 namespace TruthWeaver.Evaluation;
 
 /// <summary>
-/// What kind of thing faulted, so the evaluation log names it correctly. All three go through
-/// <see cref="FaultRecorder.Record"/> and all three are logged under the same event id; the name of the value appears in the
+/// What kind of thing faulted, so the evaluation log names it correctly. All of them go through
+/// <see cref="FaultRecorder.Record"/> and all are logged under the same event id; the name of the value appears in the
 /// rendered message (<c>"{Origin} fault for term {Term}: ..."</c>) and as the <c>Origin</c> structured field.
 /// </summary>
 internal enum FaultOrigin
@@ -15,4 +15,7 @@ internal enum FaultOrigin
 
     /// <summary>A quantifier reached <see cref="EvaluationOptions.MaxElementEvaluations"/>.</summary>
     ElementLimit,
+
+    /// <summary>A <c>call("name")</c> could not run its rule: a reload removed or changed the rule, or the rule no longer compiles.</summary>
+    LibraryCall,
 }

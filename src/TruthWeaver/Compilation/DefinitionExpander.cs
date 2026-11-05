@@ -421,6 +421,14 @@ internal static class DefinitionExpander
         {
             (RuleNode body, int nodeCount) = this.scope.Expand(reference, libraryChain, site, diagnostics);
 
+            // A call runs the library rule at evaluation time (ADR-0019 decision 1), so the expansion above only checks it:
+            // the rule exists, the pin matches, it compiles against this scope and it is on no cycle. The expanded body is
+            // dropped and the node stays, with one node in the compiled tree whatever the size of the callee.
+            if (reference.IsCall)
+            {
+                return body is ErrorNode ? body with { Path = reference.Path } : this.CallNode(reference);
+            }
+
             // The reference's own span: in a library rule it is in the library rule text, like every other diagnostic of
             // the expansion, and the library rule expander locates it there.
             if (!this.nodeBudget.TryCount(nodeCount - 1, diagnostics, reference.Span, reference.Path))
@@ -429,6 +437,17 @@ internal static class DefinitionExpander
             }
 
             return WithLeadingNote(body, reference.Note);
+        }
+
+        // The checked call, named as the library holds the rule and with the pin in upper case, so that two calls of one rule
+        // and one pin are equal nodes whatever case they were written in. The reference's note, path and locator stay on it.
+        private RuleNode CallNode(LibraryReferenceNode reference)
+        {
+            string name =
+                options.Library is { } ruleLibrary && ruleLibrary.TryGet(reference.Name, out LibraryRule? libraryRule)
+                    ? libraryRule.Name
+                    : reference.Name;
+            return reference with { Name = name, PinnedHash = reference.PinnedHash?.ToUpperInvariant() };
         }
 
         // Expands the body of a quantifier in the library rule scope of its collection, then returns to the enclosing scope.

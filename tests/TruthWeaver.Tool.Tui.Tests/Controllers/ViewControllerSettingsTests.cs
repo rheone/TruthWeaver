@@ -129,6 +129,83 @@ public sealed class ViewControllerSettingsTests
         Assert.Contains("decision: off", controller.Header, StringComparison.Ordinal);
     }
 
+    /// <summary>The constant style moves to the next style and tells the panes.</summary>
+    [Fact]
+    public void CycleConstantStyle_Once_ChangesTheStyleAndRaisesSettingsChanged_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+        ConstantStyle? before = controller.Settings.ConstantStyle;
+        int raised = 0;
+        controller.SettingsChanged += (_, _) => raised++;
+
+        controller.CycleConstantStyle();
+
+        Assert.NotEqual(before, controller.Settings.ConstantStyle);
+        Assert.Equal(1, raised);
+    }
+
+    /// <summary>The simple-variables toggle flips the setting and tells the panes.</summary>
+    [Fact]
+    public void ToggleSimpleVariables_Once_FlipsTheSettingAndRaisesSettingsChanged_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+        bool before = controller.Settings.SimpleVariables;
+        int raised = 0;
+        controller.SettingsChanged += (_, _) => raised++;
+
+        controller.ToggleSimpleVariables();
+
+        Assert.Equal(!before, controller.Settings.SimpleVariables);
+        Assert.Equal(1, raised);
+    }
+
+    /// <summary>The header of a LaTeX equation names the envelope, and a constant override is marked.</summary>
+    [Fact]
+    public void Header_LatexEquationWithAConstantOverride_NamesTheEnvelopeAndTheOverride_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+        controller.Settings.Kind = ViewKind.Equation;
+        controller.Settings.Dialect = EquationDialect.LaTeX;
+        controller.Settings.TrueText = "yes";
+
+        string header = controller.Header;
+
+        Assert.Contains("envelope: ", header, StringComparison.Ordinal);
+        Assert.Contains("(overrides)", header, StringComparison.Ordinal);
+    }
+
+    /// <summary>The header of the Mermaid view starts with its name.</summary>
+    [Fact]
+    public void Header_MermaidView_StartsWithItsName_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+        controller.Settings.Kind = ViewKind.Mermaid;
+
+        Assert.StartsWith("Mermaid", controller.Header, StringComparison.Ordinal);
+    }
+
+    /// <summary>The header of the YAML view starts with its name.</summary>
+    [Fact]
+    public void Header_YamlView_StartsWithItsName_Test()
+    {
+        (ViewController controller, _, _) = Create("a");
+        controller.Settings.Kind = ViewKind.Yaml;
+
+        Assert.StartsWith("YAML", controller.Header, StringComparison.Ordinal);
+    }
+
+    /// <summary>Saving a view that has no text because the rule has errors says so and writes nothing.</summary>
+    [Fact]
+    public void Save_RuleWithErrors_SaysThereIsNothingToSave_Test()
+    {
+        (ViewController controller, _, Workbench workbench) = Create("a AND");
+
+        bool saved = controller.Save();
+
+        Assert.False(saved);
+        Assert.StartsWith("Nothing to save", workbench.Status, StringComparison.Ordinal);
+    }
+
     private static (ViewController Controller, ScriptedServices Services, Workbench Workbench) Create(string text)
     {
         Workbench workbench = new(RuleDocument.Create(text), ToolSettings.Default, new ScriptedPrompts());

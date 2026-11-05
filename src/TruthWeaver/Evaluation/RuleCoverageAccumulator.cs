@@ -269,6 +269,18 @@ internal sealed class RuleCoverageAccumulator
             return;
         }
 
+        // A call is an opaque term-like leaf (ADR-0019), keyed by its name and pin: the callee's own nodes are not nodes
+        // of this rule, so they are neither flattened nor counted.
+        if (node is CallExpression call)
+        {
+            if (!insideBody)
+            {
+                this.termOfNode[index] = this.RegisterTerm(CallAtom.IdentityOf(call));
+            }
+
+            return;
+        }
+
         if (node is ConstantExpression)
         {
             return;
@@ -344,6 +356,15 @@ internal sealed class RuleCoverageAccumulator
             return;
         }
 
+        // The trace of a call nests the callee's trace (ADR-0019), whose nodes are not nodes of this rule, so the call is
+        // paired as a leaf like a term and its recorded value is taken as given.
+        if (node is CallExpression)
+        {
+            evaluated[index] = true;
+            value[index] = result;
+            return;
+        }
+
         int[] children = this.operands[index];
         if (traceNode.Children.Count != children.Length)
         {
@@ -403,7 +424,7 @@ internal sealed class RuleCoverageAccumulator
             bool consistent = this.nodes[i] switch
             {
                 ConstantExpression constant => !evaluated[i] || constant.Value == value[i],
-                TermExpression => true,
+                TermExpression or CallExpression => true,
 
                 // Trusted like a term: the fold over its elements is not recomputable from a single operand value
                 // (ADR-0010 decision 7), so its recorded result is taken as given, as a term's is.
@@ -426,7 +447,7 @@ internal sealed class RuleCoverageAccumulator
             bool consistent = this.nodes[i] switch
             {
                 ConstantExpression constant => !evaluated[i] || constant.Value == value[i],
-                TermExpression => true,
+                TermExpression or CallExpression => true,
                 QuantifierExpression => true,
                 _ => !evaluated[i] || this.CombineAt(i, value) == value[i],
             };

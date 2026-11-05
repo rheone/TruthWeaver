@@ -204,6 +204,50 @@ public sealed class ImportControllerTests
         Assert.Equal(ImportController.ConvertTargets.Select(t => t.Title), services.Dialogs.LastItems);
     }
 
+    /// <summary>Cancelling the choice of where to import from imports nothing.</summary>
+    [Fact]
+    public void Import_SourceChoiceCancelled_ImportsNothing_Test()
+    {
+        (ImportController controller, _, Workbench workbench, _) = Create("a");
+
+        bool imported = controller.Import();
+
+        Assert.False(imported);
+        Assert.Equal("a", workbench.Document.Text);
+    }
+
+    /// <summary>Choosing the clipboard and a format imports the rule on the clipboard.</summary>
+    [Fact]
+    public void Import_ClipboardChosen_ImportsTheClipboardRule_Test()
+    {
+        (ImportController controller, ScriptedServices services, Workbench workbench, _) = Create("a");
+        services.Dialogs.Choices.Enqueue(0);
+        services.Dialogs.Choices.Enqueue(0);
+        services.Clipboard.Text = "b AND c";
+
+        bool imported = controller.Import();
+
+        Assert.True(imported);
+        Assert.Equal("b AND c", workbench.Document.Text);
+    }
+
+    /// <summary>Choosing a file while there are unsaved changes that the author will not discard imports nothing.</summary>
+    [Fact]
+    public void Import_FileChosenWithUnsavedChangesNotDiscarded_ImportsNothing_Test()
+    {
+        (ImportController controller, ScriptedServices services, Workbench workbench, ScriptedPrompts prompts) = Create("a");
+        workbench.Document.SetText("a AND b");
+        services.Dialogs.Choices.Enqueue(1);
+        services.Dialogs.Choices.Enqueue(0);
+        prompts.Discard = false;
+
+        bool imported = controller.Import();
+
+        Assert.False(imported);
+        Assert.Equal(1, prompts.DiscardQuestions);
+        Assert.Equal("a AND b", workbench.Document.Text);
+    }
+
     private static (
         ImportController Controller,
         ScriptedServices Services,

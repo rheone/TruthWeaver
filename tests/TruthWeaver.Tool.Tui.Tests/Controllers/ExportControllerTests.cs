@@ -242,6 +242,57 @@ public sealed class ExportControllerTests
         Assert.Equal(20, controller.TruthTableTermLimit);
     }
 
+    /// <summary>With a renderer on the search path, the image is written to the chosen path and the status names it.</summary>
+    [Fact]
+    public void SaveImage_RendererWritesTheImage_SavesItAndSaysWhere_Test()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
+        (ExportController controller, _, Workbench workbench, ScriptedPrompts prompts) = Create("a");
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo fake > \"$3\"");
+        controller.ImageSearchPath = tools.FullPath;
+        string image = Path.Combine(tools.FullPath, "rule.svg");
+
+        bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg, image);
+
+        Assert.True(saved);
+        Assert.True(File.Exists(image));
+        Assert.Contains("image to", workbench.Status, StringComparison.Ordinal);
+        Assert.Null(prompts.SavePath);
+    }
+
+    /// <summary>A renderer that fails leaves no image, and the status starts with the reason.</summary>
+    [Fact]
+    public void SaveImage_RendererFails_SaysNoImageWithTheReason_Test()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
+        (ExportController controller, _, Workbench workbench, _) = Create("a");
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo 'syntax error' >&2; exit 3");
+        controller.ImageSearchPath = tools.FullPath;
+        string image = Path.Combine(tools.FullPath, "rule.svg");
+
+        bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg, image);
+
+        Assert.False(saved);
+        Assert.StartsWith("No image:", workbench.Status, StringComparison.Ordinal);
+        Assert.False(File.Exists(image));
+    }
+
+    /// <summary>Cancelling the save dialog writes no image.</summary>
+    [Fact]
+    public void SaveImage_SaveDialogCancelled_WritesNothing_Test()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake renderer is a shell script.");
+        (ExportController controller, _, _, ScriptedPrompts prompts) = Create("a");
+        using TemporaryDirectory tools = TemporaryDirectory.WithRenderer("echo fake > \"$3\"");
+        controller.ImageSearchPath = tools.FullPath;
+        prompts.SavePath = null;
+
+        bool saved = controller.SaveImage(DiagramLanguage.Dot, ImageFormat.Svg);
+
+        Assert.False(saved);
+        Assert.Empty(Directory.GetFiles(tools.FullPath, "*.svg"));
+    }
+
     private static ArtifactDefinition Artifact(string id)
     {
         Assert.True(ArtifactCatalog.TryFind(id, out ArtifactDefinition? artifact));

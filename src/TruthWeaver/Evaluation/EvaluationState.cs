@@ -28,6 +28,12 @@ internal sealed class EvaluationState(bool collectTrace = true)
     // with a trace, so a rule without library references pays nothing.
     private Dictionary<Expression, string>? libraryLocators;
 
+    /// <summary>Gets how the calls of this evaluation find their rules, or <see langword="null"/> before a rule has set it.</summary>
+    public LibraryCalls? Calls { get; private set; }
+
+    /// <summary>Gets or sets how many calls are running, one inside the next, at this point of the evaluation.</summary>
+    public int CallDepth { get; set; }
+
     /// <summary>Gets every fault recorded anywhere in this evaluation, in the order they were raised.</summary>
     public List<Fault> Faults { get; } = [];
 
@@ -119,6 +125,16 @@ internal sealed class EvaluationState(bool collectTrace = true)
         {
             this.libraryLocators.TryAdd(locator.Key, locator.Value);
         }
+    }
+
+    /// <summary>
+    /// Sets how the calls of this evaluation find their rules. The first rule evaluated into the state sets it, so the rules
+    /// of one <c>PolicySet</c> evaluation share the call settings of the first.
+    /// </summary>
+    /// <param name="calls">The calls of the rule being evaluated.</param>
+    public void UseCalls(LibraryCalls calls)
+    {
+        this.Calls ??= calls;
     }
 
     /// <summary>Gets the library locator of a node, or <see langword="null"/> when the node is not from a library rule.</summary>

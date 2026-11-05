@@ -96,6 +96,12 @@ internal static class OrderOptimizer
             {
                 result = new SubtreeCost(costOf(term.Identity), new HashSet<TermIdentity> { term.Identity });
             }
+            else if (node is CallExpression call)
+            {
+                // A call is one opaque atom (ADR-0019), priced like a term by its own identity.
+                TermIdentity atom = CallAtom.IdentityOf(call);
+                result = new SubtreeCost(costOf(atom), new HashSet<TermIdentity> { atom });
+            }
             else if (node is ConstantExpression)
             {
                 result = new SubtreeCost(0.0, new HashSet<TermIdentity>());

@@ -41,7 +41,7 @@ Before planning or resuming effort work, read [.scratch/in-flight.md](.scratch/i
 ## Development rules
 
 - Prefer .NET file-based apps (`dotnet run scripts/<name>.cs`, [docs](https://learn.microsoft.com/en-us/dotnet/core/sdk/file-based-apps)) over PowerShell for repository scripts. The repository scripts are file-based apps; their shared helpers live in `scripts/shared/` and are pulled in with a literal-path `#:include`.
-- Edit files with the Edit tool, and use a file-based `.cs` script for a bulk or multi-line change. Use `sed` only for a one-line substitution: multi-line `sed` and `awk` splices fail on this BusyBox. The container has no `python3` or `perl`. The shell is zsh, so keep a file list in an array (`F=(a b); cmd "${F[@]}"`); a string variable is one word.
+- Edit files with the Edit tool, and use a file-based `.cs` script for a bulk or multi-line change. Use `sed` only for a one-line substitution: multi-line `sed` and `awk` splices fail on this BusyBox. The container has no `python3` or `perl`. The shell is zsh, so keep a file list in an array (`F=(a b); cmd "${F[@]}"`); a string variable is one word. `dotnet run scripts/edit-text.cs` inserts a snippet file before an anchor line (`insert-before`) and moves a member, with its attributes and XML comment, to the end of its class (`move-to-end`); the header of the script has the usage.
 - Prefer modern idiomatic C#.
 - Nullable reference types are enabled.
 - Implicit usings are enabled.
@@ -89,7 +89,7 @@ dotnet test tests/TruthWeaver.Tests --filter-method "*Not_of_a_faulting_term*"
 
 ## Formatting
 
-Run `dotnet run scripts/format-all.cs` before you push. For the formatter, hook and text-normalizer details, or when a formatter or hook fails, read [docs/agents/formatting.md](docs/agents/formatting.md).
+Run `dotnet run scripts/format-all.cs` before you push. After you edit C# files, run `dotnet run scripts/format-all.cs -- --files <path>...` first: it reports every analyzer finding in seconds (SA1202 member order after you append a test below a private helper, and SA1118 multi-line arguments, are the usual two), where the full run needs about 4.5 minutes. For the formatter, hook and text-normalizer details, or when a formatter or hook fails, read [docs/agents/formatting.md](docs/agents/formatting.md).
 
 ## Testing
 
@@ -98,6 +98,7 @@ Run `dotnet run scripts/format-all.cs` before you push. For the formatter, hook 
 - Tests should describe behavior rather than implementation details.
 - New and touched tests carry an XML `<summary>` describing the behavior. Untouched pre-existing tests are not backfilled.
 - Prefer one logical behavior per test.
+- A test slice that claims a coverage gain measures it before and after with `dotnet run scripts/coverage-lines.cs`; the procedure is in [docs/agents/testing.md](docs/agents/testing.md).
 - Runnable examples in `README.md`/`CONTEXT.md` are tested: put a `<!-- doctest:... -->` marker above each `text`/`json`/`yaml`/`mermaid` block (procedure in `docs/doc-examples.md`); an untagged block fails `dotnet test`.
 
 ## Documentation
@@ -118,6 +119,8 @@ A commit runs the full test suite (2+ minutes): background it or use a long time
 
 ## Claude Code
 
+- A `/name` that the user types and that is missing from the skill list can be a user-only skill (`disable-model-invocation: true` in its `SKILL.md`, for example `implement`). The Skill tool refuses it, and it runs only when the user starts a message with it: a `/implement` inside a sentence is not expanded. Say so at once and ask the user to start the message with the command; do not copy its workflow.
+- `codegraph_explore` on broad symbol names returns many thousand tokens. When the file and line are known (a coverage report, a compiler message), `Read` with an offset is cheaper.
 - Before resuming or restarting a multi-ticket effort after a context clear, a new session, or a stated pause, check `ListAgents` for an already-running dispatch on the same branch before editing. A background bundle survives a context clear in the same session; nothing else will surface it.
 
 ## Agent skills

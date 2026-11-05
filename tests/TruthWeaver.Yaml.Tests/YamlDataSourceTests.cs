@@ -183,11 +183,12 @@ public sealed class YamlDataSourceTests
         Assert.ThrowsAny<YamlException>(() => YamlDataSource.Parse(yaml));
     }
 
-    /// <summary>Malformed YAML, a duplicate key and a self-referencing alias each make <c>TryParse</c> return false with an error, and never throw.</summary>
+    /// <summary>Malformed YAML (including an unclosed flow sequence), a duplicate key and a self-referencing alias each make <c>TryParse</c> return false with an error, and never throw.</summary>
     [Theory]
     [InlineData("a: [1, 2")]
     [InlineData("a: &x [*x]")]
     [InlineData("a: 1\na: 2")]
+    [InlineData("a: [1, 2\nb: x\n")]
     public void TryParse_MalformedOrCyclicYaml_ReturnsFalseWithError_Test(string yaml)
     {
         bool parsed = YamlDataSource.TryParse(yaml, out YamlDataSource? source, out string? error);

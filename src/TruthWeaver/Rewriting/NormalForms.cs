@@ -258,7 +258,9 @@ internal static class NormalForms
             return node switch
             {
                 ConstantExpression c => negate ? new ConstantExpression(K3Logic.Not(c.Value)) : c,
-                TermExpression => negate ? new NotExpression(node) : node,
+
+                // A call is an opaque literal like a term (ADR-0019): the callee is never entered.
+                TermExpression or CallExpression => negate ? new NotExpression(node) : node,
                 NotExpression n => this.Visit(n.Operand, !negate),
 
                 // De Morgan: a negated AND is an OR of negated operands, and the reverse.

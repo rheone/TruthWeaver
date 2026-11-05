@@ -1,6 +1,6 @@
 # 17 - Tool.Core's document/conversion model layer is largely untested
 
-Status: ready-for-agent
+Status: done
 Category: enhancement
 Severity: high
 Slice: Tool.Core (src/TruthWeaver.Tool.Core/)
@@ -65,9 +65,9 @@ required variable; `SourceNodeIndex`'s lookup for a node with no matching source
 
 **Acceptance criteria:**
 - [x] Each of the seven classes gains at least one test for a genuinely non-trivial previously-uncovered path, prioritizing the representative scenarios named above.
-- [ ] Line/branch coverage improves measurably for the listed files (not necessarily to 100%).
+- [x] Line/branch coverage improves measurably for the listed files (not necessarily to 100%).
 - [x] Named `{Member}_{Scenario}_{Expectation}_Test`, one behavior per test, `<summary>` added.
-- [ ] The full validation list in `CLAUDE.md` passes.
+- [x] The full validation list in `CLAUDE.md` passes.
 
 **Out of scope:**
 - The pure-presentation TUI widgets (separate ticket).
@@ -77,15 +77,27 @@ required variable; `SourceNodeIndex`'s lookup for a node with no matching source
 
 First slice (50 tests, all passing; coverage was not measured, so criterion 2 is not ticked): `JsonLogicImporterFailureTests` (9), `AssignmentVariablesEdgeTests` (8), `RuleTestCaseTextReadTests` (5), `SourceNodeIndexTests` (6), `RuleTreePathTests` (7), `RuleDocumentHistoryTests` (6), `ImageRendererSearchTests` (8) and one test in `ImageRendererTests` (a renderer that writes no file).
 
-**Finding (defect, test left out).** `AssignmentVariables.Read("user: [1, 2\nother: x\n")` (an unclosed YAML flow sequence) throws `InvalidOperationException` from `YamlDotNet.Core.Scanner.ScanPlainScalar`. `TryReadAny` catches only `JsonException`, `YamlException` and `ArgumentException`, so the exception escapes instead of a `MalformedDocument` error. Expected: a `MalformedDocument` diagnostic. `StubAssignment.ReadYaml` and `RuleTestCaseText.Parse` have the same catch list.
+**Finding (defect, test left out).** `AssignmentVariables.Read("user: [1, 2\nother: x\n")` (an unclosed YAML flow sequence) throws `InvalidOperationException` from `YamlDotNet.Core.Scanner.ScanPlainScalar`. `TryReadAny` catches only `JsonException`, `YamlException` and `ArgumentException`, so the exception escapes instead of a `MalformedDocument` error. Expected: a `MalformedDocument` diagnostic. `StubAssignment.ReadYaml` and `RuleTestCaseText.Parse` have the same catch list. Fixed by coverage-gaps ticket 21 (2026-11-03), which also fixes the other YAML readers.
 
 **Noticed, not changed.** `RuleTree.TryLocate` leaves `parent` and `index` set to the last step that worked when it returns `false` for a later step (for example `$.operands[0].operands[0]`); callers only read them after `true`.
 
+## Second slice (2026-11-03, branch `fix/coverage-gaps-2026-10-25`)
+
+Measured with `dotnet test tests/TruthWeaver.Tool.Core.Tests -c Release --coverlet --coverlet-output-format cobertura`. Covered lines of the seven files, before and after the second slice (line coverage; the first slice is in both numbers):
+
+| File | Before | After |
+| --- | --- | --- |
+| `RuleTestCaseText` | 189/200 | 194/200 |
+| `JsonLogicImporter` | 206/223 | 223/223 |
+| `RuleTree` | 236/242 | 241/242 |
+| `RuleDocument` | 143/155 | 144/155 |
+| `SourceNodeIndex` | 107/118 | 116/118 |
+| `AssignmentVariables` | 85/96 | 88/96 |
+| `ImageRenderer` | 107/112 | 112/112 |
+
+New tests: JsonLogic bad arguments, `!!`, empty `if` and a digit-first variable name; `RuleTestCaseText` malformed files for `RemoveCase` and `WithRule`, a list root, a flow-mapping case and `variableFiles`; `SourceNodeIndex` keys that are a sequence, a mapping or an alias; `AssignmentVariables` `false`, a sequence key and a scalar block; `RuleDocument.ApplyEdit` with and without definitions, `ConvertTo` with definitions and `Save` over a read-only file; `RuleTree.TextOf("$")`, the `atLeast k=2` label and `TryLocatePath`; `ImageRenderer` timeout kill and a renderer that cannot start.
+
+Left uncovered on purpose: the `RuleDocument` branches where printing a current rule fails (`FormatText`, `Save`, `ConvertTo`, `ReplaceRule`), which no input reaches today; the `AssignmentVariables.Parse` branch for a source that the JSON data source refuses (no input reaches it, since the data is re-serialized JSON); and the `RuleTestCaseText` empty-cases branch, which the block-list check reaches first.
 ## Remaining
 
-- `RuleTestCaseText`: `AddOrReplaceCase` when the file has keys or comments after the last case, `WithRule` with several rule keys, `NewFile` with a multi-line rule.
-- `JsonLogicImporter`: `!!` with two arguments, the `?:` alias, `in` with a non-literal candidate.
-- `RuleTree`: `Collect` for definitions, uses and `CollectSource` (RuleDefinitions input), `OperatorLabel` for quantifiers and `min`/`max`, `CopyDocument`.
-- `RuleDocument`: `ConvertTo` with definitions, `ApplyEdit` with a definitions document, `Save` over a read-only target.
-- `ImageRenderer`: the renderer timeout (the `Run` kill path) and a renderer that cannot start.
-- `SourceNodeIndex`: complex YAML keys, anchored scalars with tags, several YAML documents.
+Nothing from the first-slice list is open: the second slice above covers it. What stays uncovered, and why, is in the last paragraph of the second slice.

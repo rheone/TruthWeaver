@@ -290,7 +290,7 @@ public sealed class RuleTreeEditor
                 if (
                     !workspace.TryFind(parentPath, Part.Content, out JsonObject? owner, out Action<JsonObject>? putOwner)
                     || owner["operands"] is not JsonArray operands
-                    || OperandIndex(path!) is not int index
+                    || RuleTree.OperandIndex(path!) is not int index
                     || index >= operands.Count
                 )
                 {
@@ -327,7 +327,7 @@ public sealed class RuleTreeEditor
                     parentPath is not null && workspace.TryFind(parentPath, Part.Content, out JsonObject? owner, out _)
                         ? owner["operands"] as JsonArray
                         : null;
-                int index = OperandIndex(path!) ?? -1;
+                int index = RuleTree.OperandIndex(path!) ?? -1;
                 int other = index + Math.Sign(direction);
                 if (
                     parent is null
@@ -478,27 +478,6 @@ public sealed class RuleTreeEditor
     private static JsonObject Not(JsonObject node)
     {
         return new JsonObject { ["op"] = "not", ["operands"] = new JsonArray(node.DeepClone()) };
-    }
-
-    // The index of a node among the operands of its parent, read from the end of its path; null for the root.
-    private static int? OperandIndex(string path)
-    {
-        int open = path.LastIndexOf('[');
-        if (
-            path.EndsWith(']')
-            && open >= 0
-            && int.TryParse(
-                path.AsSpan(open + 1, path.Length - open - 2),
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out int index
-            )
-        )
-        {
-            return index;
-        }
-
-        return null;
     }
 
     // Keeps a member that an operator needs (adding it with a start value) and removes it when the operator does not take it.

@@ -31,6 +31,7 @@ public sealed partial class CompiledRule<TContext>
     private readonly Lazy<RuleMetrics> metrics;
     private readonly CompilerOptions options;
     private readonly Lazy<NoteLookup?> noteLookup;
+    private LibraryCalls? calls;
 
     /// <summary>Initializes a new instance of the <see cref="CompiledRule{TContext}"/> class.</summary>
     /// <param name="root">The compiled tree.</param>
@@ -128,6 +129,12 @@ public sealed partial class CompiledRule<TContext>
     /// </summary>
     internal IReadOnlySet<TermIdentity> TermIdentities => this.termIdentities.Value;
 
+    /// <summary>Gets the library locator text of each node that a library rule reference expanded to, or <see langword="null"/> for none.</summary>
+    internal IReadOnlyDictionary<Expression, string>? LibraryLocators => this.libraryLocators;
+
+    /// <summary>Gets how the <c>call("name")</c> nodes of this rule find and compile their rules, created on first use.</summary>
+    internal LibraryCalls Calls => LazyInitializer.EnsureInitialized(ref this.calls, () => new LibraryCalls(this.options));
+
     /// <inheritdoc />
     public override string ToString()
     {
@@ -176,6 +183,12 @@ public sealed partial class CompiledRule<TContext>
                 if (node is QuantifierExpression quantifier)
                 {
                     identities.Add(new TermIdentity(quantifier.CollectionName, []));
+                }
+
+                // A call that cannot run its callee records its fault against the call's own atom identity.
+                if (node is CallExpression call)
+                {
+                    identities.Add(CallAtom.IdentityOf(call));
                 }
 
                 foreach (Expression operand in ExpressionShape.Of(node).Operands)

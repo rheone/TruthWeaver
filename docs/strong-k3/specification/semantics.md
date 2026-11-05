@@ -212,6 +212,8 @@ The no-tautology theorem does not extend to them. `IsKnown(a) OR IsUnknown(a)` i
 
 `NAND` and `NOR` cannot express them. Every circuit built from `NOT`, `AND`, `OR`, `NAND` and `NOR` is monotone, and `COALESCE` is not (see the example in [values](values.md#information-order)).
 
+A runtime call, `call("name")`, is neither a connective nor an external operator. It is a leaf whose value is the value of another rule of the rule library, and the analysis treats it as an opaque term keyed by the rule name and the optional hash pin: two calls with the same name and pin are one term, and the analysis never reads the called rule. A call is not an information-monotone claim, because a library reload can remove the called rule or change it from the pinned version, and the call is then `Unknown` with a fault. The no-tautology theorem therefore does not extend to a rule that contains a call.
+
 `Project` and `Collapse` are neither connectives nor external rule operators: they are methods on an evaluated decision, described in the [result transformations](../result-transformations/README.md).
 
 ## Related

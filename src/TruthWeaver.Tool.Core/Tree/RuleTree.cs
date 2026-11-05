@@ -8,6 +8,7 @@ using TruthWeaver.Printing;
 using TruthWeaver.Tool.Core.Assignment;
 using TruthWeaver.Tool.Core.Configuration;
 using TruthWeaver.Tool.Core.Diagnostics;
+using TruthWeaver.Tool.Core.Documents;
 using TruthWeaver.Tool.Core.Output;
 using TruthWeaver.Yaml;
 
@@ -26,8 +27,6 @@ using TruthWeaver.Yaml;
 /// </remarks>
 public sealed class RuleTree
 {
-    private const string OperandsSegment = ".operands[";
-
     private readonly JsonObject root;
     private readonly ToolSettings settings;
     private readonly RuleCompiler<StubAssignment> compiler;
@@ -145,45 +144,20 @@ public sealed class RuleTree
         node = null;
         parent = null;
         index = -1;
-        if (!path.StartsWith('$'))
+        if (!TryParsePath(path, out DocumentPath? parsed) || !IsOperandPath(parsed))
         {
             return false;
         }
 
-        JsonObject current = root;
-        int position = 1;
-        while (position < path.Length)
+        PathLocation<JsonNode> location = parsed.Locate<JsonNode>(JsonNodePathNavigator.Instance, root);
+        if (location.Node is not JsonObject found)
         {
-            if (string.CompareOrdinal(path, position, OperandsSegment, 0, OperandsSegment.Length) != 0)
-            {
-                return false;
-            }
-
-            position += OperandsSegment.Length;
-            int close = path.IndexOf(']', position);
-            if (
-                close < 0
-                || !int.TryParse(
-                    path.AsSpan(position, close - position),
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out int operand
-                )
-                || current["operands"] is not JsonArray operands
-                || operand >= operands.Count
-                || operands[operand] is not JsonObject child
-            )
-            {
-                return false;
-            }
-
-            parent = operands;
-            index = operand;
-            current = child;
-            position = close + 1;
+            return false;
         }
 
-        node = current;
+        node = found;
+        parent = location.Parent as JsonArray;
+        index = location.Last is { Name: null } last ? last.Position : -1;
         return true;
     }
 
@@ -205,32 +179,23 @@ public sealed class RuleTree
     {
         node = null;
         put = null;
-        if (!path.StartsWith('$'))
+        if (!TryParsePath(path, out DocumentPath? parsed))
         {
             return false;
         }
 
-        JsonNode current = root;
-        Action<JsonObject> place = replacement => ReplaceMembers(root, replacement);
-        int position = 1;
-        while (position < path.Length)
-        {
-            if (!TryStep(path, ref position, current, out JsonNode? child, out Action<JsonObject>? childPlace))
-            {
-                return false;
-            }
-
-            current = child;
-            place = childPlace;
-        }
-
-        if (current is not JsonObject found)
+        PathLocation<JsonNode> location = parsed.Locate<JsonNode>(JsonNodePathNavigator.Instance, root);
+        if (location.Node is not JsonObject found)
         {
             return false;
         }
 
         node = found;
-        put = place;
+
+        // Replacing the root replaces its members, so the root stays the same instance.
+        put = location.Parent is null
+            ? replacement => ReplaceMembers(root, replacement)
+            : replacement => location.Replace(replacement);
         return true;
     }
 
@@ -238,18 +203,30 @@ public sealed class RuleTree
     /// <param name="path">The path of the node.</param>
     /// <param name="index">The index of the operand.</param>
     /// <returns>The path of the operand.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is not a valid tree path.</exception>
     internal static string OperandPath(string path, int index)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"{path}{OperandsSegment}{index}]");
+        return TryParsePath(path, out DocumentPath? parsed)
+            ? parsed.Operand(index).Text
+            : throw new ArgumentException($"The path '{path}' is not a valid tree path.", nameof(path));
     }
 
     /// <summary>Gets the path of the parent of a node, or <see langword="null"/> for the root.</summary>
     /// <param name="path">The path of the node.</param>
-    /// <returns>The path of the parent.</returns>
+    /// <returns>The path of the parent; <see langword="null"/> when the path does not end in an operand step.</returns>
     internal static string? ParentPath(string path)
     {
-        int last = path.LastIndexOf(OperandsSegment, StringComparison.Ordinal);
-        return last < 0 ? null : path[..last];
+        return TryParsePath(path, out DocumentPath? parsed) && IsEndingInOperand(parsed)
+            ? parsed.Parent()!.Parent()!.Text
+            : null;
+    }
+
+    /// <summary>Gets the index in the last operand step of a path.</summary>
+    /// <param name="path">The path of the node.</param>
+    /// <returns>The index, or <see langword="null"/> when the path does not end in an operand step.</returns>
+    internal static int? OperandIndex(string path)
+    {
+        return TryParsePath(path, out DocumentPath? parsed) && IsEndingInOperand(parsed) ? parsed.Segments[^1].Position : null;
     }
 
     /// <summary>Prints a rule as rule text with its notes, in the operator style of the settings when that style reads back.</summary>
@@ -318,75 +295,32 @@ public sealed class RuleTree
         return flag ? "True" : "False";
     }
 
-    // Reads one step of a path (".name", "['name']" or "[0]") and moves to that child.
-    private static bool TryStep(
-        string path,
-        ref int position,
-        JsonNode current,
-        [NotNullWhen(true)] out JsonNode? child,
-        [NotNullWhen(true)] out Action<JsonObject>? place
-    )
+    // A tree path starts at the root: unlike a document path, it never omits the "$".
+    private static bool TryParsePath(string path, [NotNullWhen(true)] out DocumentPath? parsed)
     {
-        child = null;
-        place = null;
-        string? key = null;
-        if (path[position] == '.')
-        {
-            int start = ++position;
-            while (position < path.Length && (char.IsAsciiLetterOrDigit(path[position]) || path[position] == '_'))
-            {
-                position++;
-            }
+        parsed = null;
+        return path.StartsWith('$') && DocumentPath.TryParse(path, out parsed, out _);
+    }
 
-            key = path[start..position];
-        }
-        else if (string.CompareOrdinal(path, position, "['", 0, 2) == 0)
-        {
-            StringBuilder name = new();
-            position += 2;
-            while (position < path.Length && string.CompareOrdinal(path, position, "']", 0, 2) != 0)
-            {
-                // TreePath writes a quote inside a bracketed key as a backslash and the quote.
-                bool escaped = path[position] == '\\' && position + 1 < path.Length && path[position + 1] == '\'';
-                position += escaped ? 1 : 0;
-                name.Append(path[position++]);
-            }
+    // True when the path ends in an "operands" key and an index: the node is an operand of its parent.
+    private static bool IsEndingInOperand(DocumentPath path)
+    {
+        IReadOnlyList<DocumentPath.Segment> segments = path.Segments;
+        return segments is [.., { Name: "operands" }, { Name: null }];
+    }
 
-            position += 2;
-            key = name.ToString();
-        }
-        else if (path[position] == '[')
+    // True when every step of the path is an "operands" key followed by an index, so the path names a node of the rule.
+    private static bool IsOperandPath(DocumentPath path)
+    {
+        IReadOnlyList<DocumentPath.Segment> segments = path.Segments;
+        for (int i = 0; i < segments.Count; i += 2)
         {
-            int close = path.IndexOf(']', position);
-            if (
-                close < 0
-                || !int.TryParse(
-                    path.AsSpan(position + 1, close - position - 1),
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out int index
-                )
-                || current is not JsonArray items
-                || index >= items.Count
-                || items[index] is not { } item
-            )
+            if (segments[i].Name != "operands" || i + 1 >= segments.Count || segments[i + 1].Name is not null)
             {
                 return false;
             }
-
-            position = close + 1;
-            child = item;
-            place = replacement => items[index] = replacement;
-            return true;
         }
 
-        if (string.IsNullOrEmpty(key) || current is not JsonObject owner || owner[key] is not { } value)
-        {
-            return false;
-        }
-
-        child = value;
-        place = replacement => owner[key] = replacement;
         return true;
     }
 

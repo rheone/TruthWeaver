@@ -133,4 +133,14 @@ public sealed class DocumentOutlineTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Diagnostics, d => d.Code == ToolDiagnosticCodes.InvalidPath);
     }
+
+    /// <summary>YAML with an unclosed flow sequence is a malformed-document error and not a scanner exception.</summary>
+    [Fact]
+    public void Browse_YamlWithUnclosedFlowSequence_ReportsMalformedDocument_Test()
+    {
+        ToolResult<IReadOnlyList<DocumentNode>> result = DocumentOutline.Browse("rules: [1, 2\nother: x\n", RuleFormat.Yaml);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(ToolDiagnosticCodes.MalformedDocument, Assert.Single(result.Diagnostics).Code);
+    }
 }

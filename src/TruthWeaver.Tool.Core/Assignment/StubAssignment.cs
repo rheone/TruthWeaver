@@ -198,6 +198,12 @@ public sealed class StubAssignment
             diagnostics.Add(Malformed($"line {ex.Start.Line}, column {ex.Start.Column}", "YAML"));
             return null;
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for a document such as an unclosed flow sequence.
+            diagnostics.Add(Malformed(null, "YAML"));
+            return null;
+        }
 
         if (stream.Documents.Count == 0)
         {
@@ -235,11 +241,12 @@ public sealed class StubAssignment
         return ToolResults.Error(ToolDiagnosticCodes.InvalidStubValue, message, path);
     }
 
-    private static Diagnostic Malformed(string position, string format)
+    private static Diagnostic Malformed(string? position, string format)
     {
+        string where = position is null ? string.Empty : $" ({position})";
         return ToolResults.Error(
             ToolDiagnosticCodes.MalformedDocument,
-            $"The stub-value document is not well-formed {format} ({position})."
+            $"The stub-value document is not well-formed {format}{where}."
         );
     }
 

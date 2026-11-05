@@ -106,6 +106,7 @@ public sealed class TreeSchemaValidatorTests
     [Theory]
     [InlineData("""{"op": "and", """, RuleFormat.Json)]
     [InlineData("op: [and\n", RuleFormat.Yaml)]
+    [InlineData("op: [and, or\nother: x\n", RuleFormat.Yaml)]
     public void Validate_MalformedDocument_ReportsMalformedDocument_Test(string text, RuleFormat format)
     {
         Diagnostic finding = Assert.Single(TreeSchemaValidator.Validate(text, format));

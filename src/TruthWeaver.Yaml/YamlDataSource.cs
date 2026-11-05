@@ -71,6 +71,13 @@ public sealed partial class YamlDataSource : IDataSource
             error = $"The YAML document is not valid (line {ex.Start.Line}, column {ex.Start.Column}).";
             return false;
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            source = null;
+            error = "The YAML document is not valid.";
+            return false;
+        }
     }
 
     /// <summary>Creates a source over an already-parsed YAML node, for example one entry of a larger configuration document.</summary>

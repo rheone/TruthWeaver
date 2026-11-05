@@ -52,7 +52,7 @@ internal static class ConversionNotice
                 }
             }
         }
-        catch (YamlException)
+        catch (Exception ex) when (ex is YamlException or InvalidOperationException)
         {
             // Text that does not scan is not a document to count comments in.
         }

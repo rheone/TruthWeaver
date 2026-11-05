@@ -240,3 +240,16 @@ public sealed record CoalesceExpression(EquatableArray<Expression> Operands) : E
 /// <param name="Body">The element condition, evaluated once per element against that element's own predicate scope.</param>
 public sealed record QuantifierExpression(QuantifierKind Kind, string Variable, string CollectionName, Expression Body)
     : Expression;
+
+/// <summary>
+/// <c>call("name")</c> or <c>call("name", hash: "...")</c> (ADR-0019 decisions 1 and 7): a runtime call to another rule of
+/// the <c>RuleLibrary</c>. Unlike <c>rule("name")</c>, which the compiler replaces with the library rule's own tree, the node
+/// stays in the tree and the evaluator compiles and evaluates the named rule when it reaches the node. The value of the
+/// node is the value of the callee. The analyzer and every rewrite treat the node as an opaque atom keyed by
+/// <see cref="Name"/> and <see cref="PinnedHash"/> and never look inside the callee, so two calls with the same name and the
+/// same pin are one atom. A call is not an information-monotone claim: it can fail closed to <c>Unknown</c> after a library
+/// reload, so the "no tautologies" note of the specification does not extend to it.
+/// </summary>
+/// <param name="Name">The library rule name, as the library holds it (the compiler replaces the case written in the rule text).</param>
+/// <param name="PinnedHash">The content hash the call pins, in upper-case hexadecimal, or <see langword="null"/> for the current version.</param>
+public sealed record CallExpression(string Name, string? PinnedHash) : Expression;

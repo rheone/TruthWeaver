@@ -104,4 +104,56 @@ public sealed class JsonLogicImporterFailureTests
         Assert.False(result.Succeeded);
         Assert.Contains("variable path", Assert.Single(result.Diagnostics).Message, StringComparison.Ordinal);
     }
+
+    /// <summary>An operation with the wrong number or kind of arguments fails the import with an unsupported-JsonLogic error.</summary>
+    /// <param name="jsonLogic">The JsonLogic document.</param>
+    [Theory]
+    [InlineData("""{"!": [true, false]}""")]
+    [InlineData("""{"!!": [true, false]}""")]
+    [InlineData("""{"var": 5}""")]
+    [InlineData("""{"<": [1]}""")]
+    [InlineData("""{"<": [1, 2, 3]}""")]
+    [InlineData("""{"<": [1, {"var": 5}, 3]}""")]
+    [InlineData("""{"in": [{"var": 5}, ["a"]]}""")]
+    [InlineData("""{"in": ["a", {"var": 5}]}""")]
+    [InlineData("""{"in": [{"+": [1]}, ["a"]]}""")]
+    public void Import_OperationWithBadArguments_FailsAsUnsupported_Test(string jsonLogic)
+    {
+        ToolResult<string> result = JsonLogicImporter.Import(jsonLogic);
+
+        Assert.False(result.Succeeded);
+        Assert.NotEmpty(result.Diagnostics);
+        Assert.All(result.Diagnostics, d => Assert.Equal(ToolDiagnosticCodes.UnsupportedJsonLogic, d.Code));
+    }
+
+    /// <summary>A double negation with one argument is that argument.</summary>
+    [Fact]
+    public void Import_DoubleNegationWithOneArgument_GivesTheArgument_Test()
+    {
+        ToolResult<string> result = JsonLogicImporter.Import("""{"!!": [true]}""");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("""{"const":true}""", result.Value);
+    }
+
+    /// <summary>An <c>if</c> with no arguments is null in JsonLogic, so the import gives the constant Unknown and warns.</summary>
+    [Fact]
+    public void Import_IfWithNoArguments_GivesUnknownWithAWarning_Test()
+    {
+        ToolResult<string> result = JsonLogicImporter.Import("""{"if": []}""");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("""{"const":"unknown"}""", result.Value);
+        Assert.Equal(ToolDiagnosticCodes.JsonLogicBehaviorDiffers, Assert.Single(result.Diagnostics).Code);
+    }
+
+    /// <summary>A variable whose name starts with a digit gets a prefix, so that the term is a valid name.</summary>
+    [Fact]
+    public void Import_VariableNameStartingWithADigit_PrefixesTheTermName_Test()
+    {
+        ToolResult<string> result = JsonLogicImporter.Import("""{"var": "1abc"}""");
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("v1abc", result.Value, StringComparison.Ordinal);
+    }
 }

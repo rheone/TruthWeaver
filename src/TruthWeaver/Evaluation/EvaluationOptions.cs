@@ -51,6 +51,14 @@ namespace TruthWeaver.Evaluation;
 /// starts only the evaluation span, because a span for each predicate costs allocation and exporter volume. It has no
 /// effect while no <see cref="System.Diagnostics.ActivityListener"/> samples the source.
 /// </param>
+/// <param name="Library">
+/// The rule library that <c>call("name")</c> nodes of the rule look their rules up in during this evaluation (ADR-0019).
+/// <see langword="null"/> (the default) uses the <see cref="Compilation.CompilerOptions.Library"/> the rule was compiled
+/// with. A host that reloads its library passes the current one here, so a call runs the current version of its rule
+/// without a recompile of the caller; a call whose rule the library no longer holds, or holds with another content hash
+/// than the call pins, is <see cref="Abstractions.TruthValue.Unknown"/> with a <see cref="Fault"/>. It has no effect on
+/// <c>rule("name")</c>, which the compiler expanded in place.
+/// </param>
 public sealed record EvaluationOptions(
     int? FaultBudget = null,
     EvaluationMode Mode = EvaluationMode.ShortCircuit,
@@ -58,7 +66,8 @@ public sealed record EvaluationOptions(
     bool IncludeResolvedValues = false,
     int MaxElementEvaluations = 10_000,
     bool IncludeTrace = false,
-    bool TracePredicates = false
+    bool TracePredicates = false,
+    Compilation.RuleLibrary? Library = null
 )
 {
     // The largest delay CancellationTokenSource.CancelAfter accepts, in milliseconds (uint.MaxValue is reserved by the timer).

@@ -58,14 +58,16 @@ internal static class EmbeddedRuleReader
 
         using (parsed)
         {
-            JsonElement current = parsed.RootElement;
-            for (int i = 0; i < path.Segments.Count; i++)
+            PathLocation<JsonElementNode> location = path.Locate(
+                JsonElementPathNavigator.Instance,
+                new JsonElementNode(parsed.RootElement)
+            );
+            if (!location.Found)
             {
-                if (!TryGetChild(current, path.Segments[i], out current))
-                {
-                    return NotFound(path, i);
-                }
+                return NotFound(path, location.StoppedIndex);
             }
+
+            JsonElement current = location.Node.Element;
 
             return current.ValueKind switch
             {
@@ -91,6 +93,11 @@ internal static class EmbeddedRuleReader
                 $"The YAML document is not valid (line {ex.Start.Line}, column {ex.Start.Column})."
             );
         }
+        catch (InvalidOperationException)
+        {
+            // The YamlDotNet scanner throws this, with no position, for text such as an unclosed flow sequence.
+            return ToolResults.Failure<RuleSelection>(ToolDiagnosticCodes.MalformedDocument, "The YAML document is not valid.");
+        }
 
         if (stream.Documents.Count == 0)
         {
@@ -98,51 +105,18 @@ internal static class EmbeddedRuleReader
             return path.Segments.Count == 0 ? NotARule(path) : NotFound(path, 0);
         }
 
-        YamlNode current = stream.Documents[0].RootNode;
-        for (int i = 0; i < path.Segments.Count; i++)
+        PathLocation<YamlNode> location = path.Locate(YamlNodePathNavigator.Instance, stream.Documents[0].RootNode);
+        if (!location.Found)
         {
-            YamlNode? next = Child(current, path.Segments[i]);
-            if (next is null)
-            {
-                return NotFound(path, i);
-            }
-
-            current = next;
+            return NotFound(path, location.StoppedIndex);
         }
 
-        return current switch
+        return location.Node switch
         {
             YamlScalarNode { Value: { } value } => ToolResults.Success(new RuleSelection(RuleFormat.Text, value)),
             YamlMappingNode mapping => ToolResults.Success(new RuleSelection(RuleFormat.Yaml, Slice(document, mapping))),
             _ => NotARule(path),
         };
-    }
-
-    private static bool TryGetChild(JsonElement element, DocumentPath.Segment segment, out JsonElement child)
-    {
-        if (segment.Name is { } name)
-        {
-            child = default;
-            return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out child);
-        }
-
-        bool inRange = element.ValueKind == JsonValueKind.Array && segment.Position < element.GetArrayLength();
-        child = inRange ? element[segment.Position] : default;
-        return inRange;
-    }
-
-    private static YamlNode? Child(YamlNode node, DocumentPath.Segment segment)
-    {
-        if (segment.Name is { } name)
-        {
-            return node is YamlMappingNode mapping
-                ? mapping.Children.FirstOrDefault(entry => entry.Key is YamlScalarNode { Value: { } key } && key == name).Value
-                : null;
-        }
-
-        return node is YamlSequenceNode sequence && segment.Position < sequence.Children.Count
-            ? sequence.Children[segment.Position]
-            : null;
     }
 
     // The mapping's own source text. A block mapping's first line starts at its first key, while its other lines keep

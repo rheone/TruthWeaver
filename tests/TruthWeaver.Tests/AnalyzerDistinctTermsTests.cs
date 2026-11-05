@@ -39,6 +39,7 @@ public sealed class AnalyzerDistinctTermsTests
         new InspectionExpression(InspectionKind.IsKnown, A),
         new IfExpression(A, B, C),
         new QuantifierExpression(QuantifierKind.ForAll, "x", "items", A),
+        new CallExpression("shared", null),
     ];
 
     /// <summary>Gets the index of each sample so failures name the operator kind.</summary>
@@ -93,6 +94,13 @@ public sealed class AnalyzerDistinctTermsTests
         if (node is QuantifierExpression quantifier)
         {
             yield return QuantifierAtom.IdentityOf(quantifier).PredicateName;
+            yield break;
+        }
+
+        // ADR-0019: a call is an opaque atom keyed by its name and pin; the called rule is never entered.
+        if (node is CallExpression call)
+        {
+            yield return CallAtom.IdentityOf(call).PredicateName;
             yield break;
         }
 

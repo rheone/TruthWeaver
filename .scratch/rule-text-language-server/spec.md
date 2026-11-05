@@ -1,6 +1,6 @@
 # Rule-text language server: shared coloring, diagnostics and hover across VS Code, Visual Studio and the TUI's future
 
-**Status:** ready-for-agent (grilled 2026-10-24)
+**Status:** needs-triage (grilled 2026-10-24; held 2026-11-04 as a post-release feature, do not start or dispatch until the owner triggers it)
 
 Source: a `/grilling` session that grew out of `.scratch/editors-vscode/` scoping, prompted by "can this grammar be caught and recognized in both Visual Studio and VS Code for richer editing and information." Supersedes the placeholder at `.scratch/editors-vscode/issues/03-rule-text-language-server.md`.
 
@@ -31,11 +31,11 @@ Today, rule-text coloring exists twice, independently: a VS Code TextMate gramma
 
 | Ticket | Change | Status | Blocked by |
 | --- | --- | --- | --- |
-| [01](issues/01-shared-token-classifier.md) | Shared token classifier in core `TruthWeaver`, superset-of-`SyntaxKind` taxonomy | ready-for-agent | None |
-| [02](issues/02-language-server-project.md) | `TruthWeaver.LanguageServer`: in-process engine link, live diagnostics, hover via `OperatorDefinitions`, semantic tokens via the classifier | ready-for-agent | 01 |
-| [03](issues/03-vscode-lsp-client.md) | VS Code LSP client extension; grammar stays as base layer | ready-for-agent | 02 |
-| [04](issues/04-visual-studio-lsp-client.md) | Visual Studio LSP client extension; semantic-tokens-only coloring | ready-for-agent | 02 |
-| [05](issues/05-bundled-scoped-theme.md) | Bundled light+dark scoped color contribution for the DSL's scopes/semantic token types | ready-for-agent | 01 |
+| [01](issues/01-shared-token-classifier.md) | Shared token classifier in core `TruthWeaver`, superset-of-`SyntaxKind` taxonomy | needs-triage (post-release; held 2026-11-04) | None |
+| [02](issues/02-language-server-project.md) | `TruthWeaver.LanguageServer`: in-process engine link, live diagnostics, hover via `OperatorDefinitions`, semantic tokens via the classifier | needs-triage (post-release; held 2026-11-04) | 01 |
+| [03](issues/03-vscode-lsp-client.md) | VS Code LSP client extension; grammar stays as base layer | needs-triage (post-release; held 2026-11-04) | 02 |
+| [04](issues/04-visual-studio-lsp-client.md) | Visual Studio LSP client extension; semantic-tokens-only coloring | needs-triage (post-release; held 2026-11-04) | 02 |
+| [05](issues/05-bundled-scoped-theme.md) | Bundled light+dark scoped color contribution for the DSL's scopes/semantic token types | needs-triage (post-release; held 2026-11-04) | 01 |
 
 ## Out of scope
 

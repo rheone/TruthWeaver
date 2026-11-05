@@ -530,6 +530,13 @@ internal static class Analyzer
             return;
         }
 
+        // A call is an opaque atom keyed by its name and pin (ADR-0019): the callee is never entered.
+        if (node is CallExpression call)
+        {
+            terms.Add(CallAtom.IdentityOf(call));
+            return;
+        }
+
         if (node is ConstantExpression)
         {
             return;
@@ -876,6 +883,20 @@ internal static class Analyzer
                 int atomDefinite = bdd.Variable(2 * atomIndex);
                 int atomUnknown = bdd.Variable((2 * atomIndex) + 1);
                 return new DualRail(atomDefinite, bdd.Or(atomDefinite, atomUnknown));
+            case CallExpression call:
+                // ADR-0019: a call is an opaque atom keyed by its name and pin, exactly as a term is keyed by its
+                // identity. Every K3 value is reachable for the atom (the callee can be any rule, or can fail closed to
+                // Unknown), so this is sound. The callee is never read, so two calls with one name and pin share a variable.
+                TermIdentity callAtom = CallAtom.IdentityOf(call);
+                if (!variableIndex.TryGetValue(callAtom, out int callIndex))
+                {
+                    callIndex = variableIndex.Count;
+                    variableIndex[callAtom] = callIndex;
+                }
+
+                int callDefinite = bdd.Variable(2 * callIndex);
+                int callUnknown = bdd.Variable((2 * callIndex) + 1);
+                return new DualRail(callDefinite, bdd.Or(callDefinite, callUnknown));
             case NotExpression n:
                 rail = Not(bdd, Build(n.Operand, bdd, variableIndex, diagnostics));
                 break;
