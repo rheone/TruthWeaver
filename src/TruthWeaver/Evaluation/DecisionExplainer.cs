@@ -121,6 +121,10 @@ internal static class DecisionExplainer
                 return;
             case ConstantExpression:
                 return;
+            case CallExpression call:
+                TermIdentity callAtom = CallAtom.IdentityOf(call);
+                identities.TryAdd(callAtom.ToString(), callAtom);
+                return;
             case QuantifierExpression quantifier:
                 TermIdentity atom = QuantifierAtom.IdentityOf(quantifier);
                 identities.TryAdd(atom.ToString(), atom);

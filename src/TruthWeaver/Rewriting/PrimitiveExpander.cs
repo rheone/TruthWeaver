@@ -37,8 +37,13 @@ internal static class PrimitiveExpander
         return node switch
         {
             // Leaves and primitive operators are already primitive.
-            ConstantExpression or TermExpression or NotExpression or AndExpression or OrExpression or CoalesceExpression =>
-                node,
+            ConstantExpression
+            or TermExpression
+            or CallExpression
+            or NotExpression
+            or AndExpression
+            or OrExpression
+            or CoalesceExpression => node,
 
             // The threshold family: AtLeast, AtMost and Exactly are the kernel; the strict comparisons shift k by one.
             ThresholdExpression t => ExpandThreshold(t),

@@ -175,6 +175,7 @@ internal static class CanonicalPrinter
         {
             ConstantExpression c => constants.Text(c.Value),
             TermExpression t => t.Identity.ToString(),
+            CallExpression call => CallAtom.TextOf(call),
             NotExpression n => NotToken(operatorStyle)
                 + PrintNode(n.Operand, PrintContext.NotOperand, innerDepth, grouping, operatorStyle, constants, notes),
             AndExpression => JoinOperands(
@@ -316,7 +317,7 @@ internal static class CanonicalPrinter
 
         string flat = PrintNode(node, context, depth, grouping, operatorStyle, constants, notes);
         bool fits = width is null || (indentLevel * indentSize) + flat.Length <= width.Value;
-        if (fits || node is ConstantExpression or TermExpression)
+        if (fits || node is ConstantExpression or TermExpression or CallExpression)
         {
             return flat;
         }

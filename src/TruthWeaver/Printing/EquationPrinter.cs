@@ -105,6 +105,18 @@ internal static class EquationPrinter
             return;
         }
 
+        // A call is one opaque atom (ADR-0019), so it takes a variable of its own in the legend.
+        if (node is CallExpression call)
+        {
+            TermIdentity atom = CallAtom.IdentityOf(call);
+            if (!terms.Contains(atom))
+            {
+                terms.Add(atom);
+            }
+
+            return;
+        }
+
         if (node is ConstantExpression)
         {
             return;
@@ -128,6 +140,7 @@ internal static class EquationPrinter
         {
             ConstantExpression c => tokens.FormatConstant(c.Value, constants),
             TermExpression t => formatTerm(t.Identity),
+            CallExpression call => formatTerm(CallAtom.IdentityOf(call)),
             NotExpression n => tokens.Not + PrintNode(n.Operand, PrintContext.Operand, tokens, formatTerm, constants),
             AndExpression => JoinInfix(node, tokens.And, tokens, formatTerm, constants),
             OrExpression => JoinInfix(node, tokens.Or, tokens, formatTerm, constants),

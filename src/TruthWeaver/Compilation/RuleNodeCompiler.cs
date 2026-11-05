@@ -339,6 +339,10 @@ internal sealed class RuleNodeCompiler<TContext>
         {
             ConstantNode c => new ConstantExpression(c.Value),
             ErrorNode => FailedNode.Placeholder,
+
+            // The expansion has already checked the call (the rule exists, the pin matches, no cycle) and named it as the
+            // library holds it, so the build only keeps it (ADR-0019). A rule reference never reaches here: it was expanded.
+            LibraryReferenceNode { IsCall: true } call => new CallExpression(call.Name, call.PinnedHash),
             TermNode t => this.BuildTerm(t),
             NotNode n => new NotExpression(this.Build(n.Operand, depth + 1)),
             AndNode a => this.BuildVariadic(

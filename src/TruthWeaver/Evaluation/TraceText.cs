@@ -43,6 +43,11 @@ internal static class TraceText
             return t.Identity.ToString();
         }
 
+        if (node is CallExpression call)
+        {
+            return CallAtom.TextOf(call);
+        }
+
         if (node is QuantifierExpression q)
         {
             // Must match the description the evaluator and the collection binding build for this node's trace

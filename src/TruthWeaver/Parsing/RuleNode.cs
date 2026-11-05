@@ -194,13 +194,17 @@ internal sealed record ErrorNode(SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
 /// A reference to a named rule of the compiler's <c>RuleLibrary</c>: <c>rule("name")</c>, or
-/// <c>rule("name", hash: "...")</c> with a pin. <c>DefinitionExpander</c> replaces it with the library rule's own
-/// expanded tree before <c>RuleNodeCompiler</c> builds the compiled tree, so nothing after expansion sees it.
+/// <c>rule("name", hash: "...")</c> with a pin, and the runtime forms <c>call("name")</c> and
+/// <c>call("name", hash: "...")</c>. <c>DefinitionExpander</c> replaces a <c>rule</c> reference with the library rule's own
+/// expanded tree before <c>RuleNodeCompiler</c> builds the compiled tree, so nothing after expansion sees it. It checks a
+/// <c>call</c> reference with the same checks and keeps the node, with the name as the library holds it and the pin in
+/// upper case; <c>RuleNodeCompiler</c> builds that node into a <c>CallExpression</c>.
 /// </summary>
 /// <param name="Name">The library rule name, as written.</param>
 /// <param name="PinnedHash">The content hash the reference pins, or <see langword="null"/> for the current version.</param>
-/// <param name="Span">The whole reference, from <c>rule</c> to its closing parenthesis.</param>
-internal sealed record LibraryReferenceNode(string Name, string? PinnedHash, SourceSpan Span) : RuleNode(Span);
+/// <param name="IsCall"><see langword="true"/> for <c>call(...)</c>, which stays in the compiled tree; <see langword="false"/> for <c>rule(...)</c>.</param>
+/// <param name="Span">The whole reference, from <c>rule</c> or <c>call</c> to its closing parenthesis.</param>
+internal sealed record LibraryReferenceNode(string Name, string? PinnedHash, bool IsCall, SourceSpan Span) : RuleNode(Span);
 
 /// <summary>
 /// A document-scoped <c>let</c> declaration (ADR-0008): names a reusable sub-expression, with zero or more declared

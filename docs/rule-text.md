@@ -219,9 +219,9 @@ A library rule follows these rules:
   for each name. The compiler reads every CRLF and every lone CR as LF before it compares the texts, as it does for the
   hash. Two libraries that differ only in line endings are equal. The order of the rules does not matter.
   `CompilerOptions` that hold equal libraries are equal.
-- **Case.** The words `rule` and `hash` and the library rule names are compared without case.
-- **Not reserved.** `rule` is a reference only when a quoted name follows its `(`. A predicate call always names its
-  arguments, as in `rule(name: "x")`, so a predicate named `rule` still compiles as a term.
+- **Case.** The words `rule`, `call` and `hash` and the library rule names are compared without case.
+- **Not reserved.** `rule` and `call` are references only when a quoted name follows their `(`. A predicate call always
+  names its arguments, as in `rule(name: "x")`, so a predicate named `rule` or `call` still compiles as a term.
 
 Each mistake is a compile error. The span of the diagnostic is the reference in the text that you compile, also when
 the mistake is in a library rule that the reference expands. A diagnostic about a place in the text of a library rule
@@ -264,6 +264,56 @@ TRE0047 error at line 1, column 1: 'contractor-clear' is not a rule in the compi
   Found: 'contractor-clear'
   Hint: Did you mean the library rule 'contractor-cleared'?
 ```
+
+### Runtime calls
+
+`call("name")` runs a library rule when the caller is evaluated, instead of expanding it when the caller is compiled.
+It takes the same optional pin as `rule`: `call("name", hash: "...")`.
+
+<!-- doctest:rule runtime-call -->
+```text
+call("contractor-cleared") AND NOT isBanned
+```
+
+The call node stays in the compiled rule, so the rule prints with the call and not with the body of the library rule:
+
+<!-- doctest:ruletext runtime-call -->
+```text
+call("contractor-cleared") AND NOT isBanned
+```
+
+The compiler checks a call with the checks of `rule("name")`: the library rule must exist (`TRE0047`), a pin must match
+the current hash (`TRE0048`), the library rule must compile against the caller (`TRE0050`), and no cycle may exist
+(`TRE0049`). A cycle can go through `rule` and `call` together. It is one error that lists the path, such as
+`a -> b -> a`. The compiler names the call as the library holds the rule, and writes the pin in upper case.
+
+At evaluation, the evaluator compiles the library rule against the registry of the caller, once for each library, and
+evaluates it with the evaluation of the caller. The call follows these rules:
+
+- **The value.** The value of the call is the value of the library rule.
+- **The faults.** The faults of the library rule join the faults of the caller and count against its `FaultBudget`.
+- **The trace.** The trace tree node of the call has the trace tree of the library rule as its one child. In
+  `Decision.Trace` the entries of the library rule come before the entry of the call.
+- **The limits.** `Timeout` and the cancellation token come from the caller.
+- **One value for one atom.** Two calls with the same name and pin in one scope are one atom. The library rule runs once, and a
+  fault is recorded once.
+
+By default a call uses the library that the caller was compiled with. A host that reloads its library passes the current
+one in `EvaluationOptions.Library`, and the call then runs the current version of the library rule without a recompile
+of the caller. The call returns `Unknown` and records one fault, so `Decision.IsSatisfied` is `false`, when:
+
+- the library no longer holds the rule;
+- the call has a pin and the rule has another hash now;
+- the rule no longer compiles against the caller, for example because it now makes a cycle.
+
+A call without a pin follows a change of the rule. A call with a pin does not, so pin a call when it must fail closed on
+a change.
+
+The analysis treats a call as an opaque term. A call is keyed by its name and its pin, so two calls with the same name
+and pin are one term, and the analysis never reads the library rule. The analyzer, the normal forms, the rewrites, the
+truth table and the coverage list the call as one term. A call is not a claim about information: a library rule can
+change or fail closed to `Unknown` after a reload, so the [no-tautology result](strong-k3/specification/semantics.md#no-tautologies-no-contradictions)
+does not extend to a call.
 
 Library rule references are part of rule text only. The JSON and YAML tree formats and `RuleBuilder` cannot write them.
 

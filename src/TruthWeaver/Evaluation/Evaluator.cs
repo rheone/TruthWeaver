@@ -164,6 +164,8 @@ internal sealed class Evaluator<TContext>(
                 return await this.EvalTermAsync(t).ConfigureAwait(false);
             case QuantifierExpression q:
                 return await this.EvalQuantifierAsync(q).ConfigureAwait(false);
+            case CallExpression call:
+                return await this.EvalCallAsync(call).ConfigureAwait(false);
             default:
                 // An operator node's flat entry is recorded here, after its operands' entries, because its result
                 // is only known once they are evaluated (a quantifier's binding records its entry the same way).
@@ -505,6 +507,79 @@ internal sealed class Evaluator<TContext>(
             TruthValue.Unknown,
             new TraceNode(skippedDescription, null, true, EquatableArray<TraceNode>.Empty)
         );
+    }
+
+    /// <summary>
+    /// Evaluates a <c>call("name")</c> node (ADR-0019 decision 7): finds the named rule in the current library, compiles it
+    /// against this evaluator's registry and evaluates its tree with this evaluator, so the callee shares the context, the
+    /// term memo, the fault list, the fault budget, the timeout and the cancellation token of the caller. The value of
+    /// the callee is the value of the node and its trace tree is the only child of the node's trace tree node. A rule
+    /// that a reload removed or changed, or that no longer compiles, makes the node <c>Unknown</c> with one fault
+    /// (decision 9). The result is memoized per call atom, so a second call to the same rule with the same pin in one
+    /// scope reuses the value and records no second fault.
+    /// </summary>
+    private async ValueTask<EvalResult> EvalCallAsync(CallExpression node)
+    {
+        string description = CallAtom.TextOf(node);
+        TermIdentity identity = CallAtom.IdentityOf(node);
+        (string? Scope, object Registry, TermIdentity Identity) key = (this.memoScope, this.registry, identity);
+        if (this.state.Memo.TryGetValue(key, out TruthValue cached))
+        {
+            this.AddTraceEntry(node, description, cached, false);
+            return new EvalResult(cached, new TraceNode(description, cached, false, EquatableArray<TraceNode>.Empty));
+        }
+
+        LibraryCalls? calls = this.state.Calls;
+        string? failure;
+        CompiledRule<TContext>? callee = null;
+        if (calls is null)
+        {
+            failure = "The evaluation has no rule library.";
+        }
+        else if (this.state.CallDepth >= calls.MaxCallDepth)
+        {
+            // A reloaded library can chain calls deeper than the compiler allowed when it checked the caller, so the
+            // evaluation bounds the nesting by the same limit as the tree depth.
+            failure = $"Calls nest deeper than the maximum of {calls.MaxCallDepth}.";
+        }
+        else
+        {
+            callee = calls.Resolve(this.registry, this.options.Library ?? calls.CompiledWith, node, out failure);
+        }
+
+        TruthValue value = TruthValue.Unknown;
+        EquatableArray<TraceNode> children = EquatableArray<TraceNode>.Empty;
+        if (callee is null)
+        {
+            FaultRecorder.Record(
+                this.state,
+                this.logger,
+                this.options,
+                this.scope,
+                FaultOrigin.LibraryCall,
+                identity,
+                new InvalidOperationException(failure)
+            );
+        }
+        else
+        {
+            this.state.AddLibraryLocators(callee.LibraryLocators);
+            this.state.CallDepth++;
+            try
+            {
+                EvalResult inner = await this.EvalAsync(callee.Root).ConfigureAwait(false);
+                value = inner.Value;
+                children = new EquatableArray<TraceNode>([inner.Node]);
+            }
+            finally
+            {
+                this.state.CallDepth--;
+            }
+        }
+
+        this.state.Memo[key] = value;
+        this.AddTraceEntry(node, description, value, false);
+        return new EvalResult(value, new TraceNode(description, value, false, children));
     }
 
     /// <summary>Evaluates a quantifier node by delegating to its collection binding (ADR-0010).</summary>

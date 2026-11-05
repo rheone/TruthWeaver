@@ -38,6 +38,8 @@ The caller can pass evaluation options. `Mode` selects the evaluation mode below
 | `EXISTS` | Stops after the first element whose body is `True` |
 | Every other Operation | Runs every operand |
 
+A runtime call, `call("name")`, has the trace tree of the called rule as its one child, and the flat log lists the entries of the called rule before the entry of the call. The faults of the called rule join the faults of the caller and count against its `FaultBudget`, and `Timeout` and the cancellation token come from the caller. A called rule that a reload removed or changed makes the call `Unknown` with one fault.
+
 A quantifier has one trace child for each element of its collection, not one for each written operand. `EvaluationOptions.MaxElementEvaluations` (default 10,000) bounds the body runs of all quantifiers in one evaluation. See [quantifiers](../quantifiers/README.md).
 
 The Evaluation behavior section of each Operation document states the rule for that Operation. These rows show the effect on a fault. Here `boom` is a term that faults, `isOn` is `True` and `isOff` is `False`.

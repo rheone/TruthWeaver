@@ -1096,21 +1096,25 @@ internal sealed class DslParser
     }
 
     /// <summary>
-    /// Whether the cursor starts a library rule reference: the word <c>rule</c> (any case), then <c>(</c>, then a quoted
-    /// name. The word is not reserved. A predicate call always names its arguments (<c>rule(name: "x")</c>), so a quoted
-    /// string directly after the <c>(</c> cannot start a predicate call, and a predicate named <c>rule</c> still parses as
-    /// a term.
+    /// Whether the cursor starts a library rule reference: the word <c>rule</c> or <c>call</c> (any case), then <c>(</c>,
+    /// then a quoted name. The words are not reserved. A predicate call always names its arguments
+    /// (<c>rule(name: "x")</c>), so a quoted string directly after the <c>(</c> cannot start a predicate call, and a
+    /// predicate named <c>rule</c> or <c>call</c> still parses as a term.
     /// </summary>
     private bool IsLibraryReferenceStart()
     {
         return this.Current.Kind == TokenKind.Identifier
-            && string.Equals(this.Current.Text, "rule", StringComparison.OrdinalIgnoreCase)
+            && (
+                string.Equals(this.Current.Text, "rule", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(this.Current.Text, "call", StringComparison.OrdinalIgnoreCase)
+            )
             && this.tokens[this.position + 1].Kind == TokenKind.LParen
             && this.tokens[this.position + 2].Kind == TokenKind.StringLiteral;
     }
 
     /// <summary>
-    /// Parses <c>rule("name")</c> or the pinned <c>rule("name", hash: "...")</c>. The cursor is on <c>rule</c>, and
+    /// Parses <c>rule("name")</c> or the pinned <c>rule("name", hash: "...")</c>, and the same two forms with <c>call</c>.
+    /// The cursor is on <c>rule</c> or <c>call</c>, and
     /// <see cref="IsLibraryReferenceStart"/> is true. The word <c>hash</c> is matched without case, like a keyword.
     /// </summary>
     private LibraryReferenceNode ParseLibraryReference()
@@ -1151,7 +1155,12 @@ internal sealed class DslParser
 
         int end = this.Current.Span.End;
         this.ExpectClose(opener);
-        return new LibraryReferenceNode(name, pinnedHash, SpanCovering(ruleToken.Span.Start, end));
+        return new LibraryReferenceNode(
+            name,
+            pinnedHash,
+            string.Equals(ruleToken.Text, "call", StringComparison.OrdinalIgnoreCase),
+            SpanCovering(ruleToken.Span.Start, end)
+        );
     }
 
     private ArgumentNode ParseArgument()

@@ -496,7 +496,9 @@ internal static class Simplifier
             bool result = node switch
             {
                 ConstantExpression c => c.Value != TruthValue.Unknown,
-                TermExpression => false,
+
+                // A call can fail closed to Unknown (ADR-0019), so it is never definite, like a term.
+                TermExpression or CallExpression => false,
 
                 // A quantifier can always be Unknown (a null collection, ADR-0010 decision 4) no matter how
                 // definite its body is, unlike every other operator, whose definiteness follows from its

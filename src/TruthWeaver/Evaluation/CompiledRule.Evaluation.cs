@@ -211,6 +211,7 @@ public sealed partial class CompiledRule<TContext>
         {
             ArgumentNullException.ThrowIfNull(sharedState);
             sharedState.AddLibraryLocators(this.libraryLocators);
+            sharedState.UseCalls(this.Calls);
         }
 
         EvaluationOptions effectiveOptions = options ?? EvaluationOptions.Default;
@@ -236,6 +237,7 @@ public sealed partial class CompiledRule<TContext>
     {
         EvaluationState state = new(options.IncludeTrace);
         state.AddLibraryLocators(this.libraryLocators);
+        state.UseCalls(this.Calls);
         return state;
     }
 }

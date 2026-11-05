@@ -48,6 +48,10 @@ internal static class ExpressionShape
             // not make the analyzer or a rewrite look inside a quantifier. Those treat it as an opaque atom explicitly,
             // ahead of this shared seam.
             QuantifierExpression q => new NodeShape(q.Kind == QuantifierKind.ForAll ? "Forall" : "Exists", null, [q.Body]),
+
+            // A call is a leaf for every structural consumer: the callee's body is not an operand (ADR-0019), so a generic
+            // walk never enters it. It has no OperatorDefinition, like a quantifier: it is not a K3 connective.
+            CallExpression => new NodeShape("Call", null, []),
             ConstantExpression or TermExpression => throw new ArgumentException(
                 $"'{node.GetType().Name}' is a leaf with no operand shape - handle it directly instead "
                     + $"of calling {nameof(ExpressionShape)}.{nameof(Of)}.",
