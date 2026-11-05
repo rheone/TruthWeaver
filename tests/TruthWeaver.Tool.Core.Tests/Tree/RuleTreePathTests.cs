@@ -124,6 +124,18 @@ public sealed class RuleTreePathTests
         Assert.Null(RuleTree.ParentPath("$"));
     }
 
+    /// <summary>A key that holds the text <c>.operands[</c> is a key, not an operand step: the path is not cut inside it.</summary>
+    [Fact]
+    public void ParentPath_KeyThatHoldsAnOperandStepText_IsNotCutInsideTheKey_Test()
+    {
+        const string KeyPath = "$.definitions['a.operands[0]'].body";
+
+        Assert.Null(RuleTree.ParentPath(KeyPath));
+        Assert.Equal(KeyPath, RuleTree.ParentPath(KeyPath + ".operands[1]"));
+        Assert.Equal(1, RuleTree.OperandIndex(KeyPath + ".operands[1]"));
+        Assert.Equal(KeyPath + ".operands[2]", RuleTree.OperandPath(KeyPath, 2));
+    }
+
     /// <summary>Replacing the members keeps the same instance, empties the replacement and drops old members.</summary>
     [Fact]
     public void ReplaceMembers_NewMembers_KeepsTheTargetInstanceAndDropsTheOldMembers_Test()

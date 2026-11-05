@@ -5,8 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// A parsed embedded-rule path: a singular JSONPath-style query that names one value in a JSON or YAML document. The
 /// grammar is an optional <c>$</c>, then segments: <c>.name</c> (a letter or <c>_</c>, then letters, digits, <c>_</c> or
-/// <c>-</c>), <c>['name']</c> or <c>["name"]</c> (any key), and <c>[n]</c> (an array index from 0). Without <c>$</c> the
-/// first name may omit its dot, so <c>rules.admin</c> and <c>$.rules.admin</c> are the same path.
+/// <c>-</c>), <c>['name']</c> or <c>["name"]</c> (any key; a backslash before a quote stands for that quote and a
+/// <c>]</c> inside the quotes belongs to the key), and <c>[n]</c> (an array index from 0). Without <c>$</c> the
+/// first name may omit its dot, so <c>rules.admin</c> and <c>$.rules.admin</c> are the same path. The path is written in the
+/// form of <c>TreePath</c>: <c>.name</c> for letters, digits and <c>_</c>, and <c>['name']</c> for any other key, with
+/// <c>\'</c> for each quote.
 /// </summary>
 internal sealed class DocumentPath
 {
@@ -83,6 +86,48 @@ internal sealed class DocumentPath
         return builder.ToString();
     }
 
+    /// <summary>Gets the path of the node that holds this one.</summary>
+    /// <returns>The path without its last segment, or <see langword="null"/> for the root.</returns>
+    public DocumentPath? Parent()
+    {
+        return this.Segments.Count == 0 ? null : new DocumentPath([.. this.Segments.Take(this.Segments.Count - 1)]);
+    }
+
+    /// <summary>Gets the path of an operand of the rule node this path names: this path, then <c>operands</c>, then the index.</summary>
+    /// <param name="index">The index of the operand.</param>
+    /// <returns>The operand path.</returns>
+    public DocumentPath Operand(int index)
+    {
+        return new DocumentPath([.. this.Segments, Segment.Key("operands"), Segment.Index(index)]);
+    }
+
+    /// <summary>Walks the segments from a root, in order, through a tree.</summary>
+    /// <typeparam name="TNode">The node type of the tree.</typeparam>
+    /// <param name="navigator">The steps of the tree type.</param>
+    /// <param name="root">The root node.</param>
+    /// <returns>The node with its parent, or the segment at which the walk stopped.</returns>
+    public PathLocation<TNode> Locate<TNode>(IPathNavigator<TNode> navigator, TNode root)
+        where TNode : class
+    {
+        TNode current = root;
+        TNode? parent = null;
+        Segment? last = null;
+        for (int index = 0; index < this.Segments.Count; index++)
+        {
+            Segment segment = this.Segments[index];
+            if (!navigator.TryGetChild(current, segment, out TNode? child))
+            {
+                return PathLocation<TNode>.Stop(navigator, segment, index);
+            }
+
+            parent = current;
+            last = segment;
+            current = child;
+        }
+
+        return PathLocation<TNode>.Reached(navigator, current, parent, last);
+    }
+
     private static bool IsNameStart(char c)
     {
         return char.IsAsciiLetter(c) || c == '_';
@@ -108,32 +153,92 @@ internal sealed class DocumentPath
     private static bool TryReadBracket(string text, int open, List<Segment> segments, out int next)
     {
         next = open;
-        int close = text.IndexOf(']', open + 1);
-        if (close < 0)
+        int position = SkipSpaces(text, open + 1);
+        if (position >= text.Length)
         {
             return false;
         }
 
-        string inner = text[(open + 1)..close].Trim();
-        if (inner.Length >= 2 && inner[0] is '\'' or '"' && inner[^1] == inner[0])
+        Segment segment;
+        if (text[position] is '\'' or '"')
         {
-            segments.Add(Segment.Key(inner[1..^1]));
-        }
-        else if (
-            inner.Length > 0
-            && inner.All(char.IsAsciiDigit)
-            && int.TryParse(inner, NumberStyles.None, CultureInfo.InvariantCulture, out int index)
-        )
-        {
-            segments.Add(Segment.Index(index));
+            if (!TryReadQuotedKey(text, ref position, out string? key))
+            {
+                return false;
+            }
+
+            segment = Segment.Key(key);
         }
         else
         {
+            int start = position;
+            while (position < text.Length && char.IsAsciiDigit(text[position]))
+            {
+                position++;
+            }
+
+            if (
+                position == start
+                || !int.TryParse(text[start..position], NumberStyles.None, CultureInfo.InvariantCulture, out int index)
+            )
+            {
+                return false;
+            }
+
+            segment = Segment.Index(index);
+        }
+
+        position = SkipSpaces(text, position);
+        if (position >= text.Length || text[position] != ']')
+        {
             return false;
         }
 
-        next = close + 1;
+        segments.Add(segment);
+        next = position + 1;
         return true;
+    }
+
+    private static int SkipSpaces(string text, int position)
+    {
+        while (position < text.Length && char.IsWhiteSpace(text[position]))
+        {
+            position++;
+        }
+
+        return position;
+    }
+
+    // Reads the quoted key that starts at position. A backslash before a quote character stands for that quote, and a
+    // closing bracket or a dot inside the quotes belongs to the key. On success position is just after the closing quote.
+    private static bool TryReadQuotedKey(string text, ref int position, [NotNullWhen(true)] out string? key)
+    {
+        char quote = text[position];
+        StringBuilder builder = new();
+        int i = position + 1;
+        while (i < text.Length)
+        {
+            char c = text[i];
+            if (c == '\\' && i + 1 < text.Length && text[i + 1] is '\'' or '"')
+            {
+                builder.Append(text[i + 1]);
+                i += 2;
+            }
+            else if (c == quote)
+            {
+                position = i + 1;
+                key = builder.ToString();
+                return true;
+            }
+            else
+            {
+                builder.Append(c);
+                i++;
+            }
+        }
+
+        key = null;
+        return false;
     }
 
     /// <summary>One step of a path: a mapping key or an array index.</summary>
@@ -146,8 +251,8 @@ internal sealed class DocumentPath
             this.Name switch
             {
                 null => $"[{this.Position.ToString(CultureInfo.InvariantCulture)}]",
-                { } name when name.Length > 0 && IsNameStart(name[0]) && name.All(IsNamePart) => "." + name,
-                { } name => "['" + name + "']",
+                { } name when name.Length > 0 && IsNameStart(name[0]) && name.All(IsPlainPart) => "." + name,
+                { } name => "['" + name.Replace("'", "\\'", StringComparison.Ordinal) + "']",
             };
 
         /// <summary>Creates a key segment.</summary>
@@ -160,6 +265,12 @@ internal sealed class DocumentPath
         public static Segment Index(int position)
         {
             return new Segment(null, position);
+        }
+
+        // The writer form of a name part: a hyphen needs the bracket form, as in TreePath.
+        private static bool IsPlainPart(char c)
+        {
+            return char.IsAsciiLetterOrDigit(c) || c == '_';
         }
     }
 }

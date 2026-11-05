@@ -28,22 +28,20 @@ internal static class DocumentRewrite
             {
                 JsonNode replacement =
                     loaded.Format == RuleFormat.Text ? JsonValue.Create(rule.Text) : JsonNode.Parse(rule.Json)!;
-                IReadOnlyList<DocumentPath.Segment> segments = SegmentsOf(loaded);
-                if (segments.Count == 0)
+                PathLocation<JsonNode> location = PathOf(loaded).Locate(JsonNodePathNavigator.Instance, root!);
+                if (!location.Found)
                 {
-                    root = replacement;
-                    continue;
+                    return null;
                 }
 
-                JsonNode parent = segments.SkipLast(1).Aggregate(root!, (node, segment) => Child(node, segment));
-                DocumentPath.Segment last = segments[^1];
-                if (last.Name is { } name)
+                // The root has no parent: the new rule becomes the document.
+                if (location.Parent is null)
                 {
-                    parent.AsObject()[name] = replacement;
+                    root = replacement;
                 }
-                else
+                else if (!location.Replace(replacement))
                 {
-                    parent.AsArray()[last.Position] = replacement;
+                    return null;
                 }
             }
 
@@ -71,24 +69,21 @@ internal static class DocumentRewrite
                     loaded.Format == RuleFormat.Text
                         ? new YamlScalarNode(rule.Text) { Style = ScalarStyle.DoubleQuoted }
                         : Load(rule.Yaml).Documents[0].RootNode;
-                IReadOnlyList<DocumentPath.Segment> segments = SegmentsOf(loaded);
-                if (segments.Count == 0)
+                PathLocation<YamlNode> location = PathOf(loaded)
+                    .Locate(YamlNodePathNavigator.Instance, stream.Documents[0].RootNode);
+                if (!location.Found)
                 {
-                    stream.Documents[0] = new YamlDocument(replacement);
-                    continue;
+                    return null;
                 }
 
-                YamlNode parent = segments.SkipLast(1).Aggregate(stream.Documents[0].RootNode, Child);
-                DocumentPath.Segment last = segments[^1];
-                if (last.Name is { } name)
+                // The root has no parent: the new rule becomes the document.
+                if (location.Parent is null)
                 {
-                    YamlMappingNode mapping = (YamlMappingNode)parent;
-                    YamlNode key = mapping.Children.Keys.First(k => k is YamlScalarNode { Value: { } value } && value == name);
-                    mapping.Children[key] = replacement;
+                    stream.Documents[0] = new YamlDocument(replacement);
                 }
-                else
+                else if (!location.Replace(replacement))
                 {
-                    ((YamlSequenceNode)parent).Children[last.Position] = replacement;
+                    return null;
                 }
             }
 
@@ -116,23 +111,11 @@ internal static class DocumentRewrite
         return stream;
     }
 
-    private static IReadOnlyList<DocumentPath.Segment> SegmentsOf(LoadedRule loaded)
+    private static DocumentPath PathOf(LoadedRule loaded)
     {
-        // The loader normalized the path, so it parses.
-        return loaded.Path is null || !DocumentPath.TryParse(loaded.Path, out DocumentPath? path, out _) ? [] : path.Segments;
-    }
-
-    private static JsonNode Child(JsonNode node, DocumentPath.Segment segment)
-    {
-        return (segment.Name is { } name ? node.AsObject()[name] : node.AsArray()[segment.Position])!;
-    }
-
-    private static YamlNode Child(YamlNode node, DocumentPath.Segment segment)
-    {
-        return segment.Name is { } name
-            ? ((YamlMappingNode)node)
-                .Children.First(entry => entry.Key is YamlScalarNode { Value: { } key } && key == name)
-                .Value
-            : ((YamlSequenceNode)node).Children[segment.Position];
+        // The loader normalized the path, so it parses; no path means the whole document.
+        return DocumentPath.TryParse(loaded.Path ?? "$", out DocumentPath? path, out _)
+            ? path
+            : throw new InvalidOperationException("The loader gave a path that does not parse.");
     }
 }

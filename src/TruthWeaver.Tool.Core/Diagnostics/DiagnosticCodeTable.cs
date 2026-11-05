@@ -231,17 +231,17 @@ public static class DiagnosticCodeTable
         Error(
             DiagnosticCodes.UnknownLibraryRule,
             nameof(DiagnosticCodes.UnknownLibraryRule),
-            "A rule(\"name\") reference names a rule that the rule library does not hold."
+            "A rule(\"name\") or call(\"name\") reference names a rule that the rule library does not hold."
         ),
         Error(
             DiagnosticCodes.LibraryRuleHashMismatch,
             nameof(DiagnosticCodes.LibraryRuleHashMismatch),
-            "A pinned rule reference names a hash that is not the current content hash of the library rule."
+            "A pinned rule or call reference names a hash that is not the current content hash of the library rule."
         ),
         Error(
             DiagnosticCodes.LibraryRuleCycleDetected,
             nameof(DiagnosticCodes.LibraryRuleCycleDetected),
-            "A library rule references itself, directly or through other library rules."
+            "A library rule references itself, directly or through other library rules, with rule or call."
         ),
         Error(
             DiagnosticCodes.InvalidLibraryRule,
