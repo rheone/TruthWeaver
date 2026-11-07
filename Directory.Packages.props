@@ -64,7 +64,7 @@
        a net11.0 build, evaluates System.Text.Json JsonNode directly and is actively maintained. Chosen over JsonPath.Net, whose
        3.x binaries ship under the Open Source Maintenance Fee EULA. -->
   <ItemGroup>
-    <PackageVersion Include="Meziantou.Framework.JsonPath" Version="3.0.8" />
+    <PackageVersion Include="Meziantou.Framework.JsonPath" Version="3.0.9" />
   </ItemGroup>
   <!-- YamlDotNet - TruthWeaver.Yaml's sole dependency beyond TruthWeaver itself. -->
   <ItemGroup>
@@ -129,7 +129,7 @@
        fast and fully automatic (no hand-written Arbitrary/shrink instances), and every failure
        reports a replayable seed. Not referenced by any shipping project. -->
   <ItemGroup>
-    <PackageVersion Include="CsCheck" Version="5.0.0" />
+    <PackageVersion Include="CsCheck" Version="5.0.1" />
   </ItemGroup>
   <!-- MinVer derives every package version from the Git tags. It is a build-only reference, and only for projects that
        pack, so test, sample and benchmark projects carry no MinVer version logic. -->
