@@ -28,7 +28,7 @@
   </ItemGroup>
   <!-- SonarAnalyzer -->
   <ItemGroup>
-    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" PrivateAssets="all" />
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" PrivateAssets="all" />
   </ItemGroup>
   <!-- Async/await usage analyzers -->
   <ItemGroup>
