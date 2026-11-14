@@ -102,10 +102,10 @@
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
-    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.1" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <!-- coverlet.MTP, not coverlet.collector (a VSTest data collector, which the
          UseMicrosoftTestingPlatformRunner test host below cannot load), is the native
          Microsoft.Testing.Platform coverage extension; run via the "coverlet" CLI flag
